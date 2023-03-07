@@ -1,6 +1,5 @@
 <script lang="ts">
   import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { createEventDispatcher } from "svelte";
 
   import {
     useQueryServiceColumnTimeRange,

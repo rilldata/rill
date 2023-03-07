@@ -690,15 +690,11 @@ export function getComparisonOptionsForTimeRange(
   let possibleComparisonRanges = [];
 
   if (timeRange.name === TimeRangeName.Custom) {
-    possibleComparisonRanges = [
-      ...pointInTimeComparisons,
-      ComparisonRange.Custom,
-    ];
+    possibleComparisonRanges = pointInTimeComparisons;
   } else {
     possibleComparisonRanges = [
       timeRangeNameToComparisonRange[timeRange.name],
       ...pointInTimeComparisons,
-      ComparisonRange.Custom,
     ];
   }
 

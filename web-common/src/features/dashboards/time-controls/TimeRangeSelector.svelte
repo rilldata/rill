@@ -10,7 +10,11 @@
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
-  import { TimeRange, TimeRangeName } from "./time-control-types";
+  import {
+    ComparisonWithTimeRange,
+    TimeRange,
+    TimeRangeName,
+  } from "./time-control-types";
   import { prettyFormatTimeRange } from "./time-range-utils";
 
   export let timeRangeOptions = [];
@@ -28,8 +32,8 @@
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
 
-  function onSelectRelativeTimeRange(
-    timeRange: TimeRange,
+  function onSelectTimeRange(
+    timeRange: TimeRange | ComparisonWithTimeRange,
     closeMenu: () => void
   ) {
     closeMenu();
@@ -106,8 +110,7 @@
     {#if timeRangeOptions}
       {#each timeRangeOptions as timeRange}
         <MenuItem
-          on:select={() =>
-            onSelectRelativeTimeRange(timeRange, toggleFloatingElement)}
+          on:select={() => onSelectTimeRange(timeRange, toggleFloatingElement)}
         >
           {timeRange.name}
         </MenuItem>

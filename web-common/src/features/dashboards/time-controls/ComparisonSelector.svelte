@@ -1,68 +1,106 @@
 <script lang="ts">
-  import { IconSpaceFixer } from "../../../components/button";
-  import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
-  import { WithSelectMenu } from "../../../components/menu";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
+    useQueryServiceColumnTimeRange,
+    useRuntimeServiceGetCatalogEntry,
+  } from "../../../runtime-client";
+  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import { ComparisonRange, TimeRangeName } from "./time-control-types";
+  import {
+    exclusiveToInclusiveEndISOString,
     getComparisonTimeRange,
-    prettyFormatTimeRange,
+    getDateFromISOString,
   } from "./time-range-utils";
+  import TimeRangeSelector from "./TimeRangeSelector.svelte";
 
   export let metricViewName;
-  export let comparisonOptions;
+  export let comparisonOptions: ComparisonRange[];
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
-  // Comparison Menu
-  $: options = comparisonOptions.map((key) => ({
-    main: key,
-    key,
-  }));
-
   $: selectedTimeRange = $dashboardStore?.selectedTimeRange;
-  $: selectedCompareName =
-    $dashboardStore?.selectedComparisonTimeRange?.name || options[0]?.key;
 
-  $: datePrettyString = prettyFormatTimeRange(
-    $dashboardStore?.selectedComparisonTimeRange
-  );
-  const onCompareRangeSelect = (comparisonRange) => {
+  let metricsViewQuery;
+  $: if ($runtimeStore?.instanceId) {
+    metricsViewQuery = useRuntimeServiceGetCatalogEntry(
+      $runtimeStore.instanceId,
+      metricViewName
+    );
+  }
+  let timeRangeQuery;
+  $: if (
+    $runtimeStore?.instanceId &&
+    $metricsViewQuery?.data?.entry?.metricsView?.model &&
+    $metricsViewQuery?.data?.entry?.metricsView?.timeDimension
+  ) {
+    timeRangeQuery = useQueryServiceColumnTimeRange(
+      $runtimeStore.instanceId,
+      $metricsViewQuery.data.entry.metricsView.model,
+      {
+        columnName: $metricsViewQuery.data.entry.metricsView.timeDimension,
+      }
+    );
+  }
+
+  $: min = $timeRangeQuery.data.timeRangeSummary?.min
+    ? getDateFromISOString($timeRangeQuery.data.timeRangeSummary.min)
+    : undefined;
+
+  $: options = comparisonOptions.map((comparisonRange) => {
     const comparisonTimeRange = getComparisonTimeRange(
       selectedTimeRange,
       comparisonRange
     );
-    metricsExplorerStore.setSelectedComparisonRange(metricViewName, {
-      ...comparisonTimeRange,
+    return {
       name: comparisonRange,
+      start: comparisonTimeRange.start,
+      end: comparisonTimeRange.end,
+    };
+  });
+
+  let initialStartDate;
+  let initialEndDate;
+  $: if (selectedTimeRange) {
+    initialStartDate = getDateFromISOString(
+      $dashboardStore.selectedComparisonTimeRange.start
+    );
+    initialEndDate = getDateFromISOString(
+      exclusiveToInclusiveEndISOString(
+        $dashboardStore.selectedComparisonTimeRange.end
+      )
+    );
+  }
+
+  const onCompareRangeSelect = (timeRange) => {
+    let name = timeRange.name;
+    if (timeRange.name === TimeRangeName.Custom) {
+      name = ComparisonRange.Custom;
+    }
+
+    metricsExplorerStore.setSelectedComparisonRange(metricViewName, {
+      ...timeRange,
+      name,
     });
   };
+
+  function validateCustomTimeRange(start, end) {
+    return undefined;
+  }
 </script>
 
 <div class="flex gap-x-2 flex-row items-center pl-3">
   <div>Compare to</div>
 
-  <WithSelectMenu
-    distance={8}
-    {options}
-    selection={{
-      main: selectedCompareName,
-      key: selectedCompareName,
+  <TimeRangeSelector
+    on:select-time-range={(e) => {
+      onCompareRangeSelect(e.detail);
     }}
-    on:select={(event) => onCompareRangeSelect(event.detail.key)}
-    let:toggleMenu
-    let:active
-  >
-    <button
-      class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600"
-      on:click={toggleMenu}
-    >
-      <span class="font-bold">{selectedCompareName}</span>
-      <span>{datePrettyString}</span>
-      <IconSpaceFixer pullRight>
-        <div class="transition-transform" class:-rotate-180={active}>
-          <CaretDownIcon size="16px" />
-        </div>
-      </IconSpaceFixer>
-    </button>
-  </WithSelectMenu>
+    timeRangeOptions={options}
+    selectedTimeRange={$dashboardStore.selectedComparisonTimeRange}
+    {min}
+    max={selectedTimeRange.end}
+    {initialStartDate}
+    {initialEndDate}
+    {validateCustomTimeRange}
+  />
 </div>
