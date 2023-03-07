@@ -6,6 +6,7 @@ import {
   isNested,
   TIMESTAMPS,
 } from "@rilldata/web-common/lib/duckdb-data-types";
+import type { NumericHistogramBinsBin } from "@rilldata/web-common/runtime-client";
 
 export function sortByCardinality(a, b) {
   if (a.cardinality && b.cardinality) {
@@ -72,4 +73,20 @@ export function defaultSort(a, b) {
   if (!CATEGORICALS.has(a.type) && !CATEGORICALS.has(b.type))
     return sortByNullity(b, a);
   return sortByCardinality(a, b);
+}
+
+/** this is a temporary function for floating point numbers until we
+ * move toward KDEs.
+ */
+export function chooseBetweenDiagnosticAndStatistical(
+  diagnostic: NumericHistogramBinsBin[],
+  statistical: NumericHistogramBinsBin[]
+) {
+  if (diagnostic?.length > 10) {
+    return diagnostic;
+  }
+  if (diagnostic?.length > statistical?.length) {
+    return diagnostic;
+  }
+  return statistical;
 }
