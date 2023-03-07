@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { invalidateRuntimeQueries } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { runtime } from "./runtime-store";
 
   export let host: string;
@@ -10,6 +12,11 @@
     instanceId: instanceId,
     jwt: jwt,
   });
+
+  // Re-run all runtime queries when `host` or `jwt` change
+  // By default, a new `instanceId` triggers a re-run because it's in the queryKeys
+  const queryClient = useQueryClient();
+  $: (host || jwt) && invalidateRuntimeQueries(queryClient);
 </script>
 
 <slot />
