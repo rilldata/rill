@@ -116,13 +116,25 @@ We should rename TimeSeriesTimeRange to a better name.
   );
 
   let comparisonOptions = [];
-  $: if (selectedTimeRange) {
-    comparisonOptions = getComparisonOptionsForTimeRange(selectedTimeRange);
-    console.log(comparisonOptions, !!comparisonOptions.length);
-    metricsExplorerStore.setShowComparison(
-      metricViewName,
-      !!comparisonOptions.length
-    );
+
+  function updateComparisonAppState(newTimeRange) {
+    if (newTimeRange) {
+      comparisonOptions = getComparisonOptionsForTimeRange(
+        newTimeRange,
+        allTimeRange
+      );
+
+      if (comparisonOptions.length) {
+        metricsExplorerStore.setSelectedComparisonRange(
+          metricViewName,
+          comparisonOptions[0]
+        );
+      }
+      metricsExplorerStore.setShowComparison(
+        metricViewName,
+        !!comparisonOptions.length
+      );
+    }
   }
 
   function onSelectTimeRange(name: TimeRangeName, start: string, end: string) {
@@ -199,6 +211,8 @@ We should rename TimeSeriesTimeRange to a better name.
     };
 
     metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
+
+    updateComparisonAppState(newTimeRange);
   }
 </script>
 

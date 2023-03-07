@@ -15,7 +15,7 @@
     key,
   }));
   $: selectedCompareRange =
-    $dashboardStore.comparisonTimeRange || options[0]?.key || "None";
+    $dashboardStore.comparisonTimeRange || options[0]?.key;
 
   const onCompareRangeSelect = (comparisonRange) => {
     metricsExplorerStore.setSelectedComparisonRange(

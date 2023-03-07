@@ -615,6 +615,33 @@ export function getISOStringFromDate(date: string): string {
 
 // Comparison Time Utils
 
+function getComparisonDurationMs(comparisonRange: ComparisonRange): number {
+  switch (comparisonRange) {
+    case ComparisonRange.Previous6Hours:
+      return 6 * TIME.HOUR;
+    case ComparisonRange.PreviousDay:
+      return TIME.DAY;
+    case ComparisonRange.PreviousWeek:
+      return TIME.WEEK;
+    case ComparisonRange.Previous30Days:
+      return 30 * TIME.DAY;
+    case ComparisonRange.PreviousYear:
+      return TIME.YEAR;
+    case ComparisonRange.DayOverDay:
+      return TIME.DAY;
+    case ComparisonRange.WeekOverWeek:
+      return TIME.WEEK;
+    case ComparisonRange.MonthOverMonth:
+      return TIME.MONTH; // Do we vary this by month type?
+    case ComparisonRange.YearOverYear:
+      return TIME.YEAR;
+    case ComparisonRange.Custom:
+      return 0;
+    default:
+      throw new Error(`Unknown comparison range: ${comparisonRange}`);
+  }
+}
+
 const pointInTimeComparisons = [
   ComparisonRange.DayOverDay,
   ComparisonRange.WeekOverWeek,
@@ -622,45 +649,61 @@ const pointInTimeComparisons = [
   ComparisonRange.YearOverYear,
 ];
 
-// TODO: Check if previous period data is available
-export function getComparisonOptionsForTimeRange(
-  timeRange: TimeSeriesTimeRange
-): ComparisonRange[] {
-  const alwaysAllowed = [...pointInTimeComparisons, ComparisonRange.Custom];
+const timeRangeNameToComparisonRange = {
+  [TimeRangeName.Last6Hours]: ComparisonRange.Previous6Hours,
+  [TimeRangeName.LastDay]: ComparisonRange.PreviousDay,
+  [TimeRangeName.LastWeek]: ComparisonRange.PreviousWeek,
+  [TimeRangeName.Last30Days]: ComparisonRange.Previous30Days,
+};
 
-  switch (timeRange.name) {
-    case TimeRangeName.Last6Hours:
-      return [ComparisonRange.Previous6Hours, ...alwaysAllowed];
-    case TimeRangeName.LastDay:
-      return [ComparisonRange.PreviousDay, ...alwaysAllowed];
-    case TimeRangeName.LastWeek:
-      return [ComparisonRange.PreviousWeek, ...alwaysAllowed];
-    case TimeRangeName.Last30Days:
-      return [ComparisonRange.Previous30Days, ...alwaysAllowed];
-    case TimeRangeName.Custom:
-      return alwaysAllowed;
-    case TimeRangeName.AllTime:
-      return [];
-    default:
-      throw new Error(`Unknown time range: ${timeRange.name}`);
+function getComparisonsInsideAllTime(
+  currentStartDate: number,
+  allTimeRange: TimeRange
+) {
+  const comparisonsInsideAllTime = [];
+  for (const range in ComparisonRange) {
+    const duration = getComparisonDurationMs(ComparisonRange[range]);
+    const comparisonStart = currentStartDate - duration;
+    if (comparisonStart >= allTimeRange.start.getTime()) {
+      comparisonsInsideAllTime.push(ComparisonRange[range]);
+    }
   }
+  return comparisonsInsideAllTime;
 }
 
-function getPointInTimeComparisonDurations(
-  comparisonRange: ComparisonRange
-): number {
-  switch (comparisonRange) {
-    case ComparisonRange.DayOverDay:
-      return TIME.DAY;
-    case ComparisonRange.WeekOverWeek:
-      return TIME.WEEK;
-    case ComparisonRange.MonthOverMonth:
-      return TIME.MONTH;
-    case ComparisonRange.YearOverYear:
-      return TIME.YEAR;
-    default:
-      throw new Error(`Unknown comparison range: ${comparisonRange}`);
+// TODO: Check if previous period data is available
+export function getComparisonOptionsForTimeRange(
+  timeRange: TimeSeriesTimeRange,
+  allTimeRange: TimeRange
+): ComparisonRange[] {
+  if (timeRange.name === TimeRangeName.AllTime) {
+    return [];
   }
+
+  const currentStartDate = new Date(timeRange.start).getTime();
+  const comparisonsInsideAllTime = getComparisonsInsideAllTime(
+    currentStartDate,
+    allTimeRange
+  );
+
+  let possibleComparisonRanges = [];
+
+  if (timeRange.name === TimeRangeName.Custom) {
+    possibleComparisonRanges = [
+      ...pointInTimeComparisons,
+      ComparisonRange.Custom,
+    ];
+  } else {
+    possibleComparisonRanges = [
+      timeRangeNameToComparisonRange[timeRange.name],
+      ...pointInTimeComparisons,
+      ComparisonRange.Custom,
+    ];
+  }
+
+  return possibleComparisonRanges.filter((range) =>
+    comparisonsInsideAllTime.includes(range)
+  );
 }
 
 export function getComparisonTimeRange(
@@ -670,7 +713,7 @@ export function getComparisonTimeRange(
   const currentStartDate = new Date(timeRange.start).getTime();
   const currentEndDate = new Date(timeRange.end).getTime();
 
-  // TODO:  Work on All time and custom comparison later
+  // TODO: Work on All time and custom comparison later
   if (
     timeRange.name === TimeRangeName.Custom ||
     timeRange.name === TimeRangeName.AllTime
@@ -678,21 +721,10 @@ export function getComparisonTimeRange(
     return timeRange;
   }
 
-  let startDate;
-  let endDate;
+  const comparisonDurationMs = getComparisonDurationMs(comparisonRange);
 
-  // Handle Point in Time comparisons
-  if (pointInTimeComparisons.includes(comparisonRange)) {
-    startDate =
-      currentStartDate - getPointInTimeComparisonDurations(comparisonRange);
-    endDate =
-      currentEndDate - getPointInTimeComparisonDurations(comparisonRange);
-  }
-  // Handle Previous X comparisons
-  else {
-    startDate = currentStartDate - getLastXTimeRangeDurationMs(timeRange.name);
-    endDate = currentEndDate - getLastXTimeRangeDurationMs(timeRange.name);
-  }
+  const startDate = currentStartDate - comparisonDurationMs;
+  const endDate = currentEndDate - comparisonDurationMs;
 
   return {
     name: timeRange.name,
