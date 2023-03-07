@@ -29,6 +29,7 @@ require (
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/marcboeker/go-duckdb v1.2.0
 	github.com/mitchellh/mapstructure v1.5.0
+	github.com/rs/cors v1.8.2
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.0
 	github.com/testcontainers/testcontainers-go v0.13.0

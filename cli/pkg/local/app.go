@@ -22,6 +22,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
+	"github.com/rs/cors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
@@ -338,7 +339,15 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 
 	// Start the local HTTP server
 	group.Go(func() error {
-		server := &http.Server{Handler: cors(mux)}
+		c := cors.New(cors.Options{
+			AllowedOrigins:   []string{},
+			AllowCredentials: true,
+			// Enable Debugging for testing, consider disabling in production
+			// Debug: true,
+		})
+		handler := c.Handler(mux)
+
+		server := &http.Server{Handler: handler}
 		return graceful.ServeHTTP(ctx, server, httpPort)
 	})
 
@@ -450,21 +459,21 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 	})
 }
 
-// Fully open CORS policy. This is very much local-only.
-// TODO: Adapt before recommending hosting Rill using the local server.
-func cors(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if origin := r.Header.Get("Origin"); origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-			if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
-				w.Header().Set("Access-Control-Allow-Headers", "*")
-				w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, PATCH, DELETE")
-				return
-			}
-		}
-		h.ServeHTTP(w, r)
-	})
-}
+// // Fully open CORS policy. This is very much local-only.
+// // TODO: Adapt before recommending hosting Rill using the local server.
+// func cors(h http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		if origin := r.Header.Get("Origin"); origin != "" {
+// 			w.Header().Set("Access-Control-Allow-Origin", origin)
+// 			if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
+// 				w.Header().Set("Access-Control-Allow-Headers", "*")
+// 				w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, PATCH, DELETE")
+// 				return
+// 			}
+// 		}
+// 		h.ServeHTTP(w, r)
+// 	})
+// }
 
 func ParseLogFormat(format string) (LogFormat, bool) {
 	switch format {

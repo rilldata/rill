@@ -19,6 +19,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"github.com/rs/cors"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -174,7 +175,14 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	}
 
 	// Register CORS
-	handler := cors(mux)
+	// handler := cors(mux)
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{},
+		AllowCredentials: true,
+		// Enable Debugging for testing, consider disabling in production
+		// Debug: true,
+	})
+	handler := c.Handler(mux)
 
 	return handler, nil
 }
@@ -198,17 +206,17 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 	return resp, nil
 }
 
-func cors(h http.Handler) http.Handler {
-	// TODO: Hack for local - not production-ready
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if origin := r.Header.Get("Origin"); origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-			if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
-				w.Header().Set("Access-Control-Allow-Headers", "*")
-				w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, PATCH, DELETE")
-				return
-			}
-		}
-		h.ServeHTTP(w, r)
-	})
-}
+// func cors(h http.Handler) http.Handler {
+// 	// TODO: Hack for local - not production-ready
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		if origin := r.Header.Get("Origin"); origin != "" {
+// 			w.Header().Set("Access-Control-Allow-Origin", origin)
+// 			if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
+// 				w.Header().Set("Access-Control-Allow-Headers", "*")
+// 				w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, PATCH, DELETE")
+// 				return
+// 			}
+// 		}
+// 		h.ServeHTTP(w, r)
+// 	})
+// }
