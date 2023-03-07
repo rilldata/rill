@@ -20,7 +20,7 @@ on:
 
 env:
   PUBLISH_NIGHTLY: ${{ contains(fromJSON('["schedule", "workflow_dispatch"]'), github.event_name) }}
-  PUBLISH_RELEASE: ${{ contains('refs/tags', github.ref_name) }}
+  PUBLISH_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
 jobs:
   release:

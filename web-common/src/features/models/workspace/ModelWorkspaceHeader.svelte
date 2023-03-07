@@ -8,15 +8,13 @@
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import {
-    appQueryStatusStore,
-    runtimeStore,
-  } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { appQueryStatusStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { WorkspaceHeader } from "../../../layout/workspace";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { useGetDashboardsForModel } from "../../dashboards/selectors";
   import { renameFileArtifact } from "../../entity-management/actions";
   import {
@@ -29,7 +27,7 @@
 
   export let modelName: string;
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
+  $: runtimeInstanceId = $runtime.instanceId;
 
   $: allNamesQuery = useAllNames(runtimeInstanceId);
   const queryClient = useQueryClient();

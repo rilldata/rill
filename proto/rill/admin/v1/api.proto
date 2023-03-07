@@ -2,22 +2,21 @@ syntax = "proto3";
 package rill.admin.v1;
 
 import "google/api/annotations.proto";
-// import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 // import "validate/validate.proto";
 
 service AdminService {
-  // Ping returns information about the admin
+  // Ping returns information about the server
   rpc Ping(PingRequest) returns (PingResponse) {
     option (google.api.http) = {get: "/v1/ping"};
   }
 
-  // findOrganizations lists all the organizations currently managed by the admin
+  // FindOrganizations lists all the organizations the caller has access to
   rpc FindOrganizations(FindOrganizationsRequest) returns (FindOrganizationsResponse) {
     option (google.api.http) = {get: "/v1/organizations"};
   }
 
-  // FindOrganization returns information about a specific organization
+  // FindOrganization looks up a specific organization
   rpc FindOrganization(FindOrganizationRequest) returns (FindOrganizationResponse) {
     option (google.api.http) = {get: "/v1/organizations/{name}"};
   }
@@ -40,16 +39,15 @@ service AdminService {
     option (google.api.http) = {
       put: "/v1/organizations/{name}",
       body: "*"
-    
     };
   }
 
-  // FindProjects lists all the projects currently available for given organizations
+  // FindProjects lists all the projects in an organization
   rpc FindProjects(FindProjectsRequest) returns (FindProjectsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects"};
   }
 
-  // FindProject returns information about a specific project
+  // FindProject looks up a project by name
   rpc FindProject(FindProjectRequest) returns (FindProjectResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{name}"};
   }
@@ -67,11 +65,18 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/projects/{name}"};
   }
 
-  // UpdateProject update a project
+  // UpdateProject updates a project
   rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse) {
     option (google.api.http) = {
       put: "/v1/organizations/{organization}/projects/{name}",
       body: "*"
+    };
+  }
+
+  // GetCurrentUser returns the currently authenticated user (if any)
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {
+    option (google.api.http) = {
+      get: "/v1/users/current"
     };
   }
 }
@@ -228,4 +233,21 @@ message UpdateProjectRequest {
 // Response message for AdminService.UpdateOrganization
 message UpdateProjectResponse {
   Project project = 1;
+}
+
+// Request message for GetCurrentUser
+message GetCurrentUserRequest {}
+
+// Response message for GetCurrentUser
+message GetCurrentUserResponse {
+  User user = 1;
+}
+
+message User {
+  string id = 1;
+  string email = 2;
+  string display_name = 3;
+  string photo_url = 4;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
 }

@@ -14,7 +14,7 @@ import (
 // FindOrganizations implements AdminService.
 // (GET /v1/organizations)
 func (s *Server) FindOrganizations(ctx context.Context, req *adminv1.FindOrganizationsRequest) (*adminv1.FindOrganizationsResponse, error) {
-	orgs, err := s.db.FindOrganizations(ctx)
+	orgs, err := s.admin.DB.FindOrganizations(ctx)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -29,7 +29,7 @@ func (s *Server) FindOrganizations(ctx context.Context, req *adminv1.FindOrganiz
 
 // (GET /organizations/{name})
 func (s *Server) FindOrganization(ctx context.Context, req *adminv1.FindOrganizationRequest) (*adminv1.FindOrganizationResponse, error) {
-	org, err := s.db.FindOrganizationByName(ctx, req.Name)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "org not found")
@@ -45,7 +45,7 @@ func (s *Server) FindOrganization(ctx context.Context, req *adminv1.FindOrganiza
 // CreateOrganization implements AdminService.
 // (POST /organizations)
 func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrganizationRequest) (*adminv1.CreateOrganizationResponse, error) {
-	org, err := s.db.CreateOrganization(ctx, req.Name, req.Description)
+	org, err := s.admin.DB.CreateOrganization(ctx, req.Name, req.Description)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -57,7 +57,7 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 
 // (DELETE /organizations/{name})
 func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrganizationRequest) (*adminv1.DeleteOrganizationResponse, error) {
-	err := s.db.DeleteOrganization(ctx, req.Name)
+	err := s.admin.DB.DeleteOrganization(ctx, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -69,7 +69,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 
 // (PUT /organizations/{name})
 func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrganizationRequest) (*adminv1.UpdateOrganizationResponse, error) {
-	org, err := s.db.UpdateOrganization(ctx, req.Name, req.Description)
+	org, err := s.admin.DB.UpdateOrganization(ctx, req.Name, req.Description)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

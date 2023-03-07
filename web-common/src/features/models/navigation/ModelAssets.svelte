@@ -4,19 +4,19 @@
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../../layout/navigation/NavigationHeader.svelte";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { getName } from "../../entity-management/name-utils";
   import { createModel } from "../createModel";
   import { useModelNames } from "../selectors";
   import ModelMenuItems from "./ModelMenuItems.svelte";
   import ModelTooltip from "./ModelTooltip.svelte";
 
-  $: modelNames = useModelNames($runtimeStore.instanceId);
+  $: modelNames = useModelNames($runtime.instanceId);
 
   const queryClient = useQueryClient();
 
@@ -27,7 +27,7 @@
   async function handleAddModel() {
     await createModel(
       queryClient,
-      $runtimeStore.instanceId,
+      $runtime.instanceId,
       getName("model", $modelNames.data),
       $createModelMutation
     );
