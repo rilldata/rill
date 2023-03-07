@@ -6,7 +6,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import { useModelTimestampColumns } from "@rilldata/web-common/features/models/selectors";
-  import { featureFlags } from "@rilldata/web-common/lib/application-state-stores/application-store";
+  import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { runtime } from "../../../runtime-client/runtime-store";
 
   export let metricViewName: string;
