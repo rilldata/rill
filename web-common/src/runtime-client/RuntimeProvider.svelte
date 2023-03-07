@@ -13,10 +13,10 @@
     jwt: jwt,
   });
 
-  // Re-run all runtime queries when `host` or `jwt` change
+  // Re-run all runtime queries when `host` changes
   // By default, a new `instanceId` triggers a re-run because it's in the queryKeys
   const queryClient = useQueryClient();
-  $: (host || jwt) && invalidateRuntimeQueries(queryClient);
+  $: host && invalidateRuntimeQueries(queryClient);
 </script>
 
 {#if $runtime.host && $runtime.instanceId}
