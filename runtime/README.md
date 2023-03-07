@@ -24,7 +24,13 @@ You can start a stand-alone runtime server using the CLI:
 ```bash
 go run ./cli runtime start
 ```
-Or run all tests using:
+
+Ping the server to verify it's running:
+```bash
+go run ./cli runtime ping --base-url http://localhost:9090
+```
+
+You can run all tests using:
 ```bash
 go test ./runtime/...
 ```
