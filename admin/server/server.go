@@ -168,8 +168,22 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	}
 
 	// Build CORS options for admin server
+
+	// If the AllowedOrigins contains a "*" we want to return the requester's origin instead of "*" in the "Access-Control-Allow-Origin" header.
+	// This is useful in development. In production, we set AllowedOrigins to non-wildcard values, so this does not have security implications.
+	var allowedOriginFunc func(string) bool
+	allowedOrigins := s.opts.AllowedOrigins
+	for _, origin := range s.opts.AllowedOrigins {
+		if origin == "*" {
+			allowedOriginFunc = func(origin string) bool { return true }
+			allowedOrigins = nil
+			break
+		}
+	}
+
 	corsOpts := cors.Options{
-		AllowedOrigins: s.opts.AllowedOrigins,
+		AllowedOrigins:  allowedOrigins,
+		AllowOriginFunc: allowedOriginFunc,
 		AllowedMethods: []string{
 			http.MethodHead,
 			http.MethodGet,
