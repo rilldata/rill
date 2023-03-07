@@ -189,6 +189,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 
 	// If the AllowedOrigins contains a "*" we want to return the requester's origin instead of "*" in the "Access-Control-Allow-Origin" header.
 	// This is useful in development. In production, we set AllowedOrigins to non-wildcard values, so this does not have security implications.
+	// Details: https://github.com/rs/cors#allow--with-credentials-security-protection
 	var allowedOriginFunc func(string) bool
 	allowedOrigins := s.opts.AllowedOrigins
 	for _, origin := range s.opts.AllowedOrigins {
