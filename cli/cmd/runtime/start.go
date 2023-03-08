@@ -70,7 +70,6 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				fmt.Printf("error: failed to create logger: %s", err.Error())
 				os.Exit(1)
 			}
-			fmt.Println("Conf", conf)
 
 			// Init runtime
 			opts := &runtime.Options{
