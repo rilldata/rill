@@ -3,10 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/rilldata/rill/cli/cmd/auth"
 	"os"
 
 	"github.com/rilldata/rill/cli/cmd/admin"
-	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/build"
 	"github.com/rilldata/rill/cli/cmd/docs"
 	"github.com/rilldata/rill/cli/cmd/initialize"
@@ -77,6 +77,10 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(versioncmd.VersionCmd())
 
+	cmd := auth.AuthCmd(cfg)
+	cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", "https://admin.rilldata.com", "Base URL for the admin API")
+	rootCmd.AddCommand(cmd)
+
 	// Add sub-commands for admin
 	// (This allows us to add persistent flags that apply only to the admin-related commands.)
 	adminCmds := []*cobra.Command{
@@ -85,12 +89,9 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", "https://admin.rilldata.com", "Base URL for the admin API")
-		cmd.PersistentFlags().StringVar(&cfg.AdminToken, "api-token", "", "Token for authenticating with the admin API")
+		cmd.PersistentFlags().StringVar(&cfg.AdminToken, "api-token", token, "Token for authenticating with the admin API")
 		rootCmd.AddCommand(cmd)
 	}
-	cmd := auth.AuthCmd(cfg)
-	cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", "https://admin.rilldata.com", "Base URL for the admin API")
-	rootCmd.AddCommand(cmd)
 
 	return rootCmd.ExecuteContext(ctx)
 }

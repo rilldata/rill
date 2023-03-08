@@ -242,6 +242,9 @@ func checkErrorResponse(res *http.Response) (bool, error) {
 	if bodyStr == "authorization_pending" || bodyStr == "slow_down" {
 		return true, nil
 	}
+	if bodyStr == "expired_token" || bodyStr == "rejected" {
+		return false, errors.New(bodyStr)
+	}
 
 	return false, errors.New(strconv.Itoa(res.StatusCode) + ": " + bodyStr)
 }

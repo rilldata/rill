@@ -103,6 +103,7 @@ const (
 )
 
 type AuthCode struct {
+	ID            string                `db:"id"`
 	DeviceCode    string                `db:"device_code"`
 	UserCode      string                `db:"user_code"`
 	Expiry        time.Time             `db:"expires_at"`

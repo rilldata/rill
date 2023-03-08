@@ -48,8 +48,12 @@ To add a new endpoint:
 3. Copy the new handler signature from the `AdminServiceServer` interface in `proto/gen/rill/admin/v1/api_grpc_pb.go`
 4. Paste the handler signature and implement it in a relevant file in `admin/server/`
 
-### CLI login
-For trying out CLI login add api-url parameter to point to local admin server like this:
+### CLI login/logout
+For trying out CLI login add api-url parameter to point to local admin HTTP server like this:
 ```
 go run ./cli auth login --api-url http://localhost:8080/
+```
+For trying out CLI logout add api-url parameter to point to local admin gRPC server like this:
+```
+go run ./cli auth logout --api-url http://localhost:9090/
 ```

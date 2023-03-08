@@ -14,7 +14,6 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
-	"go.uber.org/zap"
 )
 
 const (
@@ -46,8 +45,7 @@ type TokenRequest struct {
 func (s *Server) handleDeviceCodeRequest(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		s.logger.Error("failed to read request body", zap.Error(err))
-		internalServerError(w, err)
+		internalServerError(w, fmt.Errorf("failed to read request body: %w", err))
 		return
 	}
 	bodyStr := string(body)
@@ -72,8 +70,7 @@ func (s *Server) handleDeviceCodeRequest(w http.ResponseWriter, r *http.Request,
 	}
 	authCode, err := s.admin.IssueAuthCode(r.Context(), clientID)
 	if err != nil {
-		s.logger.Error("failed to issue auth code", zap.Error(err))
-		internalServerError(w, err)
+		internalServerError(w, fmt.Errorf("failed to issue auth code: %w", err))
 		return
 	}
 
@@ -90,8 +87,7 @@ func (s *Server) handleDeviceCodeRequest(w http.ResponseWriter, r *http.Request,
 	e.SetIndent("", "  ")
 	err = e.Encode(resp)
 	if err != nil {
-		s.logger.Error("failed to encode response", zap.Error(err))
-		internalServerError(w, err)
+		internalServerError(w, fmt.Errorf("failed to encode response: %w", err))
 	}
 }
 
@@ -112,14 +108,12 @@ func (s *Server) handleUserCodeConfirmation(w http.ResponseWriter, r *http.Reque
 
 	claims := auth.GetClaims(r.Context())
 	if claims == nil {
-		s.logger.Error("did not find any claims")
-		internalServerError(w, errors.New("server error"))
+		internalServerError(w, fmt.Errorf("did not find any claims, %w", errors.New("server error")))
 		return
 	}
 	userID := claims.OwnerID()
 	if userID == "" {
-		s.logger.Error("did not find user id in claims")
-		internalServerError(w, errors.New("server error"))
+		internalServerError(w, fmt.Errorf("did not find user id in claims, %w", errors.New("server error")))
 		return
 	}
 
@@ -129,8 +123,7 @@ func (s *Server) handleUserCodeConfirmation(w http.ResponseWriter, r *http.Reque
 			http.Error(w, fmt.Sprintf("no such user code: %s found", userCode), http.StatusBadRequest)
 			return
 		}
-		s.logger.Error("failed to get auth code for userCode: "+userCode, zap.Error(err))
-		internalServerError(w, err)
+		internalServerError(w, fmt.Errorf("failed to get auth code for userCode: %s, %w", userCode, err))
 		return
 	}
 	if authCode.ApprovalState != database.Pending {
@@ -151,8 +144,7 @@ func (s *Server) handleUserCodeConfirmation(w http.ResponseWriter, r *http.Reque
 	}
 	err = s.admin.DB.UpdateAuthCode(r.Context(), userCode, userID, authCode.ApprovalState)
 	if err != nil {
-		s.logger.Error("failed to update auth code for userCode: "+userCode, zap.Error(err))
-		internalServerError(w, err)
+		internalServerError(w, fmt.Errorf("failed to update auth code for userCode: %s, %w", userCode, err))
 	}
 }
 
@@ -160,15 +152,13 @@ func (s *Server) handleUserCodeConfirmation(w http.ResponseWriter, r *http.Reque
 func (s *Server) getAccessToken(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		s.logger.Error("failed to read request body", zap.Error(err))
-		internalServerError(w, err)
+		internalServerError(w, fmt.Errorf("failed to read request body: %w", err))
 		return
 	}
 	bodyStr := string(body)
 	values, err := url.ParseQuery(bodyStr)
 	if err != nil {
-		s.logger.Error("failed to parse query: "+bodyStr, zap.Error(err))
-		internalServerError(w, err)
+		internalServerError(w, fmt.Errorf("failed to parse query: %w", err))
 		return
 	}
 	deviceCode := values.Get("device_code")
@@ -188,8 +178,7 @@ func (s *Server) getAccessToken(w http.ResponseWriter, r *http.Request, pathPara
 			http.Error(w, fmt.Sprintf("no such device code: %s found", deviceCode), http.StatusBadRequest)
 			return
 		}
-		s.logger.Error("failed to get auth code for deviceCode: "+deviceCode, zap.Error(err))
-		internalServerError(w, err)
+		internalServerError(w, fmt.Errorf("failed to get auth code for deviceCode: %s, %w", deviceCode, err))
 		return
 	}
 	clientID := values.Get("client_id")
@@ -203,6 +192,11 @@ func (s *Server) getAccessToken(w http.ResponseWriter, r *http.Request, pathPara
 		return
 	}
 	if authCode.ApprovalState == database.Rejected {
+		err = s.admin.DB.DeleteAuthCode(r.Context(), deviceCode)
+		if err != nil {
+			internalServerError(w, fmt.Errorf("failed to clean up rejected code: %s, %w", deviceCode, err))
+			return
+		}
 		http.Error(w, "rejected", http.StatusUnauthorized)
 		return
 	}
@@ -211,24 +205,20 @@ func (s *Server) getAccessToken(w http.ResponseWriter, r *http.Request, pathPara
 		return
 	}
 	if authCode.ApprovalState != database.Approved || authCode.UserID == "" {
-		s.logger.Error("inconsistent state")
-		internalServerError(w, err)
+		internalServerError(w, fmt.Errorf("inconsistent state, %w", errors.New("server error")))
 		return
 	}
 	// TODO handle too many requests
 
-	authToken, err := s.admin.IssueUserAuthToken(r.Context(), authCode.UserID, authCode.ClientID, "")
+	authToken, err := s.admin.IssueUserAuthToken(r.Context(), authCode.UserID, database.AuthClientIDRillCLI, "CLI login")
 	if err != nil {
-		s.logger.Error("failed to issue access token", zap.Error(err))
-		internalServerError(w, err)
+		internalServerError(w, fmt.Errorf("failed to issue access token, %w", err))
 		return
 	}
 
-	// TODO insert access token and update auth code to used in a single transaction
 	err = s.admin.DB.DeleteAuthCode(r.Context(), deviceCode)
 	if err != nil {
-		s.logger.Error("failed to update auth code to used for deviceCode: "+deviceCode, zap.Error(err))
-		internalServerError(w, err)
+		internalServerError(w, fmt.Errorf("failed to clean up approved code: %s, %w", deviceCode, err))
 		return
 	}
 
@@ -242,8 +232,7 @@ func (s *Server) getAccessToken(w http.ResponseWriter, r *http.Request, pathPara
 	e.SetIndent("", "  ")
 	err = e.Encode(resp)
 	if err != nil {
-		s.logger.Error("failed to encode response", zap.Error(err))
-		internalServerError(w, err)
+		internalServerError(w, fmt.Errorf("failed to encode response, %w", err))
 	}
 }
 

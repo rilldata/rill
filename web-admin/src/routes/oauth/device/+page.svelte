@@ -12,16 +12,15 @@
     const urlParams = new URLSearchParams(window.location.search);
     userCode = urlParams.get("user_code");
 
-    const response = await fetch(ADMIN_URL + "/auth/user", {
+    const response = await fetch(ADMIN_URL + "/v1/users/current", {
       method: "GET",
       credentials: "include",
     });
-    console.log(response.status);
-    if (response.status === 401) {
-      window.location.href =
-        ADMIN_URL + "/auth/login?redirect=" + window.location.href;
-    } else if (response.ok) {
-      user = await response.json();
+    let data = await response.json();
+    if (!data.user) {
+      window.location.href = ADMIN_URL + "/auth/login?redirect=" + window.location.href;
+    } else {
+      user = data.user;
     }
   }
 
@@ -81,7 +80,7 @@
 
 {#if user}
   <div>
-    <h1>Hello, {user.name}!</h1>
+    <h1>Hello, {user.displayName}!</h1>
     <p>Your user code is: {userCode}</p>
     <button
       on:click={() => {
