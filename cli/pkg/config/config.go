@@ -35,7 +35,7 @@ func (c *Config) IsAuthenticated() bool {
 	return c.AdminToken() != ""
 }
 
-func (c *Config) AdminToken() string {
+func (c Config) AdminToken() string {
 	if c.AdminTokenOverride != "" {
 		return c.AdminTokenOverride
 	}

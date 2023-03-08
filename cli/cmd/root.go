@@ -77,10 +77,13 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(versioncmd.VersionCmd())
 
+	cmd := auth.AuthCmd(cfg)
+	cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", "https://admin.rilldata.com", "Base URL for the admin API")
+	rootCmd.AddCommand(cmd)
+
 	// Add sub-commands for admin
 	// (This allows us to add persistent flags that apply only to the admin-related commands.)
 	adminCmds := []*cobra.Command{
-		auth.AuthCmd(cfg),
 		org.OrgCmd(cfg),
 		project.ProjectCmd(cfg),
 	}

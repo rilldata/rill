@@ -8,7 +8,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ListProjects implements AdminService.
@@ -41,7 +41,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	}, nil
 }
 
-// (POST /v1/organizations/{organization}/projects)
+// CreateProject (POST /v1/organizations/{organization}/projects)
 func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
@@ -61,7 +61,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}, nil
 }
 
-// (DELETE /v1/organizations/{organization}/project/{name})
+// DeleteProject (DELETE /v1/organizations/{organization}/project/{name})
 func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRequest) (*adminv1.DeleteProjectResponse, error) {
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Name)
 	if err != nil {
@@ -81,7 +81,7 @@ func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRe
 	}, nil
 }
 
-// (PUT /v1/organizations/{organization}/project/{name})
+// UpdateProject (PUT /v1/organizations/{organization}/project/{name})
 func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRequest) (*adminv1.UpdateProjectResponse, error) {
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Name)
 	if err != nil {

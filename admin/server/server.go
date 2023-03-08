@@ -27,18 +27,19 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type Options struct {
-	HTTPPort         int
-	GRPCPort         int
-	ExternalURL      string
-	SessionKeyPairs  [][]byte
-	AllowedOrigins   []string
-	AuthDomain       string
-	AuthClientID     string
-	AuthClientSecret string
+	HTTPPort               int
+	GRPCPort               int
+	ExternalURL            string
+	SessionKeyPairs        [][]byte
+	AllowedOrigins         []string
+	AuthDomain             string
+	AuthClientID           string
+	AuthClientSecret       string
+	DeviceVerificationHost string
 }
 
 type Server struct {
@@ -64,10 +65,11 @@ func New(logger *zap.Logger, adm *admin.Service, opts *Options) (*Server, error)
 	cookies.Options.HttpOnly = true
 
 	authenticator, err := auth.NewAuthenticator(logger, adm, cookies, &auth.AuthenticatorOptions{
-		AuthDomain:       opts.AuthDomain,
-		AuthClientID:     opts.AuthClientID,
-		AuthClientSecret: opts.AuthClientSecret,
-		ExternalURL:      opts.ExternalURL,
+		AuthDomain:             opts.AuthDomain,
+		AuthClientID:           opts.AuthClientID,
+		AuthClientSecret:       opts.AuthClientSecret,
+		ExternalURL:            opts.ExternalURL,
+		DeviceVerificationHost: opts.DeviceVerificationHost,
 	})
 	if err != nil {
 		return nil, err
