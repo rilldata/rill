@@ -68,7 +68,7 @@ const getInvalidationsForPath = (
   }
 };
 
-export function isMetricsViewData(queryHash, metricsViewName: string) {
+export function isMetricsViewQuery(queryHash, metricsViewName: string) {
   const r = new RegExp(
     `/v1/instances/[a-zA-Z0-9-]+/queries/metrics-views/${metricsViewName}/`
   );
@@ -77,7 +77,7 @@ export function isMetricsViewData(queryHash, metricsViewName: string) {
 export function invalidationForMetricsViewData(query, metricsViewName: string) {
   return (
     typeof query.queryKey[0] === "string" &&
-    isMetricsViewData(query.queryKey[0], metricsViewName)
+    isMetricsViewQuery(query.queryKey[0], metricsViewName)
   );
 }
 
