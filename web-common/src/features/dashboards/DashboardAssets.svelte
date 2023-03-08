@@ -24,7 +24,7 @@
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
@@ -39,9 +39,10 @@
   import { LIST_SLIDE_DURATION } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
+  import { runtime } from "../../runtime-client/runtime-store";
   import RenameAssetModal from "../entity-management/RenameAssetModal.svelte";
 
-  $: instanceId = $runtimeStore.instanceId;
+  $: instanceId = $runtime.instanceId;
 
   $: dashboardNames = useDashboardNames(instanceId);
 
@@ -179,7 +180,7 @@
     return entities[dashboardPath];
   };
 
-  $: canAddDashboard = $runtimeStore.readOnly === false;
+  $: canAddDashboard = $featureFlags.readOnly === false;
 </script>
 
 <NavigationHeader
@@ -204,7 +205,7 @@
         dashboardName
       )}
       <NavigationEntry
-        showContextMenu={!$runtimeStore.readOnly}
+        showContextMenu={!$featureFlags.readOnly}
         expandable={false}
         name={dashboardName}
         href={`/dashboard/${dashboardName}`}

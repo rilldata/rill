@@ -80,13 +80,17 @@ func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	resp := &runtimev1.NumericSummary{
-		Case: &runtimev1.NumericSummary_NumericStatistics{
-			NumericStatistics: q.Result,
-		},
+	// ColumnDescriptiveStatistics may return an empty result
+	if q.Result == nil {
+		return &runtimev1.ColumnDescriptiveStatisticsResponse{}, nil
 	}
+
 	return &runtimev1.ColumnDescriptiveStatisticsResponse{
-		NumericSummary: resp,
+		NumericSummary: &runtimev1.NumericSummary{
+			Case: &runtimev1.NumericSummary_NumericStatistics{
+				NumericStatistics: q.Result,
+			},
+		},
 	}, nil
 }
 
@@ -148,6 +152,9 @@ func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.Colu
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
+
+	// NOTE: q.Result may be nil if there were no bins. The below will output it as an empty histogram.
+
 	return &runtimev1.ColumnNumericHistogramResponse{
 		NumericSummary: &runtimev1.NumericSummary{
 			Case: &runtimev1.NumericSummary_NumericHistogramBins{

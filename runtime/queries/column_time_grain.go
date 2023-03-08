@@ -129,6 +129,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	}
 
 	if !timeGrainString.Valid {
+		q.Result = runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED // It's the default value. This is just to clarify intended behavior.
 		return nil
 	}
 

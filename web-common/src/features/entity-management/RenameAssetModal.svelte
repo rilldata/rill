@@ -11,7 +11,7 @@
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
-  import { runtimeStore } from "../../../../web-local/src/lib/application-state-stores/application-store";
+  import { runtime } from "../../runtime-client/runtime-store";
   import { renameFileArtifact } from "./actions";
   import { getLabel, getRouteFromName } from "./entity-mappers";
   import { isDuplicateName } from "./name-utils";
@@ -25,7 +25,7 @@
 
   let error: string;
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
+  $: runtimeInstanceId = $runtime.instanceId;
   $: getCatalog = useRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     currentAssetName

@@ -13,5 +13,6 @@ func AdminCmd(cfg *config.Config) *cobra.Command {
 		Short:  "Manage an admin server",
 	}
 	adminCmd.AddCommand(StartCmd(cfg))
+	adminCmd.AddCommand(PingCmd(cfg))
 	return adminCmd
 }

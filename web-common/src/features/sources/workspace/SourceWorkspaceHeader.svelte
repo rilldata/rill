@@ -29,10 +29,7 @@
     V1ReconcileResponse,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
-  import {
-    appQueryStatusStore,
-    runtimeStore,
-  } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { appQueryStatusStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
@@ -43,6 +40,7 @@
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { fade } from "svelte/transition";
   import { WorkspaceHeader } from "../../../layout/workspace";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { renameFileArtifact } from "../../entity-management/actions";
   import { getRouteFromName } from "../../entity-management/entity-mappers";
   import { getName, isDuplicateName } from "../../entity-management/name-utils";
@@ -60,7 +58,7 @@
 
   const renameSource = useRuntimeServiceRenameFileAndReconcile();
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
+  $: runtimeInstanceId = $runtime.instanceId;
   const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
   const createSource = useRuntimeServicePutFileAndReconcile();
 
@@ -117,7 +115,7 @@
     $createDashboardFromSourceMutation.mutate(
       {
         data: {
-          instanceId: $runtimeStore.instanceId,
+          instanceId: $runtime.instanceId,
           sourceName,
           newModelName,
           newDashboardName,

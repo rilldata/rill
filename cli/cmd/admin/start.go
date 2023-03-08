@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"os"
 
@@ -24,16 +25,18 @@ import (
 // Env var keys must be prefixed with RILL_ADMIN_ and are converted from snake_case to CamelCase.
 // For example RILL_ADMIN_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	DatabaseDriver   string        `default:"postgres" split_words:"true"`
-	DatabaseURL      string        `split_words:"true"`
-	HTTPPort         int           `default:"8080" split_words:"true"`
-	GRPCPort         int           `default:"9090" split_words:"true"`
-	LogLevel         zapcore.Level `default:"info" split_words:"true"`
-	SessionSecret    string        `split_words:"true"`
-	AuthDomain       string        `split_words:"true"`
-	AuthClientID     string        `split_words:"true"`
-	AuthClientSecret string        `split_words:"true"`
-	AuthCallbackURL  string        `split_words:"true"`
+	DatabaseDriver         string        `default:"postgres" split_words:"true"`
+	DatabaseURL            string        `split_words:"true"`
+	HTTPPort               int           `default:"8080" split_words:"true"`
+	GRPCPort               int           `default:"9090" split_words:"true"`
+	LogLevel               zapcore.Level `default:"info" split_words:"true"`
+	ExternalURL            string        `default:"http://localhost:8080" split_words:"true"`
+	SessionKeyPairs        []string      `split_words:"true"`
+	AllowedOrigins         []string      `default:"*" split_words:"true"`
+	AuthDomain             string        `split_words:"true"`
+	AuthClientID           string        `split_words:"true"`
+	AuthClientSecret       string        `split_words:"true"`
+	DeviceVerificationHost string        `default:"http://localhost:5173" split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -73,17 +76,29 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}
 			defer adm.Close()
 
-			// Init admin server
-			srvConf := server.Config{
-				HTTPPort:         conf.HTTPPort,
-				GRPCPort:         conf.GRPCPort,
-				AuthDomain:       conf.AuthDomain,
-				AuthClientID:     conf.AuthClientID,
-				AuthClientSecret: conf.AuthClientSecret,
-				AuthCallbackURL:  conf.AuthCallbackURL,
-				SessionSecret:    conf.SessionSecret,
+			// Parse session keys as hex strings
+			keyPairs := make([][]byte, len(conf.SessionKeyPairs))
+			for idx, keyHex := range conf.SessionKeyPairs {
+				key, err := hex.DecodeString(keyHex)
+				if err != nil {
+					logger.Fatal("failed to parse session key from hex string to bytes")
+				}
+				keyPairs[idx] = key
 			}
-			srv, err := server.New(logger, adm, srvConf)
+
+			// Init admin server
+			srvOpts := &server.Options{
+				HTTPPort:               conf.HTTPPort,
+				GRPCPort:               conf.GRPCPort,
+				ExternalURL:            conf.ExternalURL,
+				SessionKeyPairs:        keyPairs,
+				AllowedOrigins:         conf.AllowedOrigins,
+				AuthDomain:             conf.AuthDomain,
+				AuthClientID:           conf.AuthClientID,
+				AuthClientSecret:       conf.AuthClientSecret,
+				DeviceVerificationHost: conf.DeviceVerificationHost,
+			}
+			srv, err := server.New(logger, adm, srvOpts)
 			if err != nil {
 				logger.Fatal("error creating server", zap.Error(err))
 			}
