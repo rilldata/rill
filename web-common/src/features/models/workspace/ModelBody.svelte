@@ -23,8 +23,6 @@
     V1CatalogEntry,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
     invalidateAfterReconcile,
     isProfilingQuery,
@@ -37,6 +35,8 @@
   import { slide } from "svelte/transition";
   import { SIDE_PAD } from "../../../layout/config";
   import { drag } from "../../../layout/drag";
+  import { httpRequestQueue } from "../../../runtime-client/http-client";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { useModelFileIsEmpty } from "../selectors";
   import { sanitizeQuery } from "../utils/sanitize-query";
   import Editor from "./Editor.svelte";
@@ -50,7 +50,7 @@
     "rill:app:query-highlight"
   );
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
+  $: runtimeInstanceId = $runtime.instanceId;
   const updateModel = useRuntimeServicePutFileAndReconcile();
 
   // track innerHeight to calculate the size of the editor element.
@@ -70,7 +70,7 @@
   let sanitizedQuery: string;
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
 
-  $: sourceCatalogsQuery = useEmbeddedSources($runtimeStore?.instanceId);
+  $: sourceCatalogsQuery = useEmbeddedSources($runtime?.instanceId);
   let embeddedSourceCatalogs: Map<string, V1CatalogEntry>;
   $: embeddedSourceCatalogs = getMapFromArray(
     $sourceCatalogsQuery?.data ?? [],
@@ -148,15 +148,11 @@
       if (!resp.errors.length && hasChanged) {
         sanitizedQuery = sanitizeQuery(content);
       }
-      await invalidateAfterReconcile(
-        queryClient,
-        $runtimeStore.instanceId,
-        resp
-      );
+      await invalidateAfterReconcile(queryClient, $runtime.instanceId, resp);
       if (resp.affectedPaths.length === 0) {
         // when backend detects no change, we need to invalidate the file
         await queryClient.refetchQueries(
-          getRuntimeServiceGetFileQueryKey($runtimeStore.instanceId, modelPath)
+          getRuntimeServiceGetFileQueryKey($runtime.instanceId, modelPath)
         );
       }
     } catch (err) {

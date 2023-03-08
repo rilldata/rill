@@ -44,6 +44,21 @@ func (a *Authenticator) RegisterEndpoints(mux *gateway.ServeMux) error {
 		return err
 	}
 
+	err = mux.HandlePath("POST", "/oauth/device_authorization", a.handleDeviceCodeRequest)
+	if err != nil {
+		return err
+	}
+
+	err = mux.HandlePath("POST", "/oauth/device", a.HTTPMiddleware(a.handleUserCodeConfirmation))
+	if err != nil {
+		return err
+	}
+
+	err = mux.HandlePath("POST", "/oauth/token", a.getAccessToken)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -100,7 +115,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 
 	// Check that random state matches (for CSRF protection)
 	if r.URL.Query().Get("state") != sess.Values[cookieFieldState] {
-		http.Error(w, fmt.Sprintf("Invalid state parameter: %s", err), http.StatusBadRequest)
+		http.Error(w, "invalid state parameter", http.StatusBadRequest)
 		return
 	}
 	delete(sess.Values, cookieFieldState)
@@ -108,7 +123,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	// Exchange authorization code for an oauth2 token
 	oauthToken, err := a.oauth2.Exchange(r.Context(), r.URL.Query().Get("code"))
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to convert an authorization code into a token: %s", err), http.StatusUnauthorized)
+		http.Error(w, fmt.Sprintf("failed to convert authorization code into a token: %s", err), http.StatusUnauthorized)
 		return
 	}
 
@@ -125,7 +140,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 
 	idToken, err := a.oidc.Verifier(oidcConfig).Verify(r.Context(), rawIDToken)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to verify ID Token: %s", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("failed to verify ID token: %s", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -154,7 +169,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	// Create (or update) user in our DB
 	user, err := a.admin.CreateOrUpdateUser(r.Context(), email, name, photoURL)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to update user: %s", err.Error()), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("failed to update user: %s", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -171,7 +186,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	// Issue a new persistent auth token
 	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session")
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to issue API token: %s", err.Error()), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -238,7 +253,7 @@ func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request, pathP
 	// Build callback endpoint for authLogoutCallback
 	returnTo, err := url.JoinPath(a.opts.ExternalURL, "/auth/logout/callback")
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to build callback URL: %s", err.Error()), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("failed to build callback URL: %s", err), http.StatusInternalServerError)
 		return
 	}
 

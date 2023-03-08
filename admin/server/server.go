@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/gorilla/sessions"
@@ -20,46 +21,55 @@ import (
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rs/cors"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type Config struct {
-	HTTPPort         int
-	GRPCPort         int
-	ExternalURL      string
-	SessionKeyPairs  [][]byte
-	AuthDomain       string
-	AuthClientID     string
-	AuthClientSecret string
+type Options struct {
+	HTTPPort               int
+	GRPCPort               int
+	ExternalURL            string
+	SessionKeyPairs        [][]byte
+	AllowedOrigins         []string
+	AuthDomain             string
+	AuthClientID           string
+	AuthClientSecret       string
+	DeviceVerificationHost string
 }
 
 type Server struct {
 	adminv1.UnsafeAdminServiceServer
 	logger        *zap.Logger
 	admin         *admin.Service
-	conf          *Config
+	opts          *Options
 	cookies       *sessions.CookieStore
 	authenticator *auth.Authenticator
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
-func New(logger *zap.Logger, adm *admin.Service, conf *Config) (*Server, error) {
-	cookies := sessions.NewCookieStore(conf.SessionKeyPairs...)
+func New(logger *zap.Logger, adm *admin.Service, opts *Options) (*Server, error) {
+	externalURL, err := url.Parse(opts.ExternalURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse external URL: %w", err)
+	}
+
+	cookies := sessions.NewCookieStore(opts.SessionKeyPairs...)
 	cookies.Options.MaxAge = 60 * 60 * 24 * 365 * 10 // 10 years
-	cookies.Options.Secure = true
+	cookies.Options.Secure = externalURL.Scheme == "https"
 	cookies.Options.HttpOnly = true
 
 	authenticator, err := auth.NewAuthenticator(logger, adm, cookies, &auth.AuthenticatorOptions{
-		AuthDomain:       conf.AuthDomain,
-		AuthClientID:     conf.AuthClientID,
-		AuthClientSecret: conf.AuthClientSecret,
-		ExternalURL:      conf.ExternalURL,
+		AuthDomain:             opts.AuthDomain,
+		AuthClientID:           opts.AuthClientID,
+		AuthClientSecret:       opts.AuthClientSecret,
+		ExternalURL:            opts.ExternalURL,
+		DeviceVerificationHost: opts.DeviceVerificationHost,
 	})
 	if err != nil {
 		return nil, err
@@ -68,7 +78,7 @@ func New(logger *zap.Logger, adm *admin.Service, conf *Config) (*Server, error) 
 	return &Server{
 		logger:        logger,
 		admin:         adm,
-		conf:          conf,
+		opts:          opts,
 		cookies:       cookies,
 		authenticator: authenticator,
 	}, nil
@@ -96,8 +106,8 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	)
 
 	adminv1.RegisterAdminServiceServer(server, s)
-	s.logger.Sugar().Infof("serving admin gRPC on port:%v", s.conf.GRPCPort)
-	return graceful.ServeGRPC(ctx, server, s.conf.GRPCPort)
+	s.logger.Sugar().Infof("serving admin gRPC on port:%v", s.opts.GRPCPort)
+	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
 // Starts the HTTP server.
@@ -108,8 +118,8 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 	}
 
 	server := &http.Server{Handler: handler}
-	s.logger.Sugar().Infof("serving admin HTTP on port:%v", s.conf.HTTPPort)
-	return graceful.ServeHTTP(ctx, server, s.conf.HTTPPort)
+	s.logger.Sugar().Infof("serving admin HTTP on port:%v", s.opts.HTTPPort)
+	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 
 // ErrorToCode maps an error to a gRPC code for logging. It wraps the default behavior and adds handling of context errors.
@@ -147,7 +157,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		gateway.WithMetadata(s.authenticator.Annotator),
 	)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	grpcAddress := fmt.Sprintf(":%d", s.conf.GRPCPort)
+	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
 	err := adminv1.RegisterAdminServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
 	if err != nil {
 		return nil, err
@@ -159,8 +169,41 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		return nil, err
 	}
 
-	// Register CORS
-	handler := cors(mux)
+	// Build CORS options for admin server
+
+	// If the AllowedOrigins contains a "*" we want to return the requester's origin instead of "*" in the "Access-Control-Allow-Origin" header.
+	// This is useful in development. In production, we set AllowedOrigins to non-wildcard values, so this does not have security implications.
+	// Details: https://github.com/rs/cors#allow--with-credentials-security-protection
+	var allowedOriginFunc func(string) bool
+	allowedOrigins := s.opts.AllowedOrigins
+	for _, origin := range s.opts.AllowedOrigins {
+		if origin == "*" {
+			allowedOriginFunc = func(origin string) bool { return true }
+			allowedOrigins = nil
+			break
+		}
+	}
+
+	corsOpts := cors.Options{
+		AllowedOrigins:  allowedOrigins,
+		AllowOriginFunc: allowedOriginFunc,
+		AllowedMethods: []string{
+			http.MethodHead,
+			http.MethodGet,
+			http.MethodPost,
+			http.MethodPut,
+			http.MethodPatch,
+			http.MethodDelete,
+		},
+		AllowedHeaders: []string{"*"},
+		// We use cookies for browser sessions, so this is required to allow ui.rilldata.com to make authenticated requests to admin.rilldata.com
+		AllowCredentials: true,
+		// Set max age to 1 hour (default if not set is 5 seconds)
+		MaxAge: 60 * 60,
+	}
+
+	// Wrap mux with CORS middleware
+	handler := cors.New(corsOpts).Handler(mux)
 
 	return handler, nil
 }
@@ -182,19 +225,4 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
-}
-
-func cors(h http.Handler) http.Handler {
-	// TODO: Hack for local - not production-ready
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if origin := r.Header.Get("Origin"); origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-			if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
-				w.Header().Set("Access-Control-Allow-Headers", "*")
-				w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, PATCH, DELETE")
-				return
-			}
-		}
-		h.ServeHTTP(w, r)
-	})
 }

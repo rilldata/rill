@@ -10,11 +10,11 @@
     useQueryServiceMetricsViewTotals,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import {
     LeaderboardValue,
     MetricsExplorerEntity,
@@ -36,7 +36,7 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
   // query the `/meta` endpoint to get the metric's measures and dimensions
-  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
   let dimensions: Array<MetricsViewDimension>;
   $: dimensions = $metaQuery.data?.dimensions;
   $: measures = $metaQuery.data?.measures;
@@ -50,7 +50,7 @@
     );
 
   $: metricTimeSeries = useModelHasTimeSeries(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     metricViewName
   );
   $: hasTimeSeries = $metricTimeSeries.data;
@@ -77,7 +77,7 @@
       };
     }
     totalsQuery = useQueryServiceMetricsViewTotals(
-      $runtimeStore.instanceId,
+      $runtime.instanceId,
       metricViewName,
       totalsQueryParams
     );

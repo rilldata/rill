@@ -44,11 +44,13 @@ export class HttpRequestQueue {
   private readonly nameHeap = getHeapByName();
   private activeCount = 0;
 
-  public constructor(private readonly urlBase: string) {}
+  public constructor() {
+    // no-op
+  }
 
   public add(requestOptions: FetchWrapperOptions) {
     // prepend after parsing to make parsing faster
-    requestOptions.url = `${this.urlBase}${requestOptions.url}`;
+    requestOptions.url = `${requestOptions?.baseUrl}${requestOptions.url}`;
 
     const urlMatch = UrlExtractorRegex.exec(requestOptions.url);
 

@@ -20,9 +20,9 @@
     MetricsViewMeasure,
     useQueryServiceMetricsViewToplist,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -56,7 +56,7 @@
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
-  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
@@ -68,7 +68,7 @@
   $: filterKey = filterExcludeMode ? "exclude" : "include";
 
   $: dimensionQuery = useMetaDimension(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     metricViewName,
     dimensionName
   );
@@ -77,7 +77,7 @@
   $: displayName = dimension?.label || dimension?.name;
 
   $: measureQuery = useMetaMeasure(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     metricViewName,
     metricsExplorer?.leaderboardMeasureName
   );
@@ -96,7 +96,7 @@
   $: atLeastOneActive = !!activeValues?.length;
 
   $: metricTimeSeries = useModelHasTimeSeries(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     metricViewName
   );
   $: hasTimeSeries = $metricTimeSeries.data;
@@ -150,7 +150,7 @@
     }
 
     topListQuery = useQueryServiceMetricsViewToplist(
-      $runtimeStore.instanceId,
+      $runtime.instanceId,
       metricViewName,
       topListParams
     );

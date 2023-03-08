@@ -36,8 +36,9 @@
   $: [yExtentMin, yExtentMax] = extent(data, (d) => d[yAccessor]);
   $: internalXMin = xMin || xExtentMin;
   $: internalXMax = xMax || xExtentMax;
-  $: inflate =
-    yExtentMin == yExtentMax ? 2 / 3 : (yExtentMax - yExtentMin) / yExtentMax;
+  /** we'll set the inflation amount here. */
+  let inflate = 5 / 6;
+
   $: internalYMin = yExtentMin >= 0 ? 0 : yExtentMin;
 
   $: internalYMax = yMax

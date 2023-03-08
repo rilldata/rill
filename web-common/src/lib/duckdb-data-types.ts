@@ -66,6 +66,12 @@ export function isList(type) {
   return type.includes("[]");
 }
 
+// decimal values don't quite match a simple FLOATS.has(type) function,
+// so we need this one.
+export function isFloat(type) {
+  return FLOATS.has(type) || type.startsWith("DECIMAL");
+}
+
 export function isStruct(type) {
   return type.startsWith("STRUCT");
 }

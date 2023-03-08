@@ -24,20 +24,20 @@ const _ = grpc.SupportPackageIsVersion7
 type AdminServiceClient interface {
 	// Ping returns information about the server
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
-	// FindOrganizations lists all the organizations the caller has access to
-	FindOrganizations(ctx context.Context, in *FindOrganizationsRequest, opts ...grpc.CallOption) (*FindOrganizationsResponse, error)
-	// FindOrganization looks up a specific organization
-	FindOrganization(ctx context.Context, in *FindOrganizationRequest, opts ...grpc.CallOption) (*FindOrganizationResponse, error)
+	// findOrganizations lists all the organizations currently managed by the admin
+	ListOrganizations(ctx context.Context, in *ListOrganizationsRequest, opts ...grpc.CallOption) (*ListOrganizationsResponse, error)
+	// GetOrganization returns information about a specific organization
+	GetOrganization(ctx context.Context, in *GetOrganizationRequest, opts ...grpc.CallOption) (*GetOrganizationResponse, error)
 	// CreateOrganization creates a new organization
 	CreateOrganization(ctx context.Context, in *CreateOrganizationRequest, opts ...grpc.CallOption) (*CreateOrganizationResponse, error)
 	// DeleteOrganization deletes an organizations
 	DeleteOrganization(ctx context.Context, in *DeleteOrganizationRequest, opts ...grpc.CallOption) (*DeleteOrganizationResponse, error)
 	// UpdateOrganization deletes an organizations
 	UpdateOrganization(ctx context.Context, in *UpdateOrganizationRequest, opts ...grpc.CallOption) (*UpdateOrganizationResponse, error)
-	// FindProjects lists all the projects in an organization
-	FindProjects(ctx context.Context, in *FindProjectsRequest, opts ...grpc.CallOption) (*FindProjectsResponse, error)
-	// FindProject looks up a project by name
-	FindProject(ctx context.Context, in *FindProjectRequest, opts ...grpc.CallOption) (*FindProjectResponse, error)
+	// ListProjects lists all the projects currently available for given organizations
+	ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*ListProjectsResponse, error)
+	// GetProject returns information about a specific project
+	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
 	// CreateProject creates a new project
 	CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*CreateProjectResponse, error)
 	// DeleteProject deletes an project
@@ -46,6 +46,8 @@ type AdminServiceClient interface {
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
+	// RevokeCurrentAuthToken revoke the current auth token
+	RevokeCurrentAuthToken(ctx context.Context, in *RevokeCurrentAuthTokenRequest, opts ...grpc.CallOption) (*RevokeCurrentAuthTokenResponse, error)
 }
 
 type adminServiceClient struct {
@@ -65,18 +67,18 @@ func (c *adminServiceClient) Ping(ctx context.Context, in *PingRequest, opts ...
 	return out, nil
 }
 
-func (c *adminServiceClient) FindOrganizations(ctx context.Context, in *FindOrganizationsRequest, opts ...grpc.CallOption) (*FindOrganizationsResponse, error) {
-	out := new(FindOrganizationsResponse)
-	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/FindOrganizations", in, out, opts...)
+func (c *adminServiceClient) ListOrganizations(ctx context.Context, in *ListOrganizationsRequest, opts ...grpc.CallOption) (*ListOrganizationsResponse, error) {
+	out := new(ListOrganizationsResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/ListOrganizations", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *adminServiceClient) FindOrganization(ctx context.Context, in *FindOrganizationRequest, opts ...grpc.CallOption) (*FindOrganizationResponse, error) {
-	out := new(FindOrganizationResponse)
-	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/FindOrganization", in, out, opts...)
+func (c *adminServiceClient) GetOrganization(ctx context.Context, in *GetOrganizationRequest, opts ...grpc.CallOption) (*GetOrganizationResponse, error) {
+	out := new(GetOrganizationResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/GetOrganization", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -110,18 +112,18 @@ func (c *adminServiceClient) UpdateOrganization(ctx context.Context, in *UpdateO
 	return out, nil
 }
 
-func (c *adminServiceClient) FindProjects(ctx context.Context, in *FindProjectsRequest, opts ...grpc.CallOption) (*FindProjectsResponse, error) {
-	out := new(FindProjectsResponse)
-	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/FindProjects", in, out, opts...)
+func (c *adminServiceClient) ListProjects(ctx context.Context, in *ListProjectsRequest, opts ...grpc.CallOption) (*ListProjectsResponse, error) {
+	out := new(ListProjectsResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/ListProjects", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *adminServiceClient) FindProject(ctx context.Context, in *FindProjectRequest, opts ...grpc.CallOption) (*FindProjectResponse, error) {
-	out := new(FindProjectResponse)
-	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/FindProject", in, out, opts...)
+func (c *adminServiceClient) GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error) {
+	out := new(GetProjectResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/GetProject", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -164,26 +166,35 @@ func (c *adminServiceClient) GetCurrentUser(ctx context.Context, in *GetCurrentU
 	return out, nil
 }
 
+func (c *adminServiceClient) RevokeCurrentAuthToken(ctx context.Context, in *RevokeCurrentAuthTokenRequest, opts ...grpc.CallOption) (*RevokeCurrentAuthTokenResponse, error) {
+	out := new(RevokeCurrentAuthTokenResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/RevokeCurrentAuthToken", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility
 type AdminServiceServer interface {
 	// Ping returns information about the server
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
-	// FindOrganizations lists all the organizations the caller has access to
-	FindOrganizations(context.Context, *FindOrganizationsRequest) (*FindOrganizationsResponse, error)
-	// FindOrganization looks up a specific organization
-	FindOrganization(context.Context, *FindOrganizationRequest) (*FindOrganizationResponse, error)
+	// findOrganizations lists all the organizations currently managed by the admin
+	ListOrganizations(context.Context, *ListOrganizationsRequest) (*ListOrganizationsResponse, error)
+	// GetOrganization returns information about a specific organization
+	GetOrganization(context.Context, *GetOrganizationRequest) (*GetOrganizationResponse, error)
 	// CreateOrganization creates a new organization
 	CreateOrganization(context.Context, *CreateOrganizationRequest) (*CreateOrganizationResponse, error)
 	// DeleteOrganization deletes an organizations
 	DeleteOrganization(context.Context, *DeleteOrganizationRequest) (*DeleteOrganizationResponse, error)
 	// UpdateOrganization deletes an organizations
 	UpdateOrganization(context.Context, *UpdateOrganizationRequest) (*UpdateOrganizationResponse, error)
-	// FindProjects lists all the projects in an organization
-	FindProjects(context.Context, *FindProjectsRequest) (*FindProjectsResponse, error)
-	// FindProject looks up a project by name
-	FindProject(context.Context, *FindProjectRequest) (*FindProjectResponse, error)
+	// ListProjects lists all the projects currently available for given organizations
+	ListProjects(context.Context, *ListProjectsRequest) (*ListProjectsResponse, error)
+	// GetProject returns information about a specific project
+	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
 	// CreateProject creates a new project
 	CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error)
 	// DeleteProject deletes an project
@@ -192,6 +203,8 @@ type AdminServiceServer interface {
 	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
+	// RevokeCurrentAuthToken revoke the current auth token
+	RevokeCurrentAuthToken(context.Context, *RevokeCurrentAuthTokenRequest) (*RevokeCurrentAuthTokenResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -202,11 +215,11 @@ type UnimplementedAdminServiceServer struct {
 func (UnimplementedAdminServiceServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
-func (UnimplementedAdminServiceServer) FindOrganizations(context.Context, *FindOrganizationsRequest) (*FindOrganizationsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method FindOrganizations not implemented")
+func (UnimplementedAdminServiceServer) ListOrganizations(context.Context, *ListOrganizationsRequest) (*ListOrganizationsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizations not implemented")
 }
-func (UnimplementedAdminServiceServer) FindOrganization(context.Context, *FindOrganizationRequest) (*FindOrganizationResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method FindOrganization not implemented")
+func (UnimplementedAdminServiceServer) GetOrganization(context.Context, *GetOrganizationRequest) (*GetOrganizationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetOrganization not implemented")
 }
 func (UnimplementedAdminServiceServer) CreateOrganization(context.Context, *CreateOrganizationRequest) (*CreateOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateOrganization not implemented")
@@ -217,11 +230,11 @@ func (UnimplementedAdminServiceServer) DeleteOrganization(context.Context, *Dele
 func (UnimplementedAdminServiceServer) UpdateOrganization(context.Context, *UpdateOrganizationRequest) (*UpdateOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateOrganization not implemented")
 }
-func (UnimplementedAdminServiceServer) FindProjects(context.Context, *FindProjectsRequest) (*FindProjectsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method FindProjects not implemented")
+func (UnimplementedAdminServiceServer) ListProjects(context.Context, *ListProjectsRequest) (*ListProjectsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjects not implemented")
 }
-func (UnimplementedAdminServiceServer) FindProject(context.Context, *FindProjectRequest) (*FindProjectResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method FindProject not implemented")
+func (UnimplementedAdminServiceServer) GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProject not implemented")
 }
 func (UnimplementedAdminServiceServer) CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateProject not implemented")
@@ -234,6 +247,9 @@ func (UnimplementedAdminServiceServer) UpdateProject(context.Context, *UpdatePro
 }
 func (UnimplementedAdminServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
+}
+func (UnimplementedAdminServiceServer) RevokeCurrentAuthToken(context.Context, *RevokeCurrentAuthTokenRequest) (*RevokeCurrentAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RevokeCurrentAuthToken not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -266,38 +282,38 @@ func _AdminService_Ping_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_FindOrganizations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FindOrganizationsRequest)
+func _AdminService_ListOrganizations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListOrganizationsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).FindOrganizations(ctx, in)
+		return srv.(AdminServiceServer).ListOrganizations(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.admin.v1.AdminService/FindOrganizations",
+		FullMethod: "/rill.admin.v1.AdminService/ListOrganizations",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).FindOrganizations(ctx, req.(*FindOrganizationsRequest))
+		return srv.(AdminServiceServer).ListOrganizations(ctx, req.(*ListOrganizationsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_FindOrganization_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FindOrganizationRequest)
+func _AdminService_GetOrganization_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetOrganizationRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).FindOrganization(ctx, in)
+		return srv.(AdminServiceServer).GetOrganization(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.admin.v1.AdminService/FindOrganization",
+		FullMethod: "/rill.admin.v1.AdminService/GetOrganization",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).FindOrganization(ctx, req.(*FindOrganizationRequest))
+		return srv.(AdminServiceServer).GetOrganization(ctx, req.(*GetOrganizationRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -356,38 +372,38 @@ func _AdminService_UpdateOrganization_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_FindProjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FindProjectsRequest)
+func _AdminService_ListProjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).FindProjects(ctx, in)
+		return srv.(AdminServiceServer).ListProjects(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.admin.v1.AdminService/FindProjects",
+		FullMethod: "/rill.admin.v1.AdminService/ListProjects",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).FindProjects(ctx, req.(*FindProjectsRequest))
+		return srv.(AdminServiceServer).ListProjects(ctx, req.(*ListProjectsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_FindProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FindProjectRequest)
+func _AdminService_GetProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProjectRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).FindProject(ctx, in)
+		return srv.(AdminServiceServer).GetProject(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.admin.v1.AdminService/FindProject",
+		FullMethod: "/rill.admin.v1.AdminService/GetProject",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).FindProject(ctx, req.(*FindProjectRequest))
+		return srv.(AdminServiceServer).GetProject(ctx, req.(*GetProjectRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -464,6 +480,24 @@ func _AdminService_GetCurrentUser_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_RevokeCurrentAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeCurrentAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RevokeCurrentAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.admin.v1.AdminService/RevokeCurrentAuthToken",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RevokeCurrentAuthToken(ctx, req.(*RevokeCurrentAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -476,12 +510,12 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_Ping_Handler,
 		},
 		{
-			MethodName: "FindOrganizations",
-			Handler:    _AdminService_FindOrganizations_Handler,
+			MethodName: "ListOrganizations",
+			Handler:    _AdminService_ListOrganizations_Handler,
 		},
 		{
-			MethodName: "FindOrganization",
-			Handler:    _AdminService_FindOrganization_Handler,
+			MethodName: "GetOrganization",
+			Handler:    _AdminService_GetOrganization_Handler,
 		},
 		{
 			MethodName: "CreateOrganization",
@@ -496,12 +530,12 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_UpdateOrganization_Handler,
 		},
 		{
-			MethodName: "FindProjects",
-			Handler:    _AdminService_FindProjects_Handler,
+			MethodName: "ListProjects",
+			Handler:    _AdminService_ListProjects_Handler,
 		},
 		{
-			MethodName: "FindProject",
-			Handler:    _AdminService_FindProject_Handler,
+			MethodName: "GetProject",
+			Handler:    _AdminService_GetProject_Handler,
 		},
 		{
 			MethodName: "CreateProject",
@@ -518,6 +552,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCurrentUser",
 			Handler:    _AdminService_GetCurrentUser_Handler,
+		},
+		{
+			MethodName: "RevokeCurrentAuthToken",
+			Handler:    _AdminService_RevokeCurrentAuthToken_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -16,12 +16,12 @@
     V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
   import type * as yup from "yup";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { compileCreateSourceYAML, inferSourceName } from "../sourceUtils";
   import { createSource } from "./createSource";
@@ -34,7 +34,7 @@
 
   export let connector: V1Connector;
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
+  $: runtimeInstanceId = $runtime.instanceId;
   $: sourceNames = useSourceNames(runtimeInstanceId);
 
   const createSourceMutation = useRuntimeServicePutFileAndReconcile();
