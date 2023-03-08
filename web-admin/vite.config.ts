@@ -13,6 +13,10 @@ const config: UserConfig = {
       "@rilldata/web-local": "/../web-local/src",
     },
   },
+  server: {
+    port: 3000,
+    strictPort: true,
+  },
   plugins: [sveltekit()],
 };
 
