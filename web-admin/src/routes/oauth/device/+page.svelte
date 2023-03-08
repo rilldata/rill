@@ -18,7 +18,8 @@
     });
     let data = await response.json();
     if (!data.user) {
-      window.location.href = ADMIN_URL + "/auth/login?redirect=" + window.location.href;
+      window.location.href =
+        ADMIN_URL + "/auth/login?redirect=" + window.location.href;
     } else {
       user = data.user;
     }
