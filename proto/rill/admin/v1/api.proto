@@ -260,5 +260,5 @@ message User {
 message RevokeCurrentAuthTokenRequest {}
 
 message RevokeCurrentAuthTokenResponse {
-  string tokenID = 1;
+  string token_id = 1;
 }
