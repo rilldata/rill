@@ -1,16 +1,17 @@
 import {
-  useRuntimeServiceEstimateRollupInterval,
-  useRuntimeServiceEstimateSmallestTimeGrain,
-  useRuntimeServiceGenerateTimeSeries,
-  useRuntimeServiceGetCardinalityOfColumn,
-  useRuntimeServiceGetNullCount,
-  useRuntimeServiceGetNumericHistogram,
-  useRuntimeServiceGetTableCardinality,
-  useRuntimeServiceGetTopK,
+  QueryServiceColumnNumericHistogramHistogramMethod,
+  useQueryServiceColumnCardinality,
+  useQueryServiceColumnNullCount,
+  useQueryServiceColumnNumericHistogram,
+  useQueryServiceColumnRollupInterval,
+  useQueryServiceColumnTimeGrain,
+  useQueryServiceColumnTimeSeries,
+  useQueryServiceColumnTopK,
+  useQueryServiceTableCardinality,
   V1ProfileColumn,
 } from "@rilldata/web-common/runtime-client";
-import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
 import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
+import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
 import { derived, Readable, writable } from "svelte/store";
 
 export function isFetching(...queries) {
@@ -35,7 +36,7 @@ export function getSummaries(
       return derived(
         [
           writable(column),
-          useRuntimeServiceGetNullCount(
+          useQueryServiceColumnNullCount(
             instanceId,
             objectName,
             { columnName: column.name },
@@ -43,7 +44,7 @@ export function getSummaries(
               query: { keepPreviousData: true },
             }
           ),
-          useRuntimeServiceGetCardinalityOfColumn(
+          useQueryServiceColumnCardinality(
             instanceId,
             objectName,
             { columnName: column.name },
@@ -72,10 +73,10 @@ export function getNullPercentage(
   objectName: string,
   columnName: string
 ) {
-  const nullQuery = useRuntimeServiceGetNullCount(instanceId, objectName, {
+  const nullQuery = useQueryServiceColumnNullCount(instanceId, objectName, {
     columnName,
   });
-  const totalRowsQuery = useRuntimeServiceGetTableCardinality(
+  const totalRowsQuery = useQueryServiceTableCardinality(
     instanceId,
     objectName
   );
@@ -93,13 +94,13 @@ export function getCountDistinct(
   objectName: string,
   columnName: string
 ) {
-  const cardinalityQuery = useRuntimeServiceGetCardinalityOfColumn(
+  const cardinalityQuery = useQueryServiceColumnCardinality(
     instanceId,
     objectName,
     { columnName }
   );
 
-  const totalRowsQuery = useRuntimeServiceGetTableCardinality(
+  const totalRowsQuery = useQueryServiceTableCardinality(
     instanceId,
     objectName
   );
@@ -122,7 +123,7 @@ export function getTopK(
   columnName: string,
   active = false
 ) {
-  const topKQuery = useRuntimeServiceGetTopK(instanceId, objectName, {
+  const topKQuery = useQueryServiceColumnTopK(instanceId, objectName, {
     columnName: columnName,
     agg: "count(*)",
     k: 75,
@@ -139,7 +140,7 @@ export function getTimeSeriesAndSpark(
   columnName: string,
   active = false
 ) {
-  const query = useRuntimeServiceGenerateTimeSeries(
+  const query = useQueryServiceColumnTimeSeries(
     instanceId,
     objectName,
     // FIXME: convert pixel back to number once the API
@@ -149,13 +150,13 @@ export function getTimeSeriesAndSpark(
       priority: getPriorityForColumn("timeseries", active),
     }
   );
-  const estimatedInterval = useRuntimeServiceEstimateRollupInterval(
+  const estimatedInterval = useQueryServiceColumnRollupInterval(
     instanceId,
     objectName,
     { columnName, priority: getPriorityForColumn("rollup-interval", active) }
   );
 
-  const smallestTimeGrain = useRuntimeServiceEstimateSmallestTimeGrain(
+  const smallestTimeGrain = useQueryServiceColumnTimeGrain(
     instanceId,
     objectName,
     {
@@ -198,12 +199,17 @@ export function getNumericHistogram(
   instanceId: string,
   objectName: string,
   columnName: string,
+  histogramMethod: QueryServiceColumnNumericHistogramHistogramMethod,
   active = false
 ) {
-  return useRuntimeServiceGetNumericHistogram(
+  return useQueryServiceColumnNumericHistogram(
     instanceId,
     objectName,
-    { columnName, priority: getPriorityForColumn("numeric-histogram", active) },
+    {
+      columnName,
+      histogramMethod,
+      priority: getPriorityForColumn("numeric-histogram", active),
+    },
     {
       query: {
         select(query) {

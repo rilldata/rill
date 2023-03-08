@@ -1,5 +1,4 @@
 import type { Timestamp } from "@bufbuild/protobuf";
-import { TimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
 import type { TimeSeriesTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
 import type { MetricsViewFilter_Cond } from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";

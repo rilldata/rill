@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/admin/database"
@@ -77,7 +78,7 @@ func (c *connection) CreateOrganization(ctx context.Context, name, description s
 
 func (c *connection) UpdateOrganization(ctx context.Context, name, description string) (*database.Organization, error) {
 	res := &database.Organization{}
-	err := c.db.QueryRowxContext(ctx, "UPDATE organizations SET description=$1 WHERE name=$2 RETURNING *", description, name).StructScan(res)
+	err := c.db.QueryRowxContext(ctx, "UPDATE organizations SET description=$1, updated_on=now() WHERE name=$2 RETURNING *", description, name).StructScan(res)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +122,7 @@ func (c *connection) CreateProject(ctx context.Context, orgID, name, description
 
 func (c *connection) UpdateProject(ctx context.Context, id, description string) (*database.Project, error) {
 	res := &database.Project{}
-	err := c.db.QueryRowxContext(ctx, "UPDATE projects SET description=$1 WHERE id=$2 RETURNING *", description, id).StructScan(res)
+	err := c.db.QueryRowxContext(ctx, "UPDATE projects SET description=$1, updated_on=now() WHERE id=$2 RETURNING *", description, id).StructScan(res)
 	if err != nil {
 		return nil, err
 	}
@@ -131,4 +132,176 @@ func (c *connection) UpdateProject(ctx context.Context, id, description string) 
 func (c *connection) DeleteProject(ctx context.Context, id string) error {
 	_, err := c.db.ExecContext(ctx, "DELETE FROM projects WHERE id=$1", id)
 	return err
+}
+
+func (c *connection) FindUsers(ctx context.Context) ([]*database.User, error) {
+	var res []*database.User
+	err := c.db.Select(&res, "SELECT u.* FROM users u")
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) FindUser(ctx context.Context, id string) (*database.User, error) {
+	res := &database.User{}
+	err := c.db.QueryRowxContext(ctx, "SELECT u.* FROM users u WHERE u.id=$1", id).StructScan(res)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, database.ErrNotFound
+		}
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) FindUserByEmail(ctx context.Context, email string) (*database.User, error) {
+	res := &database.User{}
+	err := c.db.QueryRowxContext(ctx, "SELECT u.* FROM users u WHERE lower(u.email)=lower($1)", email).StructScan(res)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, database.ErrNotFound
+		}
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) CreateUser(ctx context.Context, email, displayName, photoURL string) (*database.User, error) {
+	res := &database.User{}
+	err := c.db.QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url) VALUES ($1, $2, $3) RETURNING *", email, displayName, photoURL).StructScan(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateUser(ctx context.Context, id, displayName, photoURL string) (*database.User, error) {
+	res := &database.User{}
+	err := c.db.QueryRowxContext(ctx, "UPDATE users SET display_name=$1, photo_url=$2, updated_on=now() WHERE id=$3 RETURNING *", displayName, photoURL, id).StructScan(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteUser(ctx context.Context, id string) error {
+	_, err := c.db.ExecContext(ctx, "DELETE FROM users WHERE id=$1", id)
+	return err
+}
+
+func (c *connection) FindUserAuthTokens(ctx context.Context, userID string) ([]*database.UserAuthToken, error) {
+	var res []*database.UserAuthToken
+	err := c.db.Select(&res, "SELECT t.* FROM user_auth_tokens t WHERE t.user_id=$1", userID)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) FindUserAuthToken(ctx context.Context, id string) (*database.UserAuthToken, error) {
+	res := &database.UserAuthToken{}
+	err := c.db.QueryRowxContext(ctx, "SELECT t.* FROM user_auth_tokens t WHERE t.id=$1", id).StructScan(res)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, database.ErrNotFound
+		}
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) CreateUserAuthToken(ctx context.Context, opts *database.CreateUserAuthTokenOptions) (*database.UserAuthToken, error) {
+	res := &database.UserAuthToken{}
+	err := c.db.QueryRowxContext(ctx, `
+		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id)
+		VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID,
+	).StructScan(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
+	_, err := c.db.ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE id=$1", id)
+	return err
+}
+
+// CreateAuthCode inserts the authorization code data into the store.
+func (c *connection) CreateAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*database.AuthCode, error) {
+	res := &database.AuthCode{}
+	err := c.db.QueryRowxContext(ctx,
+		`INSERT INTO device_code_auth (device_code, user_code, expires_on, approval_state, client_id)
+		VALUES ($1, $2, $3, $4, $5)  RETURNING *`, deviceCode, userCode, expiresOn, database.Pending, clientID).StructScan(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+// FindAuthCodeByDeviceCode retrieves the authorization code data from the store
+func (c *connection) FindAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.AuthCode, error) {
+	authCode := &database.AuthCode{}
+	err := c.db.QueryRowxContext(ctx, "SELECT * FROM device_code_auth WHERE device_code = $1", deviceCode).StructScan(authCode)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, database.ErrNotFound
+		}
+		return nil, err
+	}
+	return authCode, nil
+}
+
+// FindAuthCodeByUserCode retrieves the authorization code data from the store
+func (c *connection) FindAuthCodeByUserCode(ctx context.Context, userCode string) (*database.AuthCode, error) {
+	authCode := &database.AuthCode{}
+	err := c.db.QueryRowxContext(ctx, "SELECT * FROM device_code_auth WHERE user_code = $1", userCode).StructScan(authCode)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, database.ErrNotFound
+		}
+		return nil, err
+	}
+	return authCode, nil
+}
+
+// UpdateAuthCode updates the authorization code data in the store
+func (c *connection) UpdateAuthCode(ctx context.Context, userCode, userID string, approvalState database.AuthCodeApprovalState) error {
+	res, err := c.db.ExecContext(ctx, "UPDATE device_code_auth SET approval_state=$1, user_id=$2, updated_on=now() WHERE user_code=$3",
+		approvalState, userID, userCode)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return database.ErrNotFound
+	}
+	if rows != 1 {
+		return fmt.Errorf("problem in updating auth code, expected 1 row to be affected, got %d", rows)
+	}
+	return nil
+}
+
+// DeleteAuthCode deletes the authorization code data from the store
+func (c *connection) DeleteAuthCode(ctx context.Context, deviceCode string) error {
+	res, err := c.db.ExecContext(ctx, "DELETE FROM device_code_auth WHERE device_code=$1", deviceCode)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return database.ErrNotFound
+	}
+	if rows != 1 {
+		return fmt.Errorf("problem in deleting auth code, expected 1 row to be affected, got %d", rows)
+	}
+	return nil
 }

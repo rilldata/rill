@@ -303,18 +303,25 @@ region: {{.env.region}}
 		{
 			name:     "Model",
 			filePath: "models/Model.sql",
-			content:  "select * from A {{.env.limit}}",
+			content:  "select * from {{ \"foo\" | upper }} {{.env.limit}}",
 			want: &drivers.CatalogEntry{
 				Name: "Model",
 				Path: "models/Model.sql",
 				Type: drivers.ObjectTypeModel,
 				Object: &runtimev1.Model{
 					Name:    "Model",
-					Sql:     "select * from A limit 10",
+					Sql:     "select * from FOO limit 10",
 					Dialect: runtimev1.Model_DIALECT_DUCKDB,
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name:     "Model",
+			filePath: "models/Model.sql",
+			content:  "select {{ env \"SECRET\" }}",
+			want:     nil,
+			wantErr:  true,
 		},
 	}
 	for _, tt := range tests {

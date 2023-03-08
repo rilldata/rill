@@ -11,9 +11,9 @@
     useRuntimeServicePutFileAndReconcile,
     useRuntimeServiceRefreshAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { parseDocument } from "yaml";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
   import { fileArtifactsStore } from "../../entity-management/file-artifacts-store";
   import { EntityType } from "../../entity-management/types";
@@ -22,10 +22,7 @@
 
   let sourcePath: string;
   $: sourcePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
-  $: getSource = useRuntimeServiceGetFile(
-    $runtimeStore?.instanceId,
-    sourcePath
-  );
+  $: getSource = useRuntimeServiceGetFile($runtime?.instanceId, sourcePath);
   $: source = parseDocument($getSource?.data?.blob || "{}").toJS();
 
   $: connectors = useRuntimeServiceListConnectors();
@@ -50,13 +47,13 @@
       await refreshSource(
         currentConnector?.name,
         tableName,
-        $runtimeStore?.instanceId,
+        $runtime?.instanceId,
         $refreshSourceMutation,
         $createSource,
         queryClient
       );
       const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
-        $runtimeStore?.instanceId,
+        $runtime?.instanceId,
         tableName
       );
       await queryClient.refetchQueries(queryKey);

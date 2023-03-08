@@ -25,7 +25,6 @@
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
@@ -36,6 +35,7 @@
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { getName } from "../../entity-management/name-utils";
   import { EntityType } from "../../entity-management/types";
@@ -50,7 +50,7 @@
 
   const queryClient = useQueryClient();
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
+  $: runtimeInstanceId = $runtime.instanceId;
 
   const dispatch = createEventDispatcher();
 
@@ -64,13 +64,13 @@
   $: path = source?.properties?.path;
 
   $: sourceFromYaml = useSourceFromYaml(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     getFilePathFromNameAndType(sourceName, EntityType.Table)
   );
 
-  $: sourceNames = useSourceNames($runtimeStore.instanceId);
-  $: modelNames = useModelNames($runtimeStore.instanceId);
-  $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
+  $: sourceNames = useSourceNames($runtime.instanceId);
+  $: modelNames = useModelNames($runtime.instanceId);
+  $: dashboardNames = useDashboardNames($runtime.instanceId);
 
   const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
   const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
@@ -127,7 +127,7 @@
     $createDashboardFromSourceMutation.mutate(
       {
         data: {
-          instanceId: $runtimeStore.instanceId,
+          instanceId: $runtime.instanceId,
           sourceName,
           newModelName,
           newDashboardName,

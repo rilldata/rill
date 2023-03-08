@@ -6,16 +6,19 @@ This directory contains the control-plane for multi-user, hosted deployments of 
 
 1. Create a `.env` file at the root of the repo containing:
 ```
-RILL_ADMIN_ENV=development
 RILL_ADMIN_DATABASE_DRIVER=postgres
 RILL_ADMIN_DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres
-RILL_ADMIN_PORT=8080
-RILL_ADMIN_SESSIONS_SECRET=secret
-RILL_ADMIN_AUTH_DOMAIN=gorillio-stage.auth0.com
-RILL_ADMIN_AUTH_CALLBACK_URL=http://localhost:8080/auth/callback
+RILL_ADMIN_HTTP_PORT=8080
+RILL_ADMIN_GRPC_PORT=9090
+RILL_ADMIN_EXTERNAL_URL=http://localhost:8080
+RILL_ADMIN_ALLOWED_ORIGINS=*
+# Hex-encoded comma-separated list of keys. For details: https://pkg.go.dev/github.com/gorilla/sessions#NewCookieStore
+RILL_ADMIN_SESSION_KEY_PAIRS=7938b8c95ac90b3731c353076daeae8a,90c22a5a6c6b442afdb46855f95eb7d6
 # Get these from https://auth0.com/ (or ask a colleague)
+RILL_ADMIN_AUTH_DOMAIN=gorillio-stage.auth0.com
 RILL_ADMIN_AUTH_CLIENT_ID=
 RILL_ADMIN_AUTH_CLIENT_SECRET=
+RILL_ADMIN_DEVICE_VERIFICATION_HOST=http://localhost:5173
 ```
 2. In a separate terminal, run Postgres in the background:
 ```
@@ -23,14 +26,34 @@ docker-compose -f admin/docker-compose.yml up
 ```
 3. Run the server:
 ```
-go run admin/cmd/main.go
+go run ./cli admin start
+```
+4. Ping the server:
+```
+go run ./cli admin ping --base-url http://localhost:9090
+```
+
+You can now call the local admin server from the CLI by overriding the admin API URL. For example:
+```
+go run ./cli org create foo --api-url http://localhost:9090
 ```
 
 ## Adding endpoints
 
-We define endpoints using OpenAPI and generate Go handlers and types using [oapi-codegen](https://github.com/deepmap/oapi-codegen). To add a new endpoint:
+We define our APIs using gRPC and use [gRPC-Gateway](https://grpc-ecosystem.github.io/grpc-gateway/) to map the RPCs to a RESTful API. See `proto/README.md` for details.
 
-1. Describe the new endpoint in `admin/api/openapi.yaml`
-2. Make sure you have `oapi-codegen` installed by running `go mod tidy`
-3. Run: `go generate ./admin/api`
-4. Copy the new handler(s) from `admin/api/server.gen.go` into `admin/server/handlers.go` and implement it
+To add a new endpoint:
+1. Describe the endpoint in `proto/rill/admin/v1/api.proto`
+2. Re-generate gRPC and OpenAPI interfaces by running `make proto.generate`
+3. Copy the new handler signature from the `AdminServiceServer` interface in `proto/gen/rill/admin/v1/api_grpc_pb.go`
+4. Paste the handler signature and implement it in a relevant file in `admin/server/`
+
+### CLI login/logout
+For trying out CLI login add api-url parameter to point to local admin HTTP server like this:
+```
+go run ./cli auth login --api-url http://localhost:8080/
+```
+For trying out CLI logout add api-url parameter to point to local admin gRPC server like this:
+```
+go run ./cli auth logout --api-url http://localhost:9090/
+```

@@ -1,14 +1,19 @@
 <script lang="ts">
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
-  import { INTERVALS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
-    useRuntimeServiceGetDescriptiveStatistics,
-    useRuntimeServiceGetRugHistogram,
+    FLOATS,
+    INTERVALS,
+    isFloat,
+  } from "@rilldata/web-common/lib/duckdb-data-types";
+  import {
+    QueryServiceColumnNumericHistogramHistogramMethod,
+    useQueryServiceColumnDescriptiveStatistics,
+    useQueryServiceColumnRugHistogram,
   } from "@rilldata/web-common/runtime-client";
-  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { derived } from "svelte/store";
+  import { httpRequestQueue } from "../../../runtime-client/http-client";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
   import {
@@ -17,6 +22,7 @@
     getTopK,
     isFetching,
   } from "../queries";
+  import { chooseBetweenDiagnosticAndStatistical } from "../utils";
   import NumericPlot from "./details/NumericPlot.svelte";
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
   import NumericSpark from "./sparks/NumericSpark.svelte";
@@ -33,20 +39,41 @@
 
   let active = false;
 
-  $: nulls = getNullPercentage(
-    $runtimeStore?.instanceId,
-    objectName,
-    columnName
-  );
+  $: nulls = getNullPercentage($runtime?.instanceId, objectName, columnName);
 
-  $: numericHistogram = getNumericHistogram(
-    $runtimeStore?.instanceId,
+  $: diagnosticHistogram = getNumericHistogram(
+    $runtime?.instanceId,
     objectName,
     columnName,
+    QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC,
     active
   );
-  $: rug = useRuntimeServiceGetRugHistogram(
-    $runtimeStore?.instanceId,
+  let fdHistogram;
+  $: if (isFloat(type)) {
+    fdHistogram = getNumericHistogram(
+      $runtime?.instanceId,
+      objectName,
+      columnName,
+      QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
+      active
+    );
+  }
+
+  /**
+   * We have two choices of histogram method: diagnostic and freedman-diaconis.
+   * For integers, we go with diagnostic. For floating points, let's choose between
+   * the most viable of diagnostic and freedman-diaconis. We'll remove
+   * this once we've refactored floating-point columns toward a KDE plot.
+   */
+  $: histogramData = isFloat(type)
+    ? chooseBetweenDiagnosticAndStatistical(
+        $diagnosticHistogram?.data,
+        $fdHistogram?.data
+      )
+    : $diagnosticHistogram?.data;
+
+  $: rug = useQueryServiceColumnRugHistogram(
+    $runtime?.instanceId,
     objectName,
     { columnName, priority: getPriorityForColumn("rug-histogram", active) },
     {
@@ -57,11 +84,11 @@
       },
     }
   );
-  $: topK = getTopK($runtimeStore?.instanceId, objectName, columnName);
+  $: topK = getTopK($runtime?.instanceId, objectName, columnName);
 
   $: summary = derived(
-    useRuntimeServiceGetDescriptiveStatistics(
-      $runtimeStore?.instanceId,
+    useQueryServiceColumnDescriptiveStatistics(
+      $runtime?.instanceId,
       objectName,
       {
         columnName: columnName,
@@ -78,7 +105,44 @@
     httpRequestQueue.prioritiseColumn(objectName, columnName, active);
   }
 
-  $: fetchingSummaries = isFetching($nulls, $numericHistogram);
+  $: fetchingSummaries = FLOATS.has(type)
+    ? isFetching($nulls, $diagnosticHistogram, $fdHistogram)
+    : isFetching($nulls, $diagnosticHistogram);
+
+  /** if we have a singleton where all summary information is the same, let's construct a single bin. */
+  $: if (
+    $summary?.min !== undefined &&
+    $summary?.min === $summary?.max &&
+    $nulls?.totalRows !== undefined
+  ) {
+    const boundaries = 10;
+    histogramData = [
+      // add 4 more empty bins
+      ...Array.from({ length: boundaries }).map((_, i) => {
+        return {
+          bucket: -boundaries + i,
+          count: 0,
+          high: $summary?.min - (boundaries - i - 1),
+          low: $summary?.min - (boundaries - i),
+        };
+      }),
+      {
+        bucket: boundaries,
+        count: $nulls?.totalRows,
+        low: $summary?.min,
+        high: $summary?.min + 1,
+      },
+      // add more empty bins
+      ...Array.from({ length: boundaries }).map((_, i) => {
+        return {
+          bucket: boundaries + i + 1,
+          count: 0,
+          low: $summary?.min + i,
+          high: $summary?.min + i + 1,
+        };
+      }),
+    ];
+  }
 </script>
 
 <ProfileContainer
@@ -98,7 +162,7 @@
   <ColumnProfileIcon slot="icon" isFetching={fetchingSummaries} {type} />
 
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
-  <NumericSpark {compact} data={$numericHistogram?.data} slot="summary" />
+  <NumericSpark {type} {compact} data={histogramData} slot="summary" />
   <NullPercentageSpark
     isFetching={fetchingSummaries}
     nullCount={$nulls?.nullCount}
@@ -112,7 +176,7 @@
     class:hidden={INTERVALS.has(type)}
   >
     <NumericPlot
-      data={$numericHistogram.data}
+      data={histogramData}
       rug={$rug?.data}
       summary={$summary}
       topK={$topK}

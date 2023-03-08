@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { runtime } from "../../../../runtime-client/runtime-store";
   import { useModelFileIsEmpty } from "../../selectors";
   import ModelInspectorHeader from "./ModelInspectorHeader.svelte";
   import ModelInspectorModelProfile from "./ModelInspectorModelProfile.svelte";
@@ -10,7 +10,7 @@
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
 
-  $: emptyModel = useModelFileIsEmpty($runtimeStore?.instanceId, modelName);
+  $: emptyModel = useModelFileIsEmpty($runtime?.instanceId, modelName);
 </script>
 
 {#if !$emptyModel?.data}

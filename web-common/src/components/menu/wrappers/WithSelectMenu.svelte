@@ -9,15 +9,19 @@ and the menu closes.
   import type { Alignment, Location } from "../../floating-element/types";
   import Check from "../../icons/Check.svelte";
   import Spacer from "../../icons/Spacer.svelte";
-  import { Menu, MenuItem } from "../index";
+  import { Divider, Menu, MenuItem } from "../index";
 
   export let options;
   export let selection = undefined;
 
   export let dark: boolean = undefined;
+  export let disabled: boolean = undefined;
+  export let multiSelect: boolean = undefined;
   export let location: Location = "bottom";
   export let alignment: Alignment = "start";
   export let distance = 16;
+  export let paddingTop: number = undefined;
+  export let paddingBottom: number = undefined;
 
   export let active = false;
 
@@ -38,19 +42,23 @@ and the menu closes.
     closeEventHandler: () => void
   ) {
     return async () => {
-      if (isSelected(selection, key)) {
+      if (!multiSelect && isSelected(selection, key)) {
         return;
       }
       selection = { main, right, description, key, disabled, index };
       dispatch("select", selection);
-      closeEventHandler();
+
+      if (!multiSelect) closeEventHandler();
 
       temporarilySelectedKey = undefined;
     };
   }
 
   function isSelected(selection, key) {
-    return selection.key === key;
+    if (multiSelect) {
+      return selection?.length && selection?.includes(key);
+    }
+    return selection === key || selection.key === key;
   }
 
   /** this function will make the circle check appear briefly before the menu closes */
@@ -62,7 +70,10 @@ and the menu closes.
   $: isAlreadySelectedButNotBeingAnimated = (
     key: string,
     isSelected: boolean
-  ) => temporarilySelectedKey === undefined && isSelected;
+  ) => {
+    if (multiSelect) return isSelected;
+    else return temporarilySelectedKey === undefined && isSelected;
+  };
 </script>
 
 <WithTogglableFloatingElement
@@ -76,6 +87,8 @@ and the menu closes.
   <slot {active} {handleClose} toggleMenu={toggleFloatingElement} />
 
   <Menu
+    {paddingTop}
+    {paddingBottom}
     slot="floating-element"
     {dark}
     on:click-outside={() => {
@@ -83,7 +96,7 @@ and the menu closes.
     }}
     on:escape={handleClose}
   >
-    {#each options as { key, main, description, right, disabled = false }, i}
+    {#each options as { key, main, description, right, divider = false, disabled = false }, i}
       {@const selected = isSelected(selection, key)}
       <MenuItem
         icon
@@ -122,6 +135,9 @@ and the menu closes.
           {right || ""}
         </svelte:fragment>
       </MenuItem>
+      {#if divider}
+        <Divider marginTop={1} marginBottom={1} />
+      {/if}
     {/each}
   </Menu>
 </WithTogglableFloatingElement>

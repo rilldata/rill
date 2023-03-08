@@ -11,10 +11,10 @@ import (
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// FindOrganizations implements AdminService.
+// ListOrganizations implements AdminService.
 // (GET /v1/organizations)
-func (s *Server) FindOrganizations(ctx context.Context, req *adminv1.FindOrganizationsRequest) (*adminv1.FindOrganizationsResponse, error) {
-	orgs, err := s.db.FindOrganizations(ctx)
+func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganizationsRequest) (*adminv1.ListOrganizationsResponse, error) {
+	orgs, err := s.admin.DB.FindOrganizations(ctx)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -24,12 +24,12 @@ func (s *Server) FindOrganizations(ctx context.Context, req *adminv1.FindOrganiz
 		pbs[i] = orgToDTO(org)
 	}
 
-	return &adminv1.FindOrganizationsResponse{Organization: pbs}, nil
+	return &adminv1.ListOrganizationsResponse{Organization: pbs}, nil
 }
 
 // (GET /organizations/{name})
-func (s *Server) FindOrganization(ctx context.Context, req *adminv1.FindOrganizationRequest) (*adminv1.FindOrganizationResponse, error) {
-	org, err := s.db.FindOrganizationByName(ctx, req.Name)
+func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizationRequest) (*adminv1.GetOrganizationResponse, error) {
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "org not found")
@@ -37,7 +37,7 @@ func (s *Server) FindOrganization(ctx context.Context, req *adminv1.FindOrganiza
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &adminv1.FindOrganizationResponse{
+	return &adminv1.GetOrganizationResponse{
 		Organization: orgToDTO(org),
 	}, nil
 }
@@ -45,7 +45,7 @@ func (s *Server) FindOrganization(ctx context.Context, req *adminv1.FindOrganiza
 // CreateOrganization implements AdminService.
 // (POST /organizations)
 func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrganizationRequest) (*adminv1.CreateOrganizationResponse, error) {
-	org, err := s.db.CreateOrganization(ctx, req.Name, req.Description)
+	org, err := s.admin.DB.CreateOrganization(ctx, req.Name, req.Description)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -57,7 +57,7 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 
 // (DELETE /organizations/{name})
 func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrganizationRequest) (*adminv1.DeleteOrganizationResponse, error) {
-	err := s.db.DeleteOrganization(ctx, req.Name)
+	err := s.admin.DB.DeleteOrganization(ctx, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -69,7 +69,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 
 // (PUT /organizations/{name})
 func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrganizationRequest) (*adminv1.UpdateOrganizationResponse, error) {
-	org, err := s.db.UpdateOrganization(ctx, req.Name, req.Description)
+	org, err := s.admin.DB.UpdateOrganization(ctx, req.Name, req.Description)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

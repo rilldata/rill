@@ -1,21 +1,23 @@
 <script lang="ts">
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { Button } from "../../../components/button";
   import {
+    useQueryServiceColumnTimeRange,
     useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceGetTimeRangeSummary,
     V1GetTimeRangeSummaryResponse,
   } from "../../../runtime-client";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { useDashboardStore } from "../dashboard-stores";
   import {
     exclusiveToInclusiveEndISOString,
     getDateFromISOString,
     getISOStringFromDate,
+    validateTimeRange,
   } from "./time-range-utils";
 
   export let metricViewName: string;
+  export let minTimeGrain: string;
 
   const dispatch = createEventDispatcher();
 
@@ -33,24 +35,24 @@
     }
   }
 
-  $: error = validateTimeRange(start, end);
+  $: error = validateTimeRange(new Date(start), new Date(end), minTimeGrain);
   $: disabled = !start || !end || !!error;
 
   let metricsViewQuery;
-  $: if ($runtimeStore?.instanceId) {
+  $: if ($runtime?.instanceId) {
     metricsViewQuery = useRuntimeServiceGetCatalogEntry(
-      $runtimeStore.instanceId,
+      $runtime.instanceId,
       metricViewName
     );
   }
   let timeRangeQuery: UseQueryStoreResult<V1GetTimeRangeSummaryResponse, Error>;
   $: if (
-    $runtimeStore?.instanceId &&
+    $runtime?.instanceId &&
     $metricsViewQuery?.data?.entry?.metricsView?.model &&
     $metricsViewQuery?.data?.entry?.metricsView?.timeDimension
   ) {
-    timeRangeQuery = useRuntimeServiceGetTimeRangeSummary(
-      $runtimeStore.instanceId,
+    timeRangeQuery = useQueryServiceColumnTimeRange(
+      $runtime.instanceId,
       $metricsViewQuery.data.entry.metricsView.model,
       {
         columnName: $metricsViewQuery.data.entry.metricsView.timeDimension,
@@ -64,14 +66,6 @@
   $: max = $timeRangeQuery.data.timeRangeSummary?.max
     ? getDateFromISOString($timeRangeQuery.data.timeRangeSummary.max)
     : undefined;
-
-  function validateTimeRange(start: string, end: string) {
-    if (start > end) {
-      return "Start date must be before end date";
-    } else {
-      return undefined;
-    }
-  }
 
   function applyCustomTimeRange() {
     // Currently, we assume UTC

@@ -3,11 +3,11 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
-    useRuntimeServiceMetricsViewTotals,
+    useQueryServiceMetricsViewTotals,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -38,7 +38,7 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  $: instanceId = $runtimeStore.instanceId;
+  $: instanceId = $runtime.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
@@ -135,7 +135,7 @@
       filter: metricsExplorer?.filters,
     };
 
-    totalsQuery = useRuntimeServiceMetricsViewTotals(
+    totalsQuery = useQueryServiceMetricsViewTotals(
       instanceId,
       metricViewName,
       totalsQueryParams

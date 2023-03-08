@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
@@ -12,7 +11,7 @@ import (
 
 func TestServer_TableCardinality(t *testing.T) {
 	server, instanceId := getTableTestServer(t)
-	cr, err := server.GetTableCardinality(context.Background(), &runtimev1.GetTableCardinalityRequest{
+	cr, err := server.TableCardinality(testCtx(), &runtimev1.TableCardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -22,7 +21,7 @@ func TestServer_TableCardinality(t *testing.T) {
 
 func TestServer_TableCardinality_EmptyModel(t *testing.T) {
 	server, instanceId := getTableTestServerWithEmptyModel(t)
-	cr, err := server.GetTableCardinality(context.Background(), &runtimev1.GetTableCardinalityRequest{
+	cr, err := server.TableCardinality(testCtx(), &runtimev1.TableCardinalityRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -30,9 +29,9 @@ func TestServer_TableCardinality_EmptyModel(t *testing.T) {
 	require.Equal(t, int64(0), cr.Cardinality)
 }
 
-func TestServer_ProfileColumns(t *testing.T) {
+func TestServer_TableColumns(t *testing.T) {
 	server, instanceId := getTableTestServer(t)
-	cr, err := server.ProfileColumns(context.Background(), &runtimev1.ProfileColumnsRequest{
+	cr, err := server.TableColumns(testCtx(), &runtimev1.TableColumnsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -47,9 +46,9 @@ func TestServer_ProfileColumns(t *testing.T) {
 	//require.Equal(t, int32(len("10")), cr.GetProfileColumns()[1].LargestStringLength)
 }
 
-func TestServer_ProfileColumns_DuplicateNames(t *testing.T) {
+func TestServer_TableColumns_DuplicateNames(t *testing.T) {
 	server, instanceId := getTableTestServerWithSql(t, "select * from (select 1 as a) a join (select 1 as a) b on a.a = b.a")
-	cr, err := server.ProfileColumns(context.Background(), &runtimev1.ProfileColumnsRequest{
+	cr, err := server.TableColumns(testCtx(), &runtimev1.TableColumnsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -62,9 +61,9 @@ func TestServer_ProfileColumns_DuplicateNames(t *testing.T) {
 	require.Equal(t, "INTEGER", cr.GetProfileColumns()[1].Type)
 }
 
-func TestServer_ProfileColumns_EmptyModel(t *testing.T) {
+func TestServer_TableColumns_EmptyModel(t *testing.T) {
 	server, instanceId := getTableTestServerWithEmptyModel(t)
-	cr, err := server.ProfileColumns(context.Background(), &runtimev1.ProfileColumnsRequest{
+	cr, err := server.TableColumns(testCtx(), &runtimev1.TableColumnsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 	})
@@ -81,7 +80,7 @@ func TestServer_ProfileColumns_EmptyModel(t *testing.T) {
 
 func TestServer_TableRows(t *testing.T) {
 	server, instanceId := getTableTestServer(t)
-	cr, err := server.GetTableRows(context.Background(), &runtimev1.GetTableRowsRequest{
+	cr, err := server.TableRows(testCtx(), &runtimev1.TableRowsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 		Limit:      1,
@@ -92,7 +91,7 @@ func TestServer_TableRows(t *testing.T) {
 
 func TestServer_TableRows_EmptyModel(t *testing.T) {
 	server, instanceId := getTableTestServerWithEmptyModel(t)
-	cr, err := server.GetTableRows(context.Background(), &runtimev1.GetTableRowsRequest{
+	cr, err := server.TableRows(testCtx(), &runtimev1.TableRowsRequest{
 		InstanceId: instanceId,
 		TableName:  "test",
 		Limit:      1,

@@ -13,8 +13,9 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/browser"
+	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/examples"
-	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/rilldata/rill/cli/pkg/web"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
@@ -24,16 +25,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
-
-	// Load infra drivers and connectors for local
-	_ "github.com/rilldata/rill/runtime/connectors/gcs"
-	_ "github.com/rilldata/rill/runtime/connectors/https"
-	_ "github.com/rilldata/rill/runtime/connectors/s3"
-	_ "github.com/rilldata/rill/runtime/drivers/druid"
-	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
-	_ "github.com/rilldata/rill/runtime/drivers/file"
-	_ "github.com/rilldata/rill/runtime/drivers/postgres"
-	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
 
 type LogFormat string
@@ -60,12 +51,12 @@ type App struct {
 	Instance    *drivers.Instance
 	Logger      *zap.SugaredLogger
 	BaseLogger  *zap.Logger
-	Version     version.Version
+	Version     config.Version
 	Verbose     bool
 	ProjectPath string
 }
 
-func NewApp(ctx context.Context, ver version.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, envVariables []string) (*App, error) {
+func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, envVariables []string) (*App, error) {
 	// Setup a friendly-looking colored/json logger
 	var logger *zap.Logger
 	var err error
@@ -285,21 +276,23 @@ func (a *App) ReconcileSource(sourcePath string) error {
 }
 
 func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool) error {
-	// Build local info for frontend
-	localConf, err := config()
+	// Get analytics info
+	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {
 		a.Logger.Warnf("error finding install ID: %v", err)
 	}
+
+	// Build local info for frontend
 	inf := &localInfo{
 		InstanceID:       a.Instance.ID,
 		GRPCPort:         grpcPort,
-		InstallID:        localConf.InstallID,
+		InstallID:        installID,
 		ProjectPath:      a.ProjectPath,
 		Version:          a.Version.Number,
 		BuildCommit:      a.Version.Commit,
 		BuildTime:        a.Version.Timestamp,
 		IsDev:            a.Version.IsDev(),
-		AnalyticsEnabled: localConf.AnalyticsEnabled,
+		AnalyticsEnabled: enabled,
 		Readonly:         readonly,
 	}
 
@@ -317,26 +310,14 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 
 	// Create a runtime server
 	opts := &runtimeserver.Options{
-		HTTPPort: httpPort,
-		GRPCPort: grpcPort,
+		HTTPPort:       httpPort,
+		GRPCPort:       grpcPort,
+		AllowedOrigins: []string{"*"},
 	}
 	runtimeServer, err := runtimeserver.NewServer(opts, a.Runtime, serverLogger)
 	if err != nil {
 		return err
 	}
-	runtimeHandler, err := runtimeServer.HTTPHandler(ctx)
-	if err != nil {
-		return err
-	}
-
-	// Create a single HTTP handler for both the local UI, local backend endpoints, and local runtime
-	mux := http.NewServeMux()
-	if enableUI {
-		mux.Handle("/", web.StaticHandler())
-	}
-	mux.Handle("/v1/", runtimeHandler)
-	mux.Handle("/local/config", a.infoHandler(inf))
-	mux.Handle("/local/track", a.trackingHandler(inf))
 
 	// Start the gRPC server
 	group.Go(func() error {
@@ -345,8 +326,14 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 
 	// Start the local HTTP server
 	group.Go(func() error {
-		server := &http.Server{Handler: cors(mux)}
-		return graceful.ServeHTTP(ctx, server, httpPort)
+		return runtimeServer.ServeHTTP(ctx, func(mux *http.ServeMux) {
+			// Inject local-only endpoints on the server for the local UI and local backend endpoints
+			if enableUI {
+				mux.Handle("/", web.StaticHandler())
+			}
+			mux.Handle("/local/config", a.infoHandler(inf))
+			mux.Handle("/local/track", a.trackingHandler(inf))
+		})
 	})
 
 	// Open the browser when health check succeeds
@@ -454,22 +441,6 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 
 		// Done
 		w.WriteHeader(http.StatusOK)
-	})
-}
-
-// Fully open CORS policy. This is very much local-only.
-// TODO: Adapt before recommending hosting Rill using the local server.
-func cors(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if origin := r.Header.Get("Origin"); origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-			if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
-				w.Header().Set("Access-Control-Allow-Headers", "*")
-				w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, PATCH, DELETE")
-				return
-			}
-		}
-		h.ServeHTTP(w, r)
 	})
 }
 

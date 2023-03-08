@@ -4,6 +4,7 @@ package rill.ui.v1;
 import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/api.proto";
 import "rill/runtime/v1/catalog.proto";
+import "rill/runtime/v1/queries.proto";
 
 message DashboardState {
   google.protobuf.Timestamp time_start = 1;

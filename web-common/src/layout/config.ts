@@ -24,7 +24,7 @@ export const COLUMN_PROFILE_CONFIG = {
   fontSize: 12,
 };
 
-export const TOOLTIP_STRING_LIMIT = 200;
+export const TOOLTIP_STRING_LIMIT = 60;
 
 export function collapseInspectorCTAButton(width) {
   return !(width < 398);

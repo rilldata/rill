@@ -5,10 +5,11 @@
 # Caching of the release artifacts are intentionally disabled at the bucket level by setting the Cache-Control header of the objects to 'no-store',
 # this is done because the files are cached at the CDN layer instead and multiple caching layers makes invalidating the cache difficult.
 # The CDN cache is explicitly invalidated as part of the release process, to prevent old versions from being accidentally served after the release is done.
+
 name: Release Rill CLI
 on:
-  # Trigger a full release on new Git tag
   push:
+    # Trigger a full release on new Git tag
     tags:
       - "**"
   # Trigger a nightly release at midnight
@@ -16,9 +17,11 @@ on:
     - cron: '0 0 * * *'
   # Trigger a nightly release manually
   workflow_dispatch:
+
 env:
-  # PUBLISH_NIGHTLY becomes a string with values 'true' or 'false'
-  PUBLISH_NIGHTLY: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+  PUBLISH_NIGHTLY: ${{ contains(fromJSON('["schedule", "workflow_dispatch"]'), github.event_name) }}
+  PUBLISH_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
+
 jobs:
   release:
     name: Release rill-developer
@@ -49,16 +52,17 @@ jobs:
       - name: Build and embed static UI
         run: make cli.prepare
 
-      - name: Set up release environment
+      - name: Build Rill using Goreleaser
         run: |-
           echo '${{ secrets.RILL_BINARY_SA }}' > rill-binary-sa.json
+
           echo 'GITHUB_TOKEN=${{ secrets.GORELEASER_ACCESS_TOKEN }}' > .release-env
           echo 'GOOGLE_APPLICATION_CREDENTIALS=/rill-binary-sa.json' >> .release-env
           echo 'DOCKERHUB_USER=${{ secrets.DOCKERHUB_USER }}' >> .release-env
           echo 'DOCKERHUB_PASS=${{ secrets.DOCKERHUB_PASS }}' >> .release-env
 
-      - name: Release Publish
-        run: |-
+          echo '${{ github.ref_name }}' >> latest.txt
+
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             export NIGHTLY="--snapshot"
           fi
@@ -81,21 +85,18 @@ jobs:
         with:
           credentials_json: "${{ secrets.RILL_BINARY_SA }}"
 
-      - name: Upload install script to CDN bucket
+
+      - name: Release - Upload install script to CDN bucket
         uses: google-github-actions/upload-cloud-storage@v1
+        if: env.PUBLISH_RELEASE == 'true'
         with:
           path: scripts/install.sh
           destination: prod-cdn.rilldata.com/
           headers: |-
             cache-control: no-store
 
-      - name: Create latest version file
-        if: env.PUBLISH_NIGHTLY == 'false'
-        run: |-
-          echo '${{ github.ref_name }}' >> latest.txt
-
-      - name: Upload latest version file to CDN bucket
-        if: env.PUBLISH_NIGHTLY == 'false'
+      - name: Release - Upload latest version file to CDN bucket
+        if: env.PUBLISH_RELEASE == 'true'
         uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: latest.txt
@@ -110,14 +111,14 @@ jobs:
           docker tag rilldata/rill:latest rilldata/rill:nightly
           docker push rilldata/rill:nightly
 
-      - name: Prepare for nightly GCS upload
+      - name: Nightly - Prepare for nightly GCS upload
         if: env.PUBLISH_NIGHTLY == 'true'
         run: |-
           mkdir nightly
           cp dist/*.zip nightly/
           cp dist/checksums.txt nightly/
 
-      - name: Upload nightly to CDN bucket
+      - name: Nightly - Upload nightly to CDN bucket
         if: env.PUBLISH_NIGHTLY == 'true'
         uses: google-github-actions/upload-cloud-storage@v1
         with:
@@ -129,7 +130,7 @@ jobs:
       - name: Set up Cloud SDK
         uses: 'google-github-actions/setup-gcloud@v1'
 
-      - name: Explicitly invalidate the old artifacts from CDN cache
+      - name: CDN - Explicitly invalidate the old artifacts from CDN cache
         run: |-
           gcloud compute url-maps invalidate-cdn-cache prod --path "/install.sh" --async
           gcloud compute url-maps invalidate-cdn-cache prod --path "/rill/latest.txt" --async

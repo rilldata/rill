@@ -11,7 +11,7 @@ import (
 type RollupInterval struct {
 	TableName  string
 	ColumnName string
-	Result     *runtimev1.EstimateRollupIntervalResponse
+	Result     *runtimev1.ColumnRollupIntervalResponse
 }
 
 var _ runtime.Query = &RollupInterval{}
@@ -29,7 +29,7 @@ func (q *RollupInterval) MarshalResult() any {
 }
 
 func (q *RollupInterval) UnmarshalResult(v any) error {
-	res, ok := v.(*runtimev1.EstimateRollupIntervalResponse)
+	res, ok := v.(*runtimev1.ColumnRollupIntervalResponse)
 	if !ok {
 		return fmt.Errorf("RollupInterval: mismatched unmarshal input")
 	}
@@ -47,6 +47,7 @@ func (q *RollupInterval) Resolve(ctx context.Context, rt *runtime.Runtime, insta
 		return err
 	}
 	if ctr.Result.Interval == nil {
+		q.Result = &runtimev1.ColumnRollupIntervalResponse{}
 		return nil
 	}
 	r := ctr.Result.Interval
@@ -75,7 +76,7 @@ func (q *RollupInterval) Resolve(ctx context.Context, rt *runtime.Runtime, insta
 		rollupInterval = runtimev1.TimeGrain_TIME_GRAIN_YEAR
 	}
 
-	q.Result = &runtimev1.EstimateRollupIntervalResponse{
+	q.Result = &runtimev1.ColumnRollupIntervalResponse{
 		Interval: rollupInterval,
 		Start:    ctr.Result.Min,
 		End:      ctr.Result.Max,

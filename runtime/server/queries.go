@@ -6,13 +6,18 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// Query implements RuntimeService.
+// Query implements QueryService.
 func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runtimev1.QueryResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadOLAP) {
+		return nil, ErrForbidden
+	}
+
 	args := make([]any, len(req.Args))
 	for i, arg := range req.Args {
 		args[i] = arg.AsInterface()

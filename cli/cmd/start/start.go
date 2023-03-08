@@ -2,14 +2,16 @@ package start
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
-	"github.com/rilldata/rill/cli/pkg/version"
 	"github.com/spf13/cobra"
 )
 
 // StartCmd represents the start command
-func StartCmd(ver version.Version) *cobra.Command {
+func StartCmd(cfg *config.Config) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
 	var projectPath string
@@ -26,13 +28,26 @@ func StartCmd(ver version.Version) *cobra.Command {
 	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Build project and start web app",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				projectPath = args[0]
+				if strings.HasSuffix(projectPath, ".git") {
+					repoName, err := gitutil.CloneRepo(projectPath)
+					if err != nil {
+						return fmt.Errorf("clone repo error: %w", err)
+					}
+
+					projectPath = repoName
+				}
+			}
+
 			parsedLogFormat, ok := local.ParseLogFormat(logFormat)
 			if !ok {
 				return fmt.Errorf("invalid log format %q", logFormat)
 			}
 
-			app, err := local.NewApp(cmd.Context(), ver, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, envVariables)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, envVariables)
 			if err != nil {
 				return err
 			}

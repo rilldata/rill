@@ -7,23 +7,21 @@
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
-    useRuntimeServiceGetTableCardinality,
+    useQueryServiceTableCardinality,
     V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { derived } from "svelte/store";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
+  import { runtime } from "../../../runtime-client/runtime-store";
 
   export let sourceCatalog: V1CatalogEntry;
+
   $: embeds = sourceCatalog?.children;
   $: modelsAndRowCounts = derived(
     embeds.map((modelName) => {
       return derived(
-        useRuntimeServiceGetTableCardinality(
-          $runtimeStore?.instanceId,
-          modelName
-        ),
+        useQueryServiceTableCardinality($runtime?.instanceId, modelName),
 
         (totalRows) => {
           return {
