@@ -15,13 +15,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-// This code is mostly copied from https://github.com/planetscale/cli/blob/main/internal/auth/authenticator.go
+// Most parts of this file are copied from https://github.com/planetscale/cli/blob/main/internal/auth/authenticator.go
 
 const (
-	DefaultBaseURL = "https://admin.rilldata.com/"
-	OAuthClientID  = "rill-cli"
-	formMediaType  = "application/x-www-form-urlencoded"
-	jsonMediaType  = "application/json"
+	OAuthClientID = "rill-cli"
+	formMediaType = "application/x-www-form-urlencoded"
+	jsonMediaType = "application/json"
 )
 
 // Authenticator is the interface for authentication via device oauth
@@ -60,9 +59,6 @@ type DeviceAuthenticator struct {
 
 // New returns an instance of the DeviceAuthenticator
 func New(authURL string) (*DeviceAuthenticator, error) {
-	if authURL == "" {
-		authURL = DefaultBaseURL
-	}
 	baseURL, err := url.Parse(authURL)
 	if err != nil {
 		return nil, err

@@ -3,10 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/rilldata/rill/cli/cmd/auth"
 	"os"
 
 	"github.com/rilldata/rill/cli/cmd/admin"
+	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/build"
 	"github.com/rilldata/rill/cli/cmd/docs"
 	"github.com/rilldata/rill/cli/cmd/initialize"

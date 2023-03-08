@@ -74,7 +74,7 @@ func (s *Server) handleDeviceCodeRequest(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	verificationURI := s.conf.DeviceVerificationHost + "/oauth/device"
+	verificationURI := s.opts.DeviceVerificationHost + "/oauth/device"
 	resp := DeviceCodeResponse{
 		DeviceCode:              authCode.DeviceCode,
 		UserCode:                authCode.UserCode,
