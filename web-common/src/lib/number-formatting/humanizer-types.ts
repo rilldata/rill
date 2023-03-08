@@ -39,6 +39,24 @@ export type FormatterOptionsNoneStrategy = {
   strategy: "none";
 };
 
+/**
+ * Strategy for handling numbers that are guaranteed to be an
+ * integer multiple of a power of ten, such as the output of
+ * d3 scale ticks.
+ *
+ * The number will be formatted
+ * with short scale a short scale suffix or an or engineering order
+ * of magnitude (floored multiples of three). If the floored magnitude
+ * is 10^0, no suffix is used.
+ *
+ * In case of a non integer multiple of a power of ten being passed
+ * into this strategy, an error or warning may be shown.
+ */
+export type FormatterOptionsIntTimesPowerOfTenStrategy = {
+  strategy: "intTimesPowerOfTen";
+  onInvalidInput?: "doNothing" | "throw" | "consoleWarn";
+};
+
 export type FormatterOptionsDefaultStrategy = {
   strategy: "default";
   // number of RHS digits for x s.t.: 1e-3 <= x < 1e6
@@ -109,6 +127,7 @@ export type FormatterOptionsCommon = {
 
 export type FormatterFactoryOptions = (
   | FormatterOptionsNoneStrategy
+  | FormatterOptionsIntTimesPowerOfTenStrategy
   | FormatterOptionsDefaultStrategy
   | FormatterOptionsDigitBudget
   | FormatterOptionsLargestMag
