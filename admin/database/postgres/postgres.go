@@ -78,7 +78,7 @@ func (c *connection) CreateOrganization(ctx context.Context, name, description s
 
 func (c *connection) UpdateOrganization(ctx context.Context, name, description string) (*database.Organization, error) {
 	res := &database.Organization{}
-	err := c.db.QueryRowxContext(ctx, "UPDATE organizations SET description=$1, updated_on=$2 WHERE name=$3 RETURNING *", description, time.Now(), name).StructScan(res)
+	err := c.db.QueryRowxContext(ctx, "UPDATE organizations SET description=$1, updated_on=now() WHERE name=$2 RETURNING *", description, name).StructScan(res)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (c *connection) CreateProject(ctx context.Context, orgID, name, description
 
 func (c *connection) UpdateProject(ctx context.Context, id, description string) (*database.Project, error) {
 	res := &database.Project{}
-	err := c.db.QueryRowxContext(ctx, "UPDATE projects SET description=$1, updated_on=$2 WHERE id=$3 RETURNING *", description, time.Now(), id).StructScan(res)
+	err := c.db.QueryRowxContext(ctx, "UPDATE projects SET description=$1, updated_on=now() WHERE id=$2 RETURNING *", description, id).StructScan(res)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func (c *connection) CreateUser(ctx context.Context, email, displayName, photoUR
 
 func (c *connection) UpdateUser(ctx context.Context, id, displayName, photoURL string) (*database.User, error) {
 	res := &database.User{}
-	err := c.db.QueryRowxContext(ctx, "UPDATE users SET display_name=$1, photo_url=$2, updated_on=$3 WHERE id=$4 RETURNING *", displayName, photoURL, time.Now(), id).StructScan(res)
+	err := c.db.QueryRowxContext(ctx, "UPDATE users SET display_name=$1, photo_url=$2, updated_on=now() WHERE id=$3 RETURNING *", displayName, photoURL, id).StructScan(res)
 	if err != nil {
 		return nil, err
 	}
@@ -269,8 +269,8 @@ func (c *connection) FindAuthCodeByUserCode(ctx context.Context, userCode string
 
 // UpdateAuthCode updates the authorization code data in the store
 func (c *connection) UpdateAuthCode(ctx context.Context, userCode, userID string, approvalState database.AuthCodeApprovalState) error {
-	res, err := c.db.ExecContext(ctx, "UPDATE device_code_auth SET approval_state=$1, user_id=$2, updated_on=$3 WHERE user_code=$4",
-		approvalState, userID, time.Now(), userCode)
+	res, err := c.db.ExecContext(ctx, "UPDATE device_code_auth SET approval_state=$1, user_id=$2, updated_on=now() WHERE user_code=$3",
+		approvalState, userID, userCode)
 	if err != nil {
 		return err
 	}
