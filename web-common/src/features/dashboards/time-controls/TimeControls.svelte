@@ -42,7 +42,6 @@ We should rename TimeSeriesTimeRange to a better name.
     TimeGrainOption,
   } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
-  import TimeRangeSelector from "./TimeRangeSelector.svelte";
 
   export let metricViewName: string;
 
@@ -233,15 +232,15 @@ We should rename TimeSeriesTimeRange to a better name.
       on:select-time-range={(e) =>
         onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
     />
+
+    {#if comparisonOptions.length}
+      <ComparisonSelector {comparisonOptions} {metricViewName} />
+    {/if}
     <TimeGrainSelector
       on:select-time-grain={(e) => onSelectTimeGrain(e.detail.timeGrain)}
       {metricViewName}
       {timeGrainOptions}
       {minTimeGrain}
     />
-
-    {#if comparisonOptions.length}
-      <ComparisonSelector {comparisonOptions} {metricViewName} />
-    {/if}
   {/if}
 </div>
