@@ -43,8 +43,7 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			bold.Print("Successfully logged in. Access Token: ")
-			boldGreen.Fprintln(color.Output, OAuthTokenResponse.AccessToken)
+			bold.Print("Successfully logged in.")
 
 			err = dotrill.SetAccessToken(OAuthTokenResponse.AccessToken)
 			if err != nil {

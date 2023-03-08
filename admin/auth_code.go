@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"math/big"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -34,12 +36,9 @@ func generateDeviceAndUserCode() (*database.AuthCode, error) {
 	}
 	deviceCode := base64.StdEncoding.EncodeToString(deviceCodeBytes)
 
-	// Generate an 8-character base 36 user code from the device code
-	base36Chars := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	userCode := ""
-	for i := 0; i < 8; i++ {
-		b := deviceCodeBytes[i*3]
-		userCode += base36Chars[b%36 : b%36+1]
+	userCode, err := generateUserCode()
+	if err != nil {
+		return nil, err
 	}
 
 	return &database.AuthCode{
@@ -47,4 +46,22 @@ func generateDeviceAndUserCode() (*database.AuthCode, error) {
 		UserCode:   userCode,
 		Expiry:     time.Now().Add(AuthCodeTTL),
 	}, nil
+}
+
+func generateUserCode() (string, error) {
+	// Generate an 8-character base 36 user code from the device code
+	userCodeBytes := make([]byte, 8)
+	_, err := rand.Read(userCodeBytes)
+	if err != nil {
+		return "", err
+	}
+	var i big.Int
+	i.SetBytes(userCodeBytes)
+	userCode := strings.ToUpper(i.Text(36))
+	if len(userCode) < 8 {
+		userCode = strings.Repeat("0", 8-len(userCode)) + userCode
+	} else if len(userCode) > 8 {
+		userCode = userCode[:8]
+	}
+	return userCode, nil
 }

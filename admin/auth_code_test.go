@@ -26,6 +26,12 @@ func TestGenerateDeviceAndUserCodeCollision(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
+		if len(authCode.DeviceCode) != 32 {
+			t.Errorf("device code length is incorrect; got %d, want 32", len(authCode.DeviceCode))
+		}
+		if len(authCode.UserCode) != 8 {
+			t.Errorf("user code length is incorrect; got %d, want 8", len(authCode.UserCode))
+		}
 		if deviceCodeSet[authCode.DeviceCode] {
 			t.Errorf("device code collision: %s", authCode.DeviceCode)
 		}
