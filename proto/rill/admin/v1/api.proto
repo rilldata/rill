@@ -11,7 +11,7 @@ service AdminService {
     option (google.api.http) = {get: "/v1/ping"};
   }
 
-  // findOrganizations lists all the organizations currently managed by the admin
+  // ListOrganizations lists all the organizations currently managed by the admin
   rpc ListOrganizations(ListOrganizationsRequest) returns (ListOrganizationsResponse) {
     option (google.api.http) = {get: "/v1/organizations"};
   }
@@ -44,31 +44,31 @@ service AdminService {
 
   // ListProjects lists all the projects currently available for given organizations
   rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/projects"};
+    option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects"};
   }
 
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{name}"};
+    option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}"};
   }
 
   // CreateProject creates a new project
   rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects",
+      post: "/v1/organizations/{organization_name}/projects",
       body: "*"
     };
   }
 
   // DeleteProject deletes an project
   rpc DeleteProject(DeleteProjectRequest) returns (DeleteProjectResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization}/projects/{name}"};
+    option (google.api.http) = {delete: "/v1/organizations/{organization_name}/projects/{name}"};
   }
 
   // UpdateProject updates a project
   rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization}/projects/{name}",
+      put: "/v1/organizations/{organization_name}/projects/{name}",
       body: "*"
     };
   }
@@ -86,10 +86,7 @@ message PingRequest {}
 
 // Response message for AdminService.Ping
 message PingResponse {
-  // Admin version
   string version = 1;
-
-  // Admin server time
   google.protobuf.Timestamp time = 2;
 }
 
@@ -115,35 +112,7 @@ message GetOrganizationResponse {
   Organization organization = 1;
 }
 
-
-message Organization {
-  // Identifier (UUID)
-  string id = 1;
-  // Organization name
-  string name = 2;
-  //Short description for the organization
-  string description = 3;
-  google.protobuf.Timestamp created_on = 4;
-  google.protobuf.Timestamp updated_on = 5;
-}
-
-message Project {
-  // Identifier (UUID)
-  string id = 1;
-  // project name
-  string name = 2;
-  //Short description for the project
-  string description = 3;
-  google.protobuf.Timestamp created_on = 4;
-  google.protobuf.Timestamp updated_on = 5;
-  // Git url of the project
-  string git_url = 6;
-  // Github app install id 
-  int64 github_app_install_id = 7;
-  // Branch to be deployed in repo
-  string production_branch = 8;
-}
-
+// Request message for AdminService.CreateOrganizatio
 message CreateOrganizationRequest {
   string id = 1;
   string name = 2;
@@ -178,10 +147,9 @@ message UpdateOrganizationResponse {
   Organization organization = 1;
 }
 
-
 // Request message for AdminService.ListProjects
 message ListProjectsRequest {
-  string organization =1;
+  string organization_name = 1;
   uint32 page_size = 2;
   string page_token = 3;
 }
@@ -194,7 +162,7 @@ message ListProjectsResponse {
 
 // Request message for AdminService.GetProject
 message GetProjectRequest {
-  string organization = 1;
+  string organization_name = 1;
   string name = 2;
 }
 
@@ -203,27 +171,25 @@ message GetProjectResponse {
   Project project = 1;
 }
 
-
+// Request message for AdminService.CreateProject
 message CreateProjectRequest {
-  string organization = 1;
-  string id = 2;
-  string name = 3;
-  string description = 4;
-  google.protobuf.Timestamp created_on = 5;
-  google.protobuf.Timestamp updated_on = 6;
-  string git_url = 7;
-  int64 github_app_install_id = 8;
-  string production_branch = 9;
+  string organization_name = 1;
+  string name = 2;
+  string description = 3;
+  string production_branch = 4;
+  string github_url = 5;
+  google.protobuf.Timestamp created_on = 6;
+  google.protobuf.Timestamp updated_on = 7;
 }
 
-// Response message for AdminService.CreateOrganization
+// Response message for AdminService.CreateProject
 message CreateProjectResponse {
   Project project = 1;
 }
 
 // Request message for AdminService.DeleteOrganization
 message DeleteProjectRequest {
-  string organization = 1;
+  string organization_name = 1;
   string name = 2;
 }
 
@@ -234,12 +200,11 @@ message DeleteProjectResponse {
 
 // Request message for AdminService.UpdateOrganization
 message UpdateProjectRequest {
-  string organization = 1;
+  string organization_name = 1;
   string name = 2;
   string description = 3;
-  string git_url = 4;
-  int64 github_app_install_id = 5;
-  string production_branch = 6;
+  string production_branch = 4;
+  string github_url = 5;
 }
 
 // Response message for AdminService.UpdateOrganization
@@ -253,6 +218,24 @@ message GetCurrentUserRequest {}
 // Response message for GetCurrentUser
 message GetCurrentUserResponse {
   User user = 1;
+}
+
+message Organization {
+  string id = 1;
+  string name = 2; // Globally unique
+  string description = 3;
+  google.protobuf.Timestamp created_on = 4;
+  google.protobuf.Timestamp updated_on = 5;
+}
+
+message Project {
+  string id = 1;
+  string name = 2; // Unique in organization
+  string description = 3;
+  string production_branch = 4;
+  string github_url = 5;
+  google.protobuf.Timestamp created_on = 6;
+  google.protobuf.Timestamp updated_on = 7;
 }
 
 message User {

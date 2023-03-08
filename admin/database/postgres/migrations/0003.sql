@@ -1,5 +1,6 @@
 ALTER TABLE projects
-ADD COLUMN git_url TEXT UNIQUE,
-ADD COLUMN git_full_name TEXT UNIQUE,
-ADD COLUMN github_app_install_id BIGINT,  
-ADD COLUMN production_branch TEXT;
+ADD COLUMN production_branch TEXT,
+ADD COLUMN github_url TEXT,
+ADD COLUMN github_installation_id BIGINT;
+
+CREATE UNIQUE INDEX projects_github_url_idx ON projects (lower(github_url));

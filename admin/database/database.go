@@ -52,7 +52,7 @@ type DB interface {
 
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
-	FindProjectByGitFullName(ctx context.Context, fullName string) (*Project, error)
+	FindProjectByGithubURL(ctx context.Context, githubURL string) (*Project, error)
 	CreateProject(ctx context.Context, orgID string, project *Project) (*Project, error)
 	UpdateProject(ctx context.Context, project *Project) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
@@ -96,18 +96,15 @@ type Organization struct {
 // Project represents one Git connection.
 // Projects belong to an organization.
 type Project struct {
-	ID             string
-	OrganizationID string `db:"organization_id"`
-	Name           string
-	Description    string
-	GitURL         string `db:"git_url"`
-	// GitFullName is in format owner/repo
-	// This can be created from giturl but adding this for efficient FindProjectByGitFullName
-	GitFullName        string    `db:"git_full_name"`
-	GithubAppInstallID int64     `db:"github_app_install_id"`
-	ProductionBranch   string    `db:"production_branch"`
-	CreatedOn          time.Time `db:"created_on"`
-	UpdatedOn          time.Time `db:"updated_on"`
+	ID                   string
+	OrganizationID       string `db:"organization_id"`
+	Name                 string
+	Description          string
+	ProductionBranch     string    `db:"production_branch"`
+	GithubURL            string    `db:"github_url"`
+	GithubInstallationID int64     `db:"github_installation_id"`
+	CreatedOn            time.Time `db:"created_on"`
+	UpdatedOn            time.Time `db:"updated_on"`
 }
 
 // User is a person registered in Rill.

@@ -8,8 +8,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/bradleyfalzon/ghinstallation"
-	"github.com/google/go-github/v50/github"
 	"github.com/gorilla/sessions"
 	metrics "github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2"
@@ -21,7 +19,6 @@ import (
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/server/auth"
-	"github.com/rilldata/rill/admin/server/eventhandler"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rs/cors"
@@ -43,9 +40,7 @@ type Options struct {
 	AuthDomain             string
 	AuthClientID           string
 	AuthClientSecret       string
-	GithubAppID            int64
 	GithubAppName          string
-	GithubAppPrivateKey    string
 	GithubAppWebhookSecret string
 }
 
@@ -56,9 +51,6 @@ type Server struct {
 	opts          *Options
 	cookies       *sessions.CookieStore
 	authenticator *auth.Authenticator
-	handler       eventhandler.Handler
-	// todo :: add service layer and setup it there
-	githubClient *github.Client
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
@@ -84,24 +76,12 @@ func New(logger *zap.Logger, adm *admin.Service, opts *Options) (*Server, error)
 		return nil, err
 	}
 
-	handler, err := eventhandler.NewGithubHandler(adm.DB, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := githubClient(opts)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Server{
 		logger:        logger,
 		admin:         adm,
 		opts:          opts,
 		cookies:       cookies,
 		authenticator: authenticator,
-		handler:       handler,
-		githubClient:  client,
 	}, nil
 }
 
@@ -184,24 +164,22 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		return nil, err
 	}
 
-	// Add auth endpoints (not gRPC handlers, just regular HTTP endpoints on /auth/*)
+	// Add auth endpoints (not gRPC handlers, just regular endpoints on /auth/*)
 	err = s.authenticator.RegisterEndpoints(mux)
 	if err != nil {
 		return nil, err
 	}
 
-	// this MAY be a common API for all events originating from multiple sources like github,gitlab etc
-	err = mux.HandlePath("POST", "/event_handler/{origin}", s.handleEvent)
+	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
+	err = mux.HandlePath("POST", "/github/webhook", s.githubWebhook)
 	if err != nil {
 		panic(err)
 	}
-
-	err = mux.HandlePath("GET", "/github-connect/organizations/{organization}/projects", s.connectProject)
+	err = mux.HandlePath("GET", "/github/connect", s.authenticator.HTTPMiddleware(s.githubConnect))
 	if err != nil {
 		panic(err)
 	}
-
-	err = mux.HandlePath("GET", "/github-connect/callback", s.installSetupCallback)
+	err = mux.HandlePath("GET", "/github/connect/callback", s.authenticator.HTTPMiddleware(s.githubConnectCallback))
 	if err != nil {
 		panic(err)
 	}
@@ -262,17 +240,4 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
-}
-
-func githubClient(opts *Options) (*github.Client, error) {
-	// Shared transport to reuse TCP connections.
-	tr := http.DefaultTransport
-
-	// Use installation transport with github.com/google/go-github
-	itr, err := ghinstallation.NewAppsTransport(tr, opts.GithubAppID, []byte(opts.GithubAppPrivateKey))
-	if err != nil {
-		return nil, err
-	}
-
-	return github.NewClient(&http.Client{Transport: itr}), nil
 }

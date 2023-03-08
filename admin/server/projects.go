@@ -3,9 +3,7 @@ package server
 import (
 	"context"
 	"errors"
-	"strings"
 
-	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/admin/database"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"google.golang.org/grpc/codes"
@@ -13,10 +11,8 @@ import (
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// ListProjects implements AdminService.
-// (GET /v1/organizations/{organization}/projects)
 func (s *Server) ListProjects(ctx context.Context, req *adminv1.ListProjectsRequest) (*adminv1.ListProjectsResponse, error) {
-	projs, err := s.admin.DB.FindProjects(ctx, req.Organization)
+	projs, err := s.admin.DB.FindProjects(ctx, req.OrganizationName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -29,23 +25,22 @@ func (s *Server) ListProjects(ctx context.Context, req *adminv1.ListProjectsRequ
 	return &adminv1.ListProjectsResponse{Projects: dtos}, nil
 }
 
-// (GET /v1/organizations/{organization}/project/{name})
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Name)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "proj not found")
 		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
 	return &adminv1.GetProjectResponse{
 		Project: projToDTO(proj),
 	}, nil
 }
 
-// (POST /v1/organizations/{organization}/projects)
 func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "org not found")
@@ -53,19 +48,18 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	fullName, err := gitFullName(req.GitUrl)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+	// TODO: Validate that we have access to req.GithubUrl.
+
+	// TODO: Validate that req.ProductionBranch is an actual branch.
+
+	// TODO: Acquire a Github installation ID for the repo.
 
 	project := &database.Project{
-		OrganizationID:     org.ID,
-		Name:               req.Name,
-		Description:        req.Description,
-		GitURL:             req.GitUrl,
-		GitFullName:        fullName,
-		GithubAppInstallID: req.GithubAppInstallId,
-		ProductionBranch:   req.ProductionBranch,
+		OrganizationID:   org.ID,
+		Name:             req.Name,
+		Description:      req.Description,
+		ProductionBranch: req.ProductionBranch,
+		GithubURL:        req.GithubUrl,
 	}
 	proj, err := s.admin.DB.CreateProject(ctx, org.ID, project)
 	if err != nil {
@@ -77,15 +71,16 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}, nil
 }
 
-// (DELETE /v1/organizations/{organization}/project/{name})
 func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRequest) (*adminv1.DeleteProjectResponse, error) {
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Name)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "proj not found")
 		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
+	// TODO: Teardown project deployment(s) and delete Github installation ID before deleting.
 
 	err = s.admin.DB.DeleteProject(ctx, proj.ID)
 	if err != nil {
@@ -97,9 +92,8 @@ func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRe
 	}, nil
 }
 
-// (PUT /v1/organizations/{organization}/project/{name})
 func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRequest) (*adminv1.UpdateProjectResponse, error) {
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Name)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "proj not found")
@@ -108,17 +102,10 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 
 	proj.Description = req.Description
-	proj.GitURL = req.GitUrl
-	proj.GithubAppInstallID = req.GithubAppInstallId
-
-	fullName, err := gitFullName(req.GitUrl)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	proj.GitFullName = fullName
+	proj.ProductionBranch = req.ProductionBranch
+	proj.GithubURL = req.GithubUrl
 
 	proj, err = s.admin.DB.UpdateProject(ctx, proj)
-
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -136,16 +123,4 @@ func projToDTO(p *database.Project) *adminv1.Project {
 		CreatedOn:   timestamppb.New(p.CreatedOn),
 		UpdatedOn:   timestamppb.New(p.CreatedOn),
 	}
-}
-
-func gitFullName(url string) (string, error) {
-	endpoint, err := transport.NewEndpoint(url)
-	if err != nil {
-		return "", err
-	}
-
-	// expected path is /owner/repo.git or /owner/repo
-	_, name, _ := strings.Cut(endpoint.Path, "/")
-	name, _, _ = strings.Cut(name, ".git")
-	return name, nil
 }

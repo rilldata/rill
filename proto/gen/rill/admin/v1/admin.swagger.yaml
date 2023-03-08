@@ -11,7 +11,7 @@ produces:
 paths:
   /v1/organizations:
     get:
-      summary: findOrganizations lists all the organizations currently managed by the admin
+      summary: ListOrganizations lists all the organizations currently managed by the admin
       operationId: AdminService_ListOrganizations
       responses:
         "200":
@@ -121,7 +121,7 @@ paths:
             title: Request message for AdminService.UpdateOrganization
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects:
+  /v1/organizations/{organizationName}/projects:
     get:
       summary: ListProjects lists all the projects currently available for given organizations
       operationId: AdminService_ListProjects
@@ -135,7 +135,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: organization
+        - name: organizationName
           in: path
           required: true
           type: string
@@ -163,7 +163,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: organization
+        - name: organizationName
           in: path
           required: true
           type: string
@@ -178,12 +178,7 @@ paths:
                 format: date-time
               description:
                 type: string
-              gitUrl:
-                type: string
-              githubAppInstallId:
-                type: string
-                format: int64
-              id:
+              githubUrl:
                 type: string
               name:
                 type: string
@@ -192,9 +187,10 @@ paths:
               updatedOn:
                 type: string
                 format: date-time
+            title: Request message for AdminService.CreateProject
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{name}:
+  /v1/organizations/{organizationName}/projects/{name}:
     get:
       summary: GetProject returns information about a specific project
       operationId: AdminService_GetProject
@@ -208,7 +204,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: organization
+        - name: organizationName
           in: path
           required: true
           type: string
@@ -231,7 +227,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: organization
+        - name: organizationName
           in: path
           required: true
           type: string
@@ -254,7 +250,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: organization
+        - name: organizationName
           in: path
           required: true
           type: string
@@ -270,11 +266,8 @@ paths:
             properties:
               description:
                 type: string
-              gitUrl:
+              githubUrl:
                 type: string
-              githubAppInstallId:
-                type: string
-                format: int64
               productionBranch:
                 type: string
             title: Request message for AdminService.UpdateOrganization
@@ -344,6 +337,7 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+    title: Request message for AdminService.CreateOrganizatio
   v1CreateOrganizationResponse:
     type: object
     properties:
@@ -355,7 +349,7 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
-    title: Response message for AdminService.CreateOrganization
+    title: Response message for AdminService.CreateProject
   v1DeleteOrganizationResponse:
     type: object
     properties:
@@ -414,13 +408,11 @@ definitions:
         format: date-time
       description:
         type: string
-        title: Short description for the organization
       id:
         type: string
-        title: Identifier (UUID)
       name:
         type: string
-        title: Organization name
+        title: Globally unique
       updatedOn:
         type: string
         format: date-time
@@ -430,10 +422,8 @@ definitions:
       time:
         type: string
         format: date-time
-        title: Admin server time
       version:
         type: string
-        title: Admin version
     title: Response message for AdminService.Ping
   v1Project:
     type: object
@@ -443,23 +433,15 @@ definitions:
         format: date-time
       description:
         type: string
-        title: Short description for the project
-      gitUrl:
+      githubUrl:
         type: string
-        title: Git url of the project
-      githubAppInstallId:
-        type: string
-        format: int64
-        title: Github app install id
       id:
         type: string
-        title: Identifier (UUID)
       name:
         type: string
-        title: project name
+        title: Unique in organization
       productionBranch:
         type: string
-        title: Branch to be deployed in repo
       updatedOn:
         type: string
         format: date-time

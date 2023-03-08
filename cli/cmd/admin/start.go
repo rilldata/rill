@@ -71,8 +71,10 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 
 			// Init admin service
 			admOpts := &admin.Options{
-				DatabaseDriver: conf.DatabaseDriver,
-				DatabaseDSN:    conf.DatabaseURL,
+				DatabaseDriver:      conf.DatabaseDriver,
+				DatabaseDSN:         conf.DatabaseURL,
+				GithubAppID:         conf.GithubAppID,
+				GithubAppPrivateKey: conf.GithubAppPrivateKey,
 			}
 			adm, err := admin.New(admOpts, logger)
 			if err != nil {
@@ -101,9 +103,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				AuthDomain:             conf.AuthDomain,
 				AuthClientID:           conf.AuthClientID,
 				AuthClientSecret:       conf.AuthClientSecret,
-				GithubAppID:            conf.GithubAppID,
 				GithubAppName:          conf.GithubAppName,
-				GithubAppPrivateKey:    conf.GithubAppPrivateKey,
 				GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
 			}
 			srv, err := server.New(logger, adm, srvOpts)

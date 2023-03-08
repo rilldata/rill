@@ -11,29 +11,36 @@ RILL_ADMIN_DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres
 RILL_ADMIN_HTTP_PORT=8080
 RILL_ADMIN_GRPC_PORT=9090
 RILL_ADMIN_EXTERNAL_URL=http://localhost:8080
+RILL_ADMIN_FRONTEND_URL=http://localhost:3000
 RILL_ADMIN_ALLOWED_ORIGINS=*
 # Hex-encoded comma-separated list of keys. For details: https://pkg.go.dev/github.com/gorilla/sessions#NewCookieStore
 RILL_ADMIN_SESSION_KEY_PAIRS=7938b8c95ac90b3731c353076daeae8a,90c22a5a6c6b442afdb46855f95eb7d6
-# Get these from https://auth0.com/ (or ask a colleague)
+# Get these from https://auth0.com/ (or ask a team member)
 RILL_ADMIN_AUTH_DOMAIN=gorillio-stage.auth0.com
 RILL_ADMIN_AUTH_CLIENT_ID=
 RILL_ADMIN_AUTH_CLIENT_SECRET=
+# Get these from https://github.com/ (or ask a team member)
+RILL_ADMIN_GITHUB_APP_ID=302634
+RILL_ADMIN_GITHUB_APP_NAME=rill-cloud-dev
+RILL_ADMIN_GITHUB_APP_PRIVATE_KEY=
+RILL_ADMIN_GITHUB_APP_WEBHOOK_SECRET=
 ```
 2. In a separate terminal, run Postgres in the background:
-```
+```bash
 docker-compose -f admin/docker-compose.yml up 
+# Data is persisted. To clear, run: docker-compose -f admin/docker-compose.yml down --volumes
 ```
 3. Run the server:
-```
+```bash
 go run ./cli admin start
 ```
 4. Ping the server:
-```
+```bash
 go run ./cli admin ping --base-url http://localhost:9090
 ```
 
 You can now call the local admin server from the CLI by overriding the admin API URL. For example:
-```
+```bash
 go run ./cli org create foo --api-url http://localhost:9090
 ```
 
@@ -47,23 +54,19 @@ To add a new endpoint:
 3. Copy the new handler signature from the `AdminServiceServer` interface in `proto/gen/rill/admin/v1/api_grpc_pb.go`
 4. Paste the handler signature and implement it in a relevant file in `admin/server/`
 
+## Using the Github App in development
 
-## Working with the github app 
-We have setup a github app to listen to push on repositories connected with rill and do automated deployments
-The app has access to read `contents` and receive webhooks on `push`.
+We use a Github App to listen to pushes on repositories connected to Rill to do automated deployments. The app has access to read `contents` and receives webhooks on `git push`.
 
-public link for test app : https://github.com/apps/test-rill-webhooks
+Github relies on webhooks to deliver information about new connections, pushes, etc. In development, in order for webhooks to be received on `localhost`, we use this proxy service: https://github.com/probot/smee.io.
 
-Compulsarily set following secrets in .env file (get data from vault / ask a colleague for values):
-RILL_ADMIN_GITHUB_APP_SECRET
-RILL_ADMIN_GITHUB_APP_ID
-RILL_ADMIN_GITHUB_APP_PRIVATE_KEY_PATH (path to private key file in local)
-RILL_ADMIN_GITHUB_APP_NAME (set to test app by default)
+Setup instructions:
 
-Also set RILL_ADMIN_GITHUB_APP_ID and RILL_ADMIN_GITHUB_APP_PRIVATE_KEY_PATH in hosted runtime
-
-## Working with the github app in local
-
-the test app currently sends link to a https://github.com/probot/smee.io channel. 
-In order for webhooks to be received on local, install smee-client and run following command for receiving web hooks:
-smee --url  <smee-channel from vault> --path /event_handler/github --port 8080
+1. Install Smee
+```bash
+npm install --global smee-client
+```
+2. Run it (get `IDENTIFIER` from the Github App info or a team member):
+```bash
+smee --port 8080 --path /github/webhook --url https://smee.io/IDENTIFIER
+```

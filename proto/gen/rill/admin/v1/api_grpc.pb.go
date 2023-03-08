@@ -24,7 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type AdminServiceClient interface {
 	// Ping returns information about the server
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
-	// findOrganizations lists all the organizations currently managed by the admin
+	// ListOrganizations lists all the organizations currently managed by the admin
 	ListOrganizations(ctx context.Context, in *ListOrganizationsRequest, opts ...grpc.CallOption) (*ListOrganizationsResponse, error)
 	// GetOrganization returns information about a specific organization
 	GetOrganization(ctx context.Context, in *GetOrganizationRequest, opts ...grpc.CallOption) (*GetOrganizationResponse, error)
@@ -170,7 +170,7 @@ func (c *adminServiceClient) GetCurrentUser(ctx context.Context, in *GetCurrentU
 type AdminServiceServer interface {
 	// Ping returns information about the server
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
-	// findOrganizations lists all the organizations currently managed by the admin
+	// ListOrganizations lists all the organizations currently managed by the admin
 	ListOrganizations(context.Context, *ListOrganizationsRequest) (*ListOrganizationsResponse, error)
 	// GetOrganization returns information about a specific organization
 	GetOrganization(context.Context, *GetOrganizationRequest) (*GetOrganizationResponse, error)
