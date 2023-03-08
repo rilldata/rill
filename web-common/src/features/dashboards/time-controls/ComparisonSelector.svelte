@@ -99,12 +99,11 @@
 </script>
 
 <div class="flex gap-x-2 flex-row items-center pl-3">
-  <div>Compare to</div>
-
   <TimeRangeSelector
     on:select-time-range={(e) => {
       onCompareRangeSelect(e.detail);
     }}
+    prefixText="Compare to "
     timeRangeOptions={options}
     selectedTimeRange={$dashboardStore.selectedComparisonTimeRange}
     {min}

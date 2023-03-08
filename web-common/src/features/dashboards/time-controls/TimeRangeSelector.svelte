@@ -19,6 +19,7 @@
 
   export let timeRangeOptions = [];
   export let selectedTimeRange;
+  export let prefixText = "";
   export let showIcon = false;
   export let showPreciseRange = false;
 
@@ -90,6 +91,9 @@
       <div class="font-bold flex flex-row items-center gap-x-3">
         {#if showIcon}
           <span class="ui-copy-icon"><Calendar size="16px" /></span>
+        {/if}
+        {#if prefixText}
+          <span class="font-normal">{prefixText}</span>
         {/if}
         <span style:transform={showIcon ? "translateY(1px)" : ""}>
           <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
