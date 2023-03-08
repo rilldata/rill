@@ -15,7 +15,7 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 		Short: "Authenticate with the Rill API",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			warn := color.New(color.Bold).Add(color.FgYellow)
-			if cfg.AdminToken != "" {
+			if cfg.AdminTokenDefault != "" {
 				warn.Println("You are already logged in. To log in again, run `rill auth logout` first.")
 				return nil
 			}
@@ -38,7 +38,7 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 
 			bold.Printf("\nOpen this URL in your browser to confirm the login: %s\n\n", deviceVerification.VerificationCompleteURL)
 
-			OAuthTokenResponse, err := authenticator.GetAccessTokenForDevice(ctx, *deviceVerification)
+			OAuthTokenResponse, err := authenticator.GetAccessTokenForDevice(ctx, deviceVerification)
 			if err != nil {
 				return err
 			}

@@ -47,11 +47,9 @@ func (s *Server) RevokeCurrentAuthToken(ctx context.Context, req *adminv1.Revoke
 	if claims.OwnerType() != auth.OwnerTypeUser {
 		return nil, fmt.Errorf("not authenticated as a user")
 	}
-	tokenID, err := auth.GetAuthTokenIDFromClaims(claims)
-	if err != nil {
-		return nil, err
-	}
-	err = s.admin.RevokeAuthTokenByID(ctx, tokenID)
+	tokenID := claims.AuthTokenID()
+
+	err := s.admin.DB.DeleteUserAuthToken(ctx, tokenID)
 	if err != nil {
 		return nil, err
 	}

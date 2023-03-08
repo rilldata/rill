@@ -69,7 +69,7 @@ type DB interface {
 	DeleteUserAuthToken(ctx context.Context, id string) error
 
 	// CreateAuthCode inserts the authorization code data into the store.
-	CreateAuthCode(ctx context.Context, code *AuthCode) error
+	CreateAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*AuthCode, error)
 	// FindAuthCodeByDeviceCode retrieves the authorization code data from the store
 	FindAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*AuthCode, error)
 	// FindAuthCodeByUserCode retrieves the authorization code data from the store
@@ -106,10 +106,12 @@ type AuthCode struct {
 	ID            string                `db:"id"`
 	DeviceCode    string                `db:"device_code"`
 	UserCode      string                `db:"user_code"`
-	Expiry        time.Time             `db:"expires_at"`
+	Expiry        time.Time             `db:"expires_on"`
 	ApprovalState AuthCodeApprovalState `db:"approval_state"`
 	ClientID      string                `db:"client_id"`
-	UserID        string                `db:"user_id"`
+	UserID        *string               `db:"user_id"`
+	CreatedOn     time.Time             `db:"created_on"`
+	UpdatedOn     time.Time             `db:"updated_on"`
 }
 
 // Organization represents a tenant.

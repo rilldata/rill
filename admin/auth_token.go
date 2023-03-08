@@ -84,8 +84,3 @@ func (s *Service) RevokeAuthToken(ctx context.Context, token string) error {
 
 	return s.DB.DeleteUserAuthToken(ctx, parsed.ID.String())
 }
-
-// RevokeAuthTokenByID removes an auth token from persistent storage.
-func (s *Service) RevokeAuthTokenByID(ctx context.Context, tokenID string) error {
-	return s.DB.DeleteUserAuthToken(ctx, tokenID)
-}

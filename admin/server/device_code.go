@@ -1,7 +1,6 @@
 package server
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,15 +10,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
 )
 
-const (
-	tokenExpirationSeconds = 60 * 10 // 10 minutes
-	deviceCodeGrantType    = "urn:ietf:params:oauth:grant-type:device_code"
-)
+const deviceCodeGrantType = "urn:ietf:params:oauth:grant-type:device_code"
 
 // DeviceCodeResponse encapsulates the response for obtaining a device code.
 type DeviceCodeResponse struct {
@@ -80,14 +77,20 @@ func (s *Server) handleDeviceCodeRequest(w http.ResponseWriter, r *http.Request,
 		UserCode:                authCode.UserCode,
 		VerificationURI:         verificationURI,
 		VerificationCompleteURI: verificationURI + "?user_code=" + authCode.UserCode,
-		ExpiresIn:               tokenExpirationSeconds,
+		ExpiresIn:               int(admin.AuthCodeTTL.Seconds()),
 		PollingInterval:         5,
 	}
-	e := json.NewEncoder(w)
-	e.SetIndent("", "  ")
-	err = e.Encode(resp)
+
+	respBytes, err := json.Marshal(resp)
 	if err != nil {
-		internalServerError(w, fmt.Errorf("failed to encode response: %w", err))
+		internalServerError(w, fmt.Errorf("failed to marshal response, %w", err))
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(respBytes)
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to write response, %w", err))
+		return
 	}
 }
 
@@ -111,15 +114,15 @@ func (s *Server) handleUserCodeConfirmation(w http.ResponseWriter, r *http.Reque
 		internalServerError(w, fmt.Errorf("did not find any claims, %w", errors.New("server error")))
 		return
 	}
-	userID := claims.OwnerID()
-	if userID == "" {
-		internalServerError(w, fmt.Errorf("did not find user id in claims, %w", errors.New("server error")))
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		http.Error(w, "only users can confirm device codes", http.StatusBadRequest)
 		return
 	}
+	userID := claims.OwnerID()
 
 	authCode, err := s.admin.DB.FindAuthCodeByUserCode(r.Context(), userCode)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, database.ErrNotFound) {
 			http.Error(w, fmt.Sprintf("no such user code: %s found", userCode), http.StatusBadRequest)
 			return
 		}
@@ -136,7 +139,7 @@ func (s *Server) handleUserCodeConfirmation(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Update user code with user id and approval
-	authCode.UserID = userID
+	authCode.UserID = &userID
 	if confirmation != "true" {
 		authCode.ApprovalState = database.Rejected
 	} else {
@@ -174,7 +177,7 @@ func (s *Server) getAccessToken(w http.ResponseWriter, r *http.Request, pathPara
 
 	authCode, err := s.admin.DB.FindAuthCodeByDeviceCode(r.Context(), deviceCode)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, database.ErrNotFound) {
 			http.Error(w, fmt.Sprintf("no such device code: %s found", deviceCode), http.StatusBadRequest)
 			return
 		}
@@ -204,13 +207,13 @@ func (s *Server) getAccessToken(w http.ResponseWriter, r *http.Request, pathPara
 		http.Error(w, "authorization_pending", http.StatusUnauthorized)
 		return
 	}
-	if authCode.ApprovalState != database.Approved || authCode.UserID == "" {
+	if authCode.ApprovalState != database.Approved || authCode.UserID == nil {
 		internalServerError(w, fmt.Errorf("inconsistent state, %w", errors.New("server error")))
 		return
 	}
 	// TODO handle too many requests
 
-	authToken, err := s.admin.IssueUserAuthToken(r.Context(), authCode.UserID, database.AuthClientIDRillCLI, "CLI login")
+	authToken, err := s.admin.IssueUserAuthToken(r.Context(), *authCode.UserID, authCode.ClientID, "")
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to issue access token, %w", err))
 		return
@@ -226,13 +229,18 @@ func (s *Server) getAccessToken(w http.ResponseWriter, r *http.Request, pathPara
 		AccessToken: authToken.Token().String(),
 		TokenType:   "Bearer",
 		ExpiresIn:   time.UnixMilli(0).Unix(), // never expires
-		UserID:      authCode.UserID,
+		UserID:      *authCode.UserID,
 	}
-	e := json.NewEncoder(w)
-	e.SetIndent("", "  ")
-	err = e.Encode(resp)
+	respBytes, err := json.Marshal(resp)
 	if err != nil {
-		internalServerError(w, fmt.Errorf("failed to encode response, %w", err))
+		internalServerError(w, fmt.Errorf("failed to marshal response, %w", err))
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(respBytes)
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to write response, %w", err))
+		return
 	}
 }
 

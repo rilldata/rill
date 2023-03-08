@@ -20,6 +20,7 @@ const (
 type Claims interface {
 	OwnerType() OwnerType
 	OwnerID() string
+	AuthTokenID() string
 	// TODO: Add functions for checking permissions
 }
 
@@ -48,6 +49,10 @@ func (c anonClaims) OwnerID() string {
 	return ""
 }
 
+func (c anonClaims) AuthTokenID() string {
+	return ""
+}
+
 // authTokenClaims represents claims for an admin.AuthToken.
 type authTokenClaims struct {
 	token admin.AuthToken
@@ -67,15 +72,6 @@ func (c *authTokenClaims) OwnerID() string {
 	return c.token.OwnerID()
 }
 
-func GetAuthTokenIDFromClaims(claims Claims) (string, error) {
-	if claims == nil {
-		return "", fmt.Errorf("claims is nil")
-	}
-
-	atc, ok := claims.(*authTokenClaims)
-	if !ok {
-		return "", fmt.Errorf("claims is not an authTokenClaims")
-	}
-
-	return atc.token.Token().ID.String(), nil
+func (c *authTokenClaims) AuthTokenID() string {
+	return c.token.Token().ID.String()
 }

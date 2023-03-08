@@ -9,7 +9,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 )
 
-const TokenExpirationSeconds = 60 * 10 // 10 minutes =
+const AuthCodeTTL = 10 * time.Minute
 
 func (s *Service) IssueAuthCode(ctx context.Context, clientID string) (*database.AuthCode, error) {
 	authCode, err := generateDeviceAndUserCode()
@@ -17,11 +17,11 @@ func (s *Service) IssueAuthCode(ctx context.Context, clientID string) (*database
 		return nil, err
 	}
 	authCode.ClientID = clientID
-	err = s.DB.CreateAuthCode(ctx, authCode)
+	code, err := s.DB.CreateAuthCode(ctx, authCode.DeviceCode, authCode.UserCode, authCode.ClientID, authCode.Expiry)
 	if err != nil {
 		return nil, err
 	}
-	return authCode, nil
+	return code, nil
 }
 
 // generateDeviceAndUserCode generates a random device code and user code.
@@ -45,6 +45,6 @@ func generateDeviceAndUserCode() (*database.AuthCode, error) {
 	return &database.AuthCode{
 		DeviceCode: deviceCode,
 		UserCode:   userCode,
-		Expiry:     time.Now().Add(TokenExpirationSeconds * time.Second),
+		Expiry:     time.Now().Add(AuthCodeTTL),
 	}, nil
 }

@@ -13,12 +13,12 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/pkg/errors"
+	"github.com/rilldata/rill/admin/database"
 )
 
 // Most parts of this file are copied from https://github.com/planetscale/cli/blob/main/internal/auth/authenticator.go
 
 const (
-	OAuthClientID = "rill-cli"
 	formMediaType = "application/x-www-form-urlencoded"
 	jsonMediaType = "application/json"
 )
@@ -68,7 +68,7 @@ func New(authURL string) (*DeviceAuthenticator, error) {
 		client:   http.DefaultClient,
 		BaseURL:  baseURL,
 		Clock:    clock.New(),
-		ClientID: OAuthClientID,
+		ClientID: database.AuthClientIDRillCLI,
 	}
 
 	return authenticator, nil
@@ -117,9 +117,8 @@ func (d *DeviceAuthenticator) VerifyDevice(ctx context.Context) (*DeviceVerifica
 	}, nil
 }
 
-// GetAccessTokenForDevice uses the device verification response to fetch an
-// access token.
-func (d *DeviceAuthenticator) GetAccessTokenForDevice(ctx context.Context, v DeviceVerification) (*OAuthTokenResponse, error) {
+// GetAccessTokenForDevice uses the device verification response to fetch an access token.
+func (d *DeviceAuthenticator) GetAccessTokenForDevice(ctx context.Context, v *DeviceVerification) (*OAuthTokenResponse, error) {
 	for {
 		// This loop begins right after we open the user's browser to send an
 		// authentication code. We don't request a token immediately because the
@@ -192,11 +191,7 @@ func (d *DeviceAuthenticator) requestToken(ctx context.Context, deviceCode, clie
 }
 
 // newFormRequest creates a new form URL encoded request
-func (d *DeviceAuthenticator) newFormRequest(
-	ctx context.Context,
-	path string,
-	payload url.Values,
-) (*http.Request, error) {
+func (d *DeviceAuthenticator) newFormRequest(ctx context.Context, path string, payload url.Values) (*http.Request, error) {
 	u, err := d.BaseURL.Parse(path)
 	if err != nil {
 		return nil, err
@@ -219,8 +214,7 @@ func (d *DeviceAuthenticator) newFormRequest(
 	return req, nil
 }
 
-// checkErrorResponse returns whether the error is retryable or not and the
-// error itself.
+// checkErrorResponse returns whether the error is retryable or not and the error itself.
 func checkErrorResponse(res *http.Response) (bool, error) {
 	if res.StatusCode < http.StatusBadRequest {
 		// 200 OK, etc.
@@ -233,8 +227,7 @@ func checkErrorResponse(res *http.Response) (bool, error) {
 		return false, err
 	}
 	bodyStr := string(bytes.TrimSpace(body))
-	// If we're polling and haven't authorized yet or we need to slow down, we
-	// don't wanna terminate the polling
+	// If we're polling and haven't authorized yet or we need to slow down, we don't want to terminate the polling
 	if bodyStr == "authorization_pending" || bodyStr == "slow_down" {
 		return true, nil
 	}
