@@ -81,6 +81,10 @@ func (s *Service) RevokeAuthToken(ctx context.Context, token string) error {
 	if err != nil {
 		return err
 	}
-
-	return s.DB.DeleteUserAuthToken(ctx, parsed.ID.String())
+	switch parsed.Type {
+	case authtoken.TypeUser:
+		return s.DB.DeleteUserAuthToken(ctx, parsed.ID.String())
+	default:
+		return fmt.Errorf("unknown auth token type %q", parsed.Type)
+	}
 }
