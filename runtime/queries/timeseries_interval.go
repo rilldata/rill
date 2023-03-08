@@ -47,6 +47,7 @@ func (q *RollupInterval) Resolve(ctx context.Context, rt *runtime.Runtime, insta
 		return err
 	}
 	if ctr.Result.Interval == nil {
+		q.Result = &runtimev1.ColumnRollupIntervalResponse{}
 		return nil
 	}
 	r := ctr.Result.Interval

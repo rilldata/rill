@@ -23,7 +23,7 @@ import (
 // The server then can maintain a map of origin vs handlers.
 // This should then get the right handler basis path params and run Parse in sync and Process in async.
 func (s *Server) handleEvent(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-	payload, err := github.ValidatePayload(req, s.conf.GithubAPISecretKey)
+	payload, err := github.ValidatePayload(req, []byte(s.opts.GithubAppWebhookSecret))
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -111,7 +111,7 @@ func (s *Server) connectProject(w http.ResponseWriter, req *http.Request, pathPa
 				return
 			}
 
-			installLink := fmt.Sprintf("https://github.com/apps/%s/installations/new?state=%s", s.conf.GithubAppName, encodedState)
+			installLink := fmt.Sprintf("https://github.com/apps/%s/installations/new?state=%s", s.opts.GithubAppName, encodedState)
 			http.Redirect(w, req, installLink, http.StatusTemporaryRedirect)
 			return
 		}
@@ -205,7 +205,7 @@ func (s *Server) installSetupCallback(w http.ResponseWriter, req *http.Request, 
 }
 
 func (s *Server) httpRemote(ctx context.Context, installationID int64, remote, owner, repoName string) (string, error) {
-	client, err := githubInstallationClient(s.conf, installationID)
+	client, err := githubInstallationClient(s.opts, installationID)
 	if err != nil {
 		return "", err
 	}
@@ -282,12 +282,12 @@ func parseRepoPath(path, protocol string) string {
 }
 
 // github client that works for specific installation
-func githubInstallationClient(conf Config, installationID int64) (*github.Client, error) {
+func githubInstallationClient(conf *Options, installationID int64) (*github.Client, error) {
 	// Shared transport to reuse TCP connections.
 	tr := http.DefaultTransport
 
 	// Wrap the shared transport for use with the app ID 1 authenticating with installation ID 99.
-	itr, err := ghinstallation.NewKeyFromFile(tr, conf.GithubAppID, installationID, conf.GithubAppPrivateKeyPath)
+	itr, err := ghinstallation.New(tr, conf.GithubAppID, installationID, []byte(conf.GithubAppPrivateKey))
 	if err != nil {
 		return nil, err
 	}

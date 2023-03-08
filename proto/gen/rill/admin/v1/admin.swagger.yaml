@@ -12,12 +12,12 @@ paths:
   /v1/organizations:
     get:
       summary: findOrganizations lists all the organizations currently managed by the admin
-      operationId: AdminService_FindOrganizations
+      operationId: AdminService_ListOrganizations
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1FindOrganizationsResponse'
+            $ref: '#/definitions/v1ListOrganizationsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -56,13 +56,13 @@ paths:
         - AdminService
   /v1/organizations/{name}:
     get:
-      summary: FindOrganization returns information about a specific organization
-      operationId: AdminService_FindOrganization
+      summary: GetOrganization returns information about a specific organization
+      operationId: AdminService_GetOrganization
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1FindOrganizationResponse'
+            $ref: '#/definitions/v1GetOrganizationResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -123,13 +123,13 @@ paths:
         - AdminService
   /v1/organizations/{organization}/projects:
     get:
-      summary: FindProjects lists all the projects currently available for given organizations
-      operationId: AdminService_FindProjects
+      summary: ListProjects lists all the projects currently available for given organizations
+      operationId: AdminService_ListProjects
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1FindProjectsResponse'
+            $ref: '#/definitions/v1ListProjectsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -196,13 +196,13 @@ paths:
         - AdminService
   /v1/organizations/{organization}/projects/{name}:
     get:
-      summary: FindProject returns information about a specific project
-      operationId: AdminService_FindProject
+      summary: GetProject returns information about a specific project
+      operationId: AdminService_GetProject
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1FindProjectResponse'
+            $ref: '#/definitions/v1GetProjectResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -242,7 +242,7 @@ paths:
       tags:
         - AdminService
     put:
-      summary: UpdateProject update a project
+      summary: UpdateProject updates a project
       operationId: AdminService_UpdateProject
       responses:
         "200":
@@ -282,13 +282,28 @@ paths:
         - AdminService
   /v1/ping:
     get:
-      summary: Ping returns information about the admin
+      summary: Ping returns information about the server
       operationId: AdminService_Ping
       responses:
         "200":
           description: A successful response.
           schema:
             $ref: '#/definitions/v1PingResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
+  /v1/users/current:
+    get:
+      summary: GetCurrentUser returns the currently authenticated user (if any)
+      operationId: AdminService_GetCurrentUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetCurrentUserResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -353,13 +368,25 @@ definitions:
       name:
         type: string
     title: Response message for AdminService.DeleteOrganization
-  v1FindOrganizationResponse:
+  v1GetCurrentUserResponse:
+    type: object
+    properties:
+      user:
+        $ref: '#/definitions/v1User'
+    title: Response message for GetCurrentUser
+  v1GetOrganizationResponse:
     type: object
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
     title: Response message for AdminService.GetInstance
-  v1FindOrganizationsResponse:
+  v1GetProjectResponse:
+    type: object
+    properties:
+      project:
+        $ref: '#/definitions/v1Project'
+    title: Response message for AdminService.GetProject
+  v1ListOrganizationsResponse:
     type: object
     properties:
       nextPageToken:
@@ -368,14 +395,8 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/v1Organization'
-    title: Response message for AdminService.FindOrganizations
-  v1FindProjectResponse:
-    type: object
-    properties:
-      project:
-        $ref: '#/definitions/v1Project'
-    title: Response message for AdminService.FindProject
-  v1FindProjectsResponse:
+    title: Response message for AdminService.ListOrganizations
+  v1ListProjectsResponse:
     type: object
     properties:
       nextPageToken:
@@ -384,7 +405,7 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/v1Project'
-    title: Response message for AdminService.FindProjects
+    title: Response message for AdminService.ListProjects
   v1Organization:
     type: object
     properties:
@@ -454,3 +475,20 @@ definitions:
       project:
         $ref: '#/definitions/v1Project'
     title: Response message for AdminService.UpdateOrganization
+  v1User:
+    type: object
+    properties:
+      createdOn:
+        type: string
+        format: date-time
+      displayName:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      photoUrl:
+        type: string
+      updatedOn:
+        type: string
+        format: date-time

@@ -14,10 +14,10 @@
     useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { useModelNames } from "../../models/selectors";
   import { compileCreateSourceYAML } from "../sourceUtils";
@@ -28,7 +28,7 @@
 
   const queryClient = useQueryClient();
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
+  $: runtimeInstanceId = $runtime.instanceId;
 
   $: sourceNames = useSourceNames(runtimeInstanceId);
   $: modelNames = useModelNames(runtimeInstanceId);
@@ -59,7 +59,7 @@
     const uploadedFiles = uploadTableFiles(
       files,
       [$sourceNames?.data, $modelNames?.data],
-      $runtimeStore.instanceId,
+      $runtime.instanceId,
       false
     );
     for await (const { tableName, filePath } of uploadedFiles) {

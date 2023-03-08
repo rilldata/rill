@@ -10,7 +10,6 @@
     V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { SelectorOption } from "@rilldata/web-local/lib/components/table-editable/ColumnConfig";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
@@ -19,6 +18,7 @@
   import { writable } from "svelte/store";
   import { WorkspaceContainer } from "../../../layout/workspace";
   import { createResizeListenerActionFactory } from "../../../lib/actions/create-resize-listener-factory";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { initDimensionColumns } from "../DimensionColumns";
   import { initMeasuresColumns } from "../MeasuresColumns";
   import { createInternalRepresentation } from "../metrics-internal-store";
@@ -52,7 +52,7 @@
   const queryClient = useQueryClient();
   const { listenToNodeResize } = createResizeListenerActionFactory();
 
-  $: instanceId = $runtimeStore.instanceId;
+  $: instanceId = $runtime.instanceId;
 
   const switchToMetrics = async (metricsDefName: string) => {
     if (!metricsDefName) return;
@@ -78,7 +78,7 @@
     })) as V1PutFileAndReconcileResponse;
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 
-    invalidateAfterReconcile(queryClient, $runtimeStore.instanceId, resp);
+    invalidateAfterReconcile(queryClient, $runtime.instanceId, resp);
   }
 
   // create initial internal representation

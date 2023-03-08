@@ -2,6 +2,7 @@ package git
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/bradleyfalzon/ghinstallation"
 	"github.com/eapache/go-resiliency/retrier"
 	gogit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/hashicorp/go-multierror"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -25,16 +27,28 @@ type driver struct{}
 
 const _installationUser = "__githubapp_installation_id__"
 
+type DSN struct {
+	URL    string `json:"url"`
+	Branch string `json:"branch,omitempty"`
+}
+
 func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
-	// TODO :: add some wrapper over plainclone or
-	// cloneOptions has option to set auth but seems like not being used atleast in plainclone
-	// add retries
-	authenticatedDSN, err := parse(dsn)
+	r := retrier.New(retrier.ExponentialBackoff(3, 100*time.Millisecond), nil)
+
+	var dsnObject DSN
+	err := json.Unmarshal([]byte(dsn), &dsnObject)
 	if err != nil {
 		return nil, err
 	}
 
-	r := retrier.New(retrier.ExponentialBackoff(3, 100*time.Millisecond), nil)
+	// TODO :: add some wrapper over plainclone or
+	// cloneOptions has option to set auth but seems like not being used atleast in plainclone
+	// add retries
+	authenticatedURL, err := parse(dsnObject.URL)
+	if err != nil {
+		return nil, err
+	}
+	dsnObject.URL = authenticatedURL
 
 	var c *connection
 	err = r.Run(func() error {
@@ -43,11 +57,20 @@ func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 			return err
 		}
 
-		c = &connection{root: dsn, tempdir: tempdir}
+		c = &connection{root: dsnObject.URL, branch: dsnObject.Branch, tempdir: tempdir}
 
-		_, err = gogit.PlainClone(tempdir, false, &gogit.CloneOptions{
-			URL: authenticatedDSN,
-		})
+		if dsnObject.Branch != "" {
+			_, err = gogit.PlainClone(tempdir, false, &gogit.CloneOptions{
+				URL:           dsnObject.URL,
+				ReferenceName: plumbing.NewBranchReferenceName(dsnObject.Branch),
+				SingleBranch:  true,
+			})
+		} else {
+			_, err = gogit.PlainClone(tempdir, false, &gogit.CloneOptions{
+				URL: dsnObject.URL,
+			})
+		}
+
 		if err != nil {
 			removeError := os.RemoveAll(tempdir)
 			if removeError != nil {
@@ -72,6 +95,7 @@ func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 type connection struct {
 	root    string
 	tempdir string
+	branch  string
 }
 
 // Close implements drivers.Connection.
