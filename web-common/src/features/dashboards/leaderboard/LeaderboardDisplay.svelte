@@ -1,5 +1,6 @@
 <script lang="ts">
   import VirtualizedGrid from "@rilldata/web-common/components/VirtualizedGrid.svelte";
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     useMetaQuery,
     useModelHasTimeSeries,
@@ -10,6 +11,7 @@
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -27,6 +29,8 @@
   import LeaderboardMeasureSelector from "./LeaderboardMeasureSelector.svelte";
 
   export let metricViewName: string;
+
+  const queryClient = useQueryClient();
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
@@ -101,6 +105,7 @@
   let leaderboardExpanded;
 
   function onSelectItem(event, item: MetricsViewDimension) {
+    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilter(
       metricViewName,
       item.name,
