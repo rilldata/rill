@@ -1,9 +1,3 @@
-import {
-  humanizeDataType,
-  humanizeGroupValues,
-  NicelyFormattedTypes,
-} from "@rilldata/web-local/lib/util/humanize-numbers";
-
 import { smallestPrecisionMagnitude } from "./smallest-precision-magnitude";
 import { formatNumWithOrderOfMag2 } from "./format-with-order-of-magnitude";
 import {
