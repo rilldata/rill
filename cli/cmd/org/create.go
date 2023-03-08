@@ -12,7 +12,7 @@ import (
 )
 
 func CreateCmd(cfg *config.Config) *cobra.Command {
-	var displayName string
+	var description string
 
 	createCmd := &cobra.Command{
 		Use:   "create",
@@ -22,7 +22,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 			sp := cmdutil.Spinner("Creating org...")
 			sp.Start()
 
-			client, err := client.New(cfg.AdminURL, cfg.GetAdminToken())
+			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
 			if err != nil {
 				return err
 			}
@@ -30,7 +30,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 
 			org, err := client.CreateOrganization(context.Background(), &adminv1.CreateOrganizationRequest{
 				Name:        args[0],
-				Description: displayName,
+				Description: description,
 			})
 			if err != nil {
 				return err
@@ -42,7 +42,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 	createCmd.Flags().SortFlags = false
-	createCmd.Flags().StringVar(&displayName, "display-name", "", "Display name")
+	createCmd.Flags().StringVar(&description, "description", "", "Description")
 
 	return createCmd
 }

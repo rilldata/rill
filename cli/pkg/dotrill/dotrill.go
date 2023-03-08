@@ -102,8 +102,8 @@ func GetDefaultOrg() (string, error) {
 }
 
 // SetDefaultOrg saves the default org
-func SetDefaultOrg(token string) error {
-	return Set(ConfigFilename, DefaultOrgConfigKey, token)
+func SetDefaultOrg(orgName string) error {
+	return Set(ConfigFilename, DefaultOrgConfigKey, orgName)
 }
 
 // GetToken loads the current auth token

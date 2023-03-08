@@ -9,7 +9,7 @@ import (
 )
 
 func ConnectCmd(cfg *config.Config) *cobra.Command {
-	var name, displayName, prodBranch string
+	var name, description, prodBranch string
 	var public bool
 
 	connectCmd := &cobra.Command{
@@ -27,7 +27,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 	connectCmd.Flags().SortFlags = false
 
 	connectCmd.Flags().StringVar(&name, "name", "noname", "Name")
-	connectCmd.Flags().StringVar(&displayName, "display-name", "noname", "Display name")
+	connectCmd.Flags().StringVar(&description, "description", "", "Description")
 	connectCmd.Flags().StringVar(&prodBranch, "prod-branch", "noname", "Production branch name")
 	connectCmd.Flags().BoolVar(&public, "public", false, "Public")
 

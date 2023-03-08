@@ -12,7 +12,7 @@ import (
 )
 
 func EditCmd(cfg *config.Config) *cobra.Command {
-	var displayName string
+	var description string
 
 	editCmd := &cobra.Command{
 		Use:   "edit",
@@ -22,7 +22,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			sp := cmdutil.Spinner("Updating org...")
 			sp.Start()
 
-			client, err := client.New(cfg.AdminURL, cfg.GetAdminToken())
+			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
 			if err != nil {
 				return err
 			}
@@ -30,7 +30,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 
 			org, err := client.UpdateOrganization(context.Background(), &adminv1.UpdateOrganizationRequest{
 				Name:        args[0],
-				Description: displayName,
+				Description: description,
 			})
 			if err != nil {
 				return err
@@ -42,7 +42,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 	editCmd.Flags().SortFlags = false
-	editCmd.Flags().StringVar(&displayName, "display-name", "noname", "Display name")
+	editCmd.Flags().StringVar(&description, "description", "", "Description")
 
 	return editCmd
 }

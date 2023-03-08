@@ -57,7 +57,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	if err != nil {
 		return fmt.Errorf("could not parse access token from ~/.rill: %w", err)
 	}
-	cfg.DefaultAdminToken = token
+	cfg.AdminTokenDefault = token
 
 	// Load default org from .rill
 	defaultOrg, err := dotrill.GetDefaultOrg()
@@ -86,7 +86,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", "https://admin.rilldata.com", "Base URL for the admin API")
-		cmd.PersistentFlags().StringVar(&cfg.OverridenAdminToken, "api-token", "", "Token for authenticating with the admin API")
+		cmd.PersistentFlags().StringVar(&cfg.AdminTokenOverride, "api-token", "", "Token for authenticating with the admin API")
 		rootCmd.AddCommand(cmd)
 	}
 

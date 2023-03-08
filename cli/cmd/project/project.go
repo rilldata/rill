@@ -13,6 +13,7 @@ func ProjectCmd(cfg *config.Config) *cobra.Command {
 		Short:             "Manage projects",
 		PersistentPreRunE: cmdutil.CheckAuth(cfg),
 	}
+	projectCmd.AddCommand(CreateCmd(cfg))
 	projectCmd.AddCommand(ShowCmd(cfg))
 	projectCmd.AddCommand(StatusCmd(cfg))
 	projectCmd.AddCommand(ConnectCmd(cfg))

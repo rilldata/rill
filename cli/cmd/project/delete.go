@@ -20,7 +20,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			sp := cmdutil.Spinner("Deleting project...")
 			sp.Start()
 
-			client, err := client.New(cfg.AdminURL, cfg.GetAdminToken())
+			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
 			if err != nil {
 				return err
 			}

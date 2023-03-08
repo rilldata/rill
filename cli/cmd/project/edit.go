@@ -12,7 +12,7 @@ import (
 )
 
 func EditCmd(cfg *config.Config) *cobra.Command {
-	var name, displayName, prodBranch string
+	var name, description, prodBranch string
 	var public bool
 
 	editCmd := &cobra.Command{
@@ -23,7 +23,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			sp := cmdutil.Spinner("Updating project...")
 			sp.Start()
 
-			client, err := client.New(cfg.AdminURL, cfg.GetAdminToken())
+			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
 			if err != nil {
 				return err
 			}
@@ -33,7 +33,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			proj, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
 				Organization: cfg.DefaultOrg,
 				Name:         args[0],
-				Description:  displayName,
+				Description:  description,
 			})
 			if err != nil {
 				return err
@@ -48,7 +48,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	editCmd.Flags().SortFlags = false
 
 	editCmd.Flags().StringVar(&name, "name", "noname", "Name")
-	editCmd.Flags().StringVar(&displayName, "display-name", "noname", "Display name")
+	editCmd.Flags().StringVar(&description, "description", "", "Description")
 	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "noname", "Production branch name")
 	editCmd.Flags().BoolVar(&public, "public", false, "Public")
 

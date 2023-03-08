@@ -19,7 +19,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			sp := cmdutil.Spinner("Listing project...")
 			sp.Start()
 
-			client, err := client.New(cfg.AdminURL, cfg.GetAdminToken())
+			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
 			if err != nil {
 				return err
 			}
