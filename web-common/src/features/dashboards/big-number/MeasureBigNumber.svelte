@@ -49,50 +49,65 @@
     <slot name="value">
       <div>
         {#if valusIsPresent && status === EntityStatus.Idle}
-          <div>
-            <WithTween {value} tweenProps={{ duration: 500 }} let:output>
-              {#if formatPresetEnum !== NicelyFormattedTypes.NONE}
-                {humanizeDataType(output, formatPresetEnum)}
-              {:else}
-                {output}
-              {/if}
-            </WithTween>
-          </div>
+          <Tooltip distance={16} location="right" alignment="center">
+            <div class="w-max">
+              <WithTween {value} tweenProps={{ duration: 500 }} let:output>
+                {#if formatPresetEnum !== NicelyFormattedTypes.NONE}
+                  {humanizeDataType(output, formatPresetEnum)}
+                {:else}
+                  {output}
+                {/if}
+              </WithTween>
+            </div>
+            <TooltipContent slot="tooltip-content">
+              the aggregate value over the current time period
+            </TooltipContent>
+          </Tooltip>
           {#if showComparison}
             {#if comparisonValue != null}
-              <div
-                class="text-sm ui-copy-inactive ui-copy-number"
-                class:font-semibold={isComparisonPositive}
-              >
-                <WithTween
-                  value={comparisonValue}
-                  tweenProps={{ duration: 500 }}
-                  let:output
+              <Tooltip distance={16} location="right" alignment="center">
+                <div
+                  class="w-max text-sm ui-copy-inactive ui-copy-number"
+                  class:font-semibold={isComparisonPositive}
                 >
-                  {#if formatPresetEnum !== NicelyFormattedTypes.NONE}
+                  <WithTween
+                    value={comparisonValue}
+                    tweenProps={{ duration: 500 }}
+                    let:output
+                  >
+                    {@const formattedValue =
+                      formatPresetEnum !== NicelyFormattedTypes.NONE
+                        ? humanizeDataType(output, formatPresetEnum)
+                        : output}
                     <span
                       style:width="9.5px"
                       class="inline-block"
-                    />{humanizeDataType(output, formatPresetEnum)}
-                  {:else}
-                    {output}
-                  {/if}
-                </WithTween>
-              </div>
+                    />{formattedValue}
+                  </WithTween>
+                </div>
+                <TooltipContent slot="tooltip-content"
+                  >the previous period's aggregate value</TooltipContent
+                >
+              </Tooltip>
             {/if}
             {#if comparisonPercChange != null}
-              <div
-                class="text-sm ui-copy-number
+              <Tooltip distance={16} location="right" alignment="center">
+                <div
+                  class="w-max text-sm ui-copy-number
               {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
-              >
-                <WithTween
-                  value={comparisonPercChange}
-                  tweenProps={{ duration: 500 }}
-                  let:output
                 >
-                  {formatMetricChangePercentage(output)}
-                </WithTween>
-              </div>
+                  <WithTween
+                    value={comparisonPercChange}
+                    tweenProps={{ duration: 500 }}
+                    let:output
+                  >
+                    {formatMetricChangePercentage(output)}
+                  </WithTween>
+                </div>
+                <TooltipContent slot="tooltip-content">
+                  the percentage change over the previous period
+                </TooltipContent>
+              </Tooltip>
             {/if}
           {/if}
         {:else if status === EntityStatus.Error}
