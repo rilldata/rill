@@ -3,7 +3,6 @@ package project
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
