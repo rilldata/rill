@@ -65,10 +65,11 @@ func New(logger *zap.Logger, adm *admin.Service, opts *Options) (*Server, error)
 	cookies.Options.HttpOnly = true
 
 	authenticator, err := auth.NewAuthenticator(logger, adm, cookies, &auth.AuthenticatorOptions{
-		AuthDomain:       opts.AuthDomain,
-		AuthClientID:     opts.AuthClientID,
-		AuthClientSecret: opts.AuthClientSecret,
-		ExternalURL:      opts.ExternalURL,
+		AuthDomain:             opts.AuthDomain,
+		AuthClientID:           opts.AuthClientID,
+		AuthClientSecret:       opts.AuthClientSecret,
+		ExternalURL:            opts.ExternalURL,
+		DeviceVerificationHost: opts.DeviceVerificationHost,
 	})
 	if err != nil {
 		return nil, err
@@ -199,21 +200,6 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		AllowCredentials: true,
 		// Set max age to 1 hour (default if not set is 5 seconds)
 		MaxAge: 60 * 60,
-	}
-
-	err = mux.HandlePath("POST", "/oauth/device_authorization", s.handleDeviceCodeRequest)
-	if err != nil {
-		panic(err)
-	}
-
-	err = mux.HandlePath("POST", "/oauth/device", s.authenticator.HTTPMiddleware(s.handleUserCodeConfirmation))
-	if err != nil {
-		panic(err)
-	}
-
-	err = mux.HandlePath("POST", "/oauth/token", s.getAccessToken)
-	if err != nil {
-		panic(err)
 	}
 
 	// Wrap mux with CORS middleware

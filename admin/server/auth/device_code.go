@@ -1,4 +1,4 @@
-package server
+package auth
 
 import (
 	"encoding/json"
@@ -12,7 +12,6 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
 )
 
@@ -39,7 +38,7 @@ type TokenRequest struct {
 // to the client. The device code is used to poll for an access token, and the user code is displayed
 // to the user and is used to authorize the device. The device code and user code are stored in the
 // server's device code store.
-func (s *Server) handleDeviceCodeRequest(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to read request body: %w", err))
@@ -65,13 +64,13 @@ func (s *Server) handleDeviceCodeRequest(w http.ResponseWriter, r *http.Request,
 		http.Error(w, "invalid scope", http.StatusBadRequest)
 		return
 	}
-	authCode, err := s.admin.IssueAuthCode(r.Context(), clientID)
+	authCode, err := a.admin.IssueAuthCode(r.Context(), clientID)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to issue auth code: %w", err))
 		return
 	}
 
-	verificationURI := s.opts.DeviceVerificationHost + "/oauth/device"
+	verificationURI := a.opts.DeviceVerificationHost + "/oauth/device"
 	resp := DeviceCodeResponse{
 		DeviceCode:              authCode.DeviceCode,
 		UserCode:                authCode.UserCode,
@@ -97,7 +96,7 @@ func (s *Server) handleDeviceCodeRequest(w http.ResponseWriter, r *http.Request,
 // handleUserCodeConfirmation handles the user code confirmation page. The user code is displayed
 // to the user and they are asked to confirm that they want to authorize the device. If the user
 // confirms, the device code is marked as approved in the server's device code store.
-func (s *Server) handleUserCodeConfirmation(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (a *Authenticator) handleUserCodeConfirmation(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	userCode := r.URL.Query().Get("user_code")
 	if userCode == "" {
 		http.Error(w, "user_code is required", http.StatusBadRequest)
@@ -109,18 +108,18 @@ func (s *Server) handleUserCodeConfirmation(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	claims := auth.GetClaims(r.Context())
+	claims := GetClaims(r.Context())
 	if claims == nil {
 		internalServerError(w, fmt.Errorf("did not find any claims, %w", errors.New("server error")))
 		return
 	}
-	if claims.OwnerType() != auth.OwnerTypeUser {
+	if claims.OwnerType() != OwnerTypeUser {
 		http.Error(w, "only users can confirm device codes", http.StatusBadRequest)
 		return
 	}
 	userID := claims.OwnerID()
 
-	authCode, err := s.admin.DB.FindAuthCodeByUserCode(r.Context(), userCode)
+	authCode, err := a.admin.DB.FindAuthCodeByUserCode(r.Context(), userCode)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			http.Error(w, fmt.Sprintf("no such user code: %s found", userCode), http.StatusBadRequest)
@@ -145,14 +144,14 @@ func (s *Server) handleUserCodeConfirmation(w http.ResponseWriter, r *http.Reque
 	} else {
 		authCode.ApprovalState = database.Approved
 	}
-	err = s.admin.DB.UpdateAuthCode(r.Context(), userCode, userID, authCode.ApprovalState)
+	err = a.admin.DB.UpdateAuthCode(r.Context(), userCode, userID, authCode.ApprovalState)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to update auth code for userCode: %s, %w", userCode, err))
 	}
 }
 
 // getAccessToken verifies the device code and returns an access token if the request is approved
-func (s *Server) getAccessToken(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to read request body: %w", err))
@@ -175,7 +174,7 @@ func (s *Server) getAccessToken(w http.ResponseWriter, r *http.Request, pathPara
 		return
 	}
 
-	authCode, err := s.admin.DB.FindAuthCodeByDeviceCode(r.Context(), deviceCode)
+	authCode, err := a.admin.DB.FindAuthCodeByDeviceCode(r.Context(), deviceCode)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			http.Error(w, fmt.Sprintf("no such device code: %s found", deviceCode), http.StatusBadRequest)
@@ -195,7 +194,7 @@ func (s *Server) getAccessToken(w http.ResponseWriter, r *http.Request, pathPara
 		return
 	}
 	if authCode.ApprovalState == database.Rejected {
-		err = s.admin.DB.DeleteAuthCode(r.Context(), deviceCode)
+		err = a.admin.DB.DeleteAuthCode(r.Context(), deviceCode)
 		if err != nil {
 			internalServerError(w, fmt.Errorf("failed to clean up rejected code: %s, %w", deviceCode, err))
 			return
@@ -213,13 +212,13 @@ func (s *Server) getAccessToken(w http.ResponseWriter, r *http.Request, pathPara
 	}
 	// TODO handle too many requests
 
-	authToken, err := s.admin.IssueUserAuthToken(r.Context(), *authCode.UserID, authCode.ClientID, "")
+	authToken, err := a.admin.IssueUserAuthToken(r.Context(), *authCode.UserID, authCode.ClientID, "")
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to issue access token, %w", err))
 		return
 	}
 
-	err = s.admin.DB.DeleteAuthCode(r.Context(), deviceCode)
+	err = a.admin.DB.DeleteAuthCode(r.Context(), deviceCode)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to clean up approved code: %s, %w", deviceCode, err))
 		return
