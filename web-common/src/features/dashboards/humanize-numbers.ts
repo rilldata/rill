@@ -2,6 +2,11 @@
 // Current dash persion has `prefix` key in JSON to add currecny etc.
 // We can provide a dropdown option in the table?? or regex??
 
+import { humanizedFormatterFactory } from "@rilldata/web-common/lib/number-formatting/humanizer";
+import {
+  FormatterFactoryOptions,
+  NumberKind,
+} from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 import type { LeaderboardValue } from "./dashboard-stores";
 
 const shortHandSymbols = ["Q", "T", "B", "M", "k", "none"] as const;
@@ -132,7 +137,7 @@ function getScaleForValue(value: number): ShortHandSymbols {
 /*
   Format a single value using the given type and options
 */
-export function humanizeDataType(
+export function humanizeDataType_legacy(
   value: unknown,
   type: NicelyFormattedTypes,
   options?: formatterOptions
@@ -252,7 +257,7 @@ export function humanizeGroupValues(
   if (!areAllNumbers) return values;
 
   numValues = (numValues as number[]).sort((a, b) => b - a);
-  const formattedValues = humanizeGroupValuesUtil(
+  const formattedValues = humanizeGroupValuesUtil2(
     numValues as number[],
     type,
     options
@@ -301,4 +306,84 @@ export function getScaleForLeaderboard(
   const sortedValues = numValues.sort((a, b) => b - a);
 
   return determineScaleForValues(sortedValues);
+}
+
+// NOTE: the following are adapters that I think fit the API
+// used by the existing humanizer, but I'm not sure of the
+// exact details, nor am I totally confident about the options
+// passed in at all the relevant call sites, so I've added
+// thes adapters rather than just pave over the existing functions.
+// This really needs to be reviewed by Dhiraj, at which point we
+// can deprecate any left over code that is no longer needed.
+
+const nicelyFormattedTypesToNumberKind = (type: NicelyFormattedTypes) => {
+  switch (type) {
+    case NicelyFormattedTypes.CURRENCY:
+      return NumberKind.DOLLAR;
+
+    case NicelyFormattedTypes.PERCENTAGE:
+      return NumberKind.PERCENT;
+
+    default:
+      // captures:
+      // NicelyFormattedTypes.DECIMAL
+      // NicelyFormattedTypes.NONE
+      // NicelyFormattedTypes.HUMANIZE
+      return NumberKind.ANY;
+  }
+};
+
+export function humanizeDataType(
+  value: unknown,
+  type: NicelyFormattedTypes,
+  options?: formatterOptions
+): string {
+  if (typeof value != "number") return value.toString();
+
+  const numberKind = nicelyFormattedTypesToNumberKind(type);
+
+  let innerOptions: FormatterFactoryOptions;
+  if (type === NicelyFormattedTypes.NONE) {
+    innerOptions = {
+      strategy: "none",
+      numberKind,
+      padWithInsignificantZeros: false,
+    };
+  } else {
+    innerOptions = {
+      strategy: "default",
+      numberKind,
+      padWithInsignificantZeros: false,
+      maxDigitsRightSmallNums: 3,
+      maxDigitsRightSuffixNums: 2,
+    };
+  }
+
+  return humanizedFormatterFactory([value], innerOptions).stringFormat(value);
+}
+
+function humanizeGroupValuesUtil2(
+  values: number[],
+  type: NicelyFormattedTypes,
+  options?: formatterOptions
+) {
+  if (!values.length) return values;
+  if (type == NicelyFormattedTypes.NONE) return values;
+
+  const numberKind = nicelyFormattedTypesToNumberKind(type);
+
+  let innerOptions: FormatterFactoryOptions = {
+    strategy: "default",
+    numberKind,
+    padWithInsignificantZeros: false,
+    maxDigitsRightSmallNums: 2,
+    maxDigitsRightSuffixNums: 2,
+  };
+
+  const formatter = humanizedFormatterFactory(values, innerOptions);
+
+  return values.map((v) => {
+    if (v === null) return "∅";
+    else return formatter.stringFormat(v);
+  });
 }
