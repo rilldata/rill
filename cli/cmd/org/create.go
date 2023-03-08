@@ -3,7 +3,6 @@ package org
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
@@ -20,10 +19,8 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 		Short: "Create",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sp := cmdutil.GetSpinner(4, "Creating org...")
+			sp := cmdutil.Spinner("Creating org...")
 			sp.Start()
-			// Just for spinner, will have to remove it
-			time.Sleep(1 * time.Second)
 
 			client, err := client.New(cfg.AdminURL, cfg.GetAdminToken())
 			if err != nil {

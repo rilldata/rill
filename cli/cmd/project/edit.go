@@ -3,7 +3,6 @@ package project
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
@@ -21,10 +20,8 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: "Edit",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sp := cmdutil.GetSpinner(4, "Updating project...")
+			sp := cmdutil.Spinner("Updating project...")
 			sp.Start()
-			// Just for spinner, will have to remove it
-			time.Sleep(1 * time.Second)
 
 			client, err := client.New(cfg.AdminURL, cfg.GetAdminToken())
 			if err != nil {
@@ -42,8 +39,8 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("Updated project: %v\n", proj)
 			sp.Stop()
+			fmt.Printf("Updated project: %v\n", proj)
 			return nil
 		},
 	}

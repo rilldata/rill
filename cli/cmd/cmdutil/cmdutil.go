@@ -16,13 +16,13 @@ func CheckAuth(cfg *config.Config) func(cmd *cobra.Command, args []string) error
 			return nil
 		}
 
-		return fmt.Errorf("not authenticated, Please run 'rill auth login'")
+		return fmt.Errorf("not authenticated, please run 'rill auth login'")
 	}
 }
 
-func GetSpinner(charSetsCode int, prefix string) *spinner.Spinner {
+func Spinner(prefix string) *spinner.Spinner {
 	// We can some other spinners from here https://github.com/briandowns/spinner#:~:text=90%20Character%20Sets.%20Some%20examples%20below%3A
-	sp := spinner.New(spinner.CharSets[charSetsCode], 100*time.Millisecond)
+	sp := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
 	sp.Prefix = prefix
 	// Other colour and font options can be changed
 	err := sp.Color("green", "bold")

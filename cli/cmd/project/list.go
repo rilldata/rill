@@ -17,10 +17,8 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 		Use:   "list",
 		Short: "List",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sp := cmdutil.GetSpinner(4, "Listing project...")
+			sp := cmdutil.Spinner("Listing project...")
 			sp.Start()
-			// Just for spinner, will have to remove it
-			time.Sleep(1 * time.Second)
 
 			client, err := client.New(cfg.AdminURL, cfg.GetAdminToken())
 			if err != nil {
@@ -35,8 +33,8 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("Projects list: %v\n", proj)
 			sp.Stop()
+			fmt.Printf("Projects list: %v\n", proj)
 			return nil
 		},
 	}
