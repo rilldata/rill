@@ -31,10 +31,11 @@ type Config struct {
 	GRPCPort         int           `default:"9090" split_words:"true"`
 	LogLevel         zapcore.Level `default:"info" split_words:"true"`
 	ExternalURL      string        `default:"http://localhost:8080" split_words:"true"`
+	SessionKeyPairs  []string      `split_words:"true"`
+	AllowedOrigins   []string      `default:"*" split_words:"true"`
 	AuthDomain       string        `split_words:"true"`
 	AuthClientID     string        `split_words:"true"`
 	AuthClientSecret string        `split_words:"true"`
-	SessionKeyPairs  []string      `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -85,16 +86,17 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}
 
 			// Init admin server
-			srvConf := &server.Config{
+			srvOpts := &server.Options{
 				HTTPPort:         conf.HTTPPort,
 				GRPCPort:         conf.GRPCPort,
 				ExternalURL:      conf.ExternalURL,
 				SessionKeyPairs:  keyPairs,
+				AllowedOrigins:   conf.AllowedOrigins,
 				AuthDomain:       conf.AuthDomain,
 				AuthClientID:     conf.AuthClientID,
 				AuthClientSecret: conf.AuthClientSecret,
 			}
-			srv, err := server.New(logger, adm, srvConf)
+			srv, err := server.New(logger, adm, srvOpts)
 			if err != nil {
 				logger.Fatal("error creating server", zap.Error(err))
 			}

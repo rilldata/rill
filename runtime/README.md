@@ -45,6 +45,7 @@ The runtime server is configured using environment variables parsed in `cli/cmd/
 RILL_RUNTIME_HTTP_PORT="8080"
 RILL_RUNTIME_GRPC_PORT="9090"
 RILL_RUNTIME_LOG_LEVEL="info"
+RILL_RUNTIME_ALLOWED_ORIGINS="*"
 RILL_RUNTIME_METASTORE_DRIVER="sqlite"
 RILL_RUNTIME_METASTORE_URL=":memory:"
 RILL_RUNTIME_AUTH_ENABLE="false"

@@ -11,6 +11,7 @@ RILL_ADMIN_DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres
 RILL_ADMIN_HTTP_PORT=8080
 RILL_ADMIN_GRPC_PORT=9090
 RILL_ADMIN_EXTERNAL_URL=http://localhost:8080
+RILL_ADMIN_ALLOWED_ORIGINS=*
 # Hex-encoded comma-separated list of keys. For details: https://pkg.go.dev/github.com/gorilla/sessions#NewCookieStore
 RILL_ADMIN_SESSION_KEY_PAIRS=7938b8c95ac90b3731c353076daeae8a,90c22a5a6c6b442afdb46855f95eb7d6
 # Get these from https://auth0.com/ (or ask a colleague)
