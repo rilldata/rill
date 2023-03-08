@@ -7,18 +7,16 @@
   import { useAllNames } from "@rilldata/web-common/features/entity-management/selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import {
-    appQueryStatusStore,
-    runtimeStore,
-  } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { appQueryStatusStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { WorkspaceHeader } from "../../../layout/workspace";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import MetricsExploreMetricsButton from "./MetricsExploreMetricsButton.svelte";
 
   export let metricsDefName;
   export let metricsInternalRep;
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
+  $: runtimeInstanceId = $runtime.instanceId;
   $: allNamesQuery = useAllNames(runtimeInstanceId);
   const queryClient = useQueryClient();
   const renameMetricsDef = useRuntimeServiceRenameFileAndReconcile();

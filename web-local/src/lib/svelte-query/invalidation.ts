@@ -12,6 +12,14 @@ import { get } from "svelte/store";
 
 // invalidation helpers
 
+export function invalidateRuntimeQueries(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    predicate: (query) =>
+      typeof query.queryKey[0] === "string" &&
+      query.queryKey[0].startsWith("/v1/instances"),
+  });
+}
+
 export const invalidateAfterReconcile = async (
   queryClient: QueryClient,
   instanceId: string,

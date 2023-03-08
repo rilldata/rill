@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   import {
     useQueryServiceColumnTimeRange,
@@ -44,20 +44,20 @@
   }
 
   let metricsViewQuery;
-  $: if ($runtimeStore?.instanceId) {
+  $: if ($runtime?.instanceId) {
     metricsViewQuery = useRuntimeServiceGetCatalogEntry(
-      $runtimeStore.instanceId,
+      $runtime.instanceId,
       metricViewName
     );
   }
   let timeRangeQuery;
   $: if (
-    $runtimeStore?.instanceId &&
+    $runtime?.instanceId &&
     $metricsViewQuery?.data?.entry?.metricsView?.model &&
     $metricsViewQuery?.data?.entry?.metricsView?.timeDimension
   ) {
     timeRangeQuery = useQueryServiceColumnTimeRange(
-      $runtimeStore.instanceId,
+      $runtime.instanceId,
       $metricsViewQuery.data.entry.metricsView.model,
       {
         columnName: $metricsViewQuery.data.entry.metricsView.timeDimension,
@@ -80,6 +80,7 @@
 <TimeRangeSelector
   on:select-time-range
   showIcon
+  showPreciseRange
   timeRangeOptions={relativeTimeRangeOptions}
   {selectedTimeRange}
   {min}

@@ -8,12 +8,12 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
 
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
   export let availableDashboards;
@@ -26,7 +26,7 @@
   const onExport = async (exportExtension: "csv" | "parquet") => {
     // TODO: how do we handle errors ?
     window.open(
-      `${RuntimeUrl}/v1/instances/${$runtimeStore.instanceId}/table/${modelName}/export/${exportExtension}`
+      `${RuntimeUrl}/v1/instances/${$runtime.instanceId}/table/${modelName}/export/${exportExtension}`
     );
   };
 </script>

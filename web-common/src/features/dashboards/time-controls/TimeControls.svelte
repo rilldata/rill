@@ -21,8 +21,8 @@ We should rename TimeSeriesTimeRange to a better name.
     useRuntimeServiceGetCatalogEntry,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import ComparisonSelector from "./ComparisonSelector.svelte";
   import MainTimeRangeSelector from "./MainTimeRangeSelector.svelte";
@@ -55,15 +55,15 @@ We should rename TimeSeriesTimeRange to a better name.
   let minTimeGrain: V1TimeGrain;
 
   let metricsViewQuery;
-  $: if ($runtimeStore.instanceId) {
+  $: if ($runtime.instanceId) {
     metricsViewQuery = useRuntimeServiceGetCatalogEntry(
-      $runtimeStore.instanceId,
+      $runtime.instanceId,
       metricViewName
     );
   }
 
   $: hasTimeSeriesQuery = useModelHasTimeSeries(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     metricViewName
   );
   $: hasTimeSeries = $hasTimeSeriesQuery?.data;
@@ -71,12 +71,12 @@ We should rename TimeSeriesTimeRange to a better name.
   let allTimeRangeQuery: UseQueryStoreResult;
   $: if (
     hasTimeSeries &&
-    !!$runtimeStore?.instanceId &&
+    !!$runtime?.instanceId &&
     !!$metricsViewQuery?.data?.entry?.metricsView?.model &&
     !!$metricsViewQuery?.data?.entry?.metricsView?.timeDimension
   ) {
     allTimeRangeQuery = useModelAllTimeRange(
-      $runtimeStore.instanceId,
+      $runtime.instanceId,
       $metricsViewQuery.data.entry.metricsView.model,
       $metricsViewQuery.data.entry.metricsView.timeDimension
     );

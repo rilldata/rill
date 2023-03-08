@@ -20,6 +20,7 @@
   export let timeRangeOptions = [];
   export let selectedTimeRange;
   export let showIcon = false;
+  export let showPreciseRange = false;
 
   // Custom Time Range Props
   export let min: string;
@@ -95,10 +96,13 @@
           {selectedTimeRange?.name ?? "Select a time range"}
         </span>
       </div>
-      <span style:transform={showIcon ? "translateY(1px)" : ""}>
-        {prettyFormatTimeRange(selectedTimeRange)}
-      </span>
-      <IconSpaceFixer pullRight>
+      {#if showPreciseRange}
+        <span style:transform={showIcon ? "translateY(1px)" : ""}>
+          {prettyFormatTimeRange(selectedTimeRange)}
+        </span>
+      {/if}
+
+      <IconSpaceFixer pullRight pullLeft={!showPreciseRange}>
         <div class="transition-transform" class:-rotate-180={active}>
           <CaretDownIcon size="16px" />
         </div>
