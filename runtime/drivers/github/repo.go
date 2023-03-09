@@ -2,7 +2,6 @@ package git
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -13,7 +12,6 @@ import (
 
 	doublestar "github.com/bmatcuk/doublestar/v4"
 	"github.com/eapache/go-resiliency/retrier"
-	gogit "github.com/go-git/go-git/v5"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -21,12 +19,12 @@ var limit = 500
 
 // Driver implements drivers.RepoStore.
 func (c *connection) Driver() string {
-	return "git"
+	return "github"
 }
 
 // DSN implements drivers.RepoStore.
 func (c *connection) DSN() string {
-	return c.root
+	return c.dsnStr
 }
 
 // ListRecursive implements drivers.RepoStore.
@@ -100,38 +98,12 @@ func (c *connection) Delete(ctx context.Context, instID, filePath string) error 
 	return fmt.Errorf("Delete operation is unsupported")
 }
 
+// Sync implements drivers.RepoStore.
 func (c *connection) Sync(ctx context.Context, instID string) error {
-	// add retries
-	authenticatedDSN, err := parse(c.root)
-	if err != nil {
-		return err
-	}
-
 	r := retrier.New(retrier.ExponentialBackoff(3, 100*time.Millisecond), nil)
-
-	err = r.Run(func() error {
-		repo, err := gogit.PlainOpen(c.tempdir)
-		if err != nil {
-			return err
-		}
-
-		wt, err := repo.Worktree()
-		if err != nil {
-			return err
-		}
-
-		err = wt.Pull(&gogit.PullOptions{RemoteURL: authenticatedDSN})
-		if errors.Is(err, gogit.NoErrAlreadyUpToDate) {
-			return nil
-		} else if err != nil {
-			return err
-		}
-
-		return nil
-	})
+	err := r.Run(func() error { return c.pull(ctx) })
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
