@@ -13,8 +13,8 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { getContext } from "svelte";
-  import type { Tweened } from "svelte/motion";
+  //  import { getContext } from "svelte";
+  //  import type { Tweened } from "svelte/motion";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Filters from "../filters/Filters.svelte";
   import { useMetaQuery } from "../selectors";
@@ -22,9 +22,9 @@
 
   export let metricViewName: string;
 
-  const navigationVisibilityTween = getContext(
-    "rill:app:navigation-visibility-tween"
-  ) as Tweened<number>;
+  //  const navigationVisibilityTween = getContext(
+  //    "rill:app:navigation-visibility-tween"
+  //  ) as Tweened<number>;
 
   const viewMetrics = (metricViewName: string) => {
     goto(`/dashboard/${metricViewName}/edit`);

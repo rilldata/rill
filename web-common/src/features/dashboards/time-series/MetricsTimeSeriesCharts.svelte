@@ -105,7 +105,7 @@
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
   $: if (dataCopy && dataCopy?.length) {
-    formattedData = convertTimestampPreview(dataCopy, true).map((di, i) => {
+    formattedData = convertTimestampPreview(dataCopy, true).map((di, _i) => {
       di = { ts: di.ts, bin: di.bin, ...di.records };
       return di;
     });
