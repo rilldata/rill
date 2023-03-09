@@ -49,7 +49,7 @@
     <slot name="value">
       <div>
         {#if valusIsPresent && status === EntityStatus.Idle}
-          <Tooltip distance={16} location="right" alignment="center">
+          <Tooltip distance={8} location="bottom" alignment="start">
             <div class="w-max">
               <WithTween {value} tweenProps={{ duration: 500 }} let:output>
                 {#if formatPresetEnum !== NicelyFormattedTypes.NONE}
@@ -64,51 +64,50 @@
             </TooltipContent>
           </Tooltip>
           {#if showComparison}
-            {#if comparisonValue != null}
-              <Tooltip distance={16} location="right" alignment="center">
-                <div
-                  class="w-max text-sm ui-copy-inactive ui-copy-number"
-                  class:font-semibold={isComparisonPositive}
-                >
-                  <WithTween
-                    value={comparisonValue}
-                    tweenProps={{ duration: 500 }}
-                    let:output
+            <div class="flex items-baseline gap-x-2">
+              {#if comparisonValue != null}
+                <Tooltip distance={8} location="bottom" alignment="start">
+                  <div
+                    class="w-max text-sm ui-copy-inactive "
+                    class:font-semibold={isComparisonPositive}
                   >
-                    {@const formattedValue =
-                      formatPresetEnum !== NicelyFormattedTypes.NONE
-                        ? humanizeDataType(output, formatPresetEnum)
-                        : output}
-                    <span
-                      style:width="9.5px"
-                      class="inline-block"
-                    />{formattedValue}
-                  </WithTween>
-                </div>
-                <TooltipContent slot="tooltip-content"
-                  >the previous period's aggregate value</TooltipContent
-                >
-              </Tooltip>
-            {/if}
-            {#if comparisonPercChange != null}
-              <Tooltip distance={16} location="right" alignment="center">
-                <div
-                  class="w-max text-sm ui-copy-number
+                    <WithTween
+                      value={comparisonValue}
+                      tweenProps={{ duration: 500 }}
+                      let:output
+                    >
+                      {@const formattedValue =
+                        formatPresetEnum !== NicelyFormattedTypes.NONE
+                          ? humanizeDataType(output, formatPresetEnum)
+                          : output}
+                      {formattedValue}
+                    </WithTween>
+                  </div>
+                  <TooltipContent slot="tooltip-content"
+                    >the previous period's aggregate value</TooltipContent
+                  >
+                </Tooltip>
+              {/if}
+              {#if comparisonPercChange != null}
+                <Tooltip distance={16} location="right" alignment="center">
+                  <div
+                    class="w-max text-sm 
               {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
-                >
-                  <WithTween
-                    value={comparisonPercChange}
-                    tweenProps={{ duration: 500 }}
-                    let:output
                   >
-                    {formatMetricChangePercentage(output)}
-                  </WithTween>
-                </div>
-                <TooltipContent slot="tooltip-content">
-                  the percentage change over the previous period
-                </TooltipContent>
-              </Tooltip>
-            {/if}
+                    <WithTween
+                      value={comparisonPercChange}
+                      tweenProps={{ duration: 500 }}
+                      let:output
+                    >
+                      ({formatMetricChangePercentage(output)})
+                    </WithTween>
+                  </div>
+                  <TooltipContent slot="tooltip-content">
+                    the percentage change over the previous period
+                  </TooltipContent>
+                </Tooltip>
+              {/if}
+            </div>
           {/if}
         {:else if status === EntityStatus.Error}
           <CrossIcon />

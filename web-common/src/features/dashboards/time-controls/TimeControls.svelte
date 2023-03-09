@@ -182,7 +182,6 @@ We should rename TimeSeriesTimeRange to a better name.
     timeGrain: V1TimeGrain
   ) {
     const { name, start, end } = timeRange;
-    console.log(timeRange, timeGrain);
 
     // validate time range name + time grain combination
     // (necessary because when the time range name is changed, the current time grain may not be valid for the new time range name)
