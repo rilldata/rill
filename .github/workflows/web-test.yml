@@ -9,13 +9,23 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        codepath: [web-admin, web-local]
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+    - name: Filter modified codepaths
+      uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          admin:
+            - ".github/workflows/web-test.yml"
+            - "web-admin/**"
+            - "web-common/**"
+          local:
+            - ".github/workflows/web-test.yml"
+            - "web-common/**"
+            - "web-local/**"
 
       - name: Set up NodeJS
         uses: actions/setup-node@v3
@@ -25,17 +35,31 @@ jobs:
       - name: NPM Install
         run: npm install
 
-      - name: Prettier checks for web
-        run: npx prettier --check "${{ matrix.codepath }}/**/*"
-
       - name: Install browser for UI tests
         run: npx playwright install
 
-      - name: Build the application
-        run: npm run build -w ${{ matrix.codepath }}
+      - name: Prettier checks and lint for web local
+        if: steps.filter.outputs.local == 'true'
+        run: -|
+          npx prettier --check "web-local/**/*"
+          npx prettier --check "web-common/**/*"
+          npm run lint -w web-local -- --quiet
 
-      - name: Verify lint of the repo
-        run: npm run lint -w ${{ matrix.codepath }} -- --quiet
+      - name: Build & Test the web local
+        if: steps.filter.outputs.local == 'true'
+        run: -|
+          npm run build -w web-local
+          npm run test -w web-local
 
-      - name: Run all tests
-        run: npm run test -w ${{ matrix.codepath }}
+      - name: Prettier checks and lint for web admin
+        if: steps.filter.outputs.admin == 'true'
+        run: -|
+          npx prettier --check "web-admin/**/*"
+          npx prettier --check "web-common/**/*"
+          npm run lint -w web-admin -- --quiet
+
+      - name: Build & Test the web admin
+        if: steps.filter.outputs.admin == 'true'
+        run: -|
+          npm run build -w web-admin
+          npm run test -w web-admin
