@@ -36,9 +36,6 @@ jobs:
       - name: NPM Install
         run: npm install
 
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
-
       - name: Install browser for UI tests
         run: npx playwright install
 
@@ -46,19 +43,19 @@ jobs:
         if: steps.filter.outputs.common == 'true'
         run: |-
           npx prettier --check "web-common/**/*"
-          npm run lint -w web-common -- --quiet
+          npx eslint web-common --quiet
 
       - name: Prettier checks and lint for web local
         if: steps.filter.outputs.local == 'true'
         run: |-
           npx prettier --check "web-local/**/*"
-          npm run lint -w web-local -- --quiet
+          npx eslint web-local --quiet
 
       - name: Prettier checks and lint for web admin
         if: steps.filter.outputs.admin == 'true'
         run: |-
           npx prettier --check "web-admin/**/*"
-          npm run lint -w web-admin -- --quiet
+          npx eslint web-admin --quiet
 
       - name: Build & Test the web local
         if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}
