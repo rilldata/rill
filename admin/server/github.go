@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/google/go-github/v50/github"
+	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"google.golang.org/grpc/codes"
@@ -21,19 +22,57 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 		return nil, status.Error(codes.Unauthenticated, "not authenticated")
 	}
 
-	// TODO: Check whether user has access
-
-	// Return instructions for granting access
-	grantAccessURL, err := url.JoinPath(s.opts.FrontendURL, "/github/connect")
+	// Check whether user has granted access
+	installationID, ok, err := s.admin.GetUserGithubInstallation(ctx, claims.OwnerID(), req.GithubUrl)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create redirect URL: %s", err)
+		return nil, status.Errorf(codes.InvalidArgument, "failed to check Github access: %s", err.Error())
+	}
+
+	// If the user has not granted access, return instructions for granting access
+	if !ok {
+		grantAccessURL, err := url.JoinPath(s.opts.FrontendURL, "/github/connect")
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create redirect URL: %s", err)
+		}
+
+		res := &adminv1.GetGithubRepoStatusResponse{
+			HasAccess:      false,
+			GrantAccessUrl: grantAccessURL,
+		}
+		return res, nil
+	}
+
+	// The user has granted access. Get repo info and return.
+	repo, err := s.admin.LookupGithubRepo(ctx, installationID, req.GithubUrl)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	res := &adminv1.GetGithubRepoStatusResponse{
-		HasAccess:      false,
-		GrantAccessUrl: grantAccessURL,
+		HasAccess:     true,
+		DefaultBranch: *repo.DefaultBranch,
 	}
 	return res, nil
+}
+
+// registerGithubEndpoints registers the non-gRPC endpoints for the Github integration.
+func (s *Server) registerGithubEndpoints(mux *gateway.ServeMux) error {
+	err := mux.HandlePath("POST", "/github/webhook", s.githubWebhook)
+	if err != nil {
+		return err
+	}
+
+	err = mux.HandlePath("GET", "/github/connect", s.authenticator.HTTPMiddleware(s.githubConnect))
+	if err != nil {
+		return err
+	}
+
+	err = mux.HandlePath("GET", "/github/connect/callback", s.authenticator.HTTPMiddleware(s.githubConnectCallback))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // githubConnect starts an installation flow of the Github App.
@@ -83,7 +122,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 	}
 
 	// Associate the user with the installation
-	err = s.admin.TrackGithubInstallation(r.Context(), claims.OwnerID(), int64(installationID))
+	err = s.admin.ProcessGithubInstallation(r.Context(), claims.OwnerID(), int64(installationID))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to track github install: %s", err), http.StatusInternalServerError)
 		return

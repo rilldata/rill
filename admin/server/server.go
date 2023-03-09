@@ -61,6 +61,10 @@ func New(logger *zap.Logger, adm *admin.Service, opts *Options) (*Server, error)
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)
 	}
 
+	if len(opts.SessionKeyPairs) == 0 {
+		return nil, fmt.Errorf("provided SessionKeyPairs is empty")
+	}
+
 	cookies := sessions.NewCookieStore(opts.SessionKeyPairs...)
 	cookies.Options.MaxAge = 60 * 60 * 24 * 365 * 10 // 10 years
 	cookies.Options.Secure = externalURL.Scheme == "https"
@@ -172,17 +176,9 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	}
 
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
-	err = mux.HandlePath("POST", "/github/webhook", s.githubWebhook)
+	err = s.registerGithubEndpoints(mux)
 	if err != nil {
-		panic(err)
-	}
-	err = mux.HandlePath("GET", "/github/connect", s.authenticator.HTTPMiddleware(s.githubConnect))
-	if err != nil {
-		panic(err)
-	}
-	err = mux.HandlePath("GET", "/github/connect/callback", s.authenticator.HTTPMiddleware(s.githubConnectCallback))
-	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// Build CORS options for admin server

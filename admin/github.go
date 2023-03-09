@@ -5,64 +5,76 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/bradleyfalzon/ghinstallation"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/database"
+	"go.uber.org/zap"
 )
 
-// TrackGithubInstallation TODO
-func (s *Service) TrackGithubInstallation(ctx context.Context, userID string, installationID int64) error {
-	return nil
+// ProcessGithubInstallation tracks a confirmed relationship between a user and an installation of the Github App.
+func (s *Service) ProcessGithubInstallation(ctx context.Context, userID string, installationID int64) error {
+	return s.DB.UpsertUserGithubInstallation(ctx, userID, installationID)
 }
 
-// HasGithubInstallation
-func (s *Service) HasGithubInstallation(ctx context.Context, userID, githubURL string) (bool, error) {
-	// Parse SSH or HTTP endpoints
-	// endpoint, err := transport.NewEndpoint(remote)
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	return
-	// }
-	// path := endpoint.Path
-	// if strings.Contains(endpoint.Protocol, "http") {
-	// 	_, path, _ = strings.Cut(path, "/")
-	// }
-	// fullName, _, _ = strings.Cut(path, ".git")
+// GetUserGithubInstallation returns a Github installation ID iff the Github App is installed on the repository AND we have a confirmed relationship between the user and that installation.
+// The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
+func (s *Service) GetUserGithubInstallation(ctx context.Context, userID, githubURL string) (int64, bool, error) {
+	account, repo, ok := splitGithubURL(githubURL)
+	if !ok {
+		return 0, false, fmt.Errorf("invalid Github URL %q", githubURL)
+	}
 
-	// owner, repo, found := strings.Cut(fullName, "/")
-	// if !found {
-	// 	// invalid remote
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	return
-	// }
+	installation, resp, err := s.github.Apps.FindRepositoryInstallation(ctx, account, repo)
+	if err != nil {
+		if resp.StatusCode == http.StatusNotFound {
+			// We don't have an installation on the repo
+			return 0, false, nil
+		}
+		return 0, false, fmt.Errorf("failed to lookup repo info: %w", err)
+	}
 
-	// installation, response, err := s.github.Apps.FindRepositoryInstallation(ctx, owner, repo)
-	// if err != nil {
-	// 	if response.StatusCode == http.StatusNotFound {
-	// 		// Don't have access
-	// 		return false, nil
-	// 	}
-	// 	// Unexpected
-	// 	return false, err
-	// }
+	installationID := installation.GetID()
+	if installationID == 0 {
+		// Do we have to check for this?
+		return 0, false, fmt.Errorf("received invalid installation from Github")
+	}
 
-	// installationID := installation.GetID()
-	// if installationID == 0 {
-	// 	// TODO: What does that even mean?
-	// 	return false, fmt.Errorf("weird")
-	// }
+	_, err = s.DB.FindUserGithubInstallation(ctx, userID, installationID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			// The user doesn't have access to the installation
+			return 0, false, nil
+		}
+		return 0, false, err // Unexpected error
+	}
 
-	// project.GithubAppInstallID = installation.GetID()
-	// project.GitURL, err = s.githubAuthenticatedRemote(ctx, installationID, project.GitURL, owner, repo)
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusInternalServerError)
-	// 	return
-	// }
+	// The user has access to the installation
+	return installationID, true, nil
+}
 
-	return false, nil
+// LookupGithubRepo calls the Github API using an installation token to get information about a Github repo.
+// The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
+func (s *Service) LookupGithubRepo(ctx context.Context, installationID int64, githubURL string) (*github.Repository, error) {
+	account, repo, ok := splitGithubURL(githubURL)
+	if !ok {
+		return nil, fmt.Errorf("invalid Github URL %q", githubURL)
+	}
+
+	gh, err := s.githubInstallationClient(installationID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create github installation client: %w", err)
+	}
+
+	repository, _, err := gh.Repositories.Get(ctx, account, repo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get github repository: %w", err)
+	}
+
+	return repository, nil
 }
 
 // ProcessGithubEvent processes a Github event (usually received over webhooks).
@@ -118,13 +130,19 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 }
 
 func (s *Service) processGithubInstallationEvent(ctx context.Context, event *github.InstallationEvent) error {
-	// We can access: event.Repositories and event.GetInstallation().GetID()
+	installationID := *event.GetInstallation().ID
+	// We also get event.Repositories if needed
 
 	switch event.GetAction() {
 	case "created", "unsuspend":
 		// TODO: Should we do anything for unsuspend?
-	case "suspend", "deleted":
+	case "suspend":
 		// TODO: What to do about existing projects deploying from that installation?
+	case "deleted":
+		err := s.DB.DeleteUserGithubInstallations(ctx, installationID)
+		if err != nil {
+			s.logger.Error("failed to delete github installations", zap.Int64("installation_id", installationID), zap.Error(err))
+		}
 	case "new_permissions_accepted":
 		// TODO: Any caches to update here?
 	}
@@ -135,7 +153,7 @@ func (s *Service) processGithubInstallationEvent(ctx context.Context, event *git
 func (s *Service) processGithubInstallationRepositoriesEvent(ctx context.Context, event *github.InstallationRepositoriesEvent) error {
 	// We can access event.RepositoriesAdded and event.RepositoriesRemoved
 
-	// TODO: What to do about existing projects that have been removed?
+	// TODO: Should we do anything about existing projects? (Maybe send an email?)
 
 	return nil
 }
@@ -171,4 +189,23 @@ func (s *Service) githubInstallationClient(installationID int64) (*github.Client
 		return nil, err
 	}
 	return github.NewClient(&http.Client{Transport: itr}), nil
+}
+
+func splitGithubURL(githubURL string) (account, repo string, ok bool) {
+	ep, err := transport.NewEndpoint(githubURL)
+	if err != nil {
+		return "", "", false
+	}
+
+	if ep.Host != "github.com" {
+		return "", "", false
+	}
+
+	account, repo = path.Split(ep.Path)
+	account = strings.Trim(account, "/")
+	if account == "" || repo == "" || strings.Contains(account, "/") {
+		return "", "", false
+	}
+
+	return account, repo, true
 }
