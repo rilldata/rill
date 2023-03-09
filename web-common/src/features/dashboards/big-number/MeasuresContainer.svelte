@@ -164,7 +164,7 @@
     {#if $metaQuery.data?.measures}
       {#each $metaQuery.data?.measures as measure, index (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
-        {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
+        {@const bigNum = $totalsQuery?.data?.data?.[measure.name]}
         <div
           bind:this={measureNodes[index]}
           style:width="{MEASURE_WIDTH}px"
