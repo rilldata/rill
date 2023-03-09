@@ -10,7 +10,7 @@ import (
 )
 
 /**
- * Any entity specific actions when a catalog is deleted will be here.
+ * Any entity specific actions when a catalog is touched will be here.
  * EG: on delete sources will drop the table and models will drop the view
  * Any future entity specific cache invalidation will go here as well.
  *

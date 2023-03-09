@@ -12,20 +12,18 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/services/catalog"
-	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
-	"github.com/rilldata/rill/runtime/services/catalog/migrator/metricsviews"
-	"github.com/rilldata/rill/runtime/services/catalog/testutils"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
+	"github.com/rilldata/rill/runtime/services/catalog"
+	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
+	"github.com/rilldata/rill/runtime/services/catalog/migrator/metricsviews"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
+	"github.com/rilldata/rill/runtime/services/catalog/testutils"
+	"github.com/stretchr/testify/require"
 )
 
 const TestDataPath = "../../../web-local/test/data"
@@ -698,7 +696,7 @@ path: "data/AdBids.csv`))
 }
 
 func initBasicService(t *testing.T) (*catalog.Service, string) {
-	s, dir := getService(t)
+	s, dir := testutils.GetService(t)
 	testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
 	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
@@ -741,36 +739,4 @@ func initBasicService(t *testing.T) (*catalog.Service, string) {
 	testutils.AssertInCatalogStore(t, s, "AdBids_dashboard", AdBidsDashboardRepoPath)
 
 	return s, dir
-}
-
-func getService(t *testing.T) (*catalog.Service, string) {
-	dir := t.TempDir()
-
-	duckdbStore, err := drivers.Open("duckdb", filepath.Join(dir, "stage.db"), zap.NewNop())
-	require.NoError(t, err)
-	err = duckdbStore.Migrate(context.Background())
-	require.NoError(t, err)
-	olap, ok := duckdbStore.OLAPStore()
-	require.True(t, ok)
-	catalogObject, ok := duckdbStore.CatalogStore()
-	require.True(t, ok)
-
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
-	require.NoError(t, err)
-	repo, ok := fileStore.RepoStore()
-	require.True(t, ok)
-
-	return catalog.NewService(catalogObject, repo, olap, registryStore(t), "test", nil), dir
-}
-
-func registryStore(t *testing.T) drivers.RegistryStore {
-	store, err := drivers.Open("sqlite", ":memory:", zap.NewNop())
-	store.Migrate(context.Background())
-	require.NoError(t, err)
-	registry, _ := store.RegistryStore()
-
-	err = registry.CreateInstance(context.Background(), &drivers.Instance{ID: "test"})
-	require.NoError(t, err)
-
-	return registry
 }
