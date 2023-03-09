@@ -1,8 +1,8 @@
 import {
-  FormatterFactory,
   Formatter,
-  NumberKind,
+  FormatterFactory,
   FormatterFactoryOptions,
+  NumberKind,
 } from "./humanizer-types";
 import { DefaultHumanizer } from "./strategies/default";
 import { NonFormatter } from "./strategies/none";

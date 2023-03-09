@@ -1,19 +1,18 @@
 import {
-  orderOfMagnitude,
-  orderOfMagnitudeEng,
-  formatNumWithOrderOfMag,
-} from "../utils/format-with-order-of-magnitude";
-import { shortScaleSuffixIfAvailableForStr } from "../utils/short-scale-suffixes";
-import {
+  Formatter,
   FormatterOptionsCommon,
   FormatterOptionsDefaultStrategy,
   FormatterWidths,
-  NumberParts,
-  Formatter,
-  RichFormatNumber,
   NumberKind,
+  NumberParts,
 } from "../humanizer-types";
+import {
+  formatNumWithOrderOfMag,
+  orderOfMagnitude,
+  orderOfMagnitudeEng,
+} from "../utils/format-with-order-of-magnitude";
 import { numberPartsToString } from "../utils/number-parts-utils";
+import { shortScaleSuffixIfAvailableForStr } from "../utils/short-scale-suffixes";
 
 export const humanizeDefaultStrategy = (
   sample: number[],
@@ -58,7 +57,7 @@ export const humanizeDefaultStrategy = (
   });
 
   numPartsArr = numPartsArr.map((ss, i) => {
-    let suffix = shortScaleSuffixIfAvailableForStr(ss.suffix);
+    const suffix = shortScaleSuffixIfAvailableForStr(ss.suffix);
     return { ...ss, ...{ suffix } };
   });
 

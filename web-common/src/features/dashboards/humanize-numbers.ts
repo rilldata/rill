@@ -364,6 +364,7 @@ export function humanizeDataType(
   return humanizedFormatterFactory([value], innerOptions).stringFormat(value);
 }
 
+/** This function is used primarily in the leaderboard and the detail tables. */
 function humanizeGroupValuesUtil2(
   values: number[],
   type: NicelyFormattedTypes,
@@ -374,12 +375,12 @@ function humanizeGroupValuesUtil2(
 
   const numberKind = nicelyFormattedTypesToNumberKind(type);
 
-  let innerOptions: FormatterFactoryOptions = {
+  const innerOptions: FormatterFactoryOptions = {
     strategy: "default",
     numberKind,
     padWithInsignificantZeros: false,
     maxDigitsRightSmallNums: 2,
-    maxDigitsRightSuffixNums: 2,
+    maxDigitsRightSuffixNums: 1,
   };
 
   const formatter = humanizedFormatterFactory(values, innerOptions);

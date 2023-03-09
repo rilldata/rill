@@ -1,8 +1,6 @@
 import type { NumberParts } from "../humanizer-types";
 import { smallestPrecisionMagnitude } from "./smallest-precision-magnitude";
 
-import _ from "lodash";
-
 export const orderOfMagnitude = (x) => {
   if (x === 0) return 0;
   return Math.floor(Math.log10(Math.abs(x)));
@@ -69,7 +67,7 @@ export const formatNumWithOrderOfMag = (
     minimumFractionDigits: fractionDigits,
   })
     .format(x / 10 ** newOrder)
-    .replace(/,/g, "")
+    //.replace(/,/g, "")
     .split(".");
 
   const nonInt = !Number.isInteger(x);
