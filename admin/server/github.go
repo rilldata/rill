@@ -36,7 +36,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 	// Extract info from query string
 	qry := r.URL.Query()
 	setupAction := qry.Get("setup_action")
-	if setupAction != "install" {
+	if setupAction != "install" { // TODO: Can also be update, request
 		http.Error(w, fmt.Sprintf("unexpected setup_action=%q", setupAction), http.StatusBadRequest)
 		return
 	}
