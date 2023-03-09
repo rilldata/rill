@@ -44,6 +44,6 @@ func TablePrinter(v interface{}) {
 }
 
 func TextPrinter(str string) {
-	boldGreen := color.New(color.FgBlue).Add(color.Underline).Add(color.Bold)
+	boldGreen := color.New(color.FgGreen).Add(color.Underline).Add(color.Bold)
 	boldGreen.Fprintln(color.Output, str)
 }
