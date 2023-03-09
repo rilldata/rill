@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
 
   // TODO: call the admin server
