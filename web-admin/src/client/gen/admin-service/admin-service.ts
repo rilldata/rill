@@ -31,11 +31,12 @@ import type {
   V1DeleteProjectResponse,
   V1UpdateProjectResponse,
   V1PingResponse,
+  V1GetCurrentUserResponse,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
 /**
- * @summary findOrganizations lists all the organizations currently managed by the admin
+ * @summary FindOrganizations lists all the organizations the caller has access to
  */
 export const adminServiceFindOrganizations = (
   params?: AdminServiceFindOrganizationsParams,
@@ -152,7 +153,7 @@ export const useAdminServiceCreateOrganization = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary FindOrganization returns information about a specific organization
+ * @summary FindOrganization looks up a specific organization
  */
 export const adminServiceFindOrganization = (
   name: string,
@@ -317,7 +318,7 @@ export const useAdminServiceUpdateOrganization = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary FindProjects lists all the projects currently available for given organizations
+ * @summary FindProjects lists all the projects in an organization
  */
 export const adminServiceFindProjects = (
   organization: string,
@@ -445,7 +446,7 @@ export const useAdminServiceCreateProject = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary FindProject returns information about a specific project
+ * @summary FindProject looks up a project by name
  */
 export const adminServiceFindProject = (
   organization: string,
@@ -566,7 +567,7 @@ export const useAdminServiceDeleteProject = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary UpdateProject update a project
+ * @summary UpdateProject updates a project
  */
 export const adminServiceUpdateProject = (
   organization: string,
@@ -630,7 +631,7 @@ export const useAdminServiceUpdateProject = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary Ping returns information about the admin
+ * @summary Ping returns information about the server
  */
 export const adminServicePing = (signal?: AbortSignal) => {
   return httpClient<V1PingResponse>({ url: `/v1/ping`, method: "get", signal });
@@ -672,6 +673,66 @@ export const useAdminServicePing = <
     TData
   >(queryKey, queryFn, queryOptions) as UseQueryStoreResult<
     Awaited<ReturnType<typeof adminServicePing>>,
+    TError,
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary GetCurrentUser returns the currently authenticated user (if any)
+ */
+export const adminServiceGetCurrentUser = (signal?: AbortSignal) => {
+  return httpClient<V1GetCurrentUserResponse>({
+    url: `/v1/users/current`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetCurrentUserQueryKey = () => [
+  `/v1/users/current`,
+];
+
+export type AdminServiceGetCurrentUserQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetCurrentUser>>
+>;
+export type AdminServiceGetCurrentUserQueryError = RpcStatus;
+
+export const useAdminServiceGetCurrentUser = <
+  TData = Awaited<ReturnType<typeof adminServiceGetCurrentUser>>,
+  TError = RpcStatus
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetCurrentUser>>,
+    TError,
+    TData
+  >;
+}): UseQueryStoreResult<
+  Awaited<ReturnType<typeof adminServiceGetCurrentUser>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceGetCurrentUserQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetCurrentUser>>
+  > = ({ signal }) => adminServiceGetCurrentUser(signal);
+
+  const query = useQuery<
+    Awaited<ReturnType<typeof adminServiceGetCurrentUser>>,
+    TError,
+    TData
+  >(queryKey, queryFn, queryOptions) as UseQueryStoreResult<
+    Awaited<ReturnType<typeof adminServiceGetCurrentUser>>,
     TError,
     TData,
     QueryKey
