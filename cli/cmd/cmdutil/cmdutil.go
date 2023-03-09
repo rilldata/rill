@@ -38,10 +38,9 @@ func Spinner(prefix string) *spinner.Spinner {
 }
 
 func TablePrinter(v interface{}) {
-	boldGreen := color.New(color.FgGreen)
 	var b strings.Builder
 	tableprinter.Print(&b, v)
-	boldGreen.Fprintln(os.Stdout, b.String())
+	fmt.Fprintln(os.Stdout, b.String())
 }
 
 func TextPrinter(str string) {
