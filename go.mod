@@ -31,7 +31,6 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/marcboeker/go-duckdb v1.2.1
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/pkg/browser v0.0.0-20210115035449-ce105d075bb4
 	github.com/pkg/errors v0.9.1
 	github.com/rs/cors v1.8.2
 	github.com/spf13/cobra v1.6.1
