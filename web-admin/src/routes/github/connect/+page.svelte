@@ -33,9 +33,12 @@
 </svelte:head>
 
 {#if user}
-<section>
-  <h2>Connect to Github</h2>
-  <p>Click the button to grant Rill access to one or more of your Github repositories.</p>
-  <a href="{ADMIN_URL}/github/connect">Go to Github</a>
-</section>
+  <section>
+    <h2>Connect to Github</h2>
+    <p>
+      Click the button to grant Rill access to one or more of your Github
+      repositories.
+    </p>
+    <a href="{ADMIN_URL}/github/connect">Go to Github</a>
+  </section>
 {/if}
