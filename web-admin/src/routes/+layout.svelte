@@ -12,13 +12,16 @@
 
 <RillTheme>
   <QueryClientProvider client={queryClient}>
-    <main>
-      <TopNavigationBar />
-      <slot />
-    </main>
-
-    <footer>
-      <p>Rill Data</p>
-    </footer>
+    <div class="flex flex-col h-screen">
+      <main class="flex-grow flex flex-col h-full">
+        <TopNavigationBar />
+        <div class="flex-grow">
+          <slot />
+        </div>
+      </main>
+      <footer class="text-center">
+        <p>Rill Data</p>
+      </footer>
+    </div>
   </QueryClientProvider>
 </RillTheme>
