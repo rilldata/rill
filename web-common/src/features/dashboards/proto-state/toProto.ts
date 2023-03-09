@@ -5,6 +5,7 @@ import {
   Value,
 } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import { TimeRangeName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
 import type { TimeSeriesTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
 import {
   TimeGrain,
@@ -13,9 +14,11 @@ import {
 import {
   MetricsViewFilter,
   MetricsViewFilter_Cond,
-  TimeSeriesTimeRange as PBTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
-import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import {
+  DashboardState,
+  DashboardTimeRange,
+} from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   MetricsViewFilterCond,
   V1MetricsViewFilter,
@@ -28,7 +31,7 @@ export function toProto(metrics: MetricsExplorerEntity) {
     data.filters = toFiltersProto(metrics.filters) as any;
   }
   if (metrics.selectedTimeRange) {
-    data.timeRange = toTimeRangeProto(metrics.selectedTimeRange) as any;
+    data.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
   }
   return new DashboardState(data);
 }
@@ -45,17 +48,15 @@ function toFiltersProto(filters: V1MetricsViewFilter) {
 }
 
 function toTimeRangeProto(range: TimeSeriesTimeRange) {
-  const timeRange = new PBTimeRange({});
-  if (range.start) {
-    timeRange.start = toTimeProto(range.start);
+  const timeRangeArgs: PartialMessage<DashboardTimeRange> = {
+    name: range.name,
+    timeGranularity: toTimeGrainProto(range.interval),
+  };
+  if (range.name === TimeRangeName.Custom) {
+    timeRangeArgs.timeStart = toTimeProto(range.start);
+    timeRangeArgs.timeEnd = toTimeProto(range.end);
   }
-  if (range.end) {
-    timeRange.end = toTimeProto(range.end);
-  }
-  if (range.interval) {
-    timeRange.interval = toTimeGrainProto(range.interval);
-  }
-  return timeRange;
+  return new DashboardTimeRange(timeRangeArgs);
 }
 
 function toTimeProto(time: string) {

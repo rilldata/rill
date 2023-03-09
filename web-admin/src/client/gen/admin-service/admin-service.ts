@@ -14,35 +14,36 @@ import type {
   QueryKey,
 } from "@sveltestack/svelte-query";
 import type {
-  V1FindOrganizationsResponse,
+  V1ListOrganizationsResponse,
   RpcStatus,
-  AdminServiceFindOrganizationsParams,
+  AdminServiceListOrganizationsParams,
   V1CreateOrganizationResponse,
   V1CreateOrganizationRequest,
-  V1FindOrganizationResponse,
+  V1GetOrganizationResponse,
   V1DeleteOrganizationResponse,
   V1UpdateOrganizationResponse,
   AdminServiceUpdateOrganizationBodyBody,
-  V1FindProjectsResponse,
-  AdminServiceFindProjectsParams,
+  V1ListProjectsResponse,
+  AdminServiceListProjectsParams,
   V1CreateProjectResponse,
   AdminServiceCreateProjectBody,
-  V1FindProjectResponse,
+  V1GetProjectResponse,
   V1DeleteProjectResponse,
   V1UpdateProjectResponse,
   V1PingResponse,
+  V1RevokeCurrentAuthTokenResponse,
   V1GetCurrentUserResponse,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
 /**
- * @summary FindOrganizations lists all the organizations the caller has access to
+ * @summary findOrganizations lists all the organizations currently managed by the admin
  */
-export const adminServiceFindOrganizations = (
-  params?: AdminServiceFindOrganizationsParams,
+export const adminServiceListOrganizations = (
+  params?: AdminServiceListOrganizationsParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1FindOrganizationsResponse>({
+  return httpClient<V1ListOrganizationsResponse>({
     url: `/v1/organizations`,
     method: "get",
     params,
@@ -50,29 +51,29 @@ export const adminServiceFindOrganizations = (
   });
 };
 
-export const getAdminServiceFindOrganizationsQueryKey = (
-  params?: AdminServiceFindOrganizationsParams
+export const getAdminServiceListOrganizationsQueryKey = (
+  params?: AdminServiceListOrganizationsParams
 ) => [`/v1/organizations`, ...(params ? [params] : [])];
 
-export type AdminServiceFindOrganizationsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceFindOrganizations>>
+export type AdminServiceListOrganizationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListOrganizations>>
 >;
-export type AdminServiceFindOrganizationsQueryError = RpcStatus;
+export type AdminServiceListOrganizationsQueryError = RpcStatus;
 
-export const useAdminServiceFindOrganizations = <
-  TData = Awaited<ReturnType<typeof adminServiceFindOrganizations>>,
+export const useAdminServiceListOrganizations = <
+  TData = Awaited<ReturnType<typeof adminServiceListOrganizations>>,
   TError = RpcStatus
 >(
-  params?: AdminServiceFindOrganizationsParams,
+  params?: AdminServiceListOrganizationsParams,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof adminServiceFindOrganizations>>,
+      Awaited<ReturnType<typeof adminServiceListOrganizations>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof adminServiceFindOrganizations>>,
+  Awaited<ReturnType<typeof adminServiceListOrganizations>>,
   TError,
   TData,
   QueryKey
@@ -80,18 +81,18 @@ export const useAdminServiceFindOrganizations = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getAdminServiceFindOrganizationsQueryKey(params);
+    queryOptions?.queryKey ?? getAdminServiceListOrganizationsQueryKey(params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceFindOrganizations>>
-  > = ({ signal }) => adminServiceFindOrganizations(params, signal);
+    Awaited<ReturnType<typeof adminServiceListOrganizations>>
+  > = ({ signal }) => adminServiceListOrganizations(params, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof adminServiceFindOrganizations>>,
+    Awaited<ReturnType<typeof adminServiceListOrganizations>>,
     TError,
     TData
   >(queryKey, queryFn, queryOptions) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof adminServiceFindOrganizations>>,
+    Awaited<ReturnType<typeof adminServiceListOrganizations>>,
     TError,
     TData,
     QueryKey
@@ -153,42 +154,42 @@ export const useAdminServiceCreateOrganization = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary FindOrganization looks up a specific organization
+ * @summary GetOrganization returns information about a specific organization
  */
-export const adminServiceFindOrganization = (
+export const adminServiceGetOrganization = (
   name: string,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1FindOrganizationResponse>({
+  return httpClient<V1GetOrganizationResponse>({
     url: `/v1/organizations/${name}`,
     method: "get",
     signal,
   });
 };
 
-export const getAdminServiceFindOrganizationQueryKey = (name: string) => [
+export const getAdminServiceGetOrganizationQueryKey = (name: string) => [
   `/v1/organizations/${name}`,
 ];
 
-export type AdminServiceFindOrganizationQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceFindOrganization>>
+export type AdminServiceGetOrganizationQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetOrganization>>
 >;
-export type AdminServiceFindOrganizationQueryError = RpcStatus;
+export type AdminServiceGetOrganizationQueryError = RpcStatus;
 
-export const useAdminServiceFindOrganization = <
-  TData = Awaited<ReturnType<typeof adminServiceFindOrganization>>,
+export const useAdminServiceGetOrganization = <
+  TData = Awaited<ReturnType<typeof adminServiceGetOrganization>>,
   TError = RpcStatus
 >(
   name: string,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof adminServiceFindOrganization>>,
+      Awaited<ReturnType<typeof adminServiceGetOrganization>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof adminServiceFindOrganization>>,
+  Awaited<ReturnType<typeof adminServiceGetOrganization>>,
   TError,
   TData,
   QueryKey
@@ -196,21 +197,21 @@ export const useAdminServiceFindOrganization = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getAdminServiceFindOrganizationQueryKey(name);
+    queryOptions?.queryKey ?? getAdminServiceGetOrganizationQueryKey(name);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceFindOrganization>>
-  > = ({ signal }) => adminServiceFindOrganization(name, signal);
+    Awaited<ReturnType<typeof adminServiceGetOrganization>>
+  > = ({ signal }) => adminServiceGetOrganization(name, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof adminServiceFindOrganization>>,
+    Awaited<ReturnType<typeof adminServiceGetOrganization>>,
     TError,
     TData
   >(queryKey, queryFn, {
     enabled: !!name,
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof adminServiceFindOrganization>>,
+    Awaited<ReturnType<typeof adminServiceGetOrganization>>,
     TError,
     TData,
     QueryKey
@@ -318,14 +319,14 @@ export const useAdminServiceUpdateOrganization = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary FindProjects lists all the projects in an organization
+ * @summary ListProjects lists all the projects currently available for given organizations
  */
-export const adminServiceFindProjects = (
+export const adminServiceListProjects = (
   organization: string,
-  params?: AdminServiceFindProjectsParams,
+  params?: AdminServiceListProjectsParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1FindProjectsResponse>({
+  return httpClient<V1ListProjectsResponse>({
     url: `/v1/organizations/${organization}/projects`,
     method: "get",
     params,
@@ -333,34 +334,34 @@ export const adminServiceFindProjects = (
   });
 };
 
-export const getAdminServiceFindProjectsQueryKey = (
+export const getAdminServiceListProjectsQueryKey = (
   organization: string,
-  params?: AdminServiceFindProjectsParams
+  params?: AdminServiceListProjectsParams
 ) => [
   `/v1/organizations/${organization}/projects`,
   ...(params ? [params] : []),
 ];
 
-export type AdminServiceFindProjectsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceFindProjects>>
+export type AdminServiceListProjectsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListProjects>>
 >;
-export type AdminServiceFindProjectsQueryError = RpcStatus;
+export type AdminServiceListProjectsQueryError = RpcStatus;
 
-export const useAdminServiceFindProjects = <
-  TData = Awaited<ReturnType<typeof adminServiceFindProjects>>,
+export const useAdminServiceListProjects = <
+  TData = Awaited<ReturnType<typeof adminServiceListProjects>>,
   TError = RpcStatus
 >(
   organization: string,
-  params?: AdminServiceFindProjectsParams,
+  params?: AdminServiceListProjectsParams,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof adminServiceFindProjects>>,
+      Awaited<ReturnType<typeof adminServiceListProjects>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof adminServiceFindProjects>>,
+  Awaited<ReturnType<typeof adminServiceListProjects>>,
   TError,
   TData,
   QueryKey
@@ -369,21 +370,21 @@ export const useAdminServiceFindProjects = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceFindProjectsQueryKey(organization, params);
+    getAdminServiceListProjectsQueryKey(organization, params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceFindProjects>>
-  > = ({ signal }) => adminServiceFindProjects(organization, params, signal);
+    Awaited<ReturnType<typeof adminServiceListProjects>>
+  > = ({ signal }) => adminServiceListProjects(organization, params, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof adminServiceFindProjects>>,
+    Awaited<ReturnType<typeof adminServiceListProjects>>,
     TError,
     TData
   >(queryKey, queryFn, {
     enabled: !!organization,
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof adminServiceFindProjects>>,
+    Awaited<ReturnType<typeof adminServiceListProjects>>,
     TError,
     TData,
     QueryKey
@@ -446,45 +447,45 @@ export const useAdminServiceCreateProject = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary FindProject looks up a project by name
+ * @summary GetProject returns information about a specific project
  */
-export const adminServiceFindProject = (
+export const adminServiceGetProject = (
   organization: string,
   name: string,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1FindProjectResponse>({
+  return httpClient<V1GetProjectResponse>({
     url: `/v1/organizations/${organization}/projects/${name}`,
     method: "get",
     signal,
   });
 };
 
-export const getAdminServiceFindProjectQueryKey = (
+export const getAdminServiceGetProjectQueryKey = (
   organization: string,
   name: string
 ) => [`/v1/organizations/${organization}/projects/${name}`];
 
-export type AdminServiceFindProjectQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceFindProject>>
+export type AdminServiceGetProjectQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetProject>>
 >;
-export type AdminServiceFindProjectQueryError = RpcStatus;
+export type AdminServiceGetProjectQueryError = RpcStatus;
 
-export const useAdminServiceFindProject = <
-  TData = Awaited<ReturnType<typeof adminServiceFindProject>>,
+export const useAdminServiceGetProject = <
+  TData = Awaited<ReturnType<typeof adminServiceGetProject>>,
   TError = RpcStatus
 >(
   organization: string,
   name: string,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof adminServiceFindProject>>,
+      Awaited<ReturnType<typeof adminServiceGetProject>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof adminServiceFindProject>>,
+  Awaited<ReturnType<typeof adminServiceGetProject>>,
   TError,
   TData,
   QueryKey
@@ -493,21 +494,21 @@ export const useAdminServiceFindProject = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceFindProjectQueryKey(organization, name);
+    getAdminServiceGetProjectQueryKey(organization, name);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceFindProject>>
-  > = ({ signal }) => adminServiceFindProject(organization, name, signal);
+    Awaited<ReturnType<typeof adminServiceGetProject>>
+  > = ({ signal }) => adminServiceGetProject(organization, name, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof adminServiceFindProject>>,
+    Awaited<ReturnType<typeof adminServiceGetProject>>,
     TError,
     TData
   >(queryKey, queryFn, {
     enabled: !!(organization && name),
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof adminServiceFindProject>>,
+    Awaited<ReturnType<typeof adminServiceGetProject>>,
     TError,
     TData,
     QueryKey
@@ -683,6 +684,50 @@ export const useAdminServicePing = <
   return query;
 };
 
+/**
+ * @summary RevokeCurrentAuthToken revoke the current auth token
+ */
+export const adminServiceRevokeCurrentAuthToken = () => {
+  return httpClient<V1RevokeCurrentAuthTokenResponse>({
+    url: `/v1/tokens/current`,
+    method: "delete",
+  });
+};
+
+export type AdminServiceRevokeCurrentAuthTokenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRevokeCurrentAuthToken>>
+>;
+
+export type AdminServiceRevokeCurrentAuthTokenMutationError = RpcStatus;
+
+export const useAdminServiceRevokeCurrentAuthToken = <
+  TError = RpcStatus,
+  TVariables = void,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRevokeCurrentAuthToken>>,
+    TError,
+    TVariables,
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRevokeCurrentAuthToken>>,
+    TVariables
+  > = () => {
+    return adminServiceRevokeCurrentAuthToken();
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof adminServiceRevokeCurrentAuthToken>>,
+    TError,
+    TVariables,
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary GetCurrentUser returns the currently authenticated user (if any)
  */

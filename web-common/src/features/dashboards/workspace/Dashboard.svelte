@@ -63,7 +63,6 @@
     : "max-content minmax(355px, auto)";
 
   $: if (metricsExplorer) {
-    console.log(metricsExplorer);
     const binary = toProto(metricsExplorer).toBinary();
     const message = protoToBase64(binary);
     goto(`/dashboard/${metricViewName}?state=${message}`);

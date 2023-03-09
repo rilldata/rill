@@ -1,4 +1,5 @@
 import type { Timestamp } from "@bufbuild/protobuf";
+import type { TimeRangeName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
 import type { TimeSeriesTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
 import type { MetricsViewFilter_Cond } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 import {
@@ -23,7 +24,9 @@ export function fromProto(
     filters.exclude = fromFiltersProto(dashboard.filters.exclude);
   }
 
-  return [filters, fromTimeRangeProto(dashboard.timeRange)];
+  const timeRange = fromTimeRangeProto(dashboard.timeRange);
+
+  return [filters, timeRange];
 }
 
 export function base64ToProto(message: string) {
@@ -49,14 +52,13 @@ function fromFiltersProto(conditions: Array<MetricsViewFilter_Cond>) {
 function fromTimeRangeProto(timeRange: DashboardTimeRange) {
   const selectedTimeRange: TimeSeriesTimeRange = {};
 
+  selectedTimeRange.interval = fromTimeGrainProto(timeRange.timeGranularity);
+  selectedTimeRange.name = timeRange.name as TimeRangeName;
   if (timeRange.timeStart) {
     selectedTimeRange.start = fromTimeProto(timeRange.timeStart);
   }
   if (timeRange.timeEnd) {
     selectedTimeRange.end = fromTimeProto(timeRange.timeEnd);
-  }
-  if (timeRange.timeGranularity) {
-    selectedTimeRange.interval = fromTimeGrainProto(timeRange.timeGranularity);
   }
 
   return selectedTimeRange;

@@ -13,7 +13,7 @@ import { TimeGrain } from "../../runtime/v1/catalog_pb.js";
  */
 export class DashboardState extends Message<DashboardState> {
   /**
-   * @generated from field: rill.ui.v1.DashboardTimeRange timeRange = 1;
+   * @generated from field: rill.ui.v1.DashboardTimeRange time_range = 1;
    */
   timeRange?: DashboardTimeRange;
 
@@ -30,7 +30,7 @@ export class DashboardState extends Message<DashboardState> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.ui.v1.DashboardState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "timeRange", kind: "message", T: DashboardTimeRange },
+    { no: 1, name: "time_range", kind: "message", T: DashboardTimeRange },
     { no: 2, name: "filters", kind: "message", T: MetricsViewFilter },
   ]);
 

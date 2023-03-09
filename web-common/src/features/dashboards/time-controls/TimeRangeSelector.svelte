@@ -80,10 +80,10 @@
 </script>
 
 <WithTogglableFloatingElement
-  let:toggleFloatingElement
-  let:active
-  distance={8}
   alignment="start"
+  distance={8}
+  let:active
+  let:toggleFloatingElement
 >
   <button
     class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 items-baseline"
@@ -108,9 +108,9 @@
     </IconSpaceFixer>
   </button>
   <Menu
-    slot="floating-element"
-    on:escape={toggleFloatingElement}
     on:click-outside={() => onClickOutside(toggleFloatingElement)}
+    on:escape={toggleFloatingElement}
+    slot="floating-element"
   >
     {#if relativeTimeRangeOptions}
       {#each relativeTimeRangeOptions as relativeTimeRange}
@@ -124,8 +124,8 @@
     {/if}
     <Divider />
     <CustomTimeRangeMenuItem
-      open={isCustomRangeOpen}
       on:select={() => (isCustomRangeOpen = !isCustomRangeOpen)}
+      open={isCustomRangeOpen}
     />
     {#if isCustomRangeOpen}
       <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
