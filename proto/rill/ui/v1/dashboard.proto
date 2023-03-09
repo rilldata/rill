@@ -7,8 +7,13 @@ import "rill/runtime/v1/catalog.proto";
 import "rill/runtime/v1/queries.proto";
 
 message DashboardState {
-  google.protobuf.Timestamp time_start = 1;
-  google.protobuf.Timestamp time_end = 2;
-  rill.runtime.v1.TimeGrain time_granularity = 3;
-  rill.runtime.v1.MetricsViewFilter filters = 4;
+  DashboardTimeRange timeRange = 1;
+  rill.runtime.v1.MetricsViewFilter filters = 2;
+}
+
+message DashboardTimeRange {
+  optional string name = 1;
+  optional google.protobuf.Timestamp time_start = 2;
+  optional google.protobuf.Timestamp time_end = 3;
+  rill.runtime.v1.TimeGrain time_granularity = 4;
 }

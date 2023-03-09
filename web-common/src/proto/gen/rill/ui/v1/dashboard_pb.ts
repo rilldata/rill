@@ -5,30 +5,20 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
-import { TimeGrain } from "../../runtime/v1/catalog_pb.js";
 import { MetricsViewFilter } from "../../runtime/v1/queries_pb.js";
+import { TimeGrain } from "../../runtime/v1/catalog_pb.js";
 
 /**
  * @generated from message rill.ui.v1.DashboardState
  */
 export class DashboardState extends Message<DashboardState> {
   /**
-   * @generated from field: google.protobuf.Timestamp time_start = 1;
+   * @generated from field: rill.ui.v1.DashboardTimeRange timeRange = 1;
    */
-  timeStart?: Timestamp;
+  timeRange?: DashboardTimeRange;
 
   /**
-   * @generated from field: google.protobuf.Timestamp time_end = 2;
-   */
-  timeEnd?: Timestamp;
-
-  /**
-   * @generated from field: rill.runtime.v1.TimeGrain time_granularity = 3;
-   */
-  timeGranularity = TimeGrain.UNSPECIFIED;
-
-  /**
-   * @generated from field: rill.runtime.v1.MetricsViewFilter filters = 4;
+   * @generated from field: rill.runtime.v1.MetricsViewFilter filters = 2;
    */
   filters?: MetricsViewFilter;
 
@@ -40,10 +30,8 @@ export class DashboardState extends Message<DashboardState> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.ui.v1.DashboardState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "time_start", kind: "message", T: Timestamp },
-    { no: 2, name: "time_end", kind: "message", T: Timestamp },
-    { no: 3, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
-    { no: 4, name: "filters", kind: "message", T: MetricsViewFilter },
+    { no: 1, name: "timeRange", kind: "message", T: DashboardTimeRange },
+    { no: 2, name: "filters", kind: "message", T: MetricsViewFilter },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {
@@ -60,6 +48,61 @@ export class DashboardState extends Message<DashboardState> {
 
   static equals(a: DashboardState | PlainMessage<DashboardState> | undefined, b: DashboardState | PlainMessage<DashboardState> | undefined): boolean {
     return proto3.util.equals(DashboardState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.ui.v1.DashboardTimeRange
+ */
+export class DashboardTimeRange extends Message<DashboardTimeRange> {
+  /**
+   * @generated from field: optional string name = 1;
+   */
+  name?: string;
+
+  /**
+   * @generated from field: optional google.protobuf.Timestamp time_start = 2;
+   */
+  timeStart?: Timestamp;
+
+  /**
+   * @generated from field: optional google.protobuf.Timestamp time_end = 3;
+   */
+  timeEnd?: Timestamp;
+
+  /**
+   * @generated from field: rill.runtime.v1.TimeGrain time_granularity = 4;
+   */
+  timeGranularity = TimeGrain.UNSPECIFIED;
+
+  constructor(data?: PartialMessage<DashboardTimeRange>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ui.v1.DashboardTimeRange";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "time_start", kind: "message", T: Timestamp, opt: true },
+    { no: 3, name: "time_end", kind: "message", T: Timestamp, opt: true },
+    { no: 4, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardTimeRange {
+    return new DashboardTimeRange().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DashboardTimeRange {
+    return new DashboardTimeRange().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DashboardTimeRange {
+    return new DashboardTimeRange().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DashboardTimeRange | PlainMessage<DashboardTimeRange> | undefined, b: DashboardTimeRange | PlainMessage<DashboardTimeRange> | undefined): boolean {
+    return proto3.util.equals(DashboardTimeRange, a, b);
   }
 }
 

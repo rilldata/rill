@@ -63,6 +63,7 @@
     : "max-content minmax(355px, auto)";
 
   $: if (metricsExplorer) {
+    console.log(metricsExplorer);
     const binary = toProto(metricsExplorer).toBinary();
     const message = protoToBase64(binary);
     goto(`/dashboard/${metricViewName}?state=${message}`);
@@ -77,13 +78,13 @@
 >
   <DashboardContainer
     bind:exploreContainerWidth
-    {gridConfig}
     bind:width
+    {gridConfig}
     slot="body"
   >
     <DashboardHeader {metricViewName} slot="header" />
 
-    <svelte:fragment slot="metrics" let:width>
+    <svelte:fragment let:width slot="metrics">
       {#key metricViewName}
         {#if hasTimeSeries}
           <MetricsTimeSeriesCharts {metricViewName} workspaceWidth={width} />

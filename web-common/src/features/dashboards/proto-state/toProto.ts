@@ -5,33 +5,30 @@ import {
   Value,
 } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-import { TimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+import type { TimeSeriesTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+import {
+  TimeGrain,
+  TimeGrain as TimeGrainProto,
+} from "@rilldata/web-common/proto/gen/rill/runtime/v1/catalog_pb";
 import {
   MetricsViewFilter,
   MetricsViewFilter_Cond,
-} from "@rilldata/web-common/proto/gen/rill/runtime/v1/api_pb";
+  TimeSeriesTimeRange as PBTimeRange,
+} from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   MetricsViewFilterCond,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
-import { TimeGrain as TimeGrainProto } from "@rilldata/web-common/proto/gen/rill/runtime/v1/catalog_pb";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 export function toProto(metrics: MetricsExplorerEntity) {
   const data: PartialMessage<DashboardState> = {};
   if (metrics.filters) {
     data.filters = toFiltersProto(metrics.filters) as any;
   }
-  if (metrics.selectedTimeRange?.start) {
-    data.timeStart = toTimeProto(metrics.selectedTimeRange?.start);
-  }
-  if (metrics.selectedTimeRange?.end) {
-    data.timeEnd = toTimeProto(metrics.selectedTimeRange?.end);
-  }
-  if (metrics.selectedTimeRange?.interval) {
-    data.timeGranularity = toTimeGrainProto(
-      metrics.selectedTimeRange?.interval
-    );
+  if (metrics.selectedTimeRange) {
+    data.timeRange = toTimeRangeProto(metrics.selectedTimeRange) as any;
   }
   return new DashboardState(data);
 }
@@ -47,25 +44,45 @@ function toFiltersProto(filters: V1MetricsViewFilter) {
   });
 }
 
+function toTimeRangeProto(range: TimeSeriesTimeRange) {
+  const timeRange = new PBTimeRange({});
+  if (range.start) {
+    timeRange.start = toTimeProto(range.start);
+  }
+  if (range.end) {
+    timeRange.end = toTimeProto(range.end);
+  }
+  if (range.interval) {
+    timeRange.interval = toTimeGrainProto(range.interval);
+  }
+  return timeRange;
+}
+
 function toTimeProto(time: string) {
   return new Timestamp({
     seconds: BigInt(new Date(time).getTime()),
   });
 }
 
-function toTimeGrainProto(timeGrain: TimeGrain) {
+function toTimeGrainProto(timeGrain: V1TimeGrain) {
   switch (timeGrain) {
-    case TimeGrain.OneMinute:
+    case V1TimeGrain.TIME_GRAIN_UNSPECIFIED:
+      return TimeGrain.UNSPECIFIED;
+    case V1TimeGrain.TIME_GRAIN_MILLISECOND:
+      return TimeGrain.MILLISECOND;
+    case V1TimeGrain.TIME_GRAIN_SECOND:
+      return TimeGrain.SECOND;
+    case V1TimeGrain.TIME_GRAIN_MINUTE:
       return TimeGrainProto.MINUTE;
-    case TimeGrain.OneHour:
+    case V1TimeGrain.TIME_GRAIN_HOUR:
       return TimeGrainProto.HOUR;
-    case TimeGrain.OneDay:
+    case V1TimeGrain.TIME_GRAIN_DAY:
       return TimeGrainProto.DAY;
-    case TimeGrain.OneWeek:
+    case V1TimeGrain.TIME_GRAIN_WEEK:
       return TimeGrainProto.WEEK;
-    case TimeGrain.OneMonth:
+    case V1TimeGrain.TIME_GRAIN_MONTH:
       return TimeGrainProto.MONTH;
-    case TimeGrain.OneYear:
+    case V1TimeGrain.TIME_GRAIN_YEAR:
       return TimeGrainProto.YEAR;
   }
 }
