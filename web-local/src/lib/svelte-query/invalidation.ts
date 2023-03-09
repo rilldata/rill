@@ -76,15 +76,20 @@ const getInvalidationsForPath = (
   }
 };
 
-export function invalidationForMetricsViewData(query, metricsViewName: string) {
+export function isMetricsViewQuery(queryHash, metricsViewName: string) {
   const r = new RegExp(
     `/v1/instances/[a-zA-Z0-9-]+/queries/metrics-views/${metricsViewName}/`
   );
-
-  return typeof query.queryKey[0] === "string" && r.test(query.queryKey[0]);
+  return r.test(queryHash);
+}
+export function invalidationForMetricsViewData(query, metricsViewName: string) {
+  return (
+    typeof query.queryKey[0] === "string" &&
+    isMetricsViewQuery(query.queryKey[0], metricsViewName)
+  );
 }
 
-export function invalidationForProfileQueries(queryHash, name: string) {
+export function isProfilingQuery(queryHash: string, name: string) {
   const r = new RegExp(
     `/v1/instances/[a-zA-Z0-9-]+/queries/[a-zA-Z0-9-]+/tables/${name}`
   );
@@ -107,7 +112,7 @@ export function invalidateProfilingQueries(
 ) {
   return queryClient.refetchQueries({
     predicate: (query) => {
-      return invalidationForProfileQueries(query.queryHash, name);
+      return isProfilingQuery(query.queryHash, name);
     },
   });
 }
@@ -138,7 +143,7 @@ export const removeEntityQueries = async (
     // remove profiling queries
     return queryClient.removeQueries({
       predicate: (query) => {
-        return invalidationForProfileQueries(query.queryHash, name);
+        return isProfilingQuery(query.queryHash, name);
       },
     });
   }

@@ -18,7 +18,6 @@ RILL_ADMIN_SESSION_KEY_PAIRS=7938b8c95ac90b3731c353076daeae8a,90c22a5a6c6b442afd
 RILL_ADMIN_AUTH_DOMAIN=gorillio-stage.auth0.com
 RILL_ADMIN_AUTH_CLIENT_ID=
 RILL_ADMIN_AUTH_CLIENT_SECRET=
-RILL_ADMIN_DEVICE_VERIFICATION_HOST=http://localhost:5173
 ```
 2. In a separate terminal, run Postgres in the background:
 ```

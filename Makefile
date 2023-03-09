@@ -20,3 +20,4 @@ proto.generate:
 	cd proto && buf generate --template buf.gen.openapi-runtime.yaml --path rill/runtime
 	cd proto && buf generate --template buf.gen.ui.yaml
 	npm run generate:runtime-client -w web-common
+	npm run generate:client -w web-admin

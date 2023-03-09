@@ -36,7 +36,7 @@ type Config struct {
 	AuthDomain             string        `split_words:"true"`
 	AuthClientID           string        `split_words:"true"`
 	AuthClientSecret       string        `split_words:"true"`
-	DeviceVerificationHost string        `default:"http://localhost:5173" split_words:"true"`
+	DeviceVerificationHost string        `default:"http://localhost:3000" split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.

@@ -9,8 +9,10 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
@@ -20,6 +22,8 @@
   export let dimensionName: string;
   export let isFetching: boolean;
   export let excludeMode = false;
+
+  const queryClient = useQueryClient();
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
@@ -43,6 +47,7 @@
     metricsExplorerStore.setMetricDimensionName(metricViewName, null);
   };
   function toggleFilterMode() {
+    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
   }
 </script>

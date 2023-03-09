@@ -26,6 +26,15 @@ export type AdminServiceUpdateOrganizationBodyBody = {
   description?: string;
 };
 
+export interface V1User {
+  createdOn?: string;
+  displayName?: string;
+  email?: string;
+  id?: string;
+  photoUrl?: string;
+  updatedOn?: string;
+}
+
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
 }
@@ -53,6 +62,10 @@ export interface V1Organization {
   id?: string;
   name?: string;
   updatedOn?: string;
+}
+
+export interface V1GetCurrentUserResponse {
+  user?: V1User;
 }
 
 export interface V1FindProjectsResponse {
