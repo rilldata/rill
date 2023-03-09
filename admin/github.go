@@ -16,7 +16,7 @@ import (
 )
 
 // ProcessGithubInstallation tracks a confirmed relationship between a user and an installation of the Github App.
-func (s *Service) ProcessGithubInstallation(ctx context.Context, userID string, installationID int64) error {
+func (s *Service) ProcessUserGithubInstallation(ctx context.Context, userID string, installationID int64) error {
 	return s.DB.UpsertUserGithubInstallation(ctx, userID, installationID)
 }
 
@@ -98,7 +98,7 @@ func (s *Service) ProcessGithubEvent(ctx context.Context, rawEvent any) error {
 func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent) error {
 	// Find Rill project matching the repo that was pushed to
 	repo := event.GetRepo()
-	githubURL := *repo.CloneURL
+	githubURL := *repo.HTMLURL
 	project, err := s.DB.FindProjectByGithubURL(ctx, githubURL)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -122,29 +122,23 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 		return nil
 	}
 
-	// TODO: Trigger deployment (unless currently deploying)
-	// d := deployment.LocalDeployment{Logger: g.logger}
-	// return d.DeployProject(project)
+	// TODO: Trigger reconcile (unless currently reconciling)
 
 	return nil
 }
 
 func (s *Service) processGithubInstallationEvent(ctx context.Context, event *github.InstallationEvent) error {
-	installationID := *event.GetInstallation().ID
 	// We also get event.Repositories if needed
+	installationID := *event.GetInstallation().ID
 
 	switch event.GetAction() {
-	case "created", "unsuspend":
+	case "created", "unsuspend", "suspend", "new_permissions_accepted":
 		// TODO: Should we do anything for unsuspend?
-	case "suspend":
-		// TODO: What to do about existing projects deploying from that installation?
 	case "deleted":
 		err := s.DB.DeleteUserGithubInstallations(ctx, installationID)
 		if err != nil {
 			s.logger.Error("failed to delete github installations", zap.Int64("installation_id", installationID), zap.Error(err))
 		}
-	case "new_permissions_accepted":
-		// TODO: Any caches to update here?
 	}
 
 	return nil
@@ -152,33 +146,7 @@ func (s *Service) processGithubInstallationEvent(ctx context.Context, event *git
 
 func (s *Service) processGithubInstallationRepositoriesEvent(ctx context.Context, event *github.InstallationRepositoriesEvent) error {
 	// We can access event.RepositoriesAdded and event.RepositoriesRemoved
-
-	// TODO: Should we do anything about existing projects? (Maybe send an email?)
-
 	return nil
-}
-
-// githubAuthenticatedRemote builds an authenticated Git URL for a remote in an installation.
-func (s *Service) githubAuthenticatedRemote(ctx context.Context, installationID int64, remote, owner, repoName string) (string, error) {
-	client, err := s.githubInstallationClient(installationID)
-	if err != nil {
-		return "", err
-	}
-
-	repo, _, err := client.Repositories.Get(ctx, owner, repoName)
-	if err != nil {
-		return "", err
-	}
-
-	httpURL := repo.GetCloneURL()
-	if httpURL == "" {
-		// should hopefully never happen
-		return "", fmt.Errorf("no http url")
-	}
-	httpEndpoint, _ := transport.NewEndpoint(httpURL)
-	httpEndpoint.User = "__githubapp_installation_id__"
-	httpEndpoint.Password = fmt.Sprint(installationID)
-	return httpEndpoint.String(), nil
 }
 
 // githubInstallationClient makes a Github client that authenticates as a specific installation.

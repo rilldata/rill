@@ -8,6 +8,7 @@ export type AdminServiceUpdateProjectBody = {
   description?: string;
   githubUrl?: string;
   productionBranch?: string;
+  public?: boolean;
 };
 
 export type AdminServiceCreateProjectBody = {
@@ -15,6 +16,7 @@ export type AdminServiceCreateProjectBody = {
   githubUrl?: string;
   name?: string;
   productionBranch?: string;
+  public?: boolean;
 };
 
 export type AdminServiceListProjectsParams = {
@@ -57,6 +59,7 @@ export interface V1Project {
   id?: string;
   name?: string;
   productionBranch?: string;
+  public?: boolean;
   updatedOn?: string;
 }
 

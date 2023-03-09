@@ -3,8 +3,10 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -40,6 +42,13 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 }
 
 func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
+	// Check the request is made by a user
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated")
+	}
+
+	// Find parent org
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -48,18 +57,27 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// TODO: Validate that we have access to req.GithubUrl.
+	// Get Github installation ID for the repo
+	installationID, ok, err := s.admin.GetUserGithubInstallation(ctx, claims.OwnerID(), req.GithubUrl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Github installation: %w", err)
+	}
+	// Check that the user has access to the installation
+	if !ok {
+		return nil, fmt.Errorf("you have not granted Rill access to %q", req.GithubUrl)
+	}
 
 	// TODO: Validate that req.ProductionBranch is an actual branch.
 
-	// TODO: Acquire a Github installation ID for the repo.
-
+	// Create the project
 	project := &database.Project{
-		OrganizationID:   org.ID,
-		Name:             req.Name,
-		Description:      req.Description,
-		ProductionBranch: req.ProductionBranch,
-		GithubURL:        req.GithubUrl,
+		OrganizationID:       org.ID,
+		Name:                 req.Name,
+		Description:          req.Description,
+		Public:               req.Public,
+		ProductionBranch:     req.ProductionBranch,
+		GithubURL:            req.GithubUrl,
+		GithubInstallationID: installationID,
 	}
 	proj, err := s.admin.DB.CreateProject(ctx, org.ID, project)
 	if err != nil {
@@ -117,10 +135,13 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 
 func projToDTO(p *database.Project) *adminv1.Project {
 	return &adminv1.Project{
-		Id:          p.ID,
-		Name:        p.Name,
-		Description: p.Description,
-		CreatedOn:   timestamppb.New(p.CreatedOn),
-		UpdatedOn:   timestamppb.New(p.CreatedOn),
+		Id:               p.ID,
+		Name:             p.Name,
+		Description:      p.Description,
+		Public:           p.Public,
+		ProductionBranch: p.ProductionBranch,
+		GithubUrl:        p.GithubURL,
+		CreatedOn:        timestamppb.New(p.CreatedOn),
+		UpdatedOn:        timestamppb.New(p.CreatedOn),
 	}
 }

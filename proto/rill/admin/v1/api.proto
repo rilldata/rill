@@ -168,8 +168,9 @@ message CreateProjectRequest {
   string organization_name = 1;
   string name = 2;
   string description = 3;
-  string production_branch = 4;
-  string github_url = 5;
+  bool public = 4;
+  string production_branch = 5;
+  string github_url = 6;
 }
 
 message CreateProjectResponse {
@@ -189,8 +190,9 @@ message UpdateProjectRequest {
   string organization_name = 1;
   string name = 2;
   string description = 3;
-  string production_branch = 4;
-  string github_url = 5;
+  bool public = 4;
+  string production_branch = 5;
+  string github_url = 6;
 }
 
 message UpdateProjectResponse {
@@ -231,10 +233,11 @@ message Project {
   string id = 1;
   string name = 2; // Unique in organization
   string description = 3;
-  string production_branch = 4;
-  string github_url = 5;
-  google.protobuf.Timestamp created_on = 6;
-  google.protobuf.Timestamp updated_on = 7;
+  bool public = 4;
+  string production_branch = 5;
+  string github_url = 6;
+  google.protobuf.Timestamp created_on = 7;
+  google.protobuf.Timestamp updated_on = 8;
 }
 
 message User {

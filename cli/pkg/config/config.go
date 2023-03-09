@@ -5,7 +5,6 @@ import "fmt"
 type Config struct {
 	Version            Version
 	AdminURL           string
-	AdminHTTPURL       string
 	AdminTokenDefault  string
 	AdminTokenOverride string
 	DefaultOrg         string

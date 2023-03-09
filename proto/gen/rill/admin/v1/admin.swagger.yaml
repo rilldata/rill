@@ -202,6 +202,8 @@ paths:
                 type: string
               productionBranch:
                 type: string
+              public:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}:
@@ -284,6 +286,8 @@ paths:
                 type: string
               productionBranch:
                 type: string
+              public:
+                type: boolean
       tags:
         - AdminService
   /v1/ping:
@@ -462,6 +466,8 @@ definitions:
         title: Unique in organization
       productionBranch:
         type: string
+      public:
+        type: boolean
       updatedOn:
         type: string
         format: date-time

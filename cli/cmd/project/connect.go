@@ -31,7 +31,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 
 	connectCmd := &cobra.Command{
 		Use:   "connect",
-		Short: "Connect project to rill cloud",
+		Short: "Setup continuous deployment to Rill Cloud",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Allow setting project path as arg (instead of flag)
@@ -54,7 +54,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				os.Exit(1)
 			}
 
-			// Parse into a https://url/account/repo (no .git) format
+			// Parse into a https://github.com/account/repo (no .git) format
 			githubURL, err := remotesToGithubURL(remotes)
 			if err != nil {
 				return err
@@ -79,7 +79,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			if !ghRes.HasAccess {
 				// Print instructions to grant access
 				fmt.Printf("Rill projects deploy continuously when you push changes to Github.\n\n")
-				fmt.Printf("Open this URL in your browser to grant Rill access to deploy from Github the login:\n\n")
+				fmt.Printf("Open this URL in your browser to grant Rill access to your Github repository:\n\n")
 				fmt.Printf("\t%s\n\n", ghRes.GrantAccessUrl)
 
 				// Open browser if possible
@@ -132,6 +132,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				Name:             name,
 				Description:      description,
 				ProductionBranch: prodBranch,
+				Public:           public,
 				GithubUrl:        githubURL,
 			})
 			if err != nil {
@@ -146,10 +147,10 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 
 	connectCmd.Flags().SortFlags = false
 	connectCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
-	connectCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Production branch name")
-	connectCmd.Flags().StringVar(&name, "name", "", "Name")
+	connectCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
+	connectCmd.Flags().StringVar(&name, "name", "", "Project name (default: the Github repo name)")
 	connectCmd.Flags().StringVar(&description, "description", "", "Project description")
-	connectCmd.Flags().BoolVar(&public, "public", false, "Public")
+	connectCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 
 	return connectCmd
 }

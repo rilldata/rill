@@ -1938,6 +1938,8 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for Description
 
+	// no validation rules for Public
+
 	// no validation rules for ProductionBranch
 
 	// no validation rules for GithubUrl
@@ -2390,6 +2392,8 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 	// no validation rules for Name
 
 	// no validation rules for Description
+
+	// no validation rules for Public
 
 	// no validation rules for ProductionBranch
 
@@ -3449,6 +3453,8 @@ func (m *Project) validate(all bool) error {
 	// no validation rules for Name
 
 	// no validation rules for Description
+
+	// no validation rules for Public
 
 	// no validation rules for ProductionBranch
 

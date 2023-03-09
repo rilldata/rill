@@ -122,7 +122,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 	}
 
 	// Associate the user with the installation
-	err = s.admin.ProcessGithubInstallation(r.Context(), claims.OwnerID(), int64(installationID))
+	err = s.admin.ProcessUserGithubInstallation(r.Context(), claims.OwnerID(), int64(installationID))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to track github install: %s", err), http.StatusInternalServerError)
 		return

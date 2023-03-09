@@ -135,6 +135,7 @@ type Project struct {
 	OrganizationID       string `db:"organization_id"`
 	Name                 string
 	Description          string
+	Public               bool
 	ProductionBranch     string    `db:"production_branch"`
 	GithubURL            string    `db:"github_url"`
 	GithubInstallationID int64     `db:"github_installation_id"`
