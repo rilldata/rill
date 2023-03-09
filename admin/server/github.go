@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/google/go-github/v50/github"
@@ -25,8 +26,8 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request, pathParam
 	// NOTE: If needed, we can add a `state` query parameter that will be passed through to githubConnectCallback.
 
 	// Redirect to Github App for installation
-	url := fmt.Sprintf("https://github.com/apps/%s/installations/new", s.opts.GithubAppName)
-	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	redirectURL := fmt.Sprintf("https://github.com/apps/%s/installations/new", s.opts.GithubAppName)
+	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
 // githubConnectCallback is called after a Github App authorization flow initiated by githubConnect has completed.
@@ -36,7 +37,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 	// Extract info from query string
 	qry := r.URL.Query()
 	setupAction := qry.Get("setup_action")
-	if setupAction != "install" { // TODO: Can also be update, request
+	if setupAction != "install" && setupAction != "update" { // TODO: Also handle "request"
 		http.Error(w, fmt.Sprintf("unexpected setup_action=%q", setupAction), http.StatusBadRequest)
 		return
 	}
@@ -61,9 +62,13 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	// TODO: Redirect to UI success page
-	// http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
-	w.WriteHeader(http.StatusOK)
+	// Redirect to UI success page
+	redirectURL, err := url.JoinPath(s.opts.FrontendURL, "/github/connect/success")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
 // githubWebhook is called by Github to deliver events about new pushes, pull requests, changes to a repository, etc.
