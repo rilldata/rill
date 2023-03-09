@@ -189,6 +189,7 @@ const (
 
 // UserGithubInstallation represents a confirmed user relationship to an installation of our Github app
 type UserGithubInstallation struct {
+	ID             string    `db:"id"`
 	UserID         string    `db:"user_id"`
 	InstallationID int64     `db:"installation_id"`
 	CreatedOn      time.Time `db:"created_on"`

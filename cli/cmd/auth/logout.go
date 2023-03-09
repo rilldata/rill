@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"fmt"
+
 	"github.com/fatih/color"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -27,9 +29,10 @@ func LogoutCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			defer client.Close()
+
 			_, err = client.RevokeCurrentAuthToken(cmd.Context(), &adminv1.RevokeCurrentAuthTokenRequest{})
 			if err != nil {
-				return err
+				fmt.Printf("Failed to revoke token (did you revoke it manually?). Clearing local token anyway.\n")
 			}
 
 			err = dotrill.SetAccessToken("")

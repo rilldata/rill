@@ -328,7 +328,7 @@ func (c *connection) DeleteAuthCode(ctx context.Context, deviceCode string) erro
 
 func (c *connection) FindUserGithubInstallation(ctx context.Context, userID string, installationID int64) (*database.UserGithubInstallation, error) {
 	res := &database.UserGithubInstallation{}
-	err := c.db.QueryRowxContext(ctx, "SELECT * FROM user_github_installations WHERE user_id=$1 AND installation_id=$2", userID, installationID).StructScan(res)
+	err := c.db.QueryRowxContext(ctx, "SELECT * FROM users_github_installations WHERE user_id=$1 AND installation_id=$2", userID, installationID).StructScan(res)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, database.ErrNotFound
@@ -339,7 +339,7 @@ func (c *connection) FindUserGithubInstallation(ctx context.Context, userID stri
 }
 
 func (c *connection) UpsertUserGithubInstallation(ctx context.Context, userID string, installationID int64) error {
-	_, err := c.db.ExecContext(ctx, "INSERT INTO user_github_installations (user_id, installation_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", userID, installationID)
+	_, err := c.db.ExecContext(ctx, "INSERT INTO users_github_installations (user_id, installation_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", userID, installationID)
 	if err != nil {
 		return err
 	}
@@ -347,6 +347,6 @@ func (c *connection) UpsertUserGithubInstallation(ctx context.Context, userID st
 }
 
 func (c *connection) DeleteUserGithubInstallations(ctx context.Context, installationID int64) error {
-	_, err := c.db.ExecContext(ctx, "DELETE FROM user_github_installations WHERE installation_id=$1", installationID)
+	_, err := c.db.ExecContext(ctx, "DELETE FROM users_github_installations WHERE installation_id=$1", installationID)
 	return err
 }
