@@ -70,3 +70,14 @@ npm install --global smee-client
 ```bash
 smee --port 8080 --path /github/webhook --url https://smee.io/IDENTIFIER
 ```
+
+## CLI login/logout
+
+For trying out CLI login add api-url parameter to point to local admin HTTP server like this:
+```
+go run ./cli auth login --api-url http://localhost:8080/
+```
+For trying out CLI logout add api-url parameter to point to local admin gRPC server like this:
+```
+go run ./cli auth logout --api-url http://localhost:9090/
+```

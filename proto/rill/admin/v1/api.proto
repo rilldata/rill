@@ -79,6 +79,11 @@ service AdminService {
       get: "/v1/users/current"
     };
   }
+
+  // RevokeCurrentAuthToken revoke the current auth token
+  rpc RevokeCurrentAuthToken(RevokeCurrentAuthTokenRequest) returns (RevokeCurrentAuthTokenResponse) {
+    option (google.api.http) = {delete: "/v1/tokens/current"};
+  }
 }
 
 // Request message for AdminService.Ping
@@ -245,4 +250,10 @@ message User {
   string photo_url = 4;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
+}
+
+message RevokeCurrentAuthTokenRequest {}
+
+message RevokeCurrentAuthTokenResponse {
+  string token_id = 1;
 }

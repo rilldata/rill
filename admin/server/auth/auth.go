@@ -13,10 +13,11 @@ import (
 
 // AuthenticatorOptions provides options for Authenticator
 type AuthenticatorOptions struct {
-	AuthDomain       string
-	AuthClientID     string
-	AuthClientSecret string
-	ExternalURL      string
+	AuthDomain             string
+	AuthClientID           string
+	AuthClientSecret       string
+	ExternalURL            string
+	DeviceVerificationHost string
 }
 
 // Authenticator wraps functionality for admin server auth.

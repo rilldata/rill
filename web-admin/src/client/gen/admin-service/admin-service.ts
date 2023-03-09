@@ -14,34 +14,37 @@ import type {
   QueryKey,
 } from "@sveltestack/svelte-query";
 import type {
-  V1FindOrganizationsResponse,
+  V1ListOrganizationsResponse,
   RpcStatus,
-  AdminServiceFindOrganizationsParams,
+  AdminServiceListOrganizationsParams,
   V1CreateOrganizationResponse,
   V1CreateOrganizationRequest,
-  V1FindOrganizationResponse,
+  V1GetOrganizationResponse,
   V1DeleteOrganizationResponse,
   V1UpdateOrganizationResponse,
-  AdminServiceUpdateOrganizationBodyBody,
-  V1FindProjectsResponse,
-  AdminServiceFindProjectsParams,
+  AdminServiceUpdateOrganizationBody,
+  V1ListProjectsResponse,
+  AdminServiceListProjectsParams,
   V1CreateProjectResponse,
   AdminServiceCreateProjectBody,
-  V1FindProjectResponse,
+  V1GetProjectResponse,
   V1DeleteProjectResponse,
   V1UpdateProjectResponse,
+  AdminServiceUpdateProjectBody,
   V1PingResponse,
+  V1RevokeCurrentAuthTokenResponse,
+  V1GetCurrentUserResponse,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
 /**
- * @summary findOrganizations lists all the organizations currently managed by the admin
+ * @summary ListOrganizations lists all the organizations currently managed by the admin
  */
-export const adminServiceFindOrganizations = (
-  params?: AdminServiceFindOrganizationsParams,
+export const adminServiceListOrganizations = (
+  params?: AdminServiceListOrganizationsParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1FindOrganizationsResponse>({
+  return httpClient<V1ListOrganizationsResponse>({
     url: `/v1/organizations`,
     method: "get",
     params,
@@ -49,29 +52,29 @@ export const adminServiceFindOrganizations = (
   });
 };
 
-export const getAdminServiceFindOrganizationsQueryKey = (
-  params?: AdminServiceFindOrganizationsParams
+export const getAdminServiceListOrganizationsQueryKey = (
+  params?: AdminServiceListOrganizationsParams
 ) => [`/v1/organizations`, ...(params ? [params] : [])];
 
-export type AdminServiceFindOrganizationsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceFindOrganizations>>
+export type AdminServiceListOrganizationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListOrganizations>>
 >;
-export type AdminServiceFindOrganizationsQueryError = RpcStatus;
+export type AdminServiceListOrganizationsQueryError = RpcStatus;
 
-export const useAdminServiceFindOrganizations = <
-  TData = Awaited<ReturnType<typeof adminServiceFindOrganizations>>,
+export const useAdminServiceListOrganizations = <
+  TData = Awaited<ReturnType<typeof adminServiceListOrganizations>>,
   TError = RpcStatus
 >(
-  params?: AdminServiceFindOrganizationsParams,
+  params?: AdminServiceListOrganizationsParams,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof adminServiceFindOrganizations>>,
+      Awaited<ReturnType<typeof adminServiceListOrganizations>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof adminServiceFindOrganizations>>,
+  Awaited<ReturnType<typeof adminServiceListOrganizations>>,
   TError,
   TData,
   QueryKey
@@ -79,18 +82,18 @@ export const useAdminServiceFindOrganizations = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getAdminServiceFindOrganizationsQueryKey(params);
+    queryOptions?.queryKey ?? getAdminServiceListOrganizationsQueryKey(params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceFindOrganizations>>
-  > = ({ signal }) => adminServiceFindOrganizations(params, signal);
+    Awaited<ReturnType<typeof adminServiceListOrganizations>>
+  > = ({ signal }) => adminServiceListOrganizations(params, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof adminServiceFindOrganizations>>,
+    Awaited<ReturnType<typeof adminServiceListOrganizations>>,
     TError,
     TData
   >(queryKey, queryFn, queryOptions) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof adminServiceFindOrganizations>>,
+    Awaited<ReturnType<typeof adminServiceListOrganizations>>,
     TError,
     TData,
     QueryKey
@@ -152,42 +155,42 @@ export const useAdminServiceCreateOrganization = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary FindOrganization returns information about a specific organization
+ * @summary GetOrganization returns information about a specific organization
  */
-export const adminServiceFindOrganization = (
+export const adminServiceGetOrganization = (
   name: string,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1FindOrganizationResponse>({
+  return httpClient<V1GetOrganizationResponse>({
     url: `/v1/organizations/${name}`,
     method: "get",
     signal,
   });
 };
 
-export const getAdminServiceFindOrganizationQueryKey = (name: string) => [
+export const getAdminServiceGetOrganizationQueryKey = (name: string) => [
   `/v1/organizations/${name}`,
 ];
 
-export type AdminServiceFindOrganizationQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceFindOrganization>>
+export type AdminServiceGetOrganizationQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetOrganization>>
 >;
-export type AdminServiceFindOrganizationQueryError = RpcStatus;
+export type AdminServiceGetOrganizationQueryError = RpcStatus;
 
-export const useAdminServiceFindOrganization = <
-  TData = Awaited<ReturnType<typeof adminServiceFindOrganization>>,
+export const useAdminServiceGetOrganization = <
+  TData = Awaited<ReturnType<typeof adminServiceGetOrganization>>,
   TError = RpcStatus
 >(
   name: string,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof adminServiceFindOrganization>>,
+      Awaited<ReturnType<typeof adminServiceGetOrganization>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof adminServiceFindOrganization>>,
+  Awaited<ReturnType<typeof adminServiceGetOrganization>>,
   TError,
   TData,
   QueryKey
@@ -195,21 +198,21 @@ export const useAdminServiceFindOrganization = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getAdminServiceFindOrganizationQueryKey(name);
+    queryOptions?.queryKey ?? getAdminServiceGetOrganizationQueryKey(name);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceFindOrganization>>
-  > = ({ signal }) => adminServiceFindOrganization(name, signal);
+    Awaited<ReturnType<typeof adminServiceGetOrganization>>
+  > = ({ signal }) => adminServiceGetOrganization(name, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof adminServiceFindOrganization>>,
+    Awaited<ReturnType<typeof adminServiceGetOrganization>>,
     TError,
     TData
   >(queryKey, queryFn, {
     enabled: !!name,
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof adminServiceFindOrganization>>,
+    Awaited<ReturnType<typeof adminServiceGetOrganization>>,
     TError,
     TData,
     QueryKey
@@ -270,13 +273,13 @@ export const useAdminServiceDeleteOrganization = <
  */
 export const adminServiceUpdateOrganization = (
   name: string,
-  adminServiceUpdateOrganizationBodyBody: AdminServiceUpdateOrganizationBodyBody
+  adminServiceUpdateOrganizationBody: AdminServiceUpdateOrganizationBody
 ) => {
   return httpClient<V1UpdateOrganizationResponse>({
     url: `/v1/organizations/${name}`,
     method: "put",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceUpdateOrganizationBodyBody,
+    data: adminServiceUpdateOrganizationBody,
   });
 };
 
@@ -284,7 +287,7 @@ export type AdminServiceUpdateOrganizationMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceUpdateOrganization>>
 >;
 export type AdminServiceUpdateOrganizationMutationBody =
-  AdminServiceUpdateOrganizationBodyBody;
+  AdminServiceUpdateOrganizationBody;
 export type AdminServiceUpdateOrganizationMutationError = RpcStatus;
 
 export const useAdminServiceUpdateOrganization = <
@@ -294,7 +297,7 @@ export const useAdminServiceUpdateOrganization = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof adminServiceUpdateOrganization>>,
     TError,
-    { name: string; data: AdminServiceUpdateOrganizationBodyBody },
+    { name: string; data: AdminServiceUpdateOrganizationBody },
     TContext
   >;
 }) => {
@@ -302,7 +305,7 @@ export const useAdminServiceUpdateOrganization = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceUpdateOrganization>>,
-    { name: string; data: AdminServiceUpdateOrganizationBodyBody }
+    { name: string; data: AdminServiceUpdateOrganizationBody }
   > = (props) => {
     const { name, data } = props ?? {};
 
@@ -312,54 +315,54 @@ export const useAdminServiceUpdateOrganization = <
   return useMutation<
     Awaited<ReturnType<typeof adminServiceUpdateOrganization>>,
     TError,
-    { name: string; data: AdminServiceUpdateOrganizationBodyBody },
+    { name: string; data: AdminServiceUpdateOrganizationBody },
     TContext
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary FindProjects lists all the projects currently available for given organizations
+ * @summary ListProjects lists all the projects currently available for given organizations
  */
-export const adminServiceFindProjects = (
-  organization: string,
-  params?: AdminServiceFindProjectsParams,
+export const adminServiceListProjects = (
+  organizationName: string,
+  params?: AdminServiceListProjectsParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1FindProjectsResponse>({
-    url: `/v1/organizations/${organization}/projects`,
+  return httpClient<V1ListProjectsResponse>({
+    url: `/v1/organizations/${organizationName}/projects`,
     method: "get",
     params,
     signal,
   });
 };
 
-export const getAdminServiceFindProjectsQueryKey = (
-  organization: string,
-  params?: AdminServiceFindProjectsParams
+export const getAdminServiceListProjectsQueryKey = (
+  organizationName: string,
+  params?: AdminServiceListProjectsParams
 ) => [
-  `/v1/organizations/${organization}/projects`,
+  `/v1/organizations/${organizationName}/projects`,
   ...(params ? [params] : []),
 ];
 
-export type AdminServiceFindProjectsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceFindProjects>>
+export type AdminServiceListProjectsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListProjects>>
 >;
-export type AdminServiceFindProjectsQueryError = RpcStatus;
+export type AdminServiceListProjectsQueryError = RpcStatus;
 
-export const useAdminServiceFindProjects = <
-  TData = Awaited<ReturnType<typeof adminServiceFindProjects>>,
+export const useAdminServiceListProjects = <
+  TData = Awaited<ReturnType<typeof adminServiceListProjects>>,
   TError = RpcStatus
 >(
-  organization: string,
-  params?: AdminServiceFindProjectsParams,
+  organizationName: string,
+  params?: AdminServiceListProjectsParams,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof adminServiceFindProjects>>,
+      Awaited<ReturnType<typeof adminServiceListProjects>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof adminServiceFindProjects>>,
+  Awaited<ReturnType<typeof adminServiceListProjects>>,
   TError,
   TData,
   QueryKey
@@ -368,21 +371,22 @@ export const useAdminServiceFindProjects = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceFindProjectsQueryKey(organization, params);
+    getAdminServiceListProjectsQueryKey(organizationName, params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceFindProjects>>
-  > = ({ signal }) => adminServiceFindProjects(organization, params, signal);
+    Awaited<ReturnType<typeof adminServiceListProjects>>
+  > = ({ signal }) =>
+    adminServiceListProjects(organizationName, params, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof adminServiceFindProjects>>,
+    Awaited<ReturnType<typeof adminServiceListProjects>>,
     TError,
     TData
   >(queryKey, queryFn, {
-    enabled: !!organization,
+    enabled: !!organizationName,
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof adminServiceFindProjects>>,
+    Awaited<ReturnType<typeof adminServiceListProjects>>,
     TError,
     TData,
     QueryKey
@@ -397,11 +401,11 @@ export const useAdminServiceFindProjects = <
  * @summary CreateProject creates a new project
  */
 export const adminServiceCreateProject = (
-  organization: string,
+  organizationName: string,
   adminServiceCreateProjectBody: AdminServiceCreateProjectBody
 ) => {
   return httpClient<V1CreateProjectResponse>({
-    url: `/v1/organizations/${organization}/projects`,
+    url: `/v1/organizations/${organizationName}/projects`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: adminServiceCreateProjectBody,
@@ -422,7 +426,7 @@ export const useAdminServiceCreateProject = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof adminServiceCreateProject>>,
     TError,
-    { organization: string; data: AdminServiceCreateProjectBody },
+    { organizationName: string; data: AdminServiceCreateProjectBody },
     TContext
   >;
 }) => {
@@ -430,60 +434,60 @@ export const useAdminServiceCreateProject = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceCreateProject>>,
-    { organization: string; data: AdminServiceCreateProjectBody }
+    { organizationName: string; data: AdminServiceCreateProjectBody }
   > = (props) => {
-    const { organization, data } = props ?? {};
+    const { organizationName, data } = props ?? {};
 
-    return adminServiceCreateProject(organization, data);
+    return adminServiceCreateProject(organizationName, data);
   };
 
   return useMutation<
     Awaited<ReturnType<typeof adminServiceCreateProject>>,
     TError,
-    { organization: string; data: AdminServiceCreateProjectBody },
+    { organizationName: string; data: AdminServiceCreateProjectBody },
     TContext
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary FindProject returns information about a specific project
+ * @summary GetProject returns information about a specific project
  */
-export const adminServiceFindProject = (
-  organization: string,
+export const adminServiceGetProject = (
+  organizationName: string,
   name: string,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1FindProjectResponse>({
-    url: `/v1/organizations/${organization}/projects/${name}`,
+  return httpClient<V1GetProjectResponse>({
+    url: `/v1/organizations/${organizationName}/projects/${name}`,
     method: "get",
     signal,
   });
 };
 
-export const getAdminServiceFindProjectQueryKey = (
-  organization: string,
+export const getAdminServiceGetProjectQueryKey = (
+  organizationName: string,
   name: string
-) => [`/v1/organizations/${organization}/projects/${name}`];
+) => [`/v1/organizations/${organizationName}/projects/${name}`];
 
-export type AdminServiceFindProjectQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceFindProject>>
+export type AdminServiceGetProjectQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetProject>>
 >;
-export type AdminServiceFindProjectQueryError = RpcStatus;
+export type AdminServiceGetProjectQueryError = RpcStatus;
 
-export const useAdminServiceFindProject = <
-  TData = Awaited<ReturnType<typeof adminServiceFindProject>>,
+export const useAdminServiceGetProject = <
+  TData = Awaited<ReturnType<typeof adminServiceGetProject>>,
   TError = RpcStatus
 >(
-  organization: string,
+  organizationName: string,
   name: string,
   options?: {
     query?: UseQueryOptions<
-      Awaited<ReturnType<typeof adminServiceFindProject>>,
+      Awaited<ReturnType<typeof adminServiceGetProject>>,
       TError,
       TData
     >;
   }
 ): UseQueryStoreResult<
-  Awaited<ReturnType<typeof adminServiceFindProject>>,
+  Awaited<ReturnType<typeof adminServiceGetProject>>,
   TError,
   TData,
   QueryKey
@@ -492,21 +496,21 @@ export const useAdminServiceFindProject = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceFindProjectQueryKey(organization, name);
+    getAdminServiceGetProjectQueryKey(organizationName, name);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceFindProject>>
-  > = ({ signal }) => adminServiceFindProject(organization, name, signal);
+    Awaited<ReturnType<typeof adminServiceGetProject>>
+  > = ({ signal }) => adminServiceGetProject(organizationName, name, signal);
 
   const query = useQuery<
-    Awaited<ReturnType<typeof adminServiceFindProject>>,
+    Awaited<ReturnType<typeof adminServiceGetProject>>,
     TError,
     TData
   >(queryKey, queryFn, {
-    enabled: !!(organization && name),
+    enabled: !!(organizationName && name),
     ...queryOptions,
   }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof adminServiceFindProject>>,
+    Awaited<ReturnType<typeof adminServiceGetProject>>,
     TError,
     TData,
     QueryKey
@@ -521,11 +525,11 @@ export const useAdminServiceFindProject = <
  * @summary DeleteProject deletes an project
  */
 export const adminServiceDeleteProject = (
-  organization: string,
+  organizationName: string,
   name: string
 ) => {
   return httpClient<V1DeleteProjectResponse>({
-    url: `/v1/organizations/${organization}/projects/${name}`,
+    url: `/v1/organizations/${organizationName}/projects/${name}`,
     method: "delete",
   });
 };
@@ -543,7 +547,7 @@ export const useAdminServiceDeleteProject = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof adminServiceDeleteProject>>,
     TError,
-    { organization: string; name: string },
+    { organizationName: string; name: string },
     TContext
   >;
 }) => {
@@ -551,33 +555,33 @@ export const useAdminServiceDeleteProject = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceDeleteProject>>,
-    { organization: string; name: string }
+    { organizationName: string; name: string }
   > = (props) => {
-    const { organization, name } = props ?? {};
+    const { organizationName, name } = props ?? {};
 
-    return adminServiceDeleteProject(organization, name);
+    return adminServiceDeleteProject(organizationName, name);
   };
 
   return useMutation<
     Awaited<ReturnType<typeof adminServiceDeleteProject>>,
     TError,
-    { organization: string; name: string },
+    { organizationName: string; name: string },
     TContext
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary UpdateProject update a project
+ * @summary UpdateProject updates a project
  */
 export const adminServiceUpdateProject = (
-  organization: string,
+  organizationName: string,
   name: string,
-  adminServiceUpdateOrganizationBodyBody: AdminServiceUpdateOrganizationBodyBody
+  adminServiceUpdateProjectBody: AdminServiceUpdateProjectBody
 ) => {
   return httpClient<V1UpdateProjectResponse>({
-    url: `/v1/organizations/${organization}/projects/${name}`,
+    url: `/v1/organizations/${organizationName}/projects/${name}`,
     method: "put",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceUpdateOrganizationBodyBody,
+    data: adminServiceUpdateProjectBody,
   });
 };
 
@@ -585,7 +589,7 @@ export type AdminServiceUpdateProjectMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceUpdateProject>>
 >;
 export type AdminServiceUpdateProjectMutationBody =
-  AdminServiceUpdateOrganizationBodyBody;
+  AdminServiceUpdateProjectBody;
 export type AdminServiceUpdateProjectMutationError = RpcStatus;
 
 export const useAdminServiceUpdateProject = <
@@ -596,9 +600,9 @@ export const useAdminServiceUpdateProject = <
     Awaited<ReturnType<typeof adminServiceUpdateProject>>,
     TError,
     {
-      organization: string;
+      organizationName: string;
       name: string;
-      data: AdminServiceUpdateOrganizationBodyBody;
+      data: AdminServiceUpdateProjectBody;
     },
     TContext
   >;
@@ -608,29 +612,29 @@ export const useAdminServiceUpdateProject = <
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceUpdateProject>>,
     {
-      organization: string;
+      organizationName: string;
       name: string;
-      data: AdminServiceUpdateOrganizationBodyBody;
+      data: AdminServiceUpdateProjectBody;
     }
   > = (props) => {
-    const { organization, name, data } = props ?? {};
+    const { organizationName, name, data } = props ?? {};
 
-    return adminServiceUpdateProject(organization, name, data);
+    return adminServiceUpdateProject(organizationName, name, data);
   };
 
   return useMutation<
     Awaited<ReturnType<typeof adminServiceUpdateProject>>,
     TError,
     {
-      organization: string;
+      organizationName: string;
       name: string;
-      data: AdminServiceUpdateOrganizationBodyBody;
+      data: AdminServiceUpdateProjectBody;
     },
     TContext
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary Ping returns information about the admin
+ * @summary Ping returns information about the server
  */
 export const adminServicePing = (signal?: AbortSignal) => {
   return httpClient<V1PingResponse>({ url: `/v1/ping`, method: "get", signal });
@@ -672,6 +676,110 @@ export const useAdminServicePing = <
     TData
   >(queryKey, queryFn, queryOptions) as UseQueryStoreResult<
     Awaited<ReturnType<typeof adminServicePing>>,
+    TError,
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary RevokeCurrentAuthToken revoke the current auth token
+ */
+export const adminServiceRevokeCurrentAuthToken = () => {
+  return httpClient<V1RevokeCurrentAuthTokenResponse>({
+    url: `/v1/tokens/current`,
+    method: "delete",
+  });
+};
+
+export type AdminServiceRevokeCurrentAuthTokenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRevokeCurrentAuthToken>>
+>;
+
+export type AdminServiceRevokeCurrentAuthTokenMutationError = RpcStatus;
+
+export const useAdminServiceRevokeCurrentAuthToken = <
+  TError = RpcStatus,
+  TVariables = void,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRevokeCurrentAuthToken>>,
+    TError,
+    TVariables,
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRevokeCurrentAuthToken>>,
+    TVariables
+  > = () => {
+    return adminServiceRevokeCurrentAuthToken();
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof adminServiceRevokeCurrentAuthToken>>,
+    TError,
+    TVariables,
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary GetCurrentUser returns the currently authenticated user (if any)
+ */
+export const adminServiceGetCurrentUser = (signal?: AbortSignal) => {
+  return httpClient<V1GetCurrentUserResponse>({
+    url: `/v1/users/current`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetCurrentUserQueryKey = () => [
+  `/v1/users/current`,
+];
+
+export type AdminServiceGetCurrentUserQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetCurrentUser>>
+>;
+export type AdminServiceGetCurrentUserQueryError = RpcStatus;
+
+export const useAdminServiceGetCurrentUser = <
+  TData = Awaited<ReturnType<typeof adminServiceGetCurrentUser>>,
+  TError = RpcStatus
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetCurrentUser>>,
+    TError,
+    TData
+  >;
+}): UseQueryStoreResult<
+  Awaited<ReturnType<typeof adminServiceGetCurrentUser>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceGetCurrentUserQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetCurrentUser>>
+  > = ({ signal }) => adminServiceGetCurrentUser(signal);
+
+  const query = useQuery<
+    Awaited<ReturnType<typeof adminServiceGetCurrentUser>>,
+    TError,
+    TData
+  >(queryKey, queryFn, queryOptions) as UseQueryStoreResult<
+    Awaited<ReturnType<typeof adminServiceGetCurrentUser>>,
     TError,
     TData,
     QueryKey

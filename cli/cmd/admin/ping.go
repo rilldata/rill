@@ -17,7 +17,7 @@ func PingCmd(cfg *config.Config) *cobra.Command {
 		Use:   "ping",
 		Short: "Ping",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := client.New(adminURL, cfg.AdminToken)
+			client, err := client.New(adminURL, cfg.AdminToken())
 			if err != nil {
 				return err
 			}

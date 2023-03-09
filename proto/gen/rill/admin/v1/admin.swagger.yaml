@@ -288,6 +288,21 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
+  /v1/tokens/current:
+    delete:
+      summary: RevokeCurrentAuthToken revoke the current auth token
+      operationId: AdminService_RevokeCurrentAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RevokeCurrentAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
   /v1/users/current:
     get:
       summary: GetCurrentUser returns the currently authenticated user (if any)
@@ -445,6 +460,11 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1RevokeCurrentAuthTokenResponse:
+    type: object
+    properties:
+      tokenId:
+        type: string
   v1UpdateOrganizationResponse:
     type: object
     properties:

@@ -41,6 +41,7 @@ type Config struct {
 	GithubAppName          string        `split_words:"true"`
 	GithubAppPrivateKey    string        `split_words:"true"`
 	GithubAppWebhookSecret string        `split_words:"true"`
+	DeviceVerificationHost string        `default:"http://localhost:3000" split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -105,6 +106,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				AuthClientSecret:       conf.AuthClientSecret,
 				GithubAppName:          conf.GithubAppName,
 				GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
+				DeviceVerificationHost: conf.DeviceVerificationHost,
 			}
 			srv, err := server.New(logger, adm, srvOpts)
 			if err != nil {
