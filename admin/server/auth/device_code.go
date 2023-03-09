@@ -70,7 +70,12 @@ func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	verificationURI := a.opts.DeviceVerificationHost + "/oauth/device"
+	verificationURI, err := url.JoinPath(a.opts.FrontendURL, "/oauth/device")
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to create verification uri: %w", err))
+		return
+	}
+
 	resp := DeviceCodeResponse{
 		DeviceCode:              authCode.DeviceCode,
 		UserCode:                authCode.UserCode,

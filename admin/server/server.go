@@ -42,7 +42,6 @@ type Options struct {
 	AuthClientSecret       string
 	GithubAppName          string
 	GithubAppWebhookSecret string
-	DeviceVerificationHost string
 }
 
 type Server struct {
@@ -68,11 +67,11 @@ func New(logger *zap.Logger, adm *admin.Service, opts *Options) (*Server, error)
 	cookies.Options.HttpOnly = true
 
 	authenticator, err := auth.NewAuthenticator(logger, adm, cookies, &auth.AuthenticatorOptions{
-		AuthDomain:             opts.AuthDomain,
-		AuthClientID:           opts.AuthClientID,
-		AuthClientSecret:       opts.AuthClientSecret,
-		ExternalURL:            opts.ExternalURL,
-		DeviceVerificationHost: opts.DeviceVerificationHost,
+		AuthDomain:       opts.AuthDomain,
+		AuthClientID:     opts.AuthClientID,
+		AuthClientSecret: opts.AuthClientSecret,
+		ExternalURL:      opts.ExternalURL,
+		FrontendURL:      opts.FrontendURL,
 	})
 	if err != nil {
 		return nil, err
