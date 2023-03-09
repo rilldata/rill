@@ -3,6 +3,7 @@
   import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
+  import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
@@ -35,14 +36,12 @@
   );
 
   $: if ($metricsViewQuery.data) {
-    // TODO: check readonly feature flag
-    if (!$metricsViewQuery.data?.measures?.length) {
+    if (!$featureFlags.readOnly && !$metricsViewQuery.data?.measures?.length) {
       goto(`/dashboard/${metricViewName}/edit`);
     }
     metricsExplorerStore.sync(metricViewName, $metricsViewQuery.data);
   }
-  $: if ($metricsViewQuery.isError) {
-    // TODO: check readonly feature flag
+  $: if (!$featureFlags.readOnly && $metricsViewQuery.isError) {
     goto(`/dashboard/${metricViewName}/edit`);
   }
 
