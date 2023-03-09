@@ -27,7 +27,7 @@
 
   function confirmUserCode() {
     fetch(
-      ADMIN_URL + `/oauth/device?user_code=${userCode}&code_confirmed=true`,
+      ADMIN_URL + `/auth/oauth/device?user_code=${userCode}&code_confirmed=true`,
       {
         method: "POST",
         credentials: "include",
@@ -51,7 +51,7 @@
 
   function rejectUserCode() {
     fetch(
-      ADMIN_URL + `/oauth/device?user_code=${userCode}&code_confirmed=false`,
+      ADMIN_URL + `/auth/oauth/device?user_code=${userCode}&code_confirmed=false`,
       {
         method: "POST",
         credentials: "include",
