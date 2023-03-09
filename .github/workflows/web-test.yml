@@ -21,11 +21,12 @@ jobs:
             admin:
               - ".github/workflows/web-test.yml"
               - "web-admin/**"
-              - "web-common/**"
             local:
               - ".github/workflows/web-test.yml"
-              - "web-common/**"
               - "web-local/**"
+            common:
+              - ".github/workflows/web-test.yml"
+              - "web-common/**"
 
       - name: Set up NodeJS
         uses: actions/setup-node@v3
@@ -38,28 +39,32 @@ jobs:
       - name: Install browser for UI tests
         run: npx playwright install
 
+      - name: Prettier checks and lint for web common
+        if: steps.filter.outputs.common == 'true'
+        run: |-
+          npx prettier --check "web-common/**/*"
+          npm run lint -w web-common -- --quiet
+
       - name: Prettier checks and lint for web local
         if: steps.filter.outputs.local == 'true'
         run: |-
           npx prettier --check "web-local/**/*"
-          npx prettier --check "web-common/**/*"
           npm run lint -w web-local -- --quiet
-
-      - name: Build & Test the web local
-        if: steps.filter.outputs.local == 'true'
-        run: |-
-          npm run build -w web-local
-          npm run test -w web-local
 
       - name: Prettier checks and lint for web admin
         if: steps.filter.outputs.admin == 'true'
         run: |-
           npx prettier --check "web-admin/**/*"
-          npx prettier --check "web-common/**/*"
           npm run lint -w web-admin -- --quiet
 
+      - name: Build & Test the web local
+        if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}
+        run: |-
+          npm run build -w web-local
+          npm run test -w web-local
+
       - name: Build & Test the web admin
-        if: steps.filter.outputs.admin == 'true'
+        if: ${{ steps.filter.outputs.admin == 'true' || steps.filter.outputs.common == 'true' }}
         run: |-
           npm run build -w web-admin
           npm run test -w web-admin
