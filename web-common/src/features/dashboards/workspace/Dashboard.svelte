@@ -1,6 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import {
+    protoToBase64,
+    toProto,
+  } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+  import {
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
@@ -57,23 +61,29 @@
           : MEASURE_CONFIG.container.width.breakpoint
       }px minmax(355px, auto)`
     : "max-content minmax(355px, auto)";
+
+  $: if (metricsExplorer) {
+    const binary = toProto(metricsExplorer).toBinary();
+    const message = protoToBase64(binary);
+    goto(`/dashboard/${metricViewName}?state=${message}`);
+  }
 </script>
 
 <WorkspaceContainer
-  top="0px"
   assetID={metricViewName}
   bgClass="bg-white"
   inspector={false}
+  top="0px"
 >
   <DashboardContainer
     bind:exploreContainerWidth
-    {gridConfig}
     bind:width
+    {gridConfig}
     slot="body"
   >
     <DashboardHeader {metricViewName} slot="header" />
 
-    <svelte:fragment slot="metrics" let:width>
+    <svelte:fragment let:width slot="metrics">
       {#key metricViewName}
         {#if hasTimeSeries}
           <MetricsTimeSeriesCharts {metricViewName} workspaceWidth={width} />
