@@ -44,17 +44,17 @@ func (a *Authenticator) RegisterEndpoints(mux *gateway.ServeMux) error {
 		return err
 	}
 
-	err = mux.HandlePath("POST", "/oauth/device_authorization", a.handleDeviceCodeRequest)
+	err = mux.HandlePath("POST", "/auth/oauth/device_authorization", a.handleDeviceCodeRequest)
 	if err != nil {
 		return err
 	}
 
-	err = mux.HandlePath("POST", "/oauth/device", a.HTTPMiddleware(a.handleUserCodeConfirmation))
+	err = mux.HandlePath("POST", "/auth/oauth/device", a.HTTPMiddleware(a.handleUserCodeConfirmation))
 	if err != nil {
 		return err
 	}
 
-	err = mux.HandlePath("POST", "/oauth/token", a.getAccessToken)
+	err = mux.HandlePath("POST", "/auth/oauth/token", a.getAccessToken)
 	if err != nil {
 		return err
 	}

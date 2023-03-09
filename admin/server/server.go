@@ -34,12 +34,14 @@ type Options struct {
 	HTTPPort               int
 	GRPCPort               int
 	ExternalURL            string
+	FrontendURL            string
 	SessionKeyPairs        [][]byte
 	AllowedOrigins         []string
 	AuthDomain             string
 	AuthClientID           string
 	AuthClientSecret       string
-	DeviceVerificationHost string
+	GithubAppName          string
+	GithubAppWebhookSecret string
 }
 
 type Server struct {
@@ -59,17 +61,21 @@ func New(logger *zap.Logger, adm *admin.Service, opts *Options) (*Server, error)
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)
 	}
 
+	if len(opts.SessionKeyPairs) == 0 {
+		return nil, fmt.Errorf("provided SessionKeyPairs is empty")
+	}
+
 	cookies := sessions.NewCookieStore(opts.SessionKeyPairs...)
 	cookies.Options.MaxAge = 60 * 60 * 24 * 365 * 10 // 10 years
 	cookies.Options.Secure = externalURL.Scheme == "https"
 	cookies.Options.HttpOnly = true
 
 	authenticator, err := auth.NewAuthenticator(logger, adm, cookies, &auth.AuthenticatorOptions{
-		AuthDomain:             opts.AuthDomain,
-		AuthClientID:           opts.AuthClientID,
-		AuthClientSecret:       opts.AuthClientSecret,
-		ExternalURL:            opts.ExternalURL,
-		DeviceVerificationHost: opts.DeviceVerificationHost,
+		AuthDomain:       opts.AuthDomain,
+		AuthClientID:     opts.AuthClientID,
+		AuthClientSecret: opts.AuthClientSecret,
+		ExternalURL:      opts.ExternalURL,
+		FrontendURL:      opts.FrontendURL,
 	})
 	if err != nil {
 		return nil, err
@@ -163,8 +169,14 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		return nil, err
 	}
 
-	// Add auth endpoints (not gRPC handlers, just regular HTTP endpoints on /auth/*)
+	// Add auth endpoints (not gRPC handlers, just regular endpoints on /auth/*)
 	err = s.authenticator.RegisterEndpoints(mux)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
+	err = s.registerGithubEndpoints(mux)
 	if err != nil {
 		return nil, err
 	}
