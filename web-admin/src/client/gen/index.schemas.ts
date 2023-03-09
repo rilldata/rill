@@ -4,12 +4,19 @@
  * rill/admin/v1/api.proto
  * OpenAPI spec version: version not set
  */
-export type AdminServiceCreateProjectBody = {
-  createdOn?: string;
+export type AdminServiceUpdateProjectBody = {
   description?: string;
-  id?: string;
+  githubUrl?: string;
+  productionBranch?: string;
+  public?: boolean;
+};
+
+export type AdminServiceCreateProjectBody = {
+  description?: string;
+  githubUrl?: string;
   name?: string;
-  updatedOn?: string;
+  productionBranch?: string;
+  public?: boolean;
 };
 
 export type AdminServiceListProjectsParams = {
@@ -17,14 +24,16 @@ export type AdminServiceListProjectsParams = {
   pageToken?: string;
 };
 
+export type AdminServiceUpdateOrganizationBody = {
+  description?: string;
+};
+
 export type AdminServiceListOrganizationsParams = {
   pageSize?: number;
   pageToken?: string;
 };
 
-export type AdminServiceUpdateOrganizationBodyBody = {
-  description?: string;
-};
+export type AdminServiceGetGithubRepoStatusParams = { githubUrl?: string };
 
 export interface V1User {
   createdOn?: string;
@@ -46,8 +55,11 @@ export interface V1RevokeCurrentAuthTokenResponse {
 export interface V1Project {
   createdOn?: string;
   description?: string;
+  githubUrl?: string;
   id?: string;
   name?: string;
+  productionBranch?: string;
+  public?: boolean;
   updatedOn?: string;
 }
 
@@ -86,6 +98,12 @@ export interface V1GetOrganizationResponse {
   organization?: V1Organization;
 }
 
+export interface V1GetGithubRepoStatusResponse {
+  defaultBranch?: string;
+  grantAccessUrl?: string;
+  hasAccess?: boolean;
+}
+
 export interface V1GetCurrentUserResponse {
   user?: V1User;
 }
@@ -107,11 +125,9 @@ export interface V1CreateOrganizationResponse {
 }
 
 export interface V1CreateOrganizationRequest {
-  createdOn?: string;
   description?: string;
   id?: string;
   name?: string;
-  updatedOn?: string;
 }
 
 export interface ProtobufAny {
