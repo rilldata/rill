@@ -34,7 +34,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			sp.Stop()
-			fmt.Printf("Deleted organization: %v\n", org)
+			cmdutil.TextPrinter(fmt.Sprintf("Deleted organization: %v\n", org.Name))
 			return nil
 		},
 	}

@@ -2,7 +2,6 @@ package project
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
@@ -40,7 +39,8 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			sp.Stop()
-			fmt.Printf("Updated project: %v\n", proj)
+			cmdutil.TextPrinter("Updated project \n")
+			cmdutil.TablePrinter(toProject(proj.Project))
 			return nil
 		},
 	}

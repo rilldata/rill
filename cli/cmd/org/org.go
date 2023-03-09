@@ -39,18 +39,14 @@ func toOrgs(organizations []*adminv1.Organization) []*organization {
 
 func toOrg(o *adminv1.Organization) *organization {
 	return &organization{
-		ID:          o.Id,
 		Name:        o.Name,
 		Description: o.Description,
 		CreatedAt:   o.CreatedOn.AsTime().String(),
-		UpdatedAt:   o.UpdatedOn.AsTime().String(),
 	}
 }
 
 type organization struct {
-	ID          string `header:"id" json:"id"`
 	Name        string `header:"name" json:"name"`
 	Description string `header:"description" json:"description"`
 	CreatedAt   string `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
-	UpdatedAt   string `header:"updated_at,timestamp(ms|utc|human)" json:"updated_at"`
 }

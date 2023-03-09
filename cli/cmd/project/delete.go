@@ -35,7 +35,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			sp.Stop()
-			fmt.Printf("Deleted project: %v\n", proj)
+			cmdutil.TextPrinter(fmt.Sprintf("Deleted project: %v\n", proj))
 			return nil
 		},
 	}

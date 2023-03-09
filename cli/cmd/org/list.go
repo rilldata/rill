@@ -2,7 +2,6 @@ package org
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
@@ -31,8 +30,8 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			sp.Stop()
-			fmt.Println("Organizations list:")
-			cmdutil.PrintAsTable(toOrgs(orgs.Organization))
+			cmdutil.TextPrinter("Organizations list \n")
+			cmdutil.TablePrinter(toOrgs(orgs.Organization))
 			return nil
 		},
 	}

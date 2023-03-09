@@ -3,6 +3,7 @@ package project
 import (
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -22,4 +23,28 @@ func ProjectCmd(cfg *config.Config) *cobra.Command {
 	projectCmd.AddCommand(ListCmd(cfg))
 
 	return projectCmd
+}
+
+func toProjects(projects []*adminv1.Project) []*project {
+	orgs := make([]*project, 0, len(projects))
+
+	for _, org := range projects {
+		orgs = append(orgs, toProject(org))
+	}
+
+	return orgs
+}
+
+func toProject(o *adminv1.Project) *project {
+	return &project{
+		Name:        o.Name,
+		Description: o.Description,
+		CreatedAt:   o.CreatedOn.AsTime().String(),
+	}
+}
+
+type project struct {
+	Name        string `header:"name" json:"name"`
+	Description string `header:"description" json:"description"`
+	CreatedAt   string `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
 }

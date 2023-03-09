@@ -2,7 +2,6 @@ package project
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
@@ -33,7 +32,8 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			sp.Stop()
-			fmt.Printf("Projects list: %v\n", proj)
+			cmdutil.TextPrinter("Projects list \n")
+			cmdutil.TablePrinter(toProjects(proj.Projects))
 			return nil
 		},
 	}

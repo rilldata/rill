@@ -2,7 +2,6 @@ package org
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
@@ -37,7 +36,8 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			sp.Stop()
-			fmt.Printf("Updated organization: %v\n", org)
+			cmdutil.TextPrinter("Updated organization \n")
+			cmdutil.TablePrinter(toOrg(org.Organization))
 			return nil
 		},
 	}

@@ -2,7 +2,6 @@ package project
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
@@ -37,7 +36,8 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			sp.Stop()
-			fmt.Printf("Created project: %v\n", proj)
+			cmdutil.TextPrinter("Created project \n")
+			cmdutil.TablePrinter(toProject(proj.Project))
 			return nil
 		},
 	}

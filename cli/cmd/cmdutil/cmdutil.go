@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/fatih/color"
 	"github.com/lensesio/tableprinter"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
@@ -36,8 +37,14 @@ func Spinner(prefix string) *spinner.Spinner {
 	return sp
 }
 
-func PrintAsTable(v interface{}) {
+func TablePrinter(v interface{}) {
+	boldGreen := color.New(color.FgGreen)
 	var b strings.Builder
 	tableprinter.Print(&b, v)
-	fmt.Fprintln(os.Stdout, b.String())
+	boldGreen.Fprintln(os.Stdout, b.String())
+}
+
+func TextPrinter(str string) {
+	boldGreen := color.New(color.FgBlue).Add(color.Underline).Add(color.Bold)
+	boldGreen.Fprintln(color.Output, str)
 }
