@@ -9,6 +9,28 @@ consumes:
 produces:
   - application/json
 paths:
+  /v1/github/repositories:
+    get:
+      summary: |-
+        GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
+        If the caller has not granted access to the repository, instructions for granting access are returned.
+      operationId: AdminService_GetGithubRepoStatus
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetGithubRepoStatusResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: githubUrl
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/organizations:
     get:
       summary: ListOrganizations lists all the organizations currently managed by the admin
@@ -118,7 +140,6 @@ paths:
             properties:
               description:
                 type: string
-            title: Request message for AdminService.UpdateOrganization
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects:
@@ -173,9 +194,6 @@ paths:
           schema:
             type: object
             properties:
-              createdOn:
-                type: string
-                format: date-time
               description:
                 type: string
               githubUrl:
@@ -184,10 +202,6 @@ paths:
                 type: string
               productionBranch:
                 type: string
-              updatedOn:
-                type: string
-                format: date-time
-            title: Request message for AdminService.CreateProject
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}:
@@ -270,7 +284,6 @@ paths:
                 type: string
               productionBranch:
                 type: string
-            title: Request message for AdminService.UpdateOrganization
       tags:
         - AdminService
   /v1/ping:
@@ -340,61 +353,56 @@ definitions:
   v1CreateOrganizationRequest:
     type: object
     properties:
-      createdOn:
-        type: string
-        format: date-time
       description:
         type: string
       id:
         type: string
       name:
         type: string
-      updatedOn:
-        type: string
-        format: date-time
-    title: Request message for AdminService.CreateOrganizatio
   v1CreateOrganizationResponse:
     type: object
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
-    title: Response message for AdminService.CreateOrganization
   v1CreateProjectResponse:
     type: object
     properties:
       project:
         $ref: '#/definitions/v1Project'
-    title: Response message for AdminService.CreateProject
   v1DeleteOrganizationResponse:
     type: object
     properties:
       name:
         type: string
-    title: Response message for AdminService.DeleteOrganization
   v1DeleteProjectResponse:
     type: object
     properties:
       name:
         type: string
-    title: Response message for AdminService.DeleteOrganization
   v1GetCurrentUserResponse:
     type: object
     properties:
       user:
         $ref: '#/definitions/v1User'
-    title: Response message for GetCurrentUser
+  v1GetGithubRepoStatusResponse:
+    type: object
+    properties:
+      defaultBranch:
+        type: string
+      grantAccessUrl:
+        type: string
+      hasAccess:
+        type: boolean
   v1GetOrganizationResponse:
     type: object
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
-    title: Response message for AdminService.GetInstance
   v1GetProjectResponse:
     type: object
     properties:
       project:
         $ref: '#/definitions/v1Project'
-    title: Response message for AdminService.GetProject
   v1ListOrganizationsResponse:
     type: object
     properties:
@@ -404,7 +412,6 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/v1Organization'
-    title: Response message for AdminService.ListOrganizations
   v1ListProjectsResponse:
     type: object
     properties:
@@ -414,7 +421,6 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/v1Project'
-    title: Response message for AdminService.ListProjects
   v1Organization:
     type: object
     properties:
@@ -439,7 +445,6 @@ definitions:
         format: date-time
       version:
         type: string
-    title: Response message for AdminService.Ping
   v1Project:
     type: object
     properties:
@@ -470,13 +475,11 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
-    title: Response message for AdminService.UpdateOrganization
   v1UpdateProjectResponse:
     type: object
     properties:
       project:
         $ref: '#/definitions/v1Project'
-    title: Response message for AdminService.UpdateOrganization
   v1User:
     type: object
     properties:

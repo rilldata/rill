@@ -14,8 +14,10 @@ import type {
   QueryKey,
 } from "@sveltestack/svelte-query";
 import type {
-  V1ListOrganizationsResponse,
+  V1GetGithubRepoStatusResponse,
   RpcStatus,
+  AdminServiceGetGithubRepoStatusParams,
+  V1ListOrganizationsResponse,
   AdminServiceListOrganizationsParams,
   V1CreateOrganizationResponse,
   V1CreateOrganizationRequest,
@@ -36,6 +38,75 @@ import type {
   V1GetCurrentUserResponse,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
+
+/**
+ * @summary GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
+If the caller has not granted access to the repository, instructions for granting access are returned.
+ */
+export const adminServiceGetGithubRepoStatus = (
+  params?: AdminServiceGetGithubRepoStatusParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1GetGithubRepoStatusResponse>({
+    url: `/v1/github/repositories`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceGetGithubRepoStatusQueryKey = (
+  params?: AdminServiceGetGithubRepoStatusParams
+) => [`/v1/github/repositories`, ...(params ? [params] : [])];
+
+export type AdminServiceGetGithubRepoStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetGithubRepoStatus>>
+>;
+export type AdminServiceGetGithubRepoStatusQueryError = RpcStatus;
+
+export const useAdminServiceGetGithubRepoStatus = <
+  TData = Awaited<ReturnType<typeof adminServiceGetGithubRepoStatus>>,
+  TError = RpcStatus
+>(
+  params?: AdminServiceGetGithubRepoStatusParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetGithubRepoStatus>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof adminServiceGetGithubRepoStatus>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetGithubRepoStatusQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetGithubRepoStatus>>
+  > = ({ signal }) => adminServiceGetGithubRepoStatus(params, signal);
+
+  const query = useQuery<
+    Awaited<ReturnType<typeof adminServiceGetGithubRepoStatus>>,
+    TError,
+    TData
+  >(queryKey, queryFn, queryOptions) as UseQueryStoreResult<
+    Awaited<ReturnType<typeof adminServiceGetGithubRepoStatus>>,
+    TError,
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
 
 /**
  * @summary ListOrganizations lists all the organizations currently managed by the admin

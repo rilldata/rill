@@ -11,12 +11,10 @@ export type AdminServiceUpdateProjectBody = {
 };
 
 export type AdminServiceCreateProjectBody = {
-  createdOn?: string;
   description?: string;
   githubUrl?: string;
   name?: string;
   productionBranch?: string;
-  updatedOn?: string;
 };
 
 export type AdminServiceListProjectsParams = {
@@ -32,6 +30,8 @@ export type AdminServiceListOrganizationsParams = {
   pageSize?: number;
   pageToken?: string;
 };
+
+export type AdminServiceGetGithubRepoStatusParams = { githubUrl?: string };
 
 export interface V1User {
   createdOn?: string;
@@ -95,6 +95,12 @@ export interface V1GetOrganizationResponse {
   organization?: V1Organization;
 }
 
+export interface V1GetGithubRepoStatusResponse {
+  defaultBranch?: string;
+  grantAccessUrl?: string;
+  hasAccess?: boolean;
+}
+
 export interface V1GetCurrentUserResponse {
   user?: V1User;
 }
@@ -116,11 +122,9 @@ export interface V1CreateOrganizationResponse {
 }
 
 export interface V1CreateOrganizationRequest {
-  createdOn?: string;
   description?: string;
   id?: string;
   name?: string;
-  updatedOn?: string;
 }
 
 export interface ProtobufAny {

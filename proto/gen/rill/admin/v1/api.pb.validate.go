@@ -771,64 +771,6 @@ func (m *CreateOrganizationRequest) validate(all bool) error {
 
 	// no validation rules for Description
 
-	if all {
-		switch v := interface{}(m.GetCreatedOn()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, CreateOrganizationRequestValidationError{
-					field:  "CreatedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, CreateOrganizationRequestValidationError{
-					field:  "CreatedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetCreatedOn()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CreateOrganizationRequestValidationError{
-				field:  "CreatedOn",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetUpdatedOn()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, CreateOrganizationRequestValidationError{
-					field:  "UpdatedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, CreateOrganizationRequestValidationError{
-					field:  "UpdatedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetUpdatedOn()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CreateOrganizationRequestValidationError{
-				field:  "UpdatedOn",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
 	if len(errors) > 0 {
 		return CreateOrganizationRequestMultiError(errors)
 	}
@@ -2000,64 +1942,6 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for GithubUrl
 
-	if all {
-		switch v := interface{}(m.GetCreatedOn()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, CreateProjectRequestValidationError{
-					field:  "CreatedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, CreateProjectRequestValidationError{
-					field:  "CreatedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetCreatedOn()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CreateProjectRequestValidationError{
-				field:  "CreatedOn",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetUpdatedOn()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, CreateProjectRequestValidationError{
-					field:  "UpdatedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, CreateProjectRequestValidationError{
-					field:  "UpdatedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetUpdatedOn()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CreateProjectRequestValidationError{
-				field:  "UpdatedOn",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
 	if len(errors) > 0 {
 		return CreateProjectRequestMultiError(errors)
 	}
@@ -2955,6 +2839,427 @@ var _ interface {
 	ErrorName() string
 } = GetCurrentUserResponseValidationError{}
 
+// Validate checks the field values on RevokeCurrentAuthTokenRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RevokeCurrentAuthTokenRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RevokeCurrentAuthTokenRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// RevokeCurrentAuthTokenRequestMultiError, or nil if none found.
+func (m *RevokeCurrentAuthTokenRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RevokeCurrentAuthTokenRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return RevokeCurrentAuthTokenRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// RevokeCurrentAuthTokenRequestMultiError is an error wrapping multiple
+// validation errors returned by RevokeCurrentAuthTokenRequest.ValidateAll()
+// if the designated constraints aren't met.
+type RevokeCurrentAuthTokenRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RevokeCurrentAuthTokenRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RevokeCurrentAuthTokenRequestMultiError) AllErrors() []error { return m }
+
+// RevokeCurrentAuthTokenRequestValidationError is the validation error
+// returned by RevokeCurrentAuthTokenRequest.Validate if the designated
+// constraints aren't met.
+type RevokeCurrentAuthTokenRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RevokeCurrentAuthTokenRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RevokeCurrentAuthTokenRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RevokeCurrentAuthTokenRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RevokeCurrentAuthTokenRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RevokeCurrentAuthTokenRequestValidationError) ErrorName() string {
+	return "RevokeCurrentAuthTokenRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RevokeCurrentAuthTokenRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRevokeCurrentAuthTokenRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RevokeCurrentAuthTokenRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RevokeCurrentAuthTokenRequestValidationError{}
+
+// Validate checks the field values on RevokeCurrentAuthTokenResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RevokeCurrentAuthTokenResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RevokeCurrentAuthTokenResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// RevokeCurrentAuthTokenResponseMultiError, or nil if none found.
+func (m *RevokeCurrentAuthTokenResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RevokeCurrentAuthTokenResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for TokenId
+
+	if len(errors) > 0 {
+		return RevokeCurrentAuthTokenResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RevokeCurrentAuthTokenResponseMultiError is an error wrapping multiple
+// validation errors returned by RevokeCurrentAuthTokenResponse.ValidateAll()
+// if the designated constraints aren't met.
+type RevokeCurrentAuthTokenResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RevokeCurrentAuthTokenResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RevokeCurrentAuthTokenResponseMultiError) AllErrors() []error { return m }
+
+// RevokeCurrentAuthTokenResponseValidationError is the validation error
+// returned by RevokeCurrentAuthTokenResponse.Validate if the designated
+// constraints aren't met.
+type RevokeCurrentAuthTokenResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RevokeCurrentAuthTokenResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RevokeCurrentAuthTokenResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RevokeCurrentAuthTokenResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RevokeCurrentAuthTokenResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RevokeCurrentAuthTokenResponseValidationError) ErrorName() string {
+	return "RevokeCurrentAuthTokenResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RevokeCurrentAuthTokenResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRevokeCurrentAuthTokenResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RevokeCurrentAuthTokenResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RevokeCurrentAuthTokenResponseValidationError{}
+
+// Validate checks the field values on GetGithubRepoStatusRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetGithubRepoStatusRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetGithubRepoStatusRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetGithubRepoStatusRequestMultiError, or nil if none found.
+func (m *GetGithubRepoStatusRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetGithubRepoStatusRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for GithubUrl
+
+	if len(errors) > 0 {
+		return GetGithubRepoStatusRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetGithubRepoStatusRequestMultiError is an error wrapping multiple
+// validation errors returned by GetGithubRepoStatusRequest.ValidateAll() if
+// the designated constraints aren't met.
+type GetGithubRepoStatusRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetGithubRepoStatusRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetGithubRepoStatusRequestMultiError) AllErrors() []error { return m }
+
+// GetGithubRepoStatusRequestValidationError is the validation error returned
+// by GetGithubRepoStatusRequest.Validate if the designated constraints aren't met.
+type GetGithubRepoStatusRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetGithubRepoStatusRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetGithubRepoStatusRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetGithubRepoStatusRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetGithubRepoStatusRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetGithubRepoStatusRequestValidationError) ErrorName() string {
+	return "GetGithubRepoStatusRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetGithubRepoStatusRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetGithubRepoStatusRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetGithubRepoStatusRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetGithubRepoStatusRequestValidationError{}
+
+// Validate checks the field values on GetGithubRepoStatusResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetGithubRepoStatusResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetGithubRepoStatusResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetGithubRepoStatusResponseMultiError, or nil if none found.
+func (m *GetGithubRepoStatusResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetGithubRepoStatusResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for HasAccess
+
+	// no validation rules for GrantAccessUrl
+
+	// no validation rules for DefaultBranch
+
+	if len(errors) > 0 {
+		return GetGithubRepoStatusResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetGithubRepoStatusResponseMultiError is an error wrapping multiple
+// validation errors returned by GetGithubRepoStatusResponse.ValidateAll() if
+// the designated constraints aren't met.
+type GetGithubRepoStatusResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetGithubRepoStatusResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetGithubRepoStatusResponseMultiError) AllErrors() []error { return m }
+
+// GetGithubRepoStatusResponseValidationError is the validation error returned
+// by GetGithubRepoStatusResponse.Validate if the designated constraints
+// aren't met.
+type GetGithubRepoStatusResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetGithubRepoStatusResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetGithubRepoStatusResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetGithubRepoStatusResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetGithubRepoStatusResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetGithubRepoStatusResponseValidationError) ErrorName() string {
+	return "GetGithubRepoStatusResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetGithubRepoStatusResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetGithubRepoStatusResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetGithubRepoStatusResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetGithubRepoStatusResponseValidationError{}
+
 // Validate checks the field values on Organization with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -3447,211 +3752,3 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = UserValidationError{}
-
-// Validate checks the field values on RevokeCurrentAuthTokenRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *RevokeCurrentAuthTokenRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on RevokeCurrentAuthTokenRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// RevokeCurrentAuthTokenRequestMultiError, or nil if none found.
-func (m *RevokeCurrentAuthTokenRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *RevokeCurrentAuthTokenRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if len(errors) > 0 {
-		return RevokeCurrentAuthTokenRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// RevokeCurrentAuthTokenRequestMultiError is an error wrapping multiple
-// validation errors returned by RevokeCurrentAuthTokenRequest.ValidateAll()
-// if the designated constraints aren't met.
-type RevokeCurrentAuthTokenRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m RevokeCurrentAuthTokenRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m RevokeCurrentAuthTokenRequestMultiError) AllErrors() []error { return m }
-
-// RevokeCurrentAuthTokenRequestValidationError is the validation error
-// returned by RevokeCurrentAuthTokenRequest.Validate if the designated
-// constraints aren't met.
-type RevokeCurrentAuthTokenRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e RevokeCurrentAuthTokenRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e RevokeCurrentAuthTokenRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e RevokeCurrentAuthTokenRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e RevokeCurrentAuthTokenRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e RevokeCurrentAuthTokenRequestValidationError) ErrorName() string {
-	return "RevokeCurrentAuthTokenRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e RevokeCurrentAuthTokenRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sRevokeCurrentAuthTokenRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = RevokeCurrentAuthTokenRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = RevokeCurrentAuthTokenRequestValidationError{}
-
-// Validate checks the field values on RevokeCurrentAuthTokenResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *RevokeCurrentAuthTokenResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on RevokeCurrentAuthTokenResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// RevokeCurrentAuthTokenResponseMultiError, or nil if none found.
-func (m *RevokeCurrentAuthTokenResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *RevokeCurrentAuthTokenResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for TokenId
-
-	if len(errors) > 0 {
-		return RevokeCurrentAuthTokenResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// RevokeCurrentAuthTokenResponseMultiError is an error wrapping multiple
-// validation errors returned by RevokeCurrentAuthTokenResponse.ValidateAll()
-// if the designated constraints aren't met.
-type RevokeCurrentAuthTokenResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m RevokeCurrentAuthTokenResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m RevokeCurrentAuthTokenResponseMultiError) AllErrors() []error { return m }
-
-// RevokeCurrentAuthTokenResponseValidationError is the validation error
-// returned by RevokeCurrentAuthTokenResponse.Validate if the designated
-// constraints aren't met.
-type RevokeCurrentAuthTokenResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e RevokeCurrentAuthTokenResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e RevokeCurrentAuthTokenResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e RevokeCurrentAuthTokenResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e RevokeCurrentAuthTokenResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e RevokeCurrentAuthTokenResponseValidationError) ErrorName() string {
-	return "RevokeCurrentAuthTokenResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e RevokeCurrentAuthTokenResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sRevokeCurrentAuthTokenResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = RevokeCurrentAuthTokenResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = RevokeCurrentAuthTokenResponseValidationError{}

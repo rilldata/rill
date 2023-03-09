@@ -1,68 +1,236 @@
 package project
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/url"
+	"os"
+	"path"
 	"strings"
+	"time"
 
+	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport"
-	"github.com/pkg/browser"
+	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-const _connectURL = "%s/github-connect/organizations/%s/projects?remote=remote&project_name=project&prod_branch=branch"
+const (
+	pollTimeout  = 10 * time.Minute
+	pollInterval = 5 * time.Second
+)
 
 func ConnectCmd(cfg *config.Config) *cobra.Command {
-	var name, displayName, prodBranch, projectPath string
+	var name, description, prodBranch, projectPath string
 	var public bool
 
 	connectCmd := &cobra.Command{
 		Use:   "connect",
-		Args:  cobra.ExactArgs(1),
 		Short: "Connect project to rill cloud",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Allow setting project path as arg (instead of flag)
 			if len(args) > 0 {
 				projectPath = args[0]
 			}
-			remote, err := gitutil.ExtractRemotes(projectPath)
-			// todo :: throw cli error for other errors, and return this for no remote error only
-			if err != nil && len(remote) == 0 {
-				return fmt.Errorf("Please push project to github and then try connect again")
+
+			// Extract Git remote
+			remotes, err := gitutil.ExtractRemotes(projectPath)
+			if err != nil {
+				if !errors.Is(err, git.ErrRepositoryNotExists) {
+					return fmt.Errorf("failed to parse .git remotes: %w", err)
+				}
+				// Fall through to len(remotes) check
 			}
 
-			endpoint, err := transport.NewEndpoint(remote[0].URL)
+			// Print setup instructions if no remote was found
+			if len(remotes) == 0 {
+				fmt.Print(githubSetupMsg)
+				os.Exit(1)
+			}
+
+			// Parse into a https://url/account/repo (no .git) format
+			githubURL, err := remotesToGithubURL(remotes)
 			if err != nil {
 				return err
 			}
 
-			if !strings.Contains(endpoint.Host, "github") {
-				return fmt.Errorf("Only github hosted repos are supported at this point, please push repo to github")
+			// Create admin client
+			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			if err != nil {
+				return err
 			}
+			defer client.Close()
 
-			org := cfg.DefaultOrg
-			connectURL, err := url.Parse(fmt.Sprintf(_connectURL, cfg.AdminHTTPURL, org))
+			// Check for access to the Github URL
+			ghRes, err := client.GetGithubRepoStatus(cmd.Context(), &adminv1.GetGithubRepoStatusRequest{
+				GithubUrl: githubURL,
+			})
 			if err != nil {
 				return err
 			}
 
-			q := connectURL.Query()
-			q.Set("remote", url.QueryEscape(remote[0].URL))
-			q.Set("project_name", name)
-			q.Set("prod_branch", prodBranch)
-			connectURL.RawQuery = q.Encode()
-			return browser.OpenURL(connectURL.String())
+			// If the user has not already granted access, open browser and poll for access
+			if !ghRes.HasAccess {
+				// Print instructions to grant access
+				fmt.Printf("Rill projects deploy continuously when you push changes to Github.\n\n")
+				fmt.Printf("Open this URL in your browser to grant Rill access to deploy from Github the login:\n\n")
+				fmt.Printf("\t%s\n\n", ghRes.GrantAccessUrl)
+
+				// Open browser if possible
+				_ = browser.Open(ghRes.GrantAccessUrl)
+
+				// Poll for permission granted
+				pollCtx, cancel := context.WithTimeout(cmd.Context(), pollTimeout)
+				defer cancel()
+				for {
+					select {
+					case <-pollCtx.Done():
+						return pollCtx.Err()
+					case <-time.After(pollInterval):
+						// Ready to check again.
+					}
+
+					// Poll for access to the Github URL
+					pollRes, err := client.GetGithubRepoStatus(cmd.Context(), &adminv1.GetGithubRepoStatusRequest{
+						GithubUrl: githubURL,
+					})
+					if err != nil {
+						return err
+					}
+
+					if pollRes.HasAccess {
+						// Success
+						ghRes = pollRes
+						break
+					}
+
+					// Sleep and poll again
+				}
+			}
+
+			// We now have access to the Github repo
+
+			// Infer project name from Github remote (if not explicitly set)
+			if name == "" {
+				name = path.Base(githubURL)
+			}
+
+			// Use Github project's default branch (if not explicitly set)
+			if prodBranch == "" {
+				prodBranch = ghRes.DefaultBranch
+			}
+
+			// Create the project (automatically deploys prod branch)
+			projRes, err := client.CreateProject(cmd.Context(), &adminv1.CreateProjectRequest{
+				OrganizationName: cfg.Org(),
+				Name:             name,
+				Description:      description,
+				ProductionBranch: prodBranch,
+				GithubUrl:        githubURL,
+			})
+			if err != nil {
+				return err
+			}
+
+			// Success!
+			fmt.Printf("Created project %s/%s\n", cfg.Org(), projRes.Project.Name)
+			return nil
 		},
 	}
 
 	connectCmd.Flags().SortFlags = false
-
-	connectCmd.Flags().StringVar(&name, "name", "noname", "Name")
-	connectCmd.Flags().StringVar(&displayName, "display-name", "noname", "Display name")
-	connectCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Production branch name")
-	connectCmd.Flags().BoolVar(&public, "public", false, "Public")
 	connectCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
+	connectCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Production branch name")
+	connectCmd.Flags().StringVar(&name, "name", "", "Name")
+	connectCmd.Flags().StringVar(&description, "description", "", "Project description")
+	connectCmd.Flags().BoolVar(&public, "public", false, "Public")
 
 	return connectCmd
 }
+
+func remotesToGithubURL(remotes []gitutil.Remote) (string, error) {
+	// Return the first Github URL found.
+	// If no Github remotes were found, return the first error.
+	var firstErr error
+	for _, remote := range remotes {
+		ghurl, err := remoteToGithubURL(remote.URL)
+		if err == nil {
+			// Found a Github remote. Success!
+			return ghurl, nil
+		}
+		if firstErr == nil {
+			firstErr = fmt.Errorf("invalid remote %q: %w", remote.URL, err)
+		}
+	}
+
+	// This condition is handled upstream to print better instructions. Adding here only for safety.
+	if firstErr == nil {
+		return "", fmt.Errorf("no git remotes found")
+	}
+
+	return "", firstErr
+}
+
+func remoteToGithubURL(remote string) (string, error) {
+	ep, err := transport.NewEndpoint(remote)
+	if err != nil {
+		return "", err
+	}
+
+	if ep.Host != "github.com" {
+		return "", fmt.Errorf("must be a git remote on github.com")
+	}
+
+	account, repo := path.Split(ep.Path)
+	account = strings.Trim(account, "/")
+	repo = strings.TrimSuffix(repo, ".git")
+	if account == "" || repo == "" || strings.Contains(account, "/") {
+		return "", fmt.Errorf("not a valid github.com remote")
+	}
+
+	githubURL := &url.URL{
+		Scheme: "https",
+		Host:   ep.Host,
+		Path:   strings.TrimSuffix(ep.Path, ".git"),
+	}
+
+	return githubURL.String(), nil
+}
+
+const githubSetupMsg = `No git remote was found.
+
+Rill projects deploy continuously when you push changes to Github.
+Therefore, your project must be on Github before you connect it to Rill.
+
+Follow these steps to push your project to Github.
+
+1. Initialize git
+
+	git init
+
+2. Add and commit files
+
+	git add .
+	git commit -m 'initial commit'
+
+3. Create a new GitHub repository on https://github.com/new
+
+4. Link git to the remote repository
+
+	git remote add origin https://github.com/your-account/your-repo.git
+
+5. Push your repository
+
+	git push -u origin main
+
+6. Connect Rill to your repository
+
+	rill connect
+
+`

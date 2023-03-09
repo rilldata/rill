@@ -22,6 +22,10 @@ func (c Config) AdminToken() string {
 	return c.AdminTokenDefault
 }
 
+func (c Config) Org() string {
+	return c.DefaultOrg
+}
+
 type Version struct {
 	Number    string
 	Commit    string

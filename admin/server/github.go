@@ -9,9 +9,35 @@ import (
 
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/server/auth"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
+func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithubRepoStatusRequest) (*adminv1.GetGithubRepoStatusResponse, error) {
+	// Check the request is made by an authenticated user
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated")
+	}
+
+	// TODO: Check whether user has access
+
+	// Return instructions for granting access
+	grantAccessURL, err := url.JoinPath(s.opts.FrontendURL, "/github/connect")
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create redirect URL: %s", err)
+	}
+
+	res := &adminv1.GetGithubRepoStatusResponse{
+		HasAccess:      false,
+		GrantAccessUrl: grantAccessURL,
+	}
+	return res, nil
+}
+
 // githubConnect starts an installation flow of the Github App.
+// It's implemented as a non-gRPC endpoint mounted directly on /github/connect.
 // It redirects the user to Github to authorize Rill to access one or more repositories.
 // After the Github flow completes, the user is redirected back to githubConnectCallback.
 func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
@@ -31,6 +57,7 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request, pathParam
 }
 
 // githubConnectCallback is called after a Github App authorization flow initiated by githubConnect has completed.
+// It's implemented as a non-gRPC endpoint mounted directly on /github/connect/callback.
 func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	// TODO: Enable user authorization and verify user per https://roadie.io/blog/avoid-leaking-github-org-data/
 
@@ -72,6 +99,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 }
 
 // githubWebhook is called by Github to deliver events about new pushes, pull requests, changes to a repository, etc.
+// It's implemented as a non-gRPC endpoint mounted directly on /github/webhook.
 // Note that Github webhooks have a timeout of 10 seconds. Webhook processing is moved to the background to prevent timeouts.
 func (s *Server) githubWebhook(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	payload, err := github.ValidatePayload(r, []byte(s.opts.GithubAppWebhookSecret))
