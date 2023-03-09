@@ -1,8 +1,9 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { DashboardWorkspace } from "@rilldata/web-common/features/dashboards";
+  import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetFile,
@@ -53,5 +54,12 @@
 </svelte:head>
 
 {#if $fileQuery.data && $catalogQuery.data}
-  <DashboardWorkspace {metricViewName} />
+  <WorkspaceContainer
+    top="0px"
+    assetID={metricViewName}
+    bgClass="bg-white"
+    inspector={false}
+  >
+    <Dashboard {metricViewName} slot="body" />
+  </WorkspaceContainer>
 {/if}
