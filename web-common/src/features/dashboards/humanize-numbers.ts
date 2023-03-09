@@ -316,7 +316,9 @@ export function getScaleForLeaderboard(
 // This really needs to be reviewed by Dhiraj, at which point we
 // can deprecate any left over code that is no longer needed.
 
-const nicelyFormattedTypesToNumberKind = (type: NicelyFormattedTypes) => {
+export const nicelyFormattedTypesToNumberKind = (
+  type: NicelyFormattedTypes | string
+) => {
   switch (type) {
     case NicelyFormattedTypes.CURRENCY:
       return NumberKind.DOLLAR;

@@ -22,6 +22,7 @@ This component will draw an axis on the specified side.
   export let placement = "middle";
 
   export let labelColor = "fill-gray-600 dark:fill-gray-400";
+  export let numberKind: NumberKind = NumberKind.ANY;
 
   // superlabel properties
   export let superlabel = false;
@@ -170,7 +171,7 @@ This component will draw an axis on the specified side.
     // IntTimesPowerOfTenFormatter, which is taylored to this situation.
     const formatter = new IntTimesPowerOfTenFormatter(ticks, {
       strategy: "intTimesPowerOfTen",
-      numberKind: NumberKind.ANY,
+      numberKind,
       onInvalidInput: "consoleWarn",
       padWithInsignificantZeros: false,
     });
