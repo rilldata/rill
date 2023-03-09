@@ -20,6 +20,11 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	retryN    = 3
+	retryWait = 500 * time.Millisecond
+)
+
 type DSN struct {
 	GithubURL      string `json:"github_url"`
 	Branch         string `json:"branch"`
@@ -39,22 +44,22 @@ func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, err
 		return nil, err
 	}
 
-	tempdir, err := os.MkdirTemp("", "github_repo_driver")
-	if err != nil {
-		return nil, err
-	}
-
 	var c *connection
 
-	r := retrier.New(retrier.ExponentialBackoff(3, 100*time.Millisecond), nil)
+	r := retrier.New(retrier.ExponentialBackoff(retryN, retryWait), nil)
 	err = r.Run(func() error {
+		tempdir, err := os.MkdirTemp("", "github_repo_driver")
+		if err != nil {
+			return err
+		}
+
 		c = &connection{
 			dsnStr:  dsnStr,
 			dsn:     dsn,
 			tempdir: tempdir,
 		}
 
-		err := c.clone(context.Background())
+		err = c.clone(context.Background())
 		if err != nil {
 			_ = os.RemoveAll(tempdir)
 			return err
@@ -194,7 +199,7 @@ func (c *connection) cloneURL(ctx context.Context) (string, error) {
 	}
 
 	// Create clone URL
-	ep, err := transport.NewEndpoint(c.dsn.GithubURL + ".git") // TODO: Can the clone URL be different from the HTP URL of a Github repo?
+	ep, err := transport.NewEndpoint(c.dsn.GithubURL + ".git") // TODO: Can the clone URL be different from the HTTP URL of a Github repo?
 	if err != nil {
 		return "", fmt.Errorf("failed to create endpoint from %q: %w", c.dsn.GithubURL, err)
 	}

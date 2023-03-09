@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"time"
 
 	doublestar "github.com/bmatcuk/doublestar/v4"
 	"github.com/eapache/go-resiliency/retrier"
@@ -100,7 +99,7 @@ func (c *connection) Delete(ctx context.Context, instID, filePath string) error 
 
 // Sync implements drivers.RepoStore.
 func (c *connection) Sync(ctx context.Context, instID string) error {
-	r := retrier.New(retrier.ExponentialBackoff(3, 100*time.Millisecond), nil)
+	r := retrier.New(retrier.ExponentialBackoff(retryN, retryWait), nil)
 	err := r.Run(func() error { return c.pull(ctx) })
 	if err != nil {
 		return err
