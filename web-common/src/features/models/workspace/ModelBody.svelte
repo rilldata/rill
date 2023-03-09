@@ -25,7 +25,7 @@
   } from "@rilldata/web-common/runtime-client";
   import {
     invalidateAfterReconcile,
-    invalidationForProfileQueries,
+    isProfilingQuery,
   } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
@@ -129,7 +129,7 @@
         await queryClient.cancelQueries({
           fetching: true,
           predicate: (query) => {
-            return invalidationForProfileQueries(query.queryHash, modelName);
+            return isProfilingQuery(query.queryHash, modelName);
           },
         });
       }

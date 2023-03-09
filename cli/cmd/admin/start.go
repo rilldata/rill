@@ -31,12 +31,16 @@ type Config struct {
 	GRPCPort               int           `default:"9090" split_words:"true"`
 	LogLevel               zapcore.Level `default:"info" split_words:"true"`
 	ExternalURL            string        `default:"http://localhost:8080" split_words:"true"`
+	FrontendURL            string        `default:"http://localhost:3000" split_words:"true"`
 	SessionKeyPairs        []string      `split_words:"true"`
 	AllowedOrigins         []string      `default:"*" split_words:"true"`
 	AuthDomain             string        `split_words:"true"`
 	AuthClientID           string        `split_words:"true"`
 	AuthClientSecret       string        `split_words:"true"`
-	DeviceVerificationHost string        `default:"http://localhost:3000" split_words:"true"`
+	GithubAppID            int64         `split_words:"true"`
+	GithubAppName          string        `split_words:"true"`
+	GithubAppPrivateKey    string        `split_words:"true"`
+	GithubAppWebhookSecret string        `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -67,8 +71,10 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 
 			// Init admin service
 			admOpts := &admin.Options{
-				DatabaseDriver: conf.DatabaseDriver,
-				DatabaseDSN:    conf.DatabaseURL,
+				DatabaseDriver:      conf.DatabaseDriver,
+				DatabaseDSN:         conf.DatabaseURL,
+				GithubAppID:         conf.GithubAppID,
+				GithubAppPrivateKey: conf.GithubAppPrivateKey,
 			}
 			adm, err := admin.New(admOpts, logger)
 			if err != nil {
@@ -91,12 +97,14 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				HTTPPort:               conf.HTTPPort,
 				GRPCPort:               conf.GRPCPort,
 				ExternalURL:            conf.ExternalURL,
+				FrontendURL:            conf.FrontendURL,
 				SessionKeyPairs:        keyPairs,
 				AllowedOrigins:         conf.AllowedOrigins,
 				AuthDomain:             conf.AuthDomain,
 				AuthClientID:           conf.AuthClientID,
 				AuthClientSecret:       conf.AuthClientSecret,
-				DeviceVerificationHost: conf.DeviceVerificationHost,
+				GithubAppName:          conf.GithubAppName,
+				GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
 			}
 			srv, err := server.New(logger, adm, srvOpts)
 			if err != nil {

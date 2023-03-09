@@ -1,6 +1,7 @@
 <script lang="ts">
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import { QueryClient, QueryClientProvider } from "@sveltestack/svelte-query";
+  import TopNavigationBar from "../components/navigation/TopNavigationBar.svelte";
 
   const queryClient = new QueryClient();
 </script>
@@ -9,14 +10,18 @@
   <meta name="description" content="Rill Cloud" />
 </svelte:head>
 
-<main>
-  <RillTheme>
-    <QueryClientProvider client={queryClient}>
-      <slot />
-    </QueryClientProvider>
-  </RillTheme>
-</main>
-
-<footer>
-  <p>Rill Data</p>
-</footer>
+<RillTheme>
+  <QueryClientProvider client={queryClient}>
+    <div class="flex flex-col h-screen">
+      <main class="flex-grow flex flex-col h-full">
+        <TopNavigationBar />
+        <div class="flex-grow">
+          <slot />
+        </div>
+      </main>
+      <footer class="text-center">
+        <p>Rill Data</p>
+      </footer>
+    </div>
+  </QueryClientProvider>
+</RillTheme>

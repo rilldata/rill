@@ -27,9 +27,9 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			proj, err := client.CreateProject(context.Background(), &adminv1.CreateProjectRequest{
-				Organization: cfg.DefaultOrg,
-				Name:         args[0],
-				Description:  description,
+				OrganizationName: cfg.Org(),
+				Name:             args[0],
+				Description:      description,
 			})
 			if err != nil {
 				return err

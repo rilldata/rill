@@ -76,7 +76,7 @@ func New(authURL string) (*DeviceAuthenticator, error) {
 
 // VerifyDevice performs the device verification API calls.
 func (d *DeviceAuthenticator) VerifyDevice(ctx context.Context) (*DeviceVerification, error) {
-	req, err := d.newFormRequest(ctx, "oauth/device_authorization", url.Values{
+	req, err := d.newFormRequest(ctx, "auth/oauth/device_authorization", url.Values{
 		"client_id": []string{d.ClientID},
 		"scope":     []string{"full_account"},
 	})
@@ -156,7 +156,7 @@ type OAuthTokenResponse struct {
 }
 
 func (d *DeviceAuthenticator) requestToken(ctx context.Context, deviceCode, clientID string) (*OAuthTokenResponse, error) {
-	req, err := d.newFormRequest(ctx, "oauth/token", url.Values{
+	req, err := d.newFormRequest(ctx, "auth/oauth/token", url.Values{
 		"grant_type":  []string{"urn:ietf:params:oauth:grant-type:device_code"},
 		"device_code": []string{deviceCode},
 		"client_id":   []string{clientID},

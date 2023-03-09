@@ -55,7 +55,7 @@ func (s *Server) RevokeCurrentAuthToken(ctx context.Context, req *adminv1.Revoke
 	}
 
 	return &adminv1.RevokeCurrentAuthTokenResponse{
-		TokenID: tokenID,
+		TokenId: tokenID,
 	}, nil
 }
 

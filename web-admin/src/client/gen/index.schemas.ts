@@ -4,37 +4,62 @@
  * rill/admin/v1/api.proto
  * OpenAPI spec version: version not set
  */
+export type AdminServiceUpdateProjectBody = {
+  description?: string;
+  githubUrl?: string;
+  productionBranch?: string;
+  public?: boolean;
+};
+
 export type AdminServiceCreateProjectBody = {
-  createdOn?: string;
   description?: string;
-  id?: string;
+  githubUrl?: string;
   name?: string;
-  updatedOn?: string;
+  productionBranch?: string;
+  public?: boolean;
 };
 
-export type AdminServiceFindProjectsParams = {
+export type AdminServiceListProjectsParams = {
   pageSize?: number;
   pageToken?: string;
 };
 
-export type AdminServiceFindOrganizationsParams = {
-  pageSize?: number;
-  pageToken?: string;
-};
-
-export type AdminServiceUpdateOrganizationBodyBody = {
+export type AdminServiceUpdateOrganizationBody = {
   description?: string;
 };
+
+export type AdminServiceListOrganizationsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceGetGithubRepoStatusParams = { githubUrl?: string };
+
+export interface V1User {
+  createdOn?: string;
+  displayName?: string;
+  email?: string;
+  id?: string;
+  photoUrl?: string;
+  updatedOn?: string;
+}
 
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
 }
 
+export interface V1RevokeCurrentAuthTokenResponse {
+  tokenId?: string;
+}
+
 export interface V1Project {
   createdOn?: string;
   description?: string;
+  githubUrl?: string;
   id?: string;
   name?: string;
+  productionBranch?: string;
+  public?: boolean;
   updatedOn?: string;
 }
 
@@ -55,22 +80,32 @@ export interface V1Organization {
   updatedOn?: string;
 }
 
-export interface V1FindProjectsResponse {
+export interface V1ListProjectsResponse {
   nextPageToken?: string;
   projects?: V1Project[];
 }
 
-export interface V1FindProjectResponse {
-  project?: V1Project;
-}
-
-export interface V1FindOrganizationsResponse {
+export interface V1ListOrganizationsResponse {
   nextPageToken?: string;
   organization?: V1Organization[];
 }
 
-export interface V1FindOrganizationResponse {
+export interface V1GetProjectResponse {
+  project?: V1Project;
+}
+
+export interface V1GetOrganizationResponse {
   organization?: V1Organization;
+}
+
+export interface V1GetGithubRepoStatusResponse {
+  defaultBranch?: string;
+  grantAccessUrl?: string;
+  hasAccess?: boolean;
+}
+
+export interface V1GetCurrentUserResponse {
+  user?: V1User;
 }
 
 export interface V1DeleteProjectResponse {
@@ -90,11 +125,9 @@ export interface V1CreateOrganizationResponse {
 }
 
 export interface V1CreateOrganizationRequest {
-  createdOn?: string;
   description?: string;
   id?: string;
   name?: string;
-  updatedOn?: string;
 }
 
 export interface ProtobufAny {

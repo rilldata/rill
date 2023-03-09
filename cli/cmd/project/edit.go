@@ -30,9 +30,9 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 
 			// Todo how will get the org name? will it be flag with cmd.
 			proj, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
-				Organization: cfg.DefaultOrg,
-				Name:         args[0],
-				Description:  description,
+				OrganizationName: cfg.Org(),
+				Name:             args[0],
+				Description:      description,
 			})
 			if err != nil {
 				return err

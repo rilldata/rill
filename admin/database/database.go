@@ -52,8 +52,9 @@ type DB interface {
 
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
-	CreateProject(ctx context.Context, orgID string, name string, description string) (*Project, error)
-	UpdateProject(ctx context.Context, id string, description string) (*Project, error)
+	FindProjectByGithubURL(ctx context.Context, githubURL string) (*Project, error)
+	CreateProject(ctx context.Context, orgID string, project *Project) (*Project, error)
+	UpdateProject(ctx context.Context, project *Project) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 
 	FindUsers(ctx context.Context) ([]*User, error)
@@ -78,6 +79,10 @@ type DB interface {
 	UpdateAuthCode(ctx context.Context, userCode, userID string, approvalState AuthCodeApprovalState) error
 	// DeleteAuthCode deletes the authorization code data from the store
 	DeleteAuthCode(ctx context.Context, deviceCode string) error
+
+	FindUserGithubInstallation(ctx context.Context, userID string, installationID int64) (*UserGithubInstallation, error)
+	UpsertUserGithubInstallation(ctx context.Context, userID string, installationID int64) error
+	DeleteUserGithubInstallations(ctx context.Context, installationID int64) error
 }
 
 // ErrNotFound is returned for single row queries that return no values.
@@ -126,12 +131,16 @@ type Organization struct {
 // Project represents one Git connection.
 // Projects belong to an organization.
 type Project struct {
-	ID             string
-	OrganizationID string `db:"organization_id"`
-	Name           string
-	Description    string
-	CreatedOn      time.Time `db:"created_on"`
-	UpdatedOn      time.Time `db:"updated_on"`
+	ID                   string
+	OrganizationID       string `db:"organization_id"`
+	Name                 string
+	Description          string
+	Public               bool
+	ProductionBranch     string    `db:"production_branch"`
+	GithubURL            string    `db:"github_url"`
+	GithubInstallationID int64     `db:"github_installation_id"`
+	CreatedOn            time.Time `db:"created_on"`
+	UpdatedOn            time.Time `db:"updated_on"`
 }
 
 // User is a person registered in Rill.
@@ -177,3 +186,11 @@ const (
 	AuthClientIDRillWeb = "12345678-0000-0000-0000-000000000001"
 	AuthClientIDRillCLI = "12345678-0000-0000-0000-000000000002"
 )
+
+// UserGithubInstallation represents a confirmed user relationship to an installation of our Github app
+type UserGithubInstallation struct {
+	ID             string    `db:"id"`
+	UserID         string    `db:"user_id"`
+	InstallationID int64     `db:"installation_id"`
+	CreatedOn      time.Time `db:"created_on"`
+}
