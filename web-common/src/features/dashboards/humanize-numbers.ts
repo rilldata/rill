@@ -337,8 +337,7 @@ export const nicelyFormattedTypesToNumberKind = (
 
 export function humanizeDataType(
   value: unknown,
-  type: NicelyFormattedTypes,
-  options?: formatterOptions
+  type: NicelyFormattedTypes
 ): string {
   if (typeof value != "number") return value.toString();
 
@@ -356,7 +355,7 @@ export function humanizeDataType(
       strategy: "default",
       numberKind,
       padWithInsignificantZeros: false,
-      maxDigitsRightSmallNums: 3,
+      maxDigitsRightSmallNums: 1,
       maxDigitsRightSuffixNums: 2,
     };
   }
