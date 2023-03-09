@@ -59,32 +59,34 @@ const updateMetricsExplorerByName = (
 };
 
 const metricViewReducers = {
-  sync(name: string, meta: V1MetricsView) {
-    if (!name || !meta || !meta.measures) return;
+  sync(name: string, metricsView: V1MetricsView) {
+    if (!name || !metricsView || !metricsView.measures) return;
     updateMetricsExplorerByName(
       name,
       (metricsExplorer) => {
         // sync measures with selected leaderboard measure.
         if (
-          meta.measures.length &&
+          metricsView.measures.length &&
           (!metricsExplorer.leaderboardMeasureName ||
-            !meta.measures.find(
+            !metricsView.measures.find(
               (measure) =>
                 measure.name === metricsExplorer.leaderboardMeasureName
             ))
         ) {
-          metricsExplorer.leaderboardMeasureName = meta.measures[0].name;
-        } else if (!meta.measures.length) {
+          metricsExplorer.leaderboardMeasureName = metricsView.measures[0].name;
+        } else if (!metricsView.measures.length) {
           metricsExplorer.leaderboardMeasureName = undefined;
         }
-        metricsExplorer.selectedMeasureNames = meta.measures.map(
+        metricsExplorer.selectedMeasureNames = metricsView.measures.map(
           (measure) => measure.name
         );
       },
       () => ({
         name,
-        selectedMeasureNames: meta.measures.map((measure) => measure.name),
-        leaderboardMeasureName: meta.measures[0]?.name,
+        selectedMeasureNames: metricsView.measures.map(
+          (measure) => measure.name
+        ),
+        leaderboardMeasureName: metricsView.measures[0]?.name,
         filters: {
           include: [],
           exclude: [],
