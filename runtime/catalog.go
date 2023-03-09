@@ -51,10 +51,11 @@ func (r *Runtime) Reconcile(ctx context.Context, instanceID string, changedPaths
 	}
 
 	resp, err := cat.Reconcile(ctx, catalog.ReconcileConfig{
-		DryRun:       dry,
-		Strict:       strict,
-		ChangedPaths: changedPaths,
-		ForcedPaths:  forcedPaths,
+		DryRun:            dry,
+		Strict:            strict,
+		ChangedPaths:      changedPaths,
+		ForcedPaths:       forcedPaths,
+		SafeSourceRefresh: r.opts.SafeSourceRefresh,
 	})
 	if err != nil {
 		return nil, err
@@ -85,9 +86,10 @@ func (r *Runtime) RefreshSource(ctx context.Context, instanceID, name string) er
 	}
 
 	resp, err := cat.Reconcile(ctx, catalog.ReconcileConfig{
-		ChangedPaths: []string{path},
-		ForcedPaths:  []string{path},
-		Strict:       true,
+		ChangedPaths:      []string{path},
+		ForcedPaths:       []string{path},
+		Strict:            true,
+		SafeSourceRefresh: r.opts.SafeSourceRefresh,
 	})
 	if err != nil {
 		return err
