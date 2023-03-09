@@ -40,26 +40,26 @@ jobs:
 
       - name: Prettier checks and lint for web local
         if: steps.filter.outputs.local == 'true'
-        run: -|
+        run: |-
           npx prettier --check "web-local/**/*"
           npx prettier --check "web-common/**/*"
           npm run lint -w web-local -- --quiet
 
       - name: Build & Test the web local
         if: steps.filter.outputs.local == 'true'
-        run: -|
+        run: |-
           npm run build -w web-local
           npm run test -w web-local
 
       - name: Prettier checks and lint for web admin
         if: steps.filter.outputs.admin == 'true'
-        run: -|
+        run: |-
           npx prettier --check "web-admin/**/*"
           npx prettier --check "web-common/**/*"
           npm run lint -w web-admin -- --quiet
 
       - name: Build & Test the web admin
         if: steps.filter.outputs.admin == 'true'
-        run: -|
+        run: |-
           npm run build -w web-admin
           npm run test -w web-admin
