@@ -34,6 +34,34 @@ export type AdminServiceListProjectsParams = {
   pageToken?: string;
 };
 
+export type AdminServiceSetProjectMemberRoleBody = {
+  role?: string;
+};
+
+export type AdminServiceAddProjectMemberBody = {
+  email?: string;
+  role?: string;
+};
+
+export type AdminServiceListProjectMembersParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceSetOrgMemberRoleBody = {
+  role?: string;
+};
+
+export type AdminServiceAddOrgMemberBody = {
+  email?: string;
+  role?: string;
+};
+
+export type AdminServiceListOrgMembersParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
 };
@@ -54,16 +82,28 @@ export interface V1User {
   updatedOn?: string;
 }
 
-export interface V1UpdateProjectResponse {
-  project?: V1Project;
-}
-
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
 }
 
+export interface V1SetProjectMemberRoleResponse {
+  [key: string]: any;
+}
+
+export interface V1SetOrgMemberRoleResponse {
+  [key: string]: any;
+}
+
 export interface V1RevokeCurrentAuthTokenResponse {
   tokenId?: string;
+}
+
+export interface V1RemoveProjectMemberResponse {
+  [key: string]: any;
+}
+
+export interface V1RemoveOrgMemberResponse {
+  [key: string]: any;
 }
 
 export type V1ProjectVariables = { [key: string]: string };
@@ -85,6 +125,10 @@ export interface V1Project {
   variables?: V1ProjectVariables;
 }
 
+export interface V1UpdateProjectResponse {
+  project?: V1Project;
+}
+
 export interface V1PingResponse {
   time?: string;
   version?: string;
@@ -103,9 +147,23 @@ export interface V1ListProjectsResponse {
   projects?: V1Project[];
 }
 
+export interface V1ListProjectMembersResponse {
+  nextPageToken?: string;
+  users?: V1User[];
+}
+
 export interface V1ListOrganizationsResponse {
   nextPageToken?: string;
   organizations?: V1Organization[];
+}
+
+export interface V1ListOrgMembersResponse {
+  nextPageToken?: string;
+  users?: V1User[];
+}
+
+export interface V1LeaveOrganizationResponse {
+  [key: string]: any;
 }
 
 export interface V1GetProjectResponse {
@@ -173,6 +231,14 @@ export interface V1CreateOrganizationRequest {
   description?: string;
   id?: string;
   name?: string;
+}
+
+export interface V1AddProjectMemberResponse {
+  [key: string]: any;
+}
+
+export interface V1AddOrgMemberResponse {
+  [key: string]: any;
 }
 
 export interface ProtobufAny {

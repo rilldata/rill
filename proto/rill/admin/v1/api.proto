@@ -90,6 +90,63 @@ service AdminService {
   rpc GetGithubRepoStatus(GetGithubRepoStatusRequest) returns (GetGithubRepoStatusResponse) {
     option (google.api.http) = {get: "/v1/github/repositories"};
   }
+
+  // ListOrgMembers lists all the org members
+  rpc ListOrgMembers(ListOrgMembersRequest) returns (ListOrgMembersResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/members"};
+  }
+
+  // AddOrgMember lists all the org members
+  rpc AddOrgMember(AddOrgMemberRequest) returns (AddOrgMemberResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/members",
+      body: "*"
+    };
+  }
+
+  // RemoveOrgMember removes member from the organization
+  rpc RemoveOrgMember(RemoveOrgMemberRequest) returns (RemoveOrgMemberResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/members/{email}"};
+  }
+
+  // SetOrgMemberRole sets the role for the member
+  rpc SetOrgMemberRole(SetOrgMemberRoleRequest) returns (SetOrgMemberRoleResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{organization}/members/{email}",
+      body: "*"
+    };
+  }
+
+  // LeaveOrganization removes the current user from the organization
+  rpc LeaveOrganization(LeaveOrganizationRequest) returns (LeaveOrganizationResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/members/current"};
+  }
+
+  // ListProjectMembers lists all the project members
+  rpc ListProjectMembers(ListProjectMembersRequest) returns (ListProjectMembersResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/members"};
+  }
+
+  // AddProjectMember adds a member to the project
+  rpc AddProjectMember(AddProjectMemberRequest) returns (AddProjectMemberResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/members",
+      body: "*"
+    };
+  }
+
+  // RemoveProjectMember removes member from the project
+  rpc RemoveProjectMember(RemoveProjectMemberRequest) returns (RemoveProjectMemberResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/projects/{project}/members/{email}"};
+  }
+
+  // SetProjectMemberRole sets the role for the member
+  rpc SetProjectMemberRole(SetProjectMemberRoleRequest) returns (SetProjectMemberRoleResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{organization}/projects/{project}/members/{email}",
+      body: "*"
+    };
+  }
 }
 
 message PingRequest {}
@@ -279,3 +336,99 @@ message Deployment {
   google.protobuf.Timestamp created_on = 9;
   google.protobuf.Timestamp updated_on = 10;
 }
+
+// Request message for AdminService.ListOrgMembers
+message ListOrgMembersRequest {
+  string organization = 1;
+  uint32 page_size = 2;
+  string page_token = 3;
+}
+
+// Response message for AdminService.ListOrgMembers
+message ListOrgMembersResponse {
+  repeated User users = 1;
+  string next_page_token = 2;
+}
+
+// Request message for AdminService.AddOrgMember
+message AddOrgMemberRequest {
+  string organization = 1;
+  string email = 2;
+  string role = 3;
+}
+
+// Response message for AdminService.AddOrgMember
+message AddOrgMemberResponse {}
+
+// Request message for AdminService.RemoveOrgMember
+message RemoveOrgMemberRequest {
+  string organization = 1;
+  string email = 2;
+}
+
+// Response message for AdminService.RemoveOrgMember
+message RemoveOrgMemberResponse {}
+
+// Request message for AdminService.SetOrgMemberRole
+message SetOrgMemberRoleRequest {
+  string organization = 1;
+  string email = 2;
+  string role = 3;
+}
+
+// Response message for AdminService.SetOrgMemberRole
+message SetOrgMemberRoleResponse {}
+
+// Request message for AdminService.LeaveOrg
+message LeaveOrganizationRequest {
+  string organization = 1;
+}
+
+// Response message for AdminService.LeaveOrg
+message LeaveOrganizationResponse {}
+
+// Request message for AdminService.ListProjectMembers
+message ListProjectMembersRequest {
+  string organization = 1;
+  string project = 2;
+  uint32 page_size = 3;
+  string page_token = 4;
+}
+
+// Response message for AdminService.ListProjectMembers
+message ListProjectMembersResponse {
+  repeated User users = 1;
+  string next_page_token = 2;
+}
+
+// Request message for AdminService.AddProjectMember
+message AddProjectMemberRequest {
+  string organization = 1;
+  string project = 2;
+  string email = 3;
+  string role = 4;
+}
+
+// Response message for AdminService.AddProjectMember
+message AddProjectMemberResponse {}
+
+// Request message for AdminService.RemoveProjectMember
+message RemoveProjectMemberRequest {
+  string organization = 1;
+  string project = 2;
+  string email = 3;
+}
+
+// Response message for AdminService.RemoveProjectMember
+message RemoveProjectMemberResponse {}
+
+// Request message for AdminService.SetProjectMemberRole
+message SetProjectMemberRoleRequest {
+  string organization = 1;
+  string project = 2;
+  string email = 3;
+  string role = 4;
+}
+
+// Response message for AdminService.SetProjectMemberRole
+message SetProjectMemberRoleResponse {}

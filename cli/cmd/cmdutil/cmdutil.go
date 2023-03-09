@@ -2,6 +2,7 @@ package cmdutil
 
 import (
 	"fmt"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"os"
 	"strings"
 	"time"
@@ -69,8 +70,8 @@ func TablePrinter(v interface{}) {
 	fmt.Fprintln(os.Stdout, b.String())
 }
 
-func TextPrinter(str string) {
-	boldGreen := color.New(color.FgGreen).Add(color.Underline).Add(color.Bold)
+func SuccessPrinter(str string) {
+	boldGreen := color.New(color.FgGreen).Add(color.Bold)
 	boldGreen.Fprintln(color.Output, str)
 }
 
@@ -103,4 +104,45 @@ func PromptGetSelect(items []string, label string) string {
 	}
 
 	return result
+}
+
+func WarnPrinter(str string) {
+	boldYellow := color.New(color.FgYellow).Add(color.Bold)
+	boldYellow.Fprintln(color.Output, str)
+}
+
+func PrintUsers(users []*adminv1.User) {
+	if len(users) == 0 {
+		WarnPrinter("No members found")
+		return
+	}
+
+	SuccessPrinter("Members list \n")
+	TablePrinter(toUserTable(users))
+}
+
+func toUserTable(users []*adminv1.User) []*user {
+	allUsers := make([]*user, 0, len(users))
+
+	for _, usr := range users {
+		allUsers = append(allUsers, toUserRow(usr))
+	}
+
+	return allUsers
+}
+
+func toUserRow(u *adminv1.User) *user {
+	return &user{
+		Name:      u.DisplayName,
+		Email:     u.Email,
+		CreatedOn: u.CreatedOn.AsTime().String(),
+		UpdatedOn: u.UpdatedOn.AsTime().String(),
+	}
+}
+
+type user struct {
+	Name      string `header:"name" json:"display_name"`
+	Email     string `header:"email" json:"email"`
+	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
+	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_on"`
 }

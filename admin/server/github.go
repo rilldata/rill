@@ -21,6 +21,7 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 	if claims.OwnerType() != auth.OwnerTypeUser {
 		return nil, status.Error(codes.Unauthenticated, "not authenticated")
 	}
+	// TODO need a project ID here to check permissions
 
 	// Check whether user has granted access
 	installationID, ok, err := s.admin.GetUserGithubInstallation(ctx, claims.OwnerID(), req.GithubUrl)

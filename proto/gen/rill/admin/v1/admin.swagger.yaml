@@ -142,6 +142,272 @@ paths:
                 type: string
       tags:
         - AdminService
+  /v1/organizations/{organization}/members:
+    get:
+      summary: ListOrgMembers lists all the org members
+      operationId: AdminService_ListOrgMembers
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListOrgMembersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: AddOrgMember lists all the org members
+      operationId: AdminService_AddOrgMember
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AddOrgMemberResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+              role:
+                type: string
+            title: Request message for AdminService.AddOrgMember
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/members/{email}:
+    delete:
+      summary: RemoveOrgMember removes member from the organization
+      operationId: AdminService_RemoveOrgMember
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveOrgMemberResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    put:
+      summary: SetOrgMemberRole sets the role for the member
+      operationId: AdminService_SetOrgMemberRole
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetOrgMemberRoleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
+            title: Request message for AdminService.SetOrgMemberRole
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/members/current:
+    delete:
+      summary: LeaveOrganization removes the current user from the organization
+      operationId: AdminService_LeaveOrganization
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1LeaveOrganizationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/members:
+    get:
+      summary: ListProjectMembers lists all the project members
+      operationId: AdminService_ListProjectMembers
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectMembersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: AddProjectMember adds a member to the project
+      operationId: AdminService_AddProjectMember
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AddProjectMemberResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+              role:
+                type: string
+            title: Request message for AdminService.AddProjectMember
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/members/{email}:
+    delete:
+      summary: RemoveProjectMember removes member from the project
+      operationId: AdminService_RemoveProjectMember
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveProjectMemberResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    put:
+      summary: SetProjectMemberRole sets the role for the member
+      operationId: AdminService_SetProjectMemberRole
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetProjectMemberRoleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
+            title: Request message for AdminService.SetProjectMemberRole
+      tags:
+        - AdminService
   /v1/organizations/{organizationName}/projects:
     get:
       summary: ListProjects lists all the projects currently available for given organizations
@@ -371,6 +637,12 @@ definitions:
           $ref: '#/definitions/protobufAny'
       message:
         type: string
+  v1AddOrgMemberResponse:
+    type: object
+    title: Response message for AdminService.AddOrgMember
+  v1AddProjectMemberResponse:
+    type: object
+    title: Response message for AdminService.AddProjectMember
   v1CreateOrganizationRequest:
     type: object
     properties:
@@ -457,6 +729,19 @@ definitions:
         $ref: '#/definitions/v1Deployment'
       project:
         $ref: '#/definitions/v1Project'
+  v1LeaveOrganizationResponse:
+    type: object
+    title: Response message for AdminService.LeaveOrg
+  v1ListOrgMembersResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      users:
+        type: array
+        items:
+          $ref: '#/definitions/v1User'
+    title: Response message for AdminService.ListOrgMembers
   v1ListOrganizationsResponse:
     type: object
     properties:
@@ -466,6 +751,16 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/v1Organization'
+  v1ListProjectMembersResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      users:
+        type: array
+        items:
+          $ref: '#/definitions/v1User'
+    title: Response message for AdminService.ListProjectMembers
   v1ListProjectsResponse:
     type: object
     properties:
@@ -536,11 +831,23 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  v1RemoveOrgMemberResponse:
+    type: object
+    title: Response message for AdminService.RemoveOrgMember
+  v1RemoveProjectMemberResponse:
+    type: object
+    title: Response message for AdminService.RemoveProjectMember
   v1RevokeCurrentAuthTokenResponse:
     type: object
     properties:
       tokenId:
         type: string
+  v1SetOrgMemberRoleResponse:
+    type: object
+    title: Response message for AdminService.SetOrgMemberRole
+  v1SetProjectMemberRoleResponse:
+    type: object
+    title: Response message for AdminService.SetProjectMemberRole
   v1UpdateOrganizationResponse:
     type: object
     properties:
