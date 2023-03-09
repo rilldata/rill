@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { outline } from "@rilldata/web-common/components/data-graphic/actions/outline";
   import Body from "@rilldata/web-common/components/data-graphic/elements/Body.svelte";
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
+  import WithBisector from "@rilldata/web-common/components/data-graphic/functional-components/WithBisector.svelte";
   import {
     Axis,
     Grid,
@@ -11,7 +13,7 @@
   import { extent } from "d3-array";
   import { cubicOut } from "svelte/easing";
   import { writable } from "svelte/store";
-  import { fade } from "svelte/transition";
+  import { fade, fly } from "svelte/transition";
   export let width: number = undefined;
   export let height: number = undefined;
   export let xMin;
@@ -24,6 +26,7 @@
   export let mouseoverValue;
   export let hovered = false;
   export let mouseoverFormat: (d: number) => string = (v) => v.toString();
+  export let mouseoverTimeFormat: (d: number) => string = (v) => v.toString();
 
   export let tweenProps = { duration: 400, easing: cubicOut };
 
@@ -36,8 +39,9 @@
   $: [yExtentMin, yExtentMax] = extent(data, (d) => d[yAccessor]);
   $: internalXMin = xMin || xExtentMin;
   $: internalXMax = xMax || xExtentMax;
-  $: inflate =
-    yExtentMin == yExtentMax ? 2 / 3 : (yExtentMax - yExtentMin) / yExtentMax;
+  /** we'll set the inflation amount here. */
+  let inflate = 5 / 6;
+
   $: internalYMin = yExtentMin >= 0 ? 0 : yExtentMin;
 
   $: internalYMax = yMax
@@ -98,6 +102,7 @@
   right={50}
   bind:mouseoverValue
   bind:hovered
+  let:config
   yMinTweenProps={tweenProps}
   yMaxTweenProps={tweenProps}
   xMaxTweenProps={tweenProps}
@@ -131,5 +136,22 @@
         format={mouseoverFormat}
       />
     </g>
+    <WithBisector
+      {data}
+      callback={(d) => d[xAccessor]}
+      value={mouseoverValue.x}
+      let:point
+    >
+      <g transition:fly|local={{ duration: 100, x: -4 }}>
+        <text
+          use:outline
+          class="fill-gray-600"
+          x={config.plotLeft + config.bodyBuffer + 6}
+          y={config.plotTop + 10 + config.bodyBuffer}
+        >
+          {mouseoverTimeFormat(point[xAccessor])}
+        </text>
+      </g></WithBisector
+    >
   {/if}
 </SimpleDataGraphic>

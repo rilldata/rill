@@ -1,24 +1,18 @@
 <script lang="ts">
-  import { useAdminServiceFindOrganizations } from "../client";
+  import { Button } from "@rilldata/web-common/components/button";
 
-  const orgs = useAdminServiceFindOrganizations();
+  // TODO: implement
+  function handleCreateOrganization() {
+    console.log("Create organization");
+  }
 </script>
 
-<svelte:head>
-  <title>Organizations</title>
-</svelte:head>
-
-<section>
-  <h1>Organizations</h1>
-  {#if $orgs.isLoading}
-    <span>Loading...</span>
-  {:else if $orgs.isError}
-    <span>Error: {$orgs.error}</span>
-  {:else if $orgs.data && $orgs.data.organization}
-    <ul>
-      {#each $orgs.data.organization as org}
-        <li><a href="/{org.name}">{org.name}</a></li>
-      {/each}
-    </ul>
-  {/if}
-</section>
+<div class="flex flex-col justify-center items-center h-3/5">
+  <h1 class="text-2xl font-bold">You're lonely!</h1>
+  <p class="mt-4 text-lg">You are not yet part of a Rill organization.</p>
+  <div class="mt-4">
+    <Button type="primary" on:click={handleCreateOrganization}
+      >Create organization</Button
+    >
+  </div>
+</div>

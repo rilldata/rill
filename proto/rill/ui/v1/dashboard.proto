@@ -1,0 +1,18 @@
+syntax = "proto3";
+package rill.ui.v1;
+
+import "google/protobuf/timestamp.proto";
+import "rill/runtime/v1/catalog.proto";
+import "rill/runtime/v1/queries.proto";
+
+message DashboardState {
+  DashboardTimeRange time_range = 1;
+  rill.runtime.v1.MetricsViewFilter filters = 2;
+}
+
+message DashboardTimeRange {
+  optional string name = 1;
+  optional google.protobuf.Timestamp time_start = 2;
+  optional google.protobuf.Timestamp time_end = 3;
+  rill.runtime.v1.TimeGrain time_granularity = 4;
+}

@@ -97,12 +97,13 @@
     getContext("rill:menu:menuTrigger") || writable(undefined);
 
   let mounted = false;
-  // once open, we should select the first menu item.
   onMount(() => {
     $globalActiveMenu = menuID;
+    mounted = true;
   });
 
-  $: if (focusOnMount && !mounted) {
+  // once open, we should select the first menu item.
+  $: if (focusOnMount && mounted) {
     $currentItem = $menuItems.find((item) => !item.disabled)?.id;
   }
 

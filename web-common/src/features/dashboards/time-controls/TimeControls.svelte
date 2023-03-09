@@ -8,6 +8,7 @@ Constructs a TimeSeriesTimeRange object – to be used as the filter in MetricsE
 We should rename TimeSeriesTimeRange to a better name.
 -->
 <script lang="ts">
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     useModelAllTimeRange,
     useModelHasTimeSeries,
@@ -22,6 +23,7 @@ We should rename TimeSeriesTimeRange to a better name.
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import ComparisonSelector from "./ComparisonSelector.svelte";
@@ -45,6 +47,7 @@ We should rename TimeSeriesTimeRange to a better name.
 
   export let metricViewName: string;
 
+  const queryClient = useQueryClient();
   $: dashboardStore = useDashboardStore(metricViewName);
 
   $: selectedTimeRange = $dashboardStore?.selectedTimeRange;
@@ -90,8 +93,16 @@ We should rename TimeSeriesTimeRange to a better name.
   $: allTimeRange = $allTimeRangeQuery?.data as TimeRange | undefined;
 
   // once we have the allTimeRange, set the default time range and time grain
-  $: if (!selectedTimeRange && allTimeRange)
-    setDefaultTimeControls(allTimeRange);
+  $: if (allTimeRange) {
+    if (!$dashboardStore?.selectedTimeRange) {
+      setDefaultTimeControls(allTimeRange);
+    } else if (!$dashboardStore?.selectedTimeRange.start) {
+      setTimeControlsFromUrl(
+        $dashboardStore.selectedTimeRange.name,
+        allTimeRange
+      );
+    }
+  }
 
   function setDefaultTimeControls(allTimeRange: TimeRange) {
     baseTimeRange =
@@ -103,6 +114,17 @@ We should rename TimeSeriesTimeRange to a better name.
       baseTimeRange.end
     );
     makeTimeSeriesTimeRangeAndUpdateAppState(baseTimeRange, timeGrain);
+  }
+
+  function setTimeControlsFromUrl(name: string, allTimeRange: TimeRange) {
+    baseTimeRange = makeRelativeTimeRange(
+      $dashboardStore?.selectedTimeRange.name,
+      allTimeRange
+    );
+    makeTimeSeriesTimeRangeAndUpdateAppState(
+      baseTimeRange,
+      $dashboardStore?.selectedTimeRange.interval
+    );
   }
 
   // we get the timeGrainOptions so that we can assess whether or not the
@@ -160,6 +182,7 @@ We should rename TimeSeriesTimeRange to a better name.
     timeGrain: V1TimeGrain
   ) {
     const { name, start, end } = timeRange;
+    console.log(timeRange, timeGrain);
 
     // validate time range name + time grain combination
     // (necessary because when the time range name is changed, the current time grain may not be valid for the new time range name)
@@ -212,6 +235,7 @@ We should rename TimeSeriesTimeRange to a better name.
       interval: timeGrain,
     };
 
+    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
 
     updateComparisonAppState(newTimeRange);

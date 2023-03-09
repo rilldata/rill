@@ -25,17 +25,22 @@ import (
 // Env var keys must be prefixed with RILL_ADMIN_ and are converted from snake_case to CamelCase.
 // For example RILL_ADMIN_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	DatabaseDriver   string        `default:"postgres" split_words:"true"`
-	DatabaseURL      string        `split_words:"true"`
-	HTTPPort         int           `default:"8080" split_words:"true"`
-	GRPCPort         int           `default:"9090" split_words:"true"`
-	LogLevel         zapcore.Level `default:"info" split_words:"true"`
-	ExternalURL      string        `default:"http://localhost:8080" split_words:"true"`
-	SessionKeyPairs  []string      `split_words:"true"`
-	AllowedOrigins   []string      `default:"*" split_words:"true"`
-	AuthDomain       string        `split_words:"true"`
-	AuthClientID     string        `split_words:"true"`
-	AuthClientSecret string        `split_words:"true"`
+	DatabaseDriver         string        `default:"postgres" split_words:"true"`
+	DatabaseURL            string        `split_words:"true"`
+	HTTPPort               int           `default:"8080" split_words:"true"`
+	GRPCPort               int           `default:"9090" split_words:"true"`
+	LogLevel               zapcore.Level `default:"info" split_words:"true"`
+	ExternalURL            string        `default:"http://localhost:8080" split_words:"true"`
+	FrontendURL            string        `default:"http://localhost:3000" split_words:"true"`
+	SessionKeyPairs        []string      `split_words:"true"`
+	AllowedOrigins         []string      `default:"*" split_words:"true"`
+	AuthDomain             string        `split_words:"true"`
+	AuthClientID           string        `split_words:"true"`
+	AuthClientSecret       string        `split_words:"true"`
+	GithubAppID            int64         `split_words:"true"`
+	GithubAppName          string        `split_words:"true"`
+	GithubAppPrivateKey    string        `split_words:"true"`
+	GithubAppWebhookSecret string        `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -66,8 +71,10 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 
 			// Init admin service
 			admOpts := &admin.Options{
-				DatabaseDriver: conf.DatabaseDriver,
-				DatabaseDSN:    conf.DatabaseURL,
+				DatabaseDriver:      conf.DatabaseDriver,
+				DatabaseDSN:         conf.DatabaseURL,
+				GithubAppID:         conf.GithubAppID,
+				GithubAppPrivateKey: conf.GithubAppPrivateKey,
 			}
 			adm, err := admin.New(admOpts, logger)
 			if err != nil {
@@ -87,14 +94,17 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 
 			// Init admin server
 			srvOpts := &server.Options{
-				HTTPPort:         conf.HTTPPort,
-				GRPCPort:         conf.GRPCPort,
-				ExternalURL:      conf.ExternalURL,
-				SessionKeyPairs:  keyPairs,
-				AllowedOrigins:   conf.AllowedOrigins,
-				AuthDomain:       conf.AuthDomain,
-				AuthClientID:     conf.AuthClientID,
-				AuthClientSecret: conf.AuthClientSecret,
+				HTTPPort:               conf.HTTPPort,
+				GRPCPort:               conf.GRPCPort,
+				ExternalURL:            conf.ExternalURL,
+				FrontendURL:            conf.FrontendURL,
+				SessionKeyPairs:        keyPairs,
+				AllowedOrigins:         conf.AllowedOrigins,
+				AuthDomain:             conf.AuthDomain,
+				AuthClientID:           conf.AuthClientID,
+				AuthClientSecret:       conf.AuthClientSecret,
+				GithubAppName:          conf.GithubAppName,
+				GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
 			}
 			srv, err := server.New(logger, adm, srvOpts)
 			if err != nil {

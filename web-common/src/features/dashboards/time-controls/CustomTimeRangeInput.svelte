@@ -30,34 +30,34 @@
 </script>
 
 <form
-  id="custom-time-range-form"
   class="flex flex-col gap-y-3 mt-3 mb-1 px-3"
+  id="custom-time-range-form"
   on:submit|preventDefault={applyCustomTimeRange}
 >
   <div class="flex flex-col gap-y-1">
-    <label for="start-date" class={labelClasses}>Start date</label>
+    <label class={labelClasses} for="start-date">Start date</label>
     <input
       bind:value={start}
+      class="cursor-pointer"
+      id="start-date"
+      {max}
+      {min}
+      name="start-date"
       on:blur={() => dispatch("close-calendar")}
       type="date"
-      id="start-date"
-      name="start-date"
-      {min}
-      {max}
-      class="cursor-pointer"
     />
   </div>
   <div class="flex flex-col gap-y-1">
-    <label for="end-date" class={labelClasses}>End date</label>
+    <label class={labelClasses} for="end-date">End date</label>
 
     <input
       bind:value={end}
+      id="end-date"
+      {max}
+      {min}
+      name="end-date"
       on:blur={() => dispatch("close-calendar")}
       type="date"
-      id="end-date"
-      name="end-date"
-      {min}
-      {max}
     />
   </div>
   <div class="flex mt-3 items-center">
@@ -67,7 +67,7 @@
       </div>
     {/if}
     <div class="flex-grow" />
-    <Button type="primary" submitForm form="custom-time-range-form" {disabled}>
+    <Button {disabled} form="custom-time-range-form" submitForm type="primary">
       Apply
     </Button>
   </div>

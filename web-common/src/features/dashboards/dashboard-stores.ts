@@ -66,6 +66,28 @@ const updateMetricsExplorerByName = (
 };
 
 const metricViewReducers = {
+  create(
+    name: string,
+    filters: V1MetricsViewFilter,
+    selectedTimeRange: TimeSeriesTimeRange
+  ) {
+    updateMetricsExplorerByName(
+      name,
+      (metricsExplorer) => {
+        metricsExplorer.filters = filters;
+        metricsExplorer.selectedTimeRange = selectedTimeRange;
+      },
+      () => ({
+        name,
+        selectedMeasureNames: [],
+        leaderboardMeasureName: "",
+        filters,
+        dimensionFilterExcludeMode: new Map(),
+        selectedTimeRange,
+      })
+    );
+  },
+
   sync(name: string, meta: V1MetricsView) {
     if (!name || !meta || !meta.measures) return;
     updateMetricsExplorerByName(

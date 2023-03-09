@@ -11,8 +11,6 @@ import (
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// ListOrganizations implements AdminService.
-// (GET /v1/organizations)
 func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganizationsRequest) (*adminv1.ListOrganizationsResponse, error) {
 	orgs, err := s.admin.DB.FindOrganizations(ctx)
 	if err != nil {
@@ -27,7 +25,6 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 	return &adminv1.ListOrganizationsResponse{Organization: pbs}, nil
 }
 
-// (GET /organizations/{name})
 func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizationRequest) (*adminv1.GetOrganizationResponse, error) {
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
@@ -42,8 +39,6 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 	}, nil
 }
 
-// CreateOrganization implements AdminService.
-// (POST /organizations)
 func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrganizationRequest) (*adminv1.CreateOrganizationResponse, error) {
 	org, err := s.admin.DB.CreateOrganization(ctx, req.Name, req.Description)
 	if err != nil {
@@ -55,7 +50,6 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 	}, nil
 }
 
-// (DELETE /organizations/{name})
 func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrganizationRequest) (*adminv1.DeleteOrganizationResponse, error) {
 	err := s.admin.DB.DeleteOrganization(ctx, req.Name)
 	if err != nil {
@@ -67,7 +61,6 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 	}, nil
 }
 
-// (PUT /organizations/{name})
 func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrganizationRequest) (*adminv1.UpdateOrganizationResponse, error) {
 	org, err := s.admin.DB.UpdateOrganization(ctx, req.Name, req.Description)
 	if err != nil {

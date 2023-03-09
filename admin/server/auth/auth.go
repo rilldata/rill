@@ -17,6 +17,7 @@ type AuthenticatorOptions struct {
 	AuthClientID     string
 	AuthClientSecret string
 	ExternalURL      string
+	FrontendURL      string
 }
 
 // Authenticator wraps functionality for admin server auth.
