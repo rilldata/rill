@@ -138,27 +138,27 @@ We should rename TimeSeriesTimeRange to a better name.
   let comparisonOptions = [];
 
   function updateComparisonAppState(newTimeRange) {
-    if (newTimeRange) {
-      comparisonOptions = getComparisonOptionsForTimeRange(
-        newTimeRange,
-        allTimeRange
-      );
+    if (!newTimeRange) return;
 
-      if (comparisonOptions.length) {
-        const comparisonTimeRange = getComparisonTimeRange(
-          newTimeRange,
-          comparisonOptions[0]
-        );
-        metricsExplorerStore.setSelectedComparisonRange(metricViewName, {
-          ...comparisonTimeRange,
-          name: comparisonOptions[0],
-        });
-      }
-      metricsExplorerStore.setShowComparison(
-        metricViewName,
-        !!comparisonOptions.length
-      );
-    }
+    comparisonOptions = getComparisonOptionsForTimeRange(
+      newTimeRange,
+      allTimeRange
+    );
+    metricsExplorerStore.setShowComparison(
+      metricViewName,
+      !!comparisonOptions.length
+    );
+
+    if (!comparisonOptions.length) return;
+
+    const comparisonTimeRange = getComparisonTimeRange(
+      newTimeRange,
+      comparisonOptions[0]
+    );
+    metricsExplorerStore.setSelectedComparisonRange(metricViewName, {
+      ...comparisonTimeRange,
+      name: comparisonOptions[0],
+    });
   }
 
   function onSelectTimeRange(name: TimeRangeName, start: string, end: string) {
@@ -182,7 +182,6 @@ We should rename TimeSeriesTimeRange to a better name.
     timeGrain: V1TimeGrain
   ) {
     const { name, start, end } = timeRange;
-    console.log(timeRange, timeGrain);
 
     // validate time range name + time grain combination
     // (necessary because when the time range name is changed, the current time grain may not be valid for the new time range name)

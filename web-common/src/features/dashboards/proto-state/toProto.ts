@@ -5,7 +5,11 @@ import {
   Value,
 } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-import { TimeRangeName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+import {
+  ComparisonRange,
+  ComparisonWithTimeRange,
+  TimeRangeName,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
 import type { TimeSeriesTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
 import {
   TimeGrain,
@@ -32,6 +36,16 @@ export function toProto(metrics: MetricsExplorerEntity) {
   }
   if (metrics.selectedTimeRange) {
     data.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
+    if (metrics.selectedTimeRange.interval) {
+      data.timeGranularity = toTimeGrainProto(
+        metrics.selectedTimeRange.interval
+      );
+    }
+  }
+  if (metrics.showComparison && metrics.selectedComparisonTimeRange) {
+    data.compareTimeRange = toCompareTimeRangeProto(
+      metrics.selectedComparisonTimeRange
+    );
   }
   return new DashboardState(data);
 }
@@ -50,9 +64,19 @@ function toFiltersProto(filters: V1MetricsViewFilter) {
 function toTimeRangeProto(range: TimeSeriesTimeRange) {
   const timeRangeArgs: PartialMessage<DashboardTimeRange> = {
     name: range.name,
-    timeGranularity: toTimeGrainProto(range.interval),
   };
   if (range.name === TimeRangeName.Custom) {
+    timeRangeArgs.timeStart = toTimeProto(range.start);
+    timeRangeArgs.timeEnd = toTimeProto(range.end);
+  }
+  return new DashboardTimeRange(timeRangeArgs);
+}
+
+function toCompareTimeRangeProto(range: ComparisonWithTimeRange) {
+  const timeRangeArgs: PartialMessage<DashboardTimeRange> = {
+    name: range.name,
+  };
+  if (range.name === ComparisonRange.Custom) {
     timeRangeArgs.timeStart = toTimeProto(range.start);
     timeRangeArgs.timeEnd = toTimeProto(range.end);
   }

@@ -41,6 +41,11 @@ export interface MetricsExplorerEntity {
   showComparison?: boolean;
 }
 
+export type MetricsViewFieldsFromState = Pick<
+  MetricsExplorerEntity,
+  "filters" | "selectedTimeRange" | "selectedComparisonTimeRange"
+>;
+
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
 }
@@ -66,24 +71,24 @@ const updateMetricsExplorerByName = (
 };
 
 const metricViewReducers = {
-  create(
-    name: string,
-    filters: V1MetricsViewFilter,
-    selectedTimeRange: TimeSeriesTimeRange
-  ) {
+  create(name: string, fromState: MetricsViewFieldsFromState) {
     updateMetricsExplorerByName(
       name,
       (metricsExplorer) => {
-        metricsExplorer.filters = filters;
-        metricsExplorer.selectedTimeRange = selectedTimeRange;
+        metricsExplorer.filters = fromState.filters;
+        metricsExplorer.selectedTimeRange = fromState.selectedTimeRange;
+        metricsExplorer.selectedComparisonTimeRange =
+          fromState.selectedComparisonTimeRange;
+        metricsExplorer.showComparison =
+          !!fromState.selectedComparisonTimeRange;
       },
       () => ({
         name,
         selectedMeasureNames: [],
         leaderboardMeasureName: "",
-        filters,
         dimensionFilterExcludeMode: new Map(),
-        selectedTimeRange,
+        showComparison: !!fromState.selectedComparisonTimeRange,
+        ...fromState,
       })
     );
   },
