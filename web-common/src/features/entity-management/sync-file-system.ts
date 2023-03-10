@@ -35,7 +35,7 @@ export async function syncFileSystemPeriodically(
   fileArtifactsStore: FileArtifactsStore
 ) {
   let syncFileSystemInterval: NodeJS.Timer;
-  let syncFileSystemOnVisibleDocument: () => void;
+  // let syncFileSystemOnVisibleDocument: () => void;
   let afterNavigateRanOnce: boolean;
 
   afterNavigate(async () => {
