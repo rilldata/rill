@@ -3,7 +3,7 @@
   import {
     useAdminServiceGetOrganization,
     useAdminServiceListProjects,
-  } from "../../client";
+  } from "../../../client";
 
   const org = useAdminServiceGetOrganization($page.params.organization);
   const projs = useAdminServiceListProjects($page.params.organization);
