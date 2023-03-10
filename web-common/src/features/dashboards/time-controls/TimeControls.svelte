@@ -24,8 +24,13 @@ We should rename TimeSeriesTimeRange to a better name.
   } from "@rilldata/web-common/runtime-client";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { useQueryClient } from "@sveltestack/svelte-query";
+  import type { Readable } from "svelte/store";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import {
+    MetricsExplorerEntity,
+    metricsExplorerStore,
+    useDashboardStore,
+  } from "../dashboard-stores";
   import ComparisonSelector from "./ComparisonSelector.svelte";
   import MainTimeRangeSelector from "./MainTimeRangeSelector.svelte";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
@@ -48,6 +53,7 @@ We should rename TimeSeriesTimeRange to a better name.
   export let metricViewName: string;
 
   const queryClient = useQueryClient();
+  let dashboardStore: Readable<MetricsExplorerEntity>;
   $: dashboardStore = useDashboardStore(metricViewName);
 
   $: selectedTimeRange = $dashboardStore?.selectedTimeRange;
@@ -151,13 +157,21 @@ We should rename TimeSeriesTimeRange to a better name.
 
     if (!comparisonOptions.length) return;
 
+    const hasComparisonFromUrl =
+      $dashboardStore.selectedComparisonTimeRange &&
+      !$dashboardStore.selectedComparisonTimeRange.start;
+    const selectedOption = hasComparisonFromUrl
+      ? comparisonOptions.find(
+          (name) => name === $dashboardStore.selectedComparisonTimeRange.name
+        ) ?? comparisonOptions[0]
+      : comparisonOptions[0];
     const comparisonTimeRange = getComparisonTimeRange(
       newTimeRange,
-      comparisonOptions[0]
+      selectedOption
     );
     metricsExplorerStore.setSelectedComparisonRange(metricViewName, {
       ...comparisonTimeRange,
-      name: comparisonOptions[0],
+      name: selectedOption,
     });
   }
 
