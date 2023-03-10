@@ -1,11 +1,11 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
   ComparisonRange,
+  ComparisonWithTimeRange,
   lastXTimeRangeNames,
   TimeRange,
   TimeRangeName,
   TimeSeriesTimeRange,
-  ComparisonWithTimeRange,
 } from "./time-control-types";
 
 const TIME = {
@@ -694,6 +694,7 @@ export function getComparisonOptionsForTimeRange(
   } else {
     possibleComparisonRanges = [
       timeRangeNameToComparisonRange[timeRange.name],
+      // FIXME: we need to reconcile these comparisons.
       ...pointInTimeComparisons,
     ];
   }

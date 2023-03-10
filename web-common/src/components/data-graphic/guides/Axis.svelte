@@ -205,7 +205,6 @@ This component will draw an axis on the specified side.
       />
     {/if}
     {#if superLabelFormatter && shouldPlaceSuperLabel(superLabelFormatter(tick), i)}
-      <!-- fix dx placement when tickTextPosition is null  -->
       <text
         font-weight="bold"
         x={x(side, tick)}

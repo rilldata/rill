@@ -160,7 +160,7 @@
       <div style:padding-left="24px" style:height="20px" />
       <!-- top axis element -->
       <div />
-      {#if metricsExplorer?.selectedTimeRange}
+      {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess && formattedData}
         <SimpleDataGraphic
           height={32}
           top={34}
