@@ -11,15 +11,15 @@
 
 <div class="flex flex-row items-center">
   {#if organization}
-    <a href="/{organization}" class={textClasses}>{organization}</a>
+    <a href="/-/{organization}" class={textClasses}>{organization}</a>
   {/if}
   {#if project}
     <Slash size={"2em"} className={"text-gray-200"} />
-    <a href="/{organization}/{project}" class={textClasses}>{project}</a>
+    <a href="/-/{organization}/{project}" class={textClasses}>{project}</a>
   {/if}
   {#if dashboard}
     <Slash size={"2em"} className={"text-gray-200"} />
-    <a href="/{organization}/{project}/{dashboard}" class={textClasses}>
+    <a href="/-/{organization}/{project}/{dashboard}" class={textClasses}>
       {dashboard}
     </a>
   {/if}
