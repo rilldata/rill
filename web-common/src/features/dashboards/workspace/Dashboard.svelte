@@ -71,7 +71,7 @@
   $: if (metricsExplorer) {
     const binary = toProto(metricsExplorer).toBinary();
     const message = protoToBase64(binary);
-    goto(`/dashboard/${metricViewName}?state=${message}`);
+    // goto(`/dashboard/${metricViewName}?state=${message}`);
   }
 </script>
 
