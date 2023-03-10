@@ -89,19 +89,25 @@
     </h1>
     <p class="text-lg text-gray-700 mb-6">Your user code is: {userCode}</p>
 
-    <Button type="primary" on:click={() => {
+    <Button
+      type="primary"
+      on:click={() => {
         actionTaken = true;
         confirmUserCode();
       }}
-      disabled={actionTaken}>Confirm</Button>
-<div class="mt-4"></div>
-      <Button type="secondary" on:click={() => {
+      disabled={actionTaken}>Confirm</Button
+    >
+    <div class="mt-4" />
+    <Button
+      type="secondary"
+      on:click={() => {
         actionTaken = true;
         rejectUserCode();
       }}
-      disabled={actionTaken}>Reject</Button>
+      disabled={actionTaken}>Reject</Button
+    >
 
-    <div class="mt-4"></div>
+    <div class="mt-4" />
     <p class="text-md text-green-700 font-bold mb-6">{successMsg}</p>
     <p class="text-md text-red-400 font-bold mb-6">{errorMsg}</p>
   </div>

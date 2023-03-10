@@ -39,14 +39,13 @@
 
 {#if user}
   <div class="flex flex-col justify-center items-center h-3/5">
-    <h1 class="text-3xl font-medium text-gray-800 mb-4">
-      Connect to Github
-    </h1>
-    <p class="text-lg text-gray-700 mb-6">Click the button to grant Rill access to one or more of your Github
-      repositories.</p>
+    <h1 class="text-3xl font-medium text-gray-800 mb-4">Connect to Github</h1>
+    <p class="text-lg text-gray-700 mb-6">
+      Click the button to grant Rill access to one or more of your Github
+      repositories.
+    </p>
     <div class="mt-4">
-    <Button type="primary" on:click={handleGoToGithub}>Go to Github</Button>
-  </div>
-
+      <Button type="primary" on:click={handleGoToGithub}>Go to Github</Button>
+    </div>
   </div>
 {/if}
