@@ -9,7 +9,7 @@
 </script>
 
 <svelte:head>
-  <title>Rill Developer | {metricViewName}</title>
+  <title>Rill | {metricViewName}</title>
 </svelte:head>
 
 <div class="p-2">
