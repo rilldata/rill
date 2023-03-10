@@ -4,9 +4,9 @@
 
   let user;
   let userCode;
-  let actionTaken = false;
-  let successMsg = "";
-  let errorMsg = "";
+  // let actionTaken = false;
+  // let successMsg = "";
+  // let errorMsg = "";
 
   async function fetchUserData() {
     const urlParams = new URLSearchParams(window.location.search);
