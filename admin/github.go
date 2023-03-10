@@ -122,7 +122,11 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 		return nil
 	}
 
-	// TODO: Trigger reconcile (unless currently reconciling)
+	// Trigger reconcile (runs in the background - err means the deployment wasn't found, which is unlikely)
+	err = s.TriggerReconcile(ctx, project.ProductionDeploymentID)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

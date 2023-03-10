@@ -56,9 +56,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &adminv1.DeleteOrganizationResponse{
-		Name: req.Name,
-	}, nil
+	return &adminv1.DeleteOrganizationResponse{}, nil
 }
 
 func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrganizationRequest) (*adminv1.UpdateOrganizationResponse, error) {
