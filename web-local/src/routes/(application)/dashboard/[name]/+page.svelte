@@ -1,18 +1,19 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { DashboardWorkspace } from "@rilldata/web-common/features/dashboards";
+  import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import { base64ToProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
   import { fromProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto.js";
-  import { onMount, tick } from "svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error, redirect } from "@sveltejs/kit";
+  import { onMount, tick } from "svelte";
   import { featureFlags } from "../../../../lib/application-state-stores/application-store";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
 
@@ -67,5 +68,12 @@
 </svelte:head>
 
 {#if $fileQuery.data && $catalogQuery.data}
-  <DashboardWorkspace {metricViewName} />
+  <WorkspaceContainer
+    top="0px"
+    assetID={metricViewName}
+    bgClass="bg-white"
+    inspector={false}
+  >
+    <Dashboard {metricViewName} slot="body" />
+  </WorkspaceContainer>
 {/if}

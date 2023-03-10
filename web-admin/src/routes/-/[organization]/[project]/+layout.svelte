@@ -2,8 +2,8 @@
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
 
   // TODO: call the admin server
-  $: runtimeHost = undefined;
-  $: runtimeInstanceId = undefined;
+  $: runtimeHost = "http://localhost:9009";
+  $: runtimeInstanceId = "default";
   $: jwt = undefined;
 </script>
 
