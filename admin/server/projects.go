@@ -40,7 +40,13 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, proj.ProductionDeploymentID)
+	if proj.ProductionDeploymentID == nil {
+		return &adminv1.GetProjectResponse{
+			Project: projToDTO(proj),
+		}, nil
+	}
+
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProductionDeploymentID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "project does not have a production deployment")
@@ -113,8 +119,8 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		Public:               req.Public,
 		ProductionSlots:      int(req.ProductionSlots),
 		ProductionBranch:     req.ProductionBranch,
-		GithubURL:            req.GithubUrl,
-		GithubInstallationID: installationID,
+		GithubURL:            &req.GithubUrl,
+		GithubInstallationID: &installationID,
 	}
 	proj, err := s.admin.CreateProject(ctx, project)
 	if err != nil {
@@ -154,7 +160,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 
 	proj.Description = req.Description
 	proj.ProductionBranch = req.ProductionBranch
-	proj.GithubURL = req.GithubUrl
+	proj.GithubURL = &req.GithubUrl
 
 	proj, err = s.admin.DB.UpdateProject(ctx, proj)
 	if err != nil {
@@ -174,10 +180,10 @@ func projToDTO(p *database.Project) *adminv1.Project {
 		Public:                 p.Public,
 		ProductionSlots:        int64(p.ProductionSlots),
 		ProductionBranch:       p.ProductionBranch,
-		GithubUrl:              p.GithubURL,
-		ProductionDeploymentId: p.ProductionDeploymentID,
+		GithubUrl:              safeStr(p.GithubURL),
+		ProductionDeploymentId: safeStr(p.ProductionDeploymentID),
 		CreatedOn:              timestamppb.New(p.CreatedOn),
-		UpdatedOn:              timestamppb.New(p.CreatedOn),
+		UpdatedOn:              timestamppb.New(p.UpdatedOn),
 	}
 }
 
@@ -208,6 +214,13 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		Status:            s,
 		Logs:              d.Logs,
 		CreatedOn:         timestamppb.New(d.CreatedOn),
-		UpdatedOn:         timestamppb.New(d.CreatedOn),
+		UpdatedOn:         timestamppb.New(d.UpdatedOn),
 	}
+}
+
+func safeStr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }

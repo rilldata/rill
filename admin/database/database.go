@@ -146,9 +146,9 @@ type Project struct {
 	Public                 bool
 	ProductionSlots        int       `db:"production_slots"`
 	ProductionBranch       string    `db:"production_branch"`
-	GithubURL              string    `db:"github_url"`
-	GithubInstallationID   int64     `db:"github_installation_id"`
-	ProductionDeploymentID string    `db:"production_deployment_id"`
+	GithubURL              *string   `db:"github_url"`
+	GithubInstallationID   *int64    `db:"github_installation_id"`
+	ProductionDeploymentID *string   `db:"production_deployment_id"`
 	CreatedOn              time.Time `db:"created_on"`
 	UpdatedOn              time.Time `db:"updated_on"`
 }

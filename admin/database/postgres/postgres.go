@@ -139,7 +139,7 @@ func (c *connection) CreateProject(ctx context.Context, orgID string, p *databas
 func (c *connection) UpdateProject(ctx context.Context, p *database.Project) (*database.Project, error) {
 	res := &database.Project{}
 	err := c.db.QueryRowxContext(ctx, `
-		UPDATE projects SET description=$1, public=$2, production_branch=$3, github_url=$4, github_installation_id=$5, production_deployment_id=$6 updated_on=now() 
+		UPDATE projects SET description=$1, public=$2, production_branch=$3, github_url=$4, github_installation_id=$5, production_deployment_id=$6, updated_on=now()
 		WHERE id=$7 RETURNING *`,
 		p.Description, p.Public, p.ProductionBranch, p.GithubURL, p.GithubInstallationID, p.ProductionDeploymentID, p.ID,
 	).StructScan(res)
@@ -339,6 +339,7 @@ func (c *connection) FindUserGithubInstallation(ctx context.Context, userID stri
 }
 
 func (c *connection) UpsertUserGithubInstallation(ctx context.Context, userID string, installationID int64) error {
+	// TODO: Handle updated_on
 	_, err := c.db.ExecContext(ctx, "INSERT INTO users_github_installations (user_id, installation_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", userID, installationID)
 	if err != nil {
 		return err
@@ -395,13 +396,13 @@ func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, stat
 }
 
 func (c *connection) DeleteDeployment(ctx context.Context, id string) error {
-	_, err := c.db.ExecContext(ctx, "DELETE FROM deployments WHERE deployment_id=$1", id)
+	_, err := c.db.ExecContext(ctx, "DELETE FROM deployments WHERE id=$1", id)
 	return err
 }
 
 func (c *connection) QueryRuntimeSlotsUsed(ctx context.Context) ([]*database.RuntimeSlotsUsed, error) {
 	var res []*database.RuntimeSlotsUsed
-	err := c.db.Select(&res, "SELECT d.runtime_host, sum(d.slots) as slots_used FROM deployments d GROUP BY d.runtime_host")
+	err := c.db.Select(&res, "SELECT d.runtime_host, SUM(d.slots) AS slots_used FROM deployments d GROUP BY d.runtime_host")
 	if err != nil {
 		return nil, err
 	}

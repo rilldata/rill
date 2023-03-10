@@ -24,12 +24,16 @@ func (s *Service) CreateProject(ctx context.Context, proj *database.Project) (*d
 		return nil, err
 	}
 
+	if proj.GithubURL == nil || proj.GithubInstallationID == nil {
+		return nil, fmt.Errorf("cannot create project without github info")
+	}
+
 	// Provision it
 	inst, err := s.provisioner.Provision(ctx, &provisioner.ProvisionOptions{
 		Slots:                proj.ProductionSlots,
-		GithubURL:            proj.GithubURL,
+		GithubURL:            *proj.GithubURL,
 		GitBranch:            proj.ProductionBranch,
-		GithubInstallationID: proj.GithubInstallationID,
+		GithubInstallationID: *proj.GithubInstallationID,
 	})
 	if err != nil {
 		err = fmt.Errorf("provisioner: %w", err)
@@ -56,8 +60,8 @@ func (s *Service) CreateProject(ctx context.Context, proj *database.Project) (*d
 	}
 
 	// Update prod deployment on project
-	proj.ProductionDeploymentID = depl.ID
-	proj, err = s.DB.UpdateProject(ctx, proj)
+	proj.ProductionDeploymentID = &depl.ID
+	res, err := s.DB.UpdateProject(ctx, proj)
 	if err != nil {
 		err2 := s.DB.DeleteDeployment(ctx, depl.ID)
 		err3 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID)
@@ -72,7 +76,7 @@ func (s *Service) CreateProject(ctx context.Context, proj *database.Project) (*d
 		return nil, err
 	}
 
-	return proj, nil
+	return res, nil
 }
 
 func (s *Service) TeardownProject(ctx context.Context, p *database.Project) error {
@@ -111,6 +115,8 @@ func (s *Service) TriggerReconcile(ctx context.Context, deploymentID string) err
 		// Use s.closeCtx to cancel if the service is stopped
 		ctx := s.closeCtx
 
+		s.logger.Info("reconcile: starting", zap.String("deployment_id", deploymentID))
+
 		// Get deployment
 		depl, err := s.DB.FindDeployment(ctx, deploymentID)
 		if err != nil {
@@ -134,7 +140,6 @@ func (s *Service) TriggerReconcile(ctx context.Context, deploymentID string) err
 		// Get superuser token for runtime host
 		jwt, err := s.issuer.NewToken(auth.TokenOptions{
 			AudienceURL:         depl.RuntimeAudience,
-			Subject:             "",
 			TTL:                 time.Hour,
 			InstancePermissions: map[string][]auth.Permission{depl.RuntimeInstanceID: {auth.EditInstance}},
 		})
@@ -181,6 +186,8 @@ func (s *Service) TriggerReconcile(ctx context.Context, deploymentID string) err
 				return
 			}
 		}
+
+		s.logger.Info("reconcile: completed", zap.String("deployment_id", deploymentID))
 	}()
 	return nil
 }

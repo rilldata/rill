@@ -76,6 +76,6 @@ func orgToDTO(o *database.Organization) *adminv1.Organization {
 		Name:        o.Name,
 		Description: o.Description,
 		CreatedOn:   timestamppb.New(o.CreatedOn),
-		UpdatedOn:   timestamppb.New(o.CreatedOn),
+		UpdatedOn:   timestamppb.New(o.UpdatedOn),
 	}
 }

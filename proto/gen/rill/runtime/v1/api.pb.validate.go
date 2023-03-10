@@ -313,7 +313,7 @@ func (m *Instance) validate(all bool) error {
 	if _, ok := _Instance_RepoDriver_InLookup[m.GetRepoDriver()]; !ok {
 		err := InstanceValidationError{
 			field:  "RepoDriver",
-			reason: "value must be in list [file metastore]",
+			reason: "value must be in list [file metastore github]",
 		}
 		if !all {
 			return err
@@ -416,6 +416,7 @@ var _Instance_OlapDriver_InLookup = map[string]struct{}{
 var _Instance_RepoDriver_InLookup = map[string]struct{}{
 	"file":      {},
 	"metastore": {},
+	"github":    {},
 }
 
 // Validate checks the field values on ListInstancesRequest with the rules
@@ -961,7 +962,7 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 	if _, ok := _CreateInstanceRequest_RepoDriver_InLookup[m.GetRepoDriver()]; !ok {
 		err := CreateInstanceRequestValidationError{
 			field:  "RepoDriver",
-			reason: "value must be in list [file metastore]",
+			reason: "value must be in list [file metastore github]",
 		}
 		if !all {
 			return err
@@ -1065,6 +1066,7 @@ var _CreateInstanceRequest_OlapDriver_InLookup = map[string]struct{}{
 var _CreateInstanceRequest_RepoDriver_InLookup = map[string]struct{}{
 	"file":      {},
 	"metastore": {},
+	"github":    {},
 }
 
 // Validate checks the field values on CreateInstanceResponse with the rules
