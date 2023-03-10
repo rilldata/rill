@@ -27,17 +27,17 @@ func OrgCmd(cfg *config.Config) *cobra.Command {
 	return orgCmd
 }
 
-func toOrgs(organizations []*adminv1.Organization) []*organization {
+func toTable(organizations []*adminv1.Organization) []*organization {
 	orgs := make([]*organization, 0, len(organizations))
 
 	for _, org := range organizations {
-		orgs = append(orgs, toOrg(org))
+		orgs = append(orgs, toRow(org))
 	}
 
 	return orgs
 }
 
-func toOrg(o *adminv1.Organization) *organization {
+func toRow(o *adminv1.Organization) *organization {
 	return &organization{
 		Name:        o.Name,
 		Description: o.Description,

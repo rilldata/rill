@@ -31,7 +31,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 
 			sp.Stop()
 			cmdutil.TextPrinter("Organizations list \n")
-			cmdutil.TablePrinter(toOrgs(orgs.Organization))
+			cmdutil.TablePrinter(toTable(orgs.Organization))
 			return nil
 		},
 	}

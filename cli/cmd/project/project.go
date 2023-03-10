@@ -14,7 +14,6 @@ func ProjectCmd(cfg *config.Config) *cobra.Command {
 		Short:             "Manage projects",
 		PersistentPreRunE: cmdutil.CheckAuth(cfg),
 	}
-	projectCmd.AddCommand(CreateCmd(cfg))
 	projectCmd.AddCommand(ShowCmd(cfg))
 	projectCmd.AddCommand(StatusCmd(cfg))
 	projectCmd.AddCommand(ConnectCmd(cfg))
@@ -25,17 +24,17 @@ func ProjectCmd(cfg *config.Config) *cobra.Command {
 	return projectCmd
 }
 
-func toProjects(projects []*adminv1.Project) []*project {
+func toTable(projects []*adminv1.Project) []*project {
 	orgs := make([]*project, 0, len(projects))
 
 	for _, org := range projects {
-		orgs = append(orgs, toProject(org))
+		orgs = append(orgs, toRow(org))
 	}
 
 	return orgs
 }
 
-func toProject(o *adminv1.Project) *project {
+func toRow(o *adminv1.Project) *project {
 	return &project{
 		Name:        o.Name,
 		Description: o.Description,

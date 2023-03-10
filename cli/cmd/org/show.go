@@ -16,7 +16,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 		Short: "Show",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sp := cmdutil.Spinner("Switching org...")
+			sp := cmdutil.Spinner("Finding org...")
 			sp.Start()
 
 			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
@@ -34,7 +34,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 
 			sp.Stop()
 			cmdutil.TextPrinter("Found organization \n")
-			cmdutil.TablePrinter(toOrg(org.Organization))
+			cmdutil.TablePrinter(toRow(org.Organization))
 			return nil
 		},
 	}

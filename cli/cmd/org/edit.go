@@ -37,7 +37,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 
 			sp.Stop()
 			cmdutil.TextPrinter("Updated organization \n")
-			cmdutil.TablePrinter(toOrg(org.Organization))
+			cmdutil.TablePrinter(toRow(org.Organization))
 			return nil
 		},
 	}

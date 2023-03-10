@@ -15,7 +15,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 		Use:   "list",
 		Short: "List",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sp := cmdutil.Spinner("Listing project...")
+			sp := cmdutil.Spinner("Listing projects...")
 			sp.Start()
 
 			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
@@ -33,7 +33,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 
 			sp.Stop()
 			cmdutil.TextPrinter("Projects list \n")
-			cmdutil.TablePrinter(toProjects(proj.Projects))
+			cmdutil.TablePrinter(toTable(proj.Projects))
 			return nil
 		},
 	}

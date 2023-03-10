@@ -6,6 +6,7 @@ import (
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -35,9 +36,15 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
+			// Switching to the created org
+			err = dotrill.SetDefaultOrg(args[0])
+			if err != nil {
+				return err
+			}
+
 			sp.Stop()
 			cmdutil.TextPrinter("Created organization \n")
-			cmdutil.TablePrinter(toOrg(org.Organization))
+			cmdutil.TablePrinter(toRow(org.Organization))
 			return nil
 		},
 	}

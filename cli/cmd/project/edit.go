@@ -28,7 +28,6 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			// Todo how will get the org name? will it be flag with cmd.
 			proj, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
 				OrganizationName: cfg.Org(),
 				Name:             args[0],
@@ -40,7 +39,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 
 			sp.Stop()
 			cmdutil.TextPrinter("Updated project \n")
-			cmdutil.TablePrinter(toProject(proj.Project))
+			cmdutil.TablePrinter(toRow(proj.Project))
 			return nil
 		},
 	}
