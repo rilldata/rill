@@ -5,7 +5,7 @@
 import type { LeaderboardValue } from "./dashboard-stores";
 
 const shortHandSymbols = ["Q", "T", "B", "M", "k", "none"] as const;
-export type ShortHandSymbols = (typeof shortHandSymbols)[number];
+export type ShortHandSymbols = typeof shortHandSymbols[number];
 
 interface HumanizeOptions {
   scale?: ShortHandSymbols;
