@@ -16,6 +16,7 @@ export type AdminServiceCreateProjectBody = {
   githubUrl?: string;
   name?: string;
   productionBranch?: string;
+  productionSlots?: string;
   public?: boolean;
 };
 
@@ -59,6 +60,8 @@ export interface V1Project {
   id?: string;
   name?: string;
   productionBranch?: string;
+  productionDeploymentId?: string;
+  productionSlots?: string;
   public?: boolean;
   updatedOn?: string;
 }
@@ -91,6 +94,8 @@ export interface V1ListOrganizationsResponse {
 }
 
 export interface V1GetProjectResponse {
+  jwt?: string;
+  productionDeployment?: V1Deployment;
   project?: V1Project;
 }
 
@@ -108,12 +113,37 @@ export interface V1GetCurrentUserResponse {
   user?: V1User;
 }
 
+export type V1DeploymentStatus =
+  typeof V1DeploymentStatus[keyof typeof V1DeploymentStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1DeploymentStatus = {
+  DEPLOYMENT_STATUS_UNSPECIFIED: "DEPLOYMENT_STATUS_UNSPECIFIED",
+  DEPLOYMENT_STATUS_PENDING: "DEPLOYMENT_STATUS_PENDING",
+  DEPLOYMENT_STATUS_OK: "DEPLOYMENT_STATUS_OK",
+  DEPLOYMENT_STATUS_RECONCILING: "DEPLOYMENT_STATUS_RECONCILING",
+  DEPLOYMENT_STATUS_ERROR: "DEPLOYMENT_STATUS_ERROR",
+} as const;
+
+export interface V1Deployment {
+  branch?: string;
+  createdOn?: string;
+  id?: string;
+  logs?: string;
+  projectId?: string;
+  runtimeHost?: string;
+  runtimeInstanceId?: string;
+  slots?: string;
+  status?: V1DeploymentStatus;
+  updatedOn?: string;
+}
+
 export interface V1DeleteProjectResponse {
-  name?: string;
+  [key: string]: any;
 }
 
 export interface V1DeleteOrganizationResponse {
-  name?: string;
+  [key: string]: any;
 }
 
 export interface V1CreateProjectResponse {

@@ -1,6 +1,6 @@
 ALTER TABLE projects
 ADD COLUMN public BOOLEAN NOT NULL DEFAULT FALSE,
-ADD COLUMN production_branch TEXT,
+ADD COLUMN production_branch TEXT NOT NULL DEFAULT '',
 ADD COLUMN github_url TEXT,
 ADD COLUMN github_installation_id BIGINT;
 

@@ -9,18 +9,38 @@ import { MetricsViewFilter } from "../../runtime/v1/queries_pb.js";
 import { TimeGrain } from "../../runtime/v1/catalog_pb.js";
 
 /**
+ * DashboardState represents the dashboard as seen by the user
+ *
  * @generated from message rill.ui.v1.DashboardState
  */
 export class DashboardState extends Message<DashboardState> {
   /**
+   * Selected time rage
+   *
    * @generated from field: rill.ui.v1.DashboardTimeRange time_range = 1;
    */
   timeRange?: DashboardTimeRange;
 
   /**
+   * Dimension filters applied
+   *
    * @generated from field: rill.runtime.v1.MetricsViewFilter filters = 2;
    */
   filters?: MetricsViewFilter;
+
+  /**
+   * Selected time granularity
+   *
+   * @generated from field: rill.runtime.v1.TimeGrain time_granularity = 3;
+   */
+  timeGranularity = TimeGrain.UNSPECIFIED;
+
+  /**
+   * Selected time comparison range
+   *
+   * @generated from field: rill.ui.v1.DashboardTimeRange compare_time_range = 4;
+   */
+  compareTimeRange?: DashboardTimeRange;
 
   constructor(data?: PartialMessage<DashboardState>) {
     super();
@@ -32,6 +52,8 @@ export class DashboardState extends Message<DashboardState> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "time_range", kind: "message", T: DashboardTimeRange },
     { no: 2, name: "filters", kind: "message", T: MetricsViewFilter },
+    { no: 3, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 4, name: "compare_time_range", kind: "message", T: DashboardTimeRange },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {
@@ -70,11 +92,6 @@ export class DashboardTimeRange extends Message<DashboardTimeRange> {
    */
   timeEnd?: Timestamp;
 
-  /**
-   * @generated from field: rill.runtime.v1.TimeGrain time_granularity = 4;
-   */
-  timeGranularity = TimeGrain.UNSPECIFIED;
-
   constructor(data?: PartialMessage<DashboardTimeRange>) {
     super();
     proto3.util.initPartial(data, this);
@@ -86,7 +103,6 @@ export class DashboardTimeRange extends Message<DashboardTimeRange> {
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 2, name: "time_start", kind: "message", T: Timestamp, opt: true },
     { no: 3, name: "time_end", kind: "message", T: Timestamp, opt: true },
-    { no: 4, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardTimeRange {

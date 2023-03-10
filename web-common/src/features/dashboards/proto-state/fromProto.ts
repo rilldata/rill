@@ -1,5 +1,10 @@
 import type { Timestamp } from "@bufbuild/protobuf";
-import type { TimeRangeName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+import type { MetricsViewFieldsFromState } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import type { ComparisonRange } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+import type {
+  ComparisonWithTimeRange,
+  TimeRangeName,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
 import type { TimeSeriesTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
 import type { MetricsViewFilter_Cond } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 import {
@@ -10,9 +15,7 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { V1MetricsViewFilter } from "@rilldata/web-common/runtime-client";
 import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/catalog_pb";
 
-export function fromProto(
-  binary: Uint8Array
-): [filters: V1MetricsViewFilter, selectedTimeRange: TimeSeriesTimeRange] {
+export function fromProto(binary: Uint8Array): MetricsViewFieldsFromState {
   const dashboard = DashboardState.fromBinary(binary);
 
   const filters: V1MetricsViewFilter = {
@@ -24,9 +27,22 @@ export function fromProto(
     filters.exclude = fromFiltersProto(dashboard.filters.exclude);
   }
 
-  const timeRange = fromTimeRangeProto(dashboard.timeRange);
+  const selectedTimeRange = dashboard.timeRange
+    ? fromTimeRangeProto(dashboard.timeRange)
+    : {};
+  if (dashboard.timeGranularity) {
+    selectedTimeRange.interval = fromTimeGrainProto(dashboard.timeGranularity);
+  }
 
-  return [filters, timeRange];
+  const selectedComparisonTimeRange = dashboard.compareTimeRange
+    ? fromCompareTimeRangeProto(dashboard.compareTimeRange)
+    : undefined;
+
+  return {
+    filters,
+    selectedTimeRange,
+    selectedComparisonTimeRange,
+  };
 }
 
 export function base64ToProto(message: string) {
@@ -50,10 +66,10 @@ function fromFiltersProto(conditions: Array<MetricsViewFilter_Cond>) {
 }
 
 function fromTimeRangeProto(timeRange: DashboardTimeRange) {
-  const selectedTimeRange: TimeSeriesTimeRange = {};
+  const selectedTimeRange: TimeSeriesTimeRange = {
+    name: timeRange.name as TimeRangeName,
+  };
 
-  selectedTimeRange.interval = fromTimeGrainProto(timeRange.timeGranularity);
-  selectedTimeRange.name = timeRange.name as TimeRangeName;
   if (timeRange.timeStart) {
     selectedTimeRange.start = fromTimeProto(timeRange.timeStart);
   }
@@ -62,6 +78,21 @@ function fromTimeRangeProto(timeRange: DashboardTimeRange) {
   }
 
   return selectedTimeRange;
+}
+
+function fromCompareTimeRangeProto(compareTimeRange: DashboardTimeRange) {
+  const selectedCompareTimeRange: ComparisonWithTimeRange = {
+    name: compareTimeRange.name as ComparisonRange,
+  };
+
+  if (compareTimeRange.timeStart) {
+    selectedCompareTimeRange.start = fromTimeProto(compareTimeRange.timeStart);
+  }
+  if (compareTimeRange.timeEnd) {
+    selectedCompareTimeRange.end = fromTimeProto(compareTimeRange.timeEnd);
+  }
+
+  return selectedCompareTimeRange;
 }
 
 function fromTimeProto(timestamp: Timestamp) {
