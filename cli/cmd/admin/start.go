@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -41,6 +42,9 @@ type Config struct {
 	GithubAppName          string        `split_words:"true"`
 	GithubAppPrivateKey    string        `split_words:"true"`
 	GithubAppWebhookSecret string        `split_words:"true"`
+	ProvisionerSpec        string        `split_words:"true"`
+	SigningJWKS            string        `split_words:"true"`
+	SigningKeyID           string        `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -69,14 +73,21 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				os.Exit(1)
 			}
 
+			// Init runtime JWT issuer
+			issuer, err := auth.NewIssuer(conf.ExternalURL, conf.SigningKeyID, []byte(conf.SigningJWKS))
+			if err != nil {
+				logger.Fatal("error creating runtime jwt issuer", zap.Error(err))
+			}
+
 			// Init admin service
 			admOpts := &admin.Options{
 				DatabaseDriver:      conf.DatabaseDriver,
 				DatabaseDSN:         conf.DatabaseURL,
 				GithubAppID:         conf.GithubAppID,
 				GithubAppPrivateKey: conf.GithubAppPrivateKey,
+				ProvisionerSpec:     conf.ProvisionerSpec,
 			}
-			adm, err := admin.New(admOpts, logger)
+			adm, err := admin.New(admOpts, logger, issuer)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}
@@ -106,7 +117,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				GithubAppName:          conf.GithubAppName,
 				GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
 			}
-			srv, err := server.New(logger, adm, srvOpts)
+			srv, err := server.New(srvOpts, logger, adm, issuer)
 			if err != nil {
 				logger.Fatal("error creating server", zap.Error(err))
 			}

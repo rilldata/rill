@@ -191,7 +191,8 @@ message Instance {
   string repo_driver = 4 [(validate.rules).string = {
     in: [
       "file",
-      "metastore"
+      "metastore",
+      "github"
     ]
   }];
   // DSN for connecting to repo
@@ -244,7 +245,8 @@ message CreateInstanceRequest {
   string repo_driver = 4 [(validate.rules).string = {
     in: [
       "file",
-      "metastore"
+      "metastore",
+      "github"
     ]
   }];
   string repo_dsn = 5;

@@ -88,8 +88,16 @@ We should rename TimeSeriesTimeRange to a better name.
   $: allTimeRange = $allTimeRangeQuery?.data as TimeRange | undefined;
 
   // once we have the allTimeRange, set the default time range and time grain
-  $: if (!$dashboardStore?.selectedTimeRange && allTimeRange)
-    setDefaultTimeControls(allTimeRange);
+  $: if (allTimeRange) {
+    if (!$dashboardStore?.selectedTimeRange) {
+      setDefaultTimeControls(allTimeRange);
+    } else if (!$dashboardStore?.selectedTimeRange.start) {
+      setTimeControlsFromUrl(
+        $dashboardStore.selectedTimeRange.name,
+        allTimeRange
+      );
+    }
+  }
 
   function setDefaultTimeControls(allTimeRange: TimeRange) {
     baseTimeRange =
@@ -101,6 +109,17 @@ We should rename TimeSeriesTimeRange to a better name.
       baseTimeRange.end
     );
     makeTimeSeriesTimeRangeAndUpdateAppState(baseTimeRange, timeGrain);
+  }
+
+  function setTimeControlsFromUrl(name: string, allTimeRange: TimeRange) {
+    baseTimeRange = makeRelativeTimeRange(
+      $dashboardStore?.selectedTimeRange.name,
+      allTimeRange
+    );
+    makeTimeSeriesTimeRangeAndUpdateAppState(
+      baseTimeRange,
+      $dashboardStore?.selectedTimeRange.interval
+    );
   }
 
   // we get the timeGrainOptions so that we can assess whether or not the
@@ -132,6 +151,7 @@ We should rename TimeSeriesTimeRange to a better name.
     timeGrain: V1TimeGrain
   ) {
     const { name, start, end } = timeRange;
+    console.log(timeRange, timeGrain);
 
     // validate time range name + time grain combination
     // (necessary because when the time range name is changed, the current time grain may not be valid for the new time range name)
