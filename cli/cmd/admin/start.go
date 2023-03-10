@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -31,12 +32,19 @@ type Config struct {
 	GRPCPort               int           `default:"9090" split_words:"true"`
 	LogLevel               zapcore.Level `default:"info" split_words:"true"`
 	ExternalURL            string        `default:"http://localhost:8080" split_words:"true"`
+	FrontendURL            string        `default:"http://localhost:3000" split_words:"true"`
 	SessionKeyPairs        []string      `split_words:"true"`
 	AllowedOrigins         []string      `default:"*" split_words:"true"`
 	AuthDomain             string        `split_words:"true"`
 	AuthClientID           string        `split_words:"true"`
 	AuthClientSecret       string        `split_words:"true"`
-	DeviceVerificationHost string        `default:"http://localhost:3000" split_words:"true"`
+	GithubAppID            int64         `split_words:"true"`
+	GithubAppName          string        `split_words:"true"`
+	GithubAppPrivateKey    string        `split_words:"true"`
+	GithubAppWebhookSecret string        `split_words:"true"`
+	ProvisionerSpec        string        `split_words:"true"`
+	SigningJWKS            string        `split_words:"true"`
+	SigningKeyID           string        `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -65,12 +73,21 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				os.Exit(1)
 			}
 
+			// Init runtime JWT issuer
+			issuer, err := auth.NewIssuer(conf.ExternalURL, conf.SigningKeyID, []byte(conf.SigningJWKS))
+			if err != nil {
+				logger.Fatal("error creating runtime jwt issuer", zap.Error(err))
+			}
+
 			// Init admin service
 			admOpts := &admin.Options{
-				DatabaseDriver: conf.DatabaseDriver,
-				DatabaseDSN:    conf.DatabaseURL,
+				DatabaseDriver:      conf.DatabaseDriver,
+				DatabaseDSN:         conf.DatabaseURL,
+				GithubAppID:         conf.GithubAppID,
+				GithubAppPrivateKey: conf.GithubAppPrivateKey,
+				ProvisionerSpec:     conf.ProvisionerSpec,
 			}
-			adm, err := admin.New(admOpts, logger)
+			adm, err := admin.New(admOpts, logger, issuer)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}
@@ -91,14 +108,16 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				HTTPPort:               conf.HTTPPort,
 				GRPCPort:               conf.GRPCPort,
 				ExternalURL:            conf.ExternalURL,
+				FrontendURL:            conf.FrontendURL,
 				SessionKeyPairs:        keyPairs,
 				AllowedOrigins:         conf.AllowedOrigins,
 				AuthDomain:             conf.AuthDomain,
 				AuthClientID:           conf.AuthClientID,
 				AuthClientSecret:       conf.AuthClientSecret,
-				DeviceVerificationHost: conf.DeviceVerificationHost,
+				GithubAppName:          conf.GithubAppName,
+				GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
 			}
-			srv, err := server.New(logger, adm, srvOpts)
+			srv, err := server.New(srvOpts, logger, adm, issuer)
 			if err != nil {
 				logger.Fatal("error creating server", zap.Error(err))
 			}

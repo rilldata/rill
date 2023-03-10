@@ -21,6 +21,7 @@ import (
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -34,12 +35,14 @@ type Options struct {
 	HTTPPort               int
 	GRPCPort               int
 	ExternalURL            string
+	FrontendURL            string
 	SessionKeyPairs        [][]byte
 	AllowedOrigins         []string
 	AuthDomain             string
 	AuthClientID           string
 	AuthClientSecret       string
-	DeviceVerificationHost string
+	GithubAppName          string
+	GithubAppWebhookSecret string
 }
 
 type Server struct {
@@ -49,14 +52,19 @@ type Server struct {
 	opts          *Options
 	cookies       *sessions.CookieStore
 	authenticator *auth.Authenticator
+	issuer        *runtimeauth.Issuer
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
-func New(logger *zap.Logger, adm *admin.Service, opts *Options) (*Server, error) {
+func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)
+	}
+
+	if len(opts.SessionKeyPairs) == 0 {
+		return nil, fmt.Errorf("provided SessionKeyPairs is empty")
 	}
 
 	cookies := sessions.NewCookieStore(opts.SessionKeyPairs...)
@@ -65,11 +73,11 @@ func New(logger *zap.Logger, adm *admin.Service, opts *Options) (*Server, error)
 	cookies.Options.HttpOnly = true
 
 	authenticator, err := auth.NewAuthenticator(logger, adm, cookies, &auth.AuthenticatorOptions{
-		AuthDomain:             opts.AuthDomain,
-		AuthClientID:           opts.AuthClientID,
-		AuthClientSecret:       opts.AuthClientSecret,
-		ExternalURL:            opts.ExternalURL,
-		DeviceVerificationHost: opts.DeviceVerificationHost,
+		AuthDomain:       opts.AuthDomain,
+		AuthClientID:     opts.AuthClientID,
+		AuthClientSecret: opts.AuthClientSecret,
+		ExternalURL:      opts.ExternalURL,
+		FrontendURL:      opts.FrontendURL,
 	})
 	if err != nil {
 		return nil, err
@@ -81,6 +89,7 @@ func New(logger *zap.Logger, adm *admin.Service, opts *Options) (*Server, error)
 		opts:          opts,
 		cookies:       cookies,
 		authenticator: authenticator,
+		issuer:        issuer,
 	}, nil
 }
 
@@ -163,8 +172,22 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 		return nil, err
 	}
 
-	// Add auth endpoints (not gRPC handlers, just regular HTTP endpoints on /auth/*)
+	// Add auth endpoints (not gRPC handlers, just regular endpoints on /auth/*)
 	err = s.authenticator.RegisterEndpoints(mux)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
+	err = s.registerGithubEndpoints(mux)
+	if err != nil {
+		return nil, err
+	}
+
+	// Server public JWKS for runtime JWT verification
+	err = mux.HandlePath("GET", "/.well-known/jwks.json", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+		s.issuer.WellKnownHandleFunc(w, r)
+	})
 	if err != nil {
 		return nil, err
 	}

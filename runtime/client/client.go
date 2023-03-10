@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -30,6 +31,10 @@ func New(runtimeHost, bearerToken string) (*Client, error) {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	} else {
 		opts = append(opts, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, ""))) // NOTE: Defaults to host's root certs
+		// There must be a port. Default to TLS port.
+		if uri.Port() == "" {
+			uri.Host = fmt.Sprintf("%s:443", uri.Host)
+		}
 	}
 
 	if bearerToken != "" {

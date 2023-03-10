@@ -1,6 +1,9 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { base64ToProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
+  import { fromProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto.js";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
@@ -10,10 +13,21 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error, redirect } from "@sveltejs/kit";
+  import { onMount, tick } from "svelte";
   import { featureFlags } from "../../../../lib/application-state-stores/application-store";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
 
   $: metricViewName = $page.params.name;
+
+  onMount(async () => {
+    await tick();
+    const state = new URL(location.href).searchParams.get("state");
+    if (!state) return;
+    const [filters, selectedTimeRage] = fromProto(
+      base64ToProto(decodeURIComponent(state))
+    );
+    metricsExplorerStore.create(metricViewName, filters, selectedTimeRage);
+  });
 
   $: fileQuery = useRuntimeServiceGetFile(
     $runtime.instanceId,

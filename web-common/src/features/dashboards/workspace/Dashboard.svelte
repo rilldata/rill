@@ -1,5 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import {
+    protoToBase64,
+    toProto,
+  } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
   import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
@@ -63,6 +67,12 @@
           : MEASURE_CONFIG.container.width.breakpoint
       }px minmax(355px, auto)`
     : "max-content minmax(355px, auto)";
+
+  $: if (metricsExplorer) {
+    const binary = toProto(metricsExplorer).toBinary();
+    const message = protoToBase64(binary);
+    goto(`/dashboard/${metricViewName}?state=${message}`);
+  }
 </script>
 
 <DashboardContainer bind:exploreContainerWidth {gridConfig} bind:width>

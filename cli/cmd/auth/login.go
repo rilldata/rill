@@ -2,6 +2,7 @@ package auth
 
 import (
 	"github.com/fatih/color"
+	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
@@ -38,12 +39,14 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 
 			bold.Printf("\nOpen this URL in your browser to confirm the login: %s\n\n", deviceVerification.VerificationCompleteURL)
 
+			_ = browser.Open(deviceVerification.VerificationCompleteURL)
+
 			OAuthTokenResponse, err := authenticator.GetAccessTokenForDevice(ctx, deviceVerification)
 			if err != nil {
 				return err
 			}
 
-			bold.Print("Successfully logged in.")
+			bold.Print("Successfully logged in.\n")
 
 			err = dotrill.SetAccessToken(OAuthTokenResponse.AccessToken)
 			if err != nil {

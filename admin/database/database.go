@@ -52,8 +52,9 @@ type DB interface {
 
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
-	CreateProject(ctx context.Context, orgID string, name string, description string) (*Project, error)
-	UpdateProject(ctx context.Context, id string, description string) (*Project, error)
+	FindProjectByGithubURL(ctx context.Context, githubURL string) (*Project, error)
+	CreateProject(ctx context.Context, orgID string, project *Project) (*Project, error)
+	UpdateProject(ctx context.Context, project *Project) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 
 	FindUsers(ctx context.Context) ([]*User, error)
@@ -78,6 +79,18 @@ type DB interface {
 	UpdateAuthCode(ctx context.Context, userCode, userID string, approvalState AuthCodeApprovalState) error
 	// DeleteAuthCode deletes the authorization code data from the store
 	DeleteAuthCode(ctx context.Context, deviceCode string) error
+
+	FindUserGithubInstallation(ctx context.Context, userID string, installationID int64) (*UserGithubInstallation, error)
+	UpsertUserGithubInstallation(ctx context.Context, userID string, installationID int64) error
+	DeleteUserGithubInstallations(ctx context.Context, installationID int64) error
+
+	FindDeployments(ctx context.Context, projectID string) ([]*Deployment, error)
+	FindDeployment(ctx context.Context, id string) (*Deployment, error)
+	InsertDeployment(ctx context.Context, deployment *Deployment) (*Deployment, error)
+	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, logs string) (*Deployment, error)
+	DeleteDeployment(ctx context.Context, id string) error
+
+	QueryRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
 }
 
 // ErrNotFound is returned for single row queries that return no values.
@@ -126,12 +139,18 @@ type Organization struct {
 // Project represents one Git connection.
 // Projects belong to an organization.
 type Project struct {
-	ID             string
-	OrganizationID string `db:"organization_id"`
-	Name           string
-	Description    string
-	CreatedOn      time.Time `db:"created_on"`
-	UpdatedOn      time.Time `db:"updated_on"`
+	ID                     string
+	OrganizationID         string `db:"organization_id"`
+	Name                   string
+	Description            string
+	Public                 bool
+	ProductionSlots        int       `db:"production_slots"`
+	ProductionBranch       string    `db:"production_branch"`
+	GithubURL              *string   `db:"github_url"`
+	GithubInstallationID   *int64    `db:"github_installation_id"`
+	ProductionDeploymentID *string   `db:"production_deployment_id"`
+	CreatedOn              time.Time `db:"created_on"`
+	UpdatedOn              time.Time `db:"updated_on"`
 }
 
 // User is a person registered in Rill.
@@ -177,3 +196,44 @@ const (
 	AuthClientIDRillWeb = "12345678-0000-0000-0000-000000000001"
 	AuthClientIDRillCLI = "12345678-0000-0000-0000-000000000002"
 )
+
+// UserGithubInstallation represents a confirmed user relationship to an installation of our Github app
+type UserGithubInstallation struct {
+	ID             string    `db:"id"`
+	UserID         string    `db:"user_id"`
+	InstallationID int64     `db:"installation_id"`
+	CreatedOn      time.Time `db:"created_on"`
+}
+
+// DeploymentStatus is an enum representing the state of a deployment
+type DeploymentStatus int
+
+const (
+	DeploymentStatusUnspecified DeploymentStatus = 0
+	DeploymentStatusPending     DeploymentStatus = 1
+	DeploymentStatusOK          DeploymentStatus = 2
+	DeploymentStatusReconciling DeploymentStatus = 3
+	DeploymentStatusError       DeploymentStatus = 4
+)
+
+// Deployment is a single deployment of a git branch.
+// Deployments belong to a project.
+type Deployment struct {
+	ID                string           `db:"id"`
+	ProjectID         string           `db:"project_id"`
+	Slots             int              `db:"slots"`
+	Branch            string           `db:"branch"`
+	RuntimeHost       string           `db:"runtime_host"`
+	RuntimeInstanceID string           `db:"runtime_instance_id"`
+	RuntimeAudience   string           `db:"runtime_audience"`
+	Status            DeploymentStatus `db:"status"`
+	Logs              string           `db:"logs"`
+	CreatedOn         time.Time        `db:"created_on"`
+	UpdatedOn         time.Time        `db:"updated_on"`
+}
+
+// RuntimeSlotsUsed is the result of a QueryRuntimeSlotsUsed query.
+type RuntimeSlotsUsed struct {
+	RuntimeHost string `db:"runtime_host"`
+	SlotsUsed   int    `db:"slots_used"`
+}

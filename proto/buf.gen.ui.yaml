@@ -1,0 +1,9 @@
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: github.com/rilldata/rill
+plugins:
+  - plugin: buf.build/bufbuild/es
+    opt: target=ts
+    out: ../web-common/src/proto/gen
