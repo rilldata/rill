@@ -2,9 +2,9 @@ package org
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -16,6 +16,9 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 		Short: "Show",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			sp := cmdutil.Spinner("Finding org...")
+			sp.Start()
+
 			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
 			if err != nil {
 				return err
@@ -29,7 +32,9 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("Found organization: %v\n", org)
+			sp.Stop()
+			cmdutil.TextPrinter("Found organization \n")
+			cmdutil.TablePrinter(toRow(org.Organization))
 			return nil
 		},
 	}

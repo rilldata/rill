@@ -1,7 +1,8 @@
-package project
+package org
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
@@ -10,13 +11,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func ShowCmd(cfg *config.Config) *cobra.Command {
-	showCmd := &cobra.Command{
-		Use:   "show",
+func DeleteCmd(cfg *config.Config) *cobra.Command {
+	deleteCmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete",
 		Args:  cobra.ExactArgs(1),
-		Short: "Show",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sp := cmdutil.Spinner("Finding project...")
+			sp := cmdutil.Spinner("Deleting org...")
 			sp.Start()
 
 			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
@@ -25,19 +26,19 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			proj, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{
-				OrganizationName: cfg.Org(),
-				Name:             args[0],
+			org, err := client.DeleteOrganization(context.Background(), &adminv1.DeleteOrganizationRequest{
+				Name: args[0],
 			})
 			if err != nil {
 				return err
 			}
 
 			sp.Stop()
-			cmdutil.TextPrinter("Found project \n")
-			cmdutil.TablePrinter(toRow(proj.Project))
+			cmdutil.TextPrinter(fmt.Sprintf("Deleted organization: %v\n", org))
 			return nil
 		},
 	}
-	return showCmd
+	deleteCmd.Flags().SortFlags = false
+
+	return deleteCmd
 }

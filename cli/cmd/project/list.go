@@ -10,13 +10,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func ShowCmd(cfg *config.Config) *cobra.Command {
-	showCmd := &cobra.Command{
-		Use:   "show",
-		Args:  cobra.ExactArgs(1),
-		Short: "Show",
+func ListCmd(cfg *config.Config) *cobra.Command {
+	listCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sp := cmdutil.Spinner("Finding project...")
+			sp := cmdutil.Spinner("Listing projects...")
 			sp.Start()
 
 			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
@@ -25,19 +24,18 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			proj, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{
+			proj, err := client.ListProjects(context.Background(), &adminv1.ListProjectsRequest{
 				OrganizationName: cfg.Org(),
-				Name:             args[0],
 			})
 			if err != nil {
 				return err
 			}
 
 			sp.Stop()
-			cmdutil.TextPrinter("Found project \n")
-			cmdutil.TablePrinter(toRow(proj.Project))
+			cmdutil.TextPrinter("Projects list \n")
+			cmdutil.TablePrinter(toTable(proj.Projects))
 			return nil
 		},
 	}
-	return showCmd
+	return listCmd
 }

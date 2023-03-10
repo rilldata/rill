@@ -13,6 +13,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
@@ -35,6 +36,9 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 		Short: "Setup continuous deployment to Rill Cloud",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			sp := cmdutil.Spinner("Connecting project...")
+			sp.Start()
+
 			// Allow setting project path as arg (instead of flag)
 			if len(args) > 0 {
 				projectPath = args[0]
@@ -141,6 +145,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
+			sp.Stop()
 			// Success!
 			fmt.Printf("Created project %s/%s\n", cfg.Org(), projRes.Project.Name)
 			return nil
