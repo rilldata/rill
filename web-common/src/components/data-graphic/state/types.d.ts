@@ -2,25 +2,27 @@ import type { ScaleLinear, ScaleTime } from "d3-scale";
 import type { Readable } from "svelte/store";
 
 export interface ExtremumResolutionTweenProps {
-	delay?: number;
-	duration?: number | ((from: T, to: T) => number);
-	easing?: (t: number) => number;
-	interpolate?: (a: T, b: T) => (t: number) => T;
+  delay?: number;
+  duration?: number | ((from: T, to: T) => number);
+  easing?: (t: number) => number;
+  interpolate?: (a: T, b: T) => (t: number) => T;
 }
 
 export interface ExtremumResolutionStore extends Readable<number | Date> {
-  setWithKey: (arg0: string, arg1: (number | Date), arg2: boolean) => void;
-  removeKey: (arg0: string) => void,
-  setTweenProps: (arg0: ExtremumResolutionTweenProps) => void
+  setWithKey: (arg0: string, arg1: number | Date, arg2: boolean) => void;
+  removeKey: (arg0: string) => void;
+  setTweenProps: (arg0: ExtremumResolutionTweenProps) => void;
 }
 
-export type GraphicScale = ScaleLinear<number, number> | ScaleTime<Date, number>
+export type GraphicScale =
+  | ScaleLinear<number, number>
+  | ScaleTime<Date, number>;
 export interface ScaleStore extends Readable<GraphicScale> {
-  type: string
-};
+  type: string;
+}
 
 export interface SimpleDataGraphicConfigurationArguments {
-  id: string,
+  id: string;
   width: number;
   height: number;
   left: number;
@@ -31,10 +33,10 @@ export interface SimpleDataGraphicConfigurationArguments {
   textGap: number;
   xType: string; // FIXME: we should have an enum here
   yType: string; // FIXME: we should have an enum here
-  xMin: (number | Date);
-  xMax: (number | Date);
-  yMin: (number | Date);
-  yMax: (number | Date);
+  xMin: number | Date;
+  xMax: number | Date;
+  yMin: number | Date;
+  yMax: number | Date;
   bodyBuffer: number;
   marginBuffer: number;
   pixelDeviceRation: number;
@@ -53,11 +55,17 @@ export interface SimpleGraphicConfigurationDerivations {
   graphicHeight: number;
 }
 
-export interface SimpleDataGraphicConfiguration extends SimpleDataGraphicConfigurationArguments, SimpleGraphicConfigurationDerivations { };
+export interface SimpleDataGraphicConfiguration
+  extends SimpleDataGraphicConfigurationArguments,
+    SimpleGraphicConfigurationDerivations {}
 
-export interface CascadingContextStore<Arguments, StateStructure> extends Readable<StateStructure> {
+export interface CascadingContextStore<Arguments, StateStructure>
+  extends Readable<StateStructure> {
   hasParentCascade: boolean;
-  reconcileProps: (props: Arguments) => void
+  reconcileProps: (props: Arguments) => void;
 }
 
-export type SimpleConfigurationStore = CascadingContextStore<SimpleDataGraphicConfigurationArguments, SimpleDataGraphicConfiguration>;
+export type SimpleConfigurationStore = CascadingContextStore<
+  SimpleDataGraphicConfigurationArguments,
+  SimpleDataGraphicConfiguration
+>;

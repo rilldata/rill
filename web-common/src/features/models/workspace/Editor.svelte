@@ -185,7 +185,7 @@
 
   function makeAutocompleteConfig(
     schema: { [table: string]: string[] },
-    embeddedSources: string[]
+    _embeddedSources: string[]
   ) {
     return autocompletion({
       override: [

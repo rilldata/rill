@@ -1,6 +1,7 @@
 # `data-graphic`
 
 This directory contains components for building flexible data graphics. A solid component system should be:
+
 - _composable_ - the system of domain and range cascading should ensure that we can do lots of complex things easily, such as nesting graphic contexts within each other.
 - _mostly-declarative_ - by taking care of a great deal of complexity for the user – and exposing common primitives like scales in the right places – someone shouldn't have to write too much code to make an interactive data graphic.
 - _reactive_ - the domain-space (e.g. the scale domains) should be able to reactively respond to changes in the data. The range-space should be able to respond to changes in configuration parameters. And this should be efficient enough that all values should be tweenable!
