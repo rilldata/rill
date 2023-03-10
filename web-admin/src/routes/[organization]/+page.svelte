@@ -1,12 +1,12 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
-    useAdminServiceFindOrganization,
-    useAdminServiceFindProjects,
+    useAdminServiceGetOrganization,
+    useAdminServiceListProjects,
   } from "../../client";
 
-  const org = useAdminServiceFindOrganization($page.params.organization);
-  const projs = useAdminServiceFindProjects($page.params.organization);
+  const org = useAdminServiceGetOrganization($page.params.organization);
+  const projs = useAdminServiceListProjects($page.params.organization);
 </script>
 
 <svelte:head>

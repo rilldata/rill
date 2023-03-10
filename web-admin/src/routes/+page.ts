@@ -1,7 +1,7 @@
 import { redirect } from "@sveltejs/kit";
 import {
-  adminServiceFindOrganizations,
   adminServiceGetCurrentUser,
+  adminServiceListOrganizations,
 } from "../client";
 import { ADMIN_URL } from "../client/http-client";
 
@@ -14,7 +14,7 @@ export async function load() {
     throw redirect(307, `${ADMIN_URL}/auth/login?redirect=${window.origin}`);
   }
 
-  const orgs = await adminServiceFindOrganizations();
+  const orgs = await adminServiceListOrganizations();
   if (orgs.organization.length > 0) {
     throw redirect(307, `/${orgs.organization[0].name}`);
   }

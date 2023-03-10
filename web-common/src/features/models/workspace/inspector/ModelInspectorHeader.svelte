@@ -71,7 +71,7 @@
     // first, pull out all references that are in the catalog.
 
     // then get the cardinalities.
-    cardinalityQueries = referencedThings?.map(([entity, reference]) => {
+    cardinalityQueries = referencedThings?.map(([entity, _reference]) => {
       return useQueryServiceTableCardinality(
         $runtime?.instanceId,
         entity.name,
