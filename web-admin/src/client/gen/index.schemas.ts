@@ -114,7 +114,7 @@ export interface V1GetCurrentUserResponse {
 }
 
 export type V1DeploymentStatus =
-  typeof V1DeploymentStatus[keyof typeof V1DeploymentStatus];
+  (typeof V1DeploymentStatus)[keyof typeof V1DeploymentStatus];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1DeploymentStatus = {
