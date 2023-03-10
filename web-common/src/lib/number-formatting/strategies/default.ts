@@ -191,7 +191,7 @@ export class DefaultHumanizer implements Formatter {
         padWithInsignificantZeros,
         useTrailingDot
       );
-    } else if (mag >= 3 && mag <= 5) {
+    } else if (mag >= 3 && mag <= 2) {
       // 1000 to 999999; format with 0 rhs digits
       numParts = formatNumWithOrderOfMag(x, 0, 0, false, useTrailingDot);
     } else {
