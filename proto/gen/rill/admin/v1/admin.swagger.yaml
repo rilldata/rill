@@ -202,6 +202,9 @@ paths:
                 type: string
               productionBranch:
                 type: string
+              productionSlots:
+                type: string
+                format: int64
               public:
                 type: boolean
       tags:
@@ -375,14 +378,43 @@ definitions:
         $ref: '#/definitions/v1Project'
   v1DeleteOrganizationResponse:
     type: object
-    properties:
-      name:
-        type: string
   v1DeleteProjectResponse:
     type: object
+  v1Deployment:
+    type: object
     properties:
-      name:
+      branch:
         type: string
+      createdOn:
+        type: string
+        format: date-time
+      id:
+        type: string
+      logs:
+        type: string
+      projectId:
+        type: string
+      runtimeHost:
+        type: string
+      runtimeInstanceId:
+        type: string
+      slots:
+        type: string
+        format: int64
+      status:
+        $ref: '#/definitions/v1DeploymentStatus'
+      updatedOn:
+        type: string
+        format: date-time
+  v1DeploymentStatus:
+    type: string
+    enum:
+      - DEPLOYMENT_STATUS_UNSPECIFIED
+      - DEPLOYMENT_STATUS_PENDING
+      - DEPLOYMENT_STATUS_OK
+      - DEPLOYMENT_STATUS_RECONCILING
+      - DEPLOYMENT_STATUS_ERROR
+    default: DEPLOYMENT_STATUS_UNSPECIFIED
   v1GetCurrentUserResponse:
     type: object
     properties:
@@ -405,6 +437,10 @@ definitions:
   v1GetProjectResponse:
     type: object
     properties:
+      jwt:
+        type: string
+      productionDeployment:
+        $ref: '#/definitions/v1Deployment'
       project:
         $ref: '#/definitions/v1Project'
   v1ListOrganizationsResponse:
@@ -466,6 +502,11 @@ definitions:
         title: Unique in organization
       productionBranch:
         type: string
+      productionDeploymentId:
+        type: string
+      productionSlots:
+        type: string
+        format: int64
       public:
         type: boolean
       updatedOn:

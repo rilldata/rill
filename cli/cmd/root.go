@@ -78,7 +78,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.AddCommand(versioncmd.VersionCmd())
 
 	cmd := auth.AuthCmd(cfg)
-	cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", "https://admin.rilldata.com", "Base URL for the admin API")
+	cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", "https://admin.rilldata.io", "Base URL for the admin API")
 	rootCmd.AddCommand(cmd)
 
 	// Add sub-commands for admin
@@ -88,7 +88,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		project.ProjectCmd(cfg),
 	}
 	for _, cmd := range adminCmds {
-		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", "https://admin.rilldata.com", "Base URL for the admin API")
+		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", "https://admin.rilldata.io", "Base URL for the admin API")
 		cmd.PersistentFlags().StringVar(&cfg.AdminTokenOverride, "api-token", "", "Token for authenticating with the admin API")
 		rootCmd.AddCommand(cmd)
 	}
