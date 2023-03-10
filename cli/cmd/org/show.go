@@ -2,6 +2,8 @@ package org
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
@@ -14,10 +16,21 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 	showCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			sp := cmdutil.Spinner("Finding org...")
 			sp.Start()
+
+			var name string
+			if len(args) == 0 {
+				name = cfg.Org()
+				if name == "" {
+					fmt.Printf("No organization is set. Run 'rill org create org-name' to create one.")
+					os.Exit(1)
+				}
+			} else {
+				name = args[0]
+			}
 
 			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
 			if err != nil {
@@ -26,7 +39,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			org, err := client.GetOrganization(context.Background(), &adminv1.GetOrganizationRequest{
-				Name: args[0],
+				Name: name,
 			})
 			if err != nil {
 				return err
