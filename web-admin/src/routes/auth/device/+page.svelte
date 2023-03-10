@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from "@rilldata/web-common/components/button";
   import { onMount } from "svelte";
   import { ADMIN_URL } from "../../../client/http-client";
 
@@ -82,24 +83,32 @@
 </svelte:head>
 
 {#if user}
-  <div>
-    <h1>Hello, {user.displayName}!</h1>
-    <p>Your user code is: {userCode}</p>
-    <button
+  <div class="flex flex-col justify-center items-center h-3/5">
+    <h1 class="text-3xl font-medium text-gray-800 mb-4">
+      Hello, {user.displayName}!
+    </h1>
+    <p class="text-lg text-gray-700 mb-6">Your user code is: {userCode}</p>
+
+    <Button
+      type="primary"
       on:click={() => {
         actionTaken = true;
         confirmUserCode();
       }}
-      disabled={actionTaken}>Confirm</button
+      disabled={actionTaken}>Confirm</Button
     >
-    <button
+    <div class="mt-4" />
+    <Button
+      type="secondary"
       on:click={() => {
         actionTaken = true;
         rejectUserCode();
       }}
-      disabled={actionTaken}>Reject</button
+      disabled={actionTaken}>Reject</Button
     >
-    <p style="color: green; font-weight: bold">{successMsg}</p>
-    <p style="color: red; font-weight: bold">{errorMsg}</p>
+
+    <div class="mt-4" />
+    <p class="text-md text-green-700 font-bold mb-6">{successMsg}</p>
+    <p class="text-md text-red-400 font-bold mb-6">{errorMsg}</p>
   </div>
 {/if}
