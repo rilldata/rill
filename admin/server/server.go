@@ -21,6 +21,7 @@ import (
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -51,11 +52,12 @@ type Server struct {
 	opts          *Options
 	cookies       *sessions.CookieStore
 	authenticator *auth.Authenticator
+	issuer        *runtimeauth.Issuer
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
-func New(logger *zap.Logger, adm *admin.Service, opts *Options) (*Server, error) {
+func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)
@@ -87,6 +89,7 @@ func New(logger *zap.Logger, adm *admin.Service, opts *Options) (*Server, error)
 		opts:          opts,
 		cookies:       cookies,
 		authenticator: authenticator,
+		issuer:        issuer,
 	}, nil
 }
 
@@ -177,6 +180,14 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
 	err = s.registerGithubEndpoints(mux)
+	if err != nil {
+		return nil, err
+	}
+
+	// Server public JWKS for runtime JWT verification
+	err = mux.HandlePath("GET", "/.well-known/jwks.json", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+		s.issuer.WellKnownHandleFunc(w, r)
+	})
 	if err != nil {
 		return nil, err
 	}

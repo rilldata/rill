@@ -27,6 +27,7 @@ const (
 
 func ConnectCmd(cfg *config.Config) *cobra.Command {
 	var name, description, prodBranch, projectPath string
+	var slots int
 	var public bool
 
 	connectCmd := &cobra.Command{
@@ -131,6 +132,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				OrganizationName: cfg.Org(),
 				Name:             name,
 				Description:      description,
+				ProductionSlots:  int64(slots),
 				ProductionBranch: prodBranch,
 				Public:           public,
 				GithubUrl:        githubURL,
@@ -148,6 +150,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 	connectCmd.Flags().SortFlags = false
 	connectCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
 	connectCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
+	connectCmd.Flags().IntVar(&slots, "prod-slots", 2, "Slots to allocate for production deployments")
 	connectCmd.Flags().StringVar(&name, "name", "", "Project name (default: the Github repo name)")
 	connectCmd.Flags().StringVar(&description, "description", "", "Project description")
 	connectCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
