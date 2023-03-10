@@ -6,8 +6,8 @@
   const project = $page.params.project;
 
   // TODO: call the admin server
-  $: runtimeHost = undefined;
-  $: runtimeInstanceId = undefined;
+  $: runtimeHost = "http://localhost:9009";
+  $: runtimeInstanceId = "default";
   $: jwt = undefined;
 </script>
 
