@@ -4,11 +4,14 @@ import {
   orderOfMagnitudeEng,
 } from "./format-with-order-of-magnitude";
 
-type TestArgs = [number, number, number, boolean, boolean?];
+type TestArgs = [number, number, number, boolean, boolean?, boolean?];
 
 const testCases: [TestArgs, NumberParts][] = [
   [[Infinity, 3, 4, true], { int: "∞", dot: "", frac: "", suffix: "" }],
-  [[-Infinity, 3, 4, true], { int: "-∞", dot: "", frac: "", suffix: "" }],
+  [
+    [-Infinity, 3, 4, true],
+    { neg: "-", int: "∞", dot: "", frac: "", suffix: "" },
+  ],
   [[NaN, 3, 4, true], { int: "NaN", dot: "", frac: "", suffix: "" }],
   [[0, 5, 4, false], { int: "0", dot: ".", frac: "", suffix: "E5" }],
   [[0, 5, 4, true], { int: "0", dot: ".", frac: "0000", suffix: "E5" }],
@@ -17,8 +20,19 @@ const testCases: [TestArgs, NumberParts][] = [
   [[1, 3, 5, false], { int: "0", dot: ".", frac: "001", suffix: "E3" }],
   [[1, 3, 5, true], { int: "0", dot: ".", frac: "00100", suffix: "E3" }],
 
-  [[1, -3, 5, false], { int: "1000", dot: "", frac: "", suffix: "E-3" }],
-  [[1, -3, 5, true], { int: "1000", dot: ".", frac: "00000", suffix: "E-3" }],
+  //  stripCommas = true
+  [
+    [1, -3, 5, false, false, true],
+    { int: "1000", dot: "", frac: "", suffix: "E-3" },
+  ],
+  [
+    [1, -3, 5, true, false, true],
+    { int: "1000", dot: ".", frac: "00000", suffix: "E-3" },
+  ],
+
+  // stripCommas = false (by default)
+  [[1, -3, 5, false], { int: "1,000", dot: "", frac: "", suffix: "E-3" }],
+  [[1, -3, 5, true], { int: "1,000", dot: ".", frac: "00000", suffix: "E-3" }],
 
   [[0.001, 0, 5, false], { int: "0", dot: ".", frac: "001", suffix: "E0" }],
   [[0.001, 0, 5, true], { int: "0", dot: ".", frac: "00100", suffix: "E0" }],
@@ -64,12 +78,22 @@ const testCases: [TestArgs, NumberParts][] = [
     { int: "710", dot: ".", frac: "72", suffix: "E0" },
   ],
 
+  // not stripping commas
   [
     [523523710.7237956, 0, 5, true],
-    { int: "523523710", dot: ".", frac: "72380", suffix: "E0" },
+    { int: "523,523,710", dot: ".", frac: "72380", suffix: "E0" },
   ],
   [
     [523523710.7237956, 0, 5, false],
+    { int: "523,523,710", dot: ".", frac: "72380", suffix: "E0" },
+  ],
+  // yes stripping commas
+  [
+    [523523710.7237956, 0, 5, true, false, true],
+    { int: "523523710", dot: ".", frac: "72380", suffix: "E0" },
+  ],
+  [
+    [523523710.7237956, 0, 5, false, false, true],
     { int: "523523710", dot: ".", frac: "72380", suffix: "E0" },
   ],
 
@@ -91,20 +115,20 @@ const testCases: [TestArgs, NumberParts][] = [
   // same as above but negative
   [
     [-0.00087000001, -3, 5, false],
-    { int: "-0", dot: ".", frac: "87000", suffix: "E-3" },
+    { neg: "-", int: "0", dot: ".", frac: "87000", suffix: "E-3" },
   ],
   [
     [-0.00087000001, -3, 5, true],
-    { int: "-0", dot: ".", frac: "87000", suffix: "E-3" },
+    { neg: "-", int: "0", dot: ".", frac: "87000", suffix: "E-3" },
   ],
 
   [
     [-0.00087, -3, 5, false],
-    { int: "-0", dot: ".", frac: "87", suffix: "E-3" },
+    { neg: "-", int: "0", dot: ".", frac: "87", suffix: "E-3" },
   ],
   [
     [-0.00087, -3, 5, true],
-    { int: "-0", dot: ".", frac: "87000", suffix: "E-3" },
+    { neg: "-", int: "0", dot: ".", frac: "87000", suffix: "E-3" },
   ],
 ];
 

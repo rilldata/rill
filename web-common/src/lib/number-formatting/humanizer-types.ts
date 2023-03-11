@@ -59,10 +59,64 @@ export type FormatterOptionsIntTimesPowerOfTenStrategy = {
 
 export type FormatterOptionsDefaultStrategy = {
   strategy: "default";
-  // number of RHS digits for x s.t.: 1e-3 <= x < 1e6
-  maxDigitsRightSmallNums: number;
-  // number of RHS digits for numbers rendered with a suffix
-  maxDigitsRightSuffixNums: number;
+};
+
+export type RangeFormatSpec = {
+  /**
+   * this set of parameters check whether the number should
+   * have this formatting applied.
+   *
+   * Note that we use orders of magnitude here rather than
+   * just numbers because that clarifies the handling of
+   * negative and positive numbers without repetition.
+   */
+  // minimum number for this range.
+  // Target number must be >= min.
+  minMag: number;
+  // supremum number for this range.
+  // Target number must be < sup.
+  supMag: number;
+
+  /**
+   * this set of parameters controls the formatting used
+   * for numbers in this range
+   */
+
+  // max number of digits left of decimal point
+  // if umdefined, default is 3 digits
+  maxDigitsLeft?: number;
+  // max number of digits right of decimal point
+  maxDigitsRight: number;
+  // This sets the order of magnitude used to format numbers
+  // in this range. If this is set to 0, numbers in this range
+  // will be rendered as plain numbers (no suffix).
+  // If not set, the engineering magnitude of `min` is used by default.
+  baseMagnitude?: number;
+  // if not set, treated as true
+  padWithInsignificantZeros?: boolean;
+  // if not set, treated as true
+  useTrailingDot?: boolean;
+};
+
+/**
+ * Note that defaultMaxDigitsRight can be set by the user, but
+ * it is not possible to set a maximum number of left hand digits,
+ * because this can conflict with engineering-style order of magnitude
+ * groupings if anything other than three is used. Therefore,
+ * if more than three digits are desired left of the decimal point, an
+ * explicit range must be set.
+ */
+export type FormatterOptionsPerRangeStrategy = {
+  strategy: "perRange";
+  /**
+   * This is a series of RangeFormatSpecs. Ranges may not overlap,
+   * and there can be nogaps in coverage between the ranges that
+   * are defined, though the it is not required the the entire
+   * number line be covered--defaults will be used outside of the
+   * covered range.
+   */
+  rangeSpecs: RangeFormatSpec[];
+  defaultMaxDigitsRight: number;
 };
 
 export type FormatterOptionsLargestMag = {
@@ -103,7 +157,7 @@ export type FormatterOptionsCommon = {
   // If true, pad numbers with insignificant zeros in order
   // to have a consistent number of digits to the right of the
   // decimal point
-  padWithInsignificantZeros: boolean;
+  padWithInsignificantZeros?: boolean;
 
   // method for formatting exact zeros
   // "none": don't do anything special.
@@ -123,11 +177,16 @@ export type FormatterOptionsCommon = {
   // If `true`, use upper case "E" for exponential notation;
   // If `false` or `undefined`, use lower case
   upperCaseEForExponent?: boolean;
+
+  // If `true`, use commas to group thousands when applicable;
+  // If `false` or `undefined`, no commas.
+  useCommas?: boolean;
 };
 
 export type FormatterFactoryOptions = (
   | FormatterOptionsNoneStrategy
   | FormatterOptionsIntTimesPowerOfTenStrategy
+  | FormatterOptionsPerRangeStrategy
   | FormatterOptionsDefaultStrategy
   | FormatterOptionsDigitBudget
   | FormatterOptionsLargestMag

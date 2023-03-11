@@ -1,9 +1,4 @@
-import {
-  FormatterFactoryOptions,
-  NumberKind,
-  NumberParts,
-} from "../humanizer-types";
-import { DefaultHumanizer } from "./default";
+import { FormatterFactoryOptions, NumberKind } from "../humanizer-types";
 import { IntTimesPowerOfTenFormatter } from "./IntTimesPowerOfTen";
 
 type TestArgs = [number, number, number, boolean, boolean?];

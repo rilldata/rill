@@ -10,6 +10,17 @@ export const orderOfMagnitudeEng = (x) => {
   return Math.round(Math.floor(orderOfMagnitude(x) / 3) * 3);
 };
 
+/**
+ * This function tests whether a number can be formatted
+ * as a given order of magnitude within the digit limits given
+ */
+export const canFormatWithOrderOfMag = (
+  x: number,
+  newOrder: number,
+  wholeDigits: number,
+  fractionDigits: number
+) => {};
+
 export const formatNumWithOrderOfMag = (
   x: number,
   newOrder: number,
@@ -20,12 +31,16 @@ export const formatNumWithOrderOfMag = (
   // Set to `true` to leave a trailing "." in the case
   // of non-integers formatted to e0 with 0 fraction digits.
   // Even if this is `true` integers WILL NOT be formatted with a trailing "."
-  trailingDot = false
+  trailingDot = false,
+
+  // strip commas from output?
+  stripCommas = false
 ): NumberParts => {
   if (typeof x !== "number") throw new Error("input must be a number");
 
   if (x === Infinity) return { int: "∞", dot: "", frac: "", suffix: "" };
-  if (x === -Infinity) return { int: "-∞", dot: "", frac: "", suffix: "" };
+  if (x === -Infinity)
+    return { neg: "-", int: "∞", dot: "", frac: "", suffix: "" };
   if (Number.isNaN(x)) return { int: "NaN", dot: "", frac: "", suffix: "" };
 
   const suffix = "E" + newOrder;
@@ -62,13 +77,23 @@ export const formatNumWithOrderOfMag = (
     }
   }
 
-  const [int, frac] = Intl.NumberFormat("en-US", {
+  let [int, frac] = Intl.NumberFormat("en-US", {
     maximumFractionDigits: fractionDigits,
     minimumFractionDigits: fractionDigits,
   })
     .format(x / 10 ** newOrder)
-    //.replace(/,/g, "")
     .split(".");
+
+  if (stripCommas) {
+    int = int.replace(/,/g, "");
+  }
+
+  // handle negatives
+  let neg = undefined;
+  if (int[0] === "-") {
+    int = int.slice(1);
+    neg = "-";
+  }
 
   const nonInt = !Number.isInteger(x);
 
@@ -77,5 +102,5 @@ export const formatNumWithOrderOfMag = (
       ? "."
       : "";
 
-  return { int, dot, frac: frac ?? "", suffix };
+  return { neg, int, dot, frac: frac ?? "", suffix };
 };

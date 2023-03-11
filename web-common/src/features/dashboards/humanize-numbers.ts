@@ -354,9 +354,6 @@ export function humanizeDataType(
     innerOptions = {
       strategy: "default",
       numberKind,
-      padWithInsignificantZeros: false,
-      maxDigitsRightSmallNums: 1,
-      maxDigitsRightSuffixNums: 2,
     };
   }
 
@@ -377,9 +374,6 @@ function humanizeGroupValuesUtil2(
   const innerOptions: FormatterFactoryOptions = {
     strategy: "default",
     numberKind,
-    padWithInsignificantZeros: false,
-    maxDigitsRightSmallNums: 2,
-    maxDigitsRightSuffixNums: 1,
   };
 
   const formatter = humanizedFormatterFactory(values, innerOptions);

@@ -1,232 +1,226 @@
-import {
-  Formatter,
-  FormatterOptionsCommon,
-  FormatterOptionsDefaultStrategy,
-  FormatterWidths,
-  NumberKind,
-  NumberParts,
-} from "../humanizer-types";
-import {
-  formatNumWithOrderOfMag,
-  orderOfMagnitude,
-  orderOfMagnitudeEng,
-} from "../utils/format-with-order-of-magnitude";
-import { numberPartsToString } from "../utils/number-parts-utils";
-import { shortScaleSuffixIfAvailableForStr } from "../utils/short-scale-suffixes";
+// import {
+//   Formatter,
+//   FormatterOptionsCommon,
+//   FormatterOptionsDefaultStrategy,
+//   FormatterWidths,
+//   NumberKind,
+//   NumberParts,
+// } from "../humanizer-types";
+// import {
+//   formatNumWithOrderOfMag,
+//   orderOfMagnitude,
+//   orderOfMagnitudeEng,
+// } from "../utils/format-with-order-of-magnitude";
+// import { numberPartsToString } from "../utils/number-parts-utils";
+// import { shortScaleSuffixIfAvailableForStr } from "../utils/short-scale-suffixes";
 
-export const humanizeDefaultStrategy = (
-  sample: number[],
-  options: FormatterOptionsCommon & FormatterOptionsDefaultStrategy
-): NumberParts[] => {
-  const {
-    // number of RHS digits for x s.t.: 1e-3 <= x < 1e6
-    maxDigitsRightSmallNums,
-    // number of RHS digits for numbers rendered with a suffix
-    maxDigitsRightSuffixNums,
-    padWithInsignificantZeros,
-  } = options;
-
-  // for default strategy, we'll always use the trailing dot
-  const useTrailingDot = true;
-
-  let numPartsArr: NumberParts[] = sample.map((x) => {
-    if (x === 0) {
-      return { int: "0", dot: "", frac: "", suffix: "" };
-    }
-
-    // can the number be shown without suffix within the rules allowed?
-    const mag = orderOfMagnitude(x);
-
-    if (mag >= -3 && mag <= 2) {
-      // 0.001 to 999.999; format with 3 rhs digits
-      return formatNumWithOrderOfMag(
-        x,
-        0,
-        maxDigitsRightSmallNums,
-        padWithInsignificantZeros,
-        useTrailingDot
-      );
-    } else if (mag >= 3 && mag <= 5) {
-      // 1000 to 999999; format with 0 rhs digits
-      return formatNumWithOrderOfMag(x, 0, 0, false, useTrailingDot);
-    } else {
-      // anything else -- use suffix with maxDigitsRightSuffixNums
-      const magE = orderOfMagnitudeEng(x);
-      return formatNumWithOrderOfMag(x, magE, maxDigitsRightSuffixNums, true);
-    }
-  });
-
-  numPartsArr = numPartsArr.map((ss, i) => {
-    const suffix = shortScaleSuffixIfAvailableForStr(ss.suffix);
-    return { ...ss, ...{ suffix } };
-  });
-
-  return numPartsArr;
-};
-
-// FIXME? -- will be needed if we want alignment
-// export const humanizeDefaultStrategyMaxCharWidthsPossible = (
+// export const humanizeDefaultStrategy = (
+//   sample: number[],
 //   options: FormatterOptionsCommon & FormatterOptionsDefaultStrategy
-// ): FormatterWidths => {
+// ): NumberParts[] => {
 //   const {
 //     // number of RHS digits for x s.t.: 1e-3 <= x < 1e6
 //     maxDigitsRightSmallNums,
 //     // number of RHS digits for numbers rendered with a suffix
 //     maxDigitsRightSuffixNums,
+//     padWithInsignificantZeros,
 //   } = options;
 
-//   return {
-//     // max ever is 8 for e.g. "-$999999"
-//     left: 6,
-//     // max ever is 1 for "."
-//     dot: 1,
+//   // for default strategy, we'll always use the trailing dot
+//   const useTrailingDot = true;
 
-//     frac: Math.max(maxDigitsRightSmallNums, maxDigitsRightSuffixNums),
+//   let numPartsArr: NumberParts[] = sample.map((x) => {
+//     if (x === 0) {
+//       return { int: "0", dot: "", frac: "", suffix: "" };
+//     }
 
-//     // max ever is 6 for e.g. "e-324%"
-//     suffix: 6,
-//   };
+//     // can the number be shown without suffix within the rules allowed?
+//     const mag = orderOfMagnitude(x);
+
+//     if (mag >= -3 && mag <= 2) {
+//       // 0.001 to 999.999; format with 3 rhs digits
+//       return formatNumWithOrderOfMag(
+//         x,
+//         0,
+//         maxDigitsRightSmallNums,
+//         padWithInsignificantZeros,
+//         useTrailingDot
+//       );
+//     } else if (mag >= 3 && mag <= 5) {
+//       // 1000 to 999999; format with 0 rhs digits
+//       return formatNumWithOrderOfMag(x, 0, 0, false, useTrailingDot);
+//     } else {
+//       // anything else -- use suffix with maxDigitsRightSuffixNums
+//       const magE = orderOfMagnitudeEng(x);
+//       return formatNumWithOrderOfMag(x, magE, maxDigitsRightSuffixNums, true);
+//     }
+//   });
+
+//   numPartsArr = numPartsArr.map((ss, i) => {
+//     const suffix = shortScaleSuffixIfAvailableForStr(ss.suffix);
+//     return { ...ss, ...{ suffix } };
+//   });
+
+//   return numPartsArr;
 // };
 
-// FIXME? -- will be needed if we want alignment
-// export const humanizeDefaultStrategyMaxPxWidthsPossible = (
-//   options: FormatterOptionsCommon & FormatterOptionsDefaultStrategy
-// ): FormatterWidths => {
-//   const {
-//     // number of RHS digits for x s.t.: 1e-3 <= x < 1e6
-//     maxDigitsRightSmallNums,
-//     // number of RHS digits for numbers rendered with a suffix
-//     maxDigitsRightSuffixNums,
-//   } = options;
+// // FIXME? -- will be needed if we want alignment
+// // export const humanizeDefaultStrategyMaxCharWidthsPossible = (
+// //   options: FormatterOptionsCommon & FormatterOptionsDefaultStrategy
+// // ): FormatterWidths => {
+// //   const {
+// //     // number of RHS digits for x s.t.: 1e-3 <= x < 1e6
+// //     maxDigitsRightSmallNums,
+// //     // number of RHS digits for numbers rendered with a suffix
+// //     maxDigitsRightSuffixNums,
+// //   } = options;
 
-//   return {
-//     // max ever is 8 for e.g. "-$999999"
-//     left: 6,
-//     // max ever is 1 for "."
-//     dot: 1,
+// //   return {
+// //     // max ever is 8 for e.g. "-$999999"
+// //     left: 6,
+// //     // max ever is 1 for "."
+// //     dot: 1,
 
-//     frac: Math.max(maxDigitsRightSmallNums, maxDigitsRightSuffixNums),
+// //     frac: Math.max(maxDigitsRightSmallNums, maxDigitsRightSuffixNums),
 
-//     // max ever is 6 for e.g. "e-324%"
-//     suffix: 6,
-//   };
-// };
+// //     // max ever is 6 for e.g. "e-324%"
+// //     suffix: 6,
+// //   };
+// // };
 
-export class DefaultHumanizer implements Formatter {
-  options: FormatterOptionsCommon & FormatterOptionsDefaultStrategy;
-  initialSample: number[];
+// // FIXME? -- will be needed if we want alignment
+// // export const humanizeDefaultStrategyMaxPxWidthsPossible = (
+// //   options: FormatterOptionsCommon & FormatterOptionsDefaultStrategy
+// // ): FormatterWidths => {
+// //   const {
+// //     // number of RHS digits for x s.t.: 1e-3 <= x < 1e6
+// //     maxDigitsRightSmallNums,
+// //     // number of RHS digits for numbers rendered with a suffix
+// //     maxDigitsRightSuffixNums,
+// //   } = options;
 
-  maxPxWidthsSampledSoFar: FormatterWidths;
-  maxCharWidthsSampledSoFar: FormatterWidths;
+// //   return {
+// //     // max ever is 8 for e.g. "-$999999"
+// //     left: 6,
+// //     // max ever is 1 for "."
+// //     dot: 1,
 
-  largestPossibleNumberStringParts: NumberParts;
+// //     frac: Math.max(maxDigitsRightSmallNums, maxDigitsRightSuffixNums),
 
-  constructor(
-    sample: number[],
-    options: FormatterOptionsCommon & FormatterOptionsDefaultStrategy
-  ) {
-    this.options = options;
-    this.initialSample = sample;
+// //     // max ever is 6 for e.g. "e-324%"
+// //     suffix: 6,
+// //   };
+// // };
 
-    const { maxDigitsRightSmallNums, maxDigitsRightSuffixNums } = this.options;
+// export class DefaultHumanizer implements Formatter {
+//   options: FormatterOptionsCommon & FormatterOptionsDefaultStrategy;
+//   initialSample: number[];
 
-    this.largestPossibleNumberStringParts = {
-      neg: "-",
-      dollar: options.numberKind === NumberKind.DOLLAR ? "$" : undefined,
-      int: "999999",
-      dot: ".",
-      frac: "0".repeat(
-        Math.max(maxDigitsRightSmallNums, maxDigitsRightSuffixNums)
-      ),
-      suffix: "e-324",
-      percent: options.numberKind === NumberKind.PERCENT ? "%" : undefined,
-    };
-  }
+//   maxPxWidthsSampledSoFar: FormatterWidths;
+//   maxCharWidthsSampledSoFar: FormatterWidths;
 
-  stringFormat(x: number): string {
-    return numberPartsToString(this.partsFormat(x));
-  }
+//   largestPossibleNumberStringParts: NumberParts;
 
-  partsFormat(x: number): NumberParts {
-    const {
-      // number of RHS digits for x s.t.: 1e-3 <= x < 1e6
-      maxDigitsRightSmallNums,
-      // number of RHS digits for numbers rendered with a suffix
-      maxDigitsRightSuffixNums,
-      padWithInsignificantZeros,
-    } = this.options;
+//   constructor(
+//     sample: number[],
+//     options: FormatterOptionsCommon & FormatterOptionsDefaultStrategy
+//   ) {
+//     this.options = options;
+//     this.initialSample = sample;
 
-    const isCurrency = this.options.numberKind === NumberKind.DOLLAR;
-    const isPercent = this.options.numberKind === NumberKind.PERCENT;
+//     const { maxDigitsRightSmallNums, maxDigitsRightSuffixNums } = this.options;
 
-    if (isPercent) x = 100 * x;
+//     this.largestPossibleNumberStringParts = {
+//       neg: "-",
+//       dollar: options.numberKind === NumberKind.DOLLAR ? "$" : undefined,
+//       int: "999999",
+//       dot: ".",
+//       frac: "0".repeat(
+//         Math.max(maxDigitsRightSmallNums, maxDigitsRightSuffixNums)
+//       ),
+//       suffix: "e-324",
+//       percent: options.numberKind === NumberKind.PERCENT ? "%" : undefined,
+//     };
+//   }
 
-    // for default strategy, we'll always use the trailing dot
-    const useTrailingDot = true;
+//   stringFormat(x: number): string {
+//     return numberPartsToString(this.partsFormat(x));
+//   }
 
-    let numParts: NumberParts;
+//   partsFormat(x: number): NumberParts {
+//     const {
+//       // number of RHS digits for x s.t.: 1e-3 <= x < 1e6
+//       maxDigitsRightSmallNums,
+//       // number of RHS digits for numbers rendered with a suffix
+//       maxDigitsRightSuffixNums,
+//       padWithInsignificantZeros,
+//     } = this.options;
 
-    if (x === 0) {
-      numParts = { int: "0", dot: "", frac: "", suffix: "" };
-    }
+//     const isCurrency = this.options.numberKind === NumberKind.DOLLAR;
+//     const isPercent = this.options.numberKind === NumberKind.PERCENT;
 
-    // can the number be shown without suffix within the rules allowed?
-    const mag = orderOfMagnitude(x);
+//     if (isPercent) x = 100 * x;
 
-    if (mag >= -3 && mag <= 2 && !isCurrency) {
-      // 0.001 to 999.999 and NOT currency; format with 3 rhs digits
-      numParts = formatNumWithOrderOfMag(
-        x,
-        0,
-        maxDigitsRightSmallNums,
-        padWithInsignificantZeros,
-        useTrailingDot
-      );
-    } else if (mag >= -2 && mag <= 2 && isCurrency) {
-      // 0.01 to 999.999 and IS currency; format with 2 rhs digits
-      numParts = formatNumWithOrderOfMag(
-        x,
-        0,
-        2,
-        padWithInsignificantZeros,
-        useTrailingDot
-      );
-    } else if (mag >= 3 && mag <= 2) {
-      // 1000 to 999999; format with 0 rhs digits
-      numParts = formatNumWithOrderOfMag(x, 0, 0, false, useTrailingDot);
-    } else {
-      // anying else -- use suffix with maxDigitsRightSuffixNums
-      const magE = orderOfMagnitudeEng(x);
-      numParts = formatNumWithOrderOfMag(
-        x,
-        magE,
-        maxDigitsRightSuffixNums,
-        true
-      );
-    }
+//     // for default strategy, we'll always use the trailing dot
+//     const useTrailingDot = true;
 
-    numParts.suffix = shortScaleSuffixIfAvailableForStr(numParts.suffix);
+//     let numParts: NumberParts;
 
-    if (this.options.upperCaseEForExponent !== true) {
-      numParts.suffix = numParts.suffix.replace("E", "e");
-    }
+//     if (x === 0) {
+//       numParts = { int: "0", dot: "", frac: "", suffix: "" };
+//     }
 
-    if (this.options.numberKind === NumberKind.DOLLAR) {
-      numParts.dollar = "$";
-    }
-    if (this.options.numberKind === NumberKind.PERCENT) {
-      numParts.percent = "%";
-    }
+//     const mag = orderOfMagnitude(x);
 
-    return numParts;
-  }
+//     if (mag >= -3 && mag <= 2 && !isCurrency) {
+//       // 0.001 to 999.999 and NOT currency; format with 3 rhs digits
+//       numParts = formatNumWithOrderOfMag(
+//         x,
+//         0,
+//         maxDigitsRightSmallNums,
+//         padWithInsignificantZeros,
+//         useTrailingDot
+//       );
+//     } else if (mag >= -2 && mag <= 2 && isCurrency) {
+//       // 0.01 to 999.999 and IS currency; format with 2 rhs digits
+//       // Note that we should pad with insignificat zeros in this case
+//       numParts = formatNumWithOrderOfMag(x, 0, 2, true, useTrailingDot);
+//     } else if (mag >= 3 && mag <= 2) {
+//       // 1000 to 999999; format with 0 rhs digits
+//       numParts = formatNumWithOrderOfMag(x, 0, 0, false, useTrailingDot);
+//     } else {
+//       // anying else -- use suffix with maxDigitsRightSuffixNums
+//       const magE = orderOfMagnitudeEng(x);
+//       numParts = formatNumWithOrderOfMag(
+//         x,
+//         magE,
+//         maxDigitsRightSuffixNums,
+//         true
+//       );
+//     }
 
-  // FIXME? -- will be needed if we want alignment
-  // updateMaxWidthsSample(x: number) {}
+//     numParts.suffix = shortScaleSuffixIfAvailableForStr(numParts.suffix);
 
-  // maxPxWidthsSampled(): FormatterWidths;
-  // maxPxWidthsPossible(): FormatterWidths;
+//     if (this.options.upperCaseEForExponent !== true) {
+//       numParts.suffix = numParts.suffix.replace("E", "e");
+//     }
 
-  // maxCharWidthsSampled(): FormatterWidths;
-  // maxCharWidthsPossible(): FormatterWidths;
-}
+//     if (this.options.numberKind === NumberKind.DOLLAR) {
+//       numParts.dollar = "$";
+//     }
+//     if (this.options.numberKind === NumberKind.PERCENT) {
+//       numParts.percent = "%";
+//     }
+
+//     return numParts;
+//   }
+
+//   // FIXME? -- will be needed if we want alignment
+//   // updateMaxWidthsSample(x: number) {}
+
+//   // maxPxWidthsSampled(): FormatterWidths;
+//   // maxPxWidthsPossible(): FormatterWidths;
+
+//   // maxCharWidthsSampled(): FormatterWidths;
+//   // maxCharWidthsPossible(): FormatterWidths;
+// }
