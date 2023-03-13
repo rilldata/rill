@@ -48,5 +48,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			return nil
 		},
 	}
+
+	statusCmd.Flags().StringVar(&cfg.DefaultOrg, "org", cfg.Org(), "Organization Name")
 	return statusCmd
 }

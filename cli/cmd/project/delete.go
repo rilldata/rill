@@ -35,5 +35,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			return nil
 		},
 	}
+
+	deleteCmd.Flags().StringVar(&cfg.DefaultOrg, "org", cfg.Org(), "Organization Name")
 	return deleteCmd
 }

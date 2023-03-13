@@ -35,5 +35,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 			return nil
 		},
 	}
+
+	showCmd.Flags().StringVar(&cfg.DefaultOrg, "org", cfg.Org(), "Organization Name")
 	return showCmd
 }

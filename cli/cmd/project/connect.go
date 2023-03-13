@@ -154,6 +154,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 	connectCmd.Flags().StringVar(&name, "name", "", "Project name (default: the Github repo name)")
 	connectCmd.Flags().StringVar(&description, "description", "", "Project description")
 	connectCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
+	connectCmd.Flags().StringVar(&cfg.DefaultOrg, "org", cfg.Org(), "Organization Name")
 
 	return connectCmd
 }
