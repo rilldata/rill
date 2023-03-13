@@ -8,7 +8,7 @@ import (
 )
 
 // ErrStorageLimitExceed TODO :: is this the right place for this error ?
-var ErrStorageLimitExceed = fmt.Errorf("ingesting sources will consume more data than what is allowed. Please upgrade your plan")
+var ErrStorageLimitExceed = fmt.Errorf("Ingesting sources will take more disk space than what is allowed in current plan. Please upgrade your plan")
 
 // Connectors tracks all registered connector drivers.
 var Connectors = make(map[string]Connector)
