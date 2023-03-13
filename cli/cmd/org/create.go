@@ -19,9 +19,6 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 		Short: "Create",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sp := cmdutil.Spinner("Creating org...")
-			sp.Start()
-
 			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
 			if err != nil {
 				return err
@@ -42,7 +39,6 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			sp.Stop()
 			cmdutil.TextPrinter("Created organization \n")
 			cmdutil.TablePrinter(toRow(org.Organization))
 			return nil
