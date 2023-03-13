@@ -54,7 +54,7 @@ type Options struct {
 	GlobPattern           string
 	// Although at this point GlobMaxTotalSize and StorageLimitInBytes have same impl but
 	// this is total size the source should consume on disk and is calculated upstream basis how much data one instance has already consumed
-	// across othe sources and the instance level limits
+	// across other sources and the instance level limits
 	StorageLimitInBytes int64
 }
 

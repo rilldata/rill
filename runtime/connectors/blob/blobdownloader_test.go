@@ -81,6 +81,12 @@ func TestFetchFileNames(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 		},
+		{
+			name:    "storage limit exceeded",
+			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/**", StorageLimitInBytes: 10}},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
