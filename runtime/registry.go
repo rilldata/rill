@@ -63,12 +63,13 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 		return err
 	}
 	inst.ProjectEnv = proj.Env
-	// this is a hack to set allow_host_credentials
-	// ideally the runtime should propagate this flag to connectors.Env
+	// this is a hack to set env variables from runtime options
+	// ideally the runtime should propagate these options to connectors.Env
 	if inst.Env == nil {
 		inst.Env = make(map[string]string)
 	}
 	inst.Env["allow_host_credentials"] = strconv.FormatBool(r.opts.AllowHostCredentials)
+	inst.Env["instance_storage_limit_in_bytes"] = strconv.FormatInt(r.opts.InstanceStorageLimitInBytes, 10)
 
 	// Create instance
 	err = r.Registry().CreateInstance(ctx, inst)

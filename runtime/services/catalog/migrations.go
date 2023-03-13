@@ -3,6 +3,8 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -366,9 +368,12 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 		return err
 	}
 
+	env := inst.EnvironmentVariables()
+	opts := migrator.Options{InstanceEnv: env, IngestStorageLimitInBytes: s.getSourceIngestionimit(ctx, env)}
+
 	// create in olap
 	err = s.wrapMigrator(item.CatalogInFile, func() error {
-		return migrator.Create(ctx, s.Olap, s.Repo, inst.EnvironmentVariables(), item.CatalogInFile)
+		return migrator.Create(ctx, s.Olap, s.Repo, opts, item.CatalogInFile)
 	})
 	if err != nil {
 		return err
@@ -435,7 +440,9 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 	// update in olap
 	if item.Type == MigrationUpdate {
 		err = s.wrapMigrator(item.CatalogInFile, func() error {
-			return migrator.Update(ctx, s.Olap, s.Repo, inst.EnvironmentVariables(), item.CatalogInStore, item.CatalogInFile)
+			env := inst.EnvironmentVariables()
+			opts := migrator.Options{InstanceEnv: env, IngestStorageLimitInBytes: s.getSourceIngestionimit(ctx, env)}
+			return migrator.Update(ctx, s.Olap, s.Repo, opts, item.CatalogInStore, item.CatalogInFile)
 		})
 		if err != nil {
 			return err
@@ -522,4 +529,27 @@ func (s *Service) addToDag(item *MigrationItem) *runtimev1.ReconcileError {
 		}
 	}
 	return nil
+}
+
+func (s *Service) getSourceIngestionimit(ctx context.Context, env map[string]string) int64 {
+	var sizeSoFar int64
+	entries := s.Catalog.FindEntries(ctx, s.InstID, drivers.ObjectTypeSource)
+	for _, entry := range entries {
+		sizeSoFar += entry.SizeInBytes
+	}
+
+	limit, ok := env["instance_storage_limit_in_bytes"]
+	if !ok {
+		return math.MaxInt64
+	}
+
+	limitInBytes, err := strconv.ParseInt(limit, 10, 64)
+	if err != nil {
+		return math.MaxInt64
+	}
+	limitInBytes -= sizeSoFar
+	if limitInBytes < 0 {
+		return 0
+	}
+	return limitInBytes
 }

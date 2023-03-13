@@ -36,6 +36,7 @@ type CatalogEntry struct {
 	Object      proto.Message
 	Path        string
 	Embedded    bool
+	SizeInBytes int64
 	Parents     []string
 	Children    []string
 	CreatedOn   time.Time

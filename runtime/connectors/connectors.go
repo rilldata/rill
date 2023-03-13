@@ -7,6 +7,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
+var ErrStorageLimitExceed = fmt.Errorf("sources consume more data than what is allowed. Please upgrade your plan")
+
 // Connectors tracks all registered connector drivers.
 var Connectors = make(map[string]Connector)
 
@@ -82,6 +84,7 @@ type Env struct {
 	// user provided env variables kept with keys converted to uppercase
 	Variables            map[string]string
 	AllowHostCredentials bool
+	StorageLimitInBytes  int64
 }
 
 // Source represents a dataset to ingest using a specific connector (like a connector instance).

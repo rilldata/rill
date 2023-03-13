@@ -32,19 +32,20 @@ import (
 // Env var keys must be prefixed with RILL_RUNTIME_ and are converted from snake_case to CamelCase.
 // For example RILL_RUNTIME_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	HTTPPort             int           `default:"8080" split_words:"true"`
-	GRPCPort             int           `default:"9090" split_words:"true"`
-	LogLevel             zapcore.Level `default:"info" split_words:"true"`
-	MetastoreDriver      string        `default:"sqlite"`
-	MetastoreURL         string        `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
-	AllowedOrigins       []string      `default:"*" split_words:"true"`
-	AuthEnable           bool          `default:"false" split_words:"true"`
-	AuthIssuerURL        string        `default:"" split_words:"true"`
-	AuthAudienceURL      string        `default:"" split_words:"true"`
-	SafeSourceRefresh    bool          `default:"false" split_words:"true"`
-	ConnectionCacheSize  int           `default:"100" split_words:"true"`
-	QueryCacheSize       int           `default:"10000" split_words:"true"`
-	AllowHostCredentials bool          `default:"false" split_words:"true"`
+	HTTPPort                    int           `default:"8080" split_words:"true"`
+	GRPCPort                    int           `default:"9090" split_words:"true"`
+	LogLevel                    zapcore.Level `default:"info" split_words:"true"`
+	MetastoreDriver             string        `default:"sqlite"`
+	MetastoreURL                string        `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
+	AllowedOrigins              []string      `default:"*" split_words:"true"`
+	AuthEnable                  bool          `default:"false" split_words:"true"`
+	AuthIssuerURL               string        `default:"" split_words:"true"`
+	AuthAudienceURL             string        `default:"" split_words:"true"`
+	SafeSourceRefresh           bool          `default:"false" split_words:"true"`
+	ConnectionCacheSize         int           `default:"100" split_words:"true"`
+	QueryCacheSize              int           `default:"10000" split_words:"true"`
+	AllowHostCredentials        bool          `default:"false" split_words:"true"`
+	InstanceStorageLimitInBytes int64         `default:"10737418240" split_words:"true"` // 10GB
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -75,12 +76,13 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 
 			// Init runtime
 			opts := &runtime.Options{
-				ConnectionCacheSize:  conf.ConnectionCacheSize,
-				MetastoreDriver:      conf.MetastoreDriver,
-				MetastoreDSN:         conf.MetastoreURL,
-				QueryCacheSize:       conf.QueryCacheSize,
-				AllowHostCredentials: conf.AllowHostCredentials,
-				SafeSourceRefresh:    conf.SafeSourceRefresh,
+				ConnectionCacheSize:         conf.ConnectionCacheSize,
+				MetastoreDriver:             conf.MetastoreDriver,
+				MetastoreDSN:                conf.MetastoreURL,
+				QueryCacheSize:              conf.QueryCacheSize,
+				AllowHostCredentials:        conf.AllowHostCredentials,
+				SafeSourceRefresh:           conf.SafeSourceRefresh,
+				InstanceStorageLimitInBytes: conf.InstanceStorageLimitInBytes,
 			}
 			rt, err := runtime.New(opts, logger)
 			if err != nil {
