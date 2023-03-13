@@ -32,7 +32,7 @@ We should rename TimeSeriesTimeRange to a better name.
     useDashboardStore,
   } from "../dashboard-stores";
   import ComparisonSelector from "./ComparisonSelector.svelte";
-  import MainTimeRangeSelector from "./MainTimeRangeSelector.svelte";
+  import CurrentTimeRangeSelector from "./CurrentTimeRangeSelector.svelte";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
   import {
     addGrains,
@@ -262,7 +262,7 @@ We should rename TimeSeriesTimeRange to a better name.
       modelName={$metricsViewQuery?.data?.entry?.metricsView?.model}
     />
   {:else}
-    <MainTimeRangeSelector
+    <CurrentTimeRangeSelector
       {metricViewName}
       {allTimeRange}
       {minTimeGrain}

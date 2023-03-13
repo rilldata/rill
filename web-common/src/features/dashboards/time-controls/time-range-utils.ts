@@ -628,27 +628,12 @@ function getComparisonDurationMs(comparisonRange: ComparisonRange): number {
       return 30 * TIME.DAY;
     case ComparisonRange.PreviousYear:
       return TIME.YEAR;
-    case ComparisonRange.DayOverDay:
-      return TIME.DAY;
-    case ComparisonRange.WeekOverWeek:
-      return TIME.WEEK;
-    case ComparisonRange.MonthOverMonth:
-      return TIME.MONTH; // Do we vary this by month type?
-    case ComparisonRange.YearOverYear:
-      return TIME.YEAR;
     case ComparisonRange.Custom:
       return 0;
     default:
       throw new Error(`Unknown comparison range: ${comparisonRange}`);
   }
 }
-
-const pointInTimeComparisons = [
-  ComparisonRange.DayOverDay,
-  ComparisonRange.WeekOverWeek,
-  ComparisonRange.MonthOverMonth,
-  ComparisonRange.YearOverYear,
-];
 
 const timeRangeNameToComparisonRange = {
   [TimeRangeName.Last6Hours]: ComparisonRange.Previous6Hours,
@@ -657,22 +642,22 @@ const timeRangeNameToComparisonRange = {
   [TimeRangeName.Last30Days]: ComparisonRange.Previous30Days,
 };
 
-function getComparisonsInsideAllTime(
+// Validates if a comparison range is inside the bounds
+// of all time range and current selected start date
+function isComparisonInsideBounds(
+  comparison: ComparisonRange,
   currentStartDate: number,
   allTimeRange: TimeRange
 ) {
-  const comparisonsInsideAllTime = [];
-  for (const range in ComparisonRange) {
-    const duration = getComparisonDurationMs(ComparisonRange[range]);
-    const comparisonStart = currentStartDate - duration;
-    if (comparisonStart >= allTimeRange.start.getTime()) {
-      comparisonsInsideAllTime.push(ComparisonRange[range]);
-    }
+  const duration = getComparisonDurationMs(comparison);
+  const comparisonStart = currentStartDate - duration;
+  if (comparisonStart >= allTimeRange.start.getTime()) {
+    return true;
   }
-  return comparisonsInsideAllTime;
+  return false;
 }
 
-// TODO: Check if previous period data is available
+// Returns a list of comparison enums that are available for the current selected time range
 export function getComparisonOptionsForTimeRange(
   timeRange: TimeSeriesTimeRange,
   allTimeRange: TimeRange
@@ -681,27 +666,32 @@ export function getComparisonOptionsForTimeRange(
     return [];
   }
 
-  const currentStartDate = new Date(timeRange.start).getTime();
-  const comparisonsInsideAllTime = getComparisonsInsideAllTime(
-    currentStartDate,
-    allTimeRange
-  );
+  const candidateComparisonsForAll = [
+    ComparisonRange.PreviousDay,
+    ComparisonRange.PreviousWeek,
+    ComparisonRange.Previous30Days,
+    ComparisonRange.PreviousYear,
+  ];
 
   let possibleComparisonRanges = [];
 
   if (timeRange.name === TimeRangeName.Custom) {
-    possibleComparisonRanges = pointInTimeComparisons;
+    possibleComparisonRanges = candidateComparisonsForAll;
   } else {
     possibleComparisonRanges = [
       timeRangeNameToComparisonRange[timeRange.name],
-      // FIXME: we need to reconcile these comparisons.
-      ...pointInTimeComparisons,
+      ...candidateComparisonsForAll,
     ];
   }
 
-  return possibleComparisonRanges.filter((range) =>
-    comparisonsInsideAllTime.includes(range)
+  const currentStartDate = new Date(timeRange.start).getTime();
+
+  possibleComparisonRanges = possibleComparisonRanges.filter((range) =>
+    isComparisonInsideBounds(range, currentStartDate, allTimeRange)
   );
+
+  // Remove duplicate comparison ranges
+  return [...new Set(possibleComparisonRanges)];
 }
 
 export function getComparisonTimeRange(
@@ -711,7 +701,6 @@ export function getComparisonTimeRange(
   const currentStartDate = new Date(timeRange.start).getTime();
   const currentEndDate = new Date(timeRange.end).getTime();
 
-  // TODO: Work on All time and custom comparison later
   if (
     timeRange.name === TimeRangeName.Custom ||
     timeRange.name === TimeRangeName.AllTime

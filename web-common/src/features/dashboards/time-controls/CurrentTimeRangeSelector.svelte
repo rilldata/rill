@@ -34,7 +34,7 @@
 
   let initialStartDate;
   let initialEndDate;
-  $: if ($dashboardStore?.selectedTimeRange?.start) {
+  $: if ($dashboardStore?.selectedTimeRange) {
     initialStartDate = getDateFromISOString(
       $dashboardStore.selectedTimeRange.start
     );
@@ -78,14 +78,14 @@
 </script>
 
 <TimeRangeSelector
-  {initialEndDate}
-  {initialStartDate}
-  {max}
-  {min}
   on:select-time-range
-  {selectedTimeRange}
   showIcon
   showPreciseRange
   timeRangeOptions={relativeTimeRangeOptions}
+  {selectedTimeRange}
+  {min}
+  {max}
+  {initialStartDate}
+  {initialEndDate}
   {validateCustomTimeRange}
 />
