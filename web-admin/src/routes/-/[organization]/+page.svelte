@@ -25,7 +25,9 @@
       <ul>
         {#each $projs.data.projects as proj}
           <li>
-            <a href="/{$org.data.organization.name}/{proj.name}">{proj.name}</a>
+            <a href="/-/{$org.data.organization.name}/{proj.name}"
+              >{proj.name}</a
+            >
           </li>
         {/each}
       </ul>
