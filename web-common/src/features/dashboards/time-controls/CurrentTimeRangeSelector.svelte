@@ -34,7 +34,7 @@
 
   let initialStartDate;
   let initialEndDate;
-  $: if ($dashboardStore?.selectedTimeRange) {
+  $: if ($dashboardStore?.selectedTimeRange?.start) {
     initialStartDate = getDateFromISOString(
       $dashboardStore.selectedTimeRange.start
     );
