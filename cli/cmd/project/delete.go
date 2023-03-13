@@ -17,9 +17,6 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: "Delete",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sp := cmdutil.Spinner("Deleting project...")
-			sp.Start()
-
 			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
 			if err != nil {
 				return err
@@ -34,7 +31,6 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			sp.Stop()
 			cmdutil.TextPrinter(fmt.Sprintf("Deleted project: %v\n", proj))
 			return nil
 		},

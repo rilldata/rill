@@ -2,7 +2,6 @@ package auth
 
 import (
 	"github.com/fatih/color"
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
@@ -16,9 +15,6 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 		Use:   "login",
 		Short: "Authenticate with the Rill API",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sp := cmdutil.Spinner("Login in...")
-			sp.Start()
-
 			warn := color.New(color.Bold).Add(color.FgYellow)
 			if cfg.AdminTokenDefault != "" {
 				warn.Println("You are already logged in. To log in again, run `rill auth logout` first.")
@@ -50,7 +46,6 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			sp.Stop()
 			bold.Print("Successfully logged in.\n")
 
 			err = dotrill.SetAccessToken(OAuthTokenResponse.AccessToken)

@@ -18,9 +18,6 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 		Short: "Show",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sp := cmdutil.Spinner("Finding org...")
-			sp.Start()
-
 			var name string
 			if len(args) == 0 {
 				name = cfg.Org()
@@ -45,7 +42,6 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			sp.Stop()
 			cmdutil.TextPrinter("Found organization \n")
 			cmdutil.TablePrinter(toRow(org.Organization))
 			return nil

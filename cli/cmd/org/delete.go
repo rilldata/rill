@@ -17,9 +17,6 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 		Short: "Delete",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sp := cmdutil.Spinner("Deleting org...")
-			sp.Start()
-
 			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
 			if err != nil {
 				return err
@@ -33,7 +30,6 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			sp.Stop()
 			cmdutil.TextPrinter(fmt.Sprintf("Deleted organization: %v\n", org))
 			return nil
 		},
