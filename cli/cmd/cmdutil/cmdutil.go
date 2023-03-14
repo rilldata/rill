@@ -9,6 +9,7 @@ import (
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/lensesio/tableprinter"
+	"github.com/manifoldco/promptui"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
@@ -46,4 +47,20 @@ func TablePrinter(v interface{}) {
 func TextPrinter(str string) {
 	boldGreen := color.New(color.FgGreen).Add(color.Underline).Add(color.Bold)
 	boldGreen.Fprintln(color.Output, str)
+}
+
+func PromptGetSelect(items []string, label string) string {
+	prompt := promptui.Select{
+		Label: label,
+		Items: items,
+	}
+
+	_, result, err := prompt.Run()
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("You have selected: %s\n", result)
+	return result
 }
