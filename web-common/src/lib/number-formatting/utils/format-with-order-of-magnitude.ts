@@ -10,17 +10,6 @@ export const orderOfMagnitudeEng = (x) => {
   return Math.round(Math.floor(orderOfMagnitude(x) / 3) * 3);
 };
 
-/**
- * This function tests whether a number can be formatted
- * as a given order of magnitude within the digit limits given
- */
-export const canFormatWithOrderOfMag = (
-  x: number,
-  newOrder: number,
-  wholeDigits: number,
-  fractionDigits: number
-) => {};
-
 export const formatNumWithOrderOfMag = (
   x: number,
   newOrder: number,

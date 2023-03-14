@@ -15,6 +15,9 @@ export class NonFormatter implements Formatter {
   options: FormatterOptionsCommon & FormatterOptionsNoneStrategy;
   initialSample: number[];
 
+  // FIXME: we can add this back in if we want to implement
+  // alignment. If we decide that we don't want to pursue that,
+  // we can remove this commented code
   // maxPxWidthsSampledSoFar: FormatterWidths;
   // maxCharWidthsSampledSoFar: FormatterWidths;
   // largestPossibleNumberStringParts: NumberParts;

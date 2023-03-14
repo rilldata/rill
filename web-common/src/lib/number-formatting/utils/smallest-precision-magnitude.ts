@@ -7,7 +7,6 @@ export const smallestPrecisionMagnitude = (x: number): number => {
   if (x === 0) return 0;
   // if the number is not an integer, find the smallest fractional digit
   if (!Number.isInteger(x)) {
-    // x = x - Math.round(x);
     let e = 1;
     let p = 0;
     while (Math.round(x * e) / e !== x) {
