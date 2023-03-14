@@ -28,10 +28,10 @@
 
 <RillTheme>
   <QueryClientProvider client={queryClient}>
-    <div class="flex flex-col h-screen">
-      <main class="flex-grow flex flex-col h-full">
+    <div class="flex flex-col min-h-screen">
+      <main class="flex-grow flex flex-col">
         <TopNavigationBar />
-        <div class="flex-grow">
+        <div class="flex-grow overflow-auto">
           <slot />
         </div>
       </main>
