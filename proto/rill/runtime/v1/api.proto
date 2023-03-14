@@ -197,7 +197,7 @@ message Instance {
   }];
   // DSN for connection to OLAP
   string olap_dsn = 3;
-  // Driver for reading/editing code artifacts (options: file, metastore).
+  // Driver for reading/editing code artifacts (options: file, metastore, github).
   // This enables virtualizing a file system in a cloud setting.
   string repo_driver = 4 [(validate.rules).string = {
     in: [
@@ -285,7 +285,7 @@ message EditInstanceRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string olap_driver = 2 [(validate.rules).string = {in: ["duckdb", "druid"]}];
   string olap_dsn = 3; 
-  string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore"]}];
+  string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore", "github"]}];
   string repo_dsn = 5; 
   bool embed_catalog = 6;
   map<string, string> env = 7;
