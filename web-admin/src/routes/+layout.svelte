@@ -31,7 +31,7 @@
     <div class="flex flex-col min-h-screen">
       <main class="flex-grow flex flex-col">
         <TopNavigationBar />
-        <div class="flex-grow overflow-auto">
+        <div class="flex-grow overflow-auto mt-4">
           <slot />
         </div>
       </main>
