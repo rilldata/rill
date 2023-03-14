@@ -1468,7 +1468,7 @@ func (m *EditInstanceRequest) validate(all bool) error {
 	if _, ok := _EditInstanceRequest_RepoDriver_InLookup[m.GetRepoDriver()]; !ok {
 		err := EditInstanceRequestValidationError{
 			field:  "RepoDriver",
-			reason: "value must be in list [file metastore]",
+			reason: "value must be in list [file metastore github]",
 		}
 		if !all {
 			return err
@@ -1572,6 +1572,7 @@ var _EditInstanceRequest_OlapDriver_InLookup = map[string]struct{}{
 var _EditInstanceRequest_RepoDriver_InLookup = map[string]struct{}{
 	"file":      {},
 	"metastore": {},
+	"github":    {},
 }
 
 // Validate checks the field values on EditInstanceResponse with the rules

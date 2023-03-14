@@ -122,7 +122,7 @@ export class Instance extends Message<Instance> {
   olapDsn = "";
 
   /**
-   * Driver for reading/editing code artifacts (options: file, metastore).
+   * Driver for reading/editing code artifacts (options: file, metastore, github).
    * This enables virtualizing a file system in a cloud setting.
    *
    * @generated from field: string repo_driver = 4;

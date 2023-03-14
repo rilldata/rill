@@ -584,7 +584,7 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
   olapDriver?: string;
   olapDsn?: string;
   projectEnv?: V1InstanceProjectEnv;
-  /** Driver for reading/editing code artifacts (options: file, metastore).
+  /** Driver for reading/editing code artifacts (options: file, metastore, github).
 This enables virtualizing a file system in a cloud setting. */
   repoDriver?: string;
   repoDsn?: string;

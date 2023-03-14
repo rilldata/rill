@@ -1733,7 +1733,7 @@ definitions:
       repoDriver:
         type: string
         description: |-
-          Driver for reading/editing code artifacts (options: file, metastore).
+          Driver for reading/editing code artifacts (options: file, metastore, github).
           This enables virtualizing a file system in a cloud setting.
       repoDsn:
         type: string
