@@ -23,7 +23,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			proj, err := client.DeleteProject(context.Background(), &adminv1.DeleteProjectRequest{
+			_, err = client.DeleteProject(context.Background(), &adminv1.DeleteProjectRequest{
 				OrganizationName: cfg.Org(),
 				Name:             args[0],
 			})
@@ -31,7 +31,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.TextPrinter(fmt.Sprintf("Deleted project: %v\n", proj))
+			cmdutil.TextPrinter(fmt.Sprintf("Deleted project: %v\n", args[0]))
 			return nil
 		},
 	}
