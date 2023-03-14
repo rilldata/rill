@@ -86,6 +86,7 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 		metaSem: semaphore.NewWeighted(1),
 		olapSem: priorityqueue.NewSemaphore(olapSemSize),
 		logger:  logger,
+		config:  cfg,
 	}
 
 	conn, err := c.db.Connx(context.Background())
@@ -108,6 +109,7 @@ type connection struct {
 	metaSem *semaphore.Weighted
 	// olapSem gates OLAP queries
 	olapSem *priorityqueue.Semaphore
+	config  *config
 }
 
 // Close implements drivers.Connection.

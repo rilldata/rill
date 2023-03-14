@@ -30,6 +30,8 @@ type RuntimeServiceClient interface {
 	GetInstance(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*GetInstanceResponse, error)
 	// CreateInstance creates a new instance
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*CreateInstanceResponse, error)
+	// EditInstance edits an existing instance
+	EditInstance(ctx context.Context, in *EditInstanceRequest, opts ...grpc.CallOption) (*EditInstanceResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error)
 	// ListFiles lists all the files matching a glob in a repo.
@@ -110,6 +112,15 @@ func (c *runtimeServiceClient) GetInstance(ctx context.Context, in *GetInstanceR
 func (c *runtimeServiceClient) CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*CreateInstanceResponse, error) {
 	out := new(CreateInstanceResponse)
 	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/CreateInstance", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) EditInstance(ctx context.Context, in *EditInstanceRequest, opts ...grpc.CallOption) (*EditInstanceResponse, error) {
+	out := new(EditInstanceResponse)
+	err := c.cc.Invoke(ctx, "/rill.runtime.v1.RuntimeService/EditInstance", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -272,6 +283,8 @@ type RuntimeServiceServer interface {
 	GetInstance(context.Context, *GetInstanceRequest) (*GetInstanceResponse, error)
 	// CreateInstance creates a new instance
 	CreateInstance(context.Context, *CreateInstanceRequest) (*CreateInstanceResponse, error)
+	// EditInstance edits an existing instance
+	EditInstance(context.Context, *EditInstanceRequest) (*EditInstanceResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error)
 	// ListFiles lists all the files matching a glob in a repo.
@@ -330,6 +343,9 @@ func (UnimplementedRuntimeServiceServer) GetInstance(context.Context, *GetInstan
 }
 func (UnimplementedRuntimeServiceServer) CreateInstance(context.Context, *CreateInstanceRequest) (*CreateInstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateInstance not implemented")
+}
+func (UnimplementedRuntimeServiceServer) EditInstance(context.Context, *EditInstanceRequest) (*EditInstanceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EditInstance not implemented")
 }
 func (UnimplementedRuntimeServiceServer) DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteInstance not implemented")
@@ -460,6 +476,24 @@ func _RuntimeService_CreateInstance_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).CreateInstance(ctx, req.(*CreateInstanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_EditInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EditInstanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).EditInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.runtime.v1.RuntimeService/EditInstance",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).EditInstance(ctx, req.(*EditInstanceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -774,6 +808,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateInstance",
 			Handler:    _RuntimeService_CreateInstance_Handler,
+		},
+		{
+			MethodName: "EditInstance",
+			Handler:    _RuntimeService_EditInstance_Handler,
 		},
 		{
 			MethodName: "DeleteInstance",
