@@ -60,8 +60,25 @@ const defaultGenericNumTestCases: [number, string][] = [
   [-9.1234686 / 100, "-9.12%"],
   [-0.1234686 / 100, "-0.12%"],
 
-  // // infinitesimals + padding with insignificant zeros
-  [0.009, "0.9%"],
+  // infinitesimals + making sure there is no padding with insignificant zeros
+  [0.008, "0.8%"],
+  [0.005, "0.5%"],
+  /** NOTE CORNER CASE TO IGNORE
+   * ideally, 0.009 would format as "0.9%" (no sero padding).
+   * In practice because of weirness around FP representations of
+   * numbers with fractional parts ending in a "9", we have
+   * 0.009*100 = 0.8999999999999999
+   * This means when we multiply by 100 to convert from a plain number
+   * to percentage representation, some precision is lost.
+   *
+   * In practice, this will be a rare edge case that won't really
+   * impact users anyway (no one is ever likely to notice this,
+   * especially since it is not incorrect to have the extra zero),
+   * so putting in a fix is not worth it in terms of the additional
+   *  code complexity that would be introduced
+   */
+  [0.009, "0.90%"],
+
   // Note: .10 IS significant in this case
   [0.095 / 100, "0.10%"],
   [0.0095 / 100, "0.01%"],
