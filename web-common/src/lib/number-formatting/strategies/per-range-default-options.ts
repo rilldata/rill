@@ -1,11 +1,11 @@
 import {
   FormatterOptionsCommon,
-  FormatterOptionsPerRangeStrategy,
+  FormatterRangeSpecsStrategy,
   NumberKind,
 } from "../humanizer-types";
 
 export const defaultGenericNumOptions: FormatterOptionsCommon &
-  FormatterOptionsPerRangeStrategy = {
+  FormatterRangeSpecsStrategy = {
   strategy: "perRange",
   rangeSpecs: [
     {
@@ -21,13 +21,13 @@ export const defaultGenericNumOptions: FormatterOptionsCommon &
 };
 
 export const defaultPercentOptions: FormatterOptionsCommon &
-  FormatterOptionsPerRangeStrategy = {
+  FormatterRangeSpecsStrategy = {
   ...defaultGenericNumOptions,
   numberKind: NumberKind.PERCENT,
 };
 
 export const defaultDollarOptions: FormatterOptionsCommon &
-  FormatterOptionsPerRangeStrategy = {
+  FormatterRangeSpecsStrategy = {
   strategy: "perRange",
   rangeSpecs: [
     {

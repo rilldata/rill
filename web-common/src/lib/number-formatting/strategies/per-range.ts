@@ -1,7 +1,7 @@
 import {
   Formatter,
   FormatterOptionsCommon,
-  FormatterOptionsPerRangeStrategy,
+  FormatterRangeSpecsStrategy,
   NumberKind,
   NumberParts,
   RangeFormatSpec,
@@ -49,7 +49,7 @@ const numPartsNotZero = (parts: NumberParts): boolean => {
 };
 
 export class PerRangeFormatter implements Formatter {
-  options: FormatterOptionsCommon & FormatterOptionsPerRangeStrategy;
+  options: FormatterOptionsCommon & FormatterRangeSpecsStrategy;
   initialSample: number[];
 
   // FIXME: we can add this back in if we want to implement
@@ -62,7 +62,7 @@ export class PerRangeFormatter implements Formatter {
 
   constructor(
     sample: number[],
-    options: FormatterOptionsPerRangeStrategy & FormatterOptionsCommon
+    options: FormatterRangeSpecsStrategy & FormatterOptionsCommon
   ) {
     this.options = options;
 

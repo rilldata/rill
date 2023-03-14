@@ -31,6 +31,12 @@ export type RichFormatNumber = {
   splitStr: NumberParts;
 };
 
+/**
+ * This enum represents the *semantic* kind of the number being
+ * handled, which is orthogonal to how it is being formatted.
+ *
+ * (Note that this contrasts with NicelyFormattedTypes)
+ */
 export enum NumberKind {
   DOLLAR = "DOLLAR",
   PERCENT = "PERCENT",
@@ -63,38 +69,36 @@ export type FormatterOptionsIntTimesPowerOfTenStrategy = {
   onInvalidInput?: "doNothing" | "throw" | "consoleWarn";
 };
 
+/**
+ * The "default" strategy actaully delegates to a set of
+ * pre-defined FormatterRangeSpecsStrategies, one for
+ * each of the three NumberKinds currently supported.
+ */
 export type FormatterOptionsDefaultStrategy = {
   strategy: "default";
 };
 
+/**
+ * Specifies a set of formatting options
+ */
 export type RangeFormatSpec = {
-  /**
-   * this set of parameters check whether the number should
-   * have this formatting applied.
-   *
-   * Note that we use orders of magnitude here rather than
-   * just numbers because that clarifies the handling of
-   * negative and positive numbers without repetition.
-   */
-  // minimum number for this range.
-  // Target number must be >= min.
+  // minimum order of magnitude for this range.
+  // Target number must have OoM >= minMag.
   minMag: number;
   // supremum number for this range.
-  // Target number must be < sup.
+  // Target number must have OoM < supMag.
   supMag: number;
 
-  /**
-   * this set of parameters controls the formatting used
-   * for numbers in this range
-   */
-
   // max number of digits left of decimal point
-  // if umdefined, default is 3 digits
+  // if undefined, default is 3 digits
   maxDigitsLeft?: number;
   // max number of digits right of decimal point
   maxDigitsRight: number;
   // This sets the order of magnitude used to format numbers
-  // in this range. If this is set to 0, numbers in this range
+  // in this range. For example, if baseMagnitude=3, then we'd have:
+  // - 1,000,000 => 1,000k
+  // - 100 => .1k
+  // If this is set to 0, numbers in this range
   // will be rendered as plain numbers (no suffix).
   // If not set, the engineering magnitude of `min` is used by default.
   baseMagnitude?: number;
@@ -105,51 +109,67 @@ export type RangeFormatSpec = {
 };
 
 /**
+ * Strategy for formatting numbers based on order of magnitude ranges.
+ *
+ * `rangeSpecs` is a series of RangeFormatSpecs. Ranges may not overlap,
+ * and there can be no gaps in coverage between the ranges that
+ * are defined, though the it is not required the the entire
+ * number line be covered--defaults will be used outside of the
+ * covered range.
+ *
+ * Each order of magnitude range must supply a minimum and supremum order
+ * of magnitude that sets what numbers will be formatted using that range's
+ * rules, and must also set a maximum number of RHS digits. Other formatting
+ * rules may optionally be set as well, see RangeFormatSpec.
+ *
+ * It may be possible to define sets of rules that are incompatible if very
+ * unusual parameter values have been supplied in RangeFormatSpec. The formatter
+ * constructor will throw an errot in the following cases:
+ * - If any range has minMag >= supMag
+ * - if any ranges overlap
+ * - if there are gaps between ranges
+ *
  * Note that defaultMaxDigitsRight can be set by the user, but
  * it is not possible to set a maximum number of left hand digits,
  * because this can conflict with engineering-style order of magnitude
  * groupings if anything other than three is used. Therefore,
  * if more than three digits are desired left of the decimal point, an
- * explicit range must be set.
+ * explicit range must be set with maxDigitsLeft.
  */
-export type FormatterOptionsPerRangeStrategy = {
+export type FormatterRangeSpecsStrategy = {
   strategy: "perRange";
-  /**
-   * This is a series of RangeFormatSpecs. Ranges may not overlap,
-   * and there can be nogaps in coverage between the ranges that
-   * are defined, though the it is not required the the entire
-   * number line be covered--defaults will be used outside of the
-   * covered range.
-   */
   rangeSpecs: RangeFormatSpec[];
   defaultMaxDigitsRight: number;
 };
 
-export type FormatterOptionsLargestMag = {
-  // options specific to the largestMagnitude strategy
-  strategy: "largestMagnitude";
-};
-export type FormatterOptionsDigitBudget = {
-  // options specific to the multipleMagnitudes strategy
-  strategy: "digitBudget";
-  maxDigitsLeft: number;
-  maxDigitsRight: number;
-  minDigitsNonzero: number;
+// FIXME: These strategies still need production grade implementation.
+// If we decide not to implement these strategis for production,
+// this code can be removed.
+// export type FormatterOptionsLargestMag = {
+//   // options specific to the largestMagnitude strategy
+//   strategy: "largestMagnitude";
+// };
+// export type FormatterOptionsDigitBudget = {
+//   // options specific to the multipleMagnitudes strategy
+//   strategy: "digitBudget";
+//   maxDigitsLeft: number;
+//   maxDigitsRight: number;
+//   minDigitsNonzero: number;
 
-  // Method for showing that non-integers have a fractional
-  // part if they would otherwise be rounded such that they
-  // have no fractional digits.
-  // "none": don't do anything special.
-  // Ex: 21379.23 with max 5 digits would be "21379"
-  // "trailingDot": add a trailing decimal point if a non-integer
-  // would be truncated to the e0 digit.
-  // Ex: 21379.23 with max 5 digits would be "21379."
-  // "reserveDigit": Always reserve one digit from the max digit
-  // budget to show a digit of precision after the decimal point.
-  // Ex: 21379.23 with max 5 digits would require an order of mag
-  // suffix, e.g. "21.379 k"; or with max 6 digits "21379.2"
-  nonIntHandling: "none" | "trailingDot" | "reserveDigit";
-};
+//   // Method for showing that non-integers have a fractional
+//   // part if they would otherwise be rounded such that they
+//   // have no fractional digits.
+//   // "none": don't do anything special.
+//   // Ex: 21379.23 with max 5 digits would be "21379"
+//   // "trailingDot": add a trailing decimal point if a non-integer
+//   // would be truncated to the e0 digit.
+//   // Ex: 21379.23 with max 5 digits would be "21379."
+//   // "reserveDigit": Always reserve one digit from the max digit
+//   // budget to show a digit of precision after the decimal point.
+//   // Ex: 21379.23 with max 5 digits would require an order of mag
+//   // suffix, e.g. "21.379 k"; or with max 6 digits "21379.2"
+//   nonIntHandling: "none" | "trailingDot" | "reserveDigit";
+// };
 
 export type FormatterOptionsCommon = {
   // Options common to all strategies
@@ -191,11 +211,14 @@ export type FormatterOptionsCommon = {
 
 export type FormatterFactoryOptions = (
   | FormatterOptionsNoneStrategy
+  // FIXME: These strategies still need production grade implementation.
+  // If we decide not to implement these strategis for production,
+  // this code can be removed.
+  // | FormatterOptionsDigitBudget
+  // | FormatterOptionsLargestMag
   | FormatterOptionsIntTimesPowerOfTenStrategy
-  | FormatterOptionsPerRangeStrategy
+  | FormatterRangeSpecsStrategy
   | FormatterOptionsDefaultStrategy
-  | FormatterOptionsDigitBudget
-  | FormatterOptionsLargestMag
 ) &
   FormatterOptionsCommon;
 
