@@ -28,10 +28,17 @@ type ProvisionOptions struct {
 	GithubURL            string
 	GitBranch            string
 	GithubInstallationID int64
+	Envs                 map[string]string
+}
+
+// todo :: find a better name
+type UpdateProvisionOptions struct {
+	Envs map[string]string
 }
 
 type Provisioner interface {
 	Provision(ctx context.Context, opts *ProvisionOptions) (*Instance, error)
+	UpdateProvision(ctx context.Context, opts *UpdateProvisionOptions, host, instanceID string) error
 	Teardown(ctx context.Context, host, instanceID string) error
 	Close() error
 }
@@ -111,6 +118,7 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 	if err != nil {
 		return nil, err
 	}
+	defer rt.Close()
 
 	// Build repo info
 	repoDSN, err := json.Marshal(github.DSN{
@@ -136,7 +144,7 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 		RepoDriver:   "github",
 		RepoDsn:      string(repoDSN),
 		EmbedCatalog: true,
-		Env:          nil,
+		Env:          opts.Envs,
 	})
 	if err != nil {
 		return nil, err
@@ -148,6 +156,61 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 		InstanceID: instanceID,
 	}
 	return inst, nil
+}
+
+func (p *staticProvisioner) UpdateProvision(ctx context.Context, opts *UpdateProvisionOptions, host, instanceID string) error {
+	// Find audience
+	var audience string
+	for _, candidate := range p.spec.Runtimes {
+		if candidate.Host == host {
+			audience = candidate.Audience
+			break
+		}
+	}
+	if audience == "" {
+		return fmt.Errorf("could not find a runtime matching host %q", host)
+	}
+
+	// Create JWT for runtime client
+	jwt, err := p.issuer.NewToken(auth.TokenOptions{
+		AudienceURL:       audience,
+		TTL:               time.Hour,
+		SystemPermissions: []auth.Permission{auth.ManageInstances, auth.ReadInstance},
+	})
+	if err != nil {
+		return err
+	}
+
+	// Make runtime client
+	rt, err := client.New(host, jwt)
+	if err != nil {
+		return err
+	}
+	defer rt.Close()
+
+	resp, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{
+		InstanceId: instanceID,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Edit the instance
+	inst := resp.Instance
+	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
+		InstanceId:   instanceID,
+		OlapDriver:   inst.OlapDriver,
+		OlapDsn:      inst.OlapDsn,
+		RepoDriver:   inst.RepoDriver,
+		RepoDsn:      inst.RepoDsn,
+		EmbedCatalog: inst.EmbedCatalog,
+		Env:          opts.Envs,
+	})
+	if err != nil {
+		return err
+	}
+
+	return err
 }
 
 func (p *staticProvisioner) Teardown(ctx context.Context, host, instanceID string) error {
@@ -178,10 +241,12 @@ func (p *staticProvisioner) Teardown(ctx context.Context, host, instanceID strin
 	if err != nil {
 		return err
 	}
+	defer rt.Close()
 
 	// Delete the instance
 	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 		InstanceId: instanceID,
+		DropDb:     true,
 	})
 	if err != nil {
 		return err

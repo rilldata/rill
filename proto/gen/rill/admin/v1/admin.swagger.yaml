@@ -196,6 +196,10 @@ paths:
             properties:
               description:
                 type: string
+              envs:
+                type: object
+                additionalProperties:
+                  type: string
               githubUrl:
                 type: string
               name:
@@ -285,6 +289,10 @@ paths:
             properties:
               description:
                 type: string
+              envs:
+                type: object
+                additionalProperties:
+                  type: string
               githubUrl:
                 type: string
               productionBranch:
@@ -493,6 +501,10 @@ definitions:
         format: date-time
       description:
         type: string
+      envs:
+        type: object
+        additionalProperties:
+          type: string
       githubUrl:
         type: string
       id:

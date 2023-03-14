@@ -115,7 +115,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		olapDSN = path.Join(projectPath, olapDSN)
 	}
 
-	env, err := parse(envVariables)
+	env, err := ParseEnvs(envVariables)
 	if err != nil {
 		return nil, err
 	}
@@ -455,7 +455,7 @@ func ParseLogFormat(format string) (LogFormat, bool) {
 	}
 }
 
-func parse(envs []string) (map[string]string, error) {
+func ParseEnvs(envs []string) (map[string]string, error) {
 	vars := make(map[string]string, len(envs))
 	for _, env := range envs {
 		// split into key value pairs
