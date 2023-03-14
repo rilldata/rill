@@ -2,6 +2,7 @@ package druid
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -50,6 +51,10 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	}
 
 	return &drivers.Result{Rows: rows, Schema: schema}, nil
+}
+
+func (c *connection) DropDB() error {
+	return fmt.Errorf("dropping database not supported")
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {

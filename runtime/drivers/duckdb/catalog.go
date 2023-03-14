@@ -155,3 +155,17 @@ func (c *connection) DeleteEntry(ctx context.Context, instanceID, name string) e
 	_, err = conn.ExecContext(ctx, "DELETE FROM rill.catalog WHERE LOWER(name) = LOWER(?)", name)
 	return err
 }
+
+// DeleteEntries deletes the entire catalog table.
+// This will be handled by dropping the entire rill db file when deleting instance.
+// But implementing this from completeness pov.
+func (c *connection) DeleteEntries(ctx context.Context, instanceID string) error {
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = release() }()
+
+	_, err = conn.ExecContext(ctx, "DELETE FROM rill.catalog")
+	return err
+}
