@@ -3,6 +3,7 @@ package duckdb
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -121,4 +122,10 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	}
 
 	return &runtimev1.StructType{Fields: fields}, nil
+}
+
+func (c *connection) DropDB() error {
+	// ignoring close error
+	c.Close()
+	return os.Remove(c.config.DBFilePath)
 }

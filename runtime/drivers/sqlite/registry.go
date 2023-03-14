@@ -109,6 +109,40 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 	return nil
 }
 
+// CreateInstance implements drivers.RegistryStore.
+func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) error {
+	// Override ctx because sqlite sometimes segfaults on context cancellation
+	ctx := context.Background()
+
+	// sqlite doesn't support maps need to convert to json and write as bytes array
+	env, err := mapToJSON(inst.Env)
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+	_, err = c.db.ExecContext(
+		ctx,
+		"UPDATE instances SET olap_driver = $2, olap_dsn = $3, repo_driver = $4, repo_dsn = $5, embed_catalog = $6, env = $7, updated_on = $8 "+
+			"WHERE id = $1",
+		inst.ID,
+		inst.OLAPDriver,
+		inst.OLAPDSN,
+		inst.RepoDriver,
+		inst.RepoDSN,
+		inst.EmbedCatalog,
+		env,
+		now,
+	)
+	if err != nil {
+		return err
+	}
+
+	// We assign manually instead of using RETURNING because it doesn't work for timestamps in SQLite
+	inst.UpdatedOn = now
+	return nil
+}
+
 // DeleteInstance implements drivers.RegistryStore.
 func (c *connection) DeleteInstance(_ context.Context, id string) error {
 	// Override ctx because sqlite sometimes segfaults on context cancellation

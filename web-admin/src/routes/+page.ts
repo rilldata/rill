@@ -5,9 +5,6 @@ import {
 } from "../client";
 import { ADMIN_URL } from "../client/http-client";
 
-// The current user is not available on the web server, so SSR would screw up the redirect logic
-export const ssr = false;
-
 export async function load() {
   const user = await adminServiceGetCurrentUser();
   if (!user.user) {

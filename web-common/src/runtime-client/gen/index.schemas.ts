@@ -159,6 +159,25 @@ export type RuntimeServiceListCatalogEntriesParams = {
   type?: RuntimeServiceListCatalogEntriesType;
 };
 
+export type RuntimeServiceEditInstanceBodyEnv = { [key: string]: string };
+
+/**
+ * Request message for RuntimeService.EditInstance.
+See message Instance for field descriptions.
+ */
+export type RuntimeServiceEditInstanceBody = {
+  embedCatalog?: boolean;
+  env?: RuntimeServiceEditInstanceBodyEnv;
+  olapDriver?: string;
+  olapDsn?: string;
+  repoDriver?: string;
+  repoDsn?: string;
+};
+
+export type RuntimeServiceDeleteInstanceBody = {
+  dropDb?: boolean;
+};
+
 export type RuntimeServiceListInstancesParams = {
   pageSize?: number;
   pageToken?: string;
@@ -565,7 +584,7 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
   olapDriver?: string;
   olapDsn?: string;
   projectEnv?: V1InstanceProjectEnv;
-  /** Driver for reading/editing code artifacts (options: file, metastore).
+  /** Driver for reading/editing code artifacts (options: file, metastore, github).
 This enables virtualizing a file system in a cloud setting. */
   repoDriver?: string;
   repoDsn?: string;
@@ -588,6 +607,14 @@ export interface V1GetInstanceResponse {
 export interface V1GetFileResponse {
   blob?: string;
   updatedOn?: string;
+}
+
+export interface V1GetCatalogEntryResponse {
+  entry?: V1CatalogEntry;
+}
+
+export interface V1EditInstanceResponse {
+  instance?: V1Instance;
 }
 
 export interface V1DeleteInstanceResponse {
@@ -711,10 +738,6 @@ export interface V1CatalogEntry {
   source?: V1Source;
   table?: V1Table;
   updatedOn?: string;
-}
-
-export interface V1GetCatalogEntryResponse {
-  entry?: V1CatalogEntry;
 }
 
 export interface Runtimev1Type {

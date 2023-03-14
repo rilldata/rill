@@ -85,6 +85,26 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn strin
 	return val.(drivers.Connection), nil
 }
 
+// evict removes the connection from cache and closes the connection
+// if evicting the connectioncache, evict the catalog cache as well
+func (c *connectionCache) evict(ctx context.Context, instanceID, driver, dsn string) bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.closed {
+		return false
+	}
+
+	key := instanceID + driver + dsn
+	conn, ok := c.cache.Get(key)
+	if ok {
+		// closing this would mean that any running query might also fail
+		conn.(drivers.Connection).Close()
+		c.cache.Remove(key)
+	}
+	return ok
+}
+
 type catalogCache struct {
 	cache map[string]*catalog.Service
 	lock  sync.Mutex
@@ -153,6 +173,14 @@ func (c *catalogCache) get(ctx context.Context, rt *Runtime, instID string) (*ca
 	service = catalog.NewService(catalogStore, repoStore, olap, registry, instID, rt.logger)
 	c.cache[key] = service
 	return service, nil
+}
+
+// evict removes service for instance id
+func (c *catalogCache) evict(ctx context.Context, instID string) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	delete(c.cache, instID)
 }
 
 type queryCache struct {

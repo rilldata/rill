@@ -75,13 +75,39 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 	}, nil
 }
 
+// EditInstance implements RuntimeService.
+func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRequest) (*runtimev1.EditInstanceResponse, error) {
+	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+		return nil, ErrForbidden
+	}
+
+	inst := &drivers.Instance{
+		ID:           req.InstanceId,
+		OLAPDriver:   req.OlapDriver,
+		OLAPDSN:      req.OlapDsn,
+		RepoDriver:   req.RepoDriver,
+		RepoDSN:      req.RepoDsn,
+		EmbedCatalog: req.EmbedCatalog,
+		Env:          req.Env,
+	}
+
+	err := s.runtime.EditInstance(ctx, inst)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &runtimev1.EditInstanceResponse{
+		Instance: instanceToPB(inst),
+	}, nil
+}
+
 // DeleteInstance implements RuntimeService.
 func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstanceRequest) (*runtimev1.DeleteInstanceResponse, error) {
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.DeleteInstance(ctx, req.InstanceId)
+	err := s.runtime.DeleteInstance(ctx, req.InstanceId, req.DropDb)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

@@ -11,6 +11,7 @@ type RegistryStore interface {
 	FindInstance(ctx context.Context, id string) (*Instance, error)
 	CreateInstance(ctx context.Context, instance *Instance) error
 	DeleteInstance(ctx context.Context, id string) error
+	EditInstance(ctx context.Context, instance *Instance) error
 }
 
 // Instance represents a single data project, meaning one OLAP connection, one repo connection,
