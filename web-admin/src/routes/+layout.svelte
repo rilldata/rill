@@ -1,47 +1,43 @@
 <script lang="ts">
+  import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
+  import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { QueryClient, QueryClientProvider } from "@sveltestack/svelte-query";
-  import "../app.css";
+  import TopNavigationBar from "../components/navigation/TopNavigationBar.svelte";
 
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnMount: false,
+        refetchOnReconnect: false,
+        refetchOnWindowFocus: false,
+        retry: false,
+        placeholderData: {}, // there's an issue somewhere in the Leaderboard components that depends on this setting
+      },
+    },
+  });
+
+  featureFlags.set({
+    // Set read-only mode so that the user can't edit the dashboard
+    readOnly: true,
+  });
 </script>
 
 <svelte:head>
   <meta name="description" content="Rill Cloud" />
 </svelte:head>
 
-<main>
+<RillTheme>
   <QueryClientProvider client={queryClient}>
-    <slot />
+    <div class="flex flex-col h-screen">
+      <main class="flex-grow flex flex-col h-full">
+        <TopNavigationBar />
+        <div class="flex-grow">
+          <slot />
+        </div>
+      </main>
+      <footer class="text-center">
+        <p>Rill Data</p>
+      </footer>
+    </div>
   </QueryClientProvider>
-</main>
-
-<footer>
-  <p>Rill Data</p>
-</footer>
-
-<style>
-  main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 1rem;
-    width: 100%;
-    max-width: 1024px;
-    margin: 0 auto;
-    box-sizing: border-box;
-  }
-
-  footer {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 40px;
-  }
-
-  @media (min-width: 480px) {
-    footer {
-      padding: 40px 0;
-    }
-  }
-</style>
+</RillTheme>

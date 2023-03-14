@@ -9,7 +9,6 @@
     useRuntimeServiceRefreshAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
@@ -18,6 +17,7 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { useQueryClient } from "@sveltestack/svelte-query";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { useModelNames } from "../../models/selectors";
   import { createModelFromSource } from "../createModel";
   import { refreshAndReconcile } from "../refreshSource";
@@ -28,8 +28,8 @@
 
   const queryClient = useQueryClient();
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
-  $: modelNames = useModelNames($runtimeStore.instanceId);
+  $: runtimeInstanceId = $runtime.instanceId;
+  $: modelNames = useModelNames($runtime.instanceId);
 
   const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
   const createFileMutation = useRuntimeServicePutFileAndReconcile();

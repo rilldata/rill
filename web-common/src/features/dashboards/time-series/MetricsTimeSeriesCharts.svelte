@@ -20,11 +20,10 @@
     V1MetricsViewTimeSeriesResponse,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
-  import { fly } from "svelte/transition";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import {
@@ -39,7 +38,7 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  $: instanceId = $runtimeStore.instanceId;
+  $: instanceId = $runtime.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
@@ -105,7 +104,7 @@
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
   $: if (dataCopy && dataCopy?.length) {
-    formattedData = convertTimestampPreview(dataCopy, true).map((di, i) => {
+    formattedData = convertTimestampPreview(dataCopy, true).map((di, _i) => {
       di = { ts: di.ts, bin: di.bin, ...di.records };
       return di;
     });
@@ -138,22 +137,9 @@
   let:point
 >
   <TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
-    <!-- mouseover date elements-->
     <div class="bg-white sticky left-0 top-0" />
     <div class="bg-white sticky left-0 top-0">
-      <div style:padding-left="24px">
-        {#if point?.ts}
-          <div
-            class="absolute text-gray-500"
-            transition:fly|local={{ duration: 100, y: 4 }}
-          >
-            {formatDateByInterval(interval, point.ts)}
-          </div>
-          &nbsp;
-        {:else}
-          &nbsp;
-        {/if}
-      </div>
+      <div style:padding-left="24px" style:height="20px" />
       <!-- top axis element -->
       <div />
       {#if metricsExplorer?.selectedTimeRange}
@@ -207,6 +193,9 @@
               yMin={yExtents[0] < 0 ? yExtents[0] : 0}
               start={startValue}
               end={endValue}
+              mouseoverTimeFormat={(value) => {
+                return formatDateByInterval(interval, value);
+              }}
               mouseoverFormat={(value) =>
                 formatPreset === NicelyFormattedTypes.NONE
                   ? `${value}`

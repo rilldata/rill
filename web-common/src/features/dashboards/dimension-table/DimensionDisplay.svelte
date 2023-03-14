@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
+
   /**
    * DimensionDisplay.svelte
    * -------------------------
@@ -18,7 +20,8 @@
     useQueryServiceMetricsViewToplist,
     useQueryServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -36,7 +39,9 @@
 
   let searchText = "";
 
-  $: instanceId = $runtimeStore.instanceId;
+  const queryClient = useQueryClient();
+
+  $: instanceId = $runtime.instanceId;
   $: addNull = "null".includes(searchText);
 
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
@@ -233,6 +238,7 @@
 
   function onSelectItem(event) {
     const label = values[event.detail][dimension?.name];
+    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilter(metricViewName, dimension?.name, label);
   }
 

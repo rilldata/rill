@@ -1,13 +1,15 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import {
-    useMetaQuery,
-    useModelHasTimeSeries,
-  } from "@rilldata/web-common/features/dashboards/selectors";
+    protoToBase64,
+    toProto,
+  } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+  import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { WorkspaceContainer } from "../../../layout/workspace";
+  import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { useRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import { MEASURE_CONFIG } from "../config";
   import { metricsExplorerStore } from "../dashboard-stores";
@@ -27,15 +29,23 @@
 
   $: switchToMetrics(metricViewName);
 
-  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: metricsViewQuery = useRuntimeServiceGetCatalogEntry(
+    $runtime.instanceId,
+    metricViewName,
+    {
+      query: {
+        select: (data) => data?.entry?.metricsView,
+      },
+    }
+  );
 
-  $: if ($metaQuery.data) {
-    if (!$metaQuery.data?.measures?.length) {
+  $: if ($metricsViewQuery.data) {
+    if (!$featureFlags.readOnly && !$metricsViewQuery.data?.measures?.length) {
       goto(`/dashboard/${metricViewName}/edit`);
     }
-    metricsExplorerStore.sync(metricViewName, $metaQuery.data);
+    metricsExplorerStore.sync(metricViewName, $metricsViewQuery.data);
   }
-  $: if ($metaQuery.isError) {
+  $: if (!$featureFlags.readOnly && $metricsViewQuery.isError) {
     goto(`/dashboard/${metricViewName}/edit`);
   }
 
@@ -46,7 +56,7 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
   $: selectedDimensionName = metricsExplorer?.selectedDimensionName;
   $: metricTimeSeries = useModelHasTimeSeries(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     metricViewName
   );
   $: hasTimeSeries = $metricTimeSeries.data;
@@ -57,41 +67,35 @@
           : MEASURE_CONFIG.container.width.breakpoint
       }px minmax(355px, auto)`
     : "max-content minmax(355px, auto)";
+
+  $: if (!$featureFlags.readOnly && metricsExplorer) {
+    const binary = toProto(metricsExplorer).toBinary();
+    const message = protoToBase64(binary);
+    goto(`/dashboard/${metricViewName}?state=${message}`);
+  }
 </script>
 
-<WorkspaceContainer
-  top="0px"
-  assetID={metricViewName}
-  bgClass="bg-white"
-  inspector={false}
->
-  <DashboardContainer
-    bind:exploreContainerWidth
-    {gridConfig}
-    bind:width
-    slot="body"
-  >
-    <DashboardHeader {metricViewName} slot="header" />
+<DashboardContainer bind:exploreContainerWidth {gridConfig} bind:width>
+  <DashboardHeader {metricViewName} slot="header" />
 
-    <svelte:fragment slot="metrics" let:width>
-      {#key metricViewName}
-        {#if hasTimeSeries}
-          <MetricsTimeSeriesCharts {metricViewName} workspaceWidth={width} />
-        {:else}
-          <MeasuresContainer {exploreContainerWidth} {metricViewName} />
-        {/if}
-      {/key}
-    </svelte:fragment>
-
-    <svelte:fragment slot="leaderboards">
-      {#if selectedDimensionName}
-        <DimensionDisplay
-          {metricViewName}
-          dimensionName={selectedDimensionName}
-        />
+  <svelte:fragment slot="metrics" let:width>
+    {#key metricViewName}
+      {#if hasTimeSeries}
+        <MetricsTimeSeriesCharts {metricViewName} workspaceWidth={width} />
       {:else}
-        <LeaderboardDisplay {metricViewName} />
+        <MeasuresContainer {exploreContainerWidth} {metricViewName} />
       {/if}
-    </svelte:fragment>
-  </DashboardContainer>
-</WorkspaceContainer>
+    {/key}
+  </svelte:fragment>
+
+  <svelte:fragment slot="leaderboards">
+    {#if selectedDimensionName}
+      <DimensionDisplay
+        {metricViewName}
+        dimensionName={selectedDimensionName}
+      />
+    {:else}
+      <LeaderboardDisplay {metricViewName} />
+    {/if}
+  </svelte:fragment>
+</DashboardContainer>

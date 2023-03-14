@@ -23,6 +23,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
+	_ "github.com/rilldata/rill/runtime/drivers/github"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
@@ -36,9 +37,11 @@ type Config struct {
 	LogLevel             zapcore.Level `default:"info" split_words:"true"`
 	MetastoreDriver      string        `default:"sqlite"`
 	MetastoreURL         string        `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
+	AllowedOrigins       []string      `default:"*" split_words:"true"`
 	AuthEnable           bool          `default:"false" split_words:"true"`
 	AuthIssuerURL        string        `default:"" split_words:"true"`
 	AuthAudienceURL      string        `default:"" split_words:"true"`
+	SafeSourceRefresh    bool          `default:"false" split_words:"true"`
 	ConnectionCacheSize  int           `default:"100" split_words:"true"`
 	QueryCacheSize       int           `default:"10000" split_words:"true"`
 	AllowHostCredentials bool          `default:"false" split_words:"true"`
@@ -77,6 +80,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				MetastoreDSN:         conf.MetastoreURL,
 				QueryCacheSize:       conf.QueryCacheSize,
 				AllowHostCredentials: conf.AllowHostCredentials,
+				SafeSourceRefresh:    conf.SafeSourceRefresh,
 			}
 			rt, err := runtime.New(opts, logger)
 			if err != nil {
@@ -88,6 +92,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			srvOpts := &server.Options{
 				HTTPPort:        conf.HTTPPort,
 				GRPCPort:        conf.GRPCPort,
+				AllowedOrigins:  conf.AllowedOrigins,
 				AuthEnable:      conf.AuthEnable,
 				AuthIssuerURL:   conf.AuthIssuerURL,
 				AuthAudienceURL: conf.AuthAudienceURL,
@@ -101,7 +106,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 			group, cctx := errgroup.WithContext(ctx)
 			group.Go(func() error { return s.ServeGRPC(cctx) })
-			group.Go(func() error { return s.ServeHTTP(cctx) })
+			group.Go(func() error { return s.ServeHTTP(cctx, nil) })
 			err = group.Wait()
 			if err != nil {
 				logger.Fatal("server crashed", zap.Error(err))

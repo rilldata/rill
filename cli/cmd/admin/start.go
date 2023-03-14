@@ -2,15 +2,17 @@ package admin
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -24,16 +26,25 @@ import (
 // Env var keys must be prefixed with RILL_ADMIN_ and are converted from snake_case to CamelCase.
 // For example RILL_ADMIN_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	DatabaseDriver   string        `default:"postgres" split_words:"true"`
-	DatabaseURL      string        `split_words:"true"`
-	HTTPPort         int           `default:"8080" split_words:"true"`
-	GRPCPort         int           `default:"9090" split_words:"true"`
-	LogLevel         zapcore.Level `default:"info" split_words:"true"`
-	SessionSecret    string        `split_words:"true"`
-	AuthDomain       string        `split_words:"true"`
-	AuthClientID     string        `split_words:"true"`
-	AuthClientSecret string        `split_words:"true"`
-	AuthCallbackURL  string        `split_words:"true"`
+	DatabaseDriver         string        `default:"postgres" split_words:"true"`
+	DatabaseURL            string        `split_words:"true"`
+	HTTPPort               int           `default:"8080" split_words:"true"`
+	GRPCPort               int           `default:"9090" split_words:"true"`
+	LogLevel               zapcore.Level `default:"info" split_words:"true"`
+	ExternalURL            string        `default:"http://localhost:8080" split_words:"true"`
+	FrontendURL            string        `default:"http://localhost:3000" split_words:"true"`
+	SessionKeyPairs        []string      `split_words:"true"`
+	AllowedOrigins         []string      `default:"*" split_words:"true"`
+	AuthDomain             string        `split_words:"true"`
+	AuthClientID           string        `split_words:"true"`
+	AuthClientSecret       string        `split_words:"true"`
+	GithubAppID            int64         `split_words:"true"`
+	GithubAppName          string        `split_words:"true"`
+	GithubAppPrivateKey    string        `split_words:"true"`
+	GithubAppWebhookSecret string        `split_words:"true"`
+	ProvisionerSpec        string        `split_words:"true"`
+	SigningJWKS            string        `split_words:"true"`
+	SigningKeyID           string        `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -62,29 +73,51 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				os.Exit(1)
 			}
 
-			// Init db
-			db, err := database.Open(conf.DatabaseDriver, conf.DatabaseURL)
+			// Init runtime JWT issuer
+			issuer, err := auth.NewIssuer(conf.ExternalURL, conf.SigningKeyID, []byte(conf.SigningJWKS))
 			if err != nil {
-				logger.Fatal("error connecting to database", zap.Error(err))
+				logger.Fatal("error creating runtime jwt issuer", zap.Error(err))
 			}
 
-			// Auto-run migrations
-			err = db.Migrate(context.Background())
+			// Init admin service
+			admOpts := &admin.Options{
+				DatabaseDriver:      conf.DatabaseDriver,
+				DatabaseDSN:         conf.DatabaseURL,
+				GithubAppID:         conf.GithubAppID,
+				GithubAppPrivateKey: conf.GithubAppPrivateKey,
+				ProvisionerSpec:     conf.ProvisionerSpec,
+			}
+			adm, err := admin.New(admOpts, logger, issuer)
 			if err != nil {
-				logger.Fatal("error migrating database", zap.Error(err))
+				logger.Fatal("error creating service", zap.Error(err))
+			}
+			defer adm.Close()
+
+			// Parse session keys as hex strings
+			keyPairs := make([][]byte, len(conf.SessionKeyPairs))
+			for idx, keyHex := range conf.SessionKeyPairs {
+				key, err := hex.DecodeString(keyHex)
+				if err != nil {
+					logger.Fatal("failed to parse session key from hex string to bytes")
+				}
+				keyPairs[idx] = key
 			}
 
-			// Init server
-			srvConf := server.Config{
-				HTTPPort:         conf.HTTPPort,
-				GRPCPort:         conf.GRPCPort,
-				AuthDomain:       conf.AuthDomain,
-				AuthClientID:     conf.AuthClientID,
-				AuthClientSecret: conf.AuthClientSecret,
-				AuthCallbackURL:  conf.AuthCallbackURL,
-				SessionSecret:    conf.SessionSecret,
+			// Init admin server
+			srvOpts := &server.Options{
+				HTTPPort:               conf.HTTPPort,
+				GRPCPort:               conf.GRPCPort,
+				ExternalURL:            conf.ExternalURL,
+				FrontendURL:            conf.FrontendURL,
+				SessionKeyPairs:        keyPairs,
+				AllowedOrigins:         conf.AllowedOrigins,
+				AuthDomain:             conf.AuthDomain,
+				AuthClientID:           conf.AuthClientID,
+				AuthClientSecret:       conf.AuthClientSecret,
+				GithubAppName:          conf.GithubAppName,
+				GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
 			}
-			s, err := server.New(logger, db, srvConf)
+			srv, err := server.New(srvOpts, logger, adm, issuer)
 			if err != nil {
 				logger.Fatal("error creating server", zap.Error(err))
 			}
@@ -92,8 +125,9 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			// Run server
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 			group, cctx := errgroup.WithContext(ctx)
-			group.Go(func() error { return s.ServeGRPC(cctx) })
-			group.Go(func() error { return s.ServeHTTP(cctx) })
+			group.Go(func() error { return srv.ServeGRPC(cctx) })
+			group.Go(func() error { return srv.ServeHTTP(cctx) })
+
 			err = group.Wait()
 			if err != nil {
 				logger.Fatal("server crashed", zap.Error(err))

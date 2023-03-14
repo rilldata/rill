@@ -104,7 +104,8 @@ func testProjects(t *testing.T, db database.DB) {
 	require.Equal(t, database.ErrNotFound, err)
 	require.Nil(t, proj)
 
-	proj, err = db.CreateProject(ctx, org.ID, "bar", "hello world")
+	project := &database.Project{Name: "bar", Description: "hello world"}
+	proj, err = db.CreateProject(ctx, org.ID, project)
 	require.NoError(t, err)
 	require.Equal(t, org.ID, proj.OrganizationID)
 	require.Equal(t, "bar", proj.Name)
@@ -118,7 +119,8 @@ func testProjects(t *testing.T, db database.DB) {
 	require.Equal(t, "bar", proj.Name)
 	require.Equal(t, "hello world", proj.Description)
 
-	proj, err = db.UpdateProject(ctx, proj.ID, "")
+	proj.Description = ""
+	proj, err = db.UpdateProject(ctx, proj)
 	require.NoError(t, err)
 	require.Equal(t, org.ID, proj.OrganizationID)
 	require.Equal(t, "bar", proj.Name)

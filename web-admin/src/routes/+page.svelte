@@ -1,24 +1,26 @@
-<script lang="ts">
-  import { useAdminServiceFindOrganizations } from "../client";
-
-  const orgs = useAdminServiceFindOrganizations();
-</script>
-
-<svelte:head>
-  <title>Organizations</title>
-</svelte:head>
-
-<section>
-  <h1>Organizations</h1>
-  {#if $orgs.isLoading}
-    <span>Loading...</span>
-  {:else if $orgs.isError}
-    <span>Error: {$orgs.error}</span>
-  {:else if $orgs.data && $orgs.data.organization}
-    <ul>
-      {#each $orgs.data.organization as org}
-        <li><a href="/{org.name}">{org.name}</a></li>
-      {/each}
-    </ul>
-  {/if}
-</section>
+<div class="flex flex-col justify-center items-center h-3/5">
+  <h1 class="text-3xl font-medium text-gray-800 mb-4">
+    Let's create your Rill organization
+  </h1>
+  <p class="text-lg text-gray-700 mb-6">Get started and build your team</p>
+  <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+    <p class="mb-2 text-gray-700 font-medium">To get started:</p>
+    <ol class="list-decimal pl-4">
+      <li class="mb-2 text-gray-700">
+        Install Rill: <code class="bg-gray-200 py-1 px-2 rounded-md"
+          >curl -s https://cdn.rilldata.com/install.sh | bash</code
+        >
+      </li>
+      <li class="mb-2 text-gray-700">
+        Authenticate locally: <code class="bg-gray-200 py-1 px-2 rounded-md"
+          >rill auth login</code
+        >
+      </li>
+      <li class="text-gray-700">
+        Create an organization: <code class="bg-gray-200 py-1 px-2 rounded-md"
+          >rill org create your-org-name</code
+        >
+      </li>
+    </ol>
+  </div>
+</div>

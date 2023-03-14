@@ -10,6 +10,7 @@ The main feature-set component for dashboard filters
   import { defaultChipColors } from "@rilldata/web-common/components/chip/chip-types";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     useMetaQuery,
     useModelHasTimeSeries,
@@ -20,10 +21,11 @@ The main feature-set component for dashboard filters
     V1MetricsViewFilter,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryServiceMetricsViewToplist } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -31,6 +33,8 @@ The main feature-set component for dashboard filters
   import { getDisplayName } from "./getDisplayName";
 
   export let metricViewName;
+
+  const queryClient = useQueryClient();
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
@@ -40,11 +44,12 @@ The main feature-set component for dashboard filters
   let excludeValues: Array<MetricsViewFilterCond>;
   $: excludeValues = metricsExplorer?.filters.exclude;
 
-  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
   let dimensions: Array<MetricsViewDimension>;
   $: dimensions = $metaQuery.data?.dimensions;
 
   function clearFilterForDimension(dimensionId, include: boolean) {
+    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.clearFilterForDimension(
       metricViewName,
       dimensionId,
@@ -63,7 +68,7 @@ The main feature-set component for dashboard filters
   let activeDimensionName;
 
   $: metricTimeSeries = useModelHasTimeSeries(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     metricViewName
   );
   $: hasTimeSeries = $metricTimeSeries.data;
@@ -104,7 +109,7 @@ The main feature-set component for dashboard filters
       // Use topList API to fetch the dimension names
       // We prune the measure values and use the dimension labels for the filter
       topListQuery = useQueryServiceMetricsViewToplist(
-        $runtimeStore.instanceId,
+        $runtime.instanceId,
         metricViewName,
         topListParams
       );
@@ -126,6 +131,7 @@ The main feature-set component for dashboard filters
 
   function clearAllFilters() {
     if (hasFilters) {
+      cancelDashboardQueries(queryClient, metricViewName);
       metricsExplorerStore.clearFilters(metricViewName);
     }
   }
@@ -162,10 +168,12 @@ The main feature-set component for dashboard filters
   }
 
   function toggleDimensionValue(event, item) {
+    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilter(metricViewName, item.name, event.detail);
   }
 
   function toggleFilterMode(dimensionName) {
+    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
   }
 

@@ -37,7 +37,6 @@ linters:
     - bodyclose
     - bidichk
     - depguard
-    - dupword
     - errchkjson
     - errcheck
     - errname

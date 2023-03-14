@@ -14,6 +14,7 @@ and the menu closes.
   export let location: Location = "bottom";
   export let alignment: Alignment = "start";
   export let distance = 16;
+  export let minWidth = "300px";
 
   export let active = false;
 
@@ -41,14 +42,19 @@ and the menu closes.
   <Menu
     slot="floating-element"
     {dark}
+    {minWidth}
+    focusOnMount={false}
     on:select-item={handleClose}
-    on:click-outsie={() => {
+    on:click-outside={() => {
       if (active) handleClose();
     }}
     on:escape={handleClose}
   >
     {#each options as { main, right, callback }, i}
-      <MenuItem on:select={createOnClickHandler(callback, handleClose)}>
+      <MenuItem
+        on:select={createOnClickHandler(callback, handleClose)}
+        focusOnMount={false}
+      >
         {main}
         <svelte:fragment slot="right">
           {right || ""}

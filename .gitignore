@@ -26,6 +26,7 @@ export/
 *.duckdb
 *.duckdb.wal
 *.db
+*.db.tmp
 *.wal
 *.parquet
 *.tsv
@@ -71,3 +72,4 @@ rill-binary-sa.json
 # runtime test resources
 !runtime/testdata/**
 sysroot/
+latest.txt

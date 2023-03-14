@@ -13,6 +13,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Filter modified codepaths
+        uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            admin:
+              - ".github/workflows/web-test.yml"
+              - "web-admin/**"
+            local:
+              - ".github/workflows/web-test.yml"
+              - "web-local/**"
+            common:
+              - ".github/workflows/web-test.yml"
+              - "web-common/**"
+
       - name: Set up NodeJS
         uses: actions/setup-node@v3
         with:
@@ -21,20 +36,35 @@ jobs:
       - name: NPM Install
         run: npm install
 
-      - name: Prettier checks for web
-        run: |-
-          npx prettier --check "web-admin/**/*"
-          npx prettier --check "web-common/**/*"
-          npx prettier --check "web-local/**/*"
-
       - name: Install browser for UI tests
         run: npx playwright install
 
-      - name: Build the application
-        run: npm run build
+      - name: Prettier checks and lint for web common
+        if: steps.filter.outputs.common == 'true'
+        run: |-
+          npx prettier --check "web-common/**/*"
+          npx eslint web-common --quiet
 
-      - name: Verify lint of the repo
-        run: npm run lint -w web-local -- --quiet
+      - name: Prettier checks and lint for web local
+        if: steps.filter.outputs.local == 'true'
+        run: |-
+          npx prettier --check "web-local/**/*"
+          npx eslint web-local --quiet
 
-      - name: Run all tests
-        run: npm run test
+      - name: Prettier checks and lint for web admin
+        if: steps.filter.outputs.admin == 'true'
+        run: |-
+          npx prettier --check "web-admin/**/*"
+          npx eslint web-admin --quiet
+
+      - name: Build & Test the web local
+        if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}
+        run: |-
+          npm run build -w web-local
+          npm run test -w web-local
+
+      - name: Build & Test the web admin
+        if: ${{ steps.filter.outputs.admin == 'true' || steps.filter.outputs.common == 'true' }}
+        run: |-
+          npm run build -w web-admin
+          npm run test -w web-admin
