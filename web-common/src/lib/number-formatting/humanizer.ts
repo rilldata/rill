@@ -1,11 +1,12 @@
 import { Formatter, FormatterFactory, NumberKind } from "./humanizer-types";
+import { IntTimesPowerOfTenFormatter } from "./strategies/IntTimesPowerOfTen";
 import { NonFormatter } from "./strategies/none";
+import { PerRangeFormatter } from "./strategies/per-range";
 import {
   defaultDollarOptions,
   defaultGenericNumOptions,
   defaultPercentOptions,
-  PerRangeFormatter,
-} from "./strategies/per-range";
+} from "./strategies/per-range-default-options";
 
 export const humanizedFormatterFactory: FormatterFactory = (
   sample: number[],
@@ -31,6 +32,10 @@ export const humanizedFormatterFactory: FormatterFactory = (
           formatter = new PerRangeFormatter(sample, defaultGenericNumOptions);
           break;
       }
+      break;
+
+    case "intTimesPowerOfTen":
+      formatter = new IntTimesPowerOfTenFormatter(sample, options);
       break;
 
     default:

@@ -1,9 +1,5 @@
-import {
-  FormatterFactoryOptions,
-  NumberKind,
-  NumberParts,
-} from "../humanizer-types";
-import { defaultGenericNumOptions, PerRangeFormatter } from "./per-range";
+import { FormatterFactoryOptions, NumberKind } from "../humanizer-types";
+import { PerRangeFormatter } from "./per-range";
 
 const invalidRangeOptions1: FormatterFactoryOptions = {
   strategy: "perRange",

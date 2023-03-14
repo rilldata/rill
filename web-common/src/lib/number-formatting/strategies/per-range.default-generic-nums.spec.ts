@@ -1,4 +1,5 @@
-import { defaultGenericNumOptions, PerRangeFormatter } from "./per-range";
+import { PerRangeFormatter } from "./per-range";
+import { defaultGenericNumOptions } from "./per-range-default-options";
 
 const defaultGenericNumTestCases: [number, string][] = [
   // integers

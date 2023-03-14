@@ -1,4 +1,5 @@
-import { defaultDollarOptions, PerRangeFormatter } from "./per-range";
+import { PerRangeFormatter } from "./per-range";
+import { defaultDollarOptions } from "./per-range-default-options";
 
 const defaultDollarTestCases: [number, string][] = [
   // integers

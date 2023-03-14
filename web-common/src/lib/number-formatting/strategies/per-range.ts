@@ -1,10 +1,7 @@
 import {
   Formatter,
-  FormatterFactoryOptions,
   FormatterOptionsCommon,
-  FormatterOptionsDefaultStrategy,
   FormatterOptionsPerRangeStrategy,
-  FormatterWidths,
   NumberKind,
   NumberParts,
   RangeFormatSpec,
@@ -12,59 +9,10 @@ import {
 import { countDigits, countNonZeroDigits } from "../utils/count-digits";
 import {
   formatNumWithOrderOfMag,
-  orderOfMagnitude,
   orderOfMagnitudeEng,
 } from "../utils/format-with-order-of-magnitude";
 import { numberPartsToString } from "../utils/number-parts-utils";
 import { shortScaleSuffixIfAvailableForStr } from "../utils/short-scale-suffixes";
-
-// FIXME? -- will be needed if we want alignment
-// export const humanizeDefaultStrategyMaxCharWidthsPossible = (
-//   options: FormatterOptionsCommon & FormatterOptionsDefaultStrategy
-// ): FormatterWidths => {
-//   const {
-//     // number of RHS digits for x s.t.: 1e-3 <= x < 1e6
-//     maxDigitsRightSmallNums,
-//     // number of RHS digits for numbers rendered with a suffix
-//     maxDigitsRightSuffixNums,
-//   } = options;
-
-//   return {
-//     // max ever is 8 for e.g. "-$999999"
-//     left: 6,
-//     // max ever is 1 for "."
-//     dot: 1,
-
-//     frac: Math.max(maxDigitsRightSmallNums, maxDigitsRightSuffixNums),
-
-//     // max ever is 6 for e.g. "e-324%"
-//     suffix: 6,
-//   };
-// };
-
-// FIXME? -- will be needed if we want alignment
-// export const humanizeDefaultStrategyMaxPxWidthsPossible = (
-//   options: FormatterOptionsCommon & FormatterOptionsDefaultStrategy
-// ): FormatterWidths => {
-//   const {
-//     // number of RHS digits for x s.t.: 1e-3 <= x < 1e6
-//     maxDigitsRightSmallNums,
-//     // number of RHS digits for numbers rendered with a suffix
-//     maxDigitsRightSuffixNums,
-//   } = options;
-
-//   return {
-//     // max ever is 8 for e.g. "-$999999"
-//     left: 6,
-//     // max ever is 1 for "."
-//     dot: 1,
-
-//     frac: Math.max(maxDigitsRightSmallNums, maxDigitsRightSuffixNums),
-
-//     // max ever is 6 for e.g. "e-324%"
-//     suffix: 6,
-//   };
-// };
 
 const formatWithRangeSpec = (x: number, spec: RangeFormatSpec): NumberParts => {
   const baseMag = spec.baseMagnitude ?? orderOfMagnitudeEng(spec.minMag);
@@ -100,52 +48,17 @@ const numPartsNotZero = (parts: NumberParts): boolean => {
   );
 };
 
-export const defaultGenericNumOptions: FormatterOptionsCommon &
-  FormatterOptionsPerRangeStrategy = {
-  strategy: "perRange",
-  rangeSpecs: [
-    {
-      minMag: -2,
-      supMag: 3,
-      maxDigitsRight: 2,
-      baseMagnitude: 0,
-      padWithInsignificantZeros: false,
-    },
-  ],
-  defaultMaxDigitsRight: 1,
-  numberKind: NumberKind.ANY,
-};
-
-export const defaultPercentOptions: FormatterOptionsCommon &
-  FormatterOptionsPerRangeStrategy = {
-  ...defaultGenericNumOptions,
-  numberKind: NumberKind.PERCENT,
-};
-
-export const defaultDollarOptions: FormatterOptionsCommon &
-  FormatterOptionsPerRangeStrategy = {
-  strategy: "perRange",
-  rangeSpecs: [
-    {
-      minMag: -2,
-      supMag: 3,
-      maxDigitsRight: 2,
-      baseMagnitude: 0,
-      padWithInsignificantZeros: true,
-    },
-  ],
-  defaultMaxDigitsRight: 1,
-  numberKind: NumberKind.DOLLAR,
-};
-
 export class PerRangeFormatter implements Formatter {
   options: FormatterOptionsCommon & FormatterOptionsPerRangeStrategy;
   initialSample: number[];
 
-  maxPxWidthsSampledSoFar: FormatterWidths;
-  maxCharWidthsSampledSoFar: FormatterWidths;
-
-  largestPossibleNumberStringParts: NumberParts;
+  // FIXME: we can add this back in if we want to implement
+  // alignment. If we decide that we don't want to pursue that,
+  // we can remove this commented code
+  // largestPossibleNumberStringParts: NumberParts;
+  // maxPxWidthsSampledSoFar: FormatterWidths;
+  // maxCharWidthsSampledSoFar: FormatterWidths;
+  // largestPossibleNumberStringParts: NumberParts;
 
   constructor(
     sample: number[],
@@ -190,20 +103,6 @@ export class PerRangeFormatter implements Formatter {
     }
 
     this.initialSample = sample;
-
-    // const { maxDigitsRightSmallNums, maxDigitsRightSuffixNums } = this.options;
-
-    // this.largestPossibleNumberStringParts = {
-    //   neg: "-",
-    //   dollar: options.numberKind === NumberKind.DOLLAR ? "$" : undefined,
-    //   int: "999999",
-    //   dot: ".",
-    //   frac: "0".repeat(
-    //     Math.max(maxDigitsRightSmallNums, maxDigitsRightSuffixNums)
-    //   ),
-    //   suffix: "e-324",
-    //   percent: options.numberKind === NumberKind.PERCENT ? "%" : undefined,
-    // };
   }
 
   stringFormat(x: number): string {
@@ -280,13 +179,4 @@ export class PerRangeFormatter implements Formatter {
 
     return numParts;
   }
-
-  // FIXME? -- will be needed if we want alignment
-  // updateMaxWidthsSample(x: number) {}
-
-  // maxPxWidthsSampled(): FormatterWidths;
-  // maxPxWidthsPossible(): FormatterWidths;
-
-  // maxCharWidthsSampled(): FormatterWidths;
-  // maxCharWidthsPossible(): FormatterWidths;
 }

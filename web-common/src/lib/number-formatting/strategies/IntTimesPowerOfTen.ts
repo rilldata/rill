@@ -6,8 +6,6 @@ import {
 import { shortScaleSuffixIfAvailableForStr } from "../utils/short-scale-suffixes";
 import {
   FormatterOptionsCommon,
-  FormatterOptionsDefaultStrategy,
-  FormatterWidths,
   NumberParts,
   Formatter,
   NumberKind,
@@ -19,9 +17,6 @@ import { smallestPrecisionMagnitude } from "../utils/smallest-precision-magnitud
 export class IntTimesPowerOfTenFormatter implements Formatter {
   options: FormatterOptionsCommon & FormatterOptionsIntTimesPowerOfTenStrategy;
   initialSample: number[];
-
-  maxPxWidthsSampledSoFar: FormatterWidths;
-  maxCharWidthsSampledSoFar: FormatterWidths;
 
   largestPossibleNumberStringParts: NumberParts;
 
@@ -101,13 +96,4 @@ export class IntTimesPowerOfTenFormatter implements Formatter {
 
     return numParts;
   }
-
-  // FIXME? -- will be needed if we want alignment
-  // updateMaxWidthsSample(x: number) {}
-
-  // maxPxWidthsSampled(): FormatterWidths;
-  // maxPxWidthsPossible(): FormatterWidths;
-
-  // maxCharWidthsSampled(): FormatterWidths;
-  // maxCharWidthsPossible(): FormatterWidths;
 }

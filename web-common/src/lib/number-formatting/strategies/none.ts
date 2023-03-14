@@ -1,16 +1,8 @@
-import {
-  orderOfMagnitude,
-  orderOfMagnitudeEng,
-  formatNumWithOrderOfMag,
-} from "../utils/format-with-order-of-magnitude";
 import { shortScaleSuffixIfAvailableForStr } from "../utils/short-scale-suffixes";
 import {
   FormatterOptionsCommon,
-  FormatterOptionsDefaultStrategy,
-  FormatterWidths,
   NumberParts,
   Formatter,
-  RichFormatNumber,
   NumberKind,
   FormatterOptionsNoneStrategy,
 } from "../humanizer-types";
@@ -19,62 +11,13 @@ import {
   numStrToParts,
 } from "../utils/number-parts-utils";
 
-// FIXME? -- will be needed if we want alignment
-// export const humanizeDefaultStrategyMaxCharWidthsPossible = (
-//   options: FormatterOptionsCommon & FormatterOptionsDefaultStrategy
-// ): FormatterWidths => {
-//   const {
-//     // number of RHS digits for x s.t.: 1e-3 <= x < 1e6
-//     maxDigitsRightSmallNums,
-//     // number of RHS digits for numbers rendered with a suffix
-//     maxDigitsRightSuffixNums,
-//   } = options;
-
-//   return {
-//     // max ever is 8 for e.g. "-$999999"
-//     left: 6,
-//     // max ever is 1 for "."
-//     dot: 1,
-
-//     frac: Math.max(maxDigitsRightSmallNums, maxDigitsRightSuffixNums),
-
-//     // max ever is 6 for e.g. "e-324%"
-//     suffix: 6,
-//   };
-// };
-
-// FIXME? -- will be needed if we want alignment
-// export const humanizeDefaultStrategyMaxPxWidthsPossible = (
-//   options: FormatterOptionsCommon & FormatterOptionsDefaultStrategy
-// ): FormatterWidths => {
-//   const {
-//     // number of RHS digits for x s.t.: 1e-3 <= x < 1e6
-//     maxDigitsRightSmallNums,
-//     // number of RHS digits for numbers rendered with a suffix
-//     maxDigitsRightSuffixNums,
-//   } = options;
-
-//   return {
-//     // max ever is 8 for e.g. "-$999999"
-//     left: 6,
-//     // max ever is 1 for "."
-//     dot: 1,
-
-//     frac: Math.max(maxDigitsRightSmallNums, maxDigitsRightSuffixNums),
-
-//     // max ever is 6 for e.g. "e-324%"
-//     suffix: 6,
-//   };
-// };
-
 export class NonFormatter implements Formatter {
   options: FormatterOptionsCommon & FormatterOptionsNoneStrategy;
   initialSample: number[];
 
-  maxPxWidthsSampledSoFar: FormatterWidths;
-  maxCharWidthsSampledSoFar: FormatterWidths;
-
-  largestPossibleNumberStringParts: NumberParts;
+  // maxPxWidthsSampledSoFar: FormatterWidths;
+  // maxCharWidthsSampledSoFar: FormatterWidths;
+  // largestPossibleNumberStringParts: NumberParts;
 
   constructor(
     sample: number[],
@@ -83,7 +26,10 @@ export class NonFormatter implements Formatter {
     this.options = options;
     this.initialSample = sample;
 
-    // const { maxDigitsRightSmallNums, maxDigitsRightSuffixNums } = this.options;
+    // FIXME: we can add this back in if we want to implement
+    // alignment. If we decide that we don't want to pursue that,
+    // we can remove this commented code
+    // largestPossibleNumberStringParts: NumberParts;
 
     // this.largestPossibleNumberStringParts = {
     //   neg: "-",
@@ -115,9 +61,7 @@ export class NonFormatter implements Formatter {
     } else {
       const str = new Intl.NumberFormat("en", {
         maximumFractionDigits: 20,
-      })
-        .format(x)
-        .replaceAll(",", "");
+      }).format(x);
       numParts = numStrToParts(str);
     }
 
@@ -136,13 +80,4 @@ export class NonFormatter implements Formatter {
 
     return numParts;
   }
-
-  // FIXME? -- will be needed if we want alignment
-  // updateMaxWidthsSample(x: number) {}
-
-  // maxPxWidthsSampled(): FormatterWidths;
-  // maxPxWidthsPossible(): FormatterWidths;
-
-  // maxCharWidthsSampled(): FormatterWidths;
-  // maxCharWidthsPossible(): FormatterWidths;
 }
