@@ -2,7 +2,6 @@ package project
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
@@ -52,6 +51,9 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
+			if proj.Envs == nil {
+				proj.Envs = make(map[string]string)
+			}
 			proj.Envs[key] = value
 			updatedProject, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
 				OrganizationName: cfg.Org(),
@@ -99,7 +101,6 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			proj := resp.Project
-			fmt.Println(proj)
 			if _, ok := proj.Envs[key]; !ok {
 				return nil
 			}
