@@ -62,7 +62,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		RepoDriver:   req.RepoDriver,
 		RepoDSN:      req.RepoDsn,
 		EmbedCatalog: req.EmbedCatalog,
-		Env:          req.Env,
+		Variables:    req.Variables,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -88,7 +88,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		RepoDriver:   req.RepoDriver,
 		RepoDSN:      req.RepoDsn,
 		EmbedCatalog: req.EmbedCatalog,
-		Env:          req.Env,
+		Variables:    req.Variables,
 	}
 
 	err := s.runtime.EditInstance(ctx, inst)
@@ -117,13 +117,13 @@ func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstan
 
 func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
 	return &runtimev1.Instance{
-		InstanceId:   inst.ID,
-		OlapDriver:   inst.OLAPDriver,
-		OlapDsn:      inst.OLAPDSN,
-		RepoDriver:   inst.RepoDriver,
-		RepoDsn:      inst.RepoDSN,
-		EmbedCatalog: inst.EmbedCatalog,
-		Env:          inst.Env,
-		ProjectEnv:   inst.ProjectEnv,
+		InstanceId:       inst.ID,
+		OlapDriver:       inst.OLAPDriver,
+		OlapDsn:          inst.OLAPDSN,
+		RepoDriver:       inst.RepoDriver,
+		RepoDsn:          inst.RepoDSN,
+		EmbedCatalog:     inst.EmbedCatalog,
+		Variables:        inst.Variables,
+		ProjectVariables: inst.ProjectVariables,
 	}
 }

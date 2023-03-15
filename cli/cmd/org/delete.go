@@ -23,14 +23,14 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			org, err := client.DeleteOrganization(context.Background(), &adminv1.DeleteOrganizationRequest{
+			_, err = client.DeleteOrganization(context.Background(), &adminv1.DeleteOrganizationRequest{
 				Name: args[0],
 			})
 			if err != nil {
 				return err
 			}
 
-			cmdutil.TextPrinter(fmt.Sprintf("Deleted organization: %v\n", org))
+			cmdutil.TextPrinter(fmt.Sprintf("Deleted organization: %v\n", args[0]))
 			return nil
 		},
 	}

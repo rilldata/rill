@@ -26,7 +26,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			proj, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
-				OrganizationName: cfg.Org(),
+				OrganizationName: cfg.Org,
 				Name:             args[0],
 				Description:      description,
 			})

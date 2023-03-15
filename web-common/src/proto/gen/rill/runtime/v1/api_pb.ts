@@ -145,18 +145,18 @@ export class Instance extends Message<Instance> {
   embedCatalog = false;
 
   /**
-   * instance specific environment variables
+   * instance specific variables
    *
-   * @generated from field: map<string, string> env = 7;
+   * @generated from field: map<string, string> variables = 7;
    */
-  env: { [key: string]: string } = {};
+  variables: { [key: string]: string } = {};
 
   /**
    * project defaults
    *
-   * @generated from field: map<string, string> project_env = 8;
+   * @generated from field: map<string, string> project_variables = 8;
    */
-  projectEnv: { [key: string]: string } = {};
+  projectVariables: { [key: string]: string } = {};
 
   constructor(data?: PartialMessage<Instance>) {
     super();
@@ -172,8 +172,8 @@ export class Instance extends Message<Instance> {
     { no: 4, name: "repo_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "repo_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "env", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 8, name: "project_env", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 8, name: "project_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {
@@ -399,9 +399,9 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   embedCatalog = false;
 
   /**
-   * @generated from field: map<string, string> env = 7;
+   * @generated from field: map<string, string> variables = 7;
    */
-  env: { [key: string]: string } = {};
+  variables: { [key: string]: string } = {};
 
   constructor(data?: PartialMessage<CreateInstanceRequest>) {
     super();
@@ -417,7 +417,7 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 4, name: "repo_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "repo_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "env", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {
@@ -592,9 +592,9 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   embedCatalog = false;
 
   /**
-   * @generated from field: map<string, string> env = 7;
+   * @generated from field: map<string, string> variables = 7;
    */
-  env: { [key: string]: string } = {};
+  variables: { [key: string]: string } = {};
 
   constructor(data?: PartialMessage<EditInstanceRequest>) {
     super();
@@ -610,7 +610,7 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
     { no: 4, name: "repo_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "repo_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "env", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceRequest {
