@@ -448,7 +448,7 @@ definitions:
     properties:
       nextPageToken:
         type: string
-      organization:
+      organizations:
         type: array
         items:
           $ref: '#/definitions/v1Organization'

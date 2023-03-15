@@ -90,7 +90,7 @@ export interface V1ListProjectsResponse {
 
 export interface V1ListOrganizationsResponse {
   nextPageToken?: string;
-  organization?: V1Organization[];
+  organizations?: V1Organization[];
 }
 
 export interface V1GetProjectResponse {
