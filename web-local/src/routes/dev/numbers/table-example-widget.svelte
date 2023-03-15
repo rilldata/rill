@@ -1,6 +1,5 @@
 <script lang="ts">
   import AlignedNumber from "./aligned-number.svelte";
-  import ColorPicker from "svelte-awesome-color-picker";
   import { numberLists as numberListsUnprocessed } from "./number-samples";
   import {
     formatterFactories,

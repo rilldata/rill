@@ -1,6 +1,5 @@
-import random from "@stdlib/random/base";
-import shuffle from "@stdlib/random/shuffle";
-// import { number } from "@stdlib/stdlib/docs/types";
+import random from "@stdlib/random-base";
+import shuffle from "@stdlib/random-shuffle";
 
 const N = 20;
 
