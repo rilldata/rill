@@ -2,10 +2,13 @@ package project
 
 import (
 	"context"
+	"os"
 
+	"github.com/lensesio/tableprinter"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/variable"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -18,10 +21,11 @@ func EnvCmd(cfg *config.Config) *cobra.Command {
 	}
 	envCmd.AddCommand(RmCmd(cfg))
 	envCmd.AddCommand(SetCmd(cfg))
+	envCmd.AddCommand(ShowEnvCmd(cfg))
 	return envCmd
 }
 
-// SetCmd is sub command for env. Removes the variable for a project
+// SetCmd is sub command for env. Sets the variable for a project
 func SetCmd(cfg *config.Config) *cobra.Command {
 	setCmd := &cobra.Command{
 		Use:   "set",
@@ -125,4 +129,33 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 	return rmCmd
+}
+
+func ShowEnvCmd(cfg *config.Config) *cobra.Command {
+	showCmd := &cobra.Command{
+		Use:   "show",
+		Args:  cobra.ExactArgs(1),
+		Short: "show variable for project",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			projectName := args[0]
+			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			if err != nil {
+				return err
+			}
+			defer client.Close()
+
+			ctx := context.Background()
+			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
+				OrganizationName: cfg.Org(),
+				Name:             projectName,
+			})
+			if err != nil {
+				return err
+			}
+
+			tableprinter.PrintHeadList(os.Stdout, variable.Serialize(resp.Project.Variables), "Project Variables")
+			return nil
+		},
+	}
+	return showCmd
 }

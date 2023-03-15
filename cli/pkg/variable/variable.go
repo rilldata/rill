@@ -18,3 +18,12 @@ func Parse(variables []string) (map[string]string, error) {
 	}
 	return vars, nil
 }
+
+func Serialize(variables map[string]string) []string {
+	result := make([]string, len(variables))
+	i := 0
+	for k, v := range variables {
+		result[i] = fmt.Sprintf("%v=%v", k, v)
+	}
+	return result
+}
