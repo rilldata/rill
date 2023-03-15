@@ -1,3 +1,245 @@
+<script lang="ts">
+  import AlignedNumber from "./aligned-number.svelte";
+  import { numberLists as numberListsUnprocessed } from "./number-samples";
+  import {
+    formatterFactories,
+    NumberFormatter,
+    NumPartPxWidthLookupFn,
+  } from "./number-to-string-formatters";
+  import { onMount } from "svelte";
+  import LayeredContainer from "./layered-container.svelte";
+  import RichNumberBipolarBar from "./rich-number-bipolar-bar.svelte";
+  import SampleOptions from "./option-menus/sample-options.svelte";
+  import BarOptions from "./option-menus/bar-options.svelte";
+
+  // FORMATTER SELECTION
+  export let defaultFormatterIndex = 1;
+  let selectedFormatter = formatterFactories[defaultFormatterIndex];
+  let selectedFormatterForSamples: { [colName: string]: NumberFormatter };
+
+  // SHARED DISPLAY OPTIONS
+  export let alignDecimalPoints = true;
+  export let alignSuffixes = true;
+  let suffixPadding = 2;
+  let lowerCaseEForEng = true;
+  // let minimumSignificantDigits = 3;
+  // let maximumSignificantDigits = 5;
+  export let zeroHandling: "exactZero" | "noSpecial" | "zeroDot" = "exactZero";
+  export let showMagSuffixForZero = false;
+
+  // NEW HUMANIZER OPTIONS
+  let usePlainNumsForThousands = true;
+  let usePlainNumsForThousandsOneDecimal = false;
+  let usePlainNumForThousandths = true;
+  let usePlainNumForThousandthsPadZeros = false;
+
+  let truncateThousandths = true;
+  let truncateTinyOrdersIfBigOrderExists = true;
+
+  let maxTotalDigits = 6;
+  let maxDigitsLeft = 3;
+  let maxDigitsRight = 3;
+  let minDigitsNonzero = 1;
+  let nonIntegerHandling: "none" | "oneDigit" | "trailingDot" = "trailingDot";
+  let useMaxDigitsRightIfSuffix = true;
+  let maxDigitsRightIfSuffix = 1;
+
+  let formattingUnits: "none" | "$" | "%" = "none";
+  let specialDecimalHandling:
+    | "noSpecial"
+    | "alwaysTwoDigits"
+    | "neverOneDigit" = "noSpecial";
+
+  // BARS OPTIONS
+  let showBars;
+  let absoluteValExtentsIfPosAndNeg;
+  let absoluteValExtentsAlways;
+  let reflectNegativeBars;
+  let barPosition: "left" | "behind" | "right";
+  let barContainerWidth;
+  let barOffset;
+  let negativeColor;
+  let positiveColor;
+  let barBackgroundColor;
+  let showBaseline;
+  let baselineColor;
+
+  // TABLE FORMAT OPTIONS
+  let tableGutterWidth = 30;
+  let tableRowHeight = 20;
+
+  let worstCaseStringWidth = 79 + suffixPadding;
+  $: {
+    if (pxWidthLookupFn !== undefined) {
+      if (magnitudeStrategy === "unlimitedDigitTarget") {
+        let int = pxWidthLookupFn("0") * maxDigitsRight;
+        let dot = pxWidthLookupFn(".");
+        let frac = pxWidthLookupFn("0") * maxDigitsLeft;
+        let suffix = pxWidthLookupFn("e-200");
+        worstCaseStringWidth = int + dot + frac + suffix + suffixPadding;
+      } else if (magnitudeStrategy === "largestWithDigitTarget") {
+        let int = pxWidthLookupFn("0") * 3;
+        let dot = pxWidthLookupFn(".");
+        let frac = pxWidthLookupFn("0") * (digitTarget - 3);
+        let suffix = pxWidthLookupFn("e-200");
+        console.log({ int, dot, frac, suffix });
+        worstCaseStringWidth = int + dot + frac + suffix + suffixPadding;
+      }
+    } else {
+      worstCaseStringWidth = 79 + suffixPadding;
+    }
+  }
+
+  let layerContainerWidth: number;
+  $: {
+    const barContainerWidthFinal = showBars ? barContainerWidth : 0;
+
+    if (barPosition === "behind") {
+      layerContainerWidth = Math.max(
+        worstCaseStringWidth,
+        barContainerWidthFinal
+      );
+    } else {
+      layerContainerWidth =
+        worstCaseStringWidth + barContainerWidthFinal + barOffset;
+    }
+  }
+  $: usePlainNumForThousandthsPadZeros =
+    usePlainNumForThousandths && usePlainNumForThousandthsPadZeros;
+
+  $: formatterOptions = {
+    // minimumSignificantDigits,
+    // maximumSignificantDigits,
+    magnitudeStrategy,
+    digitTarget,
+    digitTargetPadWithInsignificantZeros,
+    usePlainNumsForThousands,
+    usePlainNumsForThousandsOneDecimal,
+    usePlainNumForThousandths,
+    usePlainNumForThousandthsPadZeros,
+    truncateThousandths,
+    truncateTinyOrdersIfBigOrderExists,
+    zeroHandling,
+    maxTotalDigits,
+    maxDigitsLeft,
+    maxDigitsRight,
+    minDigitsNonzero,
+    useMaxDigitsRightIfSuffix,
+    maxDigitsRightIfSuffix,
+    nonIntegerHandling,
+    formattingUnits,
+    specialDecimalHandling,
+  };
+
+  let samplePreprocessing: "none" | "round" | "currencyRoundCent" = "none";
+  let sortSamples: "none" | "asc" | "desc" | "abs_asc" | "abs_desc" = "none";
+
+  let magnitudeStrategy:
+    | "unlimited"
+    | "unlimitedDigitTarget"
+    | "largestWithDigitTarget" = "unlimitedDigitTarget";
+  let digitTargetPadWithInsignificantZeros = false;
+  let digitTarget = 5;
+
+  let numFormattingWidthLookupKeys = [
+    ".",
+    "-",
+    "$",
+    "%",
+    "k",
+    "M",
+    "B",
+    "T",
+    "Q",
+    "e",
+    "E",
+  ];
+  for (let i = 0; i <= 9; i++) {
+    numFormattingWidthLookupKeys.push(i + "");
+  }
+
+  let numFormattingWidthLookup: { [key: string]: number } = {};
+
+  let charMeasuringDiv: HTMLDivElement;
+
+  let pxWidthLookupFn: NumPartPxWidthLookupFn;
+
+  const setUpPxWidthLookupFn = () => {
+    console.time("setUpPxWidthLookupFn");
+
+    numFormattingWidthLookupKeys.forEach((str) => {
+      charMeasuringDiv.innerHTML = str;
+      let rect = charMeasuringDiv.getBoundingClientRect();
+      numFormattingWidthLookup[str] = rect.right - rect.left;
+    });
+
+    console.timeEnd("setUpPxWidthLookupFn");
+
+    pxWidthLookupFn = (str: string) => {
+      return str
+        .split("")
+        .map((char) => numFormattingWidthLookup[char])
+        .reduce((a, b) => a + b, 0);
+    };
+  };
+
+  onMount(() => {
+    // when fonts are done loading,measure the character sizes
+    if (document.fonts.check("12px Inter")) {
+      setUpPxWidthLookupFn();
+    } else {
+      document.fonts.onloadingdone = setUpPxWidthLookupFn;
+    }
+  });
+
+  $: numberLists = numberListsUnprocessed.map((nl) => {
+    let sample = nl.sample.map((x) => {
+      switch (samplePreprocessing) {
+        case "currencyRoundCent":
+          return Math.round(x * 100) / 100;
+        case "round":
+          return Math.round(x);
+        default:
+          return x;
+      }
+    });
+
+    sample =
+      sortSamples === "none"
+        ? sample
+        : sample.sort((a, b) => {
+            const [a1, b1] =
+              sortSamples === "abs_asc" || sortSamples === "abs_desc"
+                ? [Math.abs(a), Math.abs(b)]
+                : [a, b];
+
+            return sortSamples === "desc" || sortSamples === "abs_desc"
+              ? b1 - a1
+              : a1 - b1;
+          });
+
+    return {
+      sample,
+      desc: nl.desc,
+    };
+  });
+
+  $: {
+    if (pxWidthLookupFn !== undefined) {
+      // window.pxWidthLookupFn = pxWidthLookupFn;
+
+      selectedFormatterForSamples = Object.fromEntries(
+        numberLists.map((nl) => {
+          return [
+            nl.desc,
+            selectedFormatter.fn(nl.sample, pxWidthLookupFn, formatterOptions),
+          ];
+        })
+      );
+    }
+  }
+</script>
+
 <div class="outer">
   <div class="inner ui-copy-number" bind:this={charMeasuringDiv}>CONTENT</div>
 </div>
@@ -634,245 +876,3 @@
     width: fit-content;
   }
 </style>
-
-<script lang="ts">
-  import AlignedNumber from "./aligned-number.svelte";
-  import { numberLists as numberListsUnprocessed } from "./number-samples";
-  import {
-    formatterFactories,
-    NumberFormatter,
-    NumPartPxWidthLookupFn,
-  } from "./number-to-string-formatters";
-  import { onMount } from "svelte";
-  import LayeredContainer from "./layered-container.svelte";
-  import RichNumberBipolarBar from "./rich-number-bipolar-bar.svelte";
-  import SampleOptions from "./option-menus/sample-options.svelte";
-  import BarOptions from "./option-menus/bar-options.svelte";
-
-  // FORMATTER SELECTION
-  export let defaultFormatterIndex = 1;
-  let selectedFormatter = formatterFactories[defaultFormatterIndex];
-  let selectedFormatterForSamples: { [colName: string]: NumberFormatter };
-
-  // SHARED DISPLAY OPTIONS
-  export let alignDecimalPoints = true;
-  export let alignSuffixes = true;
-  let suffixPadding = 2;
-  let lowerCaseEForEng = true;
-  // let minimumSignificantDigits = 3;
-  // let maximumSignificantDigits = 5;
-  export let zeroHandling: "exactZero" | "noSpecial" | "zeroDot" = "exactZero";
-  export let showMagSuffixForZero = false;
-
-  // NEW HUMANIZER OPTIONS
-  let usePlainNumsForThousands = true;
-  let usePlainNumsForThousandsOneDecimal = false;
-  let usePlainNumForThousandths = true;
-  let usePlainNumForThousandthsPadZeros = false;
-
-  let truncateThousandths = true;
-  let truncateTinyOrdersIfBigOrderExists = true;
-
-  let maxTotalDigits = 6;
-  let maxDigitsLeft = 3;
-  let maxDigitsRight = 3;
-  let minDigitsNonzero = 1;
-  let nonIntegerHandling: "none" | "oneDigit" | "trailingDot" = "trailingDot";
-  let useMaxDigitsRightIfSuffix = true;
-  let maxDigitsRightIfSuffix = 1;
-
-  let formattingUnits: "none" | "$" | "%" = "none";
-  let specialDecimalHandling:
-    | "noSpecial"
-    | "alwaysTwoDigits"
-    | "neverOneDigit" = "noSpecial";
-
-  // BARS OPTIONS
-  let showBars;
-  let absoluteValExtentsIfPosAndNeg;
-  let absoluteValExtentsAlways;
-  let reflectNegativeBars;
-  let barPosition: "left" | "behind" | "right";
-  let barContainerWidth;
-  let barOffset;
-  let negativeColor;
-  let positiveColor;
-  let barBackgroundColor;
-  let showBaseline;
-  let baselineColor;
-
-  // TABLE FORMAT OPTIONS
-  let tableGutterWidth = 30;
-  let tableRowHeight = 20;
-
-  let worstCaseStringWidth = 79 + suffixPadding;
-  $: {
-    if (pxWidthLookupFn !== undefined) {
-      if (magnitudeStrategy === "unlimitedDigitTarget") {
-        let int = pxWidthLookupFn("0") * maxDigitsRight;
-        let dot = pxWidthLookupFn(".");
-        let frac = pxWidthLookupFn("0") * maxDigitsLeft;
-        let suffix = pxWidthLookupFn("e-200");
-        worstCaseStringWidth = int + dot + frac + suffix + suffixPadding;
-      } else if (magnitudeStrategy === "largestWithDigitTarget") {
-        let int = pxWidthLookupFn("0") * 3;
-        let dot = pxWidthLookupFn(".");
-        let frac = pxWidthLookupFn("0") * (digitTarget - 3);
-        let suffix = pxWidthLookupFn("e-200");
-        console.log({ int, dot, frac, suffix });
-        worstCaseStringWidth = int + dot + frac + suffix + suffixPadding;
-      }
-    } else {
-      worstCaseStringWidth = 79 + suffixPadding;
-    }
-  }
-
-  let layerContainerWidth: number;
-  $: {
-    const barContainerWidthFinal = showBars ? barContainerWidth : 0;
-
-    if (barPosition === "behind") {
-      layerContainerWidth = Math.max(
-        worstCaseStringWidth,
-        barContainerWidthFinal
-      );
-    } else {
-      layerContainerWidth =
-        worstCaseStringWidth + barContainerWidthFinal + barOffset;
-    }
-  }
-  $: usePlainNumForThousandthsPadZeros =
-    usePlainNumForThousandths && usePlainNumForThousandthsPadZeros;
-
-  $: formatterOptions = {
-    // minimumSignificantDigits,
-    // maximumSignificantDigits,
-    magnitudeStrategy,
-    digitTarget,
-    digitTargetPadWithInsignificantZeros,
-    usePlainNumsForThousands,
-    usePlainNumsForThousandsOneDecimal,
-    usePlainNumForThousandths,
-    usePlainNumForThousandthsPadZeros,
-    truncateThousandths,
-    truncateTinyOrdersIfBigOrderExists,
-    zeroHandling,
-    maxTotalDigits,
-    maxDigitsLeft,
-    maxDigitsRight,
-    minDigitsNonzero,
-    useMaxDigitsRightIfSuffix,
-    maxDigitsRightIfSuffix,
-    nonIntegerHandling,
-    formattingUnits,
-    specialDecimalHandling,
-  };
-
-  let samplePreprocessing: "none" | "round" | "currencyRoundCent" = "none";
-  let sortSamples: "none" | "asc" | "desc" | "abs_asc" | "abs_desc" = "none";
-
-  let magnitudeStrategy:
-    | "unlimited"
-    | "unlimitedDigitTarget"
-    | "largestWithDigitTarget" = "unlimitedDigitTarget";
-  let digitTargetPadWithInsignificantZeros = false;
-  let digitTarget = 5;
-
-  let numFormattingWidthLookupKeys = [
-    ".",
-    "-",
-    "$",
-    "%",
-    "k",
-    "M",
-    "B",
-    "T",
-    "Q",
-    "e",
-    "E",
-  ];
-  for (let i = 0; i <= 9; i++) {
-    numFormattingWidthLookupKeys.push(i + "");
-  }
-
-  let numFormattingWidthLookup: { [key: string]: number } = {};
-
-  let charMeasuringDiv: HTMLDivElement;
-
-  let pxWidthLookupFn: NumPartPxWidthLookupFn;
-
-  const setUpPxWidthLookupFn = () => {
-    console.time("setUpPxWidthLookupFn");
-
-    numFormattingWidthLookupKeys.forEach((str) => {
-      charMeasuringDiv.innerHTML = str;
-      let rect = charMeasuringDiv.getBoundingClientRect();
-      numFormattingWidthLookup[str] = rect.right - rect.left;
-    });
-
-    console.timeEnd("setUpPxWidthLookupFn");
-
-    pxWidthLookupFn = (str: string) => {
-      return str
-        .split("")
-        .map((char) => numFormattingWidthLookup[char])
-        .reduce((a, b) => a + b, 0);
-    };
-  };
-
-  onMount(() => {
-    // when fonts are done loading,measure the character sizes
-    if (document.fonts.check("12px Inter")) {
-      setUpPxWidthLookupFn();
-    } else {
-      document.fonts.onloadingdone = setUpPxWidthLookupFn;
-    }
-  });
-
-  $: numberLists = numberListsUnprocessed.map((nl) => {
-    let sample = nl.sample.map((x) => {
-      switch (samplePreprocessing) {
-        case "currencyRoundCent":
-          return Math.round(x * 100) / 100;
-        case "round":
-          return Math.round(x);
-        default:
-          return x;
-      }
-    });
-
-    sample =
-      sortSamples === "none"
-        ? sample
-        : sample.sort((a, b) => {
-            const [a1, b1] =
-              sortSamples === "abs_asc" || sortSamples === "abs_desc"
-                ? [Math.abs(a), Math.abs(b)]
-                : [a, b];
-
-            return sortSamples === "desc" || sortSamples === "abs_desc"
-              ? b1 - a1
-              : a1 - b1;
-          });
-
-    return {
-      sample,
-      desc: nl.desc,
-    };
-  });
-
-  $: {
-    if (pxWidthLookupFn !== undefined) {
-      // window.pxWidthLookupFn = pxWidthLookupFn;
-
-      selectedFormatterForSamples = Object.fromEntries(
-        numberLists.map((nl) => {
-          return [
-            nl.desc,
-            selectedFormatter.fn(nl.sample, pxWidthLookupFn, formatterOptions),
-          ];
-        })
-      );
-    }
-  }
-</script>

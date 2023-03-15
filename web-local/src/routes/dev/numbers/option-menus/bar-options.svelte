@@ -1,3 +1,41 @@
+<script lang="ts">
+  export let showBars = true;
+  export let absoluteValExtentsIfPosAndNeg = true;
+  export let absoluteValExtentsAlways = false;
+  export let reflectNegativeBars = false;
+
+  export let barPosition: "left" | "behind" | "right" = "right";
+  export let barContainerWidth = 30;
+  export let barOffset = 10;
+
+  // https://tailwindcss.com/docs/customizing-colors
+
+  const blue100 = "#dbeafe";
+  const blue200 = "#bfdbfe";
+  // const blue300 = "#93c5fd";
+
+  const red100 = "#fee2e2";
+  const red200 = "#fecaca";
+  // const red300 = "#fca5a5";
+
+  const white = "#ffffff";
+
+  const grey50 = "#f9fafb";
+  const grey75 = "#f8f8f8";
+  const grey100 = "#f3f4f6";
+  const grey200 = "#e5e7eb";
+  const grey300 = "#d1d5db";
+  const grey400 = "#9ca3af";
+  // const grey500 = "#6b7280";
+
+  export let negativeColor = red200;
+  export let positiveColor = blue200;
+  export let barBackgroundColor = grey75;
+
+  export let showBaseline = true;
+  export let baselineColor = grey200;
+</script>
+
 <div style="padding-left: 10px;">
   <h3>bar options</h3>
   <label>
@@ -197,41 +235,3 @@
     margin-right: 8px;
   }
 </style>
-
-<script lang="ts">
-  export let showBars = true;
-  export let absoluteValExtentsIfPosAndNeg = true;
-  export let absoluteValExtentsAlways = false;
-  export let reflectNegativeBars = false;
-
-  export let barPosition: "left" | "behind" | "right" = "right";
-  export let barContainerWidth = 30;
-  export let barOffset = 10;
-
-  // https://tailwindcss.com/docs/customizing-colors
-
-  const blue100 = "#dbeafe";
-  const blue200 = "#bfdbfe";
-  // const blue300 = "#93c5fd";
-
-  const red100 = "#fee2e2";
-  const red200 = "#fecaca";
-  // const red300 = "#fca5a5";
-
-  const white = "#ffffff";
-
-  const grey50 = "#f9fafb";
-  const grey75 = "#f8f8f8";
-  const grey100 = "#f3f4f6";
-  const grey200 = "#e5e7eb";
-  const grey300 = "#d1d5db";
-  const grey400 = "#9ca3af";
-  // const grey500 = "#6b7280";
-
-  export let negativeColor = red200;
-  export let positiveColor = blue200;
-  export let barBackgroundColor = grey75;
-
-  export let showBaseline = true;
-  export let baselineColor = grey200;
-</script>

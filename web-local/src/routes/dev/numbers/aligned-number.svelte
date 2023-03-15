@@ -1,3 +1,61 @@
+<script lang="ts">
+  import type { RichFormatNumber } from "./number-to-string-formatters";
+
+  export let containerWidth = 81;
+
+  export let richNum: RichFormatNumber;
+  export let alignSuffix = false;
+  export let suffixPadding = 0;
+  export let showMagSuffixForZero = false;
+
+  export let lowerCaseEForEng = false;
+  export let alignDecimalPoints = false;
+  export let zeroHandling: "noSpecial" | "exactZero" | "zeroDot" = "noSpecial";
+
+  $: int = richNum.splitStr.int;
+  $: frac = richNum.splitStr.frac;
+  $: suffix = richNum.splitStr.suffix;
+
+  // FINALIZE CHARACTERS TO BE DISPLAYED
+  let suffixFinal;
+  $: {
+    // console.log({ lowerCaseEForEng });
+    suffixFinal = suffix;
+    if (lowerCaseEForEng) suffixFinal = suffixFinal.replace("E", "e");
+
+    if (richNum.number === 0 && !showMagSuffixForZero) suffixFinal = "";
+  }
+
+  let decimalPoint: "" | ".";
+  $: {
+    decimalPoint = richNum.splitStr.dot;
+    if (richNum.number === 0) {
+      if (zeroHandling === "exactZero") {
+        decimalPoint = "";
+        frac = "";
+      } else if (zeroHandling === "zeroDot") {
+        decimalPoint = ".";
+        frac = "";
+      }
+    }
+  }
+
+  $: suffixPadFinal = richNum.maxPxWidth.suffix > 0 ? suffixPadding : 0;
+
+  $: intPx = richNum.maxPxWidth.int;
+  $: dotPx = richNum.maxPxWidth.dot;
+  $: fracPx = richNum.maxPxWidth.frac;
+  $: suffixPx = richNum.maxPxWidth.suffix + suffixPadFinal;
+
+  // $: containerWidth = `${intPx + dotPx + fracPx + suffixPx}px`;
+
+  $: fracAndSuffixWidth = `${dotPx + fracPx + suffixPadFinal + suffixPx}px`;
+
+  $: logProps = () => {
+    console.log({ ...richNum, lowerCaseEForEng });
+  };
+</script>
+
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
   on:click={logProps}
@@ -75,61 +133,3 @@
     text-align: left;
   }
 </style>
-
-<script lang="ts">
-  import type { RichFormatNumber } from "./number-to-string-formatters";
-
-  export let containerWidth = 81;
-
-  export let richNum: RichFormatNumber;
-  export let alignSuffix = false;
-  export let suffixPadding = 0;
-  export let showMagSuffixForZero = false;
-
-  export let lowerCaseEForEng = false;
-  export let alignDecimalPoints = false;
-  export let zeroHandling: "noSpecial" | "exactZero" | "zeroDot" = "noSpecial";
-
-  $: int = richNum.splitStr.int;
-  $: frac = richNum.splitStr.frac;
-  $: suffix = richNum.splitStr.suffix;
-
-  // FINALIZE CHARACTERS TO BE DISPLAYED
-  let suffixFinal;
-  $: {
-    // console.log({ lowerCaseEForEng });
-    suffixFinal = suffix;
-    if (lowerCaseEForEng) suffixFinal = suffixFinal.replace("E", "e");
-
-    if (richNum.number === 0 && !showMagSuffixForZero) suffixFinal = "";
-  }
-
-  let decimalPoint: "" | ".";
-  $: {
-    decimalPoint = richNum.splitStr.dot;
-    if (richNum.number === 0) {
-      if (zeroHandling === "exactZero") {
-        decimalPoint = "";
-        frac = "";
-      } else if (zeroHandling === "zeroDot") {
-        decimalPoint = ".";
-        frac = "";
-      }
-    }
-  }
-
-  $: suffixPadFinal = richNum.maxPxWidth.suffix > 0 ? suffixPadding : 0;
-
-  $: intPx = richNum.maxPxWidth.int;
-  $: dotPx = richNum.maxPxWidth.dot;
-  $: fracPx = richNum.maxPxWidth.frac;
-  $: suffixPx = richNum.maxPxWidth.suffix + suffixPadFinal;
-
-  // $: containerWidth = `${intPx + dotPx + fracPx + suffixPx}px`;
-
-  $: fracAndSuffixWidth = `${dotPx + fracPx + suffixPadFinal + suffixPx}px`;
-
-  $: logProps = () => {
-    console.log({ ...richNum, lowerCaseEForEng });
-  };
-</script>
