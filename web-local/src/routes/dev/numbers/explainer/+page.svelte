@@ -1,6 +1,44 @@
+<div class="outer">
+  <div class="inner ui-copy-number" bind:this={charMeasuringDiv}>CONTENT</div>
+</div>
+
+<h1 style="font-size: 20px;">
+  Visit <a
+    href="https://www.notion.so/rilldata/humanizer-v2-explainer-ecfa5daf565644d3ad7a95ac464d0972"
+    >Notion page</a
+  > for description and discussion
+</h1>
+
+<br />
+
+{#if explainerDefs}
+  {#each explainerDefs as { title, blurb, formatterCols, sample }}
+    <h1>{title}</h1>
+
+    {#if formatterCols && sample}
+      <FormattersInColums
+        formattersDescriptionsAndOptions={formatterCols}
+        {sample}
+        {tableGutterWidth}
+      />
+    {/if}
+  {/each}
+{/if}
+
+<style>
+  .outer {
+    overflow: hidden;
+    position: relative;
+  }
+  .inner {
+    position: absolute;
+    right: -50px;
+    top: 50px;
+    width: fit-content;
+  }
+</style>
+
 <script lang="ts">
-  import TableExampleWidget from "../table-example-widget.svelte";
-  import SpanMeasurer from "../span-measurer.svelte";
   import FormattersInColums from "./formatters-in-colums.svelte";
   import { numberLists as numberListsUnprocessed } from "../number-samples";
 
@@ -8,7 +46,6 @@
     formatterFactories,
     NumberFormatter,
     NumPartPxWidthLookupFn,
-    RichFormatNumber,
   } from "../number-to-string-formatters";
   import type { FormatterOptionsV1 } from "../formatter-options";
   import { onMount } from "svelte";
@@ -905,43 +942,3 @@
   }
   let tableGutterWidth = 30;
 </script>
-
-<div class="outer">
-  <div class="inner ui-copy-number" bind:this={charMeasuringDiv}>CONTENT</div>
-</div>
-
-<h1 style="font-size: 20px;">
-  Visit <a
-    href="https://www.notion.so/rilldata/humanizer-v2-explainer-ecfa5daf565644d3ad7a95ac464d0972"
-    >Notion page</a
-  > for description and discussion
-</h1>
-
-<br />
-
-{#if explainerDefs}
-  {#each explainerDefs as { title, blurb, formatterCols, sample }}
-    <h1>{title}</h1>
-
-    {#if formatterCols && sample}
-      <FormattersInColums
-        formattersDescriptionsAndOptions={formatterCols}
-        {sample}
-        {tableGutterWidth}
-      />
-    {/if}
-  {/each}
-{/if}
-
-<style>
-  .outer {
-    overflow: hidden;
-    position: relative;
-  }
-  .inner {
-    position: absolute;
-    right: -50px;
-    top: 50px;
-    width: fit-content;
-  }
-</style>
