@@ -7,15 +7,11 @@ type Config struct {
 	AdminURL           string
 	AdminTokenOverride string
 	AdminTokenDefault  string
-	DefaultOrg         string
+	Org                string
 }
 
 func (c Config) IsDev() bool {
 	return c.Version.IsDev()
-}
-
-func (c Config) Org() string {
-	return c.DefaultOrg
 }
 
 type Version struct {
