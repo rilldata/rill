@@ -191,60 +191,6 @@ function determineScaleForValues(values: number[]): ShortHandSymbols {
   return scaleForMax;
 }
 
-function applyScaleOnValues(values: number[], scale: ShortHandSymbols) {
-  if (scale == shortHandSymbols[shortHandSymbols.length - 1]) {
-    const formatter = getNumberFormatter(NicelyFormattedTypes.DECIMAL);
-    return values.map((v) => {
-      if (v === null) return "∅";
-      else return formatter.format(v);
-    });
-  }
-  return values.map((v) => {
-    if (v === null) return "∅";
-    const shortHandNumber = v / shortHandMap[scale];
-    let shortHandValue: string;
-    if (Math.abs(shortHandNumber) < 0.1) {
-      shortHandValue = "<0.1";
-    } else {
-      shortHandValue = shortHandNumber.toFixed(1);
-    }
-
-    return shortHandValue + scale;
-  });
-}
-
-function humanizeGroupValuesUtil(
-  values: number[],
-  type: NicelyFormattedTypes,
-  options?: formatterOptions
-) {
-  if (!values.length) return values;
-  if (type == NicelyFormattedTypes.NONE) return values;
-  else if (type == NicelyFormattedTypes.HUMANIZE) {
-    let scale;
-    if (options?.scale) {
-      scale = options.scale;
-    } else scale = determineScaleForValues(values);
-    return applyScaleOnValues(values, scale);
-  } else if (type == NicelyFormattedTypes.CURRENCY) {
-    let scale;
-    if (options?.scale) {
-      scale = options.scale;
-    } else scale = determineScaleForValues(values);
-    return applyScaleOnValues(values, scale).map((v) => "$" + v);
-  } else {
-    let formatterOptions = {};
-    formatterOptions = Object.assign({}, options);
-    delete formatterOptions["scale"];
-    delete formatterOptions["columnName"];
-    const formatter = getNumberFormatter(type, formatterOptions);
-    return values.map((v) => {
-      if (v === null) return "∅";
-      else return formatter.format(v);
-    });
-  }
-}
-
 export function humanizeGroupValues(
   values: Array<Record<string, number | string>>,
   type: NicelyFormattedTypes,
@@ -364,7 +310,7 @@ export function humanizeDataType(
 function humanizeGroupValuesUtil2(
   values: number[],
   type: NicelyFormattedTypes,
-  options?: formatterOptions
+  _options?: formatterOptions
 ) {
   if (!values.length) return values;
   if (type == NicelyFormattedTypes.NONE) return values;

@@ -66,12 +66,15 @@ export const formatNumWithOrderOfMag = (
     }
   }
 
-  let [int, frac] = Intl.NumberFormat("en-US", {
+  const int_frac = Intl.NumberFormat("en-US", {
     maximumFractionDigits: fractionDigits,
     minimumFractionDigits: fractionDigits,
   })
     .format(x / 10 ** newOrder)
     .split(".");
+
+  let int = int_frac[0];
+  const frac = int_frac[1];
 
   if (stripCommas) {
     int = int.replace(/,/g, "");

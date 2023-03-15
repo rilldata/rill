@@ -8,7 +8,7 @@ const ORDER_OF_MAG_TO_SHORT_SCALE_SUFFIX = {
 };
 
 export const shortScaleSuffixIfAvailable = (x: number): string => {
-  let suffix = ORDER_OF_MAG_TO_SHORT_SCALE_SUFFIX[x];
+  const suffix = ORDER_OF_MAG_TO_SHORT_SCALE_SUFFIX[x];
   if (suffix !== undefined) return suffix;
   return "E" + x;
 };
@@ -22,7 +22,8 @@ const ORDER_OF_MAG_TEXT_TO_SHORT_SCALE_SUFFIX = {
   E15: "Q",
 };
 export const shortScaleSuffixIfAvailableForStr = (suffixIn: string): string => {
-  let suffix = ORDER_OF_MAG_TEXT_TO_SHORT_SCALE_SUFFIX[suffixIn.toUpperCase()];
+  const suffix =
+    ORDER_OF_MAG_TEXT_TO_SHORT_SCALE_SUFFIX[suffixIn.toUpperCase()];
   if (suffix !== undefined) return suffix;
   return suffixIn;
 };

@@ -128,7 +128,7 @@ export class PerRangeFormatter implements Formatter {
       // range's rules are satisfied and result in a non-zero
       // formatted number.
       for (let i = 0; i < rangeSpecs.length; i++) {
-        let spec = rangeSpecs[i];
+        const spec = rangeSpecs[i];
         numParts = formatWithRangeSpec(x, spec);
         if (
           numberPartsValidForRangeSpec(numParts, spec) &&
