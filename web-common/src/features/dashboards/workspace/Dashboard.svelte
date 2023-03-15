@@ -1,12 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import {
-    protoToBase64,
-    toProto,
-  } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+  import { fromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
   import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
@@ -19,6 +15,7 @@
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import DashboardContainer from "./DashboardContainer.svelte";
   import DashboardHeader from "./DashboardHeader.svelte";
+  import { page } from "$app/stores";
 
   export let metricViewName: string;
 
@@ -69,11 +66,21 @@
       }px minmax(355px, auto)`
     : "max-content minmax(355px, auto)";
 
-  let protoState: DashboardState;
+  let protoState: string;
+  let selfUpdate = false;
   $: protoState = metricsExplorer?.proto;
-  $: if (protoState) {
-    const message = protoToBase64(protoState.toBinary());
-    goto(`/dashboard/${metricViewName}?state=${message}`);
+  $: if (protoState && !$featureFlags.readOnly) {
+    goto(`/dashboard/${metricViewName}?state=${protoState}`);
+    selfUpdate = true;
+  }
+
+  let urlState: string;
+  $: if ($page) {
+    urlState = $page.url.searchParams.get("state");
+    if (!selfUpdate && urlState && urlState !== protoState) {
+      metricsExplorerStore.syncFromUrl(metricViewName, fromUrl($page.url));
+    }
+    selfUpdate = false;
   }
 </script>
 

@@ -2,7 +2,10 @@
   import { page } from "$app/stores";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-  import { base64ToProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
+  import {
+    base64ToProto,
+    fromUrl,
+  } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
   import { fromProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto.js";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -21,12 +24,9 @@
 
   onMount(async () => {
     await tick();
-    const state = new URL(location.href).searchParams.get("state");
-    if (!state) return;
-    const partialMetricsView = fromProto(
-      base64ToProto(decodeURIComponent(state))
-    );
-    metricsExplorerStore.create(metricViewName, partialMetricsView);
+    const partialMetricsView = fromUrl(new URL(location.href));
+    if (!partialMetricsView) return;
+    metricsExplorerStore.syncFromUrl(metricViewName, partialMetricsView);
   });
 
   $: fileQuery = useRuntimeServiceGetFile(

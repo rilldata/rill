@@ -1,5 +1,7 @@
-import { toProto } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import type { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import {
+  protoToBase64,
+  toProto,
+} from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import type {
   V1MetricsView,
   V1MetricsViewFilter,
@@ -34,7 +36,7 @@ export interface MetricsExplorerEntity {
   selectedTimeRange?: TimeSeriesTimeRange;
   // user selected dimension
   selectedDimensionName?: string;
-  proto?: DashboardState;
+  proto?: string;
 }
 
 export interface MetricsExplorerStoreType {
@@ -64,7 +66,7 @@ const updateMetricsExplorerByName = (
 };
 
 const metricViewReducers = {
-  create(name: string, partial: Partial<MetricsExplorerEntity>) {
+  syncFromUrl(name: string, partial: Partial<MetricsExplorerEntity>) {
     updateMetricsExplorerByName(
       name,
       (metricsExplorer) => {

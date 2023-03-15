@@ -10,6 +10,12 @@ import {
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/catalog_pb";
 
+export function fromUrl(url: URL): Partial<MetricsExplorerEntity> {
+  const state = url.searchParams.get("state");
+  if (!state) return undefined;
+  return fromProto(base64ToProto(decodeURIComponent(state)));
+}
+
 export function fromProto(binary: Uint8Array): Partial<MetricsExplorerEntity> {
   const dashboard = DashboardState.fromBinary(binary);
   const entity: Partial<MetricsExplorerEntity> = {
