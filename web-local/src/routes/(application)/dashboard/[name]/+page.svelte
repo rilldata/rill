@@ -2,11 +2,7 @@
   import { page } from "$app/stores";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-  import {
-    base64ToProto,
-    fromUrl,
-  } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-  import { fromProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto.js";
+  import { fromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";

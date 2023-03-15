@@ -1,7 +1,4 @@
-import {
-  protoToBase64,
-  toProto,
-} from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+import { toProto } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import type {
   V1MetricsView,
   V1MetricsViewFilter,
