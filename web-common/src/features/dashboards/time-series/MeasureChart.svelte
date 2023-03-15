@@ -47,6 +47,8 @@
     6 / 5
   );
 
+  $: console.log(internalYMin, internalYMax);
+
   $: internalXMin = xMin || xExtentMin;
   $: internalXMax = xMax || xExtentMax;
   // we delay the tween if previousYMax < yMax
