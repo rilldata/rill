@@ -65,6 +65,12 @@ const updateMetricsExplorerByName = (
   });
 };
 
+function includeExcludeModeFromFilters(filters: V1MetricsViewFilter) {
+  const map = new Map<string, boolean>();
+  filters?.exclude.forEach((cond) => map.set(cond.name, true));
+  return map;
+}
+
 const metricViewReducers = {
   syncFromUrl(name: string, partial: Partial<MetricsExplorerEntity>) {
     updateMetricsExplorerByName(
@@ -73,13 +79,17 @@ const metricViewReducers = {
         for (const key in partial) {
           metricsExplorer[key] = partial[key];
         }
+        metricsExplorer.dimensionFilterExcludeMode =
+          includeExcludeModeFromFilters(partial.filters);
       },
       () => ({
         name,
         selectedMeasureNames: [],
         leaderboardMeasureName: "",
         filters: {},
-        dimensionFilterExcludeMode: new Map(),
+        dimensionFilterExcludeMode: includeExcludeModeFromFilters(
+          partial.filters
+        ),
         ...partial,
       })
     );
