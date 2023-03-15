@@ -33,7 +33,7 @@ func (s *Service) CreateProject(ctx context.Context, proj *database.Project) (*d
 		GithubURL:            *proj.GithubURL,
 		GitBranch:            proj.ProductionBranch,
 		GithubInstallationID: *proj.GithubInstallationID,
-		Envs:                 proj.Envs,
+		Variables:            proj.ProductionVariables,
 	}
 
 	// Provision it
@@ -203,10 +203,8 @@ func (s *Service) UpdateProject(ctx context.Context, p *database.Project) (*data
 		return nil, err
 	}
 
-	opts := &provisioner.UpdateProvisionOptions{Envs: p.Envs}
 	for _, d := range ds {
-		err := s.provisioner.UpdateProvision(ctx, opts, d.RuntimeHost, d.RuntimeInstanceID)
-		if err != nil {
+		if err := s.editInstance(ctx, d, p.ProductionVariables); err != nil {
 			return nil, err
 		}
 	}
@@ -217,4 +215,41 @@ func (s *Service) UpdateProject(ctx context.Context, p *database.Project) (*data
 		return nil, err
 	}
 	return proj, nil
+}
+
+func (s *Service) editInstance(ctx context.Context, d *database.Deployment, variables map[string]string) error {
+	jwt, err := s.issuer.NewToken(auth.TokenOptions{
+		AudienceURL:       d.RuntimeAudience,
+		TTL:               time.Hour,
+		SystemPermissions: []auth.Permission{auth.ManageInstances, auth.ReadInstance},
+	})
+	if err != nil {
+		return err
+	}
+
+	rt, err := client.New(d.RuntimeHost, jwt)
+	if err != nil {
+		return err
+	}
+	defer rt.Close()
+
+	resp, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{
+		InstanceId: d.RuntimeInstanceID,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Edit the instance
+	inst := resp.Instance
+	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
+		InstanceId:   d.RuntimeInstanceID,
+		OlapDriver:   inst.OlapDriver,
+		OlapDsn:      inst.OlapDsn,
+		RepoDriver:   inst.RepoDriver,
+		RepoDsn:      inst.RepoDsn,
+		EmbedCatalog: inst.EmbedCatalog,
+		Variables:    variables,
+	})
+	return err
 }

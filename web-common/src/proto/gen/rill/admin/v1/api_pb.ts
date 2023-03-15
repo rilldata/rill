@@ -736,9 +736,9 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   githubUrl = "";
 
   /**
-   * @generated from field: map<string, string> envs = 8;
+   * @generated from field: map<string, string> variables = 8;
    */
-  envs: { [key: string]: string } = {};
+  variables: { [key: string]: string } = {};
 
   constructor(data?: PartialMessage<CreateProjectRequest>) {
     super();
@@ -755,7 +755,7 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 5, name: "production_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 6, name: "production_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "envs", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 8, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateProjectRequest {
@@ -921,9 +921,9 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   githubUrl = "";
 
   /**
-   * @generated from field: map<string, string> envs = 7;
+   * @generated from field: map<string, string> variables = 7;
    */
-  envs: { [key: string]: string } = {};
+  variables: { [key: string]: string } = {};
 
   constructor(data?: PartialMessage<UpdateProjectRequest>) {
     super();
@@ -939,7 +939,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "production_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "envs", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectRequest {
@@ -1338,9 +1338,9 @@ export class Project extends Message<Project> {
   updatedOn?: Timestamp;
 
   /**
-   * @generated from field: map<string, string> envs = 11;
+   * @generated from field: map<string, string> variables = 11;
    */
-  envs: { [key: string]: string } = {};
+  variables: { [key: string]: string } = {};
 
   constructor(data?: PartialMessage<Project>) {
     super();
@@ -1360,7 +1360,7 @@ export class Project extends Message<Project> {
     { no: 8, name: "production_deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "created_on", kind: "message", T: Timestamp },
     { no: 10, name: "updated_on", kind: "message", T: Timestamp },
-    { no: 11, name: "envs", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 11, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Project {

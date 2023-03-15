@@ -52,7 +52,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, registryStore driver
 	}
 
 	// this is required in order to be able to use .env.KEY and not .KEY in template placeholders
-	env := map[string]map[string]string{"env": instance.EnvironmentVariables()}
+	env := map[string]map[string]string{"env": instance.InstanceVariables()}
 
 	// Add Sprig template functions (removing functions that leak host info)
 	// Derived from Helm: https://github.com/helm/helm/blob/main/pkg/engine/funcs.go

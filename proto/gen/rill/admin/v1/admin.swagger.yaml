@@ -196,10 +196,6 @@ paths:
             properties:
               description:
                 type: string
-              envs:
-                type: object
-                additionalProperties:
-                  type: string
               githubUrl:
                 type: string
               name:
@@ -211,6 +207,10 @@ paths:
                 format: int64
               public:
                 type: boolean
+              variables:
+                type: object
+                additionalProperties:
+                  type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}:
@@ -289,16 +289,16 @@ paths:
             properties:
               description:
                 type: string
-              envs:
-                type: object
-                additionalProperties:
-                  type: string
               githubUrl:
                 type: string
               productionBranch:
                 type: string
               public:
                 type: boolean
+              variables:
+                type: object
+                additionalProperties:
+                  type: string
       tags:
         - AdminService
   /v1/ping:
@@ -501,10 +501,6 @@ definitions:
         format: date-time
       description:
         type: string
-      envs:
-        type: object
-        additionalProperties:
-          type: string
       githubUrl:
         type: string
       id:
@@ -524,6 +520,10 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      variables:
+        type: object
+        additionalProperties:
+          type: string
   v1RevokeCurrentAuthTokenResponse:
     type: object
     properties:

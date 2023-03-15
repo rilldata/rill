@@ -121,7 +121,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProductionBranch:     req.ProductionBranch,
 		GithubURL:            &req.GithubUrl,
 		GithubInstallationID: &installationID,
-		Envs:                 req.Envs,
+		ProductionVariables:  req.Variables,
 	}
 
 	proj, err := s.admin.CreateProject(ctx, project)
@@ -163,7 +163,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	proj.Description = req.Description
 	proj.ProductionBranch = req.ProductionBranch
 	proj.GithubURL = &req.GithubUrl
-	proj.Envs = req.Envs
+	proj.ProductionVariables = req.Variables
 
 	proj, err = s.admin.UpdateProject(ctx, proj)
 	if err != nil {
@@ -187,7 +187,7 @@ func projToDTO(p *database.Project) *adminv1.Project {
 		ProductionDeploymentId: safeStr(p.ProductionDeploymentID),
 		CreatedOn:              timestamppb.New(p.CreatedOn),
 		UpdatedOn:              timestamppb.New(p.UpdatedOn),
-		Envs:                   p.Envs,
+		Variables:              p.ProductionVariables,
 	}
 }
 

@@ -9,13 +9,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/examples"
+	"github.com/rilldata/rill/cli/pkg/variable"
 	"github.com/rilldata/rill/cli/pkg/web"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
@@ -56,7 +56,7 @@ type App struct {
 	ProjectPath string
 }
 
-func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, envVariables []string) (*App, error) {
+func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string) (*App, error) {
 	// Setup a friendly-looking colored/json logger
 	var logger *zap.Logger
 	var err error
@@ -115,7 +115,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		olapDSN = path.Join(projectPath, olapDSN)
 	}
 
-	env, err := ParseEnvs(envVariables)
+	parsedVariables, err := variable.Parse(variables)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		RepoDriver:   "file",
 		RepoDSN:      projectPath,
 		EmbedCatalog: olapDriver == "duckdb",
-		Env:          env,
+		Variables:    parsedVariables,
 	}
 	err = rt.CreateInstance(ctx, inst)
 	if err != nil {
@@ -453,18 +453,4 @@ func ParseLogFormat(format string) (LogFormat, bool) {
 	default:
 		return "", false
 	}
-}
-
-func ParseEnvs(envs []string) (map[string]string, error) {
-	vars := make(map[string]string, len(envs))
-	for _, env := range envs {
-		// split into key value pairs
-		key, value, found := strings.Cut(env, "=")
-		// key can't be empty value can be
-		if !found || key == "" {
-			return nil, fmt.Errorf("invalid env token %q", env)
-		}
-		vars[key] = value
-	}
-	return vars, nil
 }

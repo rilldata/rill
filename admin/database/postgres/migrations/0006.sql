@@ -1,1 +1,1 @@
-ALTER TABLE projects ADD COLUMN env JSONB NOT NULL default '{}'::jsonb;
+ALTER TABLE projects ADD COLUMN production_variables JSONB NOT NULL default '{}'::jsonb;

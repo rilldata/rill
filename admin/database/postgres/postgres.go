@@ -126,9 +126,9 @@ func (c *connection) FindProjectByGithubURL(ctx context.Context, githubURL strin
 func (c *connection) CreateProject(ctx context.Context, orgID string, p *database.Project) (*database.Project, error) {
 	res := &database.Project{}
 	err := c.db.QueryRowxContext(ctx, `
-		INSERT INTO projects (organization_id, name, description, public, production_slots, production_branch, github_url, github_installation_id, env)
+		INSERT INTO projects (organization_id, name, description, public, production_slots, production_branch, github_url, github_installation_id, production_variables)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-		orgID, p.Name, p.Description, p.Public, p.ProductionSlots, p.ProductionBranch, p.GithubURL, p.GithubInstallationID, p.Envs,
+		orgID, p.Name, p.Description, p.Public, p.ProductionSlots, p.ProductionBranch, p.GithubURL, p.GithubInstallationID, p.ProductionVariables,
 	).StructScan(res)
 	if err != nil {
 		return nil, err
@@ -139,9 +139,9 @@ func (c *connection) CreateProject(ctx context.Context, orgID string, p *databas
 func (c *connection) UpdateProject(ctx context.Context, p *database.Project) (*database.Project, error) {
 	res := &database.Project{}
 	err := c.db.QueryRowxContext(ctx, `
-		UPDATE projects SET description=$1, public=$2, production_branch=$3, github_url=$4, github_installation_id=$5, production_deployment_id=$6, env=$7, updated_on=now()
+		UPDATE projects SET description=$1, public=$2, production_branch=$3, github_url=$4, github_installation_id=$5, production_deployment_id=$6, production_variables=$7, updated_on=now()
 		WHERE id=$8 RETURNING *`,
-		p.Description, p.Public, p.ProductionBranch, p.GithubURL, p.GithubInstallationID, p.ProductionDeploymentID, p.Envs, p.ID,
+		p.Description, p.Public, p.ProductionBranch, p.GithubURL, p.GithubInstallationID, p.ProductionDeploymentID, p.ProductionVariables, p.ID,
 	).StructScan(res)
 	if err != nil {
 		return nil, err

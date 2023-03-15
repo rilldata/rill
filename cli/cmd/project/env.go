@@ -14,19 +14,19 @@ import (
 func EnvCmd(cfg *config.Config) *cobra.Command {
 	envCmd := &cobra.Command{
 		Use:   "env",
-		Short: "Manage env variables for a project",
+		Short: "Manage variables for a project",
 	}
 	envCmd.AddCommand(RmCmd(cfg))
 	envCmd.AddCommand(SetCmd(cfg))
 	return envCmd
 }
 
-// SetCmd is sub command for env. Sets the env variable for a project
+// SetCmd is sub command for env. Removes the variable for a project
 func SetCmd(cfg *config.Config) *cobra.Command {
 	setCmd := &cobra.Command{
 		Use:   "set",
 		Args:  cobra.ExactArgs(3),
-		Short: "set env variable",
+		Short: "set variable",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			projectName := args[0]
 			key := args[1]
@@ -47,14 +47,14 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			proj := resp.Project
-			if val, ok := proj.Envs[key]; ok && val == value {
+			if val, ok := proj.Variables[key]; ok && val == value {
 				return nil
 			}
 
-			if proj.Envs == nil {
-				proj.Envs = make(map[string]string)
+			if proj.Variables == nil {
+				proj.Variables = make(map[string]string)
 			}
-			proj.Envs[key] = value
+			proj.Variables[key] = value
 			updatedProject, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
 				OrganizationName: cfg.Org(),
 				Name:             projectName,
@@ -62,7 +62,7 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 				Public:           proj.Public,
 				ProductionBranch: proj.ProductionBranch,
 				GithubUrl:        proj.GithubUrl,
-				Envs:             proj.Envs,
+				Variables:        proj.Variables,
 			})
 			if err != nil {
 				return err
@@ -76,12 +76,12 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 	return setCmd
 }
 
-// RmCmd is sub command for env. Sets the env variable for a project
+// RmCmd is sub command for env. Removes the variable for a project
 func RmCmd(cfg *config.Config) *cobra.Command {
 	rmCmd := &cobra.Command{
 		Use:   "rm",
 		Args:  cobra.ExactArgs(2),
-		Short: "remove env variable",
+		Short: "remove variable",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			projectName := args[0]
 			key := args[1]
@@ -101,11 +101,11 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			proj := resp.Project
-			if _, ok := proj.Envs[key]; !ok {
+			if _, ok := proj.Variables[key]; !ok {
 				return nil
 			}
 
-			delete(proj.Envs, key)
+			delete(proj.Variables, key)
 			updatedProject, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
 				OrganizationName: cfg.Org(),
 				Name:             projectName,
@@ -113,7 +113,7 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 				Public:           proj.Public,
 				ProductionBranch: proj.ProductionBranch,
 				GithubUrl:        proj.GithubUrl,
-				Envs:             proj.Envs,
+				Variables:        proj.Variables,
 			})
 			if err != nil {
 				return err

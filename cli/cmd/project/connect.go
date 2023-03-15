@@ -16,7 +16,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
-	"github.com/rilldata/rill/cli/pkg/local"
+	"github.com/rilldata/rill/cli/pkg/variable"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -30,7 +30,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 	var name, description, prodBranch, projectPath string
 	var slots int
 	var public bool
-	var envVariables []string
+	var variables []string
 
 	connectCmd := &cobra.Command{
 		Use:   "connect",
@@ -129,7 +129,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				prodBranch = ghRes.DefaultBranch
 			}
 
-			envs, err := local.ParseEnvs(envVariables)
+			parsedVariables, err := variable.Parse(variables)
 			if err != nil {
 				return err
 			}
@@ -143,7 +143,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				ProductionBranch: prodBranch,
 				Public:           public,
 				GithubUrl:        githubURL,
-				Envs:             envs,
+				Variables:        parsedVariables,
 			})
 			if err != nil {
 				return err
@@ -162,7 +162,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 	connectCmd.Flags().StringVar(&name, "name", "", "Project name (default: the Github repo name)")
 	connectCmd.Flags().StringVar(&description, "description", "", "Project description")
 	connectCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
-	connectCmd.Flags().StringSliceVarP(&envVariables, "env", "e", []string{}, "Set project environment variables")
+	connectCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
 
 	return connectCmd
 }

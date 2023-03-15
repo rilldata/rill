@@ -325,9 +325,9 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for EmbedCatalog
 
-	// no validation rules for Env
+	// no validation rules for Variables
 
-	// no validation rules for ProjectEnv
+	// no validation rules for ProjectVariables
 
 	if len(errors) > 0 {
 		return InstanceMultiError(errors)
@@ -974,7 +974,7 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	// no validation rules for EmbedCatalog
 
-	// no validation rules for Env
+	// no validation rules for Variables
 
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)
@@ -1480,7 +1480,7 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	// no validation rules for EmbedCatalog
 
-	// no validation rules for Env
+	// no validation rules for Variables
 
 	if len(errors) > 0 {
 		return EditInstanceRequestMultiError(errors)

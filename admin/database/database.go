@@ -147,17 +147,17 @@ type Project struct {
 	Public                 bool
 	ProductionSlots        int       `db:"production_slots"`
 	ProductionBranch       string    `db:"production_branch"`
+	ProductionVariables    Variables `db:"production_variables"`
 	GithubURL              *string   `db:"github_url"`
 	GithubInstallationID   *int64    `db:"github_installation_id"`
 	ProductionDeploymentID *string   `db:"production_deployment_id"`
 	CreatedOn              time.Time `db:"created_on"`
 	UpdatedOn              time.Time `db:"updated_on"`
-	Envs                   Envs      `db:"env"`
 }
 
-type Envs map[string]string
+type Variables map[string]string
 
-func (e *Envs) Scan(value interface{}) error {
+func (e *Variables) Scan(value interface{}) error {
 	b, ok := value.([]byte)
 	if !ok {
 		return errors.New("failed type assertion to []byte")

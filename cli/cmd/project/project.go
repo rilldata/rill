@@ -40,14 +40,12 @@ func toRow(o *adminv1.Project) *project {
 		Public:    o.Public,
 		GithubURL: o.GithubUrl,
 		CreatedAt: o.CreatedOn.AsTime().String(),
-		Envs:      o.Envs,
 	}
 }
 
 type project struct {
-	Name      string            `header:"name" json:"name"`
-	Public    bool              `header:"public" json:"public"`
-	GithubURL string            `header:"github" json:"github"`
-	CreatedAt string            `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
-	Envs      map[string]string `header:"variables" json:"variables"`
+	Name      string `header:"name" json:"name"`
+	Public    bool   `header:"public" json:"public"`
+	GithubURL string `header:"github" json:"github"`
+	CreatedAt string `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
 }
