@@ -49,6 +49,7 @@ export const supportedTimeGrainEnums = () => {
   return supportedEnums;
 };
 
+// Co locate with application
 export function validateTimeRange(
   start: Date,
   end: Date,
