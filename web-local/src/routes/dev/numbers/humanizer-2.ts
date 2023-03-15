@@ -2,7 +2,6 @@ import { smallestPrecisionMagnitude } from "./smallest-precision-magnitude";
 import { formatNumWithOrderOfMag2 } from "./format-with-order-of-magnitude";
 import {
   splitNumStr,
-  getSpacingMetadataForRawStrings,
   getSpacingMetadataForSplitStrings,
   getMaxPxWidthsForSplitsStrings,
 } from "./num-string-to-aligned-spec";
@@ -14,6 +13,9 @@ import type {
 } from "./number-to-string-formatters";
 import { splitStrsForMagStratMultipleMagsNoAlign } from "./humanizer-strategy-many-mags-2";
 import { humanizeDefaultStrategy } from "./humanizer-strategy-many-mags-3";
+import { humanizedFormatterFactory } from "@rilldata/web-common/lib/number-formatting/humanizer";
+import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+import type { FormatterOptionsV1 } from "./formatter-options";
 
 const ORDER_OF_MAG_TO_SHORT_SCALE_SUFFIX = {
   0: "",
@@ -25,9 +27,8 @@ const ORDER_OF_MAG_TO_SHORT_SCALE_SUFFIX = {
 };
 
 export const shortScaleSuffixIfAvailable = (x: number): string => {
-  let suffix = ORDER_OF_MAG_TO_SHORT_SCALE_SUFFIX[x];
+  const suffix = ORDER_OF_MAG_TO_SHORT_SCALE_SUFFIX[x];
   if (suffix !== undefined) return suffix;
-
   return "E" + x;
 };
 
@@ -40,7 +41,8 @@ const ORDER_OF_MAG_TEXT_TO_SHORT_SCALE_SUFFIX = {
   E15: "Q",
 };
 export const shortScaleSuffixIfAvailableForStr = (suffixIn: string): string => {
-  let suffix = ORDER_OF_MAG_TEXT_TO_SHORT_SCALE_SUFFIX[suffixIn.toUpperCase()];
+  const suffix =
+    ORDER_OF_MAG_TEXT_TO_SHORT_SCALE_SUFFIX[suffixIn.toUpperCase()];
   if (suffix !== undefined) return suffix;
   return suffixIn;
 };
@@ -60,8 +62,8 @@ export const getOrdersOfMagnitude = (
   const engFmt = new Intl.NumberFormat("en-US", {
     notation: kind,
   });
-  let rawStrings = sample.map(engFmt.format);
-  let splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
+  const rawStrings = sample.map(engFmt.format);
+  const splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
   return splitStrs.map((ss) => +ss.suffix.slice(1));
 };
 
@@ -73,7 +75,7 @@ export const formatNumWithOrderOfMag = (
   const [int, frac] = Intl.NumberFormat("en-US", options)
     .format(x / 10 ** newOrder)
     .split(".");
-  const dot: "." = ".";
+  const dot: "." | "" = ".";
 
   // if (int === undefined || frac === undefined) {
   //   console.error({ x, int, frac, newOrder });
@@ -88,8 +90,8 @@ export const formatNumWithOrderOfMag = (
 
 export const thousandthsNumAsDecimalNumParts = (
   x: number,
-  maximumFractionDigits: number = 6,
-  padZero: boolean = false
+  maximumFractionDigits = 6,
+  padZero = false
 ): NumberStringParts => {
   // const minimumFractionDigits = padZero ? maximumFractionDigits : 3;
 
@@ -133,7 +135,7 @@ const splitStrsForMagStratLargestWithDigitsTarget = (
   // Plain integers of reasonable size
   if (0 <= maxMag && maxMag < digitTarget && allAreIntegers) {
     // can just show the plain integers
-    let formatter = new Intl.NumberFormat("en-US");
+    const formatter = new Intl.NumberFormat("en-US");
     return sample
       .map((x) => formatter.format(x).replace(",", ""))
       .map(splitNumStr);
@@ -165,7 +167,7 @@ const splitStrsForMagStratLargestWithDigitsTarget = (
     // can still use simple formatting, without suffix
     // just need the right number of digits
 
-    let splitStrs = sample.map((x) => {
+    const splitStrs = sample.map((x) => {
       // per-number adjustment for specialDecimalHandling
       const minMag = smallestPrecisionMagnitude(x);
       let fracDigits = digitTarget - maxMag - 1;
@@ -249,7 +251,7 @@ const splitStrsForMagStratLargestWithDigitsTarget = (
       maximumFractionDigits: fracDigits,
     })
   );
-  let maxOrderSuffix = shortScaleSuffixIfAvailable(maxMagEng);
+  const maxOrderSuffix = shortScaleSuffixIfAvailable(maxMagEng);
   splitStrs.forEach((ss) => {
     ss.suffix = maxOrderSuffix;
   });
@@ -269,7 +271,7 @@ const splitStrsForMagStratLargest = (
   if (options.usePlainNumsForThousands && maxOrder === 3) {
     // if top magnitude is e3 (thousands) AND ALL ARE INTEGERS, can just show 6 digits of integer parts
     const decimals = options.usePlainNumsForThousandsOneDecimal ? 1 : 0;
-    let formatter = new Intl.NumberFormat("en-US", {
+    const formatter = new Intl.NumberFormat("en-US", {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
     });
@@ -328,7 +330,7 @@ const splitStrsForMagStratUnlimited = (
     notation: "engineering",
     minimumFractionDigits: 3,
   });
-  let rawStrings = sample.map(engFmt.format);
+  const rawStrings = sample.map(engFmt.format);
   let splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
 
   splitStrs = splitStrs.map((ss, i) => {
@@ -346,7 +348,7 @@ const splitStrsForMagStratUnlimited = (
       return ss;
     }
 
-    let suffix = shortScaleSuffixIfAvailable(ordersOfMag[i]);
+    const suffix = shortScaleSuffixIfAvailable(ordersOfMag[i]);
     return { ...ss, ...{ suffix } };
   });
 
@@ -356,26 +358,25 @@ const splitStrsForMagStratUnlimited = (
 export const humanized2FormatterFactory: FormatterFactory = (
   sample: number[],
   pxWidthLookup: NumPartPxWidthLookupFn,
-  options
+  options: FormatterOptionsV1
 ) => {
-  let range = { max: Math.max(...sample), min: Math.min(...sample) };
+  const range = { max: Math.max(...sample), min: Math.min(...sample) };
 
   const engFmt = new Intl.NumberFormat("en-US", {
     notation: "engineering",
     minimumFractionDigits: 3,
   });
-  let rawStrings = sample.map(engFmt.format);
+  const rawStrings = sample.map(engFmt.format);
   let splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
 
-  let ordersOfMag = splitStrs.map((ss) => +ss.suffix.slice(1));
+  const ordersOfMag = splitStrs.map((ss) => +ss.suffix.slice(1));
 
   // omit exact zeros when calculating orders of magnitude
   const orderOfMagNoZeros = ordersOfMag.filter((_, i) => sample[i] != 0);
-  let maxOrder = Math.max(...orderOfMagNoZeros);
-  let minOrder = Math.min(...orderOfMagNoZeros);
+  const maxOrder = Math.max(...orderOfMagNoZeros);
 
   splitStrs.forEach((ss, i) => {
-    let suff = ORDER_OF_MAG_TO_SHORT_SCALE_SUFFIX[ordersOfMag[i]];
+    const suff = ORDER_OF_MAG_TO_SHORT_SCALE_SUFFIX[ordersOfMag[i]];
     if (suff !== undefined) ss.suffix = suff;
   });
 
@@ -411,8 +412,31 @@ export const humanized2FormatterFactory: FormatterFactory = (
       // console.log("splitStrs", splitStrs);
       break;
 
-    case "defaultStrategy":
+    case "defaultStrategyProposal-2023-03-02":
       splitStrs = humanizeDefaultStrategy(sample, options);
+      // console.log("splitStrs", splitStrs);
+      break;
+
+    case "defaultStrategy":
+      {
+        let numberKind = NumberKind.ANY;
+        switch (options.formattingUnits) {
+          case "$":
+            numberKind = NumberKind.DOLLAR;
+            break;
+          case "%":
+            numberKind = NumberKind.PERCENT;
+            break;
+          default:
+            break;
+        }
+
+        const formatter = humanizedFormatterFactory(sample, {
+          strategy: "default",
+          numberKind,
+        });
+        splitStrs = sample.map((x) => formatter.partsFormat(x));
+      }
       // console.log("splitStrs", splitStrs);
       break;
 
@@ -420,7 +444,7 @@ export const humanized2FormatterFactory: FormatterFactory = (
       break;
   }
 
-  splitStrs.forEach((ss, i) => {
+  splitStrs.forEach((ss) => {
     if (ss.suffix === undefined) console.error("bad suffix post", ss);
     // FIXME: add concept of "prefix" instead of this hack
     if (options.formattingUnits === "$") {
@@ -431,12 +455,12 @@ export const humanized2FormatterFactory: FormatterFactory = (
     }
   });
 
-  let spacing: FormatterSpacingMeta =
+  const spacing: FormatterSpacingMeta =
     getSpacingMetadataForSplitStrings(splitStrs);
   const maxPxWidth = getMaxPxWidthsForSplitsStrings(splitStrs, pxWidthLookup);
 
   return (x: number) => {
-    let i = sample.findIndex((h) => h === x);
+    const i = sample.findIndex((h) => h === x);
     return {
       number: x,
       rawStr: rawStrings[i],

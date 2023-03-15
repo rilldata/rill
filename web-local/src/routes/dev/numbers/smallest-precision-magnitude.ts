@@ -1,5 +1,3 @@
-import type { NumberStringParts } from "./number-to-string-formatters";
-
 // returns the smallest order of magnitude to which a number
 // has precision -- basically, the smallest OoM that has a non-zero
 // digit. Returm NaN if number is NaN or infinite
@@ -75,23 +73,4 @@ export const runTestsmallestPrecisionMagnitude = () => {
   } else {
     console.log("smallestPrecisionMagnitude test pass:", caseResults);
   }
-};
-
-const formatNumWithOrderOfMag = (
-  x: number,
-  newOrder: number,
-  options = { minimumFractionDigits: 3, maximumFractionDigits: 3 }
-): NumberStringParts => {
-  const [int, frac] = Intl.NumberFormat("en-US", options)
-    .format(x / 10 ** newOrder)
-    .split(".");
-  const dot: "." = ".";
-
-  // if (int === undefined || frac === undefined) {
-  //   console.error({ x, int, frac, newOrder });
-  // }
-
-  const splitStr = { int, dot, frac: frac ?? "", suffix: "E" + newOrder };
-
-  return splitStr;
 };

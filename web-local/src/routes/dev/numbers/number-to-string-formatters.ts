@@ -1,5 +1,4 @@
 import {
-  humanizeDataType,
   humanizeGroupValues,
   NicelyFormattedTypes,
 } from "@rilldata/web-common/features/dashboards/humanize-numbers";
@@ -8,7 +7,6 @@ import { humanized2FormatterFactory } from "./humanizer-2";
 import {
   splitNumStr,
   getSpacingMetadataForRawStrings,
-  getSpacingMetadataForSplitStrings,
   getMaxPxWidthsForSplitsStrings,
 } from "./num-string-to-aligned-spec";
 
@@ -61,28 +59,28 @@ export type FormatterFactory = (
 
 export type NumPartPxWidthLookupFn = (str: string) => number;
 
-let humanizeGroupValuesFormatterFactory: FormatterFactory = (
+const humanizeGroupValuesFormatterFactory: FormatterFactory = (
   sample: number[],
   pxWidthLookup: NumPartPxWidthLookupFn,
   _options
 ) => {
-  let range = { max: Math.max(...sample), min: Math.min(...sample) };
+  const range = { max: Math.max(...sample), min: Math.min(...sample) };
 
-  let humanized = humanizeGroupValues(
+  const humanized = humanizeGroupValues(
     sample.map((x) => ({ value: x })),
     NicelyFormattedTypes.HUMANIZE,
     { columnName: "value" }
   );
-  let rawStrings = humanized.map((x) => x.__formatted_value.toString());
-  let splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
+  const rawStrings = humanized.map((x) => x.__formatted_value.toString());
+  const splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
 
-  let spacing: FormatterSpacingMeta =
+  const spacing: FormatterSpacingMeta =
     getSpacingMetadataForRawStrings(rawStrings);
 
   const maxPxWidth = getMaxPxWidthsForSplitsStrings(splitStrs, pxWidthLookup);
 
   return (x: number) => {
-    let i = humanized.findIndex((h) => h.value == x);
+    const i = humanized.findIndex((h) => h.value == x);
     return {
       number: x,
       rawStr: rawStrings[i],
@@ -94,22 +92,22 @@ let humanizeGroupValuesFormatterFactory: FormatterFactory = (
   };
 };
 
-let rawStrFormatterFactory: FormatterFactory = (
+const rawStrFormatterFactory: FormatterFactory = (
   sample: number[],
   pxWidthLookup: NumPartPxWidthLookupFn,
   _options
 ) => {
-  let range = { max: Math.max(...sample), min: Math.min(...sample) };
+  const range = { max: Math.max(...sample), min: Math.min(...sample) };
 
-  let rawStrings = sample.map((x) => x.toString());
-  let splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
+  const rawStrings = sample.map((x) => x.toString());
+  const splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
 
-  let spacing: FormatterSpacingMeta =
+  const spacing: FormatterSpacingMeta =
     getSpacingMetadataForRawStrings(rawStrings);
   const maxPxWidth = getMaxPxWidthsForSplitsStrings(splitStrs, pxWidthLookup);
 
   return (x: number) => {
-    let i = sample.findIndex((h) => h === x);
+    const i = sample.findIndex((h) => h === x);
     return {
       number: x,
       rawStr: rawStrings[i],
@@ -143,25 +141,25 @@ let rawStrFormatterFactory: FormatterFactory = (
 //   };
 // };
 
-let IntlFormatterFactoryWithBaseOptions =
+const IntlFormatterFactoryWithBaseOptions =
   (baseOptions) =>
   (sample: number[], pxWidthLookup: NumPartPxWidthLookupFn, options) => {
-    let range = { max: Math.max(...sample), min: Math.min(...sample) };
+    const range = { max: Math.max(...sample), min: Math.min(...sample) };
 
-    let intlFormatter = new Intl.NumberFormat("en-US", {
+    const intlFormatter = new Intl.NumberFormat("en-US", {
       ...baseOptions,
       ...options,
     });
 
-    let rawStrings = sample.map((x) => intlFormatter.format(x));
-    let splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
+    const rawStrings = sample.map((x) => intlFormatter.format(x));
+    const splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
 
-    let spacing: FormatterSpacingMeta =
+    const spacing: FormatterSpacingMeta =
       getSpacingMetadataForRawStrings(rawStrings);
     const maxPxWidth = getMaxPxWidthsForSplitsStrings(splitStrs, pxWidthLookup);
 
     return (x: number) => {
-      let i = sample.findIndex((h) => h === x);
+      const i = sample.findIndex((h) => h === x);
       return {
         number: x,
         rawStr: rawStrings[i],
@@ -173,46 +171,21 @@ let IntlFormatterFactoryWithBaseOptions =
     };
   };
 
-let formatterFactoryFromStringifier =
-  (stringifier: (number) => string) =>
-  (sample: number[], pxWidthLookup: NumPartPxWidthLookupFn, options) => {
-    let range = { max: Math.max(...sample), min: Math.min(...sample) };
-
-    let rawStrings = sample.map(stringifier);
-    let splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
-
-    let spacing: FormatterSpacingMeta =
-      getSpacingMetadataForRawStrings(rawStrings);
-    const maxPxWidth = getMaxPxWidthsForSplitsStrings(splitStrs, pxWidthLookup);
-
-    return (x: number) => {
-      let i = sample.findIndex((h) => h === x);
-      return {
-        number: x,
-        rawStr: rawStrings[i],
-        splitStr: splitStrs[i],
-        spacing,
-        range,
-        maxPxWidth,
-      };
-    };
-  };
-
-let formatterFactoryFromStringifierWithOptions =
+const formatterFactoryFromStringifierWithOptions =
   (stringifierWithOptions: (options) => (number) => string) =>
   (sample: number[], pxWidthLookup: NumPartPxWidthLookupFn, options) => {
-    let range = { max: Math.max(...sample), min: Math.min(...sample) };
+    const range = { max: Math.max(...sample), min: Math.min(...sample) };
 
-    let rawStrings = sample.map(stringifierWithOptions(options));
-    let splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
+    const rawStrings = sample.map(stringifierWithOptions(options));
+    const splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
 
-    let spacing: FormatterSpacingMeta =
+    const spacing: FormatterSpacingMeta =
       getSpacingMetadataForRawStrings(rawStrings);
 
     const maxPxWidth = getMaxPxWidthsForSplitsStrings(splitStrs, pxWidthLookup);
 
     return (x: number) => {
-      let i = sample.findIndex((h) => h === x);
+      const i = sample.findIndex((h) => h === x);
       return {
         number: x,
         rawStr: rawStrings[i],

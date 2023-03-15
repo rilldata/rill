@@ -2,8 +2,10 @@ export type FormatterOptionsV1 = {
   magnitudeStrategy:
     | "unlimited"
     | "unlimitedDigitTarget"
+    | "largest"
     | "largestWithDigitTarget"
-    | "defaultStrategy";
+    | "defaultStrategy"
+    | "defaultStrategyProposal-2023-03-02";
   digitTarget: number;
   digitTargetPadWithInsignificantZeros: boolean;
   usePlainNumsForThousands: boolean;

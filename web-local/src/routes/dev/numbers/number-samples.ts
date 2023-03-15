@@ -41,12 +41,12 @@ const numberListsGen: NumericSampleGen[] = [
 
   {
     desc: "magnitudes (e-15, e-12) (Kasper's case)",
-    sampleFn: () => range.map((x) => 10 ** uniform(-15, -12)),
+    sampleFn: () => range.map(() => 10 ** uniform(-15, -12)),
   },
 
   {
     desc: "uniform (-1000, 1000)",
-    sampleFn: () => range.map((x) => uniform(-1000, 1000)),
+    sampleFn: () => range.map(() => uniform(-1000, 1000)),
   },
   {
     desc: "uniform (-300,700) with O(1e7) outlier",
@@ -65,43 +65,43 @@ const numberListsGen: NumericSampleGen[] = [
 
   {
     desc: "power law-ish (uniform over magnitudes (e-15, e12))",
-    sampleFn: () => range.map((x) => 10 ** uniform(-15, 12)),
+    sampleFn: () => range.map(() => 10 ** uniform(-15, 12)),
   },
 
   {
     desc: "power law-ish (uniform over magnitudes (e-6, e13))",
     sampleFn: () =>
       range
-        .map((x) => 10 ** uniform(-6, 13))
+        .map(() => 10 ** uniform(-6, 13))
         .map((x) => (randu() < 0.2 ? 0 : x)),
   },
 
   {
     desc: "power law-ish (uniform over magnitudes (e3, e8))",
     sampleFn: () =>
-      range.map((x) => 10 ** uniform(3, 8)).map((x) => (randu() < 0.2 ? 0 : x)),
+      range.map(() => 10 ** uniform(3, 8)).map((x) => (randu() < 0.2 ? 0 : x)),
   },
 
   {
     desc: "-(t-dist)^8 (all neg, with exact zeros)",
     sampleFn: () =>
-      range.map((x) => -(tDist(1) ** 8)).map((x) => (randu() < 0.1 ? 0 : x)),
+      range.map(() => -(tDist(1) ** 8)).map((x) => (randu() < 0.1 ? 0 : x)),
   },
 
   {
     desc: "t-dist to the 5th",
-    sampleFn: () => range.map((x) => tDist(1) ** 7),
+    sampleFn: () => range.map(() => tDist(1) ** 7),
   },
 
   {
     desc: "t-dist to the 5th, 2 digits precision",
-    sampleFn: () => range.map((x) => +(tDist(1) ** 5).toPrecision(2)),
+    sampleFn: () => range.map(() => +(tDist(1) ** 5).toPrecision(2)),
   },
   {
     desc: "orders of mag e-5 to e5, 2 digits precision, some exact zeros",
     sampleFn: () =>
       range
-        .map((x) => -(10 ** uniform(-5, 5)))
+        .map(() => -(10 ** uniform(-5, 5)))
         .map((x) => (randu() < 0.3 ? 0 : x))
         .map((x) => x * (randu() < 0.5 ? -1 : 1))
         .map((x) => +x.toPrecision(2)),
@@ -110,34 +110,34 @@ const numberListsGen: NumericSampleGen[] = [
     desc: "orders of mag e0 to e5, rounded to ints",
     sampleFn: () =>
       range
-        .map((x) => 10 ** uniform(0, 5))
+        .map(() => 10 ** uniform(0, 5))
         .map((x) => x * (randu() < 0.5 ? -1 : 1))
         .map(Math.round),
   },
 
   {
     desc: "t-dist cubed, rounded to int",
-    sampleFn: () => range.map((x) => Math.round(tDist(1) ** 3)),
+    sampleFn: () => range.map(() => Math.round(tDist(1) ** 3)),
   },
   {
     desc: "all negative, power law-ish, zero inflated",
     sampleFn: () =>
       range
-        .map((x) => -(10 ** uniform(-3, 6)))
+        .map(() => -(10 ** uniform(-3, 6)))
         .map((x) => (randu() < 0.3 ? 0 : x)),
   },
   {
     desc: "pos & neg, power law-ish",
     sampleFn: () =>
       range
-        .map((x) => 10 ** uniform(-9, 11))
+        .map(() => 10 ** uniform(-9, 11))
         .map((x) => x * (randu() < 0.5 ? -1 : 1)),
   },
   {
     desc: "pos & neg, power law-ish, zero inflated",
     sampleFn: () =>
       range
-        .map((x) => 10 ** uniform(-9, 11))
+        .map(() => 10 ** uniform(-9, 11))
         .map((x) => (randu() < 0.2 ? 0 : x))
         .map((x) => x * (randu() < 0.5 ? -1 : 1)),
   },
@@ -153,29 +153,29 @@ const numberListsGen: NumericSampleGen[] = [
 
   {
     desc: "uniform (0,1)",
-    sampleFn: () => range.map((x) => randu()),
+    sampleFn: () => range.map(() => randu()),
   },
 
   {
     desc: "uniform(0,1e12)",
-    sampleFn: () => range.map((x) => randu() * 1e12),
+    sampleFn: () => range.map(() => randu() * 1e12),
   },
 
   {
     desc: "power law-ish (uniform over magnitudes (e-200, e200))",
-    sampleFn: () => range.map((x) => 10 ** uniform(-200, 200)),
+    sampleFn: () => range.map(() => 10 ** uniform(-200, 200)),
   },
 
   {
     desc: "power law-ish (uniform over magnitudes (e1, e8))",
-    sampleFn: () => range.map((x) => 10 ** uniform(1, 8)),
+    sampleFn: () => range.map(() => 10 ** uniform(1, 8)),
   },
 
   {
     desc: "orders of mag e4 to e7, 2 digits precision, some rounded",
     sampleFn: () =>
       range
-        .map((x) => 10 ** uniform(4, 7))
+        .map(() => 10 ** uniform(4, 7))
         .map((x) => (randu() < 0.4 ? Math.round(x) : x)),
   },
 

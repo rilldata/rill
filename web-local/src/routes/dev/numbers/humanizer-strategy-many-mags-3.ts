@@ -1,14 +1,10 @@
 import { formatNumWithOrderOfMag2 } from "./format-with-order-of-magnitude";
 import {
-  shortScaleSuffixIfAvailable,
-  thousandthsNumAsDecimalNumParts,
   orderOfMagnitude,
   orderOfMagnitudeEng,
   shortScaleSuffixIfAvailableForStr,
 } from "./humanizer-2";
-import { splitNumStr } from "./num-string-to-aligned-spec";
 import type { NumberStringParts } from "./number-to-string-formatters";
-import { smallestPrecisionMagnitude } from "./smallest-precision-magnitude";
 
 export const humanizeDefaultStrategy = (
   sample: number[],
@@ -56,8 +52,8 @@ export const humanizeDefaultStrategy = (
     }
   });
 
-  splitStrs = splitStrs.map((ss, i) => {
-    let suffix = shortScaleSuffixIfAvailableForStr(ss.suffix);
+  splitStrs = splitStrs.map((ss) => {
+    const suffix = shortScaleSuffixIfAvailableForStr(ss.suffix);
     return { ...ss, ...{ suffix } };
   });
 

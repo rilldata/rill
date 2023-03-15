@@ -442,7 +442,18 @@
             name="defaultStrategy"
             value={"defaultStrategy"}
           />
-          <b>proposed default strategy</b>
+          <b>default strategy</b>
+        </label>
+        <br />
+
+        <label>
+          <input
+            type="radio"
+            bind:group={magnitudeStrategy}
+            name="defaultStrategyProposal-2023-03-02"
+            value={"defaultStrategyProposal-2023-03-02"}
+          />
+          <b>default strategy proposal 2023-03-02</b>
         </label>
         <br />
         <label>
