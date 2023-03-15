@@ -33,10 +33,7 @@ func (s *Service) CreateProject(ctx context.Context, proj *database.Project) (*d
 		GithubURL:            *proj.GithubURL,
 		GitBranch:            proj.ProductionBranch,
 		GithubInstallationID: *proj.GithubInstallationID,
-	}
-	if err := proj.EnvVariables.AssignTo(&opts.Envs); err != nil {
-		s.logger.Error("unable to assign project envs", zap.Error(err))
-		return nil, err
+		Envs:                 proj.Envs,
 	}
 
 	// Provision it
@@ -206,12 +203,7 @@ func (s *Service) UpdateProject(ctx context.Context, p *database.Project) (*data
 		return nil, err
 	}
 
-	opts := &provisioner.UpdateProvisionOptions{}
-	if err := p.EnvVariables.AssignTo(&opts.Envs); err != nil {
-		s.logger.Error("assign envs to project failed with error ", zap.Error(err))
-		return nil, err
-	}
-
+	opts := &provisioner.UpdateProvisionOptions{Envs: p.Envs}
 	for _, d := range ds {
 		err := s.provisioner.UpdateProvision(ctx, opts, d.RuntimeHost, d.RuntimeInstanceID)
 		if err != nil {

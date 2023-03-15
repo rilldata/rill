@@ -2,11 +2,10 @@ package database
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
-
-	"github.com/jackc/pgtype"
 )
 
 // Drivers is a registry of drivers
@@ -146,14 +145,24 @@ type Project struct {
 	Name                   string
 	Description            string
 	Public                 bool
-	ProductionSlots        int          `db:"production_slots"`
-	ProductionBranch       string       `db:"production_branch"`
-	GithubURL              *string      `db:"github_url"`
-	GithubInstallationID   *int64       `db:"github_installation_id"`
-	ProductionDeploymentID *string      `db:"production_deployment_id"`
-	CreatedOn              time.Time    `db:"created_on"`
-	UpdatedOn              time.Time    `db:"updated_on"`
-	EnvVariables           pgtype.JSONB `db:"env"`
+	ProductionSlots        int       `db:"production_slots"`
+	ProductionBranch       string    `db:"production_branch"`
+	GithubURL              *string   `db:"github_url"`
+	GithubInstallationID   *int64    `db:"github_installation_id"`
+	ProductionDeploymentID *string   `db:"production_deployment_id"`
+	CreatedOn              time.Time `db:"created_on"`
+	UpdatedOn              time.Time `db:"updated_on"`
+	Envs                   Envs      `db:"env"`
+}
+
+type Envs map[string]string
+
+func (e *Envs) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return errors.New("failed type assertion to []byte")
+	}
+	return json.Unmarshal(b, &e)
 }
 
 // User is a person registered in Rill.

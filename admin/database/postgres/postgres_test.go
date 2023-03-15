@@ -48,6 +48,7 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestOrganizations", func(t *testing.T) { testOrganizations(t, db) })
 	t.Run("TestProjects", func(t *testing.T) { testProjects(t, db) })
 	// Add new tests here
+	t.Run("TestProjectsWithEnv", func(t *testing.T) { testProjectsWithEnv(t, db) })
 
 	require.NoError(t, db.Close())
 }
@@ -142,4 +143,21 @@ func testProjects(t *testing.T, db database.DB) {
 	org, err = db.FindOrganizationByName(ctx, "foo")
 	require.Equal(t, database.ErrNotFound, err)
 	require.Nil(t, org)
+}
+
+func testProjectsWithEnv(t *testing.T, db database.DB) {
+	ctx := context.Background()
+
+	org, err := db.CreateOrganization(ctx, "foo", "")
+	require.NoError(t, err)
+	require.Equal(t, "foo", org.Name)
+
+	project := &database.Project{Name: "bar", Description: "hello world", Envs: map[string]string{"hello": "world"}}
+	proj, err := db.CreateProject(ctx, org.ID, project)
+	require.NoError(t, err)
+	require.Equal(t, project.Envs, proj.Envs)
+
+	proj, err = db.FindProjectByName(ctx, org.Name, proj.Name)
+	require.NoError(t, err)
+	require.Equal(t, project.Envs, proj.Envs)
 }

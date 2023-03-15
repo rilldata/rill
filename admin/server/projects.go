@@ -121,9 +121,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProductionBranch:     req.ProductionBranch,
 		GithubURL:            &req.GithubUrl,
 		GithubInstallationID: &installationID,
-	}
-	if err := project.EnvVariables.Set(req.Envs); err != nil {
-		return nil, err
+		Envs:                 req.Envs,
 	}
 
 	proj, err := s.admin.CreateProject(ctx, project)
@@ -165,9 +163,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	proj.Description = req.Description
 	proj.ProductionBranch = req.ProductionBranch
 	proj.GithubURL = &req.GithubUrl
-	if err := proj.EnvVariables.Set(req.Envs); err != nil {
-		return nil, err
-	}
+	proj.Envs = req.Envs
 
 	proj, err = s.admin.UpdateProject(ctx, proj)
 	if err != nil {
@@ -180,9 +176,6 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 }
 
 func projToDTO(p *database.Project) *adminv1.Project {
-	envs := make(map[string]string)
-	_ = p.EnvVariables.AssignTo(&envs)
-
 	return &adminv1.Project{
 		Id:                     p.ID,
 		Name:                   p.Name,
@@ -194,7 +187,7 @@ func projToDTO(p *database.Project) *adminv1.Project {
 		ProductionDeploymentId: safeStr(p.ProductionDeploymentID),
 		CreatedOn:              timestamppb.New(p.CreatedOn),
 		UpdatedOn:              timestamppb.New(p.UpdatedOn),
-		Envs:                   envs,
+		Envs:                   p.Envs,
 	}
 }
 
