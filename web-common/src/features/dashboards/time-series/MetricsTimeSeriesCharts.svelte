@@ -190,7 +190,6 @@
               xMin={startValue}
               xMax={endValue}
               timegrain={metricsExplorer.selectedTimeRange?.interval}
-              yMin={yExtents[0] < 0 ? yExtents[0] : 0}
               start={startValue}
               end={endValue}
               mouseoverTimeFormat={(value) => {
