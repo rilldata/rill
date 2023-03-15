@@ -172,6 +172,7 @@ message CreateProjectRequest {
   int64 production_slots = 5;
   string production_branch = 6;
   string github_url = 7;
+  map<string, string> variables = 8;
 }
 
 message CreateProjectResponse {
@@ -192,6 +193,7 @@ message UpdateProjectRequest {
   bool public = 4;
   string production_branch = 5;
   string github_url = 6;
+  map<string, string> variables = 7;
 }
 
 message UpdateProjectResponse {
@@ -239,6 +241,7 @@ message Project {
   string production_deployment_id = 8;
   google.protobuf.Timestamp created_on = 9;
   google.protobuf.Timestamp updated_on = 10;
+  map<string, string> variables = 11;
 }
 
 message User {

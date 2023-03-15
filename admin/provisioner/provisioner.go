@@ -28,6 +28,7 @@ type ProvisionOptions struct {
 	GithubURL            string
 	GitBranch            string
 	GithubInstallationID int64
+	Variables            map[string]string
 }
 
 type Provisioner interface {
@@ -111,6 +112,7 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 	if err != nil {
 		return nil, err
 	}
+	defer rt.Close()
 
 	// Build repo info
 	repoDSN, err := json.Marshal(github.DSN{
@@ -136,7 +138,7 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 		RepoDriver:   "github",
 		RepoDsn:      string(repoDSN),
 		EmbedCatalog: true,
-		Env:          nil,
+		Variables:    opts.Variables,
 	})
 	if err != nil {
 		return nil, err
@@ -178,10 +180,12 @@ func (p *staticProvisioner) Teardown(ctx context.Context, host, instanceID strin
 	if err != nil {
 		return err
 	}
+	defer rt.Close()
 
 	// Delete the instance
 	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 		InstanceId: instanceID,
+		DropDb:     true,
 	})
 	if err != nil {
 		return err

@@ -19,7 +19,7 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 	var exampleName string
 	var listExamples bool
 	var verbose bool
-	var envVariables []string
+	var variables []string
 
 	initCmd := &cobra.Command{
 		Use:   "init",
@@ -56,7 +56,7 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 			fmt.Println("You can reach us in our Rill Discord server at https://bit.ly/3NSMKdT.")
 			fmt.Println("")
 
-			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, envVariables)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, variables)
 			if err != nil {
 				return err
 			}
@@ -102,7 +102,7 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 	initCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	initCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
 	initCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
-	initCmd.Flags().StringSliceVarP(&envVariables, "env", "e", []string{}, "Set project environment variables")
+	initCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
 
 	return initCmd
 }

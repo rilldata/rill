@@ -22,7 +22,7 @@ func ProjectCmd(cfg *config.Config) *cobra.Command {
 	projectCmd.AddCommand(EditCmd(cfg))
 	projectCmd.AddCommand(DeleteCmd(cfg))
 	projectCmd.AddCommand(ListCmd(cfg))
-
+	projectCmd.AddCommand(EnvCmd(cfg))
 	return projectCmd
 }
 
