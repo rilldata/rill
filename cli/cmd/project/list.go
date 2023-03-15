@@ -22,7 +22,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			proj, err := client.ListProjects(context.Background(), &adminv1.ListProjectsRequest{
-				OrganizationName: cfg.Org(),
+				OrganizationName: cfg.Org,
 			})
 			if err != nil {
 				return err
@@ -34,6 +34,5 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	listCmd.Flags().StringVar(&cfg.DefaultOrg, "org", cfg.Org(), "Organization Name")
 	return listCmd
 }

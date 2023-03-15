@@ -15,7 +15,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// This will return empty list if org passed is not exist
 func (s *Server) ListProjects(ctx context.Context, req *adminv1.ListProjectsRequest) (*adminv1.ListProjectsResponse, error) {
 	projs, err := s.admin.DB.FindProjects(ctx, req.OrganizationName)
 	if err != nil {

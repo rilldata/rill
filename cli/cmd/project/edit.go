@@ -26,7 +26,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			proj, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
-				OrganizationName: cfg.Org(),
+				OrganizationName: cfg.Org,
 				Name:             args[0],
 				Description:      description,
 			})
@@ -46,7 +46,6 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	editCmd.Flags().StringVar(&description, "description", "", "Description")
 	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "noname", "Production branch name")
 	editCmd.Flags().BoolVar(&public, "public", false, "Public")
-	editCmd.Flags().StringVar(&cfg.DefaultOrg, "org", cfg.Org(), "Organization Name")
 
 	return editCmd
 }
