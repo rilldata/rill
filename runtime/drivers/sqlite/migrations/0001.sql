@@ -7,6 +7,6 @@ CREATE TABLE instances (
 	embed_catalog BOOLEAN NOT NULL,
 	created_on TIMESTAMP NOT NULL,
 	updated_on TIMESTAMP NOT NULL,
-	variables TEXT,
-	project_variables TEXT
+	env TEXT,
+	project_env TEXT
 );

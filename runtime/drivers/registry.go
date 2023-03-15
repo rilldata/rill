@@ -41,8 +41,8 @@ type Instance struct {
 	ProjectVariables map[string]string `db:"project_variables"`
 }
 
-// InstanceVariables returns the final resolved variables
-func (i *Instance) InstanceVariables() map[string]string {
+// ResolveVariables returns the final resolved variables
+func (i *Instance) ResolveVariables() map[string]string {
 	r := make(map[string]string, len(i.ProjectVariables))
 	// set ProjectVariables first i.e. Project defaults
 	for k, v := range i.ProjectVariables {

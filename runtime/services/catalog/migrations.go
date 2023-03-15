@@ -368,7 +368,7 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 
 	// create in olap
 	err = s.wrapMigrator(item.CatalogInFile, func() error {
-		return migrator.Create(ctx, s.Olap, s.Repo, inst.InstanceVariables(), item.CatalogInFile)
+		return migrator.Create(ctx, s.Olap, s.Repo, inst.ResolveVariables(), item.CatalogInFile)
 	})
 	if err != nil {
 		return err
@@ -435,7 +435,7 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 	// update in olap
 	if item.Type == MigrationUpdate {
 		err = s.wrapMigrator(item.CatalogInFile, func() error {
-			return migrator.Update(ctx, s.Olap, s.Repo, inst.InstanceVariables(), item.CatalogInStore, item.CatalogInFile)
+			return migrator.Update(ctx, s.Olap, s.Repo, inst.ResolveVariables(), item.CatalogInStore, item.CatalogInFile)
 		})
 		if err != nil {
 			return err
