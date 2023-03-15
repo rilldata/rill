@@ -1,6 +1,4 @@
 <script lang="ts">
-  import ColorPicker from "svelte-awesome-color-picker";
-
   export let showBars = true;
   export let absoluteValExtentsIfPosAndNeg = true;
   export let absoluteValExtentsAlways = false;
@@ -20,7 +18,7 @@
   const red200 = "#fecaca";
   const red300 = "#fca5a5";
 
-  const white = "#fff";
+  const white = "#ffffff";
 
   const grey50 = "#f9fafb";
   const grey75 = "#f8f8f8";
@@ -147,8 +145,9 @@
   <div class="option-box">
     <!-- <div><ColorPicker bind:hex={negativeColor} label="negative" /></div> -->
     <div class="color-picker-row">
+      negative: {negativeColor} &nbsp;
       <div class="color-picker-wrapper">
-        <ColorPicker bind:hex={negativeColor} label="negative" />
+        <input type="color" bind:value={negativeColor} />
       </div>
       <button on:click={() => (negativeColor = red100)}>r-100</button>
       &nbsp;
@@ -158,8 +157,9 @@
     </div>
 
     <div class="color-picker-row">
+      positive: {positiveColor} &nbsp;
       <div class="color-picker-wrapper">
-        <ColorPicker bind:hex={positiveColor} label="positive" />
+        <input type="color" bind:value={positiveColor} />
       </div>
       <button on:click={() => (positiveColor = blue100)}>b-100</button>
       &nbsp;
@@ -171,8 +171,9 @@
     </div>
 
     <div class="color-picker-row">
+      background: {barBackgroundColor} &nbsp;
       <div class="color-picker-wrapper">
-        <ColorPicker bind:hex={barBackgroundColor} label="positive" />
+        <input type="color" bind:value={barBackgroundColor} />
       </div>
       <button on:click={() => (barBackgroundColor = white)}>w</button>
       &nbsp;
@@ -186,8 +187,9 @@
     </div>
 
     <div class="color-picker-row">
+      baseline: {baselineColor}&nbsp;
       <div class="color-picker-wrapper">
-        <ColorPicker bind:hex={baselineColor} label="baseline" />
+        <input type="color" bind:value={baselineColor} />
       </div>
       <button on:click={() => (baselineColor = grey100)}>gy-100</button>
       &nbsp;
@@ -216,7 +218,7 @@
   }
 
   .color-picker-wrapper {
-    width: 100px;
+    /* width: 100px; */
     display: inline-block;
   }
 
@@ -225,5 +227,11 @@
     background-color: #f2f2f2;
     padding: 3px;
     border-radius: 5px;
+    margin-left: 5px;
+  }
+  input[type="color"] {
+    width: 30px;
+    height: 30px;
+    margin-right: 8px;
   }
 </style>
