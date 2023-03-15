@@ -235,6 +235,9 @@ const mar2ProposalNoZeroPadTestCases: [number, string][] = [
   [-89, "-89"],
   [-9, "-9"],
   [-0, "0"],
+
+  [9.1, "9.1"],
+  [9.12, "9.12"],
 ];
 
 describe("range formatter, using options for 2022-03-02 proposal and NO padding with insignificant zeros `.stringFormat()`", () => {
@@ -244,6 +247,45 @@ describe("range formatter, using options for 2022-03-02 proposal and NO padding 
         [input],
         mar2ProposalNoZeroPadOptions
       );
+      expect(formatter.stringFormat(input)).toEqual(output);
+    });
+  });
+});
+
+describe("range formatter, correct handling of useTrailingDot`.stringFormat()`", () => {
+  const options: FormatterFactoryOptions = {
+    strategy: "perRange",
+    rangeSpecs: [
+      {
+        minMag: 3,
+        supMag: 6,
+        maxDigitsLeft: 6,
+        maxDigitsRight: 0,
+        useTrailingDot: false,
+      },
+      { minMag: -3, supMag: 3, maxDigitsRight: 3 },
+    ],
+    defaultMaxDigitsRight: 2,
+    numberKind: NumberKind.ANY,
+  };
+
+  // NOTE: the default case which includes the trailing dot is tested above
+
+  const testCases: [number, string][] = [
+    [999_999.1234686, "999,999"],
+    [345_789.1234686, "345,789"],
+
+    [45_789.1234686, "45,789"],
+    [5_789.1234686, "5,789"],
+    [-999_999.1234686, "-999,999"],
+    [-345_789.1234686, "-345,789"],
+    [-45_789.1234686, "-45,789"],
+    [-5_789.1234686, "-5,789"],
+  ];
+
+  testCases.forEach(([input, output]) => {
+    it(`returns the correct string in case: ${input}`, () => {
+      const formatter = new PerRangeFormatter([input], options);
       expect(formatter.stringFormat(input)).toEqual(output);
     });
   });

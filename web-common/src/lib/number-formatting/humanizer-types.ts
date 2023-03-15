@@ -32,10 +32,9 @@ export type RichFormatNumber = {
 };
 
 /**
- * This enum represents the *semantic* kind of the number being
- * handled, which is orthogonal to how it is being formatted.
- *
- * (Note that this contrasts with NicelyFormattedTypes)
+ * This enum represents the semantic kind of the number being
+ * handled (which is not the same thing as how the number is
+ * formatted, though it can inform formatting).
  */
 export enum NumberKind {
   DOLLAR = "DOLLAR",
@@ -44,7 +43,7 @@ export enum NumberKind {
 }
 
 /**
- * This is a no-op strategy
+ * This is a no-op strategy that
  */
 export type FormatterOptionsNoneStrategy = {
   strategy: "none";
@@ -102,9 +101,22 @@ export type RangeFormatSpec = {
   // will be rendered as plain numbers (no suffix).
   // If not set, the engineering magnitude of `min` is used by default.
   baseMagnitude?: number;
+
   // if not set, treated as true
   padWithInsignificantZeros?: boolean;
-  // if not set, treated as true
+
+  /**
+   * For a range with `maxDigitsRight=0`, by default a trailling
+   * "." will be added if formatting causes some of a number's
+   * true precision to be lost. For example, `123.234` with
+   * `baseMagnitude=0` and `maxDigitsRight=0` will be rendered as
+   * "123.", with the trailing "." retained to indicate that there
+   * is additional precision that is not shown.
+   *
+   * If this is not desired, then setting `useTrailingDot=false` will
+   * remove this decimal point--e.g., in the example above, `123.234`
+   * will be formatted as just "123", with no decimal point.
+   */
   useTrailingDot?: boolean;
 };
 
@@ -203,10 +215,6 @@ export type FormatterOptionsCommon = {
   // If `true`, use upper case "E" for exponential notation;
   // If `false` or `undefined`, use lower case
   upperCaseEForExponent?: boolean;
-
-  // If `true`, use commas to group thousands when applicable;
-  // If `false` or `undefined`, no commas.
-  useCommas?: boolean;
 };
 
 export type FormatterFactoryOptions = (

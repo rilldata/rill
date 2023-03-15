@@ -8,10 +8,22 @@ import {
   defaultPercentOptions,
 } from "./strategies/per-range-default-options";
 
+/**
+ * This FormatterFactory is intended to be the user-facing
+ * wrapper for formatters. This fumction delegates to a number
+ * of different formatters depending upon the options
+ * used, but by going through this wrapper those details
+ * can be somewhat abstracted away in favor of config
+ * options.
+ *
+ * @param sample
+ * @param options
+ * @returns Formatter
+ */
 export const humanizedFormatterFactory: FormatterFactory = (
   sample: number[],
   options
-) => {
+): Formatter => {
   let formatter: Formatter;
   switch (options.strategy) {
     case "none":
@@ -19,7 +31,8 @@ export const humanizedFormatterFactory: FormatterFactory = (
       break;
 
     case "default":
-      // delegate to the range strategy formatter with
+      // default strategy simply
+      // delegates to the range strategy formatter with
       // appropriate default presets for NumberKind
       switch (options.numberKind) {
         case NumberKind.DOLLAR:
