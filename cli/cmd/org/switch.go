@@ -23,29 +23,29 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			orgs, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
+			res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
 			if err != nil {
 				return err
 			}
 
-			if len(orgs.GetOrganization()) < 1 {
+			if len(res.Organizations) < 1 {
 				fmt.Println("No organizations found, run `rill org create` first.")
 				return nil
 			}
 
 			var orgNames []string
-			for _, org := range orgs.GetOrganization() {
+			for _, org := range res.Organizations {
 				orgNames = append(orgNames, org.Name)
 			}
 
-			defaultOrg := cmdutil.PromptGetSelect(orgNames, "Select default org")
+			defaultOrg := cmdutil.PromptGetSelect(orgNames, "Select default org (to change later, run `rill org switch`)")
 
 			err = dotrill.SetDefaultOrg(defaultOrg)
 			if err != nil {
 				return err
 			}
 
-			fmt.Printf("Set default organization to %q", defaultOrg)
+			fmt.Printf("Set default organization to %q.\n", defaultOrg)
 			return nil
 		},
 	}

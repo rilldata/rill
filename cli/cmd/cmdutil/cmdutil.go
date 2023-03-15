@@ -61,6 +61,5 @@ func PromptGetSelect(items []string, label string) string {
 		os.Exit(1)
 	}
 
-	fmt.Printf("You have selected: %s\n", result)
 	return result
 }

@@ -52,8 +52,6 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			bold.Print("Successfully logged in.\n")
-
 			err = dotrill.SetAccessToken(OAuthTokenResponse.AccessToken)
 			if err != nil {
 				return err
@@ -66,14 +64,14 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			orgs, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
+			res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
 			if err != nil {
 				return err
 			}
 
-			if len(orgs.GetOrganization()) > 0 {
+			if len(res.Organizations) > 0 {
 				var orgNames []string
-				for _, org := range orgs.GetOrganization() {
+				for _, org := range res.Organizations {
 					orgNames = append(orgNames, org.Name)
 				}
 
@@ -87,9 +85,10 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				fmt.Printf("Set default organization to %q", defaultOrg)
+				fmt.Printf("Set default organization to %q.\n", defaultOrg)
 			}
 
+			bold.Print("Successfully logged in.\n")
 			return nil
 		},
 	}
