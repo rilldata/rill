@@ -20,7 +20,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var name string
 			if len(args) == 0 {
-				name = cfg.Org()
+				name = cfg.Org
 				if name == "" {
 					fmt.Printf("No organization is set. Run 'rill org create org-name' to create one.")
 					os.Exit(1)

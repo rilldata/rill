@@ -129,7 +129,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 
 			// Create the project (automatically deploys prod branch)
 			projRes, err := client.CreateProject(cmd.Context(), &adminv1.CreateProjectRequest{
-				OrganizationName: cfg.Org(),
+				OrganizationName: cfg.Org,
 				Name:             name,
 				Description:      description,
 				ProductionSlots:  int64(slots),
@@ -142,7 +142,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Success!
-			fmt.Printf("Created project %s/%s\n", cfg.Org(), projRes.Project.Name)
+			fmt.Printf("Created project %s/%s\n", cfg.Org, projRes.Project.Name)
 			return nil
 		},
 	}
