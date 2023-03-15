@@ -1,1 +1,1 @@
-ALTER TABLE projects ADD COLUMN env JSONB;
+ALTER TABLE projects ADD COLUMN env JSONB NOT NULL default '{}'::jsonb;
