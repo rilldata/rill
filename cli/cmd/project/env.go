@@ -43,7 +43,7 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 
 			ctx := context.Background()
 			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
-				OrganizationName: cfg.Org(),
+				OrganizationName: cfg.Org,
 				Name:             projectName,
 			})
 			if err != nil {
@@ -60,7 +60,7 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 			}
 			proj.Variables[key] = value
 			updatedProject, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
-				OrganizationName: cfg.Org(),
+				OrganizationName: cfg.Org,
 				Name:             projectName,
 				Description:      proj.Description,
 				Public:           proj.Public,
@@ -97,7 +97,7 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 
 			ctx := context.Background()
 			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
-				OrganizationName: cfg.Org(),
+				OrganizationName: cfg.Org,
 				Name:             projectName,
 			})
 			if err != nil {
@@ -111,7 +111,7 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 
 			delete(proj.Variables, key)
 			updatedProject, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
-				OrganizationName: cfg.Org(),
+				OrganizationName: cfg.Org,
 				Name:             projectName,
 				Description:      proj.Description,
 				Public:           proj.Public,
@@ -146,7 +146,7 @@ func ShowEnvCmd(cfg *config.Config) *cobra.Command {
 
 			ctx := context.Background()
 			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
-				OrganizationName: cfg.Org(),
+				OrganizationName: cfg.Org,
 				Name:             projectName,
 			})
 			if err != nil {
