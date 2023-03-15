@@ -77,7 +77,7 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 
 				defaultOrg := orgNames[0]
 				if len(orgNames) > 1 {
-					defaultOrg = cmdutil.PromptGetSelect(orgNames, "Select default org")
+					defaultOrg = cmdutil.PromptGetSelect(orgNames, "Select default org (to change later, run `rill org switch`).")
 				}
 
 				err = dotrill.SetDefaultOrg(defaultOrg)

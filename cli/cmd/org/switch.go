@@ -38,7 +38,7 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 				orgNames = append(orgNames, org.Name)
 			}
 
-			defaultOrg := cmdutil.PromptGetSelect(orgNames, "Select default org (to change later, run `rill org switch`)")
+			defaultOrg := cmdutil.PromptGetSelect(orgNames, "Select default org.")
 
 			err = dotrill.SetDefaultOrg(defaultOrg)
 			if err != nil {
