@@ -1,3 +1,5 @@
+import { toProto } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+import type { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   V1MetricsView,
   V1MetricsViewFilter,
@@ -32,6 +34,7 @@ export interface MetricsExplorerEntity {
   selectedTimeRange?: TimeSeriesTimeRange;
   // user selected dimension
   selectedDimensionName?: string;
+  proto?: DashboardState;
 }
 
 export interface MetricsExplorerStoreType {
@@ -54,29 +57,28 @@ const updateMetricsExplorerByName = (
       return state;
     }
     callback(state.entities[name]);
+    // every change triggers a proto update
+    state.entities[name].proto = toProto(state.entities[name]);
     return state;
   });
 };
 
 const metricViewReducers = {
-  create(
-    name: string,
-    filters: V1MetricsViewFilter,
-    selectedTimeRange: TimeSeriesTimeRange
-  ) {
+  create(name: string, partial: Partial<MetricsExplorerEntity>) {
     updateMetricsExplorerByName(
       name,
       (metricsExplorer) => {
-        metricsExplorer.filters = filters;
-        metricsExplorer.selectedTimeRange = selectedTimeRange;
+        for (const key in partial) {
+          metricsExplorer[key] = partial[key];
+        }
       },
       () => ({
         name,
         selectedMeasureNames: [],
         leaderboardMeasureName: "",
-        filters,
+        filters: {},
         dimensionFilterExcludeMode: new Map(),
-        selectedTimeRange,
+        ...partial,
       })
     );
   },
@@ -253,10 +255,9 @@ export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
 export function useDashboardStore(
   name: string
 ): Readable<MetricsExplorerEntity> {
-  const derivedStore = derived(metricsExplorerStore, ($store) => {
+  return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
   });
-  return derivedStore;
 }
 
 export const calendlyModalStore: Writable<string> = writable("");

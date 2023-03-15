@@ -23,10 +23,10 @@
     await tick();
     const state = new URL(location.href).searchParams.get("state");
     if (!state) return;
-    const [filters, selectedTimeRage] = fromProto(
+    const partialMetricsView = fromProto(
       base64ToProto(decodeURIComponent(state))
     );
-    metricsExplorerStore.create(metricViewName, filters, selectedTimeRage);
+    metricsExplorerStore.create(metricViewName, partialMetricsView);
   });
 
   $: fileQuery = useRuntimeServiceGetFile(

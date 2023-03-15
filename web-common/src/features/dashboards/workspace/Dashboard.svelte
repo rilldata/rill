@@ -6,6 +6,7 @@
   } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
   import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { useRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
@@ -68,17 +69,18 @@
       }px minmax(355px, auto)`
     : "max-content minmax(355px, auto)";
 
-  $: if (!$featureFlags.readOnly && metricsExplorer) {
-    const binary = toProto(metricsExplorer).toBinary();
-    const message = protoToBase64(binary);
+  let protoState: DashboardState;
+  $: protoState = metricsExplorer?.proto;
+  $: if (protoState) {
+    const message = protoToBase64(protoState.toBinary());
     goto(`/dashboard/${metricViewName}?state=${message}`);
   }
 </script>
 
-<DashboardContainer bind:exploreContainerWidth {gridConfig} bind:width>
+<DashboardContainer bind:exploreContainerWidth bind:width {gridConfig}>
   <DashboardHeader {metricViewName} slot="header" />
 
-  <svelte:fragment slot="metrics" let:width>
+  <svelte:fragment let:width slot="metrics">
     {#key metricViewName}
       {#if hasTimeSeries}
         <MetricsTimeSeriesCharts {metricViewName} workspaceWidth={width} />

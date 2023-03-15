@@ -26,14 +26,25 @@ import type {
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 export function toProto(metrics: MetricsExplorerEntity) {
-  const data: PartialMessage<DashboardState> = {};
+  const state: PartialMessage<DashboardState> = {};
   if (metrics.filters) {
-    data.filters = toFiltersProto(metrics.filters) as any;
+    state.filters = toFiltersProto(metrics.filters) as any;
   }
   if (metrics.selectedTimeRange) {
-    data.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
+    state.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
+    if (metrics.selectedTimeRange.interval) {
+      state.timeGranularity = toTimeGrainProto(
+        metrics.selectedTimeRange.interval
+      );
+    }
   }
-  return new DashboardState(data);
+  if (metrics.leaderboardMeasureName) {
+    state.leaderboardMeasure = metrics.leaderboardMeasureName;
+  }
+  if (metrics.selectedDimensionName) {
+    state.selectedDimension = metrics.selectedDimensionName;
+  }
+  return new DashboardState(state);
 }
 
 export function protoToBase64(proto: Uint8Array) {
@@ -50,7 +61,6 @@ function toFiltersProto(filters: V1MetricsViewFilter) {
 function toTimeRangeProto(range: TimeSeriesTimeRange) {
   const timeRangeArgs: PartialMessage<DashboardTimeRange> = {
     name: range.name,
-    timeGranularity: toTimeGrainProto(range.interval),
   };
   if (range.name === TimeRangeName.Custom) {
     timeRangeArgs.timeStart = toTimeProto(range.start);
