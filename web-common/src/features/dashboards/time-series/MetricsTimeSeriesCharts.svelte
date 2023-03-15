@@ -22,7 +22,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
-  import { extent } from "d3-array";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -159,7 +158,6 @@
       {#each $metaQuery.data?.measures as measure, index (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
         {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
-        {@const yExtents = extent(dataCopy ?? [], (d) => d[`measure_${index}`])}
         {@const formatPreset =
           NicelyFormattedTypes[measure?.format] ||
           NicelyFormattedTypes.HUMANIZE}
