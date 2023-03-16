@@ -48,6 +48,7 @@ type DB interface {
 	FindOrganizations(ctx context.Context) ([]*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
 	CreateOrganization(ctx context.Context, name string, description string) (*Organization, error)
+	CreateOrganizationFromSeeds(ctx context.Context, nameSeeds []string, description string) (*Organization, error)
 	UpdateOrganization(ctx context.Context, name string, description string) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
 
@@ -96,6 +97,9 @@ type DB interface {
 
 // ErrNotFound is returned for single row queries that return no values.
 var ErrNotFound = errors.New("database: not found")
+
+// ErrNotUnique is returned when a unique constraint is violated
+var ErrNotUnique = errors.New("database: violates unique constraint")
 
 // Entity is an enum representing the entities in this package.
 type Entity string
