@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { fromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
   import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
