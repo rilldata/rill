@@ -80,8 +80,6 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 
 	store, ok := r.metastore.CatalogStore()
 	if !ok {
-		// todo :: check this
-		// Verified as CatalogStore when instance is created, so this should never happen
 		return nil, fmt.Errorf("metastore cannot serve as catalog")
 	}
 	return store, nil

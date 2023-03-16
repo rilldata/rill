@@ -115,8 +115,7 @@ func newMigrationMetadataCache() *migrationMetaCache {
 }
 
 func (c *migrationMetaCache) get(instID string) *catalog.MigrationMeta {
-	// TODO 1: opening a driver shouldn't take too long but we should still have an instance specific lock
-	// TODO 2: Use LRU and not a map
+	// TODO : Use LRU and not a map
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -129,7 +128,6 @@ func (c *migrationMetaCache) get(instID string) *catalog.MigrationMeta {
 	return meta
 }
 
-// evict removes service for instance id
 func (c *migrationMetaCache) evict(ctx context.Context, instID string) {
 	c.lock.Lock()
 	defer c.lock.Unlock()

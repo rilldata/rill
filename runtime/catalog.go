@@ -80,7 +80,7 @@ func (r *Runtime) RefreshSource(ctx context.Context, instanceID, name string) er
 		return err
 	}
 
-	path, ok := cat.NameToPath[name]
+	path, ok := cat.Meta.NameToPath[name]
 	if !ok {
 		return fmt.Errorf("artifact not found for source")
 	}

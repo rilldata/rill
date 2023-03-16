@@ -19,7 +19,7 @@ type Options struct {
 
 type Runtime struct {
 	opts               *Options
-	metastore          drivers.Connection
+	 metastore          drivers.Connection
 	logger             *zap.Logger
 	connCache          *connectionCache
 	migrationMetaCache *migrationMetaCache

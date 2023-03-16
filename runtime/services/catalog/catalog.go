@@ -18,15 +18,7 @@ type Service struct {
 	InstID        string
 	logger        *zap.Logger
 
-	// temporary information. should this be persisted into olap?
-	// LastMigration stores the last time migrate was run. Used to filter out repos that didnt change since this time
-	LastMigration time.Time
-	dag           *dag.DAG
-	// used to get path when we only have name. happens when we get name from DAG
-	// TODO: should we add path to the DAG instead
-	NameToPath  map[string]string
-	hasMigrated bool
-	lock        *sync.Mutex
+	Meta *MigrationMeta
 }
 
 func NewService(
@@ -49,11 +41,7 @@ func NewService(
 		InstID:        instID,
 		logger:        logger,
 
-		LastMigration: m.LastMigration,
-		dag:           m.dag,
-		NameToPath:    m.NameToPath,
-		hasMigrated:   m.hasMigrated,
-		lock:          &m.lock,
+		Meta: m,
 	}
 }
 
@@ -74,8 +62,8 @@ func (s *Service) FindEntry(ctx context.Context, name string) (*drivers.CatalogE
 }
 
 func (s *Service) fillDAGInEntry(entry *drivers.CatalogEntry) {
-	entry.Children = s.dag.GetChildren(normalizeName(entry.Name))
-	entry.Parents = s.dag.GetParents(normalizeName(entry.Name))
+	entry.Children = s.Meta.dag.GetChildren(normalizeName(entry.Name))
+	entry.Parents = s.Meta.dag.GetParents(normalizeName(entry.Name))
 }
 
 type MigrationMeta struct {
