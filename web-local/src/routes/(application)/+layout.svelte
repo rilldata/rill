@@ -5,10 +5,13 @@
   import { createQueryClient } from "../../lib/svelte-query/globalQueryClient";
 
   const queryClient = createQueryClient();
+
+  // Note: this right hand side is set by Vite at build time.
+  const rillRuntimeURL = RILL_RUNTIME_URL;
 </script>
 
 <QueryClientProvider client={queryClient}>
-  <RuntimeProvider host="http://localhost:9009" instanceId="default">
+  <RuntimeProvider host={rillRuntimeURL} instanceId="default">
     <RillDeveloperLayout>
       <slot />
     </RillDeveloperLayout>
