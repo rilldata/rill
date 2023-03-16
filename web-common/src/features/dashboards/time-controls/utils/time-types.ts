@@ -1,3 +1,6 @@
+import type { DateTimeUnit } from "luxon";
+import type { V1TimeGrain } from "../../../../runtime-client";
+
 export const TIME = {
   MILLISECOND: 1,
   get SECOND() {
@@ -24,7 +27,7 @@ export const TIME = {
 };
 
 // Used for luxon's time units
-export const TimeUnit = {
+export const TimeUnit: Record<string, DateTimeUnit> = {
   PT1M: "minute",
   PT1H: "hour",
   P1D: "day",
@@ -47,4 +50,105 @@ export enum Period {
   MONTH = "P1M",
   QUARTER = "P3M",
   YEAR = "P1Y",
+}
+
+export enum RangePreset {
+  PERIOD_ANCHORED = "PERIOD_ANCHORED",
+  OFFSET_ANCHORED = "OFFSET_ANCHORED",
+  ALL_TIME = "ALL_TIME",
+  FIXED_RANGE = "FIXED_RANGE",
+}
+
+export enum ReferencePoint {
+  LATEST_DATA = "LatestData",
+  NOW = "Now",
+}
+
+/** An offset defines an operation on a point in time, primarily used to map from a
+ * datetime to something we can pass into the dashboard APIs.
+ * An offset on its own is just one operation; in a configuration, you create an array of operations,
+ * and those map to indiidual sequential operations.
+ *
+ * Why are we defining these offsets as an interface / object rather than a function?
+ * This will enable us to define wholly-custom time ranges in the configuration. Given that
+ * there are really only four operations and one input – a duration – this is a fairly tractable and
+ * elegant way to handle almost all of the basic time functions of interest in Rill.
+ *
+ */
+
+export enum TimeOffsetType {
+  /** Add the associated duration to this datetime.
+   * @example 2020-05-02 12:22:53 -> ADD PT1H -> 2020-05-02 13:22:53
+   */
+  ADD = "ADD",
+  /** Subtract the associted duration to this datetime.
+   * @example 2020-05-02 12:22:53 -> SUBTRACT PT1H -> 2020-05-02 11:22:53
+   */
+  SUBTRACT = "SUBTRACT",
+}
+
+interface TimeOffset {
+  duration: Period | string;
+  operationType: TimeOffsetType;
+}
+
+interface TimeTruncation {
+  period: Period;
+  truncationType: TimeTruncationType;
+}
+
+/**
+ * These types tell Rill to take the supplied duration, and map it to the beginning
+ * or end of the period in which the datetime object is currently in. We utilize the ISO8601 duration
+ * to specify when this duration should technically start; we will likely drastically limit the complexity
+ * to a small subset of available values. For now, we'll be capitalizing on the Period enum to keep the set
+ * of available periods to a normal amount.
+ */
+export enum TimeTruncationType {
+  /**
+   * @example 2020-05-02 12:23:53 -> START_OF_PERIOD PT1H -> 2020-05-02 12:00:00.000
+   */
+  START_OF_PERIOD = "START_OF_PERIOD",
+  /**
+   * @example 2020-05-02 12:22:53 -> END_OF_PERIOD PT1H -> 2020-05-02 12:59:59.999
+   */
+  END_OF_PERIOD = "END_OF_PERIOD",
+}
+
+/** An offset defines a transformation of an existing datetime into something more usable by our APIs
+ * (and more coherent to humans). We only need to specify two types of offsets:
+ * - operation, like subtracting or adding a time duration.
+ * - truncation, which enables us to get the beginning of end of a period of interest.
+ */
+export type RelativeTimeTransformation = TimeOffset | TimeTruncation;
+
+export interface RelativePointInTime {
+  reference: ReferencePoint;
+  transformation: RelativeTimeTransformation[];
+}
+
+export interface TimeRange {
+  label: string;
+  defaultGrain?: V1TimeGrain; // Affordance for future use
+  rangePreset?: RangePreset | string;
+  start?: string | RelativePointInTime;
+  end?: string | RelativePointInTime;
+}
+
+export interface TimeRangeOption {
+  label: string;
+  start: Date;
+  end: Date;
+}
+
+export interface TimeGrain {
+  grain: V1TimeGrain;
+  label: DateTimeUnit;
+  prettyLabel: string;
+  duration: Period;
+  width: number;
+}
+
+export interface TimeGrainOption extends TimeGrain {
+  enabled: boolean;
 }

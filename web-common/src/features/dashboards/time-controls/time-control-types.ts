@@ -6,10 +6,10 @@ export interface TimeRange {
 }
 
 export enum TimeRangeName {
-  Last6Hours = "Last 6 hours",
-  LastDay = "Last day",
-  LastWeek = "Last week",
-  Last30Days = "Last 30 days",
+  Last6Hours = "Last 6 hours", // hour
+  LastDay = "Last day", // hour
+  LastWeek = "Last week", // day
+  Last30Days = "Last 30 days", // Make last 4 weeks and truncate with week
   AllTime = "All time",
   // Today = "Today",
   // MonthToDate = "Month to date",

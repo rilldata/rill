@@ -3,8 +3,8 @@ import {
   getOffset,
   getStartOfPeriod,
   getTimeWidth,
-  Period,
 } from "./time-anchors";
+import { Period, TIME, TimeOffsetType } from "./time-types";
 
 describe("getStartOfPeriod", () => {
   it("should return the start of the week for given date", () => {
@@ -30,11 +30,19 @@ describe("getEndOfPeriod", () => {
 
 describe("getOffset", () => {
   it("should add correct amount of time for given date", () => {
-    const timeGrain = getOffset(new Date("2020-02-15"), Period.WEEK, 2);
+    const timeGrain = getOffset(
+      new Date("2020-02-15"),
+      "P2W",
+      TimeOffsetType.ADD
+    );
     expect(timeGrain).toEqual(new Date("2020-03-01"));
   });
   it("should subtract correct amount of time for given date", () => {
-    const timeGrain = getOffset(new Date("2020-02-15"), Period.MONTH, -2);
+    const timeGrain = getOffset(
+      new Date("2020-02-15"),
+      "P2M",
+      TimeOffsetType.SUBTRACT
+    );
     expect(timeGrain).toEqual(new Date("2019-12-15"));
   });
 });
@@ -45,6 +53,6 @@ describe("getTimeWidth", () => {
       new Date("2020-03-15"),
       new Date("2020-04-01")
     );
-    expect(timeGrain).toEqual(1000 * 60 * 60 * 24 * 17);
+    expect(timeGrain).toEqual(17 * TIME.DAY);
   });
 });

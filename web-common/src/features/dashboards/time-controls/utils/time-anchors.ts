@@ -1,12 +1,12 @@
 import type { TimeRange } from "../time-control-types";
 import { Duration, DateTime } from "luxon";
-import { Period, TimeUnit } from "./time-types";
+import { Period, ReferencePoint, TimeUnit } from "./time-types";
 import {
   RelativePointInTime,
   TimeOffsetType,
   TimeTruncationType,
   RelativeTimeTransformation,
-} from "./time-range";
+} from "./time-types";
 
 // reference timestamp method
 export function getPresentTime() {
@@ -20,12 +20,12 @@ export function getLatestDataTimestamp(allTimeRange: TimeRange) {
 // Period anchor methods
 export function getStartOfPeriod(period: Period, referenceTime: Date) {
   const date = DateTime.fromJSDate(referenceTime);
-  return date.startOf(TIME_UNIT[period]).toJSDate();
+  return date.startOf(TimeUnit[period]).toJSDate();
 }
 
 export function getEndOfPeriod(period: Period, referenceTime: Date) {
   const date = DateTime.fromJSDate(referenceTime);
-  return date.startOf(TIME_UNIT[period]).toJSDate();
+  return date.startOf(TimeUnit[period]).toJSDate();
 }
 
 // offset methods
@@ -40,15 +40,28 @@ export function getOffset(
     .toJSDate();
 }
 
+/**
+ * @returns the width of the time range defined by start and end in milliseconds
+ */
 export function getTimeWidth(start: Date, end: Date) {
-  return DateTime.fromJSDate(end).diff(
-    DateTime.fromJSDate(start),
-    "milliseconds"
-  ).milliseconds;
+  return end.getTime() - start.getTime();
 }
 
 export function ISOToMilliseconds(duration: string) {
   return Duration.fromISO(duration).as("milliseconds");
+}
+
+/**
+ * Returns true if the range defined by start and end is completely
+ * inside the range defined by otherStart and otherEnd.
+ */
+export function isRangeInsideOther(
+  start: Date,
+  end: Date,
+  otherStart: Date,
+  otherEnd: Date
+) {
+  return start >= otherStart && end <= otherEnd;
 }
 
 /** Loops through all of the offset transformations and applies each of them
@@ -82,6 +95,7 @@ export function getAbsoluteDateFromTransformations(
   return absoluteTime;
 }
 
+// Move to time-range as not pure?
 export function relativePointInTimeToAbsolute(
   referenceTime: Date,
   start: string | RelativePointInTime,
@@ -91,18 +105,23 @@ export function relativePointInTimeToAbsolute(
   let endDate: Date;
 
   if (typeof start === "string") startDate = new Date(start);
-  else
+  else {
+    if (start.reference === ReferencePoint.NOW)
+      referenceTime = getPresentTime();
     startDate = getAbsoluteDateFromTransformations(
       referenceTime,
       start.transformation
     );
+  }
 
   if (typeof end === "string") endDate = new Date(end);
-  else
+  else {
+    if (end.reference === ReferencePoint.NOW) referenceTime = getPresentTime();
     endDate = getAbsoluteDateFromTransformations(
       referenceTime,
       end.transformation
     );
+  }
 
   return {
     startDate,
