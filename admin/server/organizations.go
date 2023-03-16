@@ -22,7 +22,7 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 		pbs[i] = orgToDTO(org)
 	}
 
-	return &adminv1.ListOrganizationsResponse{Organization: pbs}, nil
+	return &adminv1.ListOrganizationsResponse{Organizations: pbs}, nil
 }
 
 func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizationRequest) (*adminv1.GetOrganizationResponse, error) {
