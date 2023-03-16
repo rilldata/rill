@@ -21,20 +21,7 @@ func (c *connection) NewTx(ctx context.Context) (context.Context, database.Tx, e
 	}
 
 	// Wrap the tx
-	return contextWithTx(ctx, tx), transaction{tx: tx}, nil
-}
-
-// transaction implements database.Tx.
-type transaction struct {
-	tx *sqlx.Tx
-}
-
-func (t transaction) Commit() error {
-	return t.tx.Commit()
-}
-
-func (t transaction) Rollback() error {
-	return t.tx.Rollback()
+	return contextWithTx(ctx, tx), tx, nil
 }
 
 // txCtxKey is used for saving a DB transaction in a context.

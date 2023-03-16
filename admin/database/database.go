@@ -40,13 +40,13 @@ type Driver interface {
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
-// Actual database calls should be made by passing the ctx returned from DB.WithTx to functions on the DB.
+// Actual database calls should be made by passing the ctx returned from DB.NewTx to functions on the DB.
 type Tx interface {
 	// Commit commits the transaction
 	Commit() error
 	// Rollback discards the transaction *unless* it has already been committed.
 	// It does nothing if Commit has already been called.
-	// This means that a call to Rollback should almost always be defer'ed right after a call to WithTx.
+	// This means that a call to Rollback should almost always be defer'ed right after a call to NewTx.
 	Rollback() error
 }
 
