@@ -146,12 +146,12 @@ func (c *connection) FindProjectByGithubURL(ctx context.Context, githubURL strin
 	return res, nil
 }
 
-func (c *connection) InsertProject(ctx context.Context, orgID string, p *database.Project) (*database.Project, error) {
+func (c *connection) InsertProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (organization_id, name, description, public, production_slots, production_branch, github_url, github_installation_id, production_variables)
+		INSERT INTO projects (organization_id, name, description, public, production_slots, production_branch, production_variables, github_url, github_installation_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-		orgID, p.Name, p.Description, p.Public, p.ProductionSlots, p.ProductionBranch, p.GithubURL, p.GithubInstallationID, p.ProductionVariables,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.ProductionSlots, opts.ProductionBranch, database.Variables(opts.ProductionVariables), opts.GithubURL, opts.GithubInstallationID,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
@@ -159,12 +159,12 @@ func (c *connection) InsertProject(ctx context.Context, orgID string, p *databas
 	return res, nil
 }
 
-func (c *connection) UpdateProject(ctx context.Context, p *database.Project) (*database.Project, error) {
+func (c *connection) UpdateProject(ctx context.Context, id string, opts *database.UpdateProjectOptions) (*database.Project, error) {
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET description=$1, public=$2, production_branch=$3, github_url=$4, github_installation_id=$5, production_deployment_id=$6, production_variables=$7, updated_on=now()
+		UPDATE projects SET description=$1, public=$2, production_branch=$3, production_variables=$4, github_url=$5, github_installation_id=$6, production_deployment_id=$7, updated_on=now()
 		WHERE id=$8 RETURNING *`,
-		p.Description, p.Public, p.ProductionBranch, p.GithubURL, p.GithubInstallationID, p.ProductionDeploymentID, p.ProductionVariables, p.ID,
+		opts.Description, opts.Public, opts.ProductionBranch, database.Variables(opts.ProductionVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProductionDeploymentID, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
@@ -370,12 +370,12 @@ func (c *connection) FindDeployment(ctx context.Context, id string) (*database.D
 	return res, nil
 }
 
-func (c *connection) InsertDeployment(ctx context.Context, d *database.Deployment) (*database.Deployment, error) {
+func (c *connection) InsertDeployment(ctx context.Context, opts *database.InsertDeploymentOptions) (*database.Deployment, error) {
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO deployments (project_id, slots, branch, runtime_host, runtime_instance_id, runtime_audience, status, logs)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-		d.ProjectID, d.Slots, d.Branch, d.RuntimeHost, d.RuntimeInstanceID, d.RuntimeAudience, d.Status, d.Logs,
+		opts.ProjectID, opts.Slots, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.Logs,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)

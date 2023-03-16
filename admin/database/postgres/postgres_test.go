@@ -104,8 +104,11 @@ func testProjects(t *testing.T, db database.DB) {
 	require.Equal(t, database.ErrNotFound, err)
 	require.Nil(t, proj)
 
-	project := &database.Project{Name: "bar", Description: "hello world"}
-	proj, err = db.InsertProject(ctx, org.ID, project)
+	proj, err = db.InsertProject(ctx, &database.InsertProjectOptions{
+		OrganizationID: org.ID,
+		Name:           "bar",
+		Description:    "hello world",
+	})
 	require.NoError(t, err)
 	require.Equal(t, org.ID, proj.OrganizationID)
 	require.Equal(t, "bar", proj.Name)
@@ -120,7 +123,9 @@ func testProjects(t *testing.T, db database.DB) {
 	require.Equal(t, "hello world", proj.Description)
 
 	proj.Description = ""
-	proj, err = db.UpdateProject(ctx, proj)
+	proj, err = db.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Description: proj.Description,
+	})
 	require.NoError(t, err)
 	require.Equal(t, org.ID, proj.OrganizationID)
 	require.Equal(t, "bar", proj.Name)
@@ -151,12 +156,17 @@ func testProjectsWithVariables(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 	require.Equal(t, "foo", org.Name)
 
-	project := &database.Project{Name: "bar", Description: "hello world", ProductionVariables: map[string]string{"hello": "world"}}
-	proj, err := db.InsertProject(ctx, org.ID, project)
+	opts := &database.InsertProjectOptions{
+		OrganizationID:      org.ID,
+		Name:                "bar",
+		Description:         "hello world",
+		ProductionVariables: map[string]string{"hello": "world"},
+	}
+	proj, err := db.InsertProject(ctx, opts)
 	require.NoError(t, err)
-	require.Equal(t, project.ProductionVariables, proj.ProductionVariables)
+	require.Equal(t, database.Variables(opts.ProductionVariables), proj.ProductionVariables)
 
 	proj, err = db.FindProjectByName(ctx, org.Name, proj.Name)
 	require.NoError(t, err)
-	require.Equal(t, project.ProductionVariables, proj.ProductionVariables)
+	require.Equal(t, database.Variables(opts.ProductionVariables), proj.ProductionVariables)
 }

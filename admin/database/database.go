@@ -57,8 +57,8 @@ type DB interface {
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
 	FindProjectByGithubURL(ctx context.Context, githubURL string) (*Project, error)
-	InsertProject(ctx context.Context, orgID string, project *Project) (*Project, error)
-	UpdateProject(ctx context.Context, project *Project) (*Project, error)
+	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
+	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 
 	FindUsers(ctx context.Context) ([]*User, error)
@@ -90,7 +90,7 @@ type DB interface {
 
 	FindDeployments(ctx context.Context, projectID string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
-	InsertDeployment(ctx context.Context, deployment *Deployment) (*Deployment, error)
+	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, logs string) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
 
@@ -161,6 +161,30 @@ func (e *Variables) Scan(value interface{}) error {
 		return errors.New("failed type assertion to []byte")
 	}
 	return json.Unmarshal(b, &e)
+}
+
+// InsertProjectOptions defines options for inserting a new Project.
+type InsertProjectOptions struct {
+	OrganizationID       string
+	Name                 string
+	Description          string
+	Public               bool
+	ProductionSlots      int
+	ProductionBranch     string
+	GithubURL            *string
+	GithubInstallationID *int64
+	ProductionVariables  map[string]string
+}
+
+// UpdateProjectOptions defines options for updating a Project.
+type UpdateProjectOptions struct {
+	Description            string
+	Public                 bool
+	ProductionBranch       string
+	ProductionVariables    map[string]string
+	GithubURL              *string
+	GithubInstallationID   *int64
+	ProductionDeploymentID *string
 }
 
 // User is a person registered in Rill.
@@ -263,6 +287,18 @@ type Deployment struct {
 	Logs              string           `db:"logs"`
 	CreatedOn         time.Time        `db:"created_on"`
 	UpdatedOn         time.Time        `db:"updated_on"`
+}
+
+// InsertDeploymentOptions defines options for inserting a new Deployment.
+type InsertDeploymentOptions struct {
+	ProjectID         string
+	Slots             int
+	Branch            string
+	RuntimeHost       string
+	RuntimeInstanceID string
+	RuntimeAudience   string
+	Status            DeploymentStatus
+	Logs              string
 }
 
 // RuntimeSlotsUsed is the result of a QueryRuntimeSlotsUsed query.
