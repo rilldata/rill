@@ -129,10 +129,6 @@
     );
     endValue = removeTimezoneOffset(endValue);
   }
-
-  onMount(() => {
-    console.log("TimeSeries mount");
-  });
 </script>
 
 <WithBisector

@@ -77,6 +77,7 @@ function toTimeProto(time: string) {
 function toTimeGrainProto(timeGrain: V1TimeGrain) {
   switch (timeGrain) {
     case V1TimeGrain.TIME_GRAIN_UNSPECIFIED:
+    default:
       return TimeGrain.UNSPECIFIED;
     case V1TimeGrain.TIME_GRAIN_MILLISECOND:
       return TimeGrain.MILLISECOND;

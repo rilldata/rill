@@ -16,10 +16,6 @@ export function fromUrl(url: URL): Partial<MetricsExplorerEntity> {
   return fromProto(base64ToProto(decodeURIComponent(state)));
 }
 
-export function fromBase64(message64: string) {
-  return fromProto(base64ToProto(decodeURIComponent(message64)));
-}
-
 export function fromProto(binary: Uint8Array): Partial<MetricsExplorerEntity> {
   const dashboard = DashboardState.fromBinary(binary);
   const entity: Partial<MetricsExplorerEntity> = {
@@ -36,8 +32,8 @@ export function fromProto(binary: Uint8Array): Partial<MetricsExplorerEntity> {
 
   entity.selectedTimeRange = dashboard.timeRange
     ? fromTimeRangeProto(dashboard.timeRange)
-    : {};
-  if (dashboard.timeGrain) {
+    : undefined;
+  if (dashboard.timeGrain && dashboard.timeRange) {
     entity.selectedTimeRange.interval = fromTimeGrainProto(dashboard.timeGrain);
   }
 
@@ -47,6 +43,8 @@ export function fromProto(binary: Uint8Array): Partial<MetricsExplorerEntity> {
   if (dashboard.selectedDimension) {
     entity.selectedDimensionName = dashboard.selectedDimension;
   }
+
+  console.log(entity);
 
   return entity;
 }
@@ -94,6 +92,7 @@ function fromTimeProto(timestamp: Timestamp) {
 function fromTimeGrainProto(timeGrain: TimeGrain): V1TimeGrain {
   switch (timeGrain) {
     case TimeGrain.UNSPECIFIED:
+    default:
       return V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
     case TimeGrain.MILLISECOND:
       return V1TimeGrain.TIME_GRAIN_MILLISECOND;

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { extractNameFromSlug } from "@rilldata/web-common/features/dashboards/name-extractor.js";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { MetricsWorkspace } from "@rilldata/web-common/features/metrics-views";
@@ -14,9 +13,7 @@
   import { featureFlags } from "../../../../../lib/application-state-stores/application-store";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../../lib/errors/messages";
 
-  let metricViewName: string;
-  // version and state don't matter in edit
-  $: [metricViewName, ,] = extractNameFromSlug($page.params.nameAndState);
+  $: metricViewName = $page.params.name;
 
   onMount(() => {
     if ($featureFlags.readOnly) {

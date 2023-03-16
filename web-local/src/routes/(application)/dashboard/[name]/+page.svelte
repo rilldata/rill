@@ -1,12 +1,9 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-  import { extractNameFromSlug } from "@rilldata/web-common/features/dashboards/name-extractor";
-  import {
-    fromBase64,
-    fromUrl,
-  } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
+  import { fromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
@@ -16,28 +13,49 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error, redirect } from "@sveltejs/kit";
-  import { onMount, tick } from "svelte";
   import { featureFlags } from "../../../../lib/application-state-stores/application-store";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
 
-  let metricViewName: string;
-  let state: string;
-  // version ignored for now since we dont really have anything based on it
-  $: [metricViewName, , state] = extractNameFromSlug($page.params.nameAndState);
+  $: metricViewName = $page.params.name;
+  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  $: if (state) {
-    const partialMetricsView = fromBase64(state);
-    if (partialMetricsView) {
-      metricsExplorerStore.syncFromUrl(metricViewName, partialMetricsView);
+  let protoState: string;
+  let urlState: string;
+  let updating = false;
+
+  function handleStateChange() {
+    if (protoState === metricsExplorer.proto) return;
+    protoState = metricsExplorer.proto;
+
+    // if state didn't change do not call goto. this avoids adding unnecessary urls to history stack
+    if (protoState !== urlState) {
+      goto(`/dashboard/${metricViewName}/?state=${protoState}`);
+      updating = true;
     }
   }
 
-  // $: onMount(async () => {
-  //   await tick();
-  //   const partialMetricsView = fromUrl(new URL(location.href));
-  //   if (!partialMetricsView) return;
-  //   metricsExplorerStore.syncFromUrl(metricViewName, partialMetricsView);
-  // });
+  function handleUrlChange() {
+    const newUrlState = $page.url.searchParams.get("state");
+    if (urlState === newUrlState) return;
+    urlState = newUrlState;
+
+    // run sync if we didn't change the url through a state change
+    // this can happen when url is updated directly by the user
+    if (!updating && urlState && urlState !== protoState) {
+      const partialDashboard = fromUrl($page.url);
+      if (partialDashboard) {
+        metricsExplorerStore.syncFromUrl(metricViewName, partialDashboard);
+      }
+    }
+    updating = false;
+  }
+
+  $: if (metricsExplorer) {
+    handleStateChange();
+  }
+  $: if ($page) {
+    handleUrlChange();
+  }
 
   $: fileQuery = useRuntimeServiceGetFile(
     $runtime.instanceId,

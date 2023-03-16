@@ -53,8 +53,10 @@ const updateMetricsExplorerByName = (
       if (absenceCallback) {
         state.entities[name] = absenceCallback();
       }
+      state.entities[name].proto = toProto(state.entities[name]);
       return state;
     }
+
     callback(state.entities[name]);
     // every change triggers a proto update
     state.entities[name].proto = toProto(state.entities[name]);
