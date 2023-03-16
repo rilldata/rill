@@ -17,7 +17,7 @@ func (r *Runtime) ListCatalogEntries(ctx context.Context, instanceID string, t d
 		return nil, err
 	}
 
-	return cat.FindEntries(ctx, t), nil
+	return cat.FindEntries(ctx, instanceID, t), nil
 }
 
 func (r *Runtime) GetCatalogEntry(ctx context.Context, instanceID, name string) (*drivers.CatalogEntry, error) {
@@ -26,7 +26,7 @@ func (r *Runtime) GetCatalogEntry(ctx context.Context, instanceID, name string) 
 		return nil, err
 	}
 
-	e, ok := cat.FindEntry(ctx, name)
+	e, ok := cat.FindEntry(ctx, instanceID, name)
 	if !ok {
 		return nil, fmt.Errorf("entry not found")
 	}
@@ -45,7 +45,7 @@ func (r *Runtime) Reconcile(ctx context.Context, instanceID string, changedPaths
 		return nil, err
 	}
 
-	cat, err := r.Catalog(ctx, instanceID)
+	cat, err := r.NewCatalogService(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (r *Runtime) RefreshSource(ctx context.Context, instanceID, name string) er
 		return err
 	}
 
-	cat, err := r.Catalog(ctx, instanceID)
+	cat, err := r.NewCatalogService(ctx, instanceID)
 	if err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func (r *Runtime) SyncExistingTables(ctx context.Context, instanceID string) err
 	}
 
 	// Get full catalog
-	objs := cat.FindEntries(ctx, drivers.ObjectTypeUnspecified)
+	objs := cat.FindEntries(ctx, instanceID, drivers.ObjectTypeUnspecified)
 
 	// Get information schema
 	tables, err := olap.InformationSchema().All(ctx)
@@ -150,7 +150,7 @@ func (r *Runtime) SyncExistingTables(ctx context.Context, instanceID string) err
 			tbl := obj.GetTable()
 			if !proto.Equal(t.Schema, tbl.Schema) {
 				tbl.Schema = t.Schema
-				err := cat.Catalog.UpdateEntry(ctx, instanceID, obj)
+				err := cat.UpdateEntry(ctx, instanceID, obj)
 				if err != nil {
 					return err
 				}
@@ -158,7 +158,7 @@ func (r *Runtime) SyncExistingTables(ctx context.Context, instanceID string) err
 			}
 		} else if !ok {
 			// If we haven't seen this table before, add it
-			err := cat.Catalog.CreateEntry(ctx, instanceID, &drivers.CatalogEntry{
+			err := cat.CreateEntry(ctx, instanceID, &drivers.CatalogEntry{
 				Name: t.Name,
 				Type: drivers.ObjectTypeTable,
 				Object: &runtimev1.Table{
@@ -180,7 +180,7 @@ func (r *Runtime) SyncExistingTables(ctx context.Context, instanceID string) err
 	for name, seen := range objSeen {
 		obj := objMap[name]
 		if !seen && obj.Type == drivers.ObjectTypeTable && !obj.GetTable().Managed {
-			err := cat.Catalog.DeleteEntry(ctx, instanceID, name)
+			err := cat.DeleteEntry(ctx, instanceID, name)
 			if err != nil {
 				return err
 			}

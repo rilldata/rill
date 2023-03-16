@@ -57,11 +57,55 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 	return olap, nil
 }
 
-func (r *Runtime) Catalog(ctx context.Context, instanceID string) (*catalog.Service, error) {
-	c, err := r.catalogCache.get(ctx, r, instanceID)
+func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.CatalogStore, error) {
+	inst, err := r.FindInstance(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
 
-	return c, err
+	if inst.EmbedCatalog {
+		conn, err := r.connCache.get(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
+		if err != nil {
+			return nil, err
+		}
+
+		store, ok := conn.CatalogStore()
+		if !ok {
+			// Verified as CatalogStore when instance is created, so this should never happen
+			return nil, fmt.Errorf("instance cannot embed catalog")
+		}
+
+		return store, nil
+	}
+
+	store, ok := r.metastore.CatalogStore()
+	if !ok {
+		// todo :: check this
+		// Verified as CatalogStore when instance is created, so this should never happen
+		return nil, fmt.Errorf("metastore cannot serve as catalog")
+	}
+	return store, nil
+}
+
+func (r *Runtime) NewCatalogService(ctx context.Context, instanceID string) (*catalog.Service, error) {
+	// get all stores
+	olapStore, err := r.OLAP(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	catalogStore, err := r.Catalog(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	repoStore, err := r.Repo(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	registry := r.Registry()
+
+	migrationMetadata := r.migrationMetaCache.get(instanceID)
+	return catalog.NewService(catalogStore, repoStore, olapStore, registry, instanceID, r.logger, migrationMetadata), nil
 }

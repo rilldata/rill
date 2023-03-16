@@ -83,7 +83,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 		return err
 	}
 
-	svc, err := r.catalogCache.get(ctx, r, instanceID)
+	svc, err := r.NewCatalogService(ctx, inst.ID)
 	if err != nil { // return error if db handlers can't be opened
 		return err
 	}
@@ -184,7 +184,7 @@ func (r *Runtime) evictCaches(ctx context.Context, inst *drivers.Instance) {
 	r.connCache.evict(ctx, inst.ID, inst.RepoDriver, inst.RepoDSN)
 
 	// evict catalog cache
-	r.catalogCache.evict(ctx, inst.ID)
+	r.migrationMetaCache.evict(ctx, inst.ID)
 	// query cache can't be evicted since key is a combination of instance ID and other parameters
 }
 

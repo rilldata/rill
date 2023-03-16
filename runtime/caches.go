@@ -3,7 +3,6 @@ package runtime
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -86,7 +85,6 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn strin
 }
 
 // evict removes the connection from cache and closes the connection
-// if evicting the connectioncache, evict the catalog cache as well
 func (c *connectionCache) evict(ctx context.Context, instanceID, driver, dsn string) bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -105,78 +103,34 @@ func (c *connectionCache) evict(ctx context.Context, instanceID, driver, dsn str
 	return ok
 }
 
-type catalogCache struct {
-	cache map[string]*catalog.Service
+type migrationMetaCache struct {
+	cache map[string]*catalog.MigrationMeta
 	lock  sync.Mutex
 }
 
-func newCatalogCache() *catalogCache {
-	return &catalogCache{
-		cache: make(map[string]*catalog.Service),
+func newMigrationMetadataCache() *migrationMetaCache {
+	return &migrationMetaCache{
+		cache: make(map[string]*catalog.MigrationMeta),
 	}
 }
 
-func (c *catalogCache) get(ctx context.Context, rt *Runtime, instID string) (*catalog.Service, error) {
+func (c *migrationMetaCache) get(instID string) *catalog.MigrationMeta {
 	// TODO 1: opening a driver shouldn't take too long but we should still have an instance specific lock
-	// TODO 2: This is a cache on a cache, which may lead to undefined behavior
-	// TODO 3: Use LRU and not a map
-
+	// TODO 2: Use LRU and not a map
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	key := instID
-
-	service, ok := c.cache[key]
-	if ok {
-		return service, nil
+	if val, ok := c.cache[instID]; ok {
+		return val
 	}
 
-	registry, _ := rt.metastore.RegistryStore()
-	inst, err := registry.FindInstance(ctx, instID)
-	if err != nil {
-		return nil, err
-	}
-
-	olapConn, err := rt.connCache.get(ctx, instID, inst.OLAPDriver, inst.OLAPDSN)
-	if err != nil {
-		return nil, err
-	}
-	olap, _ := olapConn.OLAPStore()
-
-	var catalogStore drivers.CatalogStore
-	if inst.EmbedCatalog {
-		conn, err := rt.connCache.get(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
-		if err != nil {
-			return nil, err
-		}
-
-		store, ok := conn.CatalogStore()
-		if !ok {
-			return nil, fmt.Errorf("instance cannot embed catalog")
-		}
-
-		catalogStore = store
-	} else {
-		store, ok := rt.metastore.CatalogStore()
-		if !ok {
-			return nil, fmt.Errorf("metastore cannot serve as catalog")
-		}
-		catalogStore = store
-	}
-
-	repoConn, err := rt.connCache.get(ctx, instID, inst.RepoDriver, inst.RepoDSN)
-	if err != nil {
-		return nil, err
-	}
-	repoStore, _ := repoConn.RepoStore()
-
-	service = catalog.NewService(catalogStore, repoStore, olap, registry, instID, rt.logger)
-	c.cache[key] = service
-	return service, nil
+	meta := catalog.NewMigrationMeta()
+	c.cache[instID] = meta
+	return meta
 }
 
 // evict removes service for instance id
-func (c *catalogCache) evict(ctx context.Context, instID string) {
+func (c *migrationMetaCache) evict(ctx context.Context, instID string) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 

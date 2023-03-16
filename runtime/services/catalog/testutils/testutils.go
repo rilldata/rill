@@ -194,7 +194,7 @@ func GetService(t *testing.T) (*catalog.Service, string) {
 	repo, ok := fileStore.RepoStore()
 	require.True(t, ok)
 
-	return catalog.NewService(catalogObject, repo, olap, registryStore(t), "test", nil), dir
+	return catalog.NewService(catalogObject, repo, olap, registryStore(t), "test", nil, catalog.NewMigrationMeta()), dir
 }
 
 func registryStore(t *testing.T) drivers.RegistryStore {

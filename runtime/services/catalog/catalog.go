@@ -16,6 +16,7 @@ type Service struct {
 	Olap          drivers.OLAPStore
 	RegistryStore drivers.RegistryStore
 	InstID        string
+	logger        *zap.Logger
 
 	// temporary information. should this be persisted into olap?
 	// LastMigration stores the last time migrate was run. Used to filter out repos that didnt change since this time
@@ -23,11 +24,9 @@ type Service struct {
 	dag           *dag.DAG
 	// used to get path when we only have name. happens when we get name from DAG
 	// TODO: should we add path to the DAG instead
-	NameToPath map[string]string
-
-	logger      *zap.Logger
+	NameToPath  map[string]string
 	hasMigrated bool
-	lock        sync.Mutex
+	lock        *sync.Mutex
 }
 
 func NewService(
@@ -37,6 +36,7 @@ func NewService(
 	registry drivers.RegistryStore,
 	instID string,
 	logger *zap.Logger,
+	m *MigrationMeta,
 ) *Service {
 	if logger == nil {
 		logger = zap.NewNop()
@@ -47,11 +47,13 @@ func NewService(
 		Olap:          olap,
 		RegistryStore: registry,
 		InstID:        instID,
+		logger:        logger,
 
-		dag:        dag.NewDAG(),
-		NameToPath: make(map[string]string),
-
-		logger: logger,
+		LastMigration: m.LastMigration,
+		dag:           m.dag,
+		NameToPath:    m.NameToPath,
+		hasMigrated:   m.hasMigrated,
+		lock:          &m.lock,
 	}
 }
 
@@ -74,4 +76,24 @@ func (s *Service) FindEntry(ctx context.Context, name string) (*drivers.CatalogE
 func (s *Service) fillDAGInEntry(entry *drivers.CatalogEntry) {
 	entry.Children = s.dag.GetChildren(normalizeName(entry.Name))
 	entry.Parents = s.dag.GetParents(normalizeName(entry.Name))
+}
+
+type MigrationMeta struct {
+	// temporary information. should this be persisted into olap?
+	// LastMigration stores the last time migrate was run. Used to filter out repos that didnt change since this time
+	LastMigration time.Time
+	dag           *dag.DAG
+	// used to get path when we only have name. happens when we get name from DAG
+	// TODO: should we add path to the DAG instead
+	NameToPath map[string]string
+
+	hasMigrated bool
+	lock        sync.Mutex
+}
+
+func NewMigrationMeta() *MigrationMeta {
+	return &MigrationMeta{
+		dag:        dag.NewDAG(),
+		NameToPath: make(map[string]string),
+	}
 }
