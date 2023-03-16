@@ -23,6 +23,7 @@
   import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
+  import { onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -128,6 +129,10 @@
     );
     endValue = removeTimezoneOffset(endValue);
   }
+
+  onMount(() => {
+    console.log("TimeSeries mount");
+  });
 </script>
 
 <WithBisector

@@ -2,7 +2,11 @@
   import { page } from "$app/stores";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-  import { fromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
+  import { extractNameFromSlug } from "@rilldata/web-common/features/dashboards/name-extractor";
+  import {
+    fromBase64,
+    fromUrl,
+  } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
@@ -16,14 +20,24 @@
   import { featureFlags } from "../../../../lib/application-state-stores/application-store";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
 
-  $: metricViewName = $page.params.name;
+  let metricViewName: string;
+  let state: string;
+  // version ignored for now since we dont really have anything based on it
+  $: [metricViewName, , state] = extractNameFromSlug($page.params.nameAndState);
 
-  onMount(async () => {
-    await tick();
-    const partialMetricsView = fromUrl(new URL(location.href));
-    if (!partialMetricsView) return;
-    metricsExplorerStore.syncFromUrl(metricViewName, partialMetricsView);
-  });
+  $: if (state) {
+    const partialMetricsView = fromBase64(state);
+    if (partialMetricsView) {
+      metricsExplorerStore.syncFromUrl(metricViewName, partialMetricsView);
+    }
+  }
+
+  // $: onMount(async () => {
+  //   await tick();
+  //   const partialMetricsView = fromUrl(new URL(location.href));
+  //   if (!partialMetricsView) return;
+  //   metricsExplorerStore.syncFromUrl(metricViewName, partialMetricsView);
+  // });
 
   $: fileQuery = useRuntimeServiceGetFile(
     $runtime.instanceId,

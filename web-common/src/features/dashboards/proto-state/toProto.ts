@@ -33,9 +33,7 @@ export function toProto(metrics: MetricsExplorerEntity): string {
   if (metrics.selectedTimeRange) {
     state.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
     if (metrics.selectedTimeRange.interval) {
-      state.timeGranularity = toTimeGrainProto(
-        metrics.selectedTimeRange.interval
-      );
+      state.timeGrain = toTimeGrainProto(metrics.selectedTimeRange.interval);
     }
   }
   if (metrics.leaderboardMeasureName) {

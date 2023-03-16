@@ -70,18 +70,19 @@
   let selfUpdate = false;
   $: protoState = metricsExplorer?.proto;
   $: if (protoState && !$featureFlags.readOnly) {
-    goto(`/dashboard/${metricViewName}?state=${protoState}`);
+    goto(`/dashboard/${metricViewName}--v0--${protoState}`);
     selfUpdate = true;
   }
 
-  let urlState: string;
-  $: if ($page) {
-    urlState = $page.url.searchParams.get("state");
-    if (!selfUpdate && urlState && urlState !== protoState) {
-      metricsExplorerStore.syncFromUrl(metricViewName, fromUrl($page.url));
-    }
-    selfUpdate = false;
-  }
+  // let urlState: string;
+  // $: if ($page) {
+  //   urlState = $page.url.searchParams.get("state");
+  //   console.log(urlState);
+  //   if (!selfUpdate && urlState && urlState !== protoState) {
+  //     metricsExplorerStore.syncFromUrl(metricViewName, fromUrl($page.url));
+  //   }
+  //   selfUpdate = false;
+  // }
 </script>
 
 <DashboardContainer bind:exploreContainerWidth bind:width {gridConfig}>

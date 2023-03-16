@@ -16,6 +16,10 @@ export function fromUrl(url: URL): Partial<MetricsExplorerEntity> {
   return fromProto(base64ToProto(decodeURIComponent(state)));
 }
 
+export function fromBase64(message64: string) {
+  return fromProto(base64ToProto(decodeURIComponent(message64)));
+}
+
 export function fromProto(binary: Uint8Array): Partial<MetricsExplorerEntity> {
   const dashboard = DashboardState.fromBinary(binary);
   const entity: Partial<MetricsExplorerEntity> = {
@@ -33,10 +37,8 @@ export function fromProto(binary: Uint8Array): Partial<MetricsExplorerEntity> {
   entity.selectedTimeRange = dashboard.timeRange
     ? fromTimeRangeProto(dashboard.timeRange)
     : {};
-  if (dashboard.timeGranularity) {
-    entity.selectedTimeRange.interval = fromTimeGrainProto(
-      dashboard.timeGranularity
-    );
+  if (dashboard.timeGrain) {
+    entity.selectedTimeRange.interval = fromTimeGrainProto(dashboard.timeGrain);
   }
 
   if (dashboard.leaderboardMeasure) {
