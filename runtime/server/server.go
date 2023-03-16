@@ -11,7 +11,6 @@ import (
 	grpczaplog "github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -19,21 +18,21 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/sdk/metric"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
-		"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-  	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-  	"go.opentelemetry.io/otel"
-  	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-  	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-  	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-  	"go.opentelemetry.io/otel/metric/global"
-  	"go.opentelemetry.io/otel/sdk/metric"
-  	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 var ErrForbidden = status.Error(codes.Unauthenticated, "action not allowed")
@@ -251,7 +250,7 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 func InitOpenTelemetry() error {
 	otelAgentAddr, ok := os.LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if !ok {
-		otelAgentAddr = "localhost:4317"
+		return nil
 	}
 
 	exporter, err := otlpmetricgrpc.New(
@@ -290,4 +289,3 @@ func InitOpenTelemetry() error {
 func OtelHandler(next http.Handler) http.Handler {
 	return otelhttp.NewHandler(next, "otel-instrumented")
 }
-
