@@ -27,7 +27,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	}
 
 	// User does not exist. Creating a new user.
-	user, err = s.DB.CreateUser(ctx, email, name, photoURL)
+	user, err = s.DB.InsertUser(ctx, email, name, photoURL)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (s *Service) createOrgForUser(ctx context.Context, email, name string) erro
 
 	orgNameSeeds := nameseeds.ForUser(email, name)
 
-	_, err = s.DB.CreateOrganizationFromSeeds(ctx, orgNameSeeds, name)
+	_, err = s.DB.InsertOrganizationFromSeeds(ctx, orgNameSeeds, name)
 	if err != nil {
 		return err
 	}

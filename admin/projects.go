@@ -19,7 +19,7 @@ func (s *Service) CreateProject(ctx context.Context, proj *database.Project) (*d
 	// TODO: Make this actually fault tolerant.
 
 	// Create the project
-	proj, err := s.DB.CreateProject(ctx, proj.OrganizationID, proj)
+	proj, err := s.DB.InsertProject(ctx, proj.OrganizationID, proj)
 	if err != nil {
 		return nil, err
 	}

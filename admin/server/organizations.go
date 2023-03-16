@@ -40,7 +40,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 }
 
 func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrganizationRequest) (*adminv1.CreateOrganizationResponse, error) {
-	org, err := s.admin.DB.CreateOrganization(ctx, req.Name, req.Description)
+	org, err := s.admin.DB.InsertOrganization(ctx, req.Name, req.Description)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

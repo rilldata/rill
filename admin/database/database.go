@@ -39,17 +39,6 @@ type Driver interface {
 	Open(dsn string) (DB, error)
 }
 
-// Tx represents a database transaction. It can only be used to commit and rollback transactions.
-// Actual database calls should be made by passing the ctx returned from DB.NewTx to functions on the DB.
-type Tx interface {
-	// Commit commits the transaction
-	Commit() error
-	// Rollback discards the transaction *unless* it has already been committed.
-	// It does nothing if Commit has already been called.
-	// This means that a call to Rollback should almost always be defer'ed right after a call to NewTx.
-	Rollback() error
-}
-
 // DB is the interface for a database connection.
 type DB interface {
 	Close() error
@@ -60,32 +49,32 @@ type DB interface {
 
 	FindOrganizations(ctx context.Context) ([]*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
-	CreateOrganization(ctx context.Context, name string, description string) (*Organization, error)
-	CreateOrganizationFromSeeds(ctx context.Context, nameSeeds []string, description string) (*Organization, error)
+	InsertOrganization(ctx context.Context, name string, description string) (*Organization, error)
+	InsertOrganizationFromSeeds(ctx context.Context, nameSeeds []string, description string) (*Organization, error)
 	UpdateOrganization(ctx context.Context, name string, description string) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
 
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
 	FindProjectByGithubURL(ctx context.Context, githubURL string) (*Project, error)
-	CreateProject(ctx context.Context, orgID string, project *Project) (*Project, error)
+	InsertProject(ctx context.Context, orgID string, project *Project) (*Project, error)
 	UpdateProject(ctx context.Context, project *Project) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 
 	FindUsers(ctx context.Context) ([]*User, error)
 	FindUser(ctx context.Context, id string) (*User, error)
 	FindUserByEmail(ctx context.Context, email string) (*User, error)
-	CreateUser(ctx context.Context, email, displayName, photoURL string) (*User, error)
+	InsertUser(ctx context.Context, email, displayName, photoURL string) (*User, error)
 	UpdateUser(ctx context.Context, id, displayName, photoURL string) (*User, error)
 	DeleteUser(ctx context.Context, id string) error
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
-	CreateUserAuthToken(ctx context.Context, opts *CreateUserAuthTokenOptions) (*UserAuthToken, error)
+	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
 	DeleteUserAuthToken(ctx context.Context, id string) error
 
-	// CreateAuthCode inserts the authorization code data into the store.
-	CreateAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*AuthCode, error)
+	// InsertAuthCode inserts the authorization code data into the store.
+	InsertAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*AuthCode, error)
 	// FindAuthCodeByDeviceCode retrieves the authorization code data from the store
 	FindAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*AuthCode, error)
 	// FindAuthCodeByUserCode retrieves the authorization code data from the store
@@ -106,6 +95,17 @@ type DB interface {
 	DeleteDeployment(ctx context.Context, id string) error
 
 	QueryRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
+}
+
+// Tx represents a database transaction. It can only be used to commit and rollback transactions.
+// Actual database calls should be made by passing the ctx returned from DB.NewTx to functions on the DB.
+type Tx interface {
+	// Commit commits the transaction
+	Commit() error
+	// Rollback discards the transaction *unless* it has already been committed.
+	// It does nothing if Commit has already been called.
+	// This means that a call to Rollback should almost always be defer'ed right after a call to NewTx.
+	Rollback() error
 }
 
 // ErrNotFound is returned for single row queries that return no values.
@@ -203,8 +203,8 @@ type UserAuthToken struct {
 	CreatedOn    time.Time `db:"created_on"`
 }
 
-// CreateUserAuthTokenOptions defines options for creating a UserAuthToken.
-type CreateUserAuthTokenOptions struct {
+// InsertUserAuthTokenOptions defines options for creating a UserAuthToken.
+type InsertUserAuthTokenOptions struct {
 	ID           string
 	SecretHash   []byte
 	UserID       string

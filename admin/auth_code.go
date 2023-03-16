@@ -19,7 +19,7 @@ func (s *Service) IssueAuthCode(ctx context.Context, clientID string) (*database
 		return nil, err
 	}
 	authCode.ClientID = clientID
-	code, err := s.DB.CreateAuthCode(ctx, authCode.DeviceCode, authCode.UserCode, authCode.ClientID, authCode.Expiry)
+	code, err := s.DB.InsertAuthCode(ctx, authCode.DeviceCode, authCode.UserCode, authCode.ClientID, authCode.Expiry)
 	if err != nil {
 		return nil, err
 	}
