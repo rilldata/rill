@@ -267,7 +267,7 @@ func (c *connection) InsertAuthCode(ctx context.Context, deviceCode, userCode, c
 	res := &database.AuthCode{}
 	err := c.getDB(ctx).QueryRowxContext(ctx,
 		`INSERT INTO device_code_auth (device_code, user_code, expires_on, approval_state, client_id)
-		VALUES ($1, $2, $3, $4, $5)  RETURNING *`, deviceCode, userCode, expiresOn, database.Pending, clientID).StructScan(res)
+		VALUES ($1, $2, $3, $4, $5)  RETURNING *`, deviceCode, userCode, expiresOn, database.AuthCodeStatePending, clientID).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -292,7 +292,7 @@ func (c *connection) FindAuthCodeByUserCode(ctx context.Context, userCode string
 	return authCode, nil
 }
 
-func (c *connection) UpdateAuthCode(ctx context.Context, userCode, userID string, approvalState database.AuthCodeApprovalState) error {
+func (c *connection) UpdateAuthCode(ctx context.Context, userCode, userID string, approvalState database.AuthCodeState) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "UPDATE device_code_auth SET approval_state=$1, user_id=$2, updated_on=now() WHERE user_code=$3",
 		approvalState, userID, userCode)
 	if err != nil {

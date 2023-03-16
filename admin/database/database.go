@@ -80,7 +80,7 @@ type DB interface {
 	// FindAuthCodeByUserCode retrieves the authorization code data from the store
 	FindAuthCodeByUserCode(ctx context.Context, userCode string) (*AuthCode, error)
 	// UpdateAuthCode updates the authorization code data in the store
-	UpdateAuthCode(ctx context.Context, userCode, userID string, approvalState AuthCodeApprovalState) error
+	UpdateAuthCode(ctx context.Context, userCode, userID string, approvalState AuthCodeState) error
 	// DeleteAuthCode deletes the authorization code data from the store
 	DeleteAuthCode(ctx context.Context, deviceCode string) error
 
@@ -125,26 +125,6 @@ const (
 	EntityClient        Entity = "Client"
 )
 
-type AuthCodeApprovalState int
-
-const (
-	Pending  AuthCodeApprovalState = 0
-	Approved AuthCodeApprovalState = 1
-	Rejected AuthCodeApprovalState = 2
-)
-
-type AuthCode struct {
-	ID            string                `db:"id"`
-	DeviceCode    string                `db:"device_code"`
-	UserCode      string                `db:"user_code"`
-	Expiry        time.Time             `db:"expires_on"`
-	ApprovalState AuthCodeApprovalState `db:"approval_state"`
-	ClientID      string                `db:"client_id"`
-	UserID        *string               `db:"user_id"`
-	CreatedOn     time.Time             `db:"created_on"`
-	UpdatedOn     time.Time             `db:"updated_on"`
-}
-
 // Organization represents a tenant.
 type Organization struct {
 	ID          string
@@ -172,6 +152,7 @@ type Project struct {
 	UpdatedOn              time.Time `db:"updated_on"`
 }
 
+// Variables implements JSON SQL encoding of variables in Project.
 type Variables map[string]string
 
 func (e *Variables) Scan(value interface{}) error {
@@ -225,6 +206,29 @@ const (
 	AuthClientIDRillWeb = "12345678-0000-0000-0000-000000000001"
 	AuthClientIDRillCLI = "12345678-0000-0000-0000-000000000002"
 )
+
+// AuthCodeState is an enum representing the approval state of an AuthCode
+type AuthCodeState int
+
+const (
+	AuthCodeStatePending  AuthCodeState = 0
+	AuthCodeStateApproved AuthCodeState = 1
+	AuthCodeStateRejected AuthCodeState = 2
+)
+
+// AuthCode represents a user authentication code as part of the OAuth2 device flow.
+// They're currently used for authenticating users in the CLI.
+type AuthCode struct {
+	ID            string        `db:"id"`
+	DeviceCode    string        `db:"device_code"`
+	UserCode      string        `db:"user_code"`
+	Expiry        time.Time     `db:"expires_on"`
+	ApprovalState AuthCodeState `db:"approval_state"`
+	ClientID      string        `db:"client_id"`
+	UserID        *string       `db:"user_id"`
+	CreatedOn     time.Time     `db:"created_on"`
+	UpdatedOn     time.Time     `db:"updated_on"`
+}
 
 // UserGithubInstallation represents a confirmed user relationship to an installation of our Github app
 type UserGithubInstallation struct {
