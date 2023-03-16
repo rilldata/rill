@@ -7,6 +7,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
+	runtimeserver "github.com/rilldata/rill/runtime/server"
 	"github.com/spf13/cobra"
 )
 
@@ -30,6 +31,11 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 		Short: "Build project and start web app",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			err := runtimeserver.InitOpenTelemetry()
+			if err != nil {
+				return err
+			}
+
 			if len(args) > 0 {
 				projectPath = args[0]
 				if strings.HasSuffix(projectPath, ".git") {

@@ -53,6 +53,8 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 		Use:   "start",
 		Short: "Start stand-alone runtime server",
 		Run: func(cmd *cobra.Command, args []string) {
+			server.InitOpenTelemetry()
+
 			// Load .env (note: fails silently if .env has errors)
 			_ = godotenv.Load()
 

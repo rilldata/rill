@@ -9,12 +9,9 @@ import (
 	"time"
 
 	"github.com/gorilla/sessions"
-	metrics "github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2"
-	"github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2"
 	grpczaplog "github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rilldata/rill/admin"
@@ -23,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -97,16 +95,14 @@ func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimea
 func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
-			tracing.StreamServerInterceptor(opentracing.InterceptorTracer()),
-			metrics.StreamServerInterceptor(metrics.NewServerMetrics()),
+			otelgrpc.StreamServerInterceptor(),
 			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			s.authenticator.StreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
-			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
-			metrics.UnaryServerInterceptor(metrics.NewServerMetrics()),
+			otelgrpc.UnaryServerInterceptor(),
 			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
