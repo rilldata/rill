@@ -39,9 +39,22 @@ type Driver interface {
 	Open(dsn string) (DB, error)
 }
 
+// Tx represents a database transaction. It can only be used to commit and rollback transactions.
+// Actual database calls should be made by passing the ctx returned from DB.WithTx to functions on the DB.
+type Tx interface {
+	// Commit commits the transaction
+	Commit() error
+	// Rollback discards the transaction *unless* it has already been committed.
+	// It does nothing if Commit has already been called.
+	// This means that a call to Rollback should almost always be defer'ed right after a call to WithTx.
+	Rollback() error
+}
+
 // DB is the interface for a database connection.
 type DB interface {
 	Close() error
+	NewTx(ctx context.Context) (context.Context, Tx, error)
+
 	Migrate(ctx context.Context) error
 	FindMigrationVersion(ctx context.Context) (int, error)
 

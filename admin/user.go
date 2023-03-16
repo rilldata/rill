@@ -32,15 +32,32 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		return nil, err
 	}
 
-	// Create a default organization
+	// We create an initial org with a name derived from the user's info
+	err = s.createOrgForUser(ctx, email, name)
+	if err != nil {
+		s.logger.Error("failed to create organization for user", zap.String("user.id", user.ID), zap.Error(err))
+		// continuing, since user was created successfully
+	}
+
+	return user, nil
+}
+
+func (s *Service) createOrgForUser(ctx context.Context, email, name string) error {
+	// Start a tx for creating org and adding the user
+	ctx, tx, err := s.DB.NewTx(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
 	orgNameSeeds := nameseeds.ForUser(email, name)
+
 	_, err = s.DB.CreateOrganizationFromSeeds(ctx, orgNameSeeds, name)
 	if err != nil {
-		s.logger.Error("failed to create organization for user", zap.Strings("seeds", orgNameSeeds), zap.String("user.id", user.ID), zap.Error(err))
-		// continuing, since user was created successfully
+		return err
 	}
 
 	// TODO: Add user to created org
 
-	return user, nil
+	return tx.Commit()
 }
