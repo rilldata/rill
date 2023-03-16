@@ -5,20 +5,27 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
-	metrics "github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2"
-	"github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2"
 	grpczaplog "github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/sdk/metric"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -84,16 +91,14 @@ func (s *Server) Close() error {
 func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
-			tracing.StreamServerInterceptor(opentracing.InterceptorTracer()),
-			metrics.StreamServerInterceptor(metrics.NewServerMetrics()),
+			otelgrpc.StreamServerInterceptor(),
 			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
 		),
 		grpc.ChainUnaryInterceptor(
-			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
-			metrics.UnaryServerInterceptor(metrics.NewServerMetrics()),
+			otelgrpc.UnaryServerInterceptor(),
 			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
@@ -211,4 +216,47 @@ func cors(h http.Handler) http.Handler {
 		}
 		h.ServeHTTP(w, r)
 	})
+}
+
+func InitOpenTelemetry() error {
+	otelAgentAddr, ok := os.LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if !ok {
+		otelAgentAddr = "localhost:4317"
+	}
+
+	exporter, err := otlpmetricgrpc.New(
+		context.Background(),
+		otlpmetricgrpc.WithInsecure(),
+		otlpmetricgrpc.WithEndpoint(otelAgentAddr),
+	)
+	if err != nil {
+		return err
+	}
+
+	mp := metric.NewMeterProvider(
+		metric.WithReader(
+			metric.NewPeriodicReader(exporter, metric.WithInterval(8*time.Second)),
+		),
+	)
+
+	global.SetMeterProvider(mp)
+
+	traceClient := otlptracegrpc.NewClient(
+		otlptracegrpc.WithInsecure(),
+		otlptracegrpc.WithEndpoint(otelAgentAddr),
+		otlptracegrpc.WithDialOption(grpc.WithBlock()))
+	traceExp, err := otlptrace.New(context.Background(), traceClient)
+
+	bsp := sdktrace.NewBatchSpanProcessor(traceExp)
+	tracerProvider := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithSpanProcessor(bsp),
+	)
+	otel.SetTracerProvider(tracerProvider)
+
+	return nil
+}
+
+func OtelHandler(next http.Handler) http.Handler {
+	return otelhttp.NewHandler(next, "otel-instrumented")
 }

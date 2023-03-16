@@ -276,6 +276,11 @@ func (a *App) ReconcileSource(sourcePath string) error {
 }
 
 func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool) error {
+	err := runtimeserver.InitOpenTelemetry()
+	if err != nil {
+		return err
+	}
+
 	// Get analytics info
 	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {
@@ -325,11 +330,11 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	// Create a single HTTP handler for both the local UI, local backend endpoints, and local runtime
 	mux := http.NewServeMux()
 	if enableUI {
-		mux.Handle("/", web.StaticHandler())
+		mux.Handle("/", runtimeserver.OtelHandler(web.StaticHandler()))
 	}
-	mux.Handle("/v1/", runtimeHandler)
-	mux.Handle("/local/config", a.infoHandler(inf))
-	mux.Handle("/local/track", a.trackingHandler(inf))
+	mux.Handle("/v1/", runtimeserver.OtelHandler(runtimeHandler))
+	mux.Handle("/local/config", runtimeserver.OtelHandler(a.infoHandler(inf)))
+	mux.Handle("/local/track", runtimeserver.OtelHandler(a.trackingHandler(inf)))
 
 	// Start the gRPC server
 	group.Go(func() error {
