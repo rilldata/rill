@@ -334,10 +334,10 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		return runtimeServer.ServeHTTP(ctx, func(mux *http.ServeMux) {
 			// Inject local-only endpoints on the server for the local UI and local backend endpoints
 			if enableUI {
-				mux.Handle("/", runtimeserver.OtelHandler(web.StaticHandler())
+				mux.Handle("/", runtimeserver.OtelHandler(web.StaticHandler()))
 			}
-			mux.Handle("/local/config", runtimeserver.OtelHandler(a.infoHandler(inf))
-			mux.Handle("/local/track", runtimeserver.OtelHandler(a.trackingHandler(inf))
+			mux.Handle("/local/config", runtimeserver.OtelHandler(a.infoHandler(inf)))
+			mux.Handle("/local/track", runtimeserver.OtelHandler(a.trackingHandler(inf)))
 		})
 	})
 
