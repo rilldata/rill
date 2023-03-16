@@ -48,7 +48,7 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 		metastore:          metastore,
 		logger:             logger,
 		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger),
-		migrationMetaCache: newMigrationMetadataCache(),
+		migrationMetaCache: newMigrationMetaCache(opts.ConnectionCacheSize), // todo :: different size for this ?
 		queryCache:         newQueryCache(opts.QueryCacheSize),
 	}, nil
 }

@@ -164,7 +164,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			// verify older olap connection is closed and cache updated if olap changed
 			require.Equal(t, !tt.clearCache, rt.connCache.cache.Contains(inst.ID+inst.OLAPDriver+inst.OLAPDSN))
 			require.Equal(t, !tt.clearCache, rt.connCache.cache.Contains(inst.ID+inst.RepoDriver+inst.RepoDSN))
-			_, ok := rt.migrationMetaCache.cache[inst.ID]
+			_, ok := rt.migrationMetaCache.cache.Get(inst.ID)
 			require.Equal(t, !tt.clearCache, ok)
 			_, err = svc.Olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
 			require.Equal(t, tt.clearCache, err != nil)
@@ -230,7 +230,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			// verify older olap connection is closed and cache updated
 			require.False(t, rt.connCache.cache.Contains(inst.ID+inst.OLAPDriver+inst.OLAPDSN))
 			require.False(t, rt.connCache.cache.Contains(inst.ID+inst.RepoDriver+inst.RepoDSN))
-			_, ok := rt.migrationMetaCache.cache[inst.ID]
+			_, ok := rt.migrationMetaCache.cache.Get(inst.ID)
 			require.False(t, ok)
 			_, err = svc.Olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
 			require.True(t, err != nil)

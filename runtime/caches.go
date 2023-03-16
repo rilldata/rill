@@ -15,6 +15,7 @@ import (
 var errConnectionCacheClosed = errors.New("connectionCache: closed")
 
 // cache for instance specific connections only
+// all instance specific connections should be opened via connection cache only
 type connectionCache struct {
 	cache  *simplelru.LRU
 	lock   sync.Mutex
@@ -23,7 +24,12 @@ type connectionCache struct {
 }
 
 func newConnectionCache(size int, logger *zap.Logger) *connectionCache {
-	cache, err := simplelru.NewLRU(size, nil)
+	cache, err := simplelru.NewLRU(size, func(key interface{}, value interface{}) {
+		// close the evicted connection
+		if err := value.(drivers.Connection).Close(); err != nil {
+			logger.Error("failed closing cached connection for ", zap.String("key", key.(string)), zap.Error(err))
+		}
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -105,35 +111,30 @@ func (c *connectionCache) evict(ctx context.Context, instanceID, driver, dsn str
 }
 
 type migrationMetaCache struct {
-	cache map[string]*catalog.MigrationMeta
-	lock  sync.Mutex
+	cache *lru.Cache
 }
 
-func newMigrationMetadataCache() *migrationMetaCache {
-	return &migrationMetaCache{
-		cache: make(map[string]*catalog.MigrationMeta),
+func newMigrationMetaCache(size int) *migrationMetaCache {
+	cache, err := lru.New(size)
+	if err != nil {
+		panic(err)
 	}
+
+	return &migrationMetaCache{cache: cache}
 }
 
 func (c *migrationMetaCache) get(instID string) *catalog.MigrationMeta {
-	// TODO : Use LRU and not a map
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	if val, ok := c.cache[instID]; ok {
-		return val
+	if val, ok := c.cache.Get(instID); ok {
+		return val.(*catalog.MigrationMeta)
 	}
 
 	meta := catalog.NewMigrationMeta()
-	c.cache[instID] = meta
+	c.cache.Add(instID, meta)
 	return meta
 }
 
 func (c *migrationMetaCache) evict(ctx context.Context, instID string) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	delete(c.cache, instID)
+	c.cache.Remove(instID)
 }
 
 type queryCache struct {
