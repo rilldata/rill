@@ -25,15 +25,25 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
-export function toProto(metrics: MetricsExplorerEntity) {
-  const data: PartialMessage<DashboardState> = {};
+export function toProto(metrics: MetricsExplorerEntity): string {
+  const state: PartialMessage<DashboardState> = {};
   if (metrics.filters) {
-    data.filters = toFiltersProto(metrics.filters) as any;
+    state.filters = toFiltersProto(metrics.filters) as any;
   }
   if (metrics.selectedTimeRange) {
-    data.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
+    state.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
+    if (metrics.selectedTimeRange.interval) {
+      state.timeGrain = toTimeGrainProto(metrics.selectedTimeRange.interval);
+    }
   }
-  return new DashboardState(data);
+  if (metrics.leaderboardMeasureName) {
+    state.leaderboardMeasure = metrics.leaderboardMeasureName;
+  }
+  if (metrics.selectedDimensionName) {
+    state.selectedDimension = metrics.selectedDimensionName;
+  }
+  const message = new DashboardState(state);
+  return protoToBase64(message.toBinary());
 }
 
 export function protoToBase64(proto: Uint8Array) {
@@ -50,7 +60,6 @@ function toFiltersProto(filters: V1MetricsViewFilter) {
 function toTimeRangeProto(range: TimeSeriesTimeRange) {
   const timeRangeArgs: PartialMessage<DashboardTimeRange> = {
     name: range.name,
-    timeGranularity: toTimeGrainProto(range.interval),
   };
   if (range.name === TimeRangeName.Custom) {
     timeRangeArgs.timeStart = toTimeProto(range.start);
@@ -68,6 +77,7 @@ function toTimeProto(time: string) {
 function toTimeGrainProto(timeGrain: V1TimeGrain) {
   switch (timeGrain) {
     case V1TimeGrain.TIME_GRAIN_UNSPECIFIED:
+    default:
       return TimeGrain.UNSPECIFIED;
     case V1TimeGrain.TIME_GRAIN_MILLISECOND:
       return TimeGrain.MILLISECOND;

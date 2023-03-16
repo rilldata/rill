@@ -71,7 +71,7 @@
         class="justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
       >
         <div>
-          <slot name="title" />
+          <slot name="title" {isActive} />
         </div>
       </div>
       <div class="justify-self-end overflow-hidden ui-copy-number">

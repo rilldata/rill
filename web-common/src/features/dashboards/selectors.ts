@@ -85,7 +85,7 @@ export const useMetaMeasure = (
   measureName: string
 ) =>
   useMetaQuery(instanceId, metricViewName, (meta) =>
-    meta.measures?.find((measure) => measure.name === measureName)
+    meta?.measures?.find((measure) => measure.name === measureName)
   );
 
 export const useMetaDimension = (
@@ -94,7 +94,7 @@ export const useMetaDimension = (
   dimensionName: string
 ) =>
   useMetaQuery(instanceId, metricViewName, (meta) =>
-    meta.dimensions?.find((dimension) => dimension.name === dimensionName)
+    meta?.dimensions?.find((dimension) => dimension.name === dimensionName)
   );
 
 /**
