@@ -216,7 +216,7 @@ message Instance {
   // project defaults
   map<string, string> project_variables = 8;
   // ingestion limit across all sources, 0 means no limit
-  int64 ingestionLimitBytes = 9;
+  int64 ingestion_limit_bytes = 9;
 }
 
 // Request message for RuntimeService.ListInstances
