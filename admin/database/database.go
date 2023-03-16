@@ -39,15 +39,29 @@ type Driver interface {
 	Open(dsn string) (DB, error)
 }
 
+// Tx represents a database transaction. It can only be used to commit and rollback transactions.
+// Actual database calls should be made by passing the ctx returned from DB.NewTx to functions on the DB.
+type Tx interface {
+	// Commit commits the transaction
+	Commit() error
+	// Rollback discards the transaction *unless* it has already been committed.
+	// It does nothing if Commit has already been called.
+	// This means that a call to Rollback should almost always be defer'ed right after a call to NewTx.
+	Rollback() error
+}
+
 // DB is the interface for a database connection.
 type DB interface {
 	Close() error
+	NewTx(ctx context.Context) (context.Context, Tx, error)
+
 	Migrate(ctx context.Context) error
 	FindMigrationVersion(ctx context.Context) (int, error)
 
 	FindOrganizations(ctx context.Context) ([]*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
 	CreateOrganization(ctx context.Context, name string, description string) (*Organization, error)
+	CreateOrganizationFromSeeds(ctx context.Context, nameSeeds []string, description string) (*Organization, error)
 	UpdateOrganization(ctx context.Context, name string, description string) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
 
@@ -96,6 +110,9 @@ type DB interface {
 
 // ErrNotFound is returned for single row queries that return no values.
 var ErrNotFound = errors.New("database: not found")
+
+// ErrNotUnique is returned when a unique constraint is violated
+var ErrNotUnique = errors.New("database: violates unique constraint")
 
 // Entity is an enum representing the entities in this package.
 type Entity string
