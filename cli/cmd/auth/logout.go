@@ -24,7 +24,7 @@ func LogoutCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-			client, err := client.New(cfg.AdminURL, token)
+			client, err := client.New(cfg.AdminURL, token, cfg.Version.String())
 			if err != nil {
 				return err
 			}

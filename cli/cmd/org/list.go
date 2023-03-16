@@ -15,7 +15,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 		Use:   "list",
 		Short: "List",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			client, err := client.New(cfg.AdminURL, cfg.AdminToken(), cfg.Version.String())
 			if err != nil {
 				return err
 			}

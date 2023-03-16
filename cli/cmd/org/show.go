@@ -29,7 +29,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 				name = args[0]
 			}
 
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			client, err := client.New(cfg.AdminURL, cfg.AdminToken(), cfg.Version.String())
 			if err != nil {
 				return err
 			}

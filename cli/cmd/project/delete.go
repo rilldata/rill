@@ -17,7 +17,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: "Delete",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			client, err := client.New(cfg.AdminURL, cfg.AdminToken(), cfg.Version.String())
 			if err != nil {
 				return err
 			}

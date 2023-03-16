@@ -64,7 +64,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Create admin client
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			client, err := client.New(cfg.AdminURL, cfg.AdminToken(), cfg.Version.String())
 			if err != nil {
 				return err
 			}
