@@ -412,7 +412,7 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   variables: { [key: string]: string } = {};
 
   /**
-   * @generated from field: int64 ingestionLimitBytes = 8;
+   * @generated from field: int64 ingestion_limit_bytes = 8;
    */
   ingestionLimitBytes = protoInt64.zero;
 
@@ -431,7 +431,7 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 5, name: "repo_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 8, name: "ingestionLimitBytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {
@@ -611,7 +611,7 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   variables: { [key: string]: string } = {};
 
   /**
-   * @generated from field: int64 ingestionLimitBytes = 8;
+   * @generated from field: int64 ingestion_limit_bytes = 8;
    */
   ingestionLimitBytes = protoInt64.zero;
 
@@ -630,7 +630,7 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
     { no: 5, name: "repo_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 8, name: "ingestionLimitBytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceRequest {

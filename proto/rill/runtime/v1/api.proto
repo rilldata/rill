@@ -265,7 +265,7 @@ message CreateInstanceRequest {
   string repo_dsn = 5;
   bool embed_catalog = 6;
   map<string, string> variables = 7;
-  int64 ingestionLimitBytes = 8;
+  int64 ingestion_limit_bytes = 8;
 }
 
 // Response message for RuntimeService.CreateInstance
@@ -292,7 +292,7 @@ message EditInstanceRequest {
   string repo_dsn = 5; 
   bool embed_catalog = 6;
   map<string, string> variables = 7;
-  int64 ingestionLimitBytes = 8; 
+  int64 ingestion_limit_bytes = 8; 
 }
 
 // Response message for RuntimeService.EditInstance
