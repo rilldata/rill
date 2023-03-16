@@ -48,7 +48,7 @@ func NewService(
 func (s *Service) FindEntries(ctx context.Context, typ drivers.ObjectType) []*drivers.CatalogEntry {
 	entries := s.Catalog.FindEntries(ctx, s.InstID, typ)
 	for _, entry := range entries {
-		s.fillDAGInEntry(entry)
+		s.Meta.fillDAGInEntry(entry)
 	}
 	return entries
 }
@@ -56,14 +56,9 @@ func (s *Service) FindEntries(ctx context.Context, typ drivers.ObjectType) []*dr
 func (s *Service) FindEntry(ctx context.Context, name string) (*drivers.CatalogEntry, bool) {
 	entry, ok := s.Catalog.FindEntry(ctx, s.InstID, name)
 	if ok {
-		s.fillDAGInEntry(entry)
+		s.Meta.fillDAGInEntry(entry)
 	}
 	return entry, ok
-}
-
-func (s *Service) fillDAGInEntry(entry *drivers.CatalogEntry) {
-	entry.Children = s.Meta.dag.GetChildren(normalizeName(entry.Name))
-	entry.Parents = s.Meta.dag.GetParents(normalizeName(entry.Name))
 }
 
 type MigrationMeta struct {
@@ -84,4 +79,9 @@ func NewMigrationMeta() *MigrationMeta {
 		dag:        dag.NewDAG(),
 		NameToPath: make(map[string]string),
 	}
+}
+
+func (m *MigrationMeta) fillDAGInEntry(entry *drivers.CatalogEntry) {
+	entry.Children = m.dag.GetChildren(normalizeName(entry.Name))
+	entry.Parents = m.dag.GetParents(normalizeName(entry.Name))
 }
