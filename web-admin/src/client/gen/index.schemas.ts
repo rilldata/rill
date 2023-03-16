@@ -4,12 +4,17 @@
  * rill/admin/v1/api.proto
  * OpenAPI spec version: version not set
  */
+export type AdminServiceUpdateProjectBodyVariables = { [key: string]: string };
+
 export type AdminServiceUpdateProjectBody = {
   description?: string;
   githubUrl?: string;
   productionBranch?: string;
   public?: boolean;
+  variables?: AdminServiceUpdateProjectBodyVariables;
 };
+
+export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
 
 export type AdminServiceCreateProjectBody = {
   description?: string;
@@ -18,6 +23,7 @@ export type AdminServiceCreateProjectBody = {
   productionBranch?: string;
   productionSlots?: string;
   public?: boolean;
+  variables?: AdminServiceCreateProjectBodyVariables;
 };
 
 export type AdminServiceListProjectsParams = {
@@ -45,6 +51,10 @@ export interface V1User {
   updatedOn?: string;
 }
 
+export interface V1UpdateProjectResponse {
+  project?: V1Project;
+}
+
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
 }
@@ -52,6 +62,8 @@ export interface V1UpdateOrganizationResponse {
 export interface V1RevokeCurrentAuthTokenResponse {
   tokenId?: string;
 }
+
+export type V1ProjectVariables = { [key: string]: string };
 
 export interface V1Project {
   createdOn?: string;
@@ -64,10 +76,7 @@ export interface V1Project {
   productionSlots?: string;
   public?: boolean;
   updatedOn?: string;
-}
-
-export interface V1UpdateProjectResponse {
-  project?: V1Project;
+  variables?: V1ProjectVariables;
 }
 
 export interface V1PingResponse {

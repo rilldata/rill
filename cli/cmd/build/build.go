@@ -13,13 +13,13 @@ func BuildCmd(cfg *config.Config) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
 	var verbose bool
-	var envVariables []string
+	var variables []string
 
 	buildCmd := &cobra.Command{
 		Use:   "build",
 		Short: "Build project without starting web app",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, envVariables)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, variables)
 			if err != nil {
 				return err
 			}
@@ -42,7 +42,7 @@ func BuildCmd(cfg *config.Config) *cobra.Command {
 	buildCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	buildCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
 	buildCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
-	buildCmd.Flags().StringSliceVarP(&envVariables, "env", "e", []string{}, "Set project environment variables")
+	buildCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
 
 	return buildCmd
 }

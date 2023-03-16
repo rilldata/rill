@@ -1975,6 +1975,8 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for GithubUrl
 
+	// no validation rules for Variables
+
 	if len(errors) > 0 {
 		return CreateProjectRequestMultiError(errors)
 	}
@@ -2427,6 +2429,8 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 	// no validation rules for ProductionBranch
 
 	// no validation rules for GithubUrl
+
+	// no validation rules for Variables
 
 	if len(errors) > 0 {
 		return UpdateProjectRequestMultiError(errors)
@@ -3550,6 +3554,8 @@ func (m *Project) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for Variables
 
 	if len(errors) > 0 {
 		return ProjectMultiError(errors)

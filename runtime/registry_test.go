@@ -32,14 +32,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "file",
 				RepoDSN:      repodsn,
 				EmbedCatalog: true,
-				Env:          map[string]string{"host": "localhost"},
+				Variables:    map[string]string{"host": "localhost"},
 			},
 			savedInst: &drivers.Instance{
 				OLAPDriver:   "duckdb",
 				OLAPDSN:      "",
 				RepoDriver:   "file",
 				EmbedCatalog: true,
-				Env:          map[string]string{"host": "localhost", "allow_host_credentials": "false"},
+				Variables:    map[string]string{"host": "localhost", "allow_host_credentials": "false"},
 			},
 		},
 		{
@@ -50,14 +50,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "file",
 				RepoDSN:      repodsn,
 				EmbedCatalog: false,
-				Env:          map[string]string{"host": "localhost"},
+				Variables:    map[string]string{"host": "localhost"},
 			},
 			savedInst: &drivers.Instance{
 				OLAPDriver:   "duckdb",
 				OLAPDSN:      "",
 				RepoDriver:   "file",
 				EmbedCatalog: false,
-				Env:          map[string]string{"host": "localhost", "allow_host_credentials": "false"},
+				Variables:    map[string]string{"host": "localhost", "allow_host_credentials": "false"},
 			},
 		},
 		{
@@ -68,14 +68,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "file",
 				RepoDSN:      repodsn,
 				EmbedCatalog: false,
-				Env:          map[string]string{"host": "localhost"},
+				Variables:    map[string]string{"host": "localhost"},
 			},
 			savedInst: &drivers.Instance{
 				OLAPDriver:   "duckdb",
 				OLAPDSN:      "?access_mode=read_write",
 				RepoDriver:   "file",
 				EmbedCatalog: false,
-				Env:          map[string]string{"host": "localhost", "allow_host_credentials": "false"},
+				Variables:    map[string]string{"host": "localhost", "allow_host_credentials": "false"},
 			},
 			clearCache: true,
 		},
@@ -87,14 +87,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "file",
 				RepoDSN:      t.TempDir(),
 				EmbedCatalog: false,
-				Env:          map[string]string{"host": "localhost"},
+				Variables:    map[string]string{"host": "localhost"},
 			},
 			savedInst: &drivers.Instance{
 				OLAPDriver:   "duckdb",
 				OLAPDSN:      "",
 				RepoDriver:   "file",
 				EmbedCatalog: false,
-				Env:          map[string]string{"host": "localhost", "allow_host_credentials": "false"},
+				Variables:    map[string]string{"host": "localhost", "allow_host_credentials": "false"},
 			},
 			clearCache: true,
 		},
@@ -106,7 +106,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "file",
 				RepoDSN:      t.TempDir(),
 				EmbedCatalog: false,
-				Env:          map[string]string{"host": "localhost"},
+				Variables:    map[string]string{"host": "localhost"},
 			},
 			wantErr: true,
 		},
@@ -118,7 +118,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "duckdb",
 				RepoDSN:      t.TempDir(),
 				EmbedCatalog: false,
-				Env:          map[string]string{"host": "localhost"},
+				Variables:    map[string]string{"host": "localhost"},
 			},
 			wantErr: true,
 		},
@@ -159,7 +159,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			require.Equal(t, tt.inst.RepoDSN, newInst.RepoDSN)
 			require.Equal(t, tt.savedInst.EmbedCatalog, newInst.EmbedCatalog)
 			require.Greater(t, time.Since(newInst.CreatedOn), time.Since(newInst.UpdatedOn))
-			require.Equal(t, tt.savedInst.Env, newInst.Env)
+			require.Equal(t, tt.savedInst.Variables, newInst.Variables)
 
 			// verify older olap connection is closed and cache updated if olap changed
 			require.Equal(t, !tt.clearCache, rt.connCache.cache.Contains(inst.ID+inst.OLAPDriver+inst.OLAPDSN))

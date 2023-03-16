@@ -57,13 +57,13 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 	if err != nil {
 		return err
 	}
-	inst.ProjectEnv = proj.Env
+	inst.ProjectVariables = proj.Variables
 	// this is a hack to set allow_host_credentials
 	// ideally the runtime should propagate this flag to connectors.Env
-	if inst.Env == nil {
-		inst.Env = make(map[string]string)
+	if inst.Variables == nil {
+		inst.Variables = make(map[string]string)
 	}
-	inst.Env["allow_host_credentials"] = strconv.FormatBool(r.opts.AllowHostCredentials)
+	inst.Variables["allow_host_credentials"] = strconv.FormatBool(r.opts.AllowHostCredentials)
 
 	// Create instance
 	err = r.Registry().CreateInstance(ctx, inst)
@@ -168,11 +168,11 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 		r.evictCaches(ctx, olderInstance)
 	}
 
-	// update env variables
-	if inst.Env == nil {
-		inst.Env = make(map[string]string)
+	// update variables
+	if inst.Variables == nil {
+		inst.Variables = make(map[string]string)
 	}
-	inst.Env["allow_host_credentials"] = strconv.FormatBool(r.opts.AllowHostCredentials)
+	inst.Variables["allow_host_credentials"] = strconv.FormatBool(r.opts.AllowHostCredentials)
 	// update the entire instance for now to avoid building queries in some complicated way
 	return r.Registry().EditInstance(ctx, inst)
 }

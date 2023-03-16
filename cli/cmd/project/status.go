@@ -24,7 +24,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			proj, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{
-				OrganizationName: cfg.Org(),
+				OrganizationName: cfg.Org,
 				Name:             args[0],
 			})
 			if err != nil {
@@ -48,5 +48,6 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			return nil
 		},
 	}
+
 	return statusCmd
 }
