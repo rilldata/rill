@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -128,17 +129,19 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 	instanceID := strings.ReplaceAll(uuid.New().String(), "-", "")
 	cpus := 1 * opts.Slots
 	memory := 2 * opts.Slots
+	ingestLimit := datasize.GB * datasize.ByteSize(5*opts.Slots) // 5GB * slots
 	olapDSN := fmt.Sprintf("%s.db?rill_pool_size=%d&threads=%d&max_memory=%dGB", path.Join(target.DataDir, instanceID), cpus, cpus, memory)
 
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
-		InstanceId:   instanceID,
-		OlapDriver:   "duckdb",
-		OlapDsn:      olapDSN,
-		RepoDriver:   "github",
-		RepoDsn:      string(repoDSN),
-		EmbedCatalog: true,
-		Variables:    opts.Variables,
+		InstanceId:          instanceID,
+		OlapDriver:          "duckdb",
+		OlapDsn:             olapDSN,
+		RepoDriver:          "github",
+		RepoDsn:             string(repoDSN),
+		EmbedCatalog:        true,
+		Variables:           opts.Variables,
+		IngestionLimitBytes: int64(ingestLimit),
 	})
 	if err != nil {
 		return nil, err

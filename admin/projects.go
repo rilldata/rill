@@ -243,13 +243,14 @@ func (s *Service) editInstance(ctx context.Context, d *database.Deployment, vari
 	// Edit the instance
 	inst := resp.Instance
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
-		InstanceId:   d.RuntimeInstanceID,
-		OlapDriver:   inst.OlapDriver,
-		OlapDsn:      inst.OlapDsn,
-		RepoDriver:   inst.RepoDriver,
-		RepoDsn:      inst.RepoDsn,
-		EmbedCatalog: inst.EmbedCatalog,
-		Variables:    variables,
+		InstanceId:          d.RuntimeInstanceID,
+		OlapDriver:          inst.OlapDriver,
+		OlapDsn:             inst.OlapDsn,
+		RepoDriver:          inst.RepoDriver,
+		RepoDsn:             inst.RepoDsn,
+		EmbedCatalog:        inst.EmbedCatalog,
+		Variables:           variables,
+		IngestionLimitBytes: inst.IngestionLimitBytes,
 	})
 	return err
 }

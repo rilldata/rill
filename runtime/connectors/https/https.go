@@ -83,7 +83,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 
 	if info, err := os.Stat(file); err == nil { // ignoring error since only possible error is path error
 		if info.Size() > env.StorageLimitInBytes {
-			return nil, connectors.ErrStorageLimitExceed
+			return nil, connectors.ErrIngestionLimitExceeded
 		}
 	}
 

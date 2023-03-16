@@ -86,7 +86,7 @@ func (opts *Options) validateLimits(size int64, matchCount int, fetched int64) e
 		return fmt.Errorf("glob pattern exceeds limits: listed more than %d files", opts.GlobMaxObjectsListed)
 	}
 	if size > opts.StorageLimitInBytes {
-		return connectors.ErrStorageLimitExceed
+		return connectors.ErrIngestionLimitExceeded
 	}
 	return nil
 }

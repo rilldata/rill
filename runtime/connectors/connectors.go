@@ -7,8 +7,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
-// ErrStorageLimitExceed TODO :: is this the right place for this error ?
-var ErrStorageLimitExceed = fmt.Errorf("Ingesting sources will take more disk space than what is allowed in current plan. Please upgrade your plan")
+var ErrIngestionLimitExceeded = fmt.Errorf("connectors: source ingestion exceeds limit")
 
 // Connectors tracks all registered connector drivers.
 var Connectors = make(map[string]Connector)

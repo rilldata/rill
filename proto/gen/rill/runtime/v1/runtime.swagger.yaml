@@ -169,6 +169,9 @@ paths:
             properties:
               embedCatalog:
                 type: boolean
+              ingestionLimitBytes:
+                type: string
+                format: int64
               olapDriver:
                 type: string
               olapDsn:
@@ -1604,6 +1607,9 @@ definitions:
     properties:
       embedCatalog:
         type: boolean
+      ingestionLimitBytes:
+        type: string
+        format: int64
       instanceId:
         type: string
       olapDriver:
@@ -1711,6 +1717,10 @@ definitions:
         description: |-
           If true, the runtime will store the instance's catalog in its OLAP store instead
           of in the runtime's metadata store. Currently only supported for the duckdb driver.
+      ingestionLimitBytes:
+        type: string
+        format: int64
+        title: ingestion limit across all sources, 0 means no limit
       instanceId:
         type: string
         title: Identifier (UUID)

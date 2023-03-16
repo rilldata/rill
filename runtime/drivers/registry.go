@@ -39,6 +39,9 @@ type Instance struct {
 	// ProjectVariables contains default variables from rill.yaml
 	// (NOTE: This can always be reproduced from rill.yaml, so it's really just a handy cache of the values.)
 	ProjectVariables map[string]string `db:"project_variables"`
+	// IngestionLimitBytes is total data allowed to ingest across all sources
+	// 0 means there is no limit
+	IngestionLimitBytes int64 `db:"ingestion_limit_in_bytes"`
 }
 
 // ResolveVariables returns the final resolved variables

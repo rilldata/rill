@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"strconv"
 	"strings"
 	"time"
 
@@ -368,9 +367,11 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 		return err
 	}
 
-	env := inst.ResolveVariables()
 	// NOTE :: IngestStorageLimitInBytes check will only work if sources are ingested in serial
-	opts := migrator.Options{InstanceEnv: env, IngestStorageLimitInBytes: s.getSourceIngestionLimit(ctx, env)}
+	opts := migrator.Options{
+		InstanceEnv:               inst.ResolveVariables(),
+		IngestStorageLimitInBytes: s.getSourceIngestionLimit(ctx, inst),
+	}
 
 	// create in olap
 	err = s.wrapMigrator(item.CatalogInFile, func() error {
@@ -441,8 +442,10 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 	// update in olap
 	if item.Type == MigrationUpdate {
 		err = s.wrapMigrator(item.CatalogInFile, func() error {
-			env := inst.ResolveVariables()
-			opts := migrator.Options{InstanceEnv: env, IngestStorageLimitInBytes: s.getSourceIngestionLimit(ctx, env)}
+			opts := migrator.Options{
+				InstanceEnv:               inst.ResolveVariables(),
+				IngestStorageLimitInBytes: s.getSourceIngestionLimit(ctx, inst),
+			}
 			return migrator.Update(ctx, s.Olap, s.Repo, opts, item.CatalogInStore, item.CatalogInFile)
 		})
 		if err != nil {
@@ -532,22 +535,18 @@ func (s *Service) addToDag(item *MigrationItem) *runtimev1.ReconcileError {
 	return nil
 }
 
-func (s *Service) getSourceIngestionLimit(ctx context.Context, env map[string]string) int64 {
+func (s *Service) getSourceIngestionLimit(ctx context.Context, inst *drivers.Instance) int64 {
+	if inst.IngestionLimitBytes == 0 {
+		return math.MaxInt64
+	}
+
 	var sizeSoFar int64
 	entries := s.Catalog.FindEntries(ctx, s.InstID, drivers.ObjectTypeSource)
 	for _, entry := range entries {
-		sizeSoFar += entry.SizeInBytes
+		sizeSoFar += entry.BytesIngested
 	}
 
-	limit, ok := env["instance_storage_limit_in_bytes"]
-	if !ok {
-		return math.MaxInt64
-	}
-
-	limitInBytes, err := strconv.ParseInt(limit, 10, 64)
-	if err != nil {
-		return math.MaxInt64
-	}
+	limitInBytes := inst.IngestionLimitBytes
 	limitInBytes -= sizeSoFar
 	if limitInBytes < 0 {
 		return 0

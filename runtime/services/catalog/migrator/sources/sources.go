@@ -220,6 +220,6 @@ func ingestSource(
 		return err
 	}
 
-	catalogObj.SizeInBytes = ingestionSummary.BytesIngested
+	catalogObj.BytesIngested = ingestionSummary.BytesIngested
 	return nil
 }

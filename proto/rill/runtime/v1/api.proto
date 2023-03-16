@@ -215,6 +215,8 @@ message Instance {
   map<string, string> variables = 7;
   // project defaults
   map<string, string> project_variables = 8;
+  // ingestion limit across all sources, 0 means no limit
+  int64 ingestionLimitBytes = 9;
 }
 
 // Request message for RuntimeService.ListInstances
@@ -263,6 +265,7 @@ message CreateInstanceRequest {
   string repo_dsn = 5;
   bool embed_catalog = 6;
   map<string, string> variables = 7;
+  int64 ingestionLimitBytes = 8;
 }
 
 // Response message for RuntimeService.CreateInstance
@@ -289,6 +292,7 @@ message EditInstanceRequest {
   string repo_dsn = 5; 
   bool embed_catalog = 6;
   map<string, string> variables = 7;
+  int64 ingestionLimitBytes = 8; 
 }
 
 // Response message for RuntimeService.EditInstance

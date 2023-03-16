@@ -46,7 +46,7 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 		var objBlob []byte
 		e := &drivers.CatalogEntry{}
 
-		err := rows.Scan(&e.Name, &e.Type, &objBlob, &e.Path, &e.SizeInBytes, &e.Embedded, &e.CreatedOn, &e.UpdatedOn, &e.RefreshedOn)
+		err := rows.Scan(&e.Name, &e.Type, &objBlob, &e.Path, &e.BytesIngested, &e.Embedded, &e.CreatedOn, &e.UpdatedOn, &e.RefreshedOn)
 		if err != nil {
 			panic(err)
 		}
@@ -99,7 +99,7 @@ func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *driv
 		e.Type,
 		obj,
 		e.Path,
-		e.SizeInBytes,
+		e.BytesIngested,
 		e.Embedded,
 		now,
 		now,
@@ -134,7 +134,7 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 		e.Type,
 		obj,
 		e.Path,
-		e.SizeInBytes,
+		e.BytesIngested,
 		e.Embedded,
 		e.UpdatedOn, // TODO: Use time.Now()
 		e.RefreshedOn,
