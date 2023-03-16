@@ -6,8 +6,6 @@
   import { createQueryClient } from "../../lib/svelte-query/globalQueryClient";
 
   const queryClient = createQueryClient();
-
-  // Note: this right hand side is set by Vite at build time.
 </script>
 
 <QueryClientProvider client={queryClient}>
