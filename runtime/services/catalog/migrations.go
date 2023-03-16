@@ -368,7 +368,7 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 		return err
 	}
 
-	env := inst.EnvironmentVariables()
+	env := inst.ResolveVariables()
 	// NOTE :: IngestStorageLimitInBytes check will only work if sources are ingested in serial
 	opts := migrator.Options{InstanceEnv: env, IngestStorageLimitInBytes: s.getSourceIngestionLimit(ctx, env)}
 
@@ -441,7 +441,7 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 	// update in olap
 	if item.Type == MigrationUpdate {
 		err = s.wrapMigrator(item.CatalogInFile, func() error {
-			env := inst.EnvironmentVariables()
+			env := inst.ResolveVariables()
 			opts := migrator.Options{InstanceEnv: env, IngestStorageLimitInBytes: s.getSourceIngestionLimit(ctx, env)}
 			return migrator.Update(ctx, s.Olap, s.Repo, opts, item.CatalogInStore, item.CatalogInFile)
 		})

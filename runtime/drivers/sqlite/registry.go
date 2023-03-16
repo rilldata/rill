@@ -31,7 +31,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 
-	sql := fmt.Sprintf("SELECT id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on, env, project_env FROM instances %s ORDER BY id", whereClause)
+	sql := fmt.Sprintf("SELECT id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on, variables, project_variables FROM instances %s ORDER BY id", whereClause)
 
 	rows, err := c.db.QueryxContext(ctx, sql, args...)
 	if err != nil {
@@ -42,18 +42,18 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	var res []*drivers.Instance
 	for rows.Next() {
 		// sqlite doesn't support maps need to read as bytes and convert to map
-		var env, projectEnv []byte
+		var variables, projectVariables []byte
 		i := &drivers.Instance{}
-		err := rows.Scan(&i.ID, &i.OLAPDriver, &i.OLAPDSN, &i.RepoDriver, &i.RepoDSN, &i.EmbedCatalog, &i.CreatedOn, &i.UpdatedOn, &env, &projectEnv)
+		err := rows.Scan(&i.ID, &i.OLAPDriver, &i.OLAPDSN, &i.RepoDriver, &i.RepoDSN, &i.EmbedCatalog, &i.CreatedOn, &i.UpdatedOn, &variables, &projectVariables)
 		if err != nil {
 			return nil, err
 		}
-		i.Env, err = mapFromJSON(env)
+		i.Variables, err = mapFromJSON(variables)
 		if err != nil {
 			return nil, err
 		}
 
-		i.ProjectEnv, err = mapFromJSON(projectEnv)
+		i.ProjectVariables, err = mapFromJSON(projectVariables)
 		if err != nil {
 			return nil, err
 		}
@@ -74,12 +74,12 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 	}
 
 	// sqlite doesn't support maps need to convert to json and write as bytes array
-	env, err := mapToJSON(inst.Env)
+	variables, err := mapToJSON(inst.Variables)
 	if err != nil {
 		return err
 	}
 
-	projectEnv, err := mapToJSON(inst.ProjectEnv)
+	projectVariables, err := mapToJSON(inst.ProjectVariables)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"INSERT INTO instances(id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on, env, project_env) "+
+		"INSERT INTO instances(id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on, variables, project_variables) "+
 			"VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8, $9)",
 		inst.ID,
 		inst.OLAPDriver,
@@ -96,8 +96,8 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		inst.RepoDSN,
 		inst.EmbedCatalog,
 		now,
-		env,
-		projectEnv,
+		variables,
+		projectVariables,
 	)
 	if err != nil {
 		return err
@@ -105,6 +105,40 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 
 	// We assign manually instead of using RETURNING because it doesn't work for timestamps in SQLite
 	inst.CreatedOn = now
+	inst.UpdatedOn = now
+	return nil
+}
+
+// CreateInstance implements drivers.RegistryStore.
+func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) error {
+	// Override ctx because sqlite sometimes segfaults on context cancellation
+	ctx := context.Background()
+
+	// sqlite doesn't support maps need to convert to json and write as bytes array
+	variables, err := mapToJSON(inst.Variables)
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+	_, err = c.db.ExecContext(
+		ctx,
+		"UPDATE instances SET olap_driver = $2, olap_dsn = $3, repo_driver = $4, repo_dsn = $5, embed_catalog = $6, variables = $7, updated_on = $8 "+
+			"WHERE id = $1",
+		inst.ID,
+		inst.OLAPDriver,
+		inst.OLAPDSN,
+		inst.RepoDriver,
+		inst.RepoDSN,
+		inst.EmbedCatalog,
+		variables,
+		now,
+	)
+	if err != nil {
+		return err
+	}
+
+	// We assign manually instead of using RETURNING because it doesn't work for timestamps in SQLite
 	inst.UpdatedOn = now
 	return nil
 }

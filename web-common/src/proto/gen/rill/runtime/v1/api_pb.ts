@@ -122,7 +122,7 @@ export class Instance extends Message<Instance> {
   olapDsn = "";
 
   /**
-   * Driver for reading/editing code artifacts (options: file, metastore).
+   * Driver for reading/editing code artifacts (options: file, metastore, github).
    * This enables virtualizing a file system in a cloud setting.
    *
    * @generated from field: string repo_driver = 4;
@@ -145,18 +145,18 @@ export class Instance extends Message<Instance> {
   embedCatalog = false;
 
   /**
-   * instance specific environment variables
+   * instance specific variables
    *
-   * @generated from field: map<string, string> env = 7;
+   * @generated from field: map<string, string> variables = 7;
    */
-  env: { [key: string]: string } = {};
+  variables: { [key: string]: string } = {};
 
   /**
    * project defaults
    *
-   * @generated from field: map<string, string> project_env = 8;
+   * @generated from field: map<string, string> project_variables = 8;
    */
-  projectEnv: { [key: string]: string } = {};
+  projectVariables: { [key: string]: string } = {};
 
   constructor(data?: PartialMessage<Instance>) {
     super();
@@ -172,8 +172,8 @@ export class Instance extends Message<Instance> {
     { no: 4, name: "repo_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "repo_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "env", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 8, name: "project_env", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 8, name: "project_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {
@@ -399,9 +399,9 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   embedCatalog = false;
 
   /**
-   * @generated from field: map<string, string> env = 7;
+   * @generated from field: map<string, string> variables = 7;
    */
-  env: { [key: string]: string } = {};
+  variables: { [key: string]: string } = {};
 
   constructor(data?: PartialMessage<CreateInstanceRequest>) {
     super();
@@ -417,7 +417,7 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 4, name: "repo_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "repo_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "env", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {
@@ -487,6 +487,11 @@ export class DeleteInstanceRequest extends Message<DeleteInstanceRequest> {
    */
   instanceId = "";
 
+  /**
+   * @generated from field: bool drop_db = 2;
+   */
+  dropDb = false;
+
   constructor(data?: PartialMessage<DeleteInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -496,6 +501,7 @@ export class DeleteInstanceRequest extends Message<DeleteInstanceRequest> {
   static readonly typeName = "rill.runtime.v1.DeleteInstanceRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "drop_db", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteInstanceRequest {
@@ -545,6 +551,121 @@ export class DeleteInstanceResponse extends Message<DeleteInstanceResponse> {
 
   static equals(a: DeleteInstanceResponse | PlainMessage<DeleteInstanceResponse> | undefined, b: DeleteInstanceResponse | PlainMessage<DeleteInstanceResponse> | undefined): boolean {
     return proto3.util.equals(DeleteInstanceResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.EditInstance.
+ * See message Instance for field descriptions.
+ *
+ * @generated from message rill.runtime.v1.EditInstanceRequest
+ */
+export class EditInstanceRequest extends Message<EditInstanceRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string olap_driver = 2;
+   */
+  olapDriver = "";
+
+  /**
+   * @generated from field: string olap_dsn = 3;
+   */
+  olapDsn = "";
+
+  /**
+   * @generated from field: string repo_driver = 4;
+   */
+  repoDriver = "";
+
+  /**
+   * @generated from field: string repo_dsn = 5;
+   */
+  repoDsn = "";
+
+  /**
+   * @generated from field: bool embed_catalog = 6;
+   */
+  embedCatalog = false;
+
+  /**
+   * @generated from field: map<string, string> variables = 7;
+   */
+  variables: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<EditInstanceRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.EditInstanceRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "repo_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "repo_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceRequest {
+    return new EditInstanceRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EditInstanceRequest {
+    return new EditInstanceRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EditInstanceRequest {
+    return new EditInstanceRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EditInstanceRequest | PlainMessage<EditInstanceRequest> | undefined, b: EditInstanceRequest | PlainMessage<EditInstanceRequest> | undefined): boolean {
+    return proto3.util.equals(EditInstanceRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.EditInstance
+ *
+ * @generated from message rill.runtime.v1.EditInstanceResponse
+ */
+export class EditInstanceResponse extends Message<EditInstanceResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.Instance instance = 1;
+   */
+  instance?: Instance;
+
+  constructor(data?: PartialMessage<EditInstanceResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.EditInstanceResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance", kind: "message", T: Instance },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceResponse {
+    return new EditInstanceResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EditInstanceResponse {
+    return new EditInstanceResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EditInstanceResponse {
+    return new EditInstanceResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EditInstanceResponse | PlainMessage<EditInstanceResponse> | undefined, b: EditInstanceResponse | PlainMessage<EditInstanceResponse> | undefined): boolean {
+    return proto3.util.equals(EditInstanceResponse, a, b);
   }
 }
 

@@ -19,9 +19,6 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: "Edit",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sp := cmdutil.Spinner("Updating project...")
-			sp.Start()
-
 			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
 			if err != nil {
 				return err
@@ -29,7 +26,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			proj, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
-				OrganizationName: cfg.Org(),
+				OrganizationName: cfg.Org,
 				Name:             args[0],
 				Description:      description,
 			})
@@ -37,7 +34,6 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			sp.Stop()
 			cmdutil.TextPrinter("Updated project \n")
 			cmdutil.TablePrinter(toRow(proj.Project))
 			return nil

@@ -16,9 +16,6 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: "Show",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sp := cmdutil.Spinner("Finding project...")
-			sp.Start()
-
 			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
 			if err != nil {
 				return err
@@ -26,18 +23,18 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			proj, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{
-				OrganizationName: cfg.Org(),
+				OrganizationName: cfg.Org,
 				Name:             args[0],
 			})
 			if err != nil {
 				return err
 			}
 
-			sp.Stop()
 			cmdutil.TextPrinter("Found project \n")
 			cmdutil.TablePrinter(toRow(proj.Project))
 			return nil
 		},
 	}
+
 	return showCmd
 }

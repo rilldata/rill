@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/admin/client"
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -18,9 +17,6 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 		Short: "Switch",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sp := cmdutil.Spinner("Switching org...")
-			sp.Start()
-
 			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
 			if err != nil {
 				return err
@@ -39,7 +35,6 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			sp.Stop()
 			fmt.Printf("Set default organization to %q", args[0])
 			return nil
 		},

@@ -11,6 +11,7 @@ type RegistryStore interface {
 	FindInstance(ctx context.Context, id string) (*Instance, error)
 	CreateInstance(ctx context.Context, instance *Instance) error
 	DeleteInstance(ctx context.Context, id string) error
+	EditInstance(ctx context.Context, instance *Instance) error
 }
 
 // Instance represents a single data project, meaning one OLAP connection, one repo connection,
@@ -33,23 +34,23 @@ type Instance struct {
 	CreatedOn time.Time `db:"created_on"`
 	// UpdatedOn is when the instance was last updated in the registry
 	UpdatedOn time.Time `db:"updated_on"`
-	// Env contains user-provided environment variables
-	Env map[string]string `db:"env"`
-	// ProjectEnv contains default environment variables from rill.yaml
+	// Variables contains user-provided variables
+	Variables map[string]string `db:"variables"`
+	// ProjectVariables contains default variables from rill.yaml
 	// (NOTE: This can always be reproduced from rill.yaml, so it's really just a handy cache of the values.)
-	ProjectEnv map[string]string `db:"project_env"`
+	ProjectVariables map[string]string `db:"project_variables"`
 }
 
-// EnvironmentVariables returns the final resolved env variables
-func (i *Instance) EnvironmentVariables() map[string]string {
-	r := make(map[string]string, len(i.ProjectEnv))
-	// set ProjectEnv first i.e. Project defaults
-	for k, v := range i.ProjectEnv {
+// ResolveVariables returns the final resolved variables
+func (i *Instance) ResolveVariables() map[string]string {
+	r := make(map[string]string, len(i.ProjectVariables))
+	// set ProjectVariables first i.e. Project defaults
+	for k, v := range i.ProjectVariables {
 		r[k] = v
 	}
 
-	// override with instance env
-	for k, v := range i.Env {
+	// override with instance Variables
+	for k, v := range i.Variables {
 		r[k] = v
 	}
 	return r

@@ -64,7 +64,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	if err != nil {
 		return fmt.Errorf("could not parse default org from ~/.rill: %w", err)
 	}
-	cfg.DefaultOrg = defaultOrg
+	cfg.Org = defaultOrg
 
 	// Add sub-commands
 	rootCmd.AddCommand(initialize.InitCmd(cfg))

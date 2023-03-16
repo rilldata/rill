@@ -4,7 +4,45 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
+import { Message, proto3, protoInt64, Timestamp } from "@bufbuild/protobuf";
+
+/**
+ * @generated from enum rill.admin.v1.DeploymentStatus
+ */
+export enum DeploymentStatus {
+  /**
+   * @generated from enum value: DEPLOYMENT_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: DEPLOYMENT_STATUS_PENDING = 1;
+   */
+  PENDING = 1,
+
+  /**
+   * @generated from enum value: DEPLOYMENT_STATUS_OK = 2;
+   */
+  OK = 2,
+
+  /**
+   * @generated from enum value: DEPLOYMENT_STATUS_RECONCILING = 3;
+   */
+  RECONCILING = 3,
+
+  /**
+   * @generated from enum value: DEPLOYMENT_STATUS_ERROR = 4;
+   */
+  ERROR = 4,
+}
+// Retrieve enum metadata with: proto3.getEnumType(DeploymentStatus)
+proto3.util.setEnumType(DeploymentStatus, "rill.admin.v1.DeploymentStatus", [
+  { no: 0, name: "DEPLOYMENT_STATUS_UNSPECIFIED" },
+  { no: 1, name: "DEPLOYMENT_STATUS_PENDING" },
+  { no: 2, name: "DEPLOYMENT_STATUS_OK" },
+  { no: 3, name: "DEPLOYMENT_STATUS_RECONCILING" },
+  { no: 4, name: "DEPLOYMENT_STATUS_ERROR" },
+]);
 
 /**
  * @generated from message rill.admin.v1.PingRequest
@@ -367,11 +405,6 @@ export class DeleteOrganizationRequest extends Message<DeleteOrganizationRequest
  * @generated from message rill.admin.v1.DeleteOrganizationResponse
  */
 export class DeleteOrganizationResponse extends Message<DeleteOrganizationResponse> {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name = "";
-
   constructor(data?: PartialMessage<DeleteOrganizationResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -380,7 +413,6 @@ export class DeleteOrganizationResponse extends Message<DeleteOrganizationRespon
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.DeleteOrganizationResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteOrganizationResponse {
@@ -624,6 +656,16 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
    */
   project?: Project;
 
+  /**
+   * @generated from field: rill.admin.v1.Deployment production_deployment = 2;
+   */
+  productionDeployment?: Deployment;
+
+  /**
+   * @generated from field: string jwt = 3;
+   */
+  jwt = "";
+
   constructor(data?: PartialMessage<GetProjectResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -633,6 +675,8 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
   static readonly typeName = "rill.admin.v1.GetProjectResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project", kind: "message", T: Project },
+    { no: 2, name: "production_deployment", kind: "message", T: Deployment },
+    { no: 3, name: "jwt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectResponse {
@@ -677,14 +721,24 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   public = false;
 
   /**
-   * @generated from field: string production_branch = 5;
+   * @generated from field: int64 production_slots = 5;
+   */
+  productionSlots = protoInt64.zero;
+
+  /**
+   * @generated from field: string production_branch = 6;
    */
   productionBranch = "";
 
   /**
-   * @generated from field: string github_url = 6;
+   * @generated from field: string github_url = 7;
    */
   githubUrl = "";
+
+  /**
+   * @generated from field: map<string, string> variables = 8;
+   */
+  variables: { [key: string]: string } = {};
 
   constructor(data?: PartialMessage<CreateProjectRequest>) {
     super();
@@ -698,8 +752,10 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 5, name: "production_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "production_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 6, name: "production_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateProjectRequest {
@@ -803,11 +859,6 @@ export class DeleteProjectRequest extends Message<DeleteProjectRequest> {
  * @generated from message rill.admin.v1.DeleteProjectResponse
  */
 export class DeleteProjectResponse extends Message<DeleteProjectResponse> {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name = "";
-
   constructor(data?: PartialMessage<DeleteProjectResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -816,7 +867,6 @@ export class DeleteProjectResponse extends Message<DeleteProjectResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.DeleteProjectResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteProjectResponse {
@@ -870,6 +920,11 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
    */
   githubUrl = "";
 
+  /**
+   * @generated from field: map<string, string> variables = 7;
+   */
+  variables: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<UpdateProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -884,6 +939,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "production_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectRequest {
@@ -1252,24 +1308,39 @@ export class Project extends Message<Project> {
   public = false;
 
   /**
-   * @generated from field: string production_branch = 5;
+   * @generated from field: int64 production_slots = 5;
+   */
+  productionSlots = protoInt64.zero;
+
+  /**
+   * @generated from field: string production_branch = 6;
    */
   productionBranch = "";
 
   /**
-   * @generated from field: string github_url = 6;
+   * @generated from field: string github_url = 7;
    */
   githubUrl = "";
 
   /**
-   * @generated from field: google.protobuf.Timestamp created_on = 7;
+   * @generated from field: string production_deployment_id = 8;
+   */
+  productionDeploymentId = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_on = 9;
    */
   createdOn?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp updated_on = 8;
+   * @generated from field: google.protobuf.Timestamp updated_on = 10;
    */
   updatedOn?: Timestamp;
+
+  /**
+   * @generated from field: map<string, string> variables = 11;
+   */
+  variables: { [key: string]: string } = {};
 
   constructor(data?: PartialMessage<Project>) {
     super();
@@ -1283,10 +1354,13 @@ export class Project extends Message<Project> {
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 5, name: "production_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "created_on", kind: "message", T: Timestamp },
-    { no: 8, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 5, name: "production_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 6, name: "production_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "production_deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "created_on", kind: "message", T: Timestamp },
+    { no: 10, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 11, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Project {
@@ -1370,6 +1444,97 @@ export class User extends Message<User> {
 
   static equals(a: User | PlainMessage<User> | undefined, b: User | PlainMessage<User> | undefined): boolean {
     return proto3.util.equals(User, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.Deployment
+ */
+export class Deployment extends Message<Deployment> {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * @generated from field: string project_id = 2;
+   */
+  projectId = "";
+
+  /**
+   * @generated from field: int64 slots = 3;
+   */
+  slots = protoInt64.zero;
+
+  /**
+   * @generated from field: string branch = 4;
+   */
+  branch = "";
+
+  /**
+   * @generated from field: string runtime_host = 5;
+   */
+  runtimeHost = "";
+
+  /**
+   * @generated from field: string runtime_instance_id = 6;
+   */
+  runtimeInstanceId = "";
+
+  /**
+   * @generated from field: rill.admin.v1.DeploymentStatus status = 7;
+   */
+  status = DeploymentStatus.UNSPECIFIED;
+
+  /**
+   * @generated from field: string logs = 8;
+   */
+  logs = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_on = 9;
+   */
+  createdOn?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_on = 10;
+   */
+  updatedOn?: Timestamp;
+
+  constructor(data?: PartialMessage<Deployment>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.Deployment";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "runtime_host", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "runtime_instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "status", kind: "enum", T: proto3.getEnumType(DeploymentStatus) },
+    { no: 8, name: "logs", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "created_on", kind: "message", T: Timestamp },
+    { no: 10, name: "updated_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Deployment {
+    return new Deployment().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Deployment {
+    return new Deployment().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Deployment {
+    return new Deployment().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Deployment | PlainMessage<Deployment> | undefined, b: Deployment | PlainMessage<Deployment> | undefined): boolean {
+    return proto3.util.equals(Deployment, a, b);
   }
 }
 

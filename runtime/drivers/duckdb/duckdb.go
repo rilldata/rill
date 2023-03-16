@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -85,6 +86,17 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 		metaSem: semaphore.NewWeighted(1),
 		olapSem: priorityqueue.NewSemaphore(olapSemSize),
 		logger:  logger,
+		config:  cfg,
+	}
+
+	conn, err := c.db.Connx(context.Background())
+	if err != nil && strings.Contains(err.Error(), "Symbol not found") {
+		fmt.Printf("This MacOS version is not supported. Please upgrade.")
+		os.Exit(1)
+	} else if err == nil {
+		conn.Close()
+	} else {
+		return nil, err
 	}
 
 	return c, nil
@@ -97,6 +109,7 @@ type connection struct {
 	metaSem *semaphore.Weighted
 	// olapSem gates OLAP queries
 	olapSem *priorityqueue.Semaphore
+	config  *config
 }
 
 // Close implements drivers.Connection.

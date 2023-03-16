@@ -207,6 +207,10 @@ paths:
                 format: int64
               public:
                 type: boolean
+              variables:
+                type: object
+                additionalProperties:
+                  type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}:
@@ -291,6 +295,10 @@ paths:
                 type: string
               public:
                 type: boolean
+              variables:
+                type: object
+                additionalProperties:
+                  type: string
       tags:
         - AdminService
   /v1/ping:
@@ -512,6 +520,10 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+      variables:
+        type: object
+        additionalProperties:
+          type: string
   v1RevokeCurrentAuthTokenResponse:
     type: object
     properties:
