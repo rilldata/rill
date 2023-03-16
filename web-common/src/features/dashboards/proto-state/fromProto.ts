@@ -1,14 +1,16 @@
 import type { Timestamp } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-import type { TimeRangeName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
-import type { TimeSeriesTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+import type {
+  TimeRangeName,
+  TimeSeriesTimeRange,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/catalog_pb";
 import type { MetricsViewFilter_Cond } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 import {
   DashboardState,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/catalog_pb";
 
 export function fromUrl(url: URL): Partial<MetricsExplorerEntity> {
   const state = url.searchParams.get("state");
@@ -43,8 +45,6 @@ export function fromProto(binary: Uint8Array): Partial<MetricsExplorerEntity> {
   if (dashboard.selectedDimension) {
     entity.selectedDimensionName = dashboard.selectedDimension;
   }
-
-  console.log(entity);
 
   return entity;
 }

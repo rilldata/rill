@@ -23,7 +23,6 @@
   import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { extent } from "d3-array";
-  import { onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -115,10 +114,14 @@
 
   let startValue: Date;
   let endValue: Date;
-  $: if (metricsExplorer?.selectedTimeRange) {
+  $: if (
+    metricsExplorer?.selectedTimeRange &&
+    metricsExplorer?.selectedTimeRange?.start
+  ) {
     startValue = removeTimezoneOffset(
       new Date(metricsExplorer?.selectedTimeRange?.start)
     );
+
     // selectedTimeRange.end is exclusive and rounded to the time grain ("interval").
     // Since values are grouped with DATE_TRUNC, we subtract one grain to get the (inclusive) axis end.
     endValue = new Date(metricsExplorer?.selectedTimeRange?.end);
