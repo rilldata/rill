@@ -275,6 +275,9 @@ func InitOpenTelemetry() error {
 		otlptracegrpc.WithEndpoint(otelAgentAddr),
 		otlptracegrpc.WithDialOption(grpc.WithBlock()))
 	traceExp, err := otlptrace.New(context.Background(), traceClient)
+	if err != nil {
+		return err
+	}
 
 	bsp := sdktrace.NewBatchSpanProcessor(traceExp)
 	tracerProvider := sdktrace.NewTracerProvider(
