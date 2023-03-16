@@ -3,7 +3,10 @@ package duckdb
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"os"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -67,18 +70,36 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	}
 
 	// Acquire connection
+	startAcquireConnection := time.Now()
 	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority)
 	if err != nil {
+		c.logMetricSet(stmt, map[string]interface{}{
+			"elapsed_time": time.Since(startAcquireConnection),
+			"query_status": "acquire_connection_failure",
+		})
 		return nil, err
 	}
+	c.logMetricSet(stmt, map[string]interface{}{
+		"elapsed_time": time.Since(startAcquireConnection),
+		"query_status": "acquire_connection_success",
+	})
 	// NOTE: We can't just "defer release()" because release() will block until rows.Close() is called.
 	// We must be careful to make sure release() is called on all code paths.
 
+	startQuery := time.Now()
 	rows, err := conn.QueryxContext(ctx, stmt.Query, stmt.Args...)
 	if err != nil {
+		c.logMetricSet(stmt, map[string]interface{}{
+			"elapsed_time": time.Since(startQuery),
+			"query_status": "query_failure",
+		})
 		_ = release()
 		return nil, err
 	}
+	c.logMetricSet(stmt, map[string]interface{}{
+		"elapsed_time": time.Since(startQuery),
+		"query_status": "query_success",
+	})
 
 	schema, err := rowsToSchema(rows)
 	if err != nil {
@@ -128,4 +149,20 @@ func (c *connection) DropDB() error {
 	// ignoring close error
 	c.Close()
 	return os.Remove(c.config.DBFilePath)
+}
+
+func (c *connection) logMetricSet(stmt *drivers.Statement, metricSet map[string]interface{}) {
+	finalMetricSet := map[string]interface{}{
+		"query":    stmt.Query,
+		"dry_run":  stmt.DryRun,
+		"args_cnt": len(stmt.Args),
+	}
+	for k, v := range metricSet {
+		finalMetricSet[k] = v
+	}
+	fields := make([]zapcore.Field, 0, len(finalMetricSet))
+	for k, v := range finalMetricSet {
+		fields = append(fields, zap.Any(k, v))
+	}
+	c.logger.Debug("query metrics", fields...)
 }
