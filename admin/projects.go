@@ -15,11 +15,11 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-func (s *Service) CreateProject(ctx context.Context, proj *database.Project) (*database.Project, error) {
+func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
 	// TODO: Make this actually fault tolerant.
 
 	// Create the project
-	proj, err := s.DB.CreateProject(ctx, proj.OrganizationID, proj)
+	proj, err := s.DB.InsertProject(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -28,16 +28,15 @@ func (s *Service) CreateProject(ctx context.Context, proj *database.Project) (*d
 		return nil, fmt.Errorf("cannot create project without github info")
 	}
 
-	opts := &provisioner.ProvisionOptions{
+	// Provision it
+	provOpts := &provisioner.ProvisionOptions{
 		Slots:                proj.ProductionSlots,
 		GithubURL:            *proj.GithubURL,
 		GitBranch:            proj.ProductionBranch,
 		GithubInstallationID: *proj.GithubInstallationID,
 		Variables:            proj.ProductionVariables,
 	}
-
-	// Provision it
-	inst, err := s.provisioner.Provision(ctx, opts)
+	inst, err := s.provisioner.Provision(ctx, provOpts)
 	if err != nil {
 		err = fmt.Errorf("provisioner: %w", err)
 		err2 := s.DB.DeleteProject(ctx, proj.ID)
@@ -45,7 +44,7 @@ func (s *Service) CreateProject(ctx context.Context, proj *database.Project) (*d
 	}
 
 	// Store deployment
-	depl := &database.Deployment{
+	depl, err := s.DB.InsertDeployment(ctx, &database.InsertDeploymentOptions{
 		ProjectID:         proj.ID,
 		Branch:            proj.ProductionBranch,
 		Slots:             proj.ProductionSlots,
@@ -54,8 +53,7 @@ func (s *Service) CreateProject(ctx context.Context, proj *database.Project) (*d
 		RuntimeAudience:   inst.Audience,
 		Status:            database.DeploymentStatusPending,
 		Logs:              "",
-	}
-	depl, err = s.DB.InsertDeployment(ctx, depl)
+	})
 	if err != nil {
 		err2 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID)
 		err3 := s.DB.DeleteProject(ctx, proj.ID)
@@ -63,8 +61,15 @@ func (s *Service) CreateProject(ctx context.Context, proj *database.Project) (*d
 	}
 
 	// Update prod deployment on project
-	proj.ProductionDeploymentID = &depl.ID
-	res, err := s.DB.UpdateProject(ctx, proj)
+	res, err := s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Description:            proj.Description,
+		Public:                 proj.Public,
+		ProductionBranch:       proj.ProductionBranch,
+		ProductionVariables:    proj.ProductionVariables,
+		GithubURL:              proj.GithubURL,
+		GithubInstallationID:   proj.GithubInstallationID,
+		ProductionDeploymentID: &depl.ID,
+	})
 	if err != nil {
 		err2 := s.DB.DeleteDeployment(ctx, depl.ID)
 		err3 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID)
@@ -195,22 +200,24 @@ func (s *Service) TriggerReconcile(ctx context.Context, deploymentID string) err
 	return nil
 }
 
-func (s *Service) UpdateProject(ctx context.Context, p *database.Project) (*database.Project, error) {
+func (s *Service) UpdateProject(ctx context.Context, projID string, opts *database.UpdateProjectOptions) (*database.Project, error) {
 	// TODO: Make this actually fault tolerant.
 
-	ds, err := s.DB.FindDeployments(ctx, p.ID)
+	// TODO: Handle if ProductionBranch or GithubURL was changed.
+
+	ds, err := s.DB.FindDeployments(ctx, projID)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, d := range ds {
-		if err := s.editInstance(ctx, d, p.ProductionVariables); err != nil {
+		if err := s.editInstance(ctx, d, opts.ProductionVariables); err != nil {
 			return nil, err
 		}
 	}
 
 	// Update the project
-	proj, err := s.DB.UpdateProject(ctx, p)
+	proj, err := s.DB.UpdateProject(ctx, projID, opts)
 	if err != nil {
 		return nil, err
 	}

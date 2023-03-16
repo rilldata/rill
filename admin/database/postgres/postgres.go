@@ -56,7 +56,7 @@ func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*
 	return res, nil
 }
 
-func (c *connection) CreateOrganization(ctx context.Context, name, description string) (*database.Organization, error) {
+func (c *connection) InsertOrganization(ctx context.Context, name, description string) (*database.Organization, error) {
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO organizations(name, description) VALUES ($1, $2) RETURNING *", name, description).StructScan(res)
 	if err != nil {
@@ -65,7 +65,7 @@ func (c *connection) CreateOrganization(ctx context.Context, name, description s
 	return res, nil
 }
 
-func (c *connection) CreateOrganizationFromSeeds(ctx context.Context, nameSeeds []string, description string) (*database.Organization, error) {
+func (c *connection) InsertOrganizationFromSeeds(ctx context.Context, nameSeeds []string, description string) (*database.Organization, error) {
 	// If this is called in a transaction, we must use savepoints to avoid aborting the whole transaction when a unique constraint is violated.
 	isTx := txFromContext(ctx) != nil
 
@@ -79,7 +79,7 @@ func (c *connection) CreateOrganizationFromSeeds(ctx context.Context, nameSeeds 
 		}
 
 		// Try to create the org
-		org, err := c.CreateOrganization(ctx, name, description)
+		org, err := c.InsertOrganization(ctx, name, description)
 		if err == nil {
 			return org, nil
 		}
@@ -146,12 +146,12 @@ func (c *connection) FindProjectByGithubURL(ctx context.Context, githubURL strin
 	return res, nil
 }
 
-func (c *connection) CreateProject(ctx context.Context, orgID string, p *database.Project) (*database.Project, error) {
+func (c *connection) InsertProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (organization_id, name, description, public, production_slots, production_branch, github_url, github_installation_id, production_variables)
+		INSERT INTO projects (organization_id, name, description, public, production_slots, production_branch, production_variables, github_url, github_installation_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-		orgID, p.Name, p.Description, p.Public, p.ProductionSlots, p.ProductionBranch, p.GithubURL, p.GithubInstallationID, p.ProductionVariables,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.ProductionSlots, opts.ProductionBranch, database.Variables(opts.ProductionVariables), opts.GithubURL, opts.GithubInstallationID,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
@@ -159,12 +159,12 @@ func (c *connection) CreateProject(ctx context.Context, orgID string, p *databas
 	return res, nil
 }
 
-func (c *connection) UpdateProject(ctx context.Context, p *database.Project) (*database.Project, error) {
+func (c *connection) UpdateProject(ctx context.Context, id string, opts *database.UpdateProjectOptions) (*database.Project, error) {
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET description=$1, public=$2, production_branch=$3, github_url=$4, github_installation_id=$5, production_deployment_id=$6, production_variables=$7, updated_on=now()
+		UPDATE projects SET description=$1, public=$2, production_branch=$3, production_variables=$4, github_url=$5, github_installation_id=$6, production_deployment_id=$7, updated_on=now()
 		WHERE id=$8 RETURNING *`,
-		p.Description, p.Public, p.ProductionBranch, p.GithubURL, p.GithubInstallationID, p.ProductionDeploymentID, p.ProductionVariables, p.ID,
+		opts.Description, opts.Public, opts.ProductionBranch, database.Variables(opts.ProductionVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProductionDeploymentID, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
@@ -204,7 +204,7 @@ func (c *connection) FindUserByEmail(ctx context.Context, email string) (*databa
 	return res, nil
 }
 
-func (c *connection) CreateUser(ctx context.Context, email, displayName, photoURL string) (*database.User, error) {
+func (c *connection) InsertUser(ctx context.Context, email, displayName, photoURL string) (*database.User, error) {
 	res := &database.User{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url) VALUES ($1, $2, $3) RETURNING *", email, displayName, photoURL).StructScan(res)
 	if err != nil {
@@ -245,7 +245,7 @@ func (c *connection) FindUserAuthToken(ctx context.Context, id string) (*databas
 	return res, nil
 }
 
-func (c *connection) CreateUserAuthToken(ctx context.Context, opts *database.CreateUserAuthTokenOptions) (*database.UserAuthToken, error) {
+func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.InsertUserAuthTokenOptions) (*database.UserAuthToken, error) {
 	res := &database.UserAuthToken{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id)
@@ -263,19 +263,17 @@ func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
 	return parseErr(err)
 }
 
-// CreateAuthCode inserts the authorization code data into the store.
-func (c *connection) CreateAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*database.AuthCode, error) {
+func (c *connection) InsertAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*database.AuthCode, error) {
 	res := &database.AuthCode{}
 	err := c.getDB(ctx).QueryRowxContext(ctx,
 		`INSERT INTO device_code_auth (device_code, user_code, expires_on, approval_state, client_id)
-		VALUES ($1, $2, $3, $4, $5)  RETURNING *`, deviceCode, userCode, expiresOn, database.Pending, clientID).StructScan(res)
+		VALUES ($1, $2, $3, $4, $5)  RETURNING *`, deviceCode, userCode, expiresOn, database.AuthCodeStatePending, clientID).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
 	return res, nil
 }
 
-// FindAuthCodeByDeviceCode retrieves the authorization code data from the store
 func (c *connection) FindAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.AuthCode, error) {
 	authCode := &database.AuthCode{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_code_auth WHERE device_code = $1", deviceCode).StructScan(authCode)
@@ -285,7 +283,6 @@ func (c *connection) FindAuthCodeByDeviceCode(ctx context.Context, deviceCode st
 	return authCode, nil
 }
 
-// FindAuthCodeByUserCode retrieves the authorization code data from the store
 func (c *connection) FindAuthCodeByUserCode(ctx context.Context, userCode string) (*database.AuthCode, error) {
 	authCode := &database.AuthCode{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_code_auth WHERE user_code = $1", userCode).StructScan(authCode)
@@ -295,8 +292,7 @@ func (c *connection) FindAuthCodeByUserCode(ctx context.Context, userCode string
 	return authCode, nil
 }
 
-// UpdateAuthCode updates the authorization code data in the store
-func (c *connection) UpdateAuthCode(ctx context.Context, userCode, userID string, approvalState database.AuthCodeApprovalState) error {
+func (c *connection) UpdateAuthCode(ctx context.Context, userCode, userID string, approvalState database.AuthCodeState) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "UPDATE device_code_auth SET approval_state=$1, user_id=$2, updated_on=now() WHERE user_code=$3",
 		approvalState, userID, userCode)
 	if err != nil {
@@ -315,7 +311,6 @@ func (c *connection) UpdateAuthCode(ctx context.Context, userCode, userID string
 	return nil
 }
 
-// DeleteAuthCode deletes the authorization code data from the store
 func (c *connection) DeleteAuthCode(ctx context.Context, deviceCode string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM device_code_auth WHERE device_code=$1", deviceCode)
 	if err != nil {
@@ -375,12 +370,12 @@ func (c *connection) FindDeployment(ctx context.Context, id string) (*database.D
 	return res, nil
 }
 
-func (c *connection) InsertDeployment(ctx context.Context, d *database.Deployment) (*database.Deployment, error) {
+func (c *connection) InsertDeployment(ctx context.Context, opts *database.InsertDeploymentOptions) (*database.Deployment, error) {
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO deployments (project_id, slots, branch, runtime_host, runtime_instance_id, runtime_audience, status, logs)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-		d.ProjectID, d.Slots, d.Branch, d.RuntimeHost, d.RuntimeInstanceID, d.RuntimeAudience, d.Status, d.Logs,
+		opts.ProjectID, opts.Slots, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.Logs,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
