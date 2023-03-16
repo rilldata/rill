@@ -14,6 +14,7 @@ import (
 
 var errConnectionCacheClosed = errors.New("connectionCache: closed")
 
+// cache for instance specific connections only
 type connectionCache struct {
 	cache  *simplelru.LRU
 	lock   sync.Mutex
