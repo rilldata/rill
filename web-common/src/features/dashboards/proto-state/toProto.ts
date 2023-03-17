@@ -26,6 +26,8 @@ import type {
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 export function toProto(metrics: MetricsExplorerEntity): string {
+  if (!metrics) return "";
+
   const state: PartialMessage<DashboardState> = {};
   if (metrics.filters) {
     state.filters = toFiltersProto(metrics.filters) as any;

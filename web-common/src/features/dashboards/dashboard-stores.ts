@@ -53,7 +53,9 @@ const updateMetricsExplorerByName = (
       if (absenceCallback) {
         state.entities[name] = absenceCallback();
       }
-      state.entities[name].proto = toProto(state.entities[name]);
+      if (state.entities[name]) {
+        state.entities[name].proto = toProto(state.entities[name]);
+      }
       return state;
     }
 

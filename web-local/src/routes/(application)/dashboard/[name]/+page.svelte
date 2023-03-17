@@ -79,12 +79,14 @@
     {
       query: {
         onError: () => {
+          if (!metricViewName) return;
+
           // When the catalog entry doesn't exist, the dashboard config is invalid
           if ($featureFlags.readOnly) {
             throw error(400, "Invalid dashboard");
           }
 
-          throw redirect(307, `/dashboard/${metricViewName}/edit`);
+          goto(`/dashboard/${metricViewName}/edit`);
         },
       },
     }
