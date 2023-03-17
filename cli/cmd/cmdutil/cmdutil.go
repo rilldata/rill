@@ -14,7 +14,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func CheckAuth(cfg *config.Config) func(cmd *cobra.Command, args []string) error {
+type PreRunCheck func(cmd *cobra.Command, args []string) error
+
+func CheckChain(chain ...PreRunCheck) PreRunCheck {
+	return func(cmd *cobra.Command, args []string) error {
+		for _, fn := range chain {
+			err := fn(cmd, args)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func CheckAuth(cfg *config.Config) PreRunCheck {
 	return func(cmd *cobra.Command, args []string) error {
 		// This will just check if token is present in the config
 		if cfg.IsAuthenticated() {
@@ -22,6 +36,16 @@ func CheckAuth(cfg *config.Config) func(cmd *cobra.Command, args []string) error
 		}
 
 		return fmt.Errorf("not authenticated, please run 'rill auth login'")
+	}
+}
+
+func CheckOrg(cfg *config.Config) PreRunCheck {
+	return func(cmd *cobra.Command, args []string) error {
+		if cfg.Org != "" {
+			return nil
+		}
+
+		return fmt.Errorf("no organization is set, pass `--org` or run `rill org switch`")
 	}
 }
 
