@@ -1,4 +1,10 @@
 <script lang="ts">
+  import {
+    exclusiveToInclusiveEndISOString,
+    getDateFromISOString,
+    getDateFromObject,
+    getISOStringFromDate,
+  } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-range";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { Button } from "../../../components/button";
@@ -9,12 +15,7 @@
   } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useDashboardStore } from "../dashboard-stores";
-  import {
-    exclusiveToInclusiveEndISOString,
-    getDateFromISOString,
-    getISOStringFromDate,
-    validateTimeRange,
-  } from "./time-range-utils";
+  import { validateTimeRange } from "./time-range-utils";
 
   export let metricViewName: string;
   export let minTimeGrain: string;
@@ -26,13 +27,11 @@
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
-  $: if (!start && !end) {
-    if ($dashboardStore?.selectedTimeRange) {
-      start = getDateFromISOString($dashboardStore.selectedTimeRange.start);
-      end = getDateFromISOString(
-        exclusiveToInclusiveEndISOString($dashboardStore.selectedTimeRange.end)
-      );
-    }
+  $: if (!start && !end && $dashboardStore?.selectedTimeRange.start) {
+    start = getDateFromObject($dashboardStore.selectedTimeRange.start);
+    end = exclusiveToInclusiveEndISOString(
+      $dashboardStore.selectedTimeRange.end
+    );
   }
 
   $: error = validateTimeRange(new Date(start), new Date(end), minTimeGrain);

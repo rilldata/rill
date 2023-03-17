@@ -289,8 +289,19 @@ export const prettyFormatTimeRange = (start: Date, end: Date): string => {
   )} - ${end.toLocaleDateString(undefined, dateFormatOptions)}`;
 };
 
-export function getDateFromISOString(isoString: string): string {
-  return isoString.split("T")[0];
+export function exclusiveToInclusiveEndISOString(exclusiveEnd: Date): string {
+  const date = new Date(exclusiveEnd);
+  date.setDate(date.getDate() - 1);
+  return getDateFromObject(date);
+}
+
+// Extracts just the date part (yy-mm-dd) from the entire date
+export function getDateFromObject(date: Date): string {
+  return getDateFromISOString(date.toISOString());
+}
+
+export function getDateFromISOString(isoDate: string): string {
+  return isoDate.split("T")[0];
 }
 
 export function getISOStringFromDate(date: string): string {

@@ -43,6 +43,7 @@ export function fromProto(binary: Uint8Array): Partial<MetricsExplorerEntity> {
   if (dashboard.selectedDimension) {
     entity.selectedDimensionName = dashboard.selectedDimension;
   }
+  console.log(entity);
 
   return entity;
 }

@@ -5,8 +5,7 @@ import {
   Value,
 } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-import { TimeRangeName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
-import type { TimeSeriesTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+import { TimeRangePreset } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-types";
 import type { DashboardTimeControls } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-types";
 import {
   TimeGrain,
@@ -62,7 +61,7 @@ function toTimeRangeProto(range: DashboardTimeControls) {
   const timeRangeArgs: PartialMessage<DashboardTimeRange> = {
     name: range.name,
   };
-  if (range.name === TimeRangeName.Custom) {
+  if (range.name === TimeRangePreset.CUSTOM) {
     timeRangeArgs.timeStart = toTimeProto(range.start);
     timeRangeArgs.timeEnd = toTimeProto(range.end);
   }
