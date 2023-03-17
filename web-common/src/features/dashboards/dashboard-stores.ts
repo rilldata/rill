@@ -5,7 +5,6 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
 import { derived, Readable, Writable, writable } from "svelte/store";
-import type { TimeSeriesTimeRange } from "./time-controls/time-control-types";
 import type { DashboardTimeControls } from "./time-controls/utils/time-types";
 
 export interface LeaderboardValue {
@@ -31,7 +30,7 @@ export interface MetricsExplorerEntity {
   // false/absence = include, true = exclude
   dimensionFilterExcludeMode: Map<string, boolean>;
   // user selected time range
-  selectedTimeRange?: TimeSeriesTimeRange;
+  selectedTimeRange?: DashboardTimeControls;
   // user selected dimension
   selectedDimensionName?: string;
   proto?: string;

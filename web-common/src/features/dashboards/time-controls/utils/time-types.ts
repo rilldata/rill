@@ -1,5 +1,6 @@
 import type { DateTimeUnit } from "luxon";
 import type { V1TimeGrain } from "../../../../runtime-client";
+import type { TIME_RANGES } from "./time-range";
 
 export const TIME = {
   MILLISECOND: 1,
@@ -127,7 +128,7 @@ export interface RelativePointInTime {
   transformation: RelativeTimeTransformation[];
 }
 
-export interface TimeRange {
+export interface TimeRangeMeta {
   label: string;
   defaultGrain?: V1TimeGrain; // Affordance for future use
   rangePreset?: RangePreset | string;
@@ -135,10 +136,26 @@ export interface TimeRange {
   end?: string | RelativePointInTime;
 }
 
-export interface TimeRangeOption {
-  label: string;
+export type TimeRangeType = keyof typeof TIME_RANGES;
+
+export const TimeRangePreset: { [K in TimeRangeType]: K } = {
+  ALL_TIME: "ALL_TIME",
+  LAST_SIX_HOURS: "LAST_SIX_HOURS",
+  LAST_DAY: "LAST_DAY",
+  CUSTOM: "CUSTOM",
+};
+export interface TimeRange {
+  name: TimeRangeType;
   start: Date;
   end: Date;
+}
+
+export interface TimeRangeOption extends TimeRange {
+  label: string;
+}
+
+export interface DashboardTimeControls extends TimeRange {
+  interval?: V1TimeGrain;
 }
 
 export interface TimeGrain {
@@ -151,11 +168,4 @@ export interface TimeGrain {
 
 export interface TimeGrainOption extends TimeGrain {
   enabled: boolean;
-}
-
-export interface DashboardTimeControls {
-  label: string;
-  start: Date;
-  end: Date;
-  timeGrain: V1TimeGrain;
 }

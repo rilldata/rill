@@ -13,12 +13,15 @@ import {
   RangePreset,
   ReferencePoint,
   TimeOffsetType,
-  TimeRange,
+  TimeRangeMeta,
   TimeRangeOption,
   TimeTruncationType,
+  TimeRangePreset,
+  TimeRangeType,
+  TimeRange,
 } from "./time-types";
 
-export const TIME_RANGES: Record<string, TimeRange> = {
+export const TIME_RANGES: Record<string, TimeRangeMeta> = {
   LAST_SIX_HOURS: {
     label: "Last 6 Hours",
     rangePreset: RangePreset.OFFSET_ANCHORED,
@@ -71,10 +74,6 @@ export const TIME_RANGES: Record<string, TimeRange> = {
     label: "All time data",
     rangePreset: RangePreset.ALL_TIME,
   },
-  CUSTOM: {
-    label: "Custom",
-    rangePreset: RangePreset.FIXED_RANGE,
-  },
 };
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
@@ -93,11 +92,13 @@ export function getChildTimeRanges(
     if (timeRange.rangePreset == RangePreset.ALL_TIME) {
       // All time is always an option
       timeRanges.push({
+        name: timePreset,
         label: timeRange.label,
         start,
         end,
       });
     } else {
+      console.log(timeRange);
       const timeRangeDates = relativePointInTimeToAbsolute(
         end,
         timeRange.start,
@@ -114,6 +115,7 @@ export function getChildTimeRanges(
 
       if (isValidTimeRange && isGrainPossible) {
         timeRanges.push({
+          name: timePreset,
           label: timeRange.label,
           start: timeRangeDates.startDate,
           end: timeRangeDates.endDate,
@@ -123,6 +125,55 @@ export function getChildTimeRanges(
   }
 
   return timeRanges;
+}
+
+export const ISODurationToTimePreset = (
+  isoDuration: string,
+  defaultToAllTime = true
+): TimeRangeType => {
+  switch (isoDuration) {
+    case "PT6H":
+      return TimeRangePreset.LAST_SIX_HOURS;
+    case "P1D":
+      return TimeRangePreset.LAST_DAY;
+    case "P7D":
+      return TimeRangePreset.LAST_WEEK;
+    case "P30D":
+      return TimeRangePreset.LAST_30_DAYS;
+    case "inf":
+      return TimeRangePreset.ALL_TIME;
+    default:
+      return defaultToAllTime ? TimeRangePreset.ALL_TIME : undefined;
+  }
+};
+
+/* Converts a Time Range preset to a TimeRange object */
+export function makeTimeRange(
+  timeRangePreset: TimeRangeType,
+  start: Date,
+  end: Date
+): TimeRange {
+  if (timeRangePreset === TimeRangePreset.ALL_TIME) {
+    return {
+      name: timeRangePreset,
+      start,
+      end,
+    };
+  }
+  const timeRange = TIME_RANGES[timeRangePreset];
+
+  console.log(timeRange, timeRangePreset);
+  const timeRangeDates = relativePointInTimeToAbsolute(
+    end,
+    timeRange.start,
+    timeRange.end
+  );
+
+  return {
+    name: timeRangePreset,
+    start: timeRangeDates.startDate,
+    end: timeRangeDates.endDate,
+  };
 }
 
 export function isTimeRangeValidForMinTimeGrain(

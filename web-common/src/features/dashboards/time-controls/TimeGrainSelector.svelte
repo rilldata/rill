@@ -6,10 +6,10 @@
   import type { V1TimeGrain } from "../../../runtime-client";
   import { useDashboardStore } from "../dashboard-stores";
   import {
-    isGrainBigger,
-    prettyTimeGrain,
-    TimeGrainOption,
-  } from "./time-range-utils";
+    getTimeGrainFromRuntimeGrain,
+    isMinGrainBigger,
+  } from "./utils/time-grain";
+  import type { TimeGrainOption } from "./utils/time-types";
 
   export let metricViewName: string;
   export let timeGrainOptions: TimeGrainOption[];
@@ -21,14 +21,17 @@
   $: dashboardStore = useDashboardStore(metricViewName);
   $: activeTimeGrain = $dashboardStore?.selectedTimeRange?.interval;
 
+  $: activeTimeGrainPretty =
+    getTimeGrainFromRuntimeGrain(activeTimeGrain)?.prettyLabel;
+
   $: timeGrains = timeGrainOptions
-    ? timeGrainOptions.map(({ timeGrain, enabled }) => {
-        const isGrainPossible = !isGrainBigger(minTimeGrain, timeGrain);
+    ? timeGrainOptions.map((timeGrain) => {
+        const isGrainPossible = !isMinGrainBigger(minTimeGrain, timeGrain);
         return {
-          main: prettyTimeGrain(timeGrain),
-          disabled: !enabled || !isGrainPossible,
-          key: timeGrain,
-          description: !enabled
+          main: timeGrain.prettyLabel,
+          disabled: !timeGrain.enabled || !isGrainPossible,
+          key: timeGrain.grain,
+          description: !timeGrain.enabled
             ? "not valid for this time range"
             : !isGrainPossible
             ? "bigger than min time grain"
@@ -47,7 +50,7 @@
     distance={8}
     options={timeGrains}
     selection={{
-      main: prettyTimeGrain(activeTimeGrain),
+      main: activeTimeGrainPretty,
       key: activeTimeGrain,
     }}
     on:select={(event) => onTimeGrainSelect(event.detail.key)}
@@ -58,9 +61,7 @@
       class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600"
       on:click={toggleMenu}
     >
-      <span class="font-bold"
-        >by {prettyTimeGrain(activeTimeGrain)} increments</span
-      >
+      <span class="font-bold">by {activeTimeGrainPretty} increments</span>
       <IconSpaceFixer pullRight>
         <div class="transition-transform" class:-rotate-180={active}>
           <CaretDownIcon size="16px" />

@@ -14,11 +14,6 @@ We should rename TimeSeriesTimeRange to a better name.
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import {
-    TimeRange,
-    TimeRangeName,
-    TimeSeriesTimeRange,
-  } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
-  import {
     useRuntimeServiceGetCatalogEntry,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
@@ -27,20 +22,21 @@ We should rename TimeSeriesTimeRange to a better name.
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
-  import {
-    addGrains,
-    checkValidTimeGrain,
-    floorDate,
-    getDefaultTimeGrain,
-    getDefaultTimeRange,
-    getTimeGrainOptions,
-    ISODurationToTimeRange,
-    makeRelativeTimeRange,
-    supportedTimeGrainEnums,
-    TimeGrainOption,
-  } from "./time-range-utils";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
+  import { ISODurationToTimePreset, makeTimeRange } from "./utils/time-range";
+  import type {
+    TimeRange,
+    DashboardTimeControls,
+    TimeRangeType,
+    TimeGrainOption,
+  } from "./utils/time-types";
+  import {
+    checkValidTimeGrain,
+    getDefaultTimeGrain,
+    getTimeGrainOptions,
+    supportedTimeGrainEnums,
+  } from "./utils/time-grain";
 
   export let metricViewName: string;
 
@@ -48,7 +44,7 @@ We should rename TimeSeriesTimeRange to a better name.
   $: dashboardStore = useDashboardStore(metricViewName);
 
   let baseTimeRange: TimeRange;
-  let defaultTimeRange: TimeRangeName;
+  let defaultTimeRange: TimeRangeType;
   let minTimeGrain: V1TimeGrain;
 
   let metricsViewQuery;
@@ -78,43 +74,41 @@ We should rename TimeSeriesTimeRange to a better name.
       $metricsViewQuery.data.entry.metricsView.timeDimension
     );
 
-    defaultTimeRange = ISODurationToTimeRange(
+    defaultTimeRange = ISODurationToTimePreset(
       $metricsViewQuery.data.entry.metricsView?.defaultTimeRange
     );
     minTimeGrain =
       $metricsViewQuery.data.entry.metricsView?.smallestTimeGrain ||
       V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
   }
-  $: allTimeRange = $allTimeRangeQuery?.data as TimeRange | undefined;
+  $: allTimeRange = $allTimeRangeQuery?.data as TimeRange;
 
   // once we have the allTimeRange, set the default time range and time grain
   $: if (allTimeRange) {
     if (!$dashboardStore?.selectedTimeRange) {
       setDefaultTimeControls(allTimeRange);
     } else if (!$dashboardStore?.selectedTimeRange.start) {
-      setTimeControlsFromUrl(
-        $dashboardStore.selectedTimeRange.name,
-        allTimeRange
-      );
+      setTimeControlsFromUrl(allTimeRange);
     }
   }
 
-  function setDefaultTimeControls(allTimeRange: TimeRange) {
+  function setDefaultTimeControls(allTimeRange: DashboardTimeControls) {
     baseTimeRange =
-      makeRelativeTimeRange(defaultTimeRange, allTimeRange) ||
-      getDefaultTimeRange(allTimeRange);
+      makeTimeRange(defaultTimeRange, allTimeRange.start, allTimeRange.end) ||
+      allTimeRange;
 
     const timeGrain = getDefaultTimeGrain(
       baseTimeRange.start,
       baseTimeRange.end
     );
-    makeTimeSeriesTimeRangeAndUpdateAppState(baseTimeRange, timeGrain);
+    makeTimeSeriesTimeRangeAndUpdateAppState(baseTimeRange, timeGrain.grain);
   }
 
-  function setTimeControlsFromUrl(name: string, allTimeRange: TimeRange) {
-    baseTimeRange = makeRelativeTimeRange(
+  function setTimeControlsFromUrl(allTimeRange: TimeRange) {
+    baseTimeRange = makeTimeRange(
       $dashboardStore?.selectedTimeRange.name,
-      allTimeRange
+      allTimeRange.start,
+      allTimeRange.end
     );
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
@@ -130,7 +124,7 @@ We should rename TimeSeriesTimeRange to a better name.
     new Date($dashboardStore?.selectedTimeRange?.end)
   );
 
-  function onSelectTimeRange(name: TimeRangeName, start: string, end: string) {
+  function onSelectTimeRange(name: TimeRangeType, start: string, end: string) {
     baseTimeRange = {
       name,
       start: new Date(start),
@@ -138,7 +132,7 @@ We should rename TimeSeriesTimeRange to a better name.
     };
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
-      $dashboardStore.selectedTimeRange.interval
+      $dashboardStore.selectedTimeRange?.interval
     );
   }
 
@@ -161,7 +155,7 @@ We should rename TimeSeriesTimeRange to a better name.
       minTimeGrain
     );
     if (!isValidTimeGrain) {
-      const defaultTimeGrain = getDefaultTimeGrain(start, end);
+      const defaultTimeGrain = getDefaultTimeGrain(start, end).grain;
       const timeGrainEnums = supportedTimeGrainEnums();
 
       const defaultGrainIndex = timeGrainEnums.indexOf(defaultTimeGrain);
@@ -180,26 +174,28 @@ We should rename TimeSeriesTimeRange to a better name.
       }
     }
 
-    // Round start time to nearest lower time grain
-    const adjustedStart = floorDate(start, timeGrain);
+    //TODO: Do adjuments and offsets for custom
+
+    // // Round start time to nearest lower time grain
+    // const adjustedStart = floorDate(start, timeGrain);
 
     // Round end time to start of next grain
     // because the runtime uses exlusive end times, whereas user inputs are inclusive
-    let adjustedEnd: Date;
-    if (timeRange.name === TimeRangeName.Custom) {
-      // Custom Range always snaps to the end of the day
-      adjustedEnd = addGrains(new Date(end), 1, V1TimeGrain.TIME_GRAIN_DAY);
-      adjustedEnd = floorDate(adjustedEnd, timeGrain);
-    } else {
-      adjustedEnd = addGrains(new Date(end), 1, timeGrain);
-      adjustedEnd = floorDate(adjustedEnd, timeGrain);
-    }
+    // let adjustedEnd: Date;
+    // if (timeRange.name === TimeRangeName.Custom) {
+    //   // Custom Range always snaps to the end of the day
+    //   adjustedEnd = addGrains(new Date(end), 1, V1TimeGrain.TIME_GRAIN_DAY);
+    //   adjustedEnd = floorDate(adjustedEnd, timeGrain);
+    // } else {
+    //   adjustedEnd = addGrains(new Date(end), 1, timeGrain);
+    //   adjustedEnd = floorDate(adjustedEnd, timeGrain);
+    // }
 
     // the adjusted time range
-    const newTimeRange: TimeSeriesTimeRange = {
-      name: name,
-      start: adjustedStart.toISOString(),
-      end: adjustedEnd.toISOString(),
+    const newTimeRange: DashboardTimeControls = {
+      name,
+      start,
+      end,
       interval: timeGrain,
     };
 

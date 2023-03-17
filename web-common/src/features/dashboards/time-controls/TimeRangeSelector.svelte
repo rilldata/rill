@@ -12,11 +12,15 @@
   import { useDashboardStore } from "../dashboard-stores";
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
-  import { TimeRange, TimeRangeName } from "./time-control-types";
   import {
-    getRelativeTimeRangeOptions,
+    getChildTimeRanges,
     prettyFormatTimeRange,
-  } from "./time-range-utils";
+  } from "./utils/time-range";
+  import {
+    TimeRange,
+    TimeRangeOption,
+    TimeRangePreset,
+  } from "./utils/time-types";
 
   export let metricViewName: string;
   export let allTimeRange: TimeRange;
@@ -26,13 +30,14 @@
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
-  let relativeTimeRangeOptions: TimeRange[];
+  let relativeTimeRangeOptions: TimeRangeOption[];
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
 
   $: if (allTimeRange) {
-    relativeTimeRangeOptions = getRelativeTimeRangeOptions(
-      allTimeRange,
+    relativeTimeRangeOptions = getChildTimeRanges(
+      allTimeRange.start,
+      allTimeRange.end,
       minTimeGrain
     );
   }
@@ -56,7 +61,7 @@
   ) {
     closeMenu();
     dispatch("select-time-range", {
-      name: TimeRangeName.Custom,
+      name: TimeRangePreset.CUSTOM,
       start: startDate,
       end: endDate,
     });
@@ -98,7 +103,10 @@
         </span>
       </div>
       <span style:transform="translateY(1px)">
-        {prettyFormatTimeRange($dashboardStore?.selectedTimeRange)}
+        {prettyFormatTimeRange(
+          $dashboardStore?.selectedTimeRange?.start,
+          $dashboardStore?.selectedTimeRange?.end
+        )}
       </span>
     </div>
     <IconSpaceFixer pullRight>
@@ -118,7 +126,7 @@
           on:select={() =>
             onSelectRelativeTimeRange(relativeTimeRange, toggleFloatingElement)}
         >
-          {relativeTimeRange.name}
+          {relativeTimeRange.label}
         </MenuItem>
       {/each}
     {/if}

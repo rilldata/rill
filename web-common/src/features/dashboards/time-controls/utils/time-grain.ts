@@ -47,6 +47,10 @@ export const TIME_GRAIN: Record<string, TimeGrain> = {
   },
 };
 
+export function supportedTimeGrainEnums(): V1TimeGrain[] {
+  return Object.values(TIME_GRAIN).map((timeGrain) => timeGrain.grain);
+}
+
 export function getTimeGrainOptions(start: Date, end: Date): TimeGrainOption[] {
   const timeGrains: TimeGrainOption[] = [];
   const timeRangeDurationMs = getTimeWidth(start, end);
@@ -126,14 +130,19 @@ export function getTimeGrainFromRuntimeGrain(grain: V1TimeGrain): TimeGrain {
   return undefined;
 }
 
+//TODO: Simplify use of this method
 export function checkValidTimeGrain(
   timeGrain: V1TimeGrain,
   timeGrainOptions: TimeGrainOption[],
   minTimeGrain: V1TimeGrain
 ): boolean {
+  console.log("checkValidTimeGrain", timeGrain, minTimeGrain);
   const timeGrainOption = timeGrainOptions.find(
     (timeGrainOption) => timeGrainOption.grain === timeGrain
   );
+
+  if (minTimeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED)
+    return timeGrainOption?.enabled;
 
   const timeGrainObj = getTimeGrainFromRuntimeGrain(timeGrain);
   const isGrainPossible = !isMinGrainBigger(minTimeGrain, timeGrainObj);
