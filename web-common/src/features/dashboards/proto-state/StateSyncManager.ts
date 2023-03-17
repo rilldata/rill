@@ -33,6 +33,8 @@ export class StateSyncManager {
     // run sync if we didn't change the url through a state change
     // this can happen when url is updated directly by the user
     if (!this.updating && this.urlState && this.urlState !== this.protoState) {
+      // not all data for MetricsExplorerEntity will be filled out here.
+      // Hence, it is a Partial<MetricsExplorerEntity>
       const partialDashboardState = getDashboardStateFromUrl(pageUrl);
       if (partialDashboardState) {
         metricsExplorerStore.syncFromUrl(
