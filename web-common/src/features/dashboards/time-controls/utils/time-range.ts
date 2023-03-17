@@ -71,6 +71,10 @@ export const TIME_RANGES: Record<string, TimeRange> = {
     label: "All time data",
     rangePreset: RangePreset.ALL_TIME,
   },
+  CUSTOM: {
+    label: "Custom",
+    rangePreset: RangePreset.FIXED_RANGE,
+  },
 };
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
@@ -81,7 +85,11 @@ export function getChildTimeRanges(
 ): TimeRangeOption[] {
   const timeRanges: TimeRangeOption[] = [];
 
-  for (const timeRange of TIME_RANGES) {
+  const allowedTimeGrains = getAllowedTimeGrains(start, end);
+  const allowedMaxGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
+
+  for (const timePreset in TIME_RANGES) {
+    const timeRange = TIME_RANGES[timePreset];
     if (timeRange.rangePreset == RangePreset.ALL_TIME) {
       // All time is always an option
       timeRanges.push({
@@ -102,8 +110,6 @@ export function getChildTimeRanges(
         end
       );
 
-      const allowedTimeGrains = getAllowedTimeGrains(start, end);
-      const allowedMaxGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
       const isGrainPossible = !isMinGrainBigger(minTimeGrain, allowedMaxGrain);
 
       if (isValidTimeRange && isGrainPossible) {
