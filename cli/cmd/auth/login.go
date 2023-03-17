@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/rilldata/rill/admin/client"
@@ -27,7 +28,15 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-			authenticator, err := deviceauth.New(cfg.AdminURL)
+			// In production, the REST and gRPC endpoints are the same, but in development, they're served on different ports.
+			// We plan to move to connect.build for gRPC, which will allow us to serve both on the same port in development as well.
+			// Until we make that change, this is a convenient hack for local development (assumes gRPC on port 9090 and REST on port 8080).
+			authURL := cfg.AdminURL
+			if strings.Contains(authURL, "http://localhost:9090") {
+				authURL = "http://localhost:8080"
+			}
+
+			authenticator, err := deviceauth.New(authURL)
 			if err != nil {
 				return err
 			}
@@ -47,12 +56,12 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 
 			_ = browser.Open(deviceVerification.VerificationCompleteURL)
 
-			OAuthTokenResponse, err := authenticator.GetAccessTokenForDevice(ctx, deviceVerification)
+			res1, err := authenticator.GetAccessTokenForDevice(ctx, deviceVerification)
 			if err != nil {
 				return err
 			}
 
-			err = dotrill.SetAccessToken(OAuthTokenResponse.AccessToken)
+			err = dotrill.SetAccessToken(res1.AccessToken)
 			if err != nil {
 				return err
 			}
@@ -64,14 +73,14 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
+			res2, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
 			if err != nil {
 				return err
 			}
 
-			if len(res.Organizations) > 0 {
+			if len(res2.Organizations) > 0 {
 				var orgNames []string
-				for _, org := range res.Organizations {
+				for _, org := range res2.Organizations {
 					orgNames = append(orgNames, org.Name)
 				}
 
