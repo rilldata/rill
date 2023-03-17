@@ -18,8 +18,8 @@ import {
   TimeTruncationType,
 } from "./time-types";
 
-export const TIME_RANGES: TimeRange[] = [
-  {
+export const TIME_RANGES: Record<string, TimeRange> = {
+  LAST_SIX_HOURS: {
     label: "Last 6 Hours",
     rangePreset: RangePreset.OFFSET_ANCHORED,
     start: {
@@ -43,7 +43,7 @@ export const TIME_RANGES: TimeRange[] = [
       ],
     },
   },
-  {
+  LAST_DAY: {
     label: "Last day",
     rangePreset: RangePreset.OFFSET_ANCHORED,
     start: {
@@ -67,11 +67,11 @@ export const TIME_RANGES: TimeRange[] = [
       ],
     },
   },
-  {
+  ALL_TIME: {
     label: "All time data",
     rangePreset: RangePreset.ALL_TIME,
   },
-];
+};
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
 export function getChildTimeRanges(

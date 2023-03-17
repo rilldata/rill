@@ -152,3 +152,10 @@ export interface TimeGrain {
 export interface TimeGrainOption extends TimeGrain {
   enabled: boolean;
 }
+
+export interface DashboardTimeControls {
+  label: string;
+  start: Date;
+  end: Date;
+  timeGrain: V1TimeGrain;
+}

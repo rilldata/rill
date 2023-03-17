@@ -5,6 +5,7 @@ import type {
 import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
 import { derived, Readable, Writable, writable } from "svelte/store";
 import type { TimeSeriesTimeRange } from "./time-controls/time-control-types";
+import type { DashboardTimeControls } from "./time-controls/utils/time-types";
 
 export interface LeaderboardValue {
   value: number;
@@ -62,7 +63,7 @@ const metricViewReducers = {
   create(
     name: string,
     filters: V1MetricsViewFilter,
-    selectedTimeRange: TimeSeriesTimeRange
+    selectedTimeRange: DashboardTimeControls
   ) {
     updateMetricsExplorerByName(
       name,
@@ -130,7 +131,7 @@ const metricViewReducers = {
     });
   },
 
-  setSelectedTimeRange(name: string, timeRange: TimeSeriesTimeRange) {
+  setSelectedTimeRange(name: string, timeRange: DashboardTimeControls) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.selectedTimeRange = timeRange;
     });
