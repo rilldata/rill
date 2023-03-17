@@ -101,7 +101,14 @@
         <span class="ui-copy-icon"><Calendar size="16px" /></span>
         <span style:transform="translateY(1px)">
           <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
-          {$dashboardStore?.selectedTimeRange?.name ?? "Select a time range"}
+          {#if $dashboardStore?.selectedTimeRange?.name === TimeRangePreset.CUSTOM}
+            Custom range
+          {:else if $dashboardStore?.selectedTimeRange?.name in DEFAULT_TIME_RANGES}
+            {DEFAULT_TIME_RANGES[$dashboardStore?.selectedTimeRange?.name]
+              .label}
+          {:else}
+            Select a time range
+          {/if}
         </span>
       </div>
       <span style:transform="translateY(1px)">
