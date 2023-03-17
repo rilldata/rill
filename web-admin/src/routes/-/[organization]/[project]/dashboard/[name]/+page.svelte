@@ -1,13 +1,13 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import { StateSyncManager } from "@rilldata/web-common/features/dashboards/proto-state/StateSyncManager";
 
   const metricViewName: string = $page.params.name;
   const stateSyncManager = new StateSyncManager(metricViewName);
 
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: metricsExplorer = useDashboardStore(metricViewName);
 
   $: if (metricsExplorer) {
     stateSyncManager.handleStateChange(metricsExplorer);

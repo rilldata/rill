@@ -1,4 +1,4 @@
-import { toProto } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import type {
   V1MetricsView,
   V1MetricsViewFilter,
@@ -53,13 +53,17 @@ const updateMetricsExplorerByName = (
       if (absenceCallback) {
         state.entities[name] = absenceCallback();
       }
-      state.entities[name].proto = toProto(state.entities[name]);
+      state.entities[name].proto = getProtoFromDashboardState(
+        state.entities[name]
+      );
       return state;
     }
 
     callback(state.entities[name]);
     // every change triggers a proto update
-    state.entities[name].proto = toProto(state.entities[name]);
+    state.entities[name].proto = getProtoFromDashboardState(
+      state.entities[name]
+    );
     return state;
   });
 };
