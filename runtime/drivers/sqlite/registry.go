@@ -31,7 +31,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 
-	sql := fmt.Sprintf("SELECT id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_in_bytes FROM instances %s ORDER BY id", whereClause)
+	sql := fmt.Sprintf("SELECT id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_bytes FROM instances %s ORDER BY id", whereClause)
 
 	rows, err := c.db.QueryxContext(ctx, sql, args...)
 	if err != nil {
@@ -87,7 +87,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"INSERT INTO instances(id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_in_bytes) "+
+		"INSERT INTO instances(id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_bytes) "+
 			"VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8, $9, $10)",
 		inst.ID,
 		inst.OLAPDriver,
@@ -124,7 +124,7 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"UPDATE instances SET olap_driver = $2, olap_dsn = $3, repo_driver = $4, repo_dsn = $5, embed_catalog = $6, variables = $7, updated_on = $8, ingestion_limit_in_bytes = $9 "+
+		"UPDATE instances SET olap_driver = $2, olap_dsn = $3, repo_driver = $4, repo_dsn = $5, embed_catalog = $6, variables = $7, updated_on = $8, ingestion_limit_bytes = $9 "+
 			"WHERE id = $1",
 		inst.ID,
 		inst.OLAPDriver,

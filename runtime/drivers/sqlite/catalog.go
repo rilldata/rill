@@ -27,7 +27,7 @@ func (c *connection) FindEntry(ctx context.Context, instanceID, name string) (*d
 }
 
 func (c *connection) findEntries(ctx context.Context, whereClause string, args ...any) []*drivers.CatalogEntry {
-	sql := fmt.Sprintf("SELECT name, type, object, path, size_in_bytes, created_on, updated_on, refreshed_on FROM catalog %s ORDER BY lower(name)", whereClause)
+	sql := fmt.Sprintf("SELECT name, type, object, path, bytes_ingested, created_on, updated_on, refreshed_on FROM catalog %s ORDER BY lower(name)", whereClause)
 
 	rows, err := c.db.QueryxContext(ctx, sql, args...)
 	if err != nil {
@@ -82,7 +82,7 @@ func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *driv
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"INSERT INTO catalog(instance_id, name, type, object, path, size_in_bytes, created_on, updated_on, refreshed_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO catalog(instance_id, name, type, object, path, bytes_ingested, created_on, updated_on, refreshed_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		instanceID,
 		e.Name,
 		e.Type,
@@ -113,7 +113,7 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"UPDATE catalog SET type = ?, object = ?, path = ?, size_in_bytes = ?, updated_on = ?, refreshed_on = ? WHERE instance_id = ? AND name = ?",
+		"UPDATE catalog SET type = ?, object = ?, path = ?, bytes_ingested = ?, updated_on = ?, refreshed_on = ? WHERE instance_id = ? AND name = ?",
 		e.Type,
 		obj,
 		e.Path,

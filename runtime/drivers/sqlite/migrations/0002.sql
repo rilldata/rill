@@ -7,7 +7,6 @@ CREATE TABLE catalog (
     created_on TIMESTAMP NOT NULL,
     updated_on TIMESTAMP NOT NULL,
     refreshed_on TIMESTAMP NOT NULL,
-    size_in_bytes INTEGER default 0 NOT NULL,
     PRIMARY KEY (instance_id, name)
 );
 
