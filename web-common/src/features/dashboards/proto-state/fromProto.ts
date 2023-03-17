@@ -1,9 +1,7 @@
 import type { Timestamp } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-import type {
-  TimeRangeName,
-  TimeSeriesTimeRange,
-} from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+import type { TimeRangeName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+import type { DashboardTimeControls } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-types";
 import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/catalog_pb";
 import type { MetricsViewFilter_Cond } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 import {
@@ -70,9 +68,9 @@ function fromFiltersProto(conditions: Array<MetricsViewFilter_Cond>) {
 }
 
 function fromTimeRangeProto(timeRange: DashboardTimeRange) {
-  const selectedTimeRange: TimeSeriesTimeRange = {
+  const selectedTimeRange: DashboardTimeControls = {
     name: timeRange.name as TimeRangeName,
-  };
+  } as DashboardTimeControls;
 
   selectedTimeRange.name = timeRange.name as TimeRangeName;
   if (timeRange.timeStart) {
@@ -86,7 +84,7 @@ function fromTimeRangeProto(timeRange: DashboardTimeRange) {
 }
 
 function fromTimeProto(timestamp: Timestamp) {
-  return new Date(Number(timestamp.seconds)).toISOString();
+  return new Date(Number(timestamp.seconds));
 }
 
 function fromTimeGrainProto(timeGrain: TimeGrain): V1TimeGrain {
