@@ -5,14 +5,22 @@ import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/catalog.proto";
 import "rill/runtime/v1/queries.proto";
 
+// DashboardState represents the dashboard as seen by the user
 message DashboardState {
+  // Selected time range
   DashboardTimeRange time_range = 1;
+  // Dimension filters applied
   rill.runtime.v1.MetricsViewFilter filters = 2;
+  // Selected time granularity
+  rill.runtime.v1.TimeGrain time_grain = 3;
+  // Selected measure for the leaderboard
+  optional string leaderboard_measure = 5;
+  // Focused dimension
+  optional string selected_dimension = 6;
 }
 
 message DashboardTimeRange {
   optional string name = 1;
   optional google.protobuf.Timestamp time_start = 2;
   optional google.protobuf.Timestamp time_end = 3;
-  rill.runtime.v1.TimeGrain time_granularity = 4;
 }

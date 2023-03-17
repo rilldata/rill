@@ -34,7 +34,7 @@ func (t *userAuthToken) OwnerID() string {
 func (s *Service) IssueUserAuthToken(ctx context.Context, userID, clientID, displayName string) (AuthToken, error) {
 	tkn := authtoken.NewRandom(authtoken.TypeUser)
 
-	uat, err := s.DB.CreateUserAuthToken(ctx, &database.CreateUserAuthTokenOptions{
+	uat, err := s.DB.InsertUserAuthToken(ctx, &database.InsertUserAuthTokenOptions{
 		ID:           tkn.ID.String(),
 		SecretHash:   tkn.SecretHash(),
 		UserID:       userID,

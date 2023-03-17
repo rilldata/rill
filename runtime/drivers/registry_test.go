@@ -13,11 +13,12 @@ import (
 func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	ctx := context.Background()
 	inst := &drivers.Instance{
-		OLAPDriver:   "duckdb",
-		OLAPDSN:      ":memory:",
-		RepoDriver:   "file",
-		RepoDSN:      ".",
-		EmbedCatalog: true,
+		OLAPDriver:          "duckdb",
+		OLAPDSN:             ":memory:",
+		RepoDriver:          "file",
+		RepoDSN:             ".",
+		EmbedCatalog:        true,
+		IngestionLimitBytes: 102345,
 	}
 
 	err := reg.CreateInstance(ctx, inst)
@@ -39,6 +40,7 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	require.Equal(t, inst.RepoDriver, res.RepoDriver)
 	require.Equal(t, inst.RepoDSN, res.RepoDSN)
 	require.Equal(t, inst.EmbedCatalog, res.EmbedCatalog)
+	require.Equal(t, inst.IngestionLimitBytes, res.IngestionLimitBytes)
 
 	err = reg.CreateInstance(ctx, &drivers.Instance{OLAPDriver: "druid"})
 	require.NoError(t, err)

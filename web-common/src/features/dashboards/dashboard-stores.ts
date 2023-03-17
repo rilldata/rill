@@ -1,3 +1,4 @@
+import { toProto } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import type {
   V1MetricsView,
   V1MetricsViewFilter,
@@ -32,6 +33,7 @@ export interface MetricsExplorerEntity {
   selectedTimeRange?: TimeSeriesTimeRange;
   // user selected dimension
   selectedDimensionName?: string;
+  proto?: string;
 }
 
 export interface MetricsExplorerStoreType {
@@ -51,32 +53,43 @@ const updateMetricsExplorerByName = (
       if (absenceCallback) {
         state.entities[name] = absenceCallback();
       }
+      state.entities[name].proto = toProto(state.entities[name]);
       return state;
     }
+
     callback(state.entities[name]);
+    // every change triggers a proto update
+    state.entities[name].proto = toProto(state.entities[name]);
     return state;
   });
 };
 
+function includeExcludeModeFromFilters(filters: V1MetricsViewFilter) {
+  const map = new Map<string, boolean>();
+  filters?.exclude.forEach((cond) => map.set(cond.name, true));
+  return map;
+}
+
 const metricViewReducers = {
-  create(
-    name: string,
-    filters: V1MetricsViewFilter,
-    selectedTimeRange: TimeSeriesTimeRange
-  ) {
+  syncFromUrl(name: string, partial: Partial<MetricsExplorerEntity>) {
     updateMetricsExplorerByName(
       name,
       (metricsExplorer) => {
-        metricsExplorer.filters = filters;
-        metricsExplorer.selectedTimeRange = selectedTimeRange;
+        for (const key in partial) {
+          metricsExplorer[key] = partial[key];
+        }
+        metricsExplorer.dimensionFilterExcludeMode =
+          includeExcludeModeFromFilters(partial.filters);
       },
       () => ({
         name,
         selectedMeasureNames: [],
         leaderboardMeasureName: "",
-        filters,
-        dimensionFilterExcludeMode: new Map(),
-        selectedTimeRange,
+        filters: {},
+        dimensionFilterExcludeMode: includeExcludeModeFromFilters(
+          partial.filters
+        ),
+        ...partial,
       })
     );
   },
@@ -253,10 +266,9 @@ export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
 export function useDashboardStore(
   name: string
 ): Readable<MetricsExplorerEntity> {
-  const derivedStore = derived(metricsExplorerStore, ($store) => {
+  return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
   });
-  return derivedStore;
 }
 
 export const calendlyModalStore: Writable<string> = writable("");

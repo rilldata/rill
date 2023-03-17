@@ -9,12 +9,27 @@ import (
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/lensesio/tableprinter"
+	"github.com/manifoldco/promptui"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-func CheckAuth(cfg *config.Config) func(cmd *cobra.Command, args []string) error {
+type PreRunCheck func(cmd *cobra.Command, args []string) error
+
+func CheckChain(chain ...PreRunCheck) PreRunCheck {
+	return func(cmd *cobra.Command, args []string) error {
+		for _, fn := range chain {
+			err := fn(cmd, args)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func CheckAuth(cfg *config.Config) PreRunCheck {
 	return func(cmd *cobra.Command, args []string) error {
 		// This will just check if token is present in the config
 		if cfg.IsAuthenticated() {
@@ -22,6 +37,16 @@ func CheckAuth(cfg *config.Config) func(cmd *cobra.Command, args []string) error
 		}
 
 		return fmt.Errorf("not authenticated, please run 'rill auth login'")
+	}
+}
+
+func CheckOrg(cfg *config.Config) PreRunCheck {
+	return func(cmd *cobra.Command, args []string) error {
+		if cfg.Org != "" {
+			return nil
+		}
+
+		return fmt.Errorf("no organization is set, pass `--org` or run `rill org switch`")
 	}
 }
 
@@ -59,4 +84,19 @@ func Client(cfg *config.Config) (*client.Client, error) {
 	}
 
 	return c, nil
+}
+
+func PromptGetSelect(items []string, label string) string {
+	prompt := promptui.Select{
+		Label: label,
+		Items: items,
+	}
+
+	_, result, err := prompt.Run()
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
+
+	return result
 }
