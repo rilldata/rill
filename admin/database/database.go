@@ -49,6 +49,7 @@ type DB interface {
 
 	FindOrganizations(ctx context.Context) ([]*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
+	FindOrganizationByID(ctx context.Context, id string) (*Organization, error)
 	InsertOrganization(ctx context.Context, name string, description string) (*Organization, error)
 	InsertOrganizationFromSeeds(ctx context.Context, nameSeeds []string, description string) (*Organization, error)
 	UpdateOrganization(ctx context.Context, name string, description string) (*Organization, error)
@@ -117,6 +118,11 @@ type DB interface {
 	ResolveUserGroupOrgRoles(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
 	// ResolveUserGroupProjectRoles resolves the roles of user groups of the user in a project.
 	ResolveUserGroupProjectRoles(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
+
+	InsertUserGroup(ctx context.Context, name, orgID, description string) (*UserGroup, error)
+	UpdateOrganizationAllUserGroup(ctx context.Context, orgID, groupID string) (*Organization, error)
+	AddUserGroupMember(ctx context.Context, userID, groupID string) error
+	AddUserGroupProjectRole(ctx context.Context, groupID, projectID, roleID string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -154,6 +160,7 @@ type Organization struct {
 	Description string
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
+	AllGroupID  *string   `db:"all_group_id"`
 }
 
 // Project represents one Git connection.
@@ -368,3 +375,10 @@ const (
 	RoleIDProjectCollaborator = "12345678-0000-0000-0000-000000000002"
 	RoleIDProjectReader       = "12345678-0000-0000-0000-000000000003"
 )
+
+type UserGroup struct {
+	ID          string `db:"id"`
+	OrgID       string `db:"org_id"`
+	DisplayName string `db:"display_name"`
+	Description string `db:"description"`
+}

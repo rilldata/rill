@@ -24,6 +24,17 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 		return nil, err
 	}
 
+	// TODO: use transaction
+	// add project collaborator role to the all user group of the org
+	org, err := s.DB.FindOrganizationByID(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+	err = s.DB.AddUserGroupProjectRole(ctx, *org.AllGroupID, proj.ID, database.RoleIDProjectCollaborator)
+	if err != nil {
+		return nil, err
+	}
+
 	if proj.GithubURL == nil || proj.GithubInstallationID == nil {
 		return nil, fmt.Errorf("cannot create project without github info")
 	}

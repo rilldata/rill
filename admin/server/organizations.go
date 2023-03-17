@@ -70,7 +70,7 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
-	org, err := s.admin.DB.InsertOrganization(ctx, req.Name, req.Description)
+	org, err := s.admin.CreateOrgForUser(ctx, claims.OwnerID(), req.Name, req.Description)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -199,12 +199,34 @@ func (s *Server) AddOrgMember(ctx context.Context, req *adminv1.AddOrgMemberRequ
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.admin.DB.AddOrganizationMember(ctx, org.ID, user.ID, role.ID)
+	err = s.addOrgUser(ctx, org.ID, user.ID, role.ID, *org.AllGroupID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &adminv1.AddOrgMemberResponse{}, nil
+}
+
+func (s *Server) addOrgUser(ctx context.Context, orgID, userID, roleID, allUserGroupID string) error {
+	ctx, tx, err := s.admin.DB.NewTx(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	err = s.admin.DB.AddOrganizationMember(ctx, orgID, userID, roleID)
+	if err != nil {
+		return err
+	}
+
+	err = s.admin.DB.AddUserGroupMember(ctx, allUserGroupID, userID)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotUnique) {
+			return err
+		}
+		// If the user is already in the all user group, we can ignore the error
+	}
+
+	return tx.Commit()
 }
 
 func (s *Server) RemoveOrgMember(ctx context.Context, req *adminv1.RemoveOrgMemberRequest) (*adminv1.RemoveOrgMemberResponse, error) {

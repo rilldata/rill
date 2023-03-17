@@ -306,12 +306,39 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.admin.DB.AddProjectMember(ctx, proj.ID, user.ID, role.ID)
+	err = s.addProjectUser(ctx, proj.ID, user.ID, role.ID, proj.OrganizationID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &adminv1.AddProjectMemberResponse{}, nil
+}
+
+func (s *Server) addProjectUser(ctx context.Context, projectID, userID, roleID, orgID string) error {
+	ctx, tx, err := s.admin.DB.NewTx(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	err = s.admin.DB.AddProjectMember(ctx, projectID, userID, roleID)
+	if err != nil {
+		return err
+	}
+
+	org, err := s.admin.DB.FindOrganizationByID(ctx, orgID)
+	if err != nil {
+		return err
+	}
+
+	err = s.admin.DB.AddUserGroupMember(ctx, userID, *org.AllGroupID)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotUnique) {
+			return err
+		}
+		// If the user is already in the all user group, we can ignore the error
+	}
+
+	return tx.Commit()
 }
 
 func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemoveProjectMemberRequest) (*adminv1.RemoveProjectMemberResponse, error) {
