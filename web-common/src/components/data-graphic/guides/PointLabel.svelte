@@ -108,7 +108,7 @@
         transition:fade|local={{ duration: 100 }}
         x1={output.x}
         x2={output.x}
-        y1={yScale.range().at(0)}
+        y1={yScale(0)}
         y2={output.y}
         stroke-width="4"
         class="stroke-blue-300"
