@@ -98,7 +98,7 @@ type DB interface {
 
 	FindOrganizationMembers(ctx context.Context, orgID string) ([]*User, error)
 	FindOrganizationMembersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
-	AddOrganizationMember(ctx context.Context, orgID, userId, roleID string) error
+	AddOrganizationMember(ctx context.Context, orgID, userID, roleID string) error
 	RemoveOrganizationMember(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberRole(ctx context.Context, orgID, userID, roleID string) error
 

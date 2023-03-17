@@ -482,7 +482,7 @@ func (c *connection) FindProjectMembers(ctx context.Context, projectID string) (
 	return res, nil
 }
 
-func (c *connection) AddProjectMember(ctx context.Context, projectID string, userID string, roleID string) error {
+func (c *connection) AddProjectMember(ctx context.Context, projectID, userID, roleID string) error {
 	res, err := c.db.ExecContext(ctx, "INSERT INTO users_projects_roles (user_id, project_id, project_role_id) VALUES ($1, $2, $3)", userID, projectID, roleID)
 	if err != nil {
 		return parseErr(err)

@@ -2,10 +2,11 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/rilldata/rill/admin/database"
 
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/authtoken"
 )
 
@@ -161,10 +162,10 @@ func (c *authTokenClaims) composeOrgPermissions(ctx context.Context, orgID strin
 	var composite *database.OrganizationRole
 	directRole, err := c.admin.DB.ResolveUserOrganizationRole(ctx, c.token.OwnerID(), orgID)
 	if err != nil {
-		// no direct role, check group roles
-		if err != database.ErrNotFound {
+		if !errors.Is(err, database.ErrNotFound) {
 			return nil, err
 		}
+		// no direct role, check group roles
 	}
 	if directRole != nil {
 		composite = unionOrgRoles(composite, directRole)
@@ -196,10 +197,10 @@ func (c *authTokenClaims) composeProjectPermissions(ctx context.Context, project
 	var composite *database.ProjectRole
 	directRole, err := c.admin.DB.ResolveUserProjectRole(ctx, c.token.OwnerID(), projectID)
 	if err != nil {
-		// no direct role, check group roles
-		if err != database.ErrNotFound {
+		if !errors.Is(err, database.ErrNotFound) {
 			return nil, err
 		}
+		// no direct role, check group roles
 	}
 	if directRole != nil {
 		composite = unionProjectRoles(composite, directRole)
