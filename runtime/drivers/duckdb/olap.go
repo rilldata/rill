@@ -164,5 +164,7 @@ func (c *connection) logMetricSet(stmt *drivers.Statement, metricSet map[string]
 	for k, v := range finalMetricSet {
 		fields = append(fields, zap.Any(k, v))
 	}
-	c.logger.Debug("query metrics", fields...)
+	if c.logger != nil { // logger might be undefined in tests
+		c.logger.Debug("query metrics", fields...)
+	}
 }
