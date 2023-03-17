@@ -22,18 +22,23 @@ func (m *sourceMigrator) Create(
 	ctx context.Context,
 	olap drivers.OLAPStore,
 	repo drivers.RepoStore,
-	e map[string]string,
+	opts migrator.Options,
 	catalogObj *drivers.CatalogEntry,
 ) error {
-	return ingestSource(ctx, olap, repo, e, catalogObj, "")
+	return ingestSource(ctx, olap, repo, opts, catalogObj, "")
 }
 
-func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, e map[string]string, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
+func (m *sourceMigrator) Update(ctx context.Context,
+	olap drivers.OLAPStore,
+	repo drivers.RepoStore,
+	opts migrator.Options,
+	oldCatalogObj, newCatalogObj *drivers.CatalogEntry,
+) error {
 	apiSource := newCatalogObj.GetSource()
 
 	tempName := fmt.Sprintf("__rill_temp_%s", apiSource.Name)
 
-	err := ingestSource(ctx, olap, repo, e, newCatalogObj, tempName)
+	err := ingestSource(ctx, olap, repo, opts, newCatalogObj, tempName)
 	if err != nil {
 		// cleanup of temp table. can exist and still error out in incremental ingestion
 		_ = olap.Exec(ctx, &drivers.Statement{
@@ -183,7 +188,7 @@ func ingestSource(
 	ctx context.Context,
 	olap drivers.OLAPStore,
 	repo drivers.RepoStore,
-	e map[string]string,
+	opts migrator.Options,
 	catalogObj *drivers.CatalogEntry,
 	name string,
 ) error {
@@ -201,13 +206,20 @@ func ingestSource(
 		Timeout:       apiSource.GetTimeoutSeconds(),
 	}
 
-	variables := convertUpper(e)
+	variables := convertUpper(opts.InstanceEnv)
 	env := &connectors.Env{
 		RepoDriver:           repo.Driver(),
 		RepoDSN:              repo.DSN(),
 		Variables:            variables,
 		AllowHostCredentials: strings.EqualFold(variables["ALLOW_HOST_CREDENTIALS"], "true"),
+		StorageLimitInBytes:  opts.IngestStorageLimitInBytes,
 	}
 
-	return olap.Ingest(ctx, env, source)
+	ingestionSummary, err := olap.Ingest(ctx, env, source)
+	if err != nil {
+		return err
+	}
+
+	catalogObj.BytesIngested = ingestionSummary.BytesIngested
+	return nil
 }
