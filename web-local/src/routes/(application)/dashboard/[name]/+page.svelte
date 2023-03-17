@@ -12,7 +12,7 @@
     useRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { error, redirect } from "@sveltejs/kit";
+  import { error } from "@sveltejs/kit";
   import { featureFlags } from "../../../../lib/application-state-stores/application-store";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
 
