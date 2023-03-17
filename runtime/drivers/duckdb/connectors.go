@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -21,7 +22,7 @@ const (
 )
 
 // Ingest data from a source with a timeout
-func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
+func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) (*drivers.IngestionSummary, error) {
 	// Wraps c.ingest with timeout handling
 
 	timeout := _defaultIngestTimeout
@@ -32,40 +33,46 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	err := c.ingest(ctxWithTimeout, env, source)
+	summary, err := c.ingest(ctxWithTimeout, env, source)
 	if err != nil && errors.Is(err, context.DeadlineExceeded) {
-		return fmt.Errorf("ingestion timeout exceeded (source=%q, timeout=%s)", source.Name, timeout.String())
+		return nil, fmt.Errorf("ingestion timeout exceeded (source=%q, timeout=%s)", source.Name, timeout.String())
 	}
 
-	return err
+	return summary, err
 }
 
-func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
+func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) (*drivers.IngestionSummary, error) {
 	// Driver-specific overrides
 	if source.Connector == "local_file" {
-		return c.ingestLocalFiles(ctx, env, source)
+		err := c.ingestLocalFiles(ctx, env, source)
+		if err != nil {
+			return nil, err
+		}
+		return &drivers.IngestionSummary{}, nil
 	}
 
 	iterator, err := connectors.ConsumeAsIterator(ctx, env, source)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer iterator.Close()
 
 	appendToTable := false
+	summary := &drivers.IngestionSummary{}
 	for iterator.HasNext() {
 		files, err := iterator.NextBatch(_iteratorBatch)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if err := c.ingestIteratorFiles(ctx, source, files, appendToTable); err != nil {
-			return err
+			return nil, err
 		}
 
+		summary.BytesIngested += fileSize(files)
 		appendToTable = true
 	}
-	return nil
+	return summary, nil
 }
 
 // for files downloaded locally from remote sources
@@ -171,4 +178,14 @@ func sourceReaderWithDelimiter(paths []string, delimiter string) string {
 		return fmt.Sprintf("read_csv_auto(['%s'])", strings.Join(paths, "','"))
 	}
 	return fmt.Sprintf("read_csv_auto(['%s'], delim='%s')", strings.Join(paths, "','"), delimiter)
+}
+
+func fileSize(paths []string) int64 {
+	var size int64
+	for _, path := range paths {
+		if info, err := os.Stat(path); err == nil { // ignoring error since only error possible is *PathError
+			size += info.Size()
+		}
+	}
+	return size
 }

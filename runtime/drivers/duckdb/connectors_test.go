@@ -69,7 +69,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 				Connector:  tt.Connector,
 				Properties: props,
 			}
-			err = olap.Ingest(ctx, e, s)
+			_, err = olap.Ingest(ctx, e, s)
 			require.NoError(t, err)
 
 			var count int
@@ -94,7 +94,7 @@ func TestCSVDelimiter(t *testing.T) {
 	require.NoError(t, err)
 	testDelimiterCsvPath := filepath.Join(testdataPathAbs, "test-delimiter.csv")
 
-	err = olap.Ingest(ctx, &connectors.Env{
+	_, err = olap.Ingest(ctx, &connectors.Env{
 		RepoDriver: "file",
 		RepoDSN:    ".",
 	}, &connectors.Source{
@@ -113,7 +113,7 @@ func TestCSVDelimiter(t *testing.T) {
 	require.Len(t, cols, 3)
 	require.NoError(t, rows.Close())
 
-	err = olap.Ingest(ctx, &connectors.Env{
+	_, err = olap.Ingest(ctx, &connectors.Env{
 		RepoDriver: "file",
 		RepoDSN:    ".",
 	}, &connectors.Source{
@@ -144,7 +144,7 @@ func TestFileFormatAndDelimiter(t *testing.T) {
 	require.NoError(t, err)
 	testDelimiterCsvPath := filepath.Join(testdataPathAbs, "test-format.log")
 
-	err = olap.Ingest(ctx, &connectors.Env{
+	_, err = olap.Ingest(ctx, &connectors.Env{
 		RepoDriver: "file",
 		RepoDSN:    ".",
 	}, &connectors.Source{

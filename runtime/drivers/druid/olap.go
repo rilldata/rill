@@ -14,8 +14,8 @@ func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectDruid
 }
 
-func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
-	return drivers.ErrUnsupportedConnector
+func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) (*drivers.IngestionSummary, error) {
+	return nil, drivers.ErrUnsupportedConnector
 }
 
 func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
