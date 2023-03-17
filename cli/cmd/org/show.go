@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -29,7 +28,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 				name = args[0]
 			}
 
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken(), cfg.Version.String())
+			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}

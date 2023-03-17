@@ -3,7 +3,6 @@ package org
 import (
 	"context"
 
-	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
@@ -19,7 +18,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 		Short: "Create",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken(), cfg.Version.String())
+			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}

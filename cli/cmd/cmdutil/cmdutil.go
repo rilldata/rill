@@ -9,6 +9,7 @@ import (
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/lensesio/tableprinter"
+	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
@@ -46,4 +47,16 @@ func TablePrinter(v interface{}) {
 func TextPrinter(str string) {
 	boldGreen := color.New(color.FgGreen).Add(color.Underline).Add(color.Bold)
 	boldGreen.Fprintln(color.Output, str)
+}
+
+// Create admin client
+func Client(cfg *config.Config) (*client.Client, error) {
+	userAgent := fmt.Sprintf("rill-cli/%s", cfg.Version.String())
+
+	c, err := client.New(cfg.AdminURL, cfg.AdminToken(), userAgent)
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
