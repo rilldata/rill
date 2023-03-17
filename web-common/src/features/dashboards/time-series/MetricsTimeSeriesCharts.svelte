@@ -114,10 +114,14 @@
 
   let startValue: Date;
   let endValue: Date;
-  $: if (metricsExplorer?.selectedTimeRange) {
+  $: if (
+    metricsExplorer?.selectedTimeRange &&
+    metricsExplorer?.selectedTimeRange?.start
+  ) {
     startValue = removeTimezoneOffset(
       new Date(metricsExplorer?.selectedTimeRange?.start)
     );
+
     // selectedTimeRange.end is exclusive and rounded to the time grain ("interval").
     // Since values are grouped with DATE_TRUNC, we subtract one grain to get the (inclusive) axis end.
     endValue = new Date(metricsExplorer?.selectedTimeRange?.end);

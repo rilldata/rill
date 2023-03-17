@@ -1,32 +1,52 @@
 import type { Timestamp } from "@bufbuild/protobuf";
-import type { TimeRangeName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
-import type { TimeSeriesTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import type {
+  TimeRangeName,
+  TimeSeriesTimeRange,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/catalog_pb";
 import type { MetricsViewFilter_Cond } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 import {
   DashboardState,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import type { V1MetricsViewFilter } from "@rilldata/web-common/runtime-client";
-import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/catalog_pb";
 
-export function fromProto(
-  binary: Uint8Array
-): [filters: V1MetricsViewFilter, selectedTimeRange: TimeSeriesTimeRange] {
+export function fromUrl(url: URL): Partial<MetricsExplorerEntity> {
+  const state = url.searchParams.get("state");
+  if (!state) return undefined;
+  return fromProto(base64ToProto(decodeURIComponent(state)));
+}
+
+export function fromProto(binary: Uint8Array): Partial<MetricsExplorerEntity> {
   const dashboard = DashboardState.fromBinary(binary);
-
-  const filters: V1MetricsViewFilter = {
-    include: [],
-    exclude: [],
+  const entity: Partial<MetricsExplorerEntity> = {
+    filters: {
+      include: [],
+      exclude: [],
+    },
   };
+
   if (dashboard.filters) {
-    filters.include = fromFiltersProto(dashboard.filters.include);
-    filters.exclude = fromFiltersProto(dashboard.filters.exclude);
+    entity.filters.include = fromFiltersProto(dashboard.filters.include);
+    entity.filters.exclude = fromFiltersProto(dashboard.filters.exclude);
   }
 
-  const timeRange = fromTimeRangeProto(dashboard.timeRange);
+  entity.selectedTimeRange = dashboard.timeRange
+    ? fromTimeRangeProto(dashboard.timeRange)
+    : undefined;
+  if (dashboard.timeGrain && dashboard.timeRange) {
+    entity.selectedTimeRange.interval = fromTimeGrainProto(dashboard.timeGrain);
+  }
 
-  return [filters, timeRange];
+  if (dashboard.leaderboardMeasure) {
+    entity.leaderboardMeasureName = dashboard.leaderboardMeasure;
+  }
+  if (dashboard.selectedDimension) {
+    entity.selectedDimensionName = dashboard.selectedDimension;
+  }
+
+  return entity;
 }
 
 export function base64ToProto(message: string) {
@@ -50,9 +70,10 @@ function fromFiltersProto(conditions: Array<MetricsViewFilter_Cond>) {
 }
 
 function fromTimeRangeProto(timeRange: DashboardTimeRange) {
-  const selectedTimeRange: TimeSeriesTimeRange = {};
+  const selectedTimeRange: TimeSeriesTimeRange = {
+    name: timeRange.name as TimeRangeName,
+  };
 
-  selectedTimeRange.interval = fromTimeGrainProto(timeRange.timeGranularity);
   selectedTimeRange.name = timeRange.name as TimeRangeName;
   if (timeRange.timeStart) {
     selectedTimeRange.start = fromTimeProto(timeRange.timeStart);
@@ -71,6 +92,7 @@ function fromTimeProto(timestamp: Timestamp) {
 function fromTimeGrainProto(timeGrain: TimeGrain): V1TimeGrain {
   switch (timeGrain) {
     case TimeGrain.UNSPECIFIED:
+    default:
       return V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
     case TimeGrain.MILLISECOND:
       return V1TimeGrain.TIME_GRAIN_MILLISECOND;

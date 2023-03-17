@@ -159,7 +159,7 @@ export type RuntimeServiceListCatalogEntriesParams = {
   type?: RuntimeServiceListCatalogEntriesType;
 };
 
-export type RuntimeServiceEditInstanceBodyEnv = { [key: string]: string };
+export type RuntimeServiceEditInstanceBodyVariables = { [key: string]: string };
 
 /**
  * Request message for RuntimeService.EditInstance.
@@ -167,11 +167,11 @@ See message Instance for field descriptions.
  */
 export type RuntimeServiceEditInstanceBody = {
   embedCatalog?: boolean;
-  env?: RuntimeServiceEditInstanceBodyEnv;
   olapDriver?: string;
   olapDsn?: string;
   repoDriver?: string;
   repoDsn?: string;
+  variables?: RuntimeServiceEditInstanceBodyVariables;
 };
 
 export type RuntimeServiceDeleteInstanceBody = {
@@ -563,9 +563,9 @@ export interface V1ListCatalogEntriesResponse {
   entries?: V1CatalogEntry[];
 }
 
-export type V1InstanceProjectEnv = { [key: string]: string };
+export type V1InstanceVariables = { [key: string]: string };
 
-export type V1InstanceEnv = { [key: string]: string };
+export type V1InstanceProjectVariables = { [key: string]: string };
 
 /**
  * Instance represents a single data project, meaning one set of code artifacts,
@@ -579,15 +579,15 @@ export interface V1Instance {
   /** If true, the runtime will store the instance's catalog in its OLAP store instead
 of in the runtime's metadata store. Currently only supported for the duckdb driver. */
   embedCatalog?: boolean;
-  env?: V1InstanceEnv;
   instanceId?: string;
   olapDriver?: string;
   olapDsn?: string;
-  projectEnv?: V1InstanceProjectEnv;
+  projectVariables?: V1InstanceProjectVariables;
   /** Driver for reading/editing code artifacts (options: file, metastore, github).
 This enables virtualizing a file system in a cloud setting. */
   repoDriver?: string;
   repoDsn?: string;
+  variables?: V1InstanceVariables;
 }
 
 export type V1HistogramMethod =
@@ -647,7 +647,7 @@ export interface V1CreateInstanceResponse {
   instance?: V1Instance;
 }
 
-export type V1CreateInstanceRequestEnv = { [key: string]: string };
+export type V1CreateInstanceRequestVariables = { [key: string]: string };
 
 /**
  * Request message for RuntimeService.CreateInstance.
@@ -655,12 +655,12 @@ See message Instance for field descriptions.
  */
 export interface V1CreateInstanceRequest {
   embedCatalog?: boolean;
-  env?: V1CreateInstanceRequestEnv;
   instanceId?: string;
   olapDriver?: string;
   olapDsn?: string;
   repoDriver?: string;
   repoDsn?: string;
+  variables?: V1CreateInstanceRequestVariables;
 }
 
 /**

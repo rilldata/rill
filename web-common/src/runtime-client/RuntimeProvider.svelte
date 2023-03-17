@@ -19,6 +19,6 @@
   $: host && invalidateRuntimeQueries(queryClient);
 </script>
 
-{#if $runtime.host && $runtime.instanceId}
+{#if $runtime.host !== undefined && $runtime.instanceId}
   <slot />
 {/if}

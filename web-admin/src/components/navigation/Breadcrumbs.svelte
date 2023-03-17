@@ -4,7 +4,7 @@
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
-  $: dashboard = $page.params.dashboard;
+  $: name = $page.params.name;
 
   const textClasses = "px-1 text-black font-semibold";
 </script>
@@ -17,10 +17,10 @@
     <Slash size={"2em"} className={"text-gray-200"} />
     <a href="/-/{organization}/{project}" class={textClasses}>{project}</a>
   {/if}
-  {#if dashboard}
+  {#if name}
     <Slash size={"2em"} className={"text-gray-200"} />
-    <a href="/-/{organization}/{project}/{dashboard}" class={textClasses}>
-      {dashboard}
+    <a href="/-/{organization}/{project}/dashboard/{name}" class={textClasses}>
+      {name}
     </a>
   {/if}
 </div>

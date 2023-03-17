@@ -112,7 +112,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	// TODO: Validate that req.ProductionSlots is an allowed tier for the caller.
 
 	// Create the project
-	project := &database.Project{
+	proj, err := s.admin.CreateProject(ctx, &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
 		Name:                 req.Name,
 		Description:          req.Description,
@@ -121,8 +121,8 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProductionBranch:     req.ProductionBranch,
 		GithubURL:            &req.GithubUrl,
 		GithubInstallationID: &installationID,
-	}
-	proj, err := s.admin.CreateProject(ctx, project)
+		ProductionVariables:  req.Variables,
+	})
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -150,6 +150,13 @@ func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRe
 }
 
 func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRequest) (*adminv1.UpdateProjectResponse, error) {
+	// Check the request is made by a user
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated")
+	}
+
+	// Find project
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -158,11 +165,31 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	proj.Description = req.Description
-	proj.ProductionBranch = req.ProductionBranch
-	proj.GithubURL = &req.GithubUrl
+	// If changing the Github URL, check the caller has access
+	if safeStr(proj.GithubURL) != req.GithubUrl {
+		_, ok, err := s.admin.GetUserGithubInstallation(ctx, claims.OwnerID(), req.GithubUrl)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get Github installation: %w", err)
+		}
+		if !ok {
+			return nil, fmt.Errorf("you have not granted Rill access to %q", req.GithubUrl)
+		}
+	}
 
-	proj, err = s.admin.DB.UpdateProject(ctx, proj)
+	var githubURL *string
+	if req.GithubUrl != "" {
+		githubURL = &req.GithubUrl
+	}
+
+	proj, err = s.admin.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Description:            req.Description,
+		Public:                 req.Public,
+		ProductionBranch:       req.ProductionBranch,
+		ProductionVariables:    req.Variables,
+		GithubURL:              githubURL,
+		GithubInstallationID:   proj.GithubInstallationID,
+		ProductionDeploymentID: proj.ProductionDeploymentID,
+	})
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -184,6 +211,7 @@ func projToDTO(p *database.Project) *adminv1.Project {
 		ProductionDeploymentId: safeStr(p.ProductionDeploymentID),
 		CreatedOn:              timestamppb.New(p.CreatedOn),
 		UpdatedOn:              timestamppb.New(p.UpdatedOn),
+		Variables:              p.ProductionVariables,
 	}
 }
 

@@ -22,7 +22,7 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 		pbs[i] = orgToDTO(org)
 	}
 
-	return &adminv1.ListOrganizationsResponse{Organization: pbs}, nil
+	return &adminv1.ListOrganizationsResponse{Organizations: pbs}, nil
 }
 
 func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizationRequest) (*adminv1.GetOrganizationResponse, error) {
@@ -40,7 +40,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 }
 
 func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrganizationRequest) (*adminv1.CreateOrganizationResponse, error) {
-	org, err := s.admin.DB.CreateOrganization(ctx, req.Name, req.Description)
+	org, err := s.admin.DB.InsertOrganization(ctx, req.Name, req.Description)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

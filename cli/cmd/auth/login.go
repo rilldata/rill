@@ -1,11 +1,17 @@
 package auth
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/fatih/color"
+	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -46,12 +52,43 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			bold.Print("Successfully logged in.\n")
-
 			err = dotrill.SetAccessToken(OAuthTokenResponse.AccessToken)
 			if err != nil {
 				return err
 			}
+
+			// Set default org after login
+			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			if err != nil {
+				return err
+			}
+			defer client.Close()
+
+			res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
+			if err != nil {
+				return err
+			}
+
+			if len(res.Organizations) > 0 {
+				var orgNames []string
+				for _, org := range res.Organizations {
+					orgNames = append(orgNames, org.Name)
+				}
+
+				defaultOrg := orgNames[0]
+				if len(orgNames) > 1 {
+					defaultOrg = cmdutil.PromptGetSelect(orgNames, "Select default org (to change later, run `rill org switch`).")
+				}
+
+				err = dotrill.SetDefaultOrg(defaultOrg)
+				if err != nil {
+					return err
+				}
+
+				fmt.Printf("Set default organization to %q.\n", defaultOrg)
+			}
+
+			bold.Print("Successfully logged in.\n")
 			return nil
 		},
 	}

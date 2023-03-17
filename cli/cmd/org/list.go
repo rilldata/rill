@@ -21,13 +21,13 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			orgs, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
+			res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
 			if err != nil {
 				return err
 			}
 
 			cmdutil.TextPrinter("Organizations list \n")
-			cmdutil.TablePrinter(toTable(orgs.Organization))
+			cmdutil.TablePrinter(toTable(res.Organizations))
 			return nil
 		},
 	}

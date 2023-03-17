@@ -366,7 +366,7 @@ func registryStore(t *testing.T) drivers.RegistryStore {
 	registry, _ := store.RegistryStore()
 
 	env := map[string]string{"delimitter": "|", "region": "us-east-2", "limit": "limit 10"}
-	err = registry.CreateInstance(ctx, &drivers.Instance{ID: "test", Env: env})
+	err = registry.CreateInstance(ctx, &drivers.Instance{ID: "test", Variables: env})
 	require.NoError(t, err)
 
 	return registry
