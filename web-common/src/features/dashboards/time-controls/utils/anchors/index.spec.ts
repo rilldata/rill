@@ -1,10 +1,5 @@
-import {
-  getEndOfPeriod,
-  getOffset,
-  getStartOfPeriod,
-  getTimeWidth,
-} from "./time-anchors";
-import { Period, TIME, TimeOffsetType } from "./time-types";
+import { Period, TIME, TimeOffsetType } from "../time-types";
+import { getEndOfPeriod, getOffset, getStartOfPeriod, getTimeWidth } from "./";
 
 describe("getStartOfPeriod", () => {
   it("should return the start of the week for given date", () => {

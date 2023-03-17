@@ -1,85 +1,25 @@
 import type { V1TimeGrain } from "../../../../runtime-client";
-import {
-  isRangeInsideOther,
-  relativePointInTimeToAbsolute,
-} from "./time-anchors";
+import { isRangeInsideOther, relativePointInTimeToAbsolute } from "./anchors";
+import { DEFAULT_TIME_RANGES } from "./defaults";
 import {
   getAllowedTimeGrains,
   getTimeGrainFromRuntimeGrain,
   isMinGrainBigger,
 } from "./time-grain";
 import {
-  Period,
   RangePreset,
-  ReferencePoint,
-  TimeOffsetType,
+  TimeRange,
   TimeRangeMeta,
   TimeRangeOption,
-  TimeTruncationType,
   TimeRangePreset,
   TimeRangeType,
-  TimeRange,
 } from "./time-types";
-
-export const TIME_RANGES: Record<string, TimeRangeMeta> = {
-  LAST_SIX_HOURS: {
-    label: "Last 6 Hours",
-    rangePreset: RangePreset.OFFSET_ANCHORED,
-    start: {
-      reference: ReferencePoint.LATEST_DATA,
-      transformation: [
-        { duration: "PT6H", operationType: TimeOffsetType.SUBTRACT }, // operation
-        {
-          period: Period.HOUR, //TODO: How to handle user selected timegrains?
-          truncationType: TimeTruncationType.START_OF_PERIOD,
-        }, // truncation
-      ],
-    },
-    end: {
-      reference: ReferencePoint.LATEST_DATA,
-      transformation: [
-        { duration: "PT1H", operationType: TimeOffsetType.SUBTRACT },
-        {
-          period: Period.HOUR,
-          truncationType: TimeTruncationType.START_OF_PERIOD,
-        },
-      ],
-    },
-  },
-  LAST_DAY: {
-    label: "Last day",
-    rangePreset: RangePreset.OFFSET_ANCHORED,
-    start: {
-      reference: ReferencePoint.LATEST_DATA,
-      transformation: [
-        { duration: "P1D", operationType: TimeOffsetType.SUBTRACT }, // operation
-        {
-          period: Period.HOUR, //TODO: How to handle user selected timegrains?
-          truncationType: TimeTruncationType.START_OF_PERIOD,
-        }, // truncation
-      ],
-    },
-    end: {
-      reference: ReferencePoint.LATEST_DATA,
-      transformation: [
-        { duration: "PT1H", operationType: TimeOffsetType.SUBTRACT },
-        {
-          period: Period.HOUR,
-          truncationType: TimeTruncationType.START_OF_PERIOD,
-        },
-      ],
-    },
-  },
-  ALL_TIME: {
-    label: "All time data",
-    rangePreset: RangePreset.ALL_TIME,
-  },
-};
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
 export function getChildTimeRanges(
   start: Date,
   end: Date,
+  ranges: Record<string, TimeRangeMeta>,
   minTimeGrain: V1TimeGrain
 ): TimeRangeOption[] {
   const timeRanges: TimeRangeOption[] = [];
@@ -87,8 +27,8 @@ export function getChildTimeRanges(
   const allowedTimeGrains = getAllowedTimeGrains(start, end);
   const allowedMaxGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
 
-  for (const timePreset in TIME_RANGES) {
-    const timeRange = TIME_RANGES[timePreset];
+  for (const timePreset in ranges) {
+    const timeRange = ranges[timePreset];
     if (timeRange.rangePreset == RangePreset.ALL_TIME) {
       // All time is always an option
       timeRanges.push({
@@ -98,7 +38,6 @@ export function getChildTimeRanges(
         end,
       });
     } else {
-      console.log(timeRange);
       const timeRangeDates = relativePointInTimeToAbsolute(
         end,
         timeRange.start,
@@ -135,7 +74,7 @@ export const ISODurationToTimePreset = (
     case "PT6H":
       return TimeRangePreset.LAST_SIX_HOURS;
     case "P1D":
-      return TimeRangePreset.LAST_DAY;
+      return TimeRangePreset.LAST_24_HOURS;
     case "P7D":
       return TimeRangePreset.LAST_WEEK;
     case "P30D":
@@ -160,9 +99,8 @@ export function makeTimeRange(
       end,
     };
   }
-  const timeRange = TIME_RANGES[timeRangePreset];
+  const timeRange = DEFAULT_TIME_RANGES[timeRangePreset];
 
-  console.log(timeRange, timeRangePreset);
   const timeRangeDates = relativePointInTimeToAbsolute(
     end,
     timeRange.start,

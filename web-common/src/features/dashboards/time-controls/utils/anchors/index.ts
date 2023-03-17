@@ -1,12 +1,14 @@
-import type { TimeRange } from "../time-control-types";
-import { Duration, DateTime } from "luxon";
-import { Period, ReferencePoint, TimeUnit } from "./time-types";
+import { DateTime, Duration } from "luxon";
+import type { TimeRange } from "../../time-control-types";
 import {
+  Period,
+  ReferencePoint,
   RelativePointInTime,
+  RelativeTimeTransformation,
   TimeOffsetType,
   TimeTruncationType,
-  RelativeTimeTransformation,
-} from "./time-types";
+  TimeUnit,
+} from "../time-types";
 
 // reference timestamp method
 export function getPresentTime() {
@@ -25,7 +27,7 @@ export function getStartOfPeriod(period: Period, referenceTime: Date) {
 
 export function getEndOfPeriod(period: Period, referenceTime: Date) {
   const date = DateTime.fromJSDate(referenceTime);
-  return date.startOf(TimeUnit[period]).toJSDate();
+  return date.endOf(TimeUnit[period]).toJSDate();
 }
 
 // offset methods
@@ -65,10 +67,11 @@ export function isRangeInsideOther(
 }
 
 /** Loops through all of the offset transformations and applies each of them
- * to the supplied referenceTime.
- * FIXME: write tests for this function
+ * to the supplied referenceTime. The transformations are applied in the orer
+ * they appear; we define these in a way that can later be serialized in
+ * a configuration file.
  */
-export function getAbsoluteDateFromTransformations(
+export function transformDate(
   referenceTime: Date,
   transformations: RelativeTimeTransformation[]
 ) {
@@ -108,19 +111,13 @@ export function relativePointInTimeToAbsolute(
   else {
     if (start.reference === ReferencePoint.NOW)
       referenceTime = getPresentTime();
-    startDate = getAbsoluteDateFromTransformations(
-      referenceTime,
-      start.transformation
-    );
+    startDate = transformDate(referenceTime, start.transformation);
   }
 
   if (typeof end === "string") endDate = new Date(end);
   else {
     if (end.reference === ReferencePoint.NOW) referenceTime = getPresentTime();
-    endDate = getAbsoluteDateFromTransformations(
-      referenceTime,
-      end.transformation
-    );
+    endDate = transformDate(referenceTime, end.transformation);
   }
 
   return {

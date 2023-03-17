@@ -1,5 +1,5 @@
 import { V1TimeGrain } from "../../../../runtime-client";
-import { getTimeWidth } from "./time-anchors";
+import { getTimeWidth } from "./anchors";
 import { Period, TIME, TimeGrain, TimeGrainOption } from "./time-types";
 
 export const TIME_GRAIN: Record<string, TimeGrain> = {

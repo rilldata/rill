@@ -17,26 +17,26 @@ We should rename TimeSeriesTimeRange to a better name.
     useRuntimeServiceGetCatalogEntry,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@sveltestack/svelte-query";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@sveltestack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
-  import { ISODurationToTimePreset, makeTimeRange } from "./utils/time-range";
-  import type {
-    TimeRange,
-    DashboardTimeControls,
-    TimeRangeType,
-    TimeGrainOption,
-  } from "./utils/time-types";
   import {
     checkValidTimeGrain,
     getDefaultTimeGrain,
     getTimeGrainOptions,
     supportedTimeGrainEnums,
   } from "./utils/time-grain";
+  import { ISODurationToTimePreset, makeTimeRange } from "./utils/time-range";
+  import type {
+    DashboardTimeControls,
+    TimeGrainOption,
+    TimeRange,
+    TimeRangeType,
+  } from "./utils/time-types";
 
   export let metricViewName: string;
 

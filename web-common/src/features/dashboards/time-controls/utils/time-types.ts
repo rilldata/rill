@@ -1,6 +1,6 @@
 import type { DateTimeUnit } from "luxon";
 import type { V1TimeGrain } from "../../../../runtime-client";
-import type { TIME_RANGES } from "./time-range";
+import type { DEFAULT_TIME_RANGES } from "./defaults";
 
 export const TIME = {
   MILLISECOND: 1,
@@ -136,12 +136,14 @@ export interface TimeRangeMeta {
   end?: string | RelativePointInTime;
 }
 
-export type TimeRangeType = keyof typeof TIME_RANGES;
+// FIXME: this will have to be relaxed when the dashboard time ranges
+// are settable within a config.
+export type TimeRangeType = keyof typeof DEFAULT_TIME_RANGES;
 
 export const TimeRangePreset: { [K in TimeRangeType]: K } = {
   ALL_TIME: "ALL_TIME",
   LAST_SIX_HOURS: "LAST_SIX_HOURS",
-  LAST_DAY: "LAST_DAY",
+  LAST_24_HOURS: "LAST_24_HOURS",
   CUSTOM: "CUSTOM",
 };
 export interface TimeRange {
@@ -156,6 +158,7 @@ export interface TimeRangeOption extends TimeRange {
 
 export interface DashboardTimeControls extends TimeRange {
   interval?: V1TimeGrain;
+  label?: string;
 }
 
 export interface TimeGrain {

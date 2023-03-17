@@ -12,6 +12,7 @@
   import { useDashboardStore } from "../dashboard-stores";
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
+  import { DEFAULT_TIME_RANGES } from "./utils/defaults";
   import {
     getChildTimeRanges,
     prettyFormatTimeRange,
@@ -38,6 +39,7 @@
     relativeTimeRangeOptions = getChildTimeRanges(
       allTimeRange.start,
       allTimeRange.end,
+      DEFAULT_TIME_RANGES,
       minTimeGrain
     );
   }
