@@ -12,14 +12,15 @@
     useQueryServiceColumnTimeRange,
     useRuntimeServiceGetCatalogEntry,
     V1ColumnTimeRangeResponse,
+    V1TimeGrain,
   } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useDashboardStore } from "../dashboard-stores";
-  import { validateTimeRange } from "./time-range-utils";
+  import { getAllowedTimeGrains, isMinGrainBigger } from "./utils/time-grain";
   import type { TimeRange } from "./utils/time-types";
 
   export let metricViewName: string;
-  export let minTimeGrain: string;
+  export let minTimeGrain: V1TimeGrain;
   export let allTimeRange: TimeRange;
 
   const dispatch = createEventDispatcher();
@@ -36,6 +37,26 @@
     );
   }
 
+  function validateTimeRange(
+    start: Date,
+    end: Date,
+    minTimeGrain: V1TimeGrain
+  ): string {
+    const allowedTimeGrains = getAllowedTimeGrains(start, end);
+    const allowedMaxGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
+
+    const isGrainPossible = !isMinGrainBigger(minTimeGrain, allowedMaxGrain);
+
+    if (start > end) {
+      return "Start date must be before end date";
+    } else if (!isGrainPossible) {
+      return "Range is smaller than min time grain";
+    } else {
+      return undefined;
+    }
+  }
+
+  // HAM, you left off here.
   $: error = validateTimeRange(new Date(start), new Date(end), minTimeGrain);
   $: disabled = !start || !end || !!error;
 

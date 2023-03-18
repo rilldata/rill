@@ -1,5 +1,9 @@
 import type { V1TimeGrain } from "../../../../runtime-client";
-import { isRangeInsideOther, relativePointInTimeToAbsolute } from "./anchors";
+import {
+  getTimeWidth,
+  isRangeInsideOther,
+  relativePointInTimeToAbsolute,
+} from "./anchors";
 import { DEFAULT_TIME_RANGES } from "./defaults";
 import {
   getAllowedTimeGrains,
@@ -16,6 +20,7 @@ import {
 } from "./time-types";
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
+// FIXME: tests.
 export function getChildTimeRanges(
   start: Date,
   end: Date,
@@ -26,7 +31,6 @@ export function getChildTimeRanges(
 
   const allowedTimeGrains = getAllowedTimeGrains(start, end);
   const allowedMaxGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
-
   for (const timePreset in ranges) {
     const timeRange = ranges[timePreset];
     if (timeRange.rangePreset == RangePreset.ALL_TIME) {
@@ -43,16 +47,34 @@ export function getChildTimeRanges(
         timeRange.start,
         timeRange.end
       );
-      const isValidTimeRange = isRangeInsideOther(
+
+      const timeRangeIsSmallerThanAllTime = isRangeInsideOther(
         timeRangeDates.startDate,
         timeRangeDates.endDate,
         start,
         end
       );
 
-      const isGrainPossible = !isMinGrainBigger(minTimeGrain, allowedMaxGrain);
+      // check if time range is possible with given minTimeGrain
+      const thisRangeAllowedGrains = getAllowedTimeGrains(
+        timeRangeDates.startDate,
+        timeRangeDates.endDate
+      );
 
-      if (isValidTimeRange && isGrainPossible) {
+      const hasSomeGrainMatches = thisRangeAllowedGrains.some((grain) => {
+        return (
+          !isMinGrainBigger(minTimeGrain, grain) &&
+          grain.width <
+            getTimeWidth(timeRangeDates.startDate, timeRangeDates.endDate)
+        );
+      });
+
+      const isGrainPossible = !isMinGrainBigger(minTimeGrain, allowedMaxGrain);
+      if (
+        timeRangeIsSmallerThanAllTime &&
+        isGrainPossible &&
+        hasSomeGrainMatches
+      ) {
         timeRanges.push({
           name: timePreset,
           label: timeRange.label,

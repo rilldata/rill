@@ -5,10 +5,9 @@
   import {
     getTimeGrainOptions,
     supportedTimeGrainEnums,
-    timeGrainEnumToYamlString,
-    TimeGrainOption,
-    timeGrainStringToEnum,
-  } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
+    TIME_GRAIN,
+  } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-grain";
+  import type { TimeGrainOption } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-types";
   import {
     useQueryServiceColumnTimeRange,
     V1Model,
@@ -77,11 +76,11 @@
         .findIndex((grain) => grain.enabled);
   }
 
-  $: selectedMinGrain = timeGrainStringToEnum(defaultTimeGrainValue);
-
   $: isValidTimeGrain =
     defaultTimeGrainValue === "__DEFAULT_VALUE__" ||
-    supportedTimeGrains.includes(selectedMinGrain);
+    Object.values(TIME_GRAIN).some(
+      (timeGrain) => timeGrain.label === defaultTimeGrainValue
+    );
 
   $: level = isValidTimeGrain ? "" : "error";
 
@@ -111,8 +110,8 @@
       const isGrainPossible = i <= maxTimeGrainPossibleIndex;
       return {
         divider: false,
-        key: timeGrainEnumToYamlString(grain.timeGrain),
-        main: timeGrainEnumToYamlString(grain.timeGrain),
+        key: grain.label,
+        main: grain.label,
         disabled: !isGrainPossible,
         description: !isGrainPossible
           ? "not valid for this time range"
@@ -121,9 +120,8 @@
     }) as any[]),
   ];
 
-  function handleDefaultTimeGrainUpdate(event) {
+  function handleSelectSmallestTimeGrain(event) {
     const selectedTimeGrain = event.detail?.key;
-
     if (selectedTimeGrain === "" || selectedTimeGrain === "__DEFAULT_VALUE__") {
       $metricsInternalRep.updateMetricsParams({
         smallest_time_grain: "",
@@ -131,7 +129,7 @@
       });
     } else {
       $metricsInternalRep.updateMetricsParams({
-        smallest_time_grain: timeGrainEnumToYamlString(selectedTimeGrain),
+        smallest_time_grain: selectedTimeGrain,
         default_time_range: "",
       });
     }
@@ -159,6 +157,7 @@
   }
 
   let active = false;
+  $: console.log(options);
 </script>
 
 <div
@@ -190,7 +189,7 @@
           : CONFIG_SELECTOR.active}
         distance={CONFIG_SELECTOR.distance}
         alignment="start"
-        on:select={handleDefaultTimeGrainUpdate}
+        on:select={handleSelectSmallestTimeGrain}
       >
         <FormattedSelectorText
           value={defaultTimeGrainValue === "__DEFAULT_VALUE__"

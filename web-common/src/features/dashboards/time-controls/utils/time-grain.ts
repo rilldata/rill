@@ -1,4 +1,4 @@
-import { V1TimeGrain } from "../../../../runtime-client";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { getTimeWidth } from "./anchors";
 import { Period, TIME, TimeGrain, TimeGrainOption } from "./time-types";
 
@@ -106,6 +106,7 @@ export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
 }
 
 // Check if minTimeGrain is bigger than provided grain
+// FIXME: this is pretty slopping, using both V1TimeGrain and TimeGrain like this.
 export function isMinGrainBigger(
   minTimeGrain: V1TimeGrain,
   grain: TimeGrain
