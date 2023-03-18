@@ -22,13 +22,13 @@
   $: activeTimeGrain = $dashboardStore?.selectedTimeRange?.interval;
 
   $: activeTimeGrainPretty =
-    getTimeGrainFromRuntimeGrain(activeTimeGrain)?.prettyLabel;
+    getTimeGrainFromRuntimeGrain(activeTimeGrain)?.label;
 
   $: timeGrains = timeGrainOptions
     ? timeGrainOptions.map((timeGrain) => {
         const isGrainPossible = !isMinGrainBigger(minTimeGrain, timeGrain);
         return {
-          main: timeGrain.prettyLabel,
+          main: timeGrain.label,
           disabled: !timeGrain.enabled || !isGrainPossible,
           key: timeGrain.grain,
           description: !timeGrain.enabled
@@ -61,7 +61,9 @@
       class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600"
       on:click={toggleMenu}
     >
-      <span class="font-bold">by {activeTimeGrainPretty} increments</span>
+      <div>
+        Metric trends by <span class="font-bold">{activeTimeGrainPretty}</span>
+      </div>
       <IconSpaceFixer pullRight>
         <div class="transition-transform" class:-rotate-180={active}>
           <CaretDownIcon size="16px" />

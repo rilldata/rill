@@ -164,7 +164,6 @@ export interface DashboardTimeControls extends TimeRange {
 export interface TimeGrain {
   grain: V1TimeGrain;
   label: DateTimeUnit;
-  prettyLabel: string;
   duration: Period;
   width: number;
 }
