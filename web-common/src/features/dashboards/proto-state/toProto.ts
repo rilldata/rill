@@ -27,7 +27,7 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 export function toProto(metrics: MetricsExplorerEntity): string {
   const state: PartialMessage<DashboardState> = {};
-  if (metrics?.filters) {
+  if (metrics.filters) {
     state.filters = toFiltersProto(metrics.filters) as any;
   }
   if (metrics.selectedTimeRange) {
