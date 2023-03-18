@@ -25,19 +25,17 @@
     getTimeGrainFromRuntimeGrain(activeTimeGrain)?.label;
 
   $: timeGrains = timeGrainOptions
-    ? timeGrainOptions.map((timeGrain) => {
-        const isGrainPossible = !isMinGrainBigger(minTimeGrain, timeGrain);
-        return {
-          main: timeGrain.label,
-          disabled: !timeGrain.enabled || !isGrainPossible,
-          key: timeGrain.grain,
-          description: !timeGrain.enabled
-            ? "not valid for this time range"
-            : !isGrainPossible
-            ? "bigger than min time grain"
-            : undefined,
-        };
-      })
+    ? timeGrainOptions
+        .filter(
+          (timeGrain) =>
+            !isMinGrainBigger(minTimeGrain, timeGrain) && timeGrain.enabled
+        )
+        .map((timeGrain) => {
+          return {
+            main: timeGrain.label,
+            key: timeGrain.grain,
+          };
+        })
     : undefined;
 
   const onTimeGrainSelect = (timeGrain: V1TimeGrain) => {
@@ -47,6 +45,9 @@
 
 {#if activeTimeGrain && timeGrainOptions}
   <WithSelectMenu
+    paddingTop={1}
+    paddingBottom={1}
+    minWidth="160px"
     distance={8}
     options={timeGrains}
     selection={{
@@ -58,6 +59,7 @@
     let:active
   >
     <button
+      class:bg-gray-200={active}
       class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600"
       on:click={toggleMenu}
     >
