@@ -6,36 +6,10 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
   lastXTimeRangeNames,
-  TimeRange,
   TimeRangeName,
   TimeSeriesTimeRange,
 } from "./time-control-types";
-
-// Moved to time-types
-const TIME = {
-  MILLISECOND: 1,
-  get SECOND() {
-    return 1000 * this.MILLISECOND;
-  },
-  get MINUTE() {
-    return 60 * this.SECOND;
-  },
-  get HOUR() {
-    return 60 * this.MINUTE;
-  },
-  get DAY() {
-    return 24 * this.HOUR;
-  },
-  get WEEK() {
-    return 7 * this.DAY;
-  },
-  get MONTH() {
-    return 30 * this.DAY;
-  },
-  get YEAR() {
-    return 365 * this.DAY;
-  },
-};
+import { TIME, TimeRange } from "./utils/time-types";
 
 // May not need this anymore as using TimeGrain objects
 export const supportedTimeGrainEnums = () => {
@@ -119,12 +93,6 @@ export function getRelativeTimeRangeOptions(
 //   return allTimeRange;
 // }
 
-// Moved to time-types
-export interface TimeGrainOption {
-  timeGrain: V1TimeGrain;
-  enabled: boolean;
-}
-
 // Moved to time range and renamed to isTimeRangeValidForMinTimeGrain
 export function isTimeRangeValidForTimeGrain(
   minTimeGrain: V1TimeGrain,
@@ -134,7 +102,7 @@ export function isTimeRangeValidForTimeGrain(
   if (!timeGrainEnums.includes(minTimeGrain)) {
     return true;
   }
-  if (!timeRange || timeRange === TimeRangeName.AllTime) {
+  if (!timeRange || timeRange === TimeRangeName.ALL_TIME) {
     return true;
   }
 
@@ -145,37 +113,9 @@ export function isTimeRangeValidForTimeGrain(
   return !isGrainBigger(minTimeGrain, maxAllowedTimeGrain);
 }
 
-// Moved to time-grain
-export function getTimeGrainOptions(start: Date, end: Date): TimeGrainOption[] {
-  const timeRangeDurationMs = end.getTime() - start.getTime();
-
-  const timeGrains: TimeGrainOption[] = [];
-  for (const timeGrain in V1TimeGrain) {
-    const unsupportedTypes = [
-      V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
-      V1TimeGrain.TIME_GRAIN_MILLISECOND,
-      V1TimeGrain.TIME_GRAIN_SECOND,
-    ];
-    if (unsupportedTypes.includes(V1TimeGrain[timeGrain])) {
-      continue;
-    }
-    // only show a time grain if it results in a reasonable number of points on the line chart
-    const MINIMUM_POINTS_ON_LINE_CHART = 2;
-    const MAXIMUM_POINTS_ON_LINE_CHART = 2500;
-    const timeGrainDurationMs = getTimeGrainDurationMs(V1TimeGrain[timeGrain]);
-    const pointsOnLineChart = timeRangeDurationMs / timeGrainDurationMs;
-    const showTimeGrain =
-      pointsOnLineChart >= MINIMUM_POINTS_ON_LINE_CHART &&
-      pointsOnLineChart <= MAXIMUM_POINTS_ON_LINE_CHART;
-    timeGrains.push({
-      timeGrain: V1TimeGrain[timeGrain],
-      enabled: showTimeGrain,
-    });
-  }
-  return timeGrains;
-}
-
-// Remove
+// This should eventually be deprecated once we have
+// changed the runtime definition for default_time_range to be a preset string.
+// see https://github.com/rilldata/rill-developer/issues/1961
 export const timeRangeToISODuration = (
   timeRangeName: TimeRangeName
 ): string => {
@@ -195,7 +135,9 @@ export const timeRangeToISODuration = (
   }
 };
 
-// Remove
+// This should eventually be deprecated once we have
+// changed the runtime definition for default_time_range to be a preset string.
+// see https://github.com/rilldata/rill-developer/issues/1961
 export const ISODurationToTimeRange = (
   isoDuration: string,
   defaultToAllTime = true
@@ -377,54 +319,6 @@ export const prettyFormatTimeRange = (
   )} - ${end.toLocaleDateString(undefined, dateFormatOptions)}`;
 };
 
-// Moved to time-grain and renamed to formatDateByGrain
-export const formatDateByInterval = (
-  interval: V1TimeGrain, // DuckDB interval
-  date: string
-): string => {
-  if (!interval || !date) return "";
-  switch (interval) {
-    case V1TimeGrain.TIME_GRAIN_MINUTE:
-      return new Date(date).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "numeric",
-      });
-    case V1TimeGrain.TIME_GRAIN_HOUR:
-      return new Date(date).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-      });
-    case V1TimeGrain.TIME_GRAIN_DAY:
-      return new Date(date).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-    case V1TimeGrain.TIME_GRAIN_WEEK:
-      return new Date(date).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-    case V1TimeGrain.TIME_GRAIN_MONTH:
-      return new Date(date).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-      });
-    case V1TimeGrain.TIME_GRAIN_YEAR:
-      return new Date(date).toLocaleDateString(undefined, {
-        year: "numeric",
-      });
-    default:
-      throw new Error(`Unknown interval: ${interval}`);
-  }
-};
-
 // Not needed
 export const timeGrainStringToEnum = (timeGrain: string): V1TimeGrain => {
   switch (timeGrain) {
@@ -572,50 +466,12 @@ export const floorDate = (
   }
 };
 
-export function ceilDate(date: Date, timeGrain: V1TimeGrain): Date {
-  const floor = floorDate(date, timeGrain);
-  return addGrains(floor, 1, timeGrain);
-}
-
-export function addGrains(date: Date, units: number, grain: V1TimeGrain): Date {
-  switch (grain) {
-    case V1TimeGrain.TIME_GRAIN_MINUTE:
-      return new Date(date.getTime() + units * TIME.MINUTE);
-    case V1TimeGrain.TIME_GRAIN_HOUR:
-      return new Date(date.getTime() + units * TIME.HOUR);
-    case V1TimeGrain.TIME_GRAIN_DAY:
-      return new Date(date.getTime() + units * TIME.DAY);
-    case V1TimeGrain.TIME_GRAIN_WEEK:
-      return new Date(date.getTime() + units * TIME.WEEK);
-    case V1TimeGrain.TIME_GRAIN_MONTH:
-      return new Date(
-        Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + units, 1)
-      );
-    case V1TimeGrain.TIME_GRAIN_YEAR:
-      return new Date(Date.UTC(date.getUTCFullYear() + units, 1, 1));
-    default:
-      throw new Error(`Unknown time grain: ${grain}`);
-  }
-}
-// moved to time-grain
-export function checkValidTimeGrain(
-  timeGrain: V1TimeGrain,
-  timeGrainOptions: TimeGrainOption[],
-  minTimeGrain: V1TimeGrain
-): boolean {
-  const timeGrainOption = timeGrainOptions.find(
-    (timeGrainOption) => timeGrainOption.timeGrain === timeGrain
-  );
-  const isGrainPossible = !isGrainBigger(minTimeGrain, timeGrain);
-  return timeGrainOption?.enabled && isGrainPossible;
-}
-
 // might not need it
 export function makeRelativeTimeRange(
   timeRangeName: TimeRangeName,
   allTimeRange: TimeRange
 ): TimeRange {
-  if (timeRangeName === TimeRangeName.AllTime) return allTimeRange;
+  if (timeRangeName === TimeRangeName.ALL_TIME) return allTimeRange;
   const startTime = new Date(
     allTimeRange.end.getTime() - getLastXTimeRangeDurationMs(timeRangeName)
   );
@@ -624,21 +480,4 @@ export function makeRelativeTimeRange(
     start: startTime,
     end: allTimeRange.end,
   };
-}
-
-// Do we need it?
-export function exclusiveToInclusiveEndISOString(exclusiveEnd: string): string {
-  const date = new Date(exclusiveEnd);
-  date.setDate(date.getDate() - 1);
-  return date.toISOString();
-}
-
-// moved to time-range
-export function getDateFromISOString(isoString: string): string {
-  return isoString.split("T")[0];
-}
-
-// moved to time-range
-export function getISOStringFromDate(date: string): string {
-  return date + "T00:00:00.000Z";
 }

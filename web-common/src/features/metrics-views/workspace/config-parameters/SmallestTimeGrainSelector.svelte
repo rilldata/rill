@@ -154,7 +154,6 @@
   }
 
   let active = false;
-  $: console.log(options);
 </script>
 
 <div
