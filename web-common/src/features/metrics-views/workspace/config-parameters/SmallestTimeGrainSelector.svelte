@@ -4,7 +4,6 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
     getTimeGrainOptions,
-    supportedTimeGrainEnums,
     TIME_GRAIN,
   } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-grain";
   import type { TimeGrainOption } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-types";
@@ -29,8 +28,6 @@
   let metricsConfigErrorStore = getContext(
     "rill:metrics-config:errors"
   ) as Writable<any>;
-
-  let supportedTimeGrains = supportedTimeGrainEnums();
 
   $: defaultTimeGrainValue =
     $metricsInternalRep.getMetricKey("smallest_time_grain") ||
