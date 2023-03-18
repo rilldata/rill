@@ -115,6 +115,8 @@
 
   let startValue: Date;
   let endValue: Date;
+
+  // FIXME: move this logic to a function + write tests.
   $: if (
     metricsExplorer?.selectedTimeRange &&
     metricsExplorer?.selectedTimeRange?.start
@@ -141,15 +143,6 @@
 
     // requires V1TimeGrain to ISO duration
 
-    // console.log(
-    //   interval,
-    //   endValue.toISOString() ===
-    //     getOffset(
-    //       new Date(metricsExplorer?.selectedTimeRange?.end),
-    //       grainToDuration(metricsExplorer?.selectedTimeRange?.interval),
-    //       TimeOffsetType.SUBTRACT
-    //     ).toISOString()
-    // );
     endValue = removeTimezoneOffset(endValue);
   }
 </script>

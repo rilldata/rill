@@ -5,8 +5,8 @@ import {
   Value,
 } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-import { TimeRangePreset } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-types";
 import type { DashboardTimeControls } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-types";
+import { TimeRangePreset } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-types";
 import {
   TimeGrain,
   TimeGrain as TimeGrainProto,
@@ -27,7 +27,7 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 export function toProto(metrics: MetricsExplorerEntity): string {
   const state: PartialMessage<DashboardState> = {};
-  if (metrics.filters) {
+  if (metrics?.filters) {
     state.filters = toFiltersProto(metrics.filters) as any;
   }
   if (metrics.selectedTimeRange) {
