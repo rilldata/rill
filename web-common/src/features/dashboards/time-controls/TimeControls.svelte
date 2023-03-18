@@ -73,7 +73,6 @@ We should rename TimeSeriesTimeRange to a better name.
       $metricsViewQuery.data.entry.metricsView.model,
       $metricsViewQuery.data.entry.metricsView.timeDimension
     );
-
     defaultTimeRange = ISODurationToTimePreset(
       $metricsViewQuery.data.entry.metricsView?.defaultTimeRange
     );

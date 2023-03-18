@@ -73,7 +73,7 @@ export function validateTimeRange(
   }
 }
 
-// Moved to time-range with name getChildTimeRanges
+// we will need to keep this for the duration amounts in the runtime / config
 export function getRelativeTimeRangeOptions(
   allTimeRange: TimeRange,
   minTimeGrain: V1TimeGrain
@@ -99,7 +99,7 @@ export function getRelativeTimeRangeOptions(
 
   // All time is always an option
   timeRanges.push({
-    name: TimeRangeName.AllTime,
+    name: TimeRangeName.ALL_TIME,
     start: allTimeRange.start,
     end: allTimeRange.end,
   });
@@ -174,15 +174,15 @@ export const timeRangeToISODuration = (
   timeRangeName: TimeRangeName
 ): string => {
   switch (timeRangeName) {
-    case TimeRangeName.Last6Hours:
+    case TimeRangeName.LAST_SIX_HOURS:
       return "PT6H";
-    case TimeRangeName.LastDay:
+    case TimeRangeName.LAST_24_HOURS:
       return "P1D";
-    case TimeRangeName.LastWeek:
+    case TimeRangeName.LAST_7_DAYS:
       return "P7D";
-    case TimeRangeName.Last30Days:
-      return "P30D";
-    case TimeRangeName.AllTime:
+    case TimeRangeName.LAST_4_WEEKS:
+      return "P4W";
+    case TimeRangeName.ALL_TIME:
       return "inf";
     default:
       return undefined;
@@ -196,17 +196,17 @@ export const ISODurationToTimeRange = (
 ): TimeRangeName => {
   switch (isoDuration) {
     case "PT6H":
-      return TimeRangeName.Last6Hours;
+      return TimeRangeName.LAST_SIX_HOURS;
     case "P1D":
-      return TimeRangeName.LastDay;
+      return TimeRangeName.LAST_24_HOURS;
     case "P7D":
-      return TimeRangeName.LastWeek;
-    case "P30D":
-      return TimeRangeName.Last30Days;
+      return TimeRangeName.LAST_7_DAYS;
+    case "P4W":
+      return TimeRangeName.LAST_4_WEEKS;
     case "inf":
-      return TimeRangeName.AllTime;
+      return TimeRangeName.ALL_TIME;
     default:
-      return defaultToAllTime ? TimeRangeName.AllTime : undefined;
+      return defaultToAllTime ? TimeRangeName.ALL_TIME : undefined;
   }
 };
 
@@ -492,14 +492,14 @@ function getAllTimeRangeDurationMs(allTimeRange: TimeRange): number {
 // Not needed
 const getLastXTimeRangeDurationMs = (name: TimeRangeName): number => {
   switch (name) {
-    case TimeRangeName.Last6Hours:
+    case TimeRangeName.LAST_SIX_HOURS:
       return 6 * TIME.HOUR;
-    case TimeRangeName.LastDay:
+    case TimeRangeName.LAST_24_HOURS:
       return TIME.DAY;
-    case TimeRangeName.LastWeek:
+    case TimeRangeName.LAST_7_DAYS:
       return TIME.WEEK;
-    case TimeRangeName.Last30Days:
-      return TIME.MONTH;
+    case TimeRangeName.LAST_4_WEEKS:
+      return TIME.DAY * 28;
 
     default:
       throw new Error(`Unknown last X time range name: ${name}`);

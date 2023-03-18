@@ -88,6 +88,8 @@ export function getChildTimeRanges(
   return timeRanges;
 }
 
+// TODO: investigate whether we need this after we've removed the need
+// for the config's default_time_Range to be an ISO duration.
 export const ISODurationToTimePreset = (
   isoDuration: string,
   defaultToAllTime = true
@@ -98,9 +100,9 @@ export const ISODurationToTimePreset = (
     case "P1D":
       return TimeRangePreset.LAST_24_HOURS;
     case "P7D":
-      return TimeRangePreset.LAST_WEEK;
-    case "P30D":
-      return TimeRangePreset.LAST_30_DAYS;
+      return TimeRangePreset.LAST_7_DAYS;
+    case "P4W":
+      return TimeRangePreset.LAST_4_WEEKS;
     case "inf":
       return TimeRangePreset.ALL_TIME;
     default:

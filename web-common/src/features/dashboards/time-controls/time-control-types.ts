@@ -5,27 +5,28 @@ export interface TimeRange {
   end: Date;
 }
 
+// TODO: we should deprecate this as soon as its not needed.
+// We primarily use this in the DefaultTimeRangeSelector component.
+// see https://github.com/rilldata/rill-developer/issues/1961 for progress.
 export enum TimeRangeName {
-  Last6Hours = "Last 6 hours", // hour
-  LastDay = "Last day", // hour
-  LastWeek = "Last week", // day
-  Last30Days = "Last 30 days", // Make last 4 weeks and truncate with week
-  AllTime = "All time",
-  // Today = "Today",
-  // MonthToDate = "Month to date",
-  Custom = "Custom range",
+  LAST_SIX_HOURS = "Last 6 hours", // hour
+  LAST_24_HOURS = "Last 24 hours", // hour
+  LAST_7_DAYS = "Last 7 days", // day
+  LAST_4_WEEKS = "Last 4 weeks", // Make last 4 weeks and truncate with week
+  ALL_TIME = "All time",
+  CUSTOM = "Custom range",
 }
 
 export const lastXTimeRangeNames: TimeRangeName[] = [
-  TimeRangeName.Last6Hours,
-  TimeRangeName.LastDay,
-  TimeRangeName.LastWeek,
-  TimeRangeName.Last30Days,
+  TimeRangeName.LAST_SIX_HOURS,
+  TimeRangeName.LAST_24_HOURS,
+  TimeRangeName.LAST_7_DAYS,
+  TimeRangeName.LAST_4_WEEKS,
 ];
 
 export const supportedTimeRangeEnums: TimeRangeName[] = [
   ...lastXTimeRangeNames,
-  TimeRangeName.AllTime,
+  TimeRangeName.ALL_TIME,
 ];
 
 // The start and end times are rounded to the time grain (interval) such that start is inclusive and end is exclusive.

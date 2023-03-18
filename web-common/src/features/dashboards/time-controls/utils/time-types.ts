@@ -140,12 +140,27 @@ export interface TimeRangeMeta {
 // are settable within a config.
 export type TimeRangeType = keyof typeof DEFAULT_TIME_RANGES;
 
+// HAMILTON: I left off here. Get TimeRangePreset to just use the DEFAULT_TIME_RANGES keys.
+// FIXME: this is confusing. Why do we have RangePreset and TimeRangePreset?
+// And why do we need to define this explicitly?
 export const TimeRangePreset: { [K in TimeRangeType]: K } = {
   ALL_TIME: "ALL_TIME",
   LAST_SIX_HOURS: "LAST_SIX_HOURS",
   LAST_24_HOURS: "LAST_24_HOURS",
+  LAST_7_DAYS: "LAST_7_DAYS",
+  LAST_4_WEEKS: "LAST_4_WEEKS",
+  LAST_YEAR: "LAST_YEAR",
+  TODAY: "TODAY",
+  WEEK_TO_DATE: "WEEK_TO_DATE",
+  MONTH_TO_DATE: "MONTH_TO_DATE",
+  YEAR_TO_DATE: "YEAR_TO_DATE",
   CUSTOM: "CUSTOM",
+  // ...Object.keys(DEFAULT_TIME_RANGES).reduce((obj, key) => {
+  //   obj[key] = key;
+  //   return obj;
+  // }, {}),
 };
+
 export interface TimeRange {
   name: TimeRangeType;
   start: Date;

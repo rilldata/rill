@@ -231,3 +231,22 @@ export const DEFAULT_TIME_RANGES: Record<string, TimeRangeMeta> = {
   ...PERIOD_TO_DATE_RANGES,
   ALL_TIME,
 };
+
+// This is a temporary fix for the default time range setting.
+// We need to deprecate this once we have moved the default_time_range setting to operate
+// on preset strings rather than ISO durations.
+export const TEMPORARY_DEFAULT_RANGE_TO_DURATIONS = {
+  LAST_SIX_HOURS: "PT6H",
+  LAST_24_HOURS: "P1D",
+  LAST_7_DAYS: "P7D",
+  LAST_4_WEEKS: "P4W",
+  LAST_YEAR: "P1Y",
+  TODAY: "P1D",
+};
+
+export const DEFAULT_TIME_RANGE_PRESETS = Object.keys(
+  DEFAULT_TIME_RANGES
+).reduce((acc, key) => {
+  acc[key] = key;
+  return acc;
+}, {} as Record<string, string>);
