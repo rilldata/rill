@@ -1,5 +1,5 @@
 import { DateTime, Duration } from "luxon";
-import type { TimeRange } from "../../time-control-types";
+import type { TimeRange } from "../time-types";
 import {
   Period,
   ReferencePoint,

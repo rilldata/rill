@@ -1,5 +1,5 @@
 import type { DateTimeUnit } from "luxon";
-import type { V1TimeGrain } from "../../../../runtime-client";
+import { V1TimeGrain } from "../../../../runtime-client";
 import type { DEFAULT_TIME_RANGES } from "./defaults";
 
 export const TIME = {
@@ -52,6 +52,49 @@ export enum Period {
   QUARTER = "P3M",
   YEAR = "P1Y",
 }
+
+export const TimeGrainTriplets = [
+  {
+    timeGrain: V1TimeGrain.TIME_GRAIN_MINUTE,
+    duration: Period.MINUTE,
+    timeGrainUnit: TimeUnit.PT1M,
+  },
+  {
+    timeGrain: V1TimeGrain.TIME_GRAIN_HOUR,
+    duration: Period.HOUR,
+    timeGrainUnit: TimeUnit.PT1H,
+  },
+  {
+    timeGrain: V1TimeGrain.TIME_GRAIN_DAY,
+    duration: Period.DAY,
+    timeGrainUnit: TimeUnit.P1D,
+  },
+  {
+    timeGrain: V1TimeGrain.TIME_GRAIN_WEEK,
+    duration: Period.WEEK,
+    timeGrainUnit: TimeUnit.P1W,
+  },
+  {
+    timeGrain: V1TimeGrain.TIME_GRAIN_MONTH,
+    duration: Period.MONTH,
+    timeGrainUnit: TimeUnit.P1M,
+  },
+  {
+    timeGrain: V1TimeGrain.TIME_GRAIN_YEAR,
+    duration: Period.YEAR,
+    timeGrainUnit: TimeUnit.P1Y,
+  },
+];
+
+export const grainToDuration = (grain: V1TimeGrain) => {
+  const triplet = TimeGrainTriplets.find((t) => t.timeGrain === grain);
+  return triplet?.duration;
+};
+
+export const grainToUnit = (grain: V1TimeGrain) => {
+  const triplet = TimeGrainTriplets.find((t) => t.timeGrain === grain);
+  return triplet?.timeGrainUnit;
+};
 
 export enum RangePreset {
   PERIOD_ANCHORED = "PERIOD_ANCHORED",

@@ -1,3 +1,8 @@
+/** NOTE:
+ *
+ * this file should be deprecated in favor of the other time utils.
+ *
+ * */
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
   lastXTimeRangeNames,
@@ -52,28 +57,29 @@ export const supportedTimeGrainEnums = () => {
 };
 
 //TODO: Co locate with application
-export function validateTimeRange(
-  start: Date,
-  end: Date,
-  minTimeGrain: V1TimeGrain
-): string {
-  const timeRangeDurationMs = end.getTime() - start.getTime();
+// export function validateTimeRange(
+//   start: Date,
+//   end: Date,
+//   minTimeGrain: V1TimeGrain
+// ): string {
+//   const timeRangeDurationMs = end.getTime() - start.getTime();
 
-  const allowedTimeGrains = getAllowedTimeGrains(timeRangeDurationMs);
-  const allowedMaxGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
+//   const allowedTimeGrains = getAllowedTimeGrains(timeRangeDurationMs);
+//   const allowedMaxGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
 
-  const isGrainPossible = !isGrainBigger(minTimeGrain, allowedMaxGrain);
+//   const isGrainPossible = !isGrainBigger(minTimeGrain, allowedMaxGrain);
 
-  if (start > end) {
-    return "Start date must be before end date";
-  } else if (!isGrainPossible) {
-    return "Range is smaller than min time grain";
-  } else {
-    return undefined;
-  }
-}
+//   if (start > end) {
+//     return "Start date must be before end date";
+//   } else if (!isGrainPossible) {
+//     return "Range is smaller than min time grain";
+//   } else {
+//     return undefined;
+//   }
+// }
 
-// we will need to keep this for the duration amounts in the runtime / config
+// NOTE: we will need to keep this for the duration amounts in the runtime / config.
+// let's plan to deprecate it later.
 export function getRelativeTimeRangeOptions(
   allTimeRange: TimeRange,
   minTimeGrain: V1TimeGrain
@@ -108,10 +114,10 @@ export function getRelativeTimeRangeOptions(
 }
 
 //TODO: Co locate with TimeControls
-export function getDefaultTimeRange(allTimeRange: TimeRange): TimeRange {
-  // Use AllTime for now. When we go to production real-time datasets, we'll want to change this.
-  return allTimeRange;
-}
+// export function getDefaultTimeRange(allTimeRange: TimeRange): TimeRange {
+//   // Use AllTime for now. When we go to production real-time datasets, we'll want to change this.
+//   return allTimeRange;
+// }
 
 // Moved to time-types
 export interface TimeGrainOption {

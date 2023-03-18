@@ -1,9 +1,4 @@
 import type { V1TimeGrain } from "../../../runtime-client";
-export interface TimeRange {
-  name: TimeRangeName;
-  start: Date;
-  end: Date;
-}
 
 /** NOTE: this file should be deprecated once we've
  * resolved https://github.com/rilldata/rill-developer/issues/1961.

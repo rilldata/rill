@@ -172,23 +172,6 @@ We should rename TimeSeriesTimeRange to a better name.
       }
     }
 
-    //TODO: Do adjuments and offsets for custom
-
-    // // Round start time to nearest lower time grain
-    // const adjustedStart = floorDate(start, timeGrain);
-
-    // Round end time to start of next grain
-    // because the runtime uses exlusive end times, whereas user inputs are inclusive
-    // let adjustedEnd: Date;
-    // if (timeRange.name === TimeRangeName.Custom) {
-    //   // Custom Range always snaps to the end of the day
-    //   adjustedEnd = addGrains(new Date(end), 1, V1TimeGrain.TIME_GRAIN_DAY);
-    //   adjustedEnd = floorDate(adjustedEnd, timeGrain);
-    // } else {
-    //   adjustedEnd = addGrains(new Date(end), 1, timeGrain);
-    //   adjustedEnd = floorDate(adjustedEnd, timeGrain);
-    // }
-
     // the adjusted time range
     const newTimeRange: DashboardTimeControls = {
       name,
