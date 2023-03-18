@@ -5,6 +5,10 @@ export interface TimeRange {
   end: Date;
 }
 
+/** NOTE: this file should be deprecated once we've
+ * resolved https://github.com/rilldata/rill-developer/issues/1961.
+ */
+
 // TODO: we should deprecate this as soon as its not needed.
 // We primarily use this in the DefaultTimeRangeSelector component.
 // see https://github.com/rilldata/rill-developer/issues/1961 for progress.
@@ -23,6 +27,8 @@ export const lastXTimeRangeNames: TimeRangeName[] = [
   TimeRangeName.LAST_7_DAYS,
   TimeRangeName.LAST_4_WEEKS,
 ];
+
+// TODO: we should deprecate this as soon as its not needed.
 
 export const supportedTimeRangeEnums: TimeRangeName[] = [
   ...lastXTimeRangeNames,
