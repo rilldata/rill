@@ -60,7 +60,7 @@
   >
     <button
       class:bg-gray-200={active}
-      class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600"
+      class="px-3 py-2 rounded flex flex-row gap-x-2 items-center hover:bg-gray-200 hover:dark:bg-gray-600"
       on:click={toggleMenu}
     >
       <div>
@@ -68,7 +68,7 @@
       </div>
       <IconSpaceFixer pullRight>
         <div class="transition-transform" class:-rotate-180={active}>
-          <CaretDownIcon size="16px" />
+          <CaretDownIcon size="14px" />
         </div>
       </IconSpaceFixer>
     </button>

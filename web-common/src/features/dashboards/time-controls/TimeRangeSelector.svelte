@@ -149,7 +149,7 @@
     </div>
     <IconSpaceFixer pullRight>
       <div class="transition-transform" class:-rotate-180={active}>
-        <CaretDownIcon size="16px" />
+        <CaretDownIcon size="14px" />
       </div>
     </IconSpaceFixer>
   </button>

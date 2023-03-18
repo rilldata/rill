@@ -12,7 +12,7 @@
     <div class:font-bold={selected}>{TimeRangeName.Custom}</div>
     <div class="flex-grow" />
     <div class="transition-transform duration-100" class:-rotate-180={open}>
-      <CaretDownIcon size="16px" />
+      <CaretDownIcon size="14px" />
     </div>
   </div>
 </MenuItem>
