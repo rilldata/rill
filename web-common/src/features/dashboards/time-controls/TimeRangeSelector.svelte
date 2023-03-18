@@ -12,7 +12,12 @@
   import { useDashboardStore } from "../dashboard-stores";
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
-  import { DEFAULT_TIME_RANGES } from "./utils/defaults";
+  import {
+    ALL_TIME,
+    DEFAULT_TIME_RANGES,
+    LATEST_WINDOW_TIME_RANGES,
+    PERIOD_TO_DATE_RANGES,
+  } from "./utils/defaults";
   import {
     getChildTimeRanges,
     prettyFormatTimeRange,
@@ -31,17 +36,36 @@
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
-  let relativeTimeRangeOptions: TimeRangeOption[];
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
 
+  let latestWindowTimeRanges: TimeRangeOption[];
+  let periodToDateTimeRanges: TimeRangeOption[];
+
+  // get the available latest-window time ranges
   $: if (allTimeRange) {
-    relativeTimeRangeOptions = getChildTimeRanges(
+    latestWindowTimeRanges = getChildTimeRanges(
       allTimeRange.start,
       allTimeRange.end,
-      DEFAULT_TIME_RANGES,
+      LATEST_WINDOW_TIME_RANGES,
       minTimeGrain
     );
+  }
+
+  // get the the available period-to-date time ranges
+  $: if (allTimeRange) {
+    periodToDateTimeRanges = getChildTimeRanges(
+      allTimeRange.start,
+      allTimeRange.end,
+      PERIOD_TO_DATE_RANGES,
+      minTimeGrain
+    );
+  }
+
+  function setIntermediateSelection(timeRangeName: string) {
+    return () => {
+      intermediateSelection = timeRangeName;
+    };
   }
 
   function onSelectRelativeTimeRange(
@@ -61,6 +85,7 @@
     endDate: string,
     closeMenu: () => void
   ) {
+    setIntermediateSelection(TimeRangePreset.CUSTOM)();
     closeMenu();
     dispatch("select-time-range", {
       name: TimeRangePreset.CUSTOM,
@@ -84,6 +109,9 @@
       isCalendarRecentlyClosed = false;
     }, 300);
   }
+
+  $: currentSelection = $dashboardStore?.selectedTimeRange?.name;
+  $: intermediateSelection = currentSelection;
 </script>
 
 <WithTogglableFloatingElement
@@ -93,6 +121,7 @@
   let:toggleFloatingElement
 >
   <button
+    class:bg-gray-200={active}
     class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 items-baseline"
     on:click={toggleFloatingElement}
   >
@@ -101,9 +130,9 @@
         <span class="ui-copy-icon"><Calendar size="16px" /></span>
         <span style:transform="translateY(1px)">
           <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
-          {#if $dashboardStore?.selectedTimeRange?.name === TimeRangePreset.CUSTOM}
+          {#if intermediateSelection === TimeRangePreset.CUSTOM}
             Custom range
-          {:else if $dashboardStore?.selectedTimeRange?.name in DEFAULT_TIME_RANGES}
+          {:else if currentSelection in DEFAULT_TIME_RANGES}
             {DEFAULT_TIME_RANGES[$dashboardStore?.selectedTimeRange?.name]
               .label}
           {:else}
@@ -129,24 +158,62 @@
     on:escape={toggleFloatingElement}
     slot="floating-element"
   >
-    {#if relativeTimeRangeOptions}
-      {#each relativeTimeRangeOptions as relativeTimeRange}
+    {@const allTime = {
+      name: TimeRangePreset.ALL_TIME,
+      label: ALL_TIME.label,
+      start: allTimeRange.start,
+      end: allTimeRange.end,
+    }}
+    <MenuItem
+      on:before-select={setIntermediateSelection(allTime.name)}
+      on:select={() =>
+        onSelectRelativeTimeRange(allTime, toggleFloatingElement)}
+    >
+      <span class:font-bold={intermediateSelection === allTime.name}>
+        {allTime.label}
+      </span>
+    </MenuItem>
+    {#if latestWindowTimeRanges}
+      <Divider />
+
+      {#each latestWindowTimeRanges as timeRange}
         <MenuItem
+          on:before-select={setIntermediateSelection(timeRange.name)}
           on:select={() =>
-            onSelectRelativeTimeRange(relativeTimeRange, toggleFloatingElement)}
+            onSelectRelativeTimeRange(timeRange, toggleFloatingElement)}
         >
-          {relativeTimeRange.label}
+          <span class:font-bold={intermediateSelection === timeRange.name}>
+            {timeRange.label}
+          </span>
         </MenuItem>
       {/each}
     {/if}
-    <Divider />
+    {#if periodToDateTimeRanges}
+      <Divider />
+      {#each periodToDateTimeRanges as timeRange}
+        <MenuItem
+          on:before-select={setIntermediateSelection(timeRange.name)}
+          on:select={() =>
+            onSelectRelativeTimeRange(timeRange, toggleFloatingElement)}
+        >
+          <span class:font-bold={intermediateSelection === timeRange.name}>
+            {timeRange.label}
+          </span>
+        </MenuItem>
+      {/each}
+      <Divider />
+    {/if}
     <CustomTimeRangeMenuItem
-      on:select={() => (isCustomRangeOpen = !isCustomRangeOpen)}
+      on:select={() => {
+        isCustomRangeOpen = !isCustomRangeOpen;
+      }}
       open={isCustomRangeOpen}
+      selected={intermediateSelection === TimeRangePreset.CUSTOM}
     />
     {#if isCustomRangeOpen}
       <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
         <CustomTimeRangeInput
+          {allTimeRange}
           {metricViewName}
           {minTimeGrain}
           on:apply={(e) =>

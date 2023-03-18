@@ -136,7 +136,6 @@ export function checkValidTimeGrain(
   timeGrainOptions: TimeGrainOption[],
   minTimeGrain: V1TimeGrain
 ): boolean {
-  console.log("checkValidTimeGrain", timeGrain, minTimeGrain);
   const timeGrainOption = timeGrainOptions.find(
     (timeGrainOption) => timeGrainOption.grain === timeGrain
   );

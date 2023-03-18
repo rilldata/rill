@@ -7,7 +7,7 @@ import {
   TimeTruncationType,
 } from "./time-types";
 
-export const NOW_ANCHORED_TIMES: Record<string, TimeRangeMeta> = {
+export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   LAST_SIX_HOURS: {
     label: "Last 6 Hours",
     rangePreset: RangePreset.OFFSET_ANCHORED,
@@ -130,7 +130,7 @@ export const NOW_ANCHORED_TIMES: Record<string, TimeRangeMeta> = {
   },
 };
 
-export const PERIOD_ANCHORED_RANGES: Record<string, TimeRangeMeta> = {
+export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   TODAY: {
     label: "Today",
     rangePreset: RangePreset.PERIOD_ANCHORED,
@@ -221,11 +221,13 @@ export const PERIOD_ANCHORED_RANGES: Record<string, TimeRangeMeta> = {
   },
 };
 
+export const ALL_TIME = {
+  label: "All Time",
+  rangePreset: RangePreset.ALL_TIME,
+};
+
 export const DEFAULT_TIME_RANGES: Record<string, TimeRangeMeta> = {
-  ...NOW_ANCHORED_TIMES,
-  ...PERIOD_ANCHORED_RANGES,
-  ALL_TIME: {
-    label: "All Time",
-    rangePreset: RangePreset.ALL_TIME,
-  },
+  ...LATEST_WINDOW_TIME_RANGES,
+  ...PERIOD_TO_DATE_RANGES,
+  ALL_TIME,
 };

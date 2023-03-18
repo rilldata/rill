@@ -16,9 +16,11 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useDashboardStore } from "../dashboard-stores";
   import { validateTimeRange } from "./time-range-utils";
+  import type { TimeRange } from "./utils/time-types";
 
   export let metricViewName: string;
   export let minTimeGrain: string;
+  export let allTimeRange: TimeRange;
 
   const dispatch = createEventDispatcher();
 
@@ -67,10 +69,11 @@
     : undefined;
 
   function applyCustomTimeRange() {
-    // Currently, we assume UTC
+    const startDate = getISOStringFromDate(start);
+    const endDate = getISOStringFromDate(end);
     dispatch("apply", {
-      startDate: getISOStringFromDate(start),
-      endDate: getISOStringFromDate(end),
+      startDate,
+      endDate,
     });
   }
 
@@ -95,9 +98,9 @@
       type="date"
     />
   </div>
+
   <div class="flex flex-col gap-y-1">
     <label class={labelClasses} for="end-date">End date</label>
-
     <input
       bind:value={end}
       id="end-date"
