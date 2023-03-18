@@ -14,6 +14,7 @@
   import { cubicOut } from "svelte/easing";
   import { writable } from "svelte/store";
   import { fade, fly } from "svelte/transition";
+  import { niceMeasureExtents } from "./utils";
   export let width: number = undefined;
   export let height: number = undefined;
   export let xMin: Date = undefined;
@@ -38,19 +39,19 @@
 
   $: [xExtentMin, xExtentMax] = extent(data, (d) => d[xAccessor]);
   $: [yExtentMin, yExtentMax] = extent(data, (d) => d[yAccessor]);
+
+  $: [internalYMin, internalYMax] = niceMeasureExtents(
+    [
+      yMin !== undefined ? yMin : yExtentMin,
+      yMax !== undefined ? yMax : yExtentMax,
+    ],
+    6 / 5
+  );
+
+  $: console.log(internalYMin, internalYMax);
+
   $: internalXMin = xMin || xExtentMin;
   $: internalXMax = xMax || xExtentMax;
-  /** we'll set the inflation amount here. */
-  let inflate = 5 / 6;
-
-  $: internalYMin = yExtentMin >= 0 ? 0 : yExtentMin;
-
-  $: internalYMax = yMax
-    ? yMax
-    : yExtentMin == yExtentMax
-    ? yExtentMax / inflate
-    : yExtentMax / inflate;
-
   // we delay the tween if previousYMax < yMax
   let yMaxStore = writable(yExtentMax);
   let previousYMax = previousValueStore(yMaxStore);
@@ -60,6 +61,7 @@
 
   const previousTimeRangeKey = previousValueStore(timeRangeKey);
 
+  // FIXME: move this function to utils.ts
   /** reset the keys to trigger animations on time range changes */
   let syncTimeRangeKey;
   $: {
@@ -91,7 +93,7 @@
 
 <SimpleDataGraphic
   overflowHidden={false}
-  yMin={internalYMin * inflate}
+  yMin={internalYMin}
   yMax={internalYMax}
   shareYScale={false}
   yType="number"
@@ -104,6 +106,7 @@
   bind:mouseoverValue
   bind:hovered
   let:config
+  let:yScale
   yMinTweenProps={tweenProps}
   yMaxTweenProps={tweenProps}
   xMaxTweenProps={tweenProps}
@@ -126,6 +129,13 @@
         key={$timeRangeKey}
       />
     {/key}
+    <line
+      x1={config.plotLeft}
+      x2={config.plotLeft + config.plotRight}
+      y1={yScale(0)}
+      y2={yScale(0)}
+      class="stroke-blue-200"
+    />
   </Body>
   {#if !scrubbing && mouseoverValue?.x}
     <g transition:fade|local={{ duration: 100 }}>
