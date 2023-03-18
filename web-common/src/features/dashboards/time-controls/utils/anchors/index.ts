@@ -20,13 +20,21 @@ export function getLatestDataTimestamp(allTimeRange: TimeRange) {
 }
 
 // Period anchor methods
-export function getStartOfPeriod(period: Period, referenceTime: Date) {
-  const date = DateTime.fromJSDate(referenceTime);
+export function getStartOfPeriod(
+  period: Period,
+  referenceTime: Date,
+  zone = "utc"
+) {
+  const date = DateTime.fromJSDate(referenceTime, { zone });
   return date.startOf(TimeUnit[period]).toJSDate();
 }
 
-export function getEndOfPeriod(period: Period, referenceTime: Date) {
-  const date = DateTime.fromJSDate(referenceTime);
+export function getEndOfPeriod(
+  period: Period,
+  referenceTime: Date,
+  zone = "utc"
+) {
+  const date = DateTime.fromJSDate(referenceTime, { zone });
   return date.endOf(TimeUnit[period]).toJSDate();
 }
 
@@ -34,10 +42,11 @@ export function getEndOfPeriod(period: Period, referenceTime: Date) {
 export function getOffset(
   referenceTime: Date,
   duration: string,
-  direction: TimeOffsetType
+  direction: TimeOffsetType,
+  zone = "utc"
 ) {
   const durationObj = Duration.fromISO(duration);
-  return DateTime.fromJSDate(referenceTime)
+  return DateTime.fromJSDate(referenceTime, { zone })
     [direction === TimeOffsetType.ADD ? "plus" : "minus"](durationObj)
     .toJSDate();
 }
@@ -106,7 +115,6 @@ export function relativePointInTimeToAbsolute(
 ) {
   let startDate: Date;
   let endDate: Date;
-
   if (typeof start === "string") startDate = new Date(start);
   else {
     if (start.reference === ReferencePoint.NOW)

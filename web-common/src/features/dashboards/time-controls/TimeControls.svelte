@@ -82,7 +82,6 @@ We should rename TimeSeriesTimeRange to a better name.
       V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
   }
   $: allTimeRange = $allTimeRangeQuery?.data as TimeRange;
-
   // once we have the allTimeRange, set the default time range and time grain
   $: if (allTimeRange) {
     if (!$dashboardStore?.selectedTimeRange) {

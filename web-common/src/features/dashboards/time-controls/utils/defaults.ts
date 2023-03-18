@@ -27,7 +27,6 @@ export const NOW_ANCHORED_TIMES: Record<string, TimeRangeMeta> = {
     end: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
-        { duration: "PT1H", operationType: TimeOffsetType.SUBTRACT },
         {
           period: Period.HOUR,
           truncationType: TimeTruncationType.START_OF_PERIOD,
@@ -52,7 +51,6 @@ export const NOW_ANCHORED_TIMES: Record<string, TimeRangeMeta> = {
     end: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
-        { duration: "PT1H", operationType: TimeOffsetType.SUBTRACT },
         {
           period: Period.HOUR,
           truncationType: TimeTruncationType.START_OF_PERIOD,
@@ -78,7 +76,7 @@ export const NOW_ANCHORED_TIMES: Record<string, TimeRangeMeta> = {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
         {
-          period: Period.DAY,
+          period: Period.HOUR,
           truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
@@ -171,7 +169,7 @@ export const PERIOD_ANCHORED_RANGES: Record<string, TimeRangeMeta> = {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
         {
-          period: Period.DAY,
+          period: Period.HOUR,
           truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],

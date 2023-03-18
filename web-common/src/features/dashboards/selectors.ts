@@ -1,6 +1,6 @@
 import {
-  useRuntimeServiceGetCatalogEntry,
   useQueryServiceColumnTimeRange,
+  useRuntimeServiceGetCatalogEntry,
   useRuntimeServiceListCatalogEntries,
   useRuntimeServiceListFiles,
   V1MetricsView,

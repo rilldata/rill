@@ -33,7 +33,7 @@ const startOf = (period) =>
   truncation(period, TimeTruncationType.START_OF_PERIOD);
 const endOf = (period) => truncation(period, TimeTruncationType.END_OF_PERIOD);
 
-const referenceTime = new Date(2023, 4, 5, 12, 0, 0);
+const referenceTime = new Date(`2023-03-05T12:00:00+0000`);
 
 const transformations = [
   {
@@ -50,7 +50,7 @@ const transformations = [
       referenceTime,
       transformation: [subtract("P1Y")],
     },
-    output: new Date(2022, 4, 5, 12),
+    output: new Date(`2022-03-05T12:00:00+0000`),
   },
   {
     label: "should subtract a day",
@@ -58,7 +58,7 @@ const transformations = [
       referenceTime,
       transformation: [subtract("P1D")],
     },
-    output: new Date(2023, 4, 4, 12),
+    output: new Date(`2023-03-04T12:00:00+0000`),
   },
   {
     label: "should add a day",
@@ -66,7 +66,7 @@ const transformations = [
       referenceTime,
       transformation: [add("P1D")],
     },
-    output: new Date(2023, 4, 6, 12),
+    output: new Date(`2023-03-06T12:00:00+0000`),
   },
   {
     label: "should subtract then add a day to get same time",
@@ -82,7 +82,7 @@ const transformations = [
       referenceTime,
       transformation: [startOf(Period.MONTH)],
     },
-    output: new Date(2023, 4, 1),
+    output: new Date(`2023-03-01T00:00:00+0000`),
   },
   {
     label: "should get end of month",
@@ -90,7 +90,7 @@ const transformations = [
       referenceTime,
       transformation: [endOf(Period.MONTH)],
     },
-    output: new Date(2023, 4, 31, 23, 59, 59, 999),
+    output: new Date(`2023-03-31T23:59:59.999+0000`),
   },
 
   {
@@ -103,7 +103,7 @@ const transformations = [
         startOf(Period.MONTH),
       ],
     },
-    output: new Date(2023, 4, 1),
+    output: new Date(`2023-03-01T00:00:00+0000`),
   },
   {
     label: "should correctly land with end if we do end, start, end",
@@ -115,7 +115,7 @@ const transformations = [
         endOf(Period.MONTH),
       ],
     },
-    output: new Date(2023, 4, 31, 23, 59, 59, 999),
+    output: new Date(`2023-03-31T23:59:59.999+0000`),
   },
   {
     label:
@@ -124,7 +124,7 @@ const transformations = [
       referenceTime,
       transformation: [subtract("PT1H"), startOf(Period.HOUR)],
     },
-    output: new Date(2023, 4, 5, 11),
+    output: new Date(`2023-03-05T11:00:00+0000`),
   },
   {
     label: "should offset the reference time to the end of the previous hour",
@@ -132,7 +132,7 @@ const transformations = [
       referenceTime,
       transformation: [subtract("PT1H"), endOf(Period.HOUR)],
     },
-    output: new Date(2023, 4, 5, 11, 59, 59, 999),
+    output: new Date(`2023-03-05T11:59:59.999+0000`),
   },
 ];
 
@@ -143,8 +143,8 @@ describe("transformDate", () => {
         transformDate(
           transformation.input.referenceTime,
           transformation.input.transformation
-        )
-      ).toEqual(transformation.output);
+        ).toISOString()
+      ).toEqual(transformation.output.toISOString());
     });
   }
 });
