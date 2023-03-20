@@ -9,7 +9,7 @@
     checkValidTimeGrain,
     getDefaultTimeGrain,
     getTimeGrainOptions,
-  } from "@rilldata/web-common/lib/time/time-grain";
+  } from "@rilldata/web-common/lib/time/grains";
   import {
     convertTimeRangePreset,
     ISODurationToTimePreset,

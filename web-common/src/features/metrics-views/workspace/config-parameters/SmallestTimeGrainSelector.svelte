@@ -3,7 +3,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import { getTimeGrainOptions } from "@rilldata/web-common/lib/time/time-grain";
+  import { getTimeGrainOptions } from "@rilldata/web-common/lib/time/grains";
   import type { TimeGrainOption } from "@rilldata/web-common/lib/time/types";
   import {
     useQueryServiceColumnTimeRange,

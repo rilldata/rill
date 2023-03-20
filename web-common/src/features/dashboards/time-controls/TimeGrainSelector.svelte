@@ -3,7 +3,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import WithSelectMenu from "@rilldata/web-common/components/menu/wrappers/WithSelectMenu.svelte";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import { isGrainBigger } from "@rilldata/web-common/lib/time/time-grain";
+  import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
   import type { TimeGrainOption } from "@rilldata/web-common/lib/time/types";
   import { createEventDispatcher } from "svelte";
   import type { V1TimeGrain } from "../../../runtime-client";

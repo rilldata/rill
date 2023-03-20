@@ -11,7 +11,7 @@ import {
 } from "./time-control-types";
 
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-import { durationToMillis } from "@rilldata/web-common/lib/time/time-grain";
+import { durationToMillis } from "@rilldata/web-common/lib/time/grains";
 
 // May not need this anymore as using TimeGrain objects
 export const supportedTimeGrainEnums = () => {

@@ -5,9 +5,9 @@
 
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { Duration } from "luxon";
-import { getTimeWidth } from "./anchors";
-import { TIME_GRAIN } from "./config";
-import type { TimeGrain, TimeGrainOption } from "./types";
+import { getTimeWidth } from "../anchors";
+import { TIME_GRAIN } from "../config";
+import type { TimeGrain, TimeGrainOption } from "../types";
 
 export function unitToTimeGrain(unit: string): V1TimeGrain {
   return (
@@ -22,7 +22,7 @@ export function durationToMillis(duration: string): number {
 
 // FIXME: what is the difference between this and getAllowedTimeGrains?
 // It appears that we're using this instead of getAllowedTimeGrains.
-// I think we should deprecate this.
+// I think we should deprecate this function as soon as possible.
 export function getTimeGrainOptions(start: Date, end: Date): TimeGrainOption[] {
   const timeGrains: TimeGrainOption[] = [];
   const timeRangeDurationMs = getTimeWidth(start, end);

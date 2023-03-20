@@ -1,6 +1,6 @@
-import { durationToMillis } from "../time-grain";
 import { Period, TimeOffsetType } from "../types";
 import { getEndOfPeriod, getOffset, getStartOfPeriod, getTimeWidth } from "./";
+import { durationToMillis } from "./grains";
 
 describe("getStartOfPeriod", () => {
   it("should return the start of the week for given date", () => {

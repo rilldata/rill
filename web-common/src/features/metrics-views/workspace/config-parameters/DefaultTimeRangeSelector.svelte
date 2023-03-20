@@ -8,7 +8,7 @@
     isTimeRangeValidForTimeGrain,
     timeRangeToISODuration,
   } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
-  import { unitToTimeGrain } from "@rilldata/web-common/lib/time/time-grain";
+  import { unitToTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import {
     useQueryServiceColumnTimeRange,
     V1Model,

@@ -3,7 +3,7 @@
   import {
     getAllowedTimeGrains,
     isGrainBigger,
-  } from "@rilldata/web-common/lib/time/time-grain";
+  } from "@rilldata/web-common/lib/time/grains";
   import {
     getDateFromISOString,
     getDateFromObject,

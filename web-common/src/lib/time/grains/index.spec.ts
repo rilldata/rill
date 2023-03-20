@@ -3,7 +3,7 @@ import {
   durationToMillis,
   getAllowedTimeGrains,
   getDefaultTimeGrain,
-} from "../time-grain";
+} from "../grains";
 
 const allowedGrainTests = [
   {

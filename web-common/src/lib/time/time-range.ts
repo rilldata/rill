@@ -9,7 +9,7 @@ import {
   durationToMillis,
   getAllowedTimeGrains,
   isGrainBigger,
-} from "./time-grain";
+} from "./grains";
 import {
   RangePresetType,
   TimeRange,
