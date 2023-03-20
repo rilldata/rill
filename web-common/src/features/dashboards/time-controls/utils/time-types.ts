@@ -164,3 +164,10 @@ export interface TimeGrain {
 export interface TimeGrainOption extends TimeGrain {
   enabled: boolean;
 }
+
+// limit the set of available time grains to those supported
+// by th dashboard.
+export type AvailableTimeGrain = Exclude<
+  V1TimeGrain,
+  "TIME_GRAIN_UNSPECIFIED" | "TIME_GRAIN_MILLISECOND" | "TIME_GRAIN_SECOND"
+>;

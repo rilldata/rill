@@ -1,7 +1,10 @@
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
+  AvailableTimeGrain,
   Period,
   RangePresetType,
   ReferencePoint,
+  TimeGrain,
   TimeOffsetType,
   TimeRangeMeta,
   TimeTruncationType,
@@ -250,3 +253,66 @@ export const DEFAULT_TIME_RANGE_PRESETS = Object.keys(
   acc[key] = key;
   return acc;
 }, {} as Record<string, string>);
+
+export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
+  TIME_GRAIN_MINUTE: {
+    grain: V1TimeGrain.TIME_GRAIN_MINUTE,
+    label: "minute",
+    duration: Period.MINUTE,
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    },
+  },
+  TIME_GRAIN_HOUR: {
+    grain: V1TimeGrain.TIME_GRAIN_HOUR,
+    label: "hour",
+    duration: Period.HOUR,
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+    },
+  },
+  TIME_GRAIN_DAY: {
+    grain: V1TimeGrain.TIME_GRAIN_DAY,
+    label: "day",
+    duration: Period.DAY,
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    },
+  },
+  TIME_GRAIN_WEEK: {
+    grain: V1TimeGrain.TIME_GRAIN_WEEK,
+    label: "week",
+    duration: Period.WEEK,
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    },
+  },
+  TIME_GRAIN_MONTH: {
+    grain: V1TimeGrain.TIME_GRAIN_MONTH,
+    label: "month",
+    duration: Period.MONTH,
+    formatDate: {
+      year: "numeric",
+      month: "short",
+    },
+  },
+  TIME_GRAIN_YEAR: {
+    grain: V1TimeGrain.TIME_GRAIN_YEAR,
+    label: "year",
+    duration: Period.YEAR,
+    formatDate: {
+      year: "numeric",
+    },
+  },
+};

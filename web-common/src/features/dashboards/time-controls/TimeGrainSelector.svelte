@@ -5,7 +5,8 @@
   import { createEventDispatcher } from "svelte";
   import type { V1TimeGrain } from "../../../runtime-client";
   import { useDashboardStore } from "../dashboard-stores";
-  import { isGrainBigger, TIME_GRAIN } from "./utils/time-grain";
+  import { TIME_GRAIN } from "./utils/defaults";
+  import { isGrainBigger } from "./utils/time-grain";
   import type { TimeGrainOption } from "./utils/time-types";
 
   export let metricViewName: string;

@@ -26,7 +26,7 @@
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import { getOffset } from "../time-controls/utils/anchors";
-  import { TIME_GRAIN } from "../time-controls/utils/time-grain";
+  import { TIME_GRAIN } from "../time-controls/utils/defaults";
   import { TimeOffsetType } from "../time-controls/utils/time-types";
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";

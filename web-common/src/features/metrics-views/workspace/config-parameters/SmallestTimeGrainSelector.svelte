@@ -2,10 +2,8 @@
   import { SelectMenu } from "@rilldata/web-common/components/menu";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import {
-    getTimeGrainOptions,
-    TIME_GRAIN,
-  } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-grain";
+  import { TIME_GRAIN } from "@rilldata/web-common/features/dashboards/time-controls/utils/defaults";
+  import { getTimeGrainOptions } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-grain";
   import type { TimeGrainOption } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-types";
   import {
     useQueryServiceColumnTimeRange,

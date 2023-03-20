@@ -10,7 +10,8 @@ import {
 } from "./time-control-types";
 import { TimeRange } from "./utils/time-types";
 
-import { durationToMillis, TIME_GRAIN } from "./utils/time-grain";
+import { TIME_GRAIN } from "./utils/defaults";
+import { durationToMillis } from "./utils/time-grain";
 
 // May not need this anymore as using TimeGrain objects
 export const supportedTimeGrainEnums = () => {

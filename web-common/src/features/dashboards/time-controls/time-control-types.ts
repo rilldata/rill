@@ -1,12 +1,7 @@
-import type { V1TimeGrain } from "../../../runtime-client";
-
 /** NOTE: this file should be deprecated once we've
  * resolved https://github.com/rilldata/rill-developer/issues/1961.
  */
 
-// TODO: we should deprecate this as soon as its not needed.
-// We primarily use this in the DefaultTimeRangeSelector component.
-// see https://github.com/rilldata/rill-developer/issues/1961 for progress.
 export enum TimeRangeName_DEPRECATE {
   LAST_SIX_HOURS = "Last 6 hours", // hour
   LAST_24_HOURS = "Last 24 hours", // hour
@@ -23,17 +18,7 @@ export const lastXTimeRangeNames: TimeRangeName_DEPRECATE[] = [
   TimeRangeName_DEPRECATE.LAST_4_WEEKS,
 ];
 
-// TODO: we should deprecate this as soon as its not needed.
-
 export const supportedTimeRangeEnums: TimeRangeName_DEPRECATE[] = [
   ...lastXTimeRangeNames,
   TimeRangeName_DEPRECATE.ALL_TIME,
 ];
-
-// The start and end times are rounded to the time grain (interval) such that start is inclusive and end is exclusive.
-export interface TimeSeriesTimeRange {
-  name?: TimeRangeName_DEPRECATE;
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}

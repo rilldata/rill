@@ -1,12 +1,3 @@
-<!--
-@component
-Constructs a TimeSeriesTimeRange object – to be used as the filter in MetricsExplorer – by taking as input:
-- a base time range
-- a time grain (e.g., "hour" or "day")
-- the dataset's full time range (so its end time can be used in relative time ranges)
-
-We should rename TimeSeriesTimeRange to a better name.
--->
 <script lang="ts">
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
