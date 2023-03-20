@@ -1,3 +1,7 @@
+/**
+ * This module defines configured presets for time ranges & time grains.
+ */
+
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
   AvailableTimeGrain,
@@ -238,6 +242,7 @@ export const DEFAULT_TIME_RANGES: Record<string, TimeRangeMeta> = {
 // This is a temporary fix for the default time range setting.
 // We need to deprecate this once we have moved the default_time_range setting to operate
 // on preset strings rather than ISO durations.
+// See https://github.com/rilldata/rill-developer/issues/1961
 export const TEMPORARY_DEFAULT_RANGE_TO_DURATIONS = {
   LAST_SIX_HOURS: "PT6H",
   LAST_24_HOURS: "P1D",
@@ -254,6 +259,7 @@ export const DEFAULT_TIME_RANGE_PRESETS = Object.keys(
   return acc;
 }, {} as Record<string, string>);
 
+/** Configuration for the admissible set of time grains. See the TimeGrain interface for more information about values. */
 export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
   TIME_GRAIN_MINUTE: {
     grain: V1TimeGrain.TIME_GRAIN_MINUTE,

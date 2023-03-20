@@ -146,6 +146,7 @@ export interface DashboardTimeControls extends TimeRange {
   label?: string;
 }
 
+/** defines configuration for a time grain object in Rill. */
 export interface TimeGrain {
   /** the grain defined by the runtime */
   grain: V1TimeGrain;

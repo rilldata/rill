@@ -1,5 +1,4 @@
 import { DateTime, Duration } from "luxon";
-import type { TimeRange } from "../types";
 import {
   Period,
   ReferencePoint,
@@ -13,10 +12,6 @@ import {
 // reference timestamp method
 export function getPresentTime() {
   return new Date();
-}
-
-export function getLatestDataTimestamp(allTimeRange: TimeRange) {
-  return allTimeRange.end;
 }
 
 // Period anchor methods
