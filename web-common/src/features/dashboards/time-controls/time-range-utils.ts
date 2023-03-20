@@ -3,15 +3,15 @@
  * this file should be deprecated in favor of the other time utils.
  *
  * */
+import type { TimeRange } from "@rilldata/web-common/lib/time/types";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import type { TimeRange } from "../time-utils/time-types";
 import {
   lastXTimeRangeNames,
   TimeRangeName_DEPRECATE,
 } from "./time-control-types";
 
-import { TIME_GRAIN } from "@rilldata/web-common/features/dashboards/time-utils/config";
-import { durationToMillis } from "../time-utils/time-grain";
+import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import { durationToMillis } from "@rilldata/web-common/lib/time/time-grain";
 
 // May not need this anymore as using TimeGrain objects
 export const supportedTimeGrainEnums = () => {
@@ -78,7 +78,9 @@ export function isTimeRangeValidForTimeGrain(
   minTimeGrain: V1TimeGrain,
   timeRange: TimeRangeName_DEPRECATE
 ): boolean {
-  const timeGrainEnums = supportedTimeGrainEnums();
+  const timeGrainEnums = Object.values(TIME_GRAIN).map(
+    (timeGrain) => timeGrain.grain
+  );
   if (!timeGrainEnums.includes(minTimeGrain)) {
     return true;
   }

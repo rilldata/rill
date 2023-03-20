@@ -4,22 +4,22 @@
     useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time//config";
   import {
     checkValidTimeGrain,
     getDefaultTimeGrain,
     getTimeGrainOptions,
-    supportedTimeGrainEnums,
-  } from "@rilldata/web-common/features/dashboards/time-utils/time-grain";
+  } from "@rilldata/web-common/lib/time/time-grain";
   import {
     convertTimeRangePreset,
     ISODurationToTimePreset,
-  } from "@rilldata/web-common/features/dashboards/time-utils/time-range";
+  } from "@rilldata/web-common/lib/time/time-range";
   import type {
     DashboardTimeControls,
     TimeGrainOption,
     TimeRange,
     TimeRangeType,
-  } from "@rilldata/web-common/features/dashboards/time-utils/time-types";
+  } from "@rilldata/web-common/lib/time/types";
   import {
     useRuntimeServiceGetCatalogEntry,
     V1TimeGrain,
@@ -152,7 +152,9 @@
     );
     if (!isValidTimeGrain) {
       const defaultTimeGrain = getDefaultTimeGrain(start, end).grain;
-      const timeGrainEnums = supportedTimeGrainEnums();
+      const timeGrainEnums = Object.values(TIME_GRAIN).map(
+        (timeGrain) => timeGrain.grain
+      );
 
       const defaultGrainIndex = timeGrainEnums.indexOf(defaultTimeGrain);
       timeGrain = defaultTimeGrain;

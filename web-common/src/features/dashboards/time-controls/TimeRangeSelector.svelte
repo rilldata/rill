@@ -8,16 +8,16 @@
     DEFAULT_TIME_RANGES,
     LATEST_WINDOW_TIME_RANGES,
     PERIOD_TO_DATE_RANGES,
-  } from "@rilldata/web-common/features/dashboards/time-utils/config";
+  } from "@rilldata/web-common/lib/time/config";
   import {
     getChildTimeRanges,
     prettyFormatTimeRange,
-  } from "@rilldata/web-common/features/dashboards/time-utils/time-range";
+  } from "@rilldata/web-common/lib/time/time-range";
   import {
     TimeRange,
     TimeRangeOption,
     TimeRangePreset,
-  } from "@rilldata/web-common/features/dashboards/time-utils/time-types";
+  } from "@rilldata/web-common/lib/time/types";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import { Menu, MenuItem } from "../../../components/menu";

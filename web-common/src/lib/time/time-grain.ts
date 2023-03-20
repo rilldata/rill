@@ -2,7 +2,7 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { Duration } from "luxon";
 import { getTimeWidth } from "./anchors";
 import { TIME_GRAIN } from "./config";
-import { TimeGrain, TimeGrainOption } from "./time-types";
+import { TimeGrain, TimeGrainOption } from "./types";
 
 export function unitToTimeGrain(unit: string): V1TimeGrain {
   return (
@@ -13,14 +13,6 @@ export function unitToTimeGrain(unit: string): V1TimeGrain {
 
 export function durationToMillis(duration: string): number {
   return Duration.fromISO(duration).toMillis();
-}
-
-export function getTimeGrain(grain: V1TimeGrain): TimeGrain {
-  return TIME_GRAIN[grain];
-}
-
-export function supportedTimeGrainEnums(): V1TimeGrain[] {
-  return Object.values(TIME_GRAIN).map((timeGrain) => timeGrain.grain);
 }
 
 // FIXME: what is the difference between this and getAllowedTimeGrains?

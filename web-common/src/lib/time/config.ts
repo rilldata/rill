@@ -8,7 +8,7 @@ import {
   TimeOffsetType,
   TimeRangeMeta,
   TimeTruncationType,
-} from "./time-types";
+} from "./types";
 
 export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   LAST_SIX_HOURS: {

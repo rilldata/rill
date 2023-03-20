@@ -1,3 +1,4 @@
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   useQueryServiceColumnTimeRange,
   useRuntimeServiceGetCatalogEntry,
@@ -6,7 +7,6 @@ import {
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
-import { TimeRangePreset } from "./time-utils/time-types";
 
 export function useDashboardNames(repoId: string) {
   return useRuntimeServiceListFiles(

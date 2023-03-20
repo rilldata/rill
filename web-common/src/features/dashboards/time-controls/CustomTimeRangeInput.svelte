@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { getOffset } from "@rilldata/web-common/features/dashboards/time-utils/anchors";
+  import { getOffset } from "@rilldata/web-common/lib/time/anchors";
   import {
     getAllowedTimeGrains,
     isGrainBigger,
-  } from "@rilldata/web-common/features/dashboards/time-utils/time-grain";
+  } from "@rilldata/web-common/lib/time/time-grain";
   import {
     getDateFromISOString,
     getDateFromObject,
     getISOStringFromDate,
-  } from "@rilldata/web-common/features/dashboards/time-utils/time-range";
-  import { TimeOffsetType } from "@rilldata/web-common/features/dashboards/time-utils/time-types";
+  } from "@rilldata/web-common/lib/time/time-range";
+  import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { Button } from "../../../components/button";

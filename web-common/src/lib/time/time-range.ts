@@ -1,4 +1,4 @@
-import type { V1TimeGrain } from "../../../../runtime-client";
+import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
   getTimeWidth,
   isRangeInsideOther,
@@ -17,7 +17,7 @@ import {
   TimeRangeOption,
   TimeRangePreset,
   TimeRangeType,
-} from "./time-types";
+} from "./types";
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
 // FIXME: tests.

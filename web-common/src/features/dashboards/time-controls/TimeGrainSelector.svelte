@@ -2,9 +2,9 @@
   import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import WithSelectMenu from "@rilldata/web-common/components/menu/wrappers/WithSelectMenu.svelte";
-  import { TIME_GRAIN } from "@rilldata/web-common/features/dashboards/time-utils/config";
-  import { isGrainBigger } from "@rilldata/web-common/features/dashboards/time-utils/time-grain";
-  import type { TimeGrainOption } from "@rilldata/web-common/features/dashboards/time-utils/time-types";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import { isGrainBigger } from "@rilldata/web-common/lib/time/time-grain";
+  import type { TimeGrainOption } from "@rilldata/web-common/lib/time/types";
   import { createEventDispatcher } from "svelte";
   import type { V1TimeGrain } from "../../../runtime-client";
   import { useDashboardStore } from "../dashboard-stores";

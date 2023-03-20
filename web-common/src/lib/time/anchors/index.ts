@@ -1,5 +1,5 @@
 import { DateTime, Duration } from "luxon";
-import type { TimeRange } from "../time-types";
+import type { TimeRange } from "../types";
 import {
   Period,
   ReferencePoint,
@@ -8,7 +8,7 @@ import {
   TimeOffsetType,
   TimeTruncationType,
   TimeUnit,
-} from "../time-types";
+} from "../types";
 
 // reference timestamp method
 export function getPresentTime() {
