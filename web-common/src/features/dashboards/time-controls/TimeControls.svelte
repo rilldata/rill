@@ -75,11 +75,12 @@
       V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
   }
   $: allTimeRange = $allTimeRangeQuery?.data as TimeRange;
-  // once we have the allTimeRange, set the default time range and time grain
+  // Once we have the allTimeRange, set the default time range and time grain.
+  // This reactive statement feels a bit precarious!
   $: if (allTimeRange && $dashboardStore !== undefined) {
     if (!$dashboardStore?.selectedTimeRange) {
       setDefaultTimeControls(allTimeRange);
-    } else if (!$dashboardStore?.selectedTimeRange.start) {
+    } else {
       setTimeControlsFromUrl(allTimeRange);
     }
   }
@@ -100,11 +101,13 @@
   }
 
   function setTimeControlsFromUrl(allTimeRange: TimeRange) {
-    baseTimeRange = convertTimeRangePreset(
-      $dashboardStore?.selectedTimeRange.name,
-      allTimeRange.start,
-      allTimeRange.end
-    );
+    baseTimeRange =
+      convertTimeRangePreset(
+        $dashboardStore?.selectedTimeRange.name,
+        allTimeRange.start,
+        allTimeRange.end
+      ) || allTimeRange;
+
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
       $dashboardStore?.selectedTimeRange.interval
