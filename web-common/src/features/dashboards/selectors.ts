@@ -6,7 +6,7 @@ import {
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
-import { TimeRangePreset } from "./time-controls/utils/time-types";
+import { TimeRangePreset } from "./time-utils/time-types";
 
 export function useDashboardNames(repoId: string) {
   return useRuntimeServiceListFiles(

@@ -12,6 +12,9 @@
     NicelyFormattedTypes,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getOffset } from "@rilldata/web-common/features/dashboards/time-utils/anchors";
+  import { TIME_GRAIN } from "@rilldata/web-common/features/dashboards/time-utils/config";
+  import { TimeOffsetType } from "@rilldata/web-common/features/dashboards/time-utils/time-types";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import {
@@ -25,9 +28,6 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
-  import { getOffset } from "../time-controls/utils/anchors";
-  import { TIME_GRAIN } from "../time-controls/utils/config";
-  import { TimeOffsetType } from "../time-controls/utils/time-types";
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   export let metricViewName;

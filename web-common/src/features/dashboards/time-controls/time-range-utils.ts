@@ -4,14 +4,14 @@
  *
  * */
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import type { TimeRange } from "../time-utils/time-types";
 import {
   lastXTimeRangeNames,
   TimeRangeName_DEPRECATE,
 } from "./time-control-types";
-import { TimeRange } from "./utils/time-types";
 
-import { TIME_GRAIN } from "./utils/config";
-import { durationToMillis } from "./utils/time-grain";
+import { TIME_GRAIN } from "@rilldata/web-common/features/dashboards/time-utils/config";
+import { durationToMillis } from "../time-utils/time-grain";
 
 // May not need this anymore as using TimeGrain objects
 export const supportedTimeGrainEnums = () => {

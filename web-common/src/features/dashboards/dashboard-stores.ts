@@ -5,7 +5,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
 import { derived, Readable, Writable, writable } from "svelte/store";
-import type { DashboardTimeControls } from "./time-controls/utils/time-types";
+import type { DashboardTimeControls } from "./time-utils/time-types";
 
 export interface LeaderboardValue {
   value: number;

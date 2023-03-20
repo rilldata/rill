@@ -5,8 +5,8 @@ import {
   Value,
 } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-import type { DashboardTimeControls } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-types";
-import { TimeRangePreset } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-types";
+import type { DashboardTimeControls } from "@rilldata/web-common/features/dashboards/time-utils/time-types";
+import { TimeRangePreset } from "@rilldata/web-common/features/dashboards/time-utils/time-types";
 import {
   TimeGrain,
   TimeGrain as TimeGrainProto,

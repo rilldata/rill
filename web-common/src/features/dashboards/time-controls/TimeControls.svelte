@@ -5,6 +5,22 @@
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import {
+    checkValidTimeGrain,
+    getDefaultTimeGrain,
+    getTimeGrainOptions,
+    supportedTimeGrainEnums,
+  } from "@rilldata/web-common/features/dashboards/time-utils/time-grain";
+  import {
+    convertTimeRangePreset,
+    ISODurationToTimePreset,
+  } from "@rilldata/web-common/features/dashboards/time-utils/time-range";
+  import type {
+    DashboardTimeControls,
+    TimeGrainOption,
+    TimeRange,
+    TimeRangeType,
+  } from "@rilldata/web-common/features/dashboards/time-utils/time-types";
+  import {
     useRuntimeServiceGetCatalogEntry,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
@@ -15,22 +31,6 @@
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
-  import {
-    checkValidTimeGrain,
-    getDefaultTimeGrain,
-    getTimeGrainOptions,
-    supportedTimeGrainEnums,
-  } from "./utils/time-grain";
-  import {
-    convertTimeRangePreset,
-    ISODurationToTimePreset,
-  } from "./utils/time-range";
-  import type {
-    DashboardTimeControls,
-    TimeGrainOption,
-    TimeRange,
-    TimeRangeType,
-  } from "./utils/time-types";
 
   export let metricViewName: string;
 

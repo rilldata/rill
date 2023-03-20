@@ -1,9 +1,15 @@
 <script lang="ts">
+  import { getOffset } from "@rilldata/web-common/features/dashboards/time-utils/anchors";
+  import {
+    getAllowedTimeGrains,
+    isGrainBigger,
+  } from "@rilldata/web-common/features/dashboards/time-utils/time-grain";
   import {
     getDateFromISOString,
     getDateFromObject,
     getISOStringFromDate,
-  } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-range";
+  } from "@rilldata/web-common/features/dashboards/time-utils/time-range";
+  import { TimeOffsetType } from "@rilldata/web-common/features/dashboards/time-utils/time-types";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { Button } from "../../../components/button";
@@ -15,9 +21,6 @@
   } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useDashboardStore } from "../dashboard-stores";
-  import { getOffset } from "./utils/anchors";
-  import { getAllowedTimeGrains, isGrainBigger } from "./utils/time-grain";
-  import { TimeOffsetType } from "./utils/time-types";
 
   export let metricViewName: string;
   export let minTimeGrain: V1TimeGrain;

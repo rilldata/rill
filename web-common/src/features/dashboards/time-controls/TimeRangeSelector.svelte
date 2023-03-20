@@ -3,6 +3,21 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import {
+    ALL_TIME,
+    DEFAULT_TIME_RANGES,
+    LATEST_WINDOW_TIME_RANGES,
+    PERIOD_TO_DATE_RANGES,
+  } from "@rilldata/web-common/features/dashboards/time-utils/config";
+  import {
+    getChildTimeRanges,
+    prettyFormatTimeRange,
+  } from "@rilldata/web-common/features/dashboards/time-utils/time-range";
+  import {
+    TimeRange,
+    TimeRangeOption,
+    TimeRangePreset,
+  } from "@rilldata/web-common/features/dashboards/time-utils/time-types";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import { Menu, MenuItem } from "../../../components/menu";
@@ -12,21 +27,6 @@
   import { useDashboardStore } from "../dashboard-stores";
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
-  import {
-    ALL_TIME,
-    DEFAULT_TIME_RANGES,
-    LATEST_WINDOW_TIME_RANGES,
-    PERIOD_TO_DATE_RANGES,
-  } from "./utils/config";
-  import {
-    getChildTimeRanges,
-    prettyFormatTimeRange,
-  } from "./utils/time-range";
-  import {
-    TimeRange,
-    TimeRangeOption,
-    TimeRangePreset,
-  } from "./utils/time-types";
 
   export let metricViewName: string;
   export let allTimeRange: TimeRange;

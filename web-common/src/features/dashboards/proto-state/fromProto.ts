@@ -1,6 +1,6 @@
 import type { Timestamp } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-import type { DashboardTimeControls } from "@rilldata/web-common/features/dashboards/time-controls/utils/time-types";
+import type { DashboardTimeControls } from "@rilldata/web-common/features/dashboards/time-utils/time-types";
 import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/catalog_pb";
 import type { MetricsViewFilter_Cond } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 import {
