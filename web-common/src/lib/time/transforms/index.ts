@@ -1,20 +1,29 @@
-import { DateTime, Duration } from "luxon";
+/**
+ * Utility functions around transforming Date objects in ways
+ * that are useful to the Rill dashboard. The core function to use here is
+ * transformDate, which takes a reference time and a list of transformations
+ * to apply to that reference time. The transformations are applied in the order
+ * they appear in the list.
+ *
+ * We are opting to define transformations in a way that can be serialized
+ * in a configuration file.
+ */
 import {
-  Period,
   ReferencePoint,
   RelativePointInTime,
   RelativeTimeTransformation,
-  TimeOffsetType,
   TimeTruncationType,
-  TimeUnit,
 } from "../types";
 
-// reference timestamp method
+import { DateTime, Duration } from "luxon";
+import { Period, TimeOffsetType, TimeUnit } from "../types";
+
+/** Returns the current time. Might be deprecated later. */
 export function getPresentTime() {
   return new Date();
 }
 
-// Period anchor methods
+/** Returns the start of the period for the given reference time. */
 export function getStartOfPeriod(
   period: Period,
   referenceTime: Date,
@@ -24,6 +33,7 @@ export function getStartOfPeriod(
   return date.startOf(TimeUnit[period]).toJSDate();
 }
 
+/** Returns the end of the period that the reference time is in. */
 export function getEndOfPeriod(
   period: Period,
   referenceTime: Date,
@@ -33,7 +43,7 @@ export function getEndOfPeriod(
   return date.endOf(TimeUnit[period]).toJSDate();
 }
 
-// offset methods
+/** Offsets a date by a certain ISO duration amount. */
 export function getOffset(
   referenceTime: Date,
   duration: string,
@@ -46,28 +56,9 @@ export function getOffset(
     .toJSDate();
 }
 
-/**
- * @returns the width of the time range defined by start and end in milliseconds
- */
+/** The width of the time range defined by start and end in milliseconds */
 export function getTimeWidth(start: Date, end: Date) {
   return end.getTime() - start.getTime();
-}
-
-export function ISOToMilliseconds(duration: string) {
-  return Duration.fromISO(duration).as("milliseconds");
-}
-
-/**
- * Returns true if the range defined by start and end is completely
- * inside the range defined by otherStart and otherEnd.
- */
-export function isRangeInsideOther(
-  start: Date,
-  end: Date,
-  otherStart: Date,
-  otherEnd: Date
-) {
-  return start >= otherStart && end <= otherEnd;
 }
 
 /** Loops through all of the offset transformations and applies each of them
@@ -102,7 +93,7 @@ export function transformDate(
   return absoluteTime;
 }
 
-// Move to time-range as not pure?
+// FIXME: we might end up deprecating this function.
 export function relativePointInTimeToAbsolute(
   referenceTime: Date,
   start: string | RelativePointInTime,

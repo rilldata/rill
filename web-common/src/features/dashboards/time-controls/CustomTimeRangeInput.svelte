@@ -1,14 +1,9 @@
 <script lang="ts">
-  import { getOffset } from "@rilldata/web-common/lib/time/anchors";
   import {
     getAllowedTimeGrains,
     isGrainBigger,
   } from "@rilldata/web-common/lib/time/grains";
-  import {
-    getDateFromISOString,
-    getDateFromObject,
-    getISOStringFromDate,
-  } from "@rilldata/web-common/lib/time/time-range";
+  import { getOffset } from "@rilldata/web-common/lib/time/transforms";
   import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
@@ -41,6 +36,20 @@
         TimeOffsetType.SUBTRACT
       )
     );
+  }
+
+  // functions for extracting the right kind of date string out of
+  // a Date object. Used in the input elements.
+  export function getDateFromObject(date: Date): string {
+    return getDateFromISOString(date.toISOString());
+  }
+
+  export function getDateFromISOString(isoDate: string): string {
+    return isoDate.split("T")[0];
+  }
+
+  export function getISOStringFromDate(date: string): string {
+    return date + "T00:00:00.000Z";
   }
 
   function validateTimeRange(

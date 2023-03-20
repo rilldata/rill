@@ -1,15 +1,18 @@
+/**
+ * Utility functinos around handling time ranges.
+ *
+ * FIXME:
+ * - there's some legacy stuff that needs to get deprecated out of this.
+ * - we need tests for this.
+ */
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import {
-  getTimeWidth,
-  isRangeInsideOther,
-  relativePointInTimeToAbsolute,
-} from "./anchors";
-import { DEFAULT_TIME_RANGES } from "./config";
+import { DEFAULT_TIME_RANGES } from "../config";
 import {
   durationToMillis,
   getAllowedTimeGrains,
   isGrainBigger,
-} from "./grains";
+} from "../grains";
+import { getTimeWidth, relativePointInTimeToAbsolute } from "../transforms";
 import {
   RangePresetType,
   TimeRange,
@@ -17,10 +20,22 @@ import {
   TimeRangeOption,
   TimeRangePreset,
   TimeRangeType,
-} from "./types";
+} from "../types";
+
+/**
+ * Returns true if the range defined by start and end is completely
+ * inside the range defined by otherStart and otherEnd.
+ */
+export function isRangeInsideOther(
+  start: Date,
+  end: Date,
+  otherStart: Date,
+  otherEnd: Date
+) {
+  return start >= otherStart && end <= otherEnd;
+}
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
-// FIXME: tests.
 export function getChildTimeRanges(
   start: Date,
   end: Date,
@@ -93,10 +108,10 @@ export function getChildTimeRanges(
 
 // TODO: investigate whether we need this after we've removed the need
 // for the config's default_time_Range to be an ISO duration.
-export const ISODurationToTimePreset = (
+export function ISODurationToTimePreset(
   isoDuration: string,
   defaultToAllTime = true
-): TimeRangeType => {
+): TimeRangeType {
   switch (isoDuration) {
     case "PT6H":
       return TimeRangePreset.LAST_SIX_HOURS;
@@ -111,7 +126,7 @@ export const ISODurationToTimePreset = (
     default:
       return defaultToAllTime ? TimeRangePreset.ALL_TIME : undefined;
   }
-};
+}
 
 /* Converts a Time Range preset to a TimeRange object */
 export function convertTimeRangePreset(
@@ -141,6 +156,11 @@ export function convertTimeRangePreset(
   };
 }
 
+/**
+ * Formats a start and end for usage in the application.
+ * NOTE: this is primarily used for the time range picker. We might want to
+ * colocate the code w/ the component.
+ */
 export const prettyFormatTimeRange = (start: Date, end: Date): string => {
   if (!start && end) {
     return `- ${end}`;
@@ -239,16 +259,3 @@ export const prettyFormatTimeRange = (start: Date, end: Date): string => {
     dateFormatOptions
   )} - ${end.toLocaleDateString(undefined, dateFormatOptions)}`;
 };
-
-// Extracts just the date part (yy-mm-dd) from the entire date
-export function getDateFromObject(date: Date): string {
-  return getDateFromISOString(date.toISOString());
-}
-
-export function getDateFromISOString(isoDate: string): string {
-  return isoDate.split("T")[0];
-}
-
-export function getISOStringFromDate(date: string): string {
-  return date + "T00:00:00.000Z";
-}

@@ -14,8 +14,8 @@
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
-  import { getOffset } from "@rilldata/web-common/lib/time/anchors";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import { getOffset } from "@rilldata/web-common/lib/time/transforms";
   import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import {
     useQueryServiceMetricsViewTimeSeries,

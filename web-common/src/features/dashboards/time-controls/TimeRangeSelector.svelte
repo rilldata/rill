@@ -12,7 +12,7 @@
   import {
     getChildTimeRanges,
     prettyFormatTimeRange,
-  } from "@rilldata/web-common/lib/time/time-range";
+  } from "@rilldata/web-common/lib/time/ranges";
   import {
     TimeRange,
     TimeRangeOption,
