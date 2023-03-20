@@ -1,4 +1,5 @@
-import { Period, TIME, TimeOffsetType } from "../time-types";
+import { durationToMillis } from "../time-grain";
+import { Period, TimeOffsetType } from "../types";
 import { getEndOfPeriod, getOffset, getStartOfPeriod, getTimeWidth } from "./";
 
 describe("getStartOfPeriod", () => {
@@ -49,6 +50,6 @@ describe("getTimeWidth", () => {
       new Date("2020-03-15"),
       new Date("2020-04-01")
     );
-    expect(timeGrain).toEqual(17 * TIME.DAY);
+    expect(timeGrain).toEqual(durationToMillis("P1D") * 17);
   });
 });

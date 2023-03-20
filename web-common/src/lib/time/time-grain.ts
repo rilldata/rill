@@ -1,8 +1,13 @@
+/** Utility functions for using time grains within a Rill dashboard.
+ * Most of these functions utilize the TIME_GRAIN object defined in config.ts
+ * to generate either a subset of time grains or a single time grain.
+ */
+
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { Duration } from "luxon";
 import { getTimeWidth } from "./anchors";
 import { TIME_GRAIN } from "./config";
-import { TimeGrain, TimeGrainOption } from "./types";
+import type { TimeGrain, TimeGrainOption } from "./types";
 
 export function unitToTimeGrain(unit: string): V1TimeGrain {
   return (
@@ -17,6 +22,7 @@ export function durationToMillis(duration: string): number {
 
 // FIXME: what is the difference between this and getAllowedTimeGrains?
 // It appears that we're using this instead of getAllowedTimeGrains.
+// I think we should deprecate this.
 export function getTimeGrainOptions(start: Date, end: Date): TimeGrainOption[] {
   const timeGrains: TimeGrainOption[] = [];
   const timeRangeDurationMs = getTimeWidth(start, end);
@@ -38,10 +44,9 @@ export function getTimeGrainOptions(start: Date, end: Date): TimeGrainOption[] {
   return timeGrains;
 }
 
-// Get the default grain for a given time range
+// Get the default grain for a given time range.
 export function getDefaultTimeGrain(start: Date, end: Date): TimeGrain {
   const timeRangeDurationMs = end.getTime() - start.getTime();
-
   if (
     timeRangeDurationMs <
     2 * durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration)
@@ -67,7 +72,9 @@ export function getDefaultTimeGrain(start: Date, end: Date): TimeGrain {
   }
 }
 
-// Return time grains that are allowed for a given time range
+// Return time grains that are allowed for a given time range. Note that
+// this function is similar to getTimeGrainOptions. We should deprecate getTimeGrainOptions
+// in favor of this logic.
 export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
   const timeRangeDurationMs = getTimeWidth(start, end);
   if (
@@ -125,11 +132,11 @@ export function isGrainBigger(
   possiblyBiggerGrain: V1TimeGrain,
   possiblySmallerGrain: V1TimeGrain
 ): boolean {
-  const minGrain = TIME_GRAIN[possiblyBiggerGrain];
-  const comparingGrain = TIME_GRAIN[possiblySmallerGrain];
+  const biggerGrainConfig = TIME_GRAIN[possiblyBiggerGrain];
+  const smallerGrainConfig = TIME_GRAIN[possiblySmallerGrain];
   return (
-    durationToMillis(minGrain?.duration) >
-    durationToMillis(comparingGrain.duration)
+    durationToMillis(biggerGrainConfig?.duration) >
+    durationToMillis(smallerGrainConfig.duration)
   );
 }
 

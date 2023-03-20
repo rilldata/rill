@@ -1,5 +1,7 @@
 /**
  * This module defines configured presets for time ranges & time grains.
+ * We define them as JSON objects primarily users will eventually be able to
+ * manually define these in the dashboard configuration.
  */
 
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -14,6 +16,17 @@ import {
   TimeTruncationType,
 } from "./types";
 
+/**
+ * The "latest" window time ranges are defined as a set of time ranges that are
+ * anchored to the latest data point in the dataset with a conceptually-fixed
+ * lookback window. For example, the "Last 6 Hours" time range is anchored to
+ * the latest data point in the dataset, and then looks back 6 hours from that
+ * point.
+ *
+ * This description is not 100% accurate, of course, since the latest data point
+ * may be during an incomplete period. For now, we are truncating to a reasonable
+ * periodicity (e.g. to the start of the hour) and then applying the offset.
+ */
 export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   LAST_SIX_HOURS: {
     label: "Last 6 Hours",
@@ -137,6 +150,16 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   },
 };
 
+/**
+ * The "period to date" time ranges are defined as a set of time ranges that are
+ * anchored to the latest data point in the dataset, with a start datetime
+ * that's anchored to the beginning of the period that the latest data point is in.
+ * For example, the "Today" time range is anchored to the latest data point in
+ * the dataset, and then looks back to the start of that day.
+ *
+ * Like the latest window ranges, wetruncate the latest data point datetime to the
+ * start of a reasonable period for now.
+ */
 export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   TODAY: {
     label: "Today",
@@ -252,14 +275,11 @@ export const TEMPORARY_DEFAULT_RANGE_TO_DURATIONS = {
   TODAY: "P1D",
 };
 
-export const DEFAULT_TIME_RANGE_PRESETS = Object.keys(
-  DEFAULT_TIME_RANGES
-).reduce((acc, key) => {
-  acc[key] = key;
-  return acc;
-}, {} as Record<string, string>);
-
-/** Configuration for the admissible set of time grains. See the TimeGrain interface for more information about values. */
+/**
+ * A time grain is a unit of time that is used to group data points,
+ * e.g. "hour" or "day". The time grain is used to aggregate records
+ * for the purposes of time series visualization and analysis.
+ */
 export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
   TIME_GRAIN_MINUTE: {
     grain: V1TimeGrain.TIME_GRAIN_MINUTE,
