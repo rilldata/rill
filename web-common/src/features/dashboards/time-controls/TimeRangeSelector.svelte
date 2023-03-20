@@ -17,7 +17,7 @@
     DEFAULT_TIME_RANGES,
     LATEST_WINDOW_TIME_RANGES,
     PERIOD_TO_DATE_RANGES,
-  } from "./utils/defaults";
+  } from "./utils/config";
   import {
     getChildTimeRanges,
     prettyFormatTimeRange,

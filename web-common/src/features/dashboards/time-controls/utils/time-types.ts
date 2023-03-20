@@ -1,6 +1,6 @@
 import type { DateTimeUnit } from "luxon";
 import { V1TimeGrain } from "../../../../runtime-client";
-import type { DEFAULT_TIME_RANGES } from "./defaults";
+import type { DEFAULT_TIME_RANGES } from "./config";
 
 // Used for luxon's time units
 export enum TimeUnit {

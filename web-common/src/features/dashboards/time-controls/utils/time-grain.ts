@@ -1,7 +1,7 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { Duration } from "luxon";
 import { getTimeWidth } from "./anchors";
-import { TIME_GRAIN } from "./defaults";
+import { TIME_GRAIN } from "./config";
 import { TimeGrain, TimeGrainOption } from "./time-types";
 
 export function unitToTimeGrain(unit: string): V1TimeGrain {

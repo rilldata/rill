@@ -5,7 +5,7 @@
   import { createEventDispatcher } from "svelte";
   import type { V1TimeGrain } from "../../../runtime-client";
   import { useDashboardStore } from "../dashboard-stores";
-  import { TIME_GRAIN } from "./utils/defaults";
+  import { TIME_GRAIN } from "./utils/config";
   import { isGrainBigger } from "./utils/time-grain";
   import type { TimeGrainOption } from "./utils/time-types";
 

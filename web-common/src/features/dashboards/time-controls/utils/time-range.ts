@@ -4,7 +4,7 @@ import {
   isRangeInsideOther,
   relativePointInTimeToAbsolute,
 } from "./anchors";
-import { DEFAULT_TIME_RANGES } from "./defaults";
+import { DEFAULT_TIME_RANGES } from "./config";
 import {
   durationToMillis,
   getAllowedTimeGrains,
