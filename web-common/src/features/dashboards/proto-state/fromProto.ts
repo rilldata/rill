@@ -12,13 +12,17 @@ import {
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
-export function fromUrl(url: URL): Partial<MetricsExplorerEntity> {
+export function getDashboardStateFromUrl(
+  url: URL
+): Partial<MetricsExplorerEntity> {
   const state = url.searchParams.get("state");
   if (!state) return undefined;
-  return fromProto(base64ToProto(decodeURIComponent(state)));
+  return getDashboardStateFromProto(base64ToProto(decodeURIComponent(state)));
 }
 
-export function fromProto(binary: Uint8Array): Partial<MetricsExplorerEntity> {
+export function getDashboardStateFromProto(
+  binary: Uint8Array
+): Partial<MetricsExplorerEntity> {
   const dashboard = DashboardState.fromBinary(binary);
   const entity: Partial<MetricsExplorerEntity> = {
     filters: {
