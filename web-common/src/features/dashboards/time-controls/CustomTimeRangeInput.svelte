@@ -1,6 +1,5 @@
 <script lang="ts">
   import {
-    exclusiveToInclusiveEndISOString,
     getDateFromISOString,
     getDateFromObject,
     getISOStringFromDate,
@@ -16,12 +15,12 @@
   } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useDashboardStore } from "../dashboard-stores";
+  import { getOffset } from "./utils/anchors";
   import { getAllowedTimeGrains, isGrainBigger } from "./utils/time-grain";
-  import type { TimeRange } from "./utils/time-types";
+  import { TimeOffsetType } from "./utils/time-types";
 
   export let metricViewName: string;
   export let minTimeGrain: V1TimeGrain;
-  export let allTimeRange: TimeRange;
 
   const dispatch = createEventDispatcher();
 
@@ -32,8 +31,12 @@
 
   $: if (!start && !end && $dashboardStore?.selectedTimeRange.start) {
     start = getDateFromObject($dashboardStore.selectedTimeRange.start);
-    end = exclusiveToInclusiveEndISOString(
-      $dashboardStore.selectedTimeRange.end
+    end = getDateFromObject(
+      getOffset(
+        new Date($dashboardStore.selectedTimeRange.end),
+        "P1D",
+        TimeOffsetType.SUBTRACT
+      )
     );
   }
 

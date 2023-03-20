@@ -30,7 +30,10 @@ We should rename TimeSeriesTimeRange to a better name.
     getTimeGrainOptions,
     supportedTimeGrainEnums,
   } from "./utils/time-grain";
-  import { ISODurationToTimePreset, makeTimeRange } from "./utils/time-range";
+  import {
+    convertTimeRangePreset,
+    ISODurationToTimePreset,
+  } from "./utils/time-range";
   import type {
     DashboardTimeControls,
     TimeGrainOption,
@@ -92,8 +95,11 @@ We should rename TimeSeriesTimeRange to a better name.
 
   function setDefaultTimeControls(allTimeRange: DashboardTimeControls) {
     baseTimeRange =
-      makeTimeRange(defaultTimeRange, allTimeRange.start, allTimeRange.end) ||
-      allTimeRange;
+      convertTimeRangePreset(
+        defaultTimeRange,
+        allTimeRange.start,
+        allTimeRange.end
+      ) || allTimeRange;
 
     const timeGrain = getDefaultTimeGrain(
       baseTimeRange.start,
@@ -103,7 +109,7 @@ We should rename TimeSeriesTimeRange to a better name.
   }
 
   function setTimeControlsFromUrl(allTimeRange: TimeRange) {
-    baseTimeRange = makeTimeRange(
+    baseTimeRange = convertTimeRangePreset(
       $dashboardStore?.selectedTimeRange.name,
       allTimeRange.start,
       allTimeRange.end
@@ -117,6 +123,7 @@ We should rename TimeSeriesTimeRange to a better name.
   // we get the timeGrainOptions so that we can assess whether or not the
   // activeTimeGrain is valid whenever the baseTimeRange changes
   let timeGrainOptions: TimeGrainOption[];
+  // FIXME: we should be deprecating this getTimeGrainOptions in favor of getAllowedTimeGrains.
   $: timeGrainOptions = getTimeGrainOptions(
     new Date($dashboardStore?.selectedTimeRange?.start),
     new Date($dashboardStore?.selectedTimeRange?.end)

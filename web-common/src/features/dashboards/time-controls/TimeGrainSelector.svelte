@@ -5,10 +5,7 @@
   import { createEventDispatcher } from "svelte";
   import type { V1TimeGrain } from "../../../runtime-client";
   import { useDashboardStore } from "../dashboard-stores";
-  import {
-    getTimeGrainFromRuntimeGrain,
-    isGrainBigger,
-  } from "./utils/time-grain";
+  import { isGrainBigger, TIME_GRAIN } from "./utils/time-grain";
   import type { TimeGrainOption } from "./utils/time-types";
 
   export let metricViewName: string;
@@ -21,8 +18,7 @@
   $: dashboardStore = useDashboardStore(metricViewName);
   $: activeTimeGrain = $dashboardStore?.selectedTimeRange?.interval;
 
-  $: activeTimeGrainPretty =
-    getTimeGrainFromRuntimeGrain(activeTimeGrain)?.label;
+  $: activeTimeGrainLabel = TIME_GRAIN[activeTimeGrain].label;
 
   $: timeGrains = timeGrainOptions
     ? timeGrainOptions
@@ -51,7 +47,7 @@
     distance={8}
     options={timeGrains}
     selection={{
-      main: activeTimeGrainPretty,
+      main: activeTimeGrainLabel,
       key: activeTimeGrain,
     }}
     on:select={(event) => onTimeGrainSelect(event.detail.key)}
@@ -64,7 +60,7 @@
       on:click={toggleMenu}
     >
       <div>
-        Metric trends by <span class="font-bold">{activeTimeGrainPretty}</span>
+        Metric trends by <span class="font-bold">{activeTimeGrainLabel}</span>
       </div>
       <IconSpaceFixer pullRight>
         <div class="transition-transform" class:-rotate-180={active}>

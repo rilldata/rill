@@ -14,7 +14,6 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_MINUTE,
     label: "minute",
     duration: Period.MINUTE,
-    width: Duration.fromISO(Period.MINUTE).toMillis(),
     formatDate: {
       year: "numeric",
       month: "short",
@@ -27,7 +26,6 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_HOUR,
     label: "hour",
     duration: Period.HOUR,
-    width: Duration.fromISO(Period.HOUR).toMillis(),
     formatDate: {
       year: "numeric",
       month: "short",
@@ -39,7 +37,6 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_DAY,
     label: "day",
     duration: Period.DAY,
-    width: Duration.fromISO(Period.DAY).toMillis(),
     formatDate: {
       year: "numeric",
       month: "short",
@@ -50,7 +47,6 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_WEEK,
     label: "week",
     duration: Period.WEEK,
-    width: Duration.fromISO(Period.WEEK).toMillis(),
     formatDate: {
       year: "numeric",
       month: "short",
@@ -62,7 +58,6 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     label: "month",
     duration: Period.MONTH,
     // note: this will not always be accurate.
-    width: Duration.fromISO("P1M").toMillis(),
     formatDate: {
       year: "numeric",
       month: "short",
@@ -72,7 +67,6 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_YEAR,
     label: "year",
     duration: Period.YEAR,
-    width: Duration.fromISO("P1Y").toMillis(),
     formatDate: {
       year: "numeric",
     },
@@ -91,6 +85,8 @@ export function supportedTimeGrainEnums(): V1TimeGrain[] {
   return Object.values(TIME_GRAIN).map((timeGrain) => timeGrain.grain);
 }
 
+// FIXME: what is the difference between this and getAllowedTimeGrains?
+// It appears that we're using this instead of getAllowedTimeGrains.
 export function getTimeGrainOptions(start: Date, end: Date): TimeGrainOption[] {
   const timeGrains: TimeGrainOption[] = [];
   const timeRangeDurationMs = getTimeWidth(start, end);
@@ -205,16 +201,6 @@ export function isGrainBigger(
     durationToMillis(minGrain?.duration) >
     durationToMillis(comparingGrain.duration)
   );
-}
-
-export function getTimeGrainFromRuntimeGrain(grain: V1TimeGrain): TimeGrain {
-  for (const timeGrain of Object.values(TIME_GRAIN)) {
-    if (timeGrain.grain === grain) {
-      return timeGrain;
-    }
-  }
-  // Do nothing when grain is not found
-  return undefined;
 }
 
 //TODO: Simplify use of this method

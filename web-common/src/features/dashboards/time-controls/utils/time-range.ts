@@ -8,7 +8,6 @@ import { DEFAULT_TIME_RANGES } from "./defaults";
 import {
   durationToMillis,
   getAllowedTimeGrains,
-  getTimeGrainFromRuntimeGrain,
   isGrainBigger,
 } from "./time-grain";
 import {
@@ -115,7 +114,7 @@ export const ISODurationToTimePreset = (
 };
 
 /* Converts a Time Range preset to a TimeRange object */
-export function makeTimeRange(
+export function convertTimeRangePreset(
   timeRangePreset: TimeRangeType,
   start: Date,
   end: Date
@@ -140,20 +139,6 @@ export function makeTimeRange(
     start: timeRangeDates.startDate,
     end: timeRangeDates.endDate,
   };
-}
-
-export function isTimeRangeValidForMinTimeGrain(
-  start: Date,
-  end: Date,
-  minTimeGrain: V1TimeGrain
-): boolean {
-  const timeGrain = getTimeGrainFromRuntimeGrain(minTimeGrain);
-  if (!timeGrain) return true;
-  if (!start || !end) return true;
-
-  const allowedTimeGrains = getAllowedTimeGrains(start, end);
-  const maxAllowedTimeGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
-  return !isGrainBigger(minTimeGrain, maxAllowedTimeGrain.grain);
 }
 
 export const prettyFormatTimeRange = (start: Date, end: Date): string => {
@@ -254,12 +239,6 @@ export const prettyFormatTimeRange = (start: Date, end: Date): string => {
     dateFormatOptions
   )} - ${end.toLocaleDateString(undefined, dateFormatOptions)}`;
 };
-
-export function exclusiveToInclusiveEndISOString(exclusiveEnd: Date): string {
-  const date = new Date(exclusiveEnd);
-  date.setDate(date.getDate() - 1);
-  return getDateFromObject(date);
-}
 
 // Extracts just the date part (yy-mm-dd) from the entire date
 export function getDateFromObject(date: Date): string {

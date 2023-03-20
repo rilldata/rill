@@ -203,7 +203,7 @@ export interface TimeGrain {
   /** the grain defined by the runtime */
   grain: V1TimeGrain;
   /** a human-readable name, e.g. minute, second, etc. */
-  label: DateTimeUnit;
+  label: DateTimeUnit | string;
   /** the ISO8601 duration, e.g. P1D, PT6H */
   duration: Period;
   /** the DateTimeFormatOptions of the Intl API that outputs
