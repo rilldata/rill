@@ -28,55 +28,7 @@ export enum Period {
   YEAR = "P1Y",
 }
 
-/**
- * These triplets define (1) the runtime enum for a time grain, (2) the corresponding ISO duration, and
- * (3) the corresponding "time unit" used elsewhere (e.g. minute, day, week). Ideally we remove the need for this
- * in favor of a single runtime-defined time grain, and that matches "minute", "day", "week", etc.
- */
-export const TimeGrainTriplets = [
-  {
-    timeGrain: V1TimeGrain.TIME_GRAIN_MINUTE,
-    duration: Period.MINUTE,
-    timeGrainUnit: TimeUnit.PT1M,
-  },
-  {
-    timeGrain: V1TimeGrain.TIME_GRAIN_HOUR,
-    duration: Period.HOUR,
-    timeGrainUnit: TimeUnit.PT1H,
-  },
-  {
-    timeGrain: V1TimeGrain.TIME_GRAIN_DAY,
-    duration: Period.DAY,
-    timeGrainUnit: TimeUnit.P1D,
-  },
-  {
-    timeGrain: V1TimeGrain.TIME_GRAIN_WEEK,
-    duration: Period.WEEK,
-    timeGrainUnit: TimeUnit.P1W,
-  },
-  {
-    timeGrain: V1TimeGrain.TIME_GRAIN_MONTH,
-    duration: Period.MONTH,
-    timeGrainUnit: TimeUnit.P1M,
-  },
-  {
-    timeGrain: V1TimeGrain.TIME_GRAIN_YEAR,
-    duration: Period.YEAR,
-    timeGrainUnit: TimeUnit.P1Y,
-  },
-];
-
-export const grainToDuration = (grain: V1TimeGrain) => {
-  const triplet = TimeGrainTriplets.find((t) => t.timeGrain === grain);
-  return triplet?.duration;
-};
-
-export const unitToGrain = (unit: TimeUnit) => {
-  const triplet = TimeGrainTriplets.find((t) => t.timeGrainUnit === unit);
-  return triplet?.timeGrain || V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
-};
-
-export enum RangePreset {
+export enum RangePresetType {
   PERIOD_ANCHORED = "PERIOD_ANCHORED",
   OFFSET_ANCHORED = "OFFSET_ANCHORED",
   ALL_TIME = "ALL_TIME",
@@ -154,7 +106,7 @@ export interface RelativePointInTime {
 export interface TimeRangeMeta {
   label: string;
   defaultGrain?: V1TimeGrain; // Affordance for future use
-  rangePreset?: RangePreset | string;
+  rangePreset?: RangePresetType | string;
   start?: string | RelativePointInTime;
   end?: string | RelativePointInTime;
 }
@@ -163,7 +115,6 @@ export interface TimeRangeMeta {
 // are settable within a config.
 export type TimeRangeType = keyof typeof DEFAULT_TIME_RANGES;
 
-// HAMILTON: I left off here. Get TimeRangePreset to just use the DEFAULT_TIME_RANGES keys.
 // FIXME: this is confusing. Why do we have RangePreset and TimeRangePreset?
 // And why do we need to define this explicitly?
 export const TimeRangePreset: { [K in TimeRangeType]: K } = {
@@ -178,10 +129,6 @@ export const TimeRangePreset: { [K in TimeRangeType]: K } = {
   MONTH_TO_DATE: "MONTH_TO_DATE",
   YEAR_TO_DATE: "YEAR_TO_DATE",
   CUSTOM: "CUSTOM",
-  // ...Object.keys(DEFAULT_TIME_RANGES).reduce((obj, key) => {
-  //   obj[key] = key;
-  //   return obj;
-  // }, {}),
 };
 
 export interface TimeRange {

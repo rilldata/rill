@@ -73,6 +73,13 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
   },
 };
 
+export function unitToTimeGrain(unit: string): V1TimeGrain {
+  return (
+    Object.values(TIME_GRAIN).find((timeGrain) => timeGrain.label === unit)
+      ?.grain || V1TimeGrain.TIME_GRAIN_UNSPECIFIED
+  );
+}
+
 export function durationToMillis(duration: string): number {
   return Duration.fromISO(duration).toMillis();
 }

@@ -27,10 +27,7 @@
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import { getOffset } from "../time-controls/utils/anchors";
   import { TIME_GRAIN } from "../time-controls/utils/time-grain";
-  import {
-    grainToDuration,
-    TimeOffsetType,
-  } from "../time-controls/utils/time-types";
+  import { TimeOffsetType } from "../time-controls/utils/time-types";
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   export let metricViewName;
@@ -129,19 +126,11 @@
     // Since values are grouped with DATE_TRUNC, we subtract one grain to get the (inclusive) axis end.
     endValue = new Date(metricsExplorer?.selectedTimeRange?.end);
 
-    // endValue = addGrains(
-    //   endValue,
-    //   -1,
-    //   metricsExplorer?.selectedTimeRange?.interval
-    // );
-
     endValue = getOffset(
       new Date(metricsExplorer?.selectedTimeRange?.end),
-      grainToDuration(metricsExplorer?.selectedTimeRange?.interval),
+      TIME_GRAIN[metricsExplorer?.selectedTimeRange?.interval].duration,
       TimeOffsetType.SUBTRACT
     );
-
-    // requires V1TimeGrain to ISO duration
 
     endValue = removeTimezoneOffset(endValue);
   }

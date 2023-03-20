@@ -11,7 +11,7 @@ import {
   isGrainBigger,
 } from "./time-grain";
 import {
-  RangePreset,
+  RangePresetType,
   TimeRange,
   TimeRangeMeta,
   TimeRangeOption,
@@ -33,7 +33,7 @@ export function getChildTimeRanges(
   const allowedMaxGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
   for (const timePreset in ranges) {
     const timeRange = ranges[timePreset];
-    if (timeRange.rangePreset == RangePreset.ALL_TIME) {
+    if (timeRange.rangePreset == RangePresetType.ALL_TIME) {
       // All time is always an option
       timeRanges.push({
         name: timePreset,

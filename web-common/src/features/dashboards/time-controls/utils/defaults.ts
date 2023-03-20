@@ -1,6 +1,6 @@
 import {
   Period,
-  RangePreset,
+  RangePresetType,
   ReferencePoint,
   TimeOffsetType,
   TimeRangeMeta,
@@ -10,7 +10,7 @@ import {
 export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   LAST_SIX_HOURS: {
     label: "Last 6 Hours",
-    rangePreset: RangePreset.OFFSET_ANCHORED,
+    rangePreset: RangePresetType.OFFSET_ANCHORED,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -37,7 +37,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
 
   LAST_24_HOURS: {
     label: "Last 24 Hours",
-    rangePreset: RangePreset.OFFSET_ANCHORED,
+    rangePreset: RangePresetType.OFFSET_ANCHORED,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -61,7 +61,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
 
   LAST_7_DAYS: {
     label: "Last 7 Days",
-    rangePreset: RangePreset.OFFSET_ANCHORED,
+    rangePreset: RangePresetType.OFFSET_ANCHORED,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -84,7 +84,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   },
   LAST_4_WEEKS: {
     label: "Last 4 Weeks",
-    rangePreset: RangePreset.OFFSET_ANCHORED,
+    rangePreset: RangePresetType.OFFSET_ANCHORED,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -107,7 +107,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   },
   LAST_YEAR: {
     label: "Last Year",
-    rangePreset: RangePreset.OFFSET_ANCHORED,
+    rangePreset: RangePresetType.OFFSET_ANCHORED,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -133,7 +133,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
 export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   TODAY: {
     label: "Today",
-    rangePreset: RangePreset.PERIOD_ANCHORED,
+    rangePreset: RangePresetType.PERIOD_ANCHORED,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -155,7 +155,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   },
   WEEK_TO_DATE: {
     label: "Week to Date",
-    rangePreset: RangePreset.PERIOD_ANCHORED,
+    rangePreset: RangePresetType.PERIOD_ANCHORED,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -177,7 +177,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   },
   MONTH_TO_DATE: {
     label: "Month to Date",
-    rangePreset: RangePreset.PERIOD_ANCHORED,
+    rangePreset: RangePresetType.PERIOD_ANCHORED,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -199,7 +199,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   },
   YEAR_TO_DATE: {
     label: "Year to Date",
-    rangePreset: RangePreset.PERIOD_ANCHORED,
+    rangePreset: RangePresetType.PERIOD_ANCHORED,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -223,7 +223,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
 
 export const ALL_TIME = {
   label: "All Time",
-  rangePreset: RangePreset.ALL_TIME,
+  rangePreset: RangePresetType.ALL_TIME,
 };
 
 export const DEFAULT_TIME_RANGES: Record<string, TimeRangeMeta> = {
