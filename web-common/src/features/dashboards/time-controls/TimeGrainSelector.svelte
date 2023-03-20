@@ -13,12 +13,10 @@
   export let minTimeGrain: V1TimeGrain;
 
   const dispatch = createEventDispatcher();
-  const EVENT_NAME = "select-time-grain";
 
   $: dashboardStore = useDashboardStore(metricViewName);
   $: activeTimeGrain = $dashboardStore?.selectedTimeRange?.interval;
-
-  $: activeTimeGrainLabel = TIME_GRAIN[activeTimeGrain].label;
+  $: activeTimeGrainLabel = TIME_GRAIN[activeTimeGrain]?.label;
 
   $: timeGrains = timeGrainOptions
     ? timeGrainOptions
@@ -35,7 +33,7 @@
     : undefined;
 
   const onTimeGrainSelect = (timeGrain: V1TimeGrain) => {
-    dispatch(EVENT_NAME, { timeGrain });
+    dispatch("select-time-grain", { timeGrain });
   };
 </script>
 
