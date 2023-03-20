@@ -2,31 +2,6 @@ import type { DateTimeUnit } from "luxon";
 import { V1TimeGrain } from "../../../../runtime-client";
 import type { DEFAULT_TIME_RANGES } from "./defaults";
 
-export const TIME = {
-  MILLISECOND: 1,
-  get SECOND() {
-    return 1000 * this.MILLISECOND;
-  },
-  get MINUTE() {
-    return 60 * this.SECOND;
-  },
-  get HOUR() {
-    return 60 * this.MINUTE;
-  },
-  get DAY() {
-    return 24 * this.HOUR;
-  },
-  get WEEK() {
-    return 7 * this.DAY;
-  },
-  get MONTH() {
-    return 30 * this.DAY;
-  },
-  get YEAR() {
-    return 365 * this.DAY;
-  },
-};
-
 // Used for luxon's time units
 export enum TimeUnit {
   PT1M = "minute",
@@ -225,12 +200,20 @@ export interface DashboardTimeControls extends TimeRange {
 }
 
 export interface TimeGrain {
+  /** the grain defined by the runtime */
   grain: V1TimeGrain;
+  /** a human-readable name, e.g. minute, second, etc. */
   label: DateTimeUnit;
+  /** the ISO8601 duration, e.g. P1D, PT6H */
   duration: Period;
-  width: number;
+  /** the DateTimeFormatOptions of the Intl API that outputs
+   * a human-readable representation of a timestamp based on
+   * the time grain. This preserves locale-based formatting.
+   */
+  formatDate: Intl.DateTimeFormatOptions;
 }
 
+// FIXME: is this needed?
 export interface TimeGrainOption extends TimeGrain {
   enabled: boolean;
 }

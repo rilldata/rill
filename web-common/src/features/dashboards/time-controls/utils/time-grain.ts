@@ -1,45 +1,91 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { Duration } from "luxon";
 import { getTimeWidth } from "./anchors";
-import { Period, TIME, TimeGrain, TimeGrainOption } from "./time-types";
+import { Period, TimeGrain, TimeGrainOption } from "./time-types";
 
-export const TIME_GRAIN: Record<string, TimeGrain> = {
-  MINUTE: {
+export type AvailableTimeGrain = Exclude<
+  V1TimeGrain,
+  "TIME_GRAIN_UNSPECIFIED" | "TIME_GRAIN_MILLISECOND" | "TIME_GRAIN_SECOND"
+>;
+
+// HAMILTON: make this the only source of truth for all time grain related functionality.
+export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
+  TIME_GRAIN_MINUTE: {
     grain: V1TimeGrain.TIME_GRAIN_MINUTE,
     label: "minute",
     duration: Period.MINUTE,
-    width: TIME.MINUTE,
+    width: Duration.fromISO(Period.MINUTE).toMillis(),
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    },
   },
-  HOUR: {
+  TIME_GRAIN_HOUR: {
     grain: V1TimeGrain.TIME_GRAIN_HOUR,
     label: "hour",
     duration: Period.HOUR,
-    width: TIME.HOUR,
+    width: Duration.fromISO(Period.HOUR).toMillis(),
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+    },
   },
-  DAY: {
+  TIME_GRAIN_DAY: {
     grain: V1TimeGrain.TIME_GRAIN_DAY,
     label: "day",
     duration: Period.DAY,
-    width: TIME.DAY,
+    width: Duration.fromISO(Period.DAY).toMillis(),
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    },
   },
-  WEEK: {
+  TIME_GRAIN_WEEK: {
     grain: V1TimeGrain.TIME_GRAIN_WEEK,
     label: "week",
     duration: Period.WEEK,
-    width: TIME.WEEK,
+    width: Duration.fromISO(Period.WEEK).toMillis(),
+    formatDate: {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    },
   },
-  MONTH: {
+  TIME_GRAIN_MONTH: {
     grain: V1TimeGrain.TIME_GRAIN_MONTH,
     label: "month",
     duration: Period.MONTH,
-    width: TIME.MONTH,
+    // note: this will not always be accurate.
+    width: Duration.fromISO("P1M").toMillis(),
+    formatDate: {
+      year: "numeric",
+      month: "short",
+    },
   },
-  YEAR: {
+  TIME_GRAIN_YEAR: {
     grain: V1TimeGrain.TIME_GRAIN_YEAR,
     label: "year",
     duration: Period.YEAR,
-    width: TIME.YEAR,
+    width: Duration.fromISO("P1Y").toMillis(),
+    formatDate: {
+      year: "numeric",
+    },
   },
 };
+
+export function durationToMillis(duration: string): number {
+  return Duration.fromISO(duration).toMillis();
+}
+
+export function getTimeGrain(grain: V1TimeGrain): TimeGrain {
+  return TIME_GRAIN[grain];
+}
 
 export function supportedTimeGrainEnums(): V1TimeGrain[] {
   return Object.values(TIME_GRAIN).map((timeGrain) => timeGrain.grain);
@@ -53,7 +99,7 @@ export function getTimeGrainOptions(start: Date, end: Date): TimeGrainOption[] {
     // only show a time grain if it results in a reasonable number of points on the line chart
     const MINIMUM_POINTS_ON_LINE_CHART = 2;
     const MAXIMUM_POINTS_ON_LINE_CHART = 2500;
-    const timeGrainDurationMs = timeGrain.width;
+    const timeGrainDurationMs = durationToMillis(timeGrain.duration);
     const pointsOnLineChart = timeRangeDurationMs / timeGrainDurationMs;
     const showTimeGrain =
       pointsOnLineChart >= MINIMUM_POINTS_ON_LINE_CHART &&
@@ -70,49 +116,95 @@ export function getTimeGrainOptions(start: Date, end: Date): TimeGrainOption[] {
 export function getDefaultTimeGrain(start: Date, end: Date): TimeGrain {
   const timeRangeDurationMs = end.getTime() - start.getTime();
 
-  if (timeRangeDurationMs < 2 * TIME.HOUR) {
-    return TIME_GRAIN.MINUTE;
-  } else if (timeRangeDurationMs < 7 * TIME.DAY) {
-    return TIME_GRAIN.HOUR;
-  } else if (timeRangeDurationMs < 3 * TIME.MONTH) {
-    return TIME_GRAIN.DAY;
-  } else if (timeRangeDurationMs < 3 * TIME.YEAR) {
-    return TIME_GRAIN.WEEK;
+  if (
+    timeRangeDurationMs <
+    2 * durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration)
+  ) {
+    return TIME_GRAIN.TIME_GRAIN_MINUTE;
+  } else if (
+    timeRangeDurationMs <
+    7 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
+  ) {
+    return TIME_GRAIN.TIME_GRAIN_HOUR;
+  } else if (
+    timeRangeDurationMs <
+    3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 30
+  ) {
+    return TIME_GRAIN.TIME_GRAIN_DAY;
+  } else if (
+    timeRangeDurationMs <
+    3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration)
+  ) {
+    return TIME_GRAIN.TIME_GRAIN_WEEK;
   } else {
-    return TIME_GRAIN.MONTH;
+    return TIME_GRAIN.TIME_GRAIN_MONTH;
   }
 }
 
 // Return time grains that are allowed for a given time range
 export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
   const timeRangeDurationMs = getTimeWidth(start, end);
-  if (timeRangeDurationMs < 2 * TIME.HOUR) {
-    return [TIME_GRAIN.MINUTE];
-  } else if (timeRangeDurationMs < 6 * TIME.HOUR) {
-    return [TIME_GRAIN.MINUTE, TIME_GRAIN.HOUR];
-  } else if (timeRangeDurationMs < TIME.DAY) {
-    return [TIME_GRAIN.HOUR];
-  } else if (timeRangeDurationMs < 14 * TIME.DAY) {
-    return [TIME_GRAIN.HOUR, TIME_GRAIN.DAY];
-  } else if (timeRangeDurationMs < TIME.MONTH) {
-    return [TIME_GRAIN.HOUR, TIME_GRAIN.DAY, TIME_GRAIN.WEEK];
-  } else if (timeRangeDurationMs < 3 * TIME.MONTH) {
-    return [TIME_GRAIN.DAY, TIME_GRAIN.WEEK];
-  } else if (timeRangeDurationMs < 3 * TIME.YEAR) {
-    return [TIME_GRAIN.DAY, TIME_GRAIN.WEEK, TIME_GRAIN.MONTH];
+  if (
+    timeRangeDurationMs <
+    2 * durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration)
+  ) {
+    return [TIME_GRAIN.TIME_GRAIN_MINUTE];
+  } else if (
+    timeRangeDurationMs <
+    6 * durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration)
+  ) {
+    return [TIME_GRAIN.TIME_GRAIN_MINUTE, TIME_GRAIN.TIME_GRAIN_HOUR];
+  } else if (
+    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
+  ) {
+    return [TIME_GRAIN.TIME_GRAIN_HOUR];
+  } else if (
+    timeRangeDurationMs <
+    14 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
+  ) {
+    return [TIME_GRAIN.TIME_GRAIN_HOUR, TIME_GRAIN.TIME_GRAIN_DAY];
+  } else if (
+    timeRangeDurationMs <
+    durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 30
+  ) {
+    return [
+      TIME_GRAIN.TIME_GRAIN_HOUR,
+      TIME_GRAIN.TIME_GRAIN_DAY,
+      TIME_GRAIN.TIME_GRAIN_WEEK,
+    ];
+  } else if (
+    timeRangeDurationMs <
+    3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 30
+  ) {
+    return [TIME_GRAIN.TIME_GRAIN_DAY, TIME_GRAIN.TIME_GRAIN_WEEK];
+  } else if (
+    timeRangeDurationMs <
+    3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration)
+  ) {
+    return [
+      TIME_GRAIN.TIME_GRAIN_DAY,
+      TIME_GRAIN.TIME_GRAIN_WEEK,
+      TIME_GRAIN.TIME_GRAIN_MONTH,
+    ];
   } else {
-    return [TIME_GRAIN.WEEK, TIME_GRAIN.MONTH, TIME_GRAIN.YEAR];
+    return [
+      TIME_GRAIN.TIME_GRAIN_WEEK,
+      TIME_GRAIN.TIME_GRAIN_MONTH,
+      TIME_GRAIN.TIME_GRAIN_YEAR,
+    ];
   }
 }
 
-// Check if minTimeGrain is bigger than provided grain
-// FIXME: this is pretty slopping, using both V1TimeGrain and TimeGrain like this.
-export function isMinGrainBigger(
-  minTimeGrain: V1TimeGrain,
-  grain: TimeGrain
+export function isGrainBigger(
+  possiblyBiggerGrain: V1TimeGrain,
+  possiblySmallerGrain: V1TimeGrain
 ): boolean {
-  const minGrain = getTimeGrainFromRuntimeGrain(minTimeGrain);
-  return minGrain?.width > grain.width;
+  const minGrain = TIME_GRAIN[possiblyBiggerGrain];
+  const comparingGrain = TIME_GRAIN[possiblySmallerGrain];
+  return (
+    durationToMillis(minGrain?.duration) >
+    durationToMillis(comparingGrain.duration)
+  );
 }
 
 export function getTimeGrainFromRuntimeGrain(grain: V1TimeGrain): TimeGrain {
@@ -138,54 +230,6 @@ export function checkValidTimeGrain(
   if (minTimeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED)
     return timeGrainOption?.enabled;
 
-  const timeGrainObj = getTimeGrainFromRuntimeGrain(timeGrain);
-  const isGrainPossible = !isMinGrainBigger(minTimeGrain, timeGrainObj);
+  const isGrainPossible = !isGrainBigger(minTimeGrain, timeGrain);
   return timeGrainOption?.enabled && isGrainPossible;
 }
-
-export const formatDateByGrain = (
-  interval: V1TimeGrain,
-  date: string
-): string => {
-  if (!interval || !date) return "";
-  switch (interval) {
-    case V1TimeGrain.TIME_GRAIN_MINUTE:
-      return new Date(date).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "numeric",
-      });
-    case V1TimeGrain.TIME_GRAIN_HOUR:
-      return new Date(date).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-      });
-    case V1TimeGrain.TIME_GRAIN_DAY:
-      return new Date(date).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-    case V1TimeGrain.TIME_GRAIN_WEEK:
-      return new Date(date).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-    case V1TimeGrain.TIME_GRAIN_MONTH:
-      return new Date(date).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-      });
-    case V1TimeGrain.TIME_GRAIN_YEAR:
-      return new Date(date).toLocaleDateString(undefined, {
-        year: "numeric",
-      });
-    default:
-      throw new Error(`Unknown interval: ${interval}`);
-  }
-};

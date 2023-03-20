@@ -38,9 +38,7 @@
     "__DEFAULT_VALUE__";
 
   $: timeColumn = $metricsInternalRep.getMetricKey("timeseries");
-  // $: smallestTimeGrain = timeGrainStringToEnum(
-  //   $metricsInternalRep.getMetricKey("smallest_time_grain")
-  // );
+
   $: smallestTimeGrain = unitToGrain(
     $metricsInternalRep.getMetricKey("smallest_time_grain")
   );

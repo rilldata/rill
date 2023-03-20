@@ -7,7 +7,7 @@
   import { useDashboardStore } from "../dashboard-stores";
   import {
     getTimeGrainFromRuntimeGrain,
-    isMinGrainBigger,
+    isGrainBigger,
   } from "./utils/time-grain";
   import type { TimeGrainOption } from "./utils/time-types";
 
@@ -28,7 +28,7 @@
     ? timeGrainOptions
         .filter(
           (timeGrain) =>
-            !isMinGrainBigger(minTimeGrain, timeGrain) && timeGrain.enabled
+            !isGrainBigger(minTimeGrain, timeGrain.grain) && timeGrain.enabled
         )
         .map((timeGrain) => {
           return {

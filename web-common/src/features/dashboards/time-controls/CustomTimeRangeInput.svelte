@@ -16,7 +16,7 @@
   } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useDashboardStore } from "../dashboard-stores";
-  import { getAllowedTimeGrains, isMinGrainBigger } from "./utils/time-grain";
+  import { getAllowedTimeGrains, isGrainBigger } from "./utils/time-grain";
   import type { TimeRange } from "./utils/time-types";
 
   export let metricViewName: string;
@@ -45,7 +45,7 @@
     const allowedTimeGrains = getAllowedTimeGrains(start, end);
     const allowedMaxGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
 
-    const isGrainPossible = !isMinGrainBigger(minTimeGrain, allowedMaxGrain);
+    const isGrainPossible = !isGrainBigger(minTimeGrain, allowedMaxGrain.grain);
 
     if (start > end) {
       return "Start date must be before end date";

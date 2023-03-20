@@ -26,7 +26,7 @@
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import { getOffset } from "../time-controls/utils/anchors";
-  import { formatDateByGrain } from "../time-controls/utils/time-grain";
+  import { TIME_GRAIN } from "../time-controls/utils/time-grain";
   import {
     grainToDuration,
     TimeOffsetType,
@@ -208,7 +208,12 @@
               start={startValue}
               end={endValue}
               mouseoverTimeFormat={(value) => {
-                return formatDateByGrain(interval, value);
+                /** format the date according to the time grain */
+                return new Date(value).toLocaleDateString(
+                  undefined,
+                  TIME_GRAIN[metricsExplorer?.selectedTimeRange?.interval]
+                    .formatDate
+                );
               }}
               mouseoverFormat={(value) =>
                 formatPreset === NicelyFormattedTypes.NONE

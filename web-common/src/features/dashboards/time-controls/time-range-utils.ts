@@ -6,10 +6,11 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import {
   lastXTimeRangeNames,
-  TimeRangeName,
-  TimeSeriesTimeRange,
+  TimeRangeName_DEPRECATE,
 } from "./time-control-types";
-import { TIME, TimeRange } from "./utils/time-types";
+import { TimeRange } from "./utils/time-types";
+
+import { durationToMillis, TIME_GRAIN } from "./utils/time-grain";
 
 // May not need this anymore as using TimeGrain objects
 export const supportedTimeGrainEnums = () => {
@@ -30,35 +31,13 @@ export const supportedTimeGrainEnums = () => {
   return supportedEnums;
 };
 
-//TODO: Co locate with application
-// export function validateTimeRange(
-//   start: Date,
-//   end: Date,
-//   minTimeGrain: V1TimeGrain
-// ): string {
-//   const timeRangeDurationMs = end.getTime() - start.getTime();
-
-//   const allowedTimeGrains = getAllowedTimeGrains(timeRangeDurationMs);
-//   const allowedMaxGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
-
-//   const isGrainPossible = !isGrainBigger(minTimeGrain, allowedMaxGrain);
-
-//   if (start > end) {
-//     return "Start date must be before end date";
-//   } else if (!isGrainPossible) {
-//     return "Range is smaller than min time grain";
-//   } else {
-//     return undefined;
-//   }
-// }
-
 // NOTE: we will need to keep this for the duration amounts in the runtime / config.
 // let's plan to deprecate it later.
 export function getRelativeTimeRangeOptions(
   allTimeRange: TimeRange,
   minTimeGrain: V1TimeGrain
 ): TimeRange[] {
-  const allTimeRangeDurationMs = getAllTimeRangeDurationMs(allTimeRange);
+  const allTimeRangeDurationMs = +allTimeRange.end - +allTimeRange.start;
   const timeRanges: TimeRange[] = [];
 
   for (const timeRangeName of lastXTimeRangeNames) {
@@ -79,7 +58,7 @@ export function getRelativeTimeRangeOptions(
 
   // All time is always an option
   timeRanges.push({
-    name: TimeRangeName.ALL_TIME,
+    name: TimeRangeName_DEPRECATE.ALL_TIME,
     start: allTimeRange.start,
     end: allTimeRange.end,
   });
@@ -96,13 +75,13 @@ export function getRelativeTimeRangeOptions(
 // Moved to time range and renamed to isTimeRangeValidForMinTimeGrain
 export function isTimeRangeValidForTimeGrain(
   minTimeGrain: V1TimeGrain,
-  timeRange: TimeRangeName
+  timeRange: TimeRangeName_DEPRECATE
 ): boolean {
   const timeGrainEnums = supportedTimeGrainEnums();
   if (!timeGrainEnums.includes(minTimeGrain)) {
     return true;
   }
-  if (!timeRange || timeRange === TimeRangeName.ALL_TIME) {
+  if (!timeRange || timeRange === TimeRangeName_DEPRECATE.ALL_TIME) {
     return true;
   }
 
@@ -113,22 +92,23 @@ export function isTimeRangeValidForTimeGrain(
   return !isGrainBigger(minTimeGrain, maxAllowedTimeGrain);
 }
 
+// Maps a TimeRangeName to an ISO duration.
 // This should eventually be deprecated once we have
 // changed the runtime definition for default_time_range to be a preset string.
 // see https://github.com/rilldata/rill-developer/issues/1961
 export const timeRangeToISODuration = (
-  timeRangeName: TimeRangeName
+  timeRangeName: TimeRangeName_DEPRECATE
 ): string => {
   switch (timeRangeName) {
-    case TimeRangeName.LAST_SIX_HOURS:
+    case TimeRangeName_DEPRECATE.LAST_SIX_HOURS:
       return "PT6H";
-    case TimeRangeName.LAST_24_HOURS:
+    case TimeRangeName_DEPRECATE.LAST_24_HOURS:
       return "P1D";
-    case TimeRangeName.LAST_7_DAYS:
+    case TimeRangeName_DEPRECATE.LAST_7_DAYS:
       return "P7D";
-    case TimeRangeName.LAST_4_WEEKS:
+    case TimeRangeName_DEPRECATE.LAST_4_WEEKS:
       return "P4W";
-    case TimeRangeName.ALL_TIME:
+    case TimeRangeName_DEPRECATE.ALL_TIME:
       return "inf";
     default:
       return undefined;
@@ -141,20 +121,20 @@ export const timeRangeToISODuration = (
 export const ISODurationToTimeRange = (
   isoDuration: string,
   defaultToAllTime = true
-): TimeRangeName => {
+): TimeRangeName_DEPRECATE => {
   switch (isoDuration) {
     case "PT6H":
-      return TimeRangeName.LAST_SIX_HOURS;
+      return TimeRangeName_DEPRECATE.LAST_SIX_HOURS;
     case "P1D":
-      return TimeRangeName.LAST_24_HOURS;
+      return TimeRangeName_DEPRECATE.LAST_24_HOURS;
     case "P7D":
-      return TimeRangeName.LAST_7_DAYS;
+      return TimeRangeName_DEPRECATE.LAST_7_DAYS;
     case "P4W":
-      return TimeRangeName.LAST_4_WEEKS;
+      return TimeRangeName_DEPRECATE.LAST_4_WEEKS;
     case "inf":
-      return TimeRangeName.ALL_TIME;
+      return TimeRangeName_DEPRECATE.ALL_TIME;
     default:
-      return defaultToAllTime ? TimeRangeName.ALL_TIME : undefined;
+      return defaultToAllTime ? TimeRangeName_DEPRECATE.ALL_TIME : undefined;
   }
 };
 
@@ -169,23 +149,43 @@ export function isGrainBigger(
 
 // Moved
 export function getAllowedTimeGrains(timeRangeDurationMs) {
-  if (timeRangeDurationMs < 2 * TIME.HOUR) {
+  if (
+    timeRangeDurationMs <
+    2 * durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration)
+  ) {
     return [V1TimeGrain.TIME_GRAIN_MINUTE];
-  } else if (timeRangeDurationMs < 6 * TIME.HOUR) {
+  } else if (
+    timeRangeDurationMs <
+    6 * durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration)
+  ) {
     return [V1TimeGrain.TIME_GRAIN_MINUTE, V1TimeGrain.TIME_GRAIN_HOUR];
-  } else if (timeRangeDurationMs < TIME.DAY) {
+  } else if (
+    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
+  ) {
     return [V1TimeGrain.TIME_GRAIN_HOUR];
-  } else if (timeRangeDurationMs < 14 * TIME.DAY) {
+  } else if (
+    timeRangeDurationMs <
+    14 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
+  ) {
     return [V1TimeGrain.TIME_GRAIN_HOUR, V1TimeGrain.TIME_GRAIN_DAY];
-  } else if (timeRangeDurationMs < TIME.MONTH) {
+  } else if (
+    timeRangeDurationMs <
+    durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 30
+  ) {
     return [
       V1TimeGrain.TIME_GRAIN_HOUR,
       V1TimeGrain.TIME_GRAIN_DAY,
       V1TimeGrain.TIME_GRAIN_WEEK,
     ];
-  } else if (timeRangeDurationMs < 3 * TIME.MONTH) {
+  } else if (
+    timeRangeDurationMs <
+    3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 30
+  ) {
     return [V1TimeGrain.TIME_GRAIN_DAY, V1TimeGrain.TIME_GRAIN_WEEK];
-  } else if (timeRangeDurationMs < 3 * TIME.YEAR) {
+  } else if (
+    timeRangeDurationMs <
+    3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration)
+  ) {
     return [
       V1TimeGrain.TIME_GRAIN_DAY,
       V1TimeGrain.TIME_GRAIN_WEEK,
@@ -204,120 +204,30 @@ export function getAllowedTimeGrains(timeRangeDurationMs) {
 export function getDefaultTimeGrain(start: Date, end: Date): V1TimeGrain {
   const timeRangeDurationMs = end.getTime() - start.getTime();
 
-  if (timeRangeDurationMs < 2 * TIME.HOUR) {
+  if (
+    timeRangeDurationMs <
+    2 * durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration)
+  ) {
     return V1TimeGrain.TIME_GRAIN_MINUTE;
-  } else if (timeRangeDurationMs < 7 * TIME.DAY) {
+  } else if (
+    timeRangeDurationMs <
+    7 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
+  ) {
     return V1TimeGrain.TIME_GRAIN_HOUR;
-  } else if (timeRangeDurationMs < 3 * TIME.MONTH) {
+  } else if (
+    timeRangeDurationMs <
+    3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 30
+  ) {
     return V1TimeGrain.TIME_GRAIN_DAY;
-  } else if (timeRangeDurationMs < 3 * TIME.YEAR) {
+  } else if (
+    timeRangeDurationMs <
+    3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration)
+  ) {
     return V1TimeGrain.TIME_GRAIN_WEEK;
   } else {
     return V1TimeGrain.TIME_GRAIN_MONTH;
   }
 }
-
-// Moved to time-range
-export const prettyFormatTimeRange = (
-  timeRange: TimeSeriesTimeRange
-): string => {
-  if (!timeRange?.start && timeRange?.end) {
-    return `- ${timeRange.end}`;
-  }
-
-  if (timeRange?.start && !timeRange?.end) {
-    return `${timeRange.start} -`;
-  }
-
-  if (!timeRange?.start && !timeRange?.end) {
-    return "";
-  }
-
-  const start = new Date(timeRange.start);
-  // timeRange.end is exclusive. We subtract one ms to render the last inclusive value.
-  const end = new Date(new Date(timeRange.end).getTime() - 1);
-
-  const TIMEZONE = "UTC";
-  // const TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone; // the user's local timezone
-
-  const startDate = start.getUTCDate(); // use start.getDate() for local timezone
-  const startMonth = start.getUTCMonth();
-  const startYear = start.getUTCFullYear();
-  const endDate = end.getUTCDate();
-  const endMonth = end.getUTCMonth();
-  const endYear = end.getUTCFullYear();
-
-  // day is the same
-  if (
-    startDate === endDate &&
-    startMonth === endMonth &&
-    startYear === endYear
-  ) {
-    return `${start.toLocaleDateString(undefined, {
-      month: "long",
-      timeZone: TIMEZONE,
-    })} ${startDate}, ${startYear} (${start
-      .toLocaleString(undefined, {
-        hour12: true,
-        hour: "numeric",
-        minute: "numeric",
-        timeZone: TIMEZONE,
-      })
-      .replace(/\s/g, "")}-${end
-      .toLocaleString(undefined, {
-        hour12: true,
-        hour: "numeric",
-        minute: "numeric",
-        timeZone: TIMEZONE,
-      })
-      .replace(/\s/g, "")})`;
-  }
-
-  // month is the same
-  if (startMonth === endMonth && startYear === endYear) {
-    return `${start.toLocaleDateString(undefined, {
-      month: "long",
-      timeZone: TIMEZONE,
-    })} ${startDate}-${endDate}, ${startYear} (${start
-      .toLocaleString(undefined, {
-        hour12: true,
-        hour: "numeric",
-        minute: "numeric",
-        timeZone: TIMEZONE,
-      })
-      .replace(/\s/g, "")}-${end
-      .toLocaleString(undefined, {
-        hour12: true,
-        hour: "numeric",
-        minute: "numeric",
-        timeZone: TIMEZONE,
-      })
-      .replace(/\s/g, "")})`;
-  }
-  // year is the same
-  if (startYear === endYear) {
-    return `${start.toLocaleDateString(undefined, {
-      month: "long",
-      day: "numeric",
-      timeZone: TIMEZONE,
-    })} - ${end.toLocaleDateString(undefined, {
-      month: "long",
-      day: "numeric",
-      timeZone: TIMEZONE,
-    })}, ${startYear}`;
-  }
-  // year is different
-  const dateFormatOptions: Intl.DateTimeFormatOptions = {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    timeZone: TIMEZONE,
-  };
-  return `${start.toLocaleDateString(
-    undefined,
-    dateFormatOptions
-  )} - ${end.toLocaleDateString(undefined, dateFormatOptions)}`;
-};
 
 // Not needed
 export const timeGrainStringToEnum = (timeGrain: string): V1TimeGrain => {
@@ -360,107 +270,39 @@ export const timeGrainEnumToYamlString = (timeGrain: V1TimeGrain): string => {
   }
 };
 
-// Not needed
-export const prettyTimeGrain = (timeGrain: V1TimeGrain): string => {
-  if (!timeGrain) return "";
-  switch (timeGrain) {
-    case V1TimeGrain.TIME_GRAIN_MINUTE:
-      return "minute";
-    case V1TimeGrain.TIME_GRAIN_HOUR:
-      return "hourly";
-    case V1TimeGrain.TIME_GRAIN_DAY:
-      return "daily";
-    case V1TimeGrain.TIME_GRAIN_WEEK:
-      return "weekly";
-    case V1TimeGrain.TIME_GRAIN_MONTH:
-      return "monthly";
-    case V1TimeGrain.TIME_GRAIN_YEAR:
-      return "yearly";
-    default:
-      return timeGrain;
-  }
-};
-
-// Not needed
-function getAllTimeRangeDurationMs(allTimeRange: TimeRange): number {
-  return (
-    new Date(allTimeRange.end).getTime() -
-    new Date(allTimeRange.start).getTime()
-  );
-}
-
-// Not needed
-const getLastXTimeRangeDurationMs = (name: TimeRangeName): number => {
+// This is the wrong way to deal with this. We should be (1) calculating the time range first
+// then (2) getting the exact duration.
+const getLastXTimeRangeDurationMs = (name: TimeRangeName_DEPRECATE): number => {
   switch (name) {
-    case TimeRangeName.LAST_SIX_HOURS:
-      return 6 * TIME.HOUR;
-    case TimeRangeName.LAST_24_HOURS:
-      return TIME.DAY;
-    case TimeRangeName.LAST_7_DAYS:
-      return TIME.WEEK;
-    case TimeRangeName.LAST_4_WEEKS:
-      return TIME.DAY * 28;
+    case TimeRangeName_DEPRECATE.LAST_SIX_HOURS:
+      return durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration) * 6;
+    case TimeRangeName_DEPRECATE.LAST_24_HOURS:
+      return durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration);
+    case TimeRangeName_DEPRECATE.LAST_7_DAYS:
+      return durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 7;
+    case TimeRangeName_DEPRECATE.LAST_4_WEEKS:
+      return durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 28;
 
     default:
       throw new Error(`Unknown last X time range name: ${name}`);
   }
 };
 
-// Not needed
+// map from time grain to duration in ms.
 const getTimeGrainDurationMs = (timeGrain: V1TimeGrain): number => {
   switch (timeGrain) {
     case V1TimeGrain.TIME_GRAIN_MINUTE:
-      return TIME.MINUTE;
+      return durationToMillis(TIME_GRAIN.TIME_GRAIN_MINUTE.duration);
     case V1TimeGrain.TIME_GRAIN_HOUR:
-      return TIME.HOUR;
+      return durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration);
     case V1TimeGrain.TIME_GRAIN_DAY:
-      return TIME.DAY;
+      return durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration);
     case V1TimeGrain.TIME_GRAIN_WEEK:
-      return TIME.WEEK;
+      return durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 7;
     case V1TimeGrain.TIME_GRAIN_MONTH:
-      return TIME.MONTH;
+      return durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 30;
     case V1TimeGrain.TIME_GRAIN_YEAR:
-      return TIME.YEAR;
-    default:
-      throw new Error(`Unknown time grain: ${timeGrain}`);
-  }
-};
-
-export const floorDate = (
-  date: Date | undefined,
-  timeGrain: V1TimeGrain
-): Date => {
-  if (!date) return new Date();
-  switch (timeGrain) {
-    case V1TimeGrain.TIME_GRAIN_MINUTE: {
-      const interval = TIME.MINUTE;
-      return new Date(Math.floor(date.getTime() / interval) * interval);
-    }
-    case V1TimeGrain.TIME_GRAIN_HOUR: {
-      const interval = TIME.HOUR;
-      return new Date(Math.floor(date.getTime() / interval) * interval);
-    }
-    case V1TimeGrain.TIME_GRAIN_DAY: {
-      const interval = TIME.DAY;
-      return new Date(Math.floor(date.getTime() / interval) * interval);
-    }
-    case V1TimeGrain.TIME_GRAIN_WEEK: {
-      // rounds to the most recent Monday
-      const day = date.getUTCDay();
-      const dateRoundedDownByDay = floorDate(date, V1TimeGrain.TIME_GRAIN_DAY);
-      const timeFromMonday = (day === 0 ? 6 : day - 1) * TIME.DAY;
-      return new Date(dateRoundedDownByDay.getTime() - timeFromMonday);
-    }
-    case V1TimeGrain.TIME_GRAIN_MONTH: {
-      // rounds to the 1st of the current month
-      return new Date(
-        Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1, 0, 0, 0, 0)
-      );
-    }
-    case V1TimeGrain.TIME_GRAIN_YEAR: {
-      // rounds to January 1st of the current year
-      return new Date(Date.UTC(date.getUTCFullYear(), 1, 1));
-    }
+      return durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration);
     default:
       throw new Error(`Unknown time grain: ${timeGrain}`);
   }
@@ -468,10 +310,10 @@ export const floorDate = (
 
 // might not need it
 export function makeRelativeTimeRange(
-  timeRangeName: TimeRangeName,
+  timeRangeName: TimeRangeName_DEPRECATE,
   allTimeRange: TimeRange
 ): TimeRange {
-  if (timeRangeName === TimeRangeName.ALL_TIME) return allTimeRange;
+  if (timeRangeName === TimeRangeName_DEPRECATE.ALL_TIME) return allTimeRange;
   const startTime = new Date(
     allTimeRange.end.getTime() - getLastXTimeRangeDurationMs(timeRangeName)
   );

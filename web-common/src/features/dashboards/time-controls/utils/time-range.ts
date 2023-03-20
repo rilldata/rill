@@ -6,9 +6,10 @@ import {
 } from "./anchors";
 import { DEFAULT_TIME_RANGES } from "./defaults";
 import {
+  durationToMillis,
   getAllowedTimeGrains,
   getTimeGrainFromRuntimeGrain,
-  isMinGrainBigger,
+  isGrainBigger,
 } from "./time-grain";
 import {
   RangePreset,
@@ -63,13 +64,16 @@ export function getChildTimeRanges(
 
       const hasSomeGrainMatches = thisRangeAllowedGrains.some((grain) => {
         return (
-          !isMinGrainBigger(minTimeGrain, grain) &&
-          grain.width <
+          !isGrainBigger(minTimeGrain, grain.grain) &&
+          durationToMillis(grain.duration) <
             getTimeWidth(timeRangeDates.startDate, timeRangeDates.endDate)
         );
       });
 
-      const isGrainPossible = !isMinGrainBigger(minTimeGrain, allowedMaxGrain);
+      const isGrainPossible = !isGrainBigger(
+        minTimeGrain,
+        allowedMaxGrain.grain
+      );
       if (
         timeRangeIsSmallerThanAllTime &&
         isGrainPossible &&
@@ -149,7 +153,7 @@ export function isTimeRangeValidForMinTimeGrain(
 
   const allowedTimeGrains = getAllowedTimeGrains(start, end);
   const maxAllowedTimeGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
-  return !isMinGrainBigger(minTimeGrain, maxAllowedTimeGrain);
+  return !isGrainBigger(minTimeGrain, maxAllowedTimeGrain.grain);
 }
 
 export const prettyFormatTimeRange = (start: Date, end: Date): string => {
