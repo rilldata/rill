@@ -25,7 +25,9 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
-export function toProto(metrics: MetricsExplorerEntity): string {
+export function getProtoFromDashboardState(
+  metrics: MetricsExplorerEntity
+): string {
   const state: PartialMessage<DashboardState> = {};
   if (metrics.filters) {
     state.filters = toFiltersProto(metrics.filters) as any;
@@ -46,7 +48,7 @@ export function toProto(metrics: MetricsExplorerEntity): string {
   return protoToBase64(message.toBinary());
 }
 
-export function protoToBase64(proto: Uint8Array) {
+function protoToBase64(proto: Uint8Array) {
   return btoa(String.fromCharCode.apply(null, proto));
 }
 
