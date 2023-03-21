@@ -1,12 +1,11 @@
 <script>
   import {
-    humanizeDataType,
+    humanizeDataType_legacy,
     humanizeGroupValues,
     NicelyFormattedTypes,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
 
   const examples = [
-    { value: 10.534234, type: NicelyFormattedTypes.DECIMAL },
     { value: 3242340.534234, type: NicelyFormattedTypes.HUMANIZE },
     { value: 53243, type: NicelyFormattedTypes.HUMANIZE },
     { value: 1253243, type: NicelyFormattedTypes.HUMANIZE },
@@ -69,7 +68,7 @@
 <!-- <div class="text-2xl">Individual value formatting</div> -->
 <div class="grid grid-cols-4 w-max gap-x-5">
   {#each examples as { value, type, label }}
-    {@const formatted = humanizeDataType(value, type)}
+    {@const formatted = humanizeDataType_legacy(value, type)}
     <div class="text-lg text-left pt-5 pl-2 pr-2">
       <div>
         Label: {type} <br />
