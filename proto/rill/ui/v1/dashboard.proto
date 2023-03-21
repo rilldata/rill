@@ -7,14 +7,19 @@ import "rill/runtime/v1/queries.proto";
 
 // DashboardState represents the dashboard as seen by the user
 message DashboardState {
-  // Selected time rage
+  // Selected time range
   DashboardTimeRange time_range = 1;
   // Dimension filters applied
   rill.runtime.v1.MetricsViewFilter filters = 2;
   // Selected time granularity
-  rill.runtime.v1.TimeGrain time_granularity = 3;
-  // Selected time comparison range
+  rill.runtime.v1.TimeGrain time_grain = 3;
+
   DashboardTimeRange compare_time_range = 4;
+
+  // Selected measure for the leaderboard
+  optional string leaderboard_measure = 5;
+  // Focused dimension
+  optional string selected_dimension = 6;
 }
 
 message DashboardTimeRange {

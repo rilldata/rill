@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -28,6 +29,7 @@ type ProvisionOptions struct {
 	GithubURL            string
 	GitBranch            string
 	GithubInstallationID int64
+	Variables            map[string]string
 }
 
 type Provisioner interface {
@@ -111,6 +113,7 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 	if err != nil {
 		return nil, err
 	}
+	defer rt.Close()
 
 	// Build repo info
 	repoDSN, err := json.Marshal(github.DSN{
@@ -126,17 +129,19 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 	instanceID := strings.ReplaceAll(uuid.New().String(), "-", "")
 	cpus := 1 * opts.Slots
 	memory := 2 * opts.Slots
+	ingestLimit := datasize.GB * datasize.ByteSize(5*opts.Slots) // 5GB * slots
 	olapDSN := fmt.Sprintf("%s.db?rill_pool_size=%d&threads=%d&max_memory=%dGB", path.Join(target.DataDir, instanceID), cpus, cpus, memory)
 
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
-		InstanceId:   instanceID,
-		OlapDriver:   "duckdb",
-		OlapDsn:      olapDSN,
-		RepoDriver:   "github",
-		RepoDsn:      string(repoDSN),
-		EmbedCatalog: true,
-		Env:          nil,
+		InstanceId:          instanceID,
+		OlapDriver:          "duckdb",
+		OlapDsn:             olapDSN,
+		RepoDriver:          "github",
+		RepoDsn:             string(repoDSN),
+		EmbedCatalog:        true,
+		Variables:           opts.Variables,
+		IngestionLimitBytes: int64(ingestLimit),
 	})
 	if err != nil {
 		return nil, err
@@ -178,10 +183,12 @@ func (p *staticProvisioner) Teardown(ctx context.Context, host, instanceID strin
 	if err != nil {
 		return err
 	}
+	defer rt.Close()
 
 	// Delete the instance
 	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 		InstanceId: instanceID,
+		DropDb:     true,
 	})
 	if err != nil {
 		return err

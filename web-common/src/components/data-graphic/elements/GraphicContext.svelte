@@ -204,13 +204,13 @@ for any of its children.
     yMaxStore.setTweenProps(yMaxTweenProps);
   }
 
-  $: if (xMin || $config?.xMin)
+  $: if (xMin !== undefined || $config?.xMin)
     xMinStore.setWithKey("global", xMin || $config.xMin, true);
-  $: if (xMax || $config?.xMax)
+  $: if (xMax !== undefined || $config?.xMax)
     xMaxStore.setWithKey("global", xMax || $config.xMax, true);
-  $: if (yMin || $config?.yMin)
+  $: if (yMin !== undefined || $config?.yMin)
     yMinStore.setWithKey("global", yMin || $config.yMin, true);
-  $: if (yMax || $config?.yMax)
+  $: if (yMax !== undefined || $config?.yMax)
     yMaxStore.setWithKey("global", yMax || $config.yMax, true);
 </script>
 

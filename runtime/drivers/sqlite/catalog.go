@@ -27,7 +27,7 @@ func (c *connection) FindEntry(ctx context.Context, instanceID, name string) (*d
 }
 
 func (c *connection) findEntries(ctx context.Context, whereClause string, args ...any) []*drivers.CatalogEntry {
-	sql := fmt.Sprintf("SELECT name, type, object, path, created_on, updated_on, refreshed_on FROM catalog %s ORDER BY lower(name)", whereClause)
+	sql := fmt.Sprintf("SELECT name, type, object, path, bytes_ingested, created_on, updated_on, refreshed_on FROM catalog %s ORDER BY lower(name)", whereClause)
 
 	rows, err := c.db.QueryxContext(ctx, sql, args...)
 	if err != nil {
@@ -40,7 +40,7 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 		var objBlob []byte
 		e := &drivers.CatalogEntry{}
 
-		err := rows.Scan(&e.Name, &e.Type, &objBlob, &e.Path, &e.CreatedOn, &e.UpdatedOn, &e.RefreshedOn)
+		err := rows.Scan(&e.Name, &e.Type, &objBlob, &e.Path, &e.BytesIngested, &e.CreatedOn, &e.UpdatedOn, &e.RefreshedOn)
 		if err != nil {
 			panic(err)
 		}
@@ -82,12 +82,13 @@ func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *driv
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"INSERT INTO catalog(instance_id, name, type, object, path, created_on, updated_on, refreshed_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO catalog(instance_id, name, type, object, path, bytes_ingested, created_on, updated_on, refreshed_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		instanceID,
 		e.Name,
 		e.Type,
 		obj,
 		e.Path,
+		e.BytesIngested,
 		now,
 		now,
 		now,
@@ -112,10 +113,11 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"UPDATE catalog SET type = ?, object = ?, path = ?, updated_on = ?, refreshed_on = ? WHERE instance_id = ? AND name = ?",
+		"UPDATE catalog SET type = ?, object = ?, path = ?, bytes_ingested = ?, updated_on = ?, refreshed_on = ? WHERE instance_id = ? AND name = ?",
 		e.Type,
 		obj,
 		e.Path,
+		e.BytesIngested,
 		now,
 		e.RefreshedOn,
 		instanceID,
@@ -131,5 +133,10 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 
 func (c *connection) DeleteEntry(ctx context.Context, instanceID, name string) error {
 	_, err := c.db.ExecContext(ctx, "DELETE FROM catalog WHERE instance_id = ? AND LOWER(name) = LOWER(?)", instanceID, name)
+	return err
+}
+
+func (c *connection) DeleteEntries(ctx context.Context, instanceID string) error {
+	_, err := c.db.ExecContext(ctx, "DELETE FROM catalog WHERE instance_id = ?", instanceID)
 	return err
 }

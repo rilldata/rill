@@ -5,24 +5,13 @@ import "fmt"
 type Config struct {
 	Version            Version
 	AdminURL           string
-	AdminTokenDefault  string
 	AdminTokenOverride string
-	DefaultOrg         string
+	AdminTokenDefault  string
+	Org                string
 }
 
 func (c Config) IsDev() bool {
 	return c.Version.IsDev()
-}
-
-func (c Config) AdminToken() string {
-	if c.AdminTokenOverride != "" {
-		return c.AdminTokenOverride
-	}
-	return c.AdminTokenDefault
-}
-
-func (c Config) Org() string {
-	return c.DefaultOrg
 }
 
 type Version struct {
@@ -40,4 +29,15 @@ func (v Version) String() string {
 
 func (v Version) IsDev() bool {
 	return v.Number == ""
+}
+
+func (c *Config) IsAuthenticated() bool {
+	return c.AdminToken() != ""
+}
+
+func (c Config) AdminToken() string {
+	if c.AdminTokenOverride != "" {
+		return c.AdminTokenOverride
+	}
+	return c.AdminTokenDefault
 }

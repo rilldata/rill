@@ -2,7 +2,7 @@
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
+  // import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import {
@@ -11,8 +11,8 @@
     useRuntimeServiceGetFile,
     useRuntimeServiceListCatalogEntries,
   } from "@rilldata/web-common/runtime-client";
-  import { getContext } from "svelte";
-  import { derived, Writable, writable } from "svelte/store";
+  //import { getContext } from "svelte";
+  import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import { getTableReferences } from "../../utils/get-table-references";
@@ -21,9 +21,9 @@
 
   export let modelName: string;
 
-  const queryHighlight: Writable<QueryHighlightState> = getContext(
-    "rill:app:query-highlight"
-  );
+  //  const queryHighlight: Writable<QueryHighlightState> = getContext(
+  //    "rill:app:query-highlight"
+  //  );
 
   $: getModel = useRuntimeServiceGetCatalogEntry(
     $runtime?.instanceId,
@@ -93,22 +93,22 @@
   let showColumns = true;
 
   // toggle state for inspector sections
-  let showSourceTables = true;
+  // let showSourceTables = true;
 
-  function focus(reference) {
-    return () => {
-      // FIXME
-      if (references.length) {
-        queryHighlight.set([reference]);
-      }
-    };
-  }
-  function blur() {
-    queryHighlight.set(undefined);
-  }
+  //  function focus(reference) {
+  //    return () => {
+  //      // FIXME
+  //      if (references.length) {
+  //        queryHighlight.set([reference]);
+  //      }
+  //    };
+  //  }
+  //  function blur() {
+  //    queryHighlight.set(undefined);
+  //  }
 
   // FIXME
-  let modelHasError = false;
+  // let modelHasError = false;
 </script>
 
 <div class="model-profile">

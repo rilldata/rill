@@ -57,6 +57,7 @@
   $: if (!modelSelected) {
     tooltipText = "Select a model before selecting a timestamp column";
   } else if (!timeColumnIsInModel) {
+    // TODO
   } else if (timestampColumns.length === 0) {
     tooltipText = "The selected model has no timestamp columns";
   } else {

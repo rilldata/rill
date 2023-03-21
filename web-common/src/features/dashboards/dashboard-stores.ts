@@ -1,3 +1,4 @@
+import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import type {
   V1MetricsView,
   V1MetricsViewFilter,
@@ -5,8 +6,8 @@ import type {
 import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
 import { derived, Readable, Writable, writable } from "svelte/store";
 import type {
-  TimeSeriesTimeRange,
   ComparisonWithTimeRange,
+  TimeSeriesTimeRange,
 } from "./time-controls/time-control-types";
 
 export interface LeaderboardValue {
@@ -39,6 +40,7 @@ export interface MetricsExplorerEntity {
   selectedComparisonTimeRange?: ComparisonWithTimeRange;
   // flag to show/hide comparison based on time range
   showComparison?: boolean;
+  proto?: string;
 }
 
 export type MetricsViewFieldsFromState = Pick<
@@ -63,62 +65,89 @@ const updateMetricsExplorerByName = (
       if (absenceCallback) {
         state.entities[name] = absenceCallback();
       }
+      state.entities[name].proto = getProtoFromDashboardState(
+        state.entities[name]
+      );
       return state;
     }
+
     callback(state.entities[name]);
+    // every change triggers a proto update
+    state.entities[name].proto = getProtoFromDashboardState(
+      state.entities[name]
+    );
     return state;
   });
 };
 
+function includeExcludeModeFromFilters(filters: V1MetricsViewFilter) {
+  const map = new Map<string, boolean>();
+  filters?.exclude.forEach((cond) => map.set(cond.name, true));
+  return map;
+}
+
 const metricViewReducers = {
   create(name: string, fromState: MetricsViewFieldsFromState) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.filters = fromState.filters;
+      metricsExplorer.selectedTimeRange = fromState.selectedTimeRange;
+      metricsExplorer.selectedComparisonTimeRange =
+        fromState.selectedComparisonTimeRange;
+      metricsExplorer.showComparison = !!fromState.selectedComparisonTimeRange;
+    });
+  },
+  syncFromUrl(name: string, partial: Partial<MetricsExplorerEntity>) {
     updateMetricsExplorerByName(
       name,
       (metricsExplorer) => {
-        metricsExplorer.filters = fromState.filters;
-        metricsExplorer.selectedTimeRange = fromState.selectedTimeRange;
-        metricsExplorer.selectedComparisonTimeRange =
-          fromState.selectedComparisonTimeRange;
-        metricsExplorer.showComparison =
-          !!fromState.selectedComparisonTimeRange;
+        for (const key in partial) {
+          metricsExplorer[key] = partial[key];
+        }
+        metricsExplorer.dimensionFilterExcludeMode =
+          includeExcludeModeFromFilters(partial.filters);
       },
       () => ({
         name,
         selectedMeasureNames: [],
         leaderboardMeasureName: "",
-        dimensionFilterExcludeMode: new Map(),
-        showComparison: !!fromState.selectedComparisonTimeRange,
-        ...fromState,
+        filters: {},
+        showComparison: !!partial.selectedComparisonTimeRange,
+        dimensionFilterExcludeMode: includeExcludeModeFromFilters(
+          partial.filters
+        ),
+        ...partial,
       })
     );
   },
 
-  sync(name: string, meta: V1MetricsView) {
-    if (!name || !meta || !meta.measures) return;
+  sync(name: string, metricsView: V1MetricsView) {
+    if (!name || !metricsView || !metricsView.measures) return;
     updateMetricsExplorerByName(
       name,
       (metricsExplorer) => {
         // sync measures with selected leaderboard measure.
         if (
-          meta.measures.length &&
+          metricsView.measures.length &&
           (!metricsExplorer.leaderboardMeasureName ||
-            !meta.measures.find(
+            !metricsView.measures.find(
               (measure) =>
                 measure.name === metricsExplorer.leaderboardMeasureName
             ))
         ) {
-          metricsExplorer.leaderboardMeasureName = meta.measures[0].name;
-        } else if (!meta.measures.length) {
+          metricsExplorer.leaderboardMeasureName = metricsView.measures[0].name;
+        } else if (!metricsView.measures.length) {
           metricsExplorer.leaderboardMeasureName = undefined;
         }
-        metricsExplorer.selectedMeasureNames = meta.measures.map(
+        metricsExplorer.selectedMeasureNames = metricsView.measures.map(
           (measure) => measure.name
         );
       },
       () => ({
         name,
-        selectedMeasureNames: meta.measures.map((measure) => measure.name),
-        leaderboardMeasureName: meta.measures[0]?.name,
+        selectedMeasureNames: metricsView.measures.map(
+          (measure) => measure.name
+        ),
+        leaderboardMeasureName: metricsView.measures[0]?.name,
         filters: {
           include: [],
           exclude: [],
@@ -278,10 +307,9 @@ export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
 export function useDashboardStore(
   name: string
 ): Readable<MetricsExplorerEntity> {
-  const derivedStore = derived(metricsExplorerStore, ($store) => {
+  return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
   });
-  return derivedStore;
 }
 
 export const calendlyModalStore: Writable<string> = writable("");

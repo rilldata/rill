@@ -1,12 +1,13 @@
 <script lang="ts">
+  import { Button } from "@rilldata/web-common/components/button";
   import { onMount } from "svelte";
   import { ADMIN_URL } from "../../../client/http-client";
 
   let user;
   let userCode;
-  let actionTaken = false;
-  let successMsg = "";
-  let errorMsg = "";
+  // let actionTaken = false;
+  // let successMsg = "";
+  // let errorMsg = "";
 
   async function fetchUserData() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -25,6 +26,10 @@
     }
   }
 
+  function handleGoToGithub() {
+    window.location.href = ADMIN_URL + "/github/connect";
+  }
+
   onMount(fetchUserData);
 </script>
 
@@ -33,12 +38,14 @@
 </svelte:head>
 
 {#if user}
-  <section>
-    <h2>Connect to Github</h2>
-    <p>
+  <div class="flex flex-col justify-center items-center h-3/5">
+    <h1 class="text-3xl font-medium text-gray-800 mb-4">Connect to Github</h1>
+    <p class="text-lg text-gray-700 mb-6">
       Click the button to grant Rill access to one or more of your Github
       repositories.
     </p>
-    <a href="{ADMIN_URL}/github/connect">Go to Github</a>
-  </section>
+    <div class="mt-4">
+      <Button type="primary" on:click={handleGoToGithub}>Go to Github</Button>
+    </div>
+  </div>
 {/if}

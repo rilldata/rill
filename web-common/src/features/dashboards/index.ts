@@ -1,1 +1,1 @@
-export { default as DashboardWorkspace } from "./workspace/Dashboard.svelte";
+export { default as Dashboard } from "./workspace/Dashboard.svelte";

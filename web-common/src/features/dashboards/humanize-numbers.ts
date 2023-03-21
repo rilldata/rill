@@ -2,6 +2,11 @@
 // Current dash persion has `prefix` key in JSON to add currecny etc.
 // We can provide a dropdown option in the table?? or regex??
 
+import { humanizedFormatterFactory } from "@rilldata/web-common/lib/number-formatting/humanizer";
+import {
+  FormatterFactoryOptions,
+  NumberKind,
+} from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 import type { LeaderboardValue } from "./dashboard-stores";
 
 const shortHandSymbols = ["Q", "T", "B", "M", "k", "none"] as const;
@@ -29,7 +34,6 @@ export enum NicelyFormattedTypes {
   NONE = "none",
   CURRENCY = "currency_usd",
   PERCENTAGE = "percentage",
-  DECIMAL = "comma_separators",
 }
 
 interface ColFormatSpec {
@@ -51,7 +55,6 @@ export const nicelyFormattedTypesSelectorOptions = [
     value: NicelyFormattedTypes.PERCENTAGE,
     label: "Percentage",
   },
-  { value: NicelyFormattedTypes.DECIMAL, label: "Decimal" },
 ];
 
 const DEFAULT_OPTIONS = {
@@ -93,10 +96,10 @@ function formatNicely(
   return formatter.format(value);
 }
 
+// FIXME/NOTE: `convertToShorthand` is used by `humanizeDataType_legacy`
+// which has been retained to avoid breaking
+// a dev route, but is not used in live client code
 function convertToShorthand(value: number): string | number {
-  if (Math.abs(value) < 1000)
-    return formatNicely(value, NicelyFormattedTypes.DECIMAL);
-
   // Fifteen Zeros for Quadrillion
   return Math.abs(value) >= 1.0e15
     ? (value / 1.0e15).toFixed(1) + "Q"
@@ -131,8 +134,11 @@ function getScaleForValue(value: number): ShortHandSymbols {
 
 /*
   Format a single value using the given type and options
+
+  FIXME/NOTE: this function has been retained to avoid breaking
+  a dev route, but is not used in live client code
 */
-export function humanizeDataType(
+export function humanizeDataType_legacy(
   value: unknown,
   type: NicelyFormattedTypes,
   options?: formatterOptions
@@ -186,60 +192,6 @@ function determineScaleForValues(values: number[]): ShortHandSymbols {
   return scaleForMax;
 }
 
-function applyScaleOnValues(values: number[], scale: ShortHandSymbols) {
-  if (scale == shortHandSymbols[shortHandSymbols.length - 1]) {
-    const formatter = getNumberFormatter(NicelyFormattedTypes.DECIMAL);
-    return values.map((v) => {
-      if (v === null) return "∅";
-      else return formatter.format(v);
-    });
-  }
-  return values.map((v) => {
-    if (v === null) return "∅";
-    const shortHandNumber = v / shortHandMap[scale];
-    let shortHandValue: string;
-    if (Math.abs(shortHandNumber) < 0.1) {
-      shortHandValue = "<0.1";
-    } else {
-      shortHandValue = shortHandNumber.toFixed(1);
-    }
-
-    return shortHandValue + scale;
-  });
-}
-
-function humanizeGroupValuesUtil(
-  values: number[],
-  type: NicelyFormattedTypes,
-  options?: formatterOptions
-) {
-  if (!values.length) return values;
-  if (type == NicelyFormattedTypes.NONE) return values;
-  else if (type == NicelyFormattedTypes.HUMANIZE) {
-    let scale;
-    if (options?.scale) {
-      scale = options.scale;
-    } else scale = determineScaleForValues(values);
-    return applyScaleOnValues(values, scale);
-  } else if (type == NicelyFormattedTypes.CURRENCY) {
-    let scale;
-    if (options?.scale) {
-      scale = options.scale;
-    } else scale = determineScaleForValues(values);
-    return applyScaleOnValues(values, scale).map((v) => "$" + v);
-  } else {
-    let formatterOptions = {};
-    formatterOptions = Object.assign({}, options);
-    delete formatterOptions["scale"];
-    delete formatterOptions["columnName"];
-    const formatter = getNumberFormatter(type, formatterOptions);
-    return values.map((v) => {
-      if (v === null) return "∅";
-      else return formatter.format(v);
-    });
-  }
-}
-
 export function humanizeGroupValues(
   values: Array<Record<string, number | string>>,
   type: NicelyFormattedTypes,
@@ -252,7 +204,7 @@ export function humanizeGroupValues(
   if (!areAllNumbers) return values;
 
   numValues = (numValues as number[]).sort((a, b) => b - a);
-  const formattedValues = humanizeGroupValuesUtil(
+  const formattedValues = humanizeGroupValuesUtil2(
     numValues as number[],
     type,
     options
@@ -301,4 +253,79 @@ export function getScaleForLeaderboard(
   const sortedValues = numValues.sort((a, b) => b - a);
 
   return determineScaleForValues(sortedValues);
+}
+
+// NOTE: the following are adapters that I think fit the API
+// used by the existing humanizer, but I'm not sure of the
+// exact details, nor am I totally confident about the options
+// passed in at all the relevant call sites, so I've added
+// thes adapters rather than just pave over the existing functions.
+// This really needs to be reviewed by Dhiraj, at which point we
+// can deprecate any left over code that is no longer needed.
+
+export const nicelyFormattedTypesToNumberKind = (
+  type: NicelyFormattedTypes | string
+) => {
+  switch (type) {
+    case NicelyFormattedTypes.CURRENCY:
+      return NumberKind.DOLLAR;
+
+    case NicelyFormattedTypes.PERCENTAGE:
+      return NumberKind.PERCENT;
+
+    default:
+      // captures:
+      // NicelyFormattedTypes.NONE
+      // NicelyFormattedTypes.HUMANIZE
+      return NumberKind.ANY;
+  }
+};
+
+export function humanizeDataType(
+  value: unknown,
+  type: NicelyFormattedTypes
+): string {
+  if (typeof value != "number") return value.toString();
+
+  const numberKind = nicelyFormattedTypesToNumberKind(type);
+
+  let innerOptions: FormatterFactoryOptions;
+  if (type === NicelyFormattedTypes.NONE) {
+    innerOptions = {
+      strategy: "none",
+      numberKind,
+      padWithInsignificantZeros: false,
+    };
+  } else {
+    innerOptions = {
+      strategy: "default",
+      numberKind,
+    };
+  }
+
+  return humanizedFormatterFactory([value], innerOptions).stringFormat(value);
+}
+
+/** This function is used primarily in the leaderboard and the detail tables. */
+function humanizeGroupValuesUtil2(
+  values: number[],
+  type: NicelyFormattedTypes,
+  _options?: formatterOptions
+) {
+  if (!values.length) return values;
+  if (type == NicelyFormattedTypes.NONE) return values;
+
+  const numberKind = nicelyFormattedTypesToNumberKind(type);
+
+  const innerOptions: FormatterFactoryOptions = {
+    strategy: "default",
+    numberKind,
+  };
+
+  const formatter = humanizedFormatterFactory(values, innerOptions);
+
+  return values.map((v) => {
+    if (v === null) return "∅";
+    else return formatter.stringFormat(v);
+  });
 }

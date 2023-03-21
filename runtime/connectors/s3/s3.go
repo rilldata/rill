@@ -127,6 +127,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		GlobPageSize:          conf.GlobPageSize,
 		GlobPattern:           url.Path,
 		ExtractPolicy:         source.ExtractPolicy,
+		StorageLimitInBytes:   env.StorageLimitInBytes,
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts)

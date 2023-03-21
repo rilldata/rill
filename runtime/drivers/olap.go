@@ -23,8 +23,9 @@ type OLAPStore interface {
 	WithConnection(ctx context.Context, priority int, fn WithConnectionFunc) error
 	Exec(ctx context.Context, stmt *Statement) error
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
-	Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error
+	Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) (*IngestionSummary, error)
 	InformationSchema() InformationSchema
+	DropDB() error
 }
 
 // Statement wraps a query to execute against an OLAP driver.
@@ -101,4 +102,9 @@ func (d Dialect) String() string {
 	default:
 		panic("not implemented")
 	}
+}
+
+// IngestionSummary is details about ingestion
+type IngestionSummary struct {
+	BytesIngested int64
 }

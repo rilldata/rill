@@ -16,6 +16,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
+	"github.com/rilldata/rill/cli/pkg/variable"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -29,6 +30,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 	var name, description, prodBranch, projectPath string
 	var slots int
 	var public bool
+	var variables []string
 
 	connectCmd := &cobra.Command{
 		Use:   "connect",
@@ -127,22 +129,28 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				prodBranch = ghRes.DefaultBranch
 			}
 
+			parsedVariables, err := variable.Parse(variables)
+			if err != nil {
+				return err
+			}
+
 			// Create the project (automatically deploys prod branch)
 			projRes, err := client.CreateProject(cmd.Context(), &adminv1.CreateProjectRequest{
-				OrganizationName: cfg.Org(),
+				OrganizationName: cfg.Org,
 				Name:             name,
 				Description:      description,
 				ProductionSlots:  int64(slots),
 				ProductionBranch: prodBranch,
 				Public:           public,
 				GithubUrl:        githubURL,
+				Variables:        parsedVariables,
 			})
 			if err != nil {
 				return err
 			}
 
 			// Success!
-			fmt.Printf("Created project %s/%s\n", cfg.Org(), projRes.Project.Name)
+			fmt.Printf("Created project %s/%s\n", cfg.Org, projRes.Project.Name)
 			return nil
 		},
 	}
@@ -154,6 +162,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 	connectCmd.Flags().StringVar(&name, "name", "", "Project name (default: the Github repo name)")
 	connectCmd.Flags().StringVar(&description, "description", "", "Project description")
 	connectCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
+	connectCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
 
 	return connectCmd
 }
@@ -235,6 +244,6 @@ Follow these steps to push your project to Github.
 
 6. Connect Rill to your repository
 
-	rill connect
+	rill project connect
 
 `

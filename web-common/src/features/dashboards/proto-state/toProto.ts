@@ -5,12 +5,12 @@ import {
   Value,
 } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import type { TimeSeriesTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
 import {
   ComparisonRange,
   ComparisonWithTimeRange,
   TimeRangeName,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
-import type { TimeSeriesTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
 import {
   TimeGrain,
   TimeGrain as TimeGrainProto,
@@ -29,28 +29,30 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
-export function toProto(metrics: MetricsExplorerEntity) {
-  const data: PartialMessage<DashboardState> = {};
+export function getProtoFromDashboardState(
+  metrics: MetricsExplorerEntity
+): string {
+  const state: PartialMessage<DashboardState> = {};
   if (metrics.filters) {
-    data.filters = toFiltersProto(metrics.filters) as any;
+    state.filters = toFiltersProto(metrics.filters) as any;
   }
   if (metrics.selectedTimeRange) {
-    data.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
+    state.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
     if (metrics.selectedTimeRange.interval) {
-      data.timeGranularity = toTimeGrainProto(
-        metrics.selectedTimeRange.interval
-      );
+      state.timeGrain = toTimeGrainProto(metrics.selectedTimeRange.interval);
     }
   }
-  if (metrics.showComparison && metrics.selectedComparisonTimeRange) {
-    data.compareTimeRange = toCompareTimeRangeProto(
-      metrics.selectedComparisonTimeRange
-    );
+  if (metrics.leaderboardMeasureName) {
+    state.leaderboardMeasure = metrics.leaderboardMeasureName;
   }
-  return new DashboardState(data);
+  if (metrics.selectedDimensionName) {
+    state.selectedDimension = metrics.selectedDimensionName;
+  }
+  const message = new DashboardState(state);
+  return protoToBase64(message.toBinary());
 }
 
-export function protoToBase64(proto: Uint8Array) {
+function protoToBase64(proto: Uint8Array) {
   return btoa(String.fromCharCode.apply(null, proto));
 }
 
@@ -92,6 +94,7 @@ function toTimeProto(time: string) {
 function toTimeGrainProto(timeGrain: V1TimeGrain) {
   switch (timeGrain) {
     case V1TimeGrain.TIME_GRAIN_UNSPECIFIED:
+    default:
       return TimeGrain.UNSPECIFIED;
     case V1TimeGrain.TIME_GRAIN_MILLISECOND:
       return TimeGrain.MILLISECOND;

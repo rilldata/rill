@@ -99,7 +99,7 @@ We should rename TimeSeriesTimeRange to a better name.
   $: allTimeRange = $allTimeRangeQuery?.data as TimeRange | undefined;
 
   // once we have the allTimeRange, set the default time range and time grain
-  $: if (allTimeRange) {
+  $: if (allTimeRange && $dashboardStore) {
     if (!$dashboardStore?.selectedTimeRange) {
       setDefaultTimeControls(allTimeRange);
     } else if (!$dashboardStore?.selectedTimeRange.start) {

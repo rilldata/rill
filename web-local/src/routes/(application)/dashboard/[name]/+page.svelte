@@ -1,12 +1,11 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { DashboardWorkspace } from "@rilldata/web-common/features/dashboards";
+  import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-  import { base64ToProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-  import { fromProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto.js";
-  import { onMount, tick } from "svelte";
+  import { StateSyncManager } from "@rilldata/web-common/features/dashboards/proto-state/StateSyncManager";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
   import {
     useRuntimeServiceGetCatalogEntry,
     useRuntimeServiceGetFile,
@@ -17,14 +16,16 @@
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
 
   $: metricViewName = $page.params.name;
+  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  onMount(async () => {
-    await tick();
-    const state = new URL(location.href).searchParams.get("state");
-    if (!state) return;
-    const fromState = fromProto(base64ToProto(decodeURIComponent(state)));
-    metricsExplorerStore.create(metricViewName, fromState);
-  });
+  $: stateSyncManager = new StateSyncManager(metricViewName);
+
+  $: if (metricsExplorer) {
+    stateSyncManager.handleStateChange(metricsExplorer);
+  }
+  $: if ($page) {
+    stateSyncManager.handleUrlChange();
+  }
 
   $: fileQuery = useRuntimeServiceGetFile(
     $runtime.instanceId,
@@ -65,5 +66,12 @@
 </svelte:head>
 
 {#if $fileQuery.data && $catalogQuery.data}
-  <DashboardWorkspace {metricViewName} />
+  <WorkspaceContainer
+    top="0px"
+    assetID={metricViewName}
+    bgClass="bg-white"
+    inspector={false}
+  >
+    <Dashboard {metricViewName} slot="body" />
+  </WorkspaceContainer>
 {/if}

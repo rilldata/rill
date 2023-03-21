@@ -1,12 +1,12 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
-    useAdminServiceFindOrganization,
-    useAdminServiceFindProjects,
-  } from "../../client";
+    useAdminServiceGetOrganization,
+    useAdminServiceListProjects,
+  } from "../../../client";
 
-  const org = useAdminServiceFindOrganization($page.params.organization);
-  const projs = useAdminServiceFindProjects($page.params.organization);
+  const org = useAdminServiceGetOrganization($page.params.organization);
+  const projs = useAdminServiceListProjects($page.params.organization);
 </script>
 
 <svelte:head>
@@ -25,7 +25,9 @@
       <ul>
         {#each $projs.data.projects as proj}
           <li>
-            <a href="/{$org.data.organization.name}/{proj.name}">{proj.name}</a>
+            <a href="/-/{$org.data.organization.name}/{proj.name}"
+              >{proj.name}</a
+            >
           </li>
         {/each}
       </ul>

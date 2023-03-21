@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { useAdminServiceFindProject } from "../../../client";
+  import { useAdminServiceGetProject } from "../../../../client";
 
-  const proj = useAdminServiceFindProject(
+  const proj = useAdminServiceGetProject(
     $page.params.organization,
     $page.params.project
   );

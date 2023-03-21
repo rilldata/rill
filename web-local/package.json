@@ -29,6 +29,8 @@
     "@babel/preset-env": "^7.16.11",
     "@playwright/test": "^1.28.1",
     "@rollup/plugin-typescript": "^8.3.1",
+    "@stdlib/random-base": "^0.0.6",
+    "@stdlib/random-shuffle": "^0.0.7",
     "@sveltejs/adapter-static": "^1.0.0",
     "@sveltejs/kit": "^1.0.0",
     "@testing-library/jest-dom": "^5.16.3",

@@ -116,7 +116,7 @@ paths:
           type: string
       tags:
         - RuntimeService
-    delete:
+    post:
       summary: DeleteInstance deletes an instance
       operationId: RuntimeService_DeleteInstance
       responses:
@@ -133,6 +133,60 @@ paths:
           in: path
           required: true
           type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              dropDb:
+                type: boolean
+            title: Request message for RuntimeService.DeleteInstance
+      tags:
+        - RuntimeService
+    put:
+      summary: EditInstance edits an existing instance
+      operationId: RuntimeService_EditInstance
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1EditInstanceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              embedCatalog:
+                type: boolean
+              ingestionLimitBytes:
+                type: string
+                format: int64
+              olapDriver:
+                type: string
+              olapDsn:
+                type: string
+              repoDriver:
+                type: string
+              repoDsn:
+                type: string
+              variables:
+                type: object
+                additionalProperties:
+                  type: string
+            description: |-
+              Request message for RuntimeService.EditInstance.
+              See message Instance for field descriptions.
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/catalog:
@@ -1553,10 +1607,9 @@ definitions:
     properties:
       embedCatalog:
         type: boolean
-      env:
-        type: object
-        additionalProperties:
-          type: string
+      ingestionLimitBytes:
+        type: string
+        format: int64
       instanceId:
         type: string
       olapDriver:
@@ -1567,6 +1620,10 @@ definitions:
         type: string
       repoDsn:
         type: string
+      variables:
+        type: object
+        additionalProperties:
+          type: string
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -1618,6 +1675,12 @@ definitions:
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
+  v1EditInstanceResponse:
+    type: object
+    properties:
+      instance:
+        $ref: '#/definitions/v1Instance'
+    title: Response message for RuntimeService.EditInstance
   v1GetCatalogEntryResponse:
     type: object
     properties:
@@ -1654,11 +1717,10 @@ definitions:
         description: |-
           If true, the runtime will store the instance's catalog in its OLAP store instead
           of in the runtime's metadata store. Currently only supported for the duckdb driver.
-      env:
-        type: object
-        additionalProperties:
-          type: string
-        title: instance specific environment variables
+      ingestionLimitBytes:
+        type: string
+        format: int64
+        title: ingestion limit across all sources, 0 means no limit
       instanceId:
         type: string
         title: Identifier (UUID)
@@ -1668,7 +1730,7 @@ definitions:
       olapDsn:
         type: string
         title: DSN for connection to OLAP
-      projectEnv:
+      projectVariables:
         type: object
         additionalProperties:
           type: string
@@ -1676,11 +1738,16 @@ definitions:
       repoDriver:
         type: string
         description: |-
-          Driver for reading/editing code artifacts (options: file, metastore).
+          Driver for reading/editing code artifacts (options: file, metastore, github).
           This enables virtualizing a file system in a cloud setting.
       repoDsn:
         type: string
         title: DSN for connecting to repo
+      variables:
+        type: object
+        additionalProperties:
+          type: string
+        title: instance specific variables
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
       one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
