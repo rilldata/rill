@@ -24,12 +24,6 @@ export enum ComparisonRange {
   Previous30Days = "Previous 30 days",
   PreviousYear = "Previous year",
 
-  // Point in time periods
-  DayOverDay = "Day over day",
-  WeekOverWeek = "Week over week",
-  MonthOverMonth = "Month over month",
-  YearOverYear = "Year over year",
-
   // Custom Range which the user can select
   Custom = "Custom range",
 }
