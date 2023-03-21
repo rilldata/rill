@@ -6,7 +6,6 @@
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
 
   const examples = [
-    { value: 10.534234, type: NicelyFormattedTypes.DECIMAL },
     { value: 3242340.534234, type: NicelyFormattedTypes.HUMANIZE },
     { value: 53243, type: NicelyFormattedTypes.HUMANIZE },
     { value: 1253243, type: NicelyFormattedTypes.HUMANIZE },

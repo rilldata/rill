@@ -34,7 +34,6 @@ export enum NicelyFormattedTypes {
   NONE = "none",
   CURRENCY = "currency_usd",
   PERCENTAGE = "percentage",
-  DECIMAL = "comma_separators",
 }
 
 interface ColFormatSpec {
@@ -56,7 +55,6 @@ export const nicelyFormattedTypesSelectorOptions = [
     value: NicelyFormattedTypes.PERCENTAGE,
     label: "Percentage",
   },
-  { value: NicelyFormattedTypes.DECIMAL, label: "Decimal" },
 ];
 
 const DEFAULT_OPTIONS = {
@@ -98,10 +96,10 @@ function formatNicely(
   return formatter.format(value);
 }
 
+// FIXME/NOTE: `convertToShorthand` is used by `humanizeDataType_legacy`
+// which has been retained to avoid breaking
+// a dev route, but is not used in live client code
 function convertToShorthand(value: number): string | number {
-  if (Math.abs(value) < 1000)
-    return formatNicely(value, NicelyFormattedTypes.DECIMAL);
-
   // Fifteen Zeros for Quadrillion
   return Math.abs(value) >= 1.0e15
     ? (value / 1.0e15).toFixed(1) + "Q"
@@ -136,6 +134,9 @@ function getScaleForValue(value: number): ShortHandSymbols {
 
 /*
   Format a single value using the given type and options
+
+  FIXME/NOTE: this function has been retained to avoid breaking
+  a dev route, but is not used in live client code
 */
 export function humanizeDataType_legacy(
   value: unknown,
@@ -274,7 +275,6 @@ export const nicelyFormattedTypesToNumberKind = (
 
     default:
       // captures:
-      // NicelyFormattedTypes.DECIMAL
       // NicelyFormattedTypes.NONE
       // NicelyFormattedTypes.HUMANIZE
       return NumberKind.ANY;
