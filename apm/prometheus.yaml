@@ -3,4 +3,3 @@ scrape_configs:
     scrape_interval: 10s
     static_configs:
       - targets: ["otel-collector:8889"]
-      - targets: ["otel-collector:8888"]
