@@ -35,7 +35,6 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
         // start during the last full hour.
-        { duration: "PT1H", operationType: TimeOffsetType.SUBTRACT },
         {
           period: Period.HOUR, //TODO: How to handle user selected timegrains?
           truncationType: TimeTruncationType.START_OF_PERIOD,
