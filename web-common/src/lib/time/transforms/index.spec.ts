@@ -11,22 +11,22 @@ import { getEndOfPeriod, getOffset, getStartOfPeriod, getTimeWidth } from "./";
 
 describe("getStartOfPeriod", () => {
   it("should return the start of the week for given date", () => {
-    const timeGrain = getStartOfPeriod(Period.WEEK, new Date("2020-03-15"));
+    const timeGrain = getStartOfPeriod(new Date("2020-03-15"), Period.WEEK);
     expect(timeGrain).toEqual(new Date("2020-03-09"));
   });
   it("should return the start of month for given date", () => {
-    const timeGrain = getStartOfPeriod(Period.MONTH, new Date("2020-03-15"));
+    const timeGrain = getStartOfPeriod(new Date("2020-03-15"), Period.MONTH);
     expect(timeGrain).toEqual(new Date("2020-03-01"));
   });
 });
 
 describe("getEndOfPeriod", () => {
   it("should return the end of the week for given date", () => {
-    const timeGrain = getEndOfPeriod(Period.WEEK, new Date("2020-03-15"));
+    const timeGrain = getEndOfPeriod(new Date("2020-03-15"), Period.WEEK);
     expect(timeGrain).toEqual(new Date("2020-03-15T23:59:59.999Z"));
   });
   it("should return the end of month for given date", () => {
-    const timeGrain = getEndOfPeriod(Period.MONTH, new Date("2020-02-15"));
+    const timeGrain = getEndOfPeriod(new Date("2020-02-15"), Period.MONTH);
     // leap year!
     expect(timeGrain).toEqual(new Date("2020-02-29T23:59:59.999Z"));
   });

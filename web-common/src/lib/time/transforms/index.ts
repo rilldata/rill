@@ -25,8 +25,8 @@ export function getPresentTime() {
 
 /** Returns the start of the period for the given reference time. */
 export function getStartOfPeriod(
-  period: Period,
   referenceTime: Date,
+  period: Period,
   zone = "utc"
 ) {
   const date = DateTime.fromJSDate(referenceTime, { zone });
@@ -35,8 +35,8 @@ export function getStartOfPeriod(
 
 /** Returns the end of the period that the reference time is in. */
 export function getEndOfPeriod(
-  period: Period,
   referenceTime: Date,
+  period: Period,
   zone = "utc"
 ) {
   const date = DateTime.fromJSDate(referenceTime, { zone });
@@ -82,11 +82,11 @@ export function transformDate(
     } else if (
       transformation.truncationType === TimeTruncationType.START_OF_PERIOD
     ) {
-      absoluteTime = getStartOfPeriod(transformation.period, absoluteTime);
+      absoluteTime = getStartOfPeriod(absoluteTime, transformation.period);
     } else if (
       transformation.truncationType === TimeTruncationType.END_OF_PERIOD
     ) {
-      absoluteTime = getEndOfPeriod(transformation.period, absoluteTime);
+      absoluteTime = getEndOfPeriod(absoluteTime, transformation.period);
     }
   }
 
