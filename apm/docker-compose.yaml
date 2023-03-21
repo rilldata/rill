@@ -28,4 +28,4 @@ services:
     volumes:
       - ./prometheus.yaml:/etc/prometheus/prometheus.yml
     ports:
-      - "9090:9090"
+      - "19090:9090"
