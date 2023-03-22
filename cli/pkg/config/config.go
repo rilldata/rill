@@ -3,11 +3,12 @@ package config
 import "fmt"
 
 type Config struct {
-	Version            Version
-	AdminURL           string
-	AdminTokenOverride string
-	AdminTokenDefault  string
-	Org                string
+	Version              Version
+	AdminURL             string
+	AdminTokenOverride   string
+	AdminTokenDefault    string
+	Org                  string
+	OtelExporterEndpoint string
 }
 
 func (c Config) IsDev() bool {

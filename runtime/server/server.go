@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	grpczaplog "github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2"
@@ -247,16 +246,18 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 	return resp, nil
 }
 
-func InitOpenTelemetry() error {
-	otelAgentAddr, ok := os.LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
-	if !ok {
+// Initializes providers and exporters.
+// Global providers accumulate metrics/traces.
+// The providers export data from Runtime using the exporters.
+func InitOpenTelemetry(endpoint string) error {
+	if endpoint == "" {
 		return nil
 	}
 
 	exporter, err := otlpmetricgrpc.New(
 		context.Background(),
 		otlpmetricgrpc.WithInsecure(),
-		otlpmetricgrpc.WithEndpoint(otelAgentAddr),
+		otlpmetricgrpc.WithEndpoint(endpoint),
 	)
 	if err != nil {
 		return err
@@ -272,7 +273,7 @@ func InitOpenTelemetry() error {
 
 	traceClient := otlptracegrpc.NewClient(
 		otlptracegrpc.WithInsecure(),
-		otlptracegrpc.WithEndpoint(otelAgentAddr),
+		otlptracegrpc.WithEndpoint(endpoint),
 		otlptracegrpc.WithDialOption(grpc.WithBlock()))
 	traceExp, err := otlptrace.New(context.Background(), traceClient)
 	if err != nil {

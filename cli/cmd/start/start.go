@@ -2,6 +2,7 @@ package start
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -31,7 +32,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 		Short: "Build project and start web app",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := runtimeserver.InitOpenTelemetry()
+			err := runtimeserver.InitOpenTelemetry(cfg.OtelExporterEndpoint)
 			if err != nil {
 				return err
 			}

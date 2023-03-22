@@ -276,11 +276,6 @@ func (a *App) ReconcileSource(sourcePath string) error {
 }
 
 func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool) error {
-	err := runtimeserver.InitOpenTelemetry()
-	if err != nil {
-		return err
-	}
-
 	// Get analytics info
 	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {

@@ -52,6 +52,8 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		Version: ver,
 	}
 
+	cfg.OtelExporterEndpoint = os.Getenv("RILL_OTEL_EXPORTER_ENDPOINT")
+
 	// Load admin token from .rill (may later be overridden by flag --api-token)
 	token, err := dotrill.GetAccessToken()
 	if err != nil {

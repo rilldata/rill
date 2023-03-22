@@ -45,6 +45,7 @@ type Config struct {
 	ConnectionCacheSize  int           `default:"100" split_words:"true"`
 	QueryCacheSize       int           `default:"10000" split_words:"true"`
 	AllowHostCredentials bool          `default:"false" split_words:"true"`
+	OtelExporterEndpoint string        `split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -53,20 +54,21 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 		Use:   "start",
 		Short: "Start stand-alone runtime server",
 		Run: func(cmd *cobra.Command, args []string) {
-			err := server.InitOpenTelemetry()
-			if err != nil {
-				fmt.Printf("failed to load Open Telemetry: %s", err.Error())
-				os.Exit(1)
-			}
-
 			// Load .env (note: fails silently if .env has errors)
 			_ = godotenv.Load()
 
 			// Init config
 			var conf Config
-			err = envconfig.Process("rill_runtime", &conf)
+			err := envconfig.Process("rill_runtime", &conf)
 			if err != nil {
 				fmt.Printf("failed to load config: %s", err.Error())
+				os.Exit(1)
+			}
+
+			// Open-Telemetry
+			err = server.InitOpenTelemetry(conf.OtelExporterEndpoint)
+			if err != nil {
+				fmt.Printf("failed to load Open Telemetry: %s", err.Error())
 				os.Exit(1)
 			}
 
