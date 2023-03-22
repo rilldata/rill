@@ -15,6 +15,9 @@
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import { getOffset } from "@rilldata/web-common/lib/time/transforms";
+  import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import {
     useQueryServiceMetricsViewTimeSeries,
     useQueryServiceMetricsViewTotals,
@@ -26,10 +29,6 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
-  import {
-    addGrains,
-    formatDateByInterval,
-  } from "../time-controls/time-range-utils";
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   export let metricViewName;
@@ -114,6 +113,8 @@
 
   let startValue: Date;
   let endValue: Date;
+
+  // FIXME: move this logic to a function + write tests.
   $: if (
     metricsExplorer?.selectedTimeRange &&
     metricsExplorer?.selectedTimeRange?.start
@@ -125,11 +126,13 @@
     // selectedTimeRange.end is exclusive and rounded to the time grain ("interval").
     // Since values are grouped with DATE_TRUNC, we subtract one grain to get the (inclusive) axis end.
     endValue = new Date(metricsExplorer?.selectedTimeRange?.end);
-    endValue = addGrains(
-      endValue,
-      -1,
-      metricsExplorer?.selectedTimeRange?.interval
+
+    endValue = getOffset(
+      new Date(metricsExplorer?.selectedTimeRange?.end),
+      TIME_GRAIN[metricsExplorer?.selectedTimeRange?.interval].duration,
+      TimeOffsetType.SUBTRACT
     );
+
     endValue = removeTimezoneOffset(endValue);
   }
 </script>
@@ -192,11 +195,15 @@
               yAccessor={measure.name}
               xMin={startValue}
               xMax={endValue}
-              timegrain={metricsExplorer.selectedTimeRange?.interval}
               start={startValue}
               end={endValue}
               mouseoverTimeFormat={(value) => {
-                return formatDateByInterval(interval, value);
+                /** format the date according to the time grain */
+                return new Date(value).toLocaleDateString(
+                  undefined,
+                  TIME_GRAIN[metricsExplorer?.selectedTimeRange?.interval]
+                    .formatDate
+                );
               }}
               numberKind={nicelyFormattedTypesToNumberKind(measure?.format)}
               mouseoverFormat={(value) =>

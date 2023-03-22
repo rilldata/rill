@@ -1,12 +1,12 @@
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
-  useRuntimeServiceGetCatalogEntry,
   useQueryServiceColumnTimeRange,
+  useRuntimeServiceGetCatalogEntry,
   useRuntimeServiceListCatalogEntries,
   useRuntimeServiceListFiles,
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
-import { TimeRangeName } from "./time-controls/time-control-types";
 
 export function useDashboardNames(repoId: string) {
   return useRuntimeServiceListFiles(
@@ -69,7 +69,7 @@ export function useModelAllTimeRange(
           if (!data.timeRangeSummary?.min || !data.timeRangeSummary?.max)
             return undefined;
           return {
-            name: TimeRangeName.AllTime,
+            name: TimeRangePreset.ALL_TIME,
             start: new Date(data.timeRangeSummary.min),
             end: new Date(data.timeRangeSummary.max),
           };
