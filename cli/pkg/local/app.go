@@ -331,8 +331,8 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 			if enableUI {
 				mux.Handle("/", runtimeserver.OtelHandler(web.StaticHandler()))
 			}
-			mux.Handle("/local/config", runtimeserver.OtelHandler(a.infoHandler(inf)))
-			mux.Handle("/local/track", runtimeserver.OtelHandler(a.trackingHandler(inf)))
+			mux.Handle("/local/config", a.infoHandler(inf))
+			mux.Handle("/local/track", a.trackingHandler(inf))
 		})
 	})
 
