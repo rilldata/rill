@@ -6,6 +6,12 @@
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time//config";
   import {
+    getAvailableComparisonsForTimeRange,
+    getComparisonRange,
+    isComparisonInsideBounds,
+  } from "@rilldata/web-common/lib/time/comparisons";
+  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
+  import {
     checkValidTimeGrain,
     getDefaultTimeGrain,
     getTimeGrainOptions,
@@ -13,6 +19,7 @@
   import {
     convertTimeRangePreset,
     ISODurationToTimePreset,
+    prettyFormatTimeRange,
   } from "@rilldata/web-common/lib/time/ranges";
   import type {
     DashboardTimeControls,
@@ -20,6 +27,7 @@
     TimeRange,
     TimeRangeType,
   } from "@rilldata/web-common/lib/time/types";
+  import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import {
     useRuntimeServiceGetCatalogEntry,
     V1TimeGrain,
@@ -186,9 +194,37 @@
     cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
   }
+
+  let comparisonRange;
+  let comparisonOption;
+  let isComparisonRangeAvailable;
+  let availableComparisons;
+  $: if ($dashboardStore?.selectedTimeRange?.start) {
+    const { start, end } = $dashboardStore?.selectedTimeRange;
+
+    comparisonOption =
+      DEFAULT_TIME_RANGES[$dashboardStore?.selectedTimeRange?.name]
+        .defaultComparison;
+
+    comparisonRange = getComparisonRange(start, end, comparisonOption);
+    isComparisonRangeAvailable = isComparisonInsideBounds(
+      allTimeRange.start,
+      allTimeRange.end,
+      start,
+      end,
+      comparisonOption
+    );
+    availableComparisons = getAvailableComparisonsForTimeRange(
+      allTimeRange.start,
+      allTimeRange.end,
+      start,
+      end,
+      [...Object.values(TimeComparisonOption)]
+    );
+  }
 </script>
 
-<div class="flex flex-row gap-x-1">
+<div class="flex flex-row items-center gap-x-1">
   {#if !hasTimeSeries}
     <NoTimeDimensionCTA
       {metricViewName}
@@ -209,4 +245,19 @@
       {minTimeGrain}
     />
   {/if}
+  <div class="flex gap-x-2">
+    <div>
+      {#if comparisonRange}
+        compared to {prettyFormatTimeRange(
+          comparisonRange.start,
+          comparisonRange.end
+        )}
+      {/if}
+    </div>
+    <div>in range ? {JSON.stringify(isComparisonRangeAvailable)}</div>
+  </div>
+</div>
+
+<div>
+  default: {comparisonOption} options: {JSON.stringify(availableComparisons)}
 </div>

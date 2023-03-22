@@ -283,20 +283,21 @@ export const nicelyFormattedTypesToNumberKind = (
 
 export function humanizeDataType(
   value: unknown,
-  type: NicelyFormattedTypes
+  type: NicelyFormattedTypes,
+  options?: FormatterFactoryOptions
 ): string {
   if (typeof value != "number") return value.toString();
 
   const numberKind = nicelyFormattedTypesToNumberKind(type);
 
-  let innerOptions: FormatterFactoryOptions;
+  let innerOptions: FormatterFactoryOptions = options;
   if (type === NicelyFormattedTypes.NONE) {
     innerOptions = {
       strategy: "none",
       numberKind,
       padWithInsignificantZeros: false,
     };
-  } else {
+  } else if (options === undefined) {
     innerOptions = {
       strategy: "default",
       numberKind,

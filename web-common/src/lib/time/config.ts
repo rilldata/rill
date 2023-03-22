@@ -10,6 +10,7 @@ import {
   Period,
   RangePresetType,
   ReferencePoint,
+  TimeComparisonOption,
   TimeGrain,
   TimeOffsetType,
   TimeRangeMeta,
@@ -31,6 +32,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   LAST_SIX_HOURS: {
     label: "Last 6 Hours",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -57,6 +59,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   LAST_24_HOURS: {
     label: "Last 24 Hours",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
+    defaultComparison: TimeComparisonOption.DAY,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -81,6 +84,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   LAST_7_DAYS: {
     label: "Last 7 Days",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
+    defaultComparison: TimeComparisonOption.WEEK,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -104,6 +108,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   LAST_4_WEEKS: {
     label: "Last 4 Weeks",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -127,6 +132,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   LAST_YEAR: {
     label: "Last Year",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
+    defaultComparison: TimeComparisonOption.YEAR,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -163,6 +169,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   TODAY: {
     label: "Today",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
+    defaultComparison: TimeComparisonOption.DAY,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -185,6 +192,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   WEEK_TO_DATE: {
     label: "Week to Date",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
+    defaultComparison: TimeComparisonOption.WEEK,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -207,6 +215,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   MONTH_TO_DATE: {
     label: "Month to Date",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
+    defaultComparison: TimeComparisonOption.MONTH,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -229,6 +238,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   YEAR_TO_DATE: {
     label: "Year to Date",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
+    defaultComparison: TimeComparisonOption.YEAR,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -253,6 +263,8 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
 export const ALL_TIME = {
   label: "All Time",
   rangePreset: RangePresetType.ALL_TIME,
+  // this comparison period is a no-op
+  defaultComparison: TimeComparisonOption.CONTIGUOUS,
 };
 
 export const DEFAULT_TIME_RANGES: Record<string, TimeRangeMeta> = {

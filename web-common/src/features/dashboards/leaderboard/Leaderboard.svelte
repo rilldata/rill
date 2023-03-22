@@ -13,8 +13,11 @@
     useMetaDimension,
     useMetaMeasure,
     useMetaQuery,
+    useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
+  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
   import {
     MetricsViewDimension,
     MetricsViewMeasure,
@@ -49,8 +52,7 @@
   export let leaderboardFormatScale: ShortHandSymbols;
   export let isSummableMeasure = false;
 
-  export let slice = 7;
-  export let seeMoreSlice = 50;
+  let slice = 7;
   let seeMore = false;
 
   const queryClient = useQueryClient();
@@ -60,6 +62,16 @@
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+
+  // the timeRangeName is the key to a selected time range's associated presets.
+  $: timeRangeName = metricsExplorer?.selectedTimeRange?.name;
+  // we'll need to get the entire time range.
+  $: allTimeRangeQuery = useModelAllTimeRange(
+    $runtime.instanceId,
+    $metaQuery.data.model,
+    $metaQuery.data.timeDimension
+  );
+  $: allTimeRange = $allTimeRangeQuery?.data?.data;
 
   let filterExcludeMode: boolean;
   $: filterExcludeMode =
@@ -156,7 +168,64 @@
     );
   }
 
+  let comparisonTopListQuery;
+  // create the right compareTopListParams.
+  $: if (!$topListQuery?.isFetching) {
+    const values = $topListQuery?.data?.data;
+
+    const comparisonTimeRange = getTimeComparisonParametersForComponent(
+      DEFAULT_TIME_RANGES[timeRangeName],
+      $allTimeRangeQuery?.data?.start,
+      $allTimeRangeQuery?.data?.end,
+      metricsExplorer.selectedTimeRange.start,
+      metricsExplorer.selectedTimeRange.end
+    );
+
+    const { start, end, isComparisonRangeAvailable } = comparisonTimeRange;
+
+    // add all available leaderboard  values to the include filter.
+    const updatedFilters = filterForDimension;
+    updatedFilters.include = [
+      ...(updatedFilters.include ?? []),
+      { in: values.map((v) => v[dimensionName]), name: dimensionName },
+    ];
+
+    let comparisonParams = {
+      dimensionName: dimensionName,
+      measureNames: [measure.name],
+      limit: "250",
+      offset: "0",
+      sort: [
+        {
+          name: measure.name,
+          ascending: false,
+        },
+      ],
+      filter: updatedFilters,
+    };
+
+    if (hasTimeSeries) {
+      comparisonParams = {
+        ...comparisonParams,
+
+        ...{
+          timeStart: isComparisonRangeAvailable ? start : undefined,
+          timeEnd: isComparisonRangeAvailable ? end : undefined,
+        },
+      };
+    }
+
+    comparisonTopListQuery = useQueryServiceMetricsViewToplist(
+      $runtime.instanceId,
+      metricViewName,
+      comparisonParams
+    );
+  }
+
+  $: console.log($comparisonTopListQuery?.data);
+
   let values = [];
+  let comparisonValues = [];
 
   /** replace data after fetched. */
   $: if (!$topListQuery?.isFetching) {
@@ -167,6 +236,15 @@
       })) ?? [];
     setLeaderboardValues(values);
   }
+
+  $: if (!$comparisonTopListQuery?.isFetching) {
+    comparisonValues =
+      $comparisonTopListQuery?.data?.data?.map((val) => ({
+        value: val[measure?.name],
+        label: val[dimension?.name],
+      })) ?? [];
+  }
+
   /** figure out how many selected values are currently hidden */
   // $: hiddenSelectedValues = values.filter((di, i) => {
   //   return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
@@ -188,7 +266,7 @@
     ?.filter((label) => {
       return (
         // the value is visible within the fold.
-        !values.slice(0, !seeMore ? slice : seeMoreSlice).some((value) => {
+        !values.slice(0, slice).some((value) => {
           return value.label === label;
         })
       );
@@ -227,7 +305,8 @@
         <!-- place the leaderboard entries that are above the fold here -->
         <DimensionLeaderboardEntrySet
           loading={$topListQuery?.isFetching}
-          values={values.slice(0, !seeMore ? slice : seeMoreSlice)}
+          values={values.slice(0, slice)}
+          comparisonValues={comparisonValues.slice(0, slice)}
           {activeValues}
           {filterExcludeMode}
           {atLeastOneActive}

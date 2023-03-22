@@ -79,6 +79,9 @@
       </div>
       <!-- {/if} -->
     </div>
+    <div slot="context">
+      <slot name="context" />
+    </div>
   </LeaderboardListItem>
   <TooltipContent slot="tooltip-content">
     <div style:max-width="300px">

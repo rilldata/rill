@@ -9,6 +9,10 @@
   import { humanizeDataType, NicelyFormattedTypes } from "../humanize-numbers";
 
   export let value: number;
+  export let comparisonValue: number;
+  export let comparisonPercChange: number;
+  export let showComparison: boolean;
+
   export let status: EntityStatus;
   export let description: string = undefined;
   export let withTimeseries = true;
@@ -17,6 +21,8 @@
   $: formatPresetEnum =
     (formatPreset as NicelyFormattedTypes) || NicelyFormattedTypes.HUMANIZE;
   $: valusIsPresent = value !== undefined && value !== null;
+
+  $: isComparisonPositive = comparisonPercChange && comparisonPercChange >= 0;
 
   const [send, receive] = crossfade({ fallback: fly });
 </script>
@@ -35,7 +41,7 @@
   </Tooltip>
   <div
     class="ui-copy-muted relative"
-    style:font-size={withTimeseries ? "1.5rem" : "1.8rem"}
+    style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
     style:font-weight="light"
   >
     <!-- the default slot will be a tweened number that uses the formatter. One can optionally
@@ -43,15 +49,69 @@
     <slot name="value">
       <div>
         {#if valusIsPresent && status === EntityStatus.Idle}
-          <div>
-            <WithTween {value} tweenProps={{ duration: 500 }} let:output>
-              {#if formatPresetEnum !== NicelyFormattedTypes.NONE}
-                {humanizeDataType(output, formatPresetEnum)}
-              {:else}
-                {output}
+          <Tooltip distance={8} location="bottom" alignment="start">
+            <div class="w-max">
+              <WithTween {value} tweenProps={{ duration: 500 }} let:output>
+                {#if formatPresetEnum !== NicelyFormattedTypes.NONE}
+                  {humanizeDataType(output, formatPresetEnum)}
+                {:else}
+                  {output}
+                {/if}
+              </WithTween>
+            </div>
+            <TooltipContent slot="tooltip-content">
+              the aggregate value over the current time period
+            </TooltipContent>
+          </Tooltip>
+          {#if showComparison}
+            <div class="flex items-baseline gap-x-2">
+              {#if comparisonValue != null}
+                <Tooltip distance={8} location="bottom" alignment="start">
+                  <div
+                    class="w-max text-sm ui-copy-inactive "
+                    class:font-semibold={isComparisonPositive}
+                  >
+                    <WithTween
+                      value={comparisonValue}
+                      tweenProps={{ duration: 500 }}
+                      let:output
+                    >
+                      {@const formattedValue =
+                        formatPresetEnum !== NicelyFormattedTypes.NONE
+                          ? humanizeDataType(output, formatPresetEnum)
+                          : output}
+                      {formattedValue}
+                    </WithTween>
+                  </div>
+                  <TooltipContent slot="tooltip-content"
+                    >the previous period's aggregate value</TooltipContent
+                  >
+                </Tooltip>
               {/if}
-            </WithTween>
-          </div>
+              {#if comparisonPercChange != null}
+                <Tooltip distance={16} location="right" alignment="center">
+                  <div
+                    class="w-max text-sm 
+              {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
+                  >
+                    <WithTween
+                      value={comparisonPercChange}
+                      tweenProps={{ duration: 500 }}
+                      let:output
+                    >
+                      ({humanizeDataType(
+                        output,
+                        NicelyFormattedTypes.PERCENTAGE
+                      )})
+                    </WithTween>
+                  </div>
+                  <TooltipContent slot="tooltip-content">
+                    the percentage change over the previous period
+                  </TooltipContent>
+                </Tooltip>
+              {/if}
+            </div>
+          {/if}
         {:else if status === EntityStatus.Error}
           <CrossIcon />
         {:else if status === EntityStatus.Running}

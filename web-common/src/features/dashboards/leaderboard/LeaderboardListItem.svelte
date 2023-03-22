@@ -74,8 +74,18 @@
           <slot name="title" {isActive} />
         </div>
       </div>
-      <div class="justify-self-end overflow-hidden ui-copy-number">
+      <div
+        class="justify-self-end overflow-hidden ui-copy-number flex gap-x-2 items-baseline"
+      >
         <slot name="right" />
+        {#if $$slots["context"]}
+          <div
+            class="text-xs text-gray-500 dark:text-gray-400"
+            style:width="44px"
+          >
+            <slot name="context" />
+          </div>
+        {/if}
       </div>
     </div>
   </BarAndLabel>

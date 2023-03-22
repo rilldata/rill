@@ -12,10 +12,17 @@
     NicelyFormattedTypes,
     nicelyFormattedTypesToNumberKind,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
+  import {
+    useMetaQuery,
+    useModelAllTimeRange,
+  } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
+  import {
+    DEFAULT_TIME_RANGES,
+    TIME_GRAIN,
+  } from "@rilldata/web-common/lib/time/config";
   import { getOffset } from "@rilldata/web-common/lib/time/transforms";
   import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import {
@@ -31,6 +38,7 @@
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
+
   export let metricViewName;
   export let workspaceWidth: number;
 
@@ -46,12 +54,43 @@
   $: interval = metricsExplorer?.selectedTimeRange?.interval;
 
   let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
+  $: allTimeRangeQuery = useModelAllTimeRange(
+    $runtime.instanceId,
+    $metaQuery.data.model,
+    $metaQuery.data.timeDimension
+  );
+
+  // get the time range name, which is the preset.
+  let name;
+  $: if ($allTimeRangeQuery?.isSuccess) {
+    name = metricsExplorer.selectedTimeRange.name;
+  }
+
+  let totalsComparisonQuery: UseQueryStoreResult<
+    V1MetricsViewTotalsResponse,
+    Error
+  >;
+
+  let isComparisonRangeAvailable = false;
+
   $: if (
+    name &&
     metricsExplorer &&
     metaQuery &&
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
+    const comparisonParams = getTimeComparisonParametersForComponent(
+      DEFAULT_TIME_RANGES[name],
+      $allTimeRangeQuery?.data?.start,
+      $allTimeRangeQuery?.data?.end,
+      metricsExplorer.selectedTimeRange.start,
+      metricsExplorer.selectedTimeRange.end
+    );
+
+    const { start, end } = comparisonParams;
+    isComparisonRangeAvailable = comparisonParams.isComparisonRangeAvailable;
+
     const totalsQueryParams = {
       measureNames: selectedMeasureNames,
       filter: metricsExplorer?.filters,
@@ -64,7 +103,27 @@
       metricViewName,
       totalsQueryParams
     );
+
+    // check if we can have a valid comparison time range.
+
+    totalsComparisonQuery = useQueryServiceMetricsViewTotals(
+      instanceId,
+      metricViewName,
+      {
+        ...totalsQueryParams,
+        timeStart: isComparisonRangeAvailable ? start.toISOString() : undefined,
+        timeEnd: isComparisonRangeAvailable ? end.toISOString() : undefined,
+      }
+    );
   }
+
+  // get the totalsComparisons.
+  $: totalsComparisons = $totalsComparisonQuery?.data?.data;
+  $: console.log(
+    "totalsComparisons",
+    totalsComparisons,
+    isComparisonRangeAvailable
+  );
 
   let timeSeriesQuery: UseQueryStoreResult<
     V1MetricsViewTimeSeriesResponse,
@@ -137,6 +196,8 @@
   }
 </script>
 
+{isComparisonRangeAvailable}
+<!-- {JSON.stringify($totalsComparisonQuery)} -->
 <WithBisector
   data={formattedData}
   callback={(datum) => datum.ts}
@@ -166,12 +227,21 @@
       {#each $metaQuery.data?.measures as measure, index (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
         {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
+        {@const showComparison = isComparisonRangeAvailable}
+        {@const comparisonValue = totalsComparisons?.[measure.name]}
+        {@const comparisonPercChange =
+          comparisonValue && bigNum
+            ? (bigNum - comparisonValue) / comparisonValue
+            : undefined}
         {@const formatPreset =
           NicelyFormattedTypes[measure?.format] ||
           NicelyFormattedTypes.HUMANIZE}
         <!-- FIXME: I can't select a time series by measure id. -->
         <MeasureBigNumber
           value={bigNum}
+          {showComparison}
+          {comparisonValue}
+          {comparisonPercChange}
           description={measure?.description ||
             measure?.label ||
             measure?.expression}

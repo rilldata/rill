@@ -107,6 +107,7 @@ export interface TimeRangeMeta {
   label: string;
   defaultGrain?: V1TimeGrain; // Affordance for future use
   rangePreset?: RangePresetType | string;
+  defaultComparison?: TimeComparisonOption | string;
   start?: string | RelativePointInTime;
   end?: string | RelativePointInTime;
 }
@@ -172,3 +173,13 @@ export type AvailableTimeGrain = Exclude<
   V1TimeGrain,
   "TIME_GRAIN_UNSPECIFIED" | "TIME_GRAIN_MILLISECOND" | "TIME_GRAIN_SECOND"
 >;
+
+export enum TimeComparisonOption {
+  CONTIGUOUS = "CONTIGUOUS",
+  CUSTOM = "CUSTOM_COMPARISON_RANGE",
+  DAY = "P1D",
+  WEEK = "P1W",
+  MONTH = "P1M",
+  QUARTER = "P3M",
+  YEAR = "P1Y",
+}
