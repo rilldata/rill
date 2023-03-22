@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -160,6 +161,7 @@ func sourceReader(paths []string, csvDelimiter, format string, hivePartition int
 		format = fmt.Sprintf(".%s", format)
 	}
 
+	sz := math.MaxInt32 - 1
 	if format == "" {
 		return "", fmt.Errorf("invalid file")
 	} else if strings.Contains(format, ".csv") || strings.Contains(format, ".tsv") || strings.Contains(format, ".txt") {
@@ -167,7 +169,7 @@ func sourceReader(paths []string, csvDelimiter, format string, hivePartition int
 	} else if strings.Contains(format, ".parquet") {
 		return fmt.Sprintf("read_parquet(['%s'], HIVE_PARTITIONING=%v)", strings.Join(paths, "','"), hivePartition), nil
 	} else if strings.Contains(format, ".json") || strings.Contains(format, ".ndjson") {
-		return fmt.Sprintf("read_json_auto(['%s'])", strings.Join(paths, "','")), nil
+		return fmt.Sprintf("read_json_auto(['%s'], maximum_object_size=%v)", strings.Join(paths, "','"), sz), nil
 	} else {
 		return "", fmt.Errorf("file type not supported : %s", format)
 	}
