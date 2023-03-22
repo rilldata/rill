@@ -1,13 +1,9 @@
-import {
-  humanizeGroupValues,
-  NicelyFormattedTypes,
-} from "@rilldata/web-common/features/dashboards/humanize-numbers";
 import { humanized2FormatterFactory } from "./humanizer-2";
 
 import {
-  splitNumStr,
-  getSpacingMetadataForRawStrings,
   getMaxPxWidthsForSplitsStrings,
+  getSpacingMetadataForRawStrings,
+  splitNumStr,
 } from "./num-string-to-aligned-spec";
 
 export type FormatterSpacingMeta = {
@@ -59,38 +55,38 @@ export type FormatterFactory = (
 
 export type NumPartPxWidthLookupFn = (str: string) => number;
 
-const humanizeGroupValuesFormatterFactory: FormatterFactory = (
-  sample: number[],
-  pxWidthLookup: NumPartPxWidthLookupFn,
-  _options
-) => {
-  const range = { max: Math.max(...sample), min: Math.min(...sample) };
+// const humanizeGroupValuesFormatterFactory: FormatterFactory = (
+//   sample: number[],
+//   pxWidthLookup: NumPartPxWidthLookupFn,
+//   _options
+// ) => {
+//   const range = { max: Math.max(...sample), min: Math.min(...sample) };
 
-  const humanized = humanizeGroupValues(
-    sample.map((x) => ({ value: x })),
-    NicelyFormattedTypes.HUMANIZE,
-    { columnName: "value" }
-  );
-  const rawStrings = humanized.map((x) => x.__formatted_value.toString());
-  const splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
+//   const humanized = humanizeGroupValues(
+//     sample.map((x) => ({ value: x })),
+//     NicelyFormattedTypes.HUMANIZE,
+//     { columnName: "value" }
+//   );
+//   const rawStrings = humanized.map((x) => x.__formatted_value.toString());
+//   const splitStrs: NumberStringParts[] = rawStrings.map(splitNumStr);
 
-  const spacing: FormatterSpacingMeta =
-    getSpacingMetadataForRawStrings(rawStrings);
+//   const spacing: FormatterSpacingMeta =
+//     getSpacingMetadataForRawStrings(rawStrings);
 
-  const maxPxWidth = getMaxPxWidthsForSplitsStrings(splitStrs, pxWidthLookup);
+//   const maxPxWidth = getMaxPxWidthsForSplitsStrings(splitStrs, pxWidthLookup);
 
-  return (x: number) => {
-    const i = humanized.findIndex((h) => h.value == x);
-    return {
-      number: x,
-      rawStr: rawStrings[i],
-      splitStr: splitStrs[i],
-      spacing,
-      range,
-      maxPxWidth,
-    };
-  };
-};
+//   return (x: number) => {
+//     const i = humanized.findIndex((h) => h.value == x);
+//     return {
+//       number: x,
+//       rawStr: rawStrings[i],
+//       splitStr: splitStrs[i],
+//       spacing,
+//       range,
+//       maxPxWidth,
+//     };
+//   };
+// };
 
 const rawStrFormatterFactory: FormatterFactory = (
   sample: number[],
@@ -205,10 +201,10 @@ type NamedFormatterFactory = {
 export const formatterFactories: NamedFormatterFactory[] = [
   { desc: "JS `toString()`", fn: rawStrFormatterFactory },
 
-  {
-    desc: "humanizeGroupValues (current humanizer)",
-    fn: humanizeGroupValuesFormatterFactory,
-  },
+  // {
+  //   desc: "humanizeGroupValues (current humanizer)",
+  //   fn: humanizeGroupValuesFormatterFactory,
+  // },
 
   { desc: "new humanizer", fn: humanized2FormatterFactory },
 

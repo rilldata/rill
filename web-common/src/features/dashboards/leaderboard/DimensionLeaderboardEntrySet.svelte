@@ -84,7 +84,8 @@ see more button
   }
 </script>
 
-{#each renderValues as { label, value, __formatted_value, active, excluded, comparisonValue } (label)}
+{#each renderValues as { label, value, active, excluded, comparisonValue } (label)}
+  {@const formattedValue = humanizeDataType(value, formatPreset)}
   {@const percDiff =
     comparisonValue && value && (value - comparisonValue) / comparisonValue}
   {@const diffIsPositive = percDiff >= 0}
@@ -133,7 +134,7 @@ see more button
           </span>
         {/if}
 
-        {__formatted_value || value || "∅"}
+        {formattedValue || value || "∅"}
       </div>
       <div slot="context" class:text-red-500={!diffIsPositive}>
         {#if percDiff !== undefined}

@@ -30,11 +30,7 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";
-  import {
-    humanizeGroupValues,
-    NicelyFormattedTypes,
-    ShortHandSymbols,
-  } from "../humanize-numbers";
+  import type { NicelyFormattedTypes } from "../humanize-numbers";
   import DimensionLeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardList from "./LeaderboardList.svelte";
@@ -49,7 +45,6 @@
   export let referenceValue: number;
 
   export let formatPreset: NicelyFormattedTypes;
-  export let leaderboardFormatScale: ShortHandSymbols;
   export let isSummableMeasure = false;
 
   let slice = 7;
@@ -252,16 +247,6 @@
   // $: hiddenSelectedValues = values.filter((di, i) => {
   //   return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
   // });
-
-  $: if (values) {
-    values = formatPreset
-      ? humanizeGroupValues(values, formatPreset, {
-          scale: leaderboardFormatScale,
-        })
-      : humanizeGroupValues(values, NicelyFormattedTypes.HUMANIZE, {
-          scale: leaderboardFormatScale,
-        });
-  }
 
   // get all values that are selected but not visible.
   // we'll put these at the bottom w/ a divider.

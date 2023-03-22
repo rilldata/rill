@@ -104,8 +104,6 @@
       totalsQueryParams
     );
 
-    // check if we can have a valid comparison time range.
-
     totalsComparisonQuery = useQueryServiceMetricsViewTotals(
       instanceId,
       metricViewName,
