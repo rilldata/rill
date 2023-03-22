@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/connectors/localfile"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -19,7 +20,7 @@ import (
 const (
 	_iteratorBatch        = 8
 	_defaultIngestTimeout = 60 * time.Minute
-	_jsonObjectMaxSize    = 1024 * 1024 * 100 // 100KB
+	_jsonObjectMaxSize    = datasize.KB * 100 // 100KB
 )
 
 // Ingest data from a source with a timeout
