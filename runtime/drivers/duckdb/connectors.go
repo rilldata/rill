@@ -169,7 +169,7 @@ func sourceReader(paths []string, csvDelimiter, format string, hivePartition int
 	} else if strings.Contains(format, ".parquet") {
 		return fmt.Sprintf("read_parquet(['%s'], HIVE_PARTITIONING=%v)", strings.Join(paths, "','"), hivePartition), nil
 	} else if strings.Contains(format, ".json") || strings.Contains(format, ".ndjson") {
-		return fmt.Sprintf("read_json_auto(['%s'], maximum_object_size=%v)", strings.Join(paths, "','"), _jsonObjectMaxSize), nil
+		return fmt.Sprintf("read_json_auto(['%s'], maximum_object_size=%v)", strings.Join(paths, "','"), _jsonObjectMaxSize.Bytes()), nil
 	} else {
 		return "", fmt.Errorf("file type not supported : %s", format)
 	}
