@@ -119,11 +119,6 @@
 
   // get the totalsComparisons.
   $: totalsComparisons = $totalsComparisonQuery?.data?.data;
-  $: console.log(
-    "totalsComparisons",
-    totalsComparisons,
-    isComparisonRangeAvailable
-  );
 
   let timeSeriesQuery: UseQueryStoreResult<
     V1MetricsViewTimeSeriesResponse,

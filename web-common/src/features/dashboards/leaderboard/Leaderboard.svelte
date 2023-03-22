@@ -169,8 +169,10 @@
   }
 
   let comparisonTopListQuery;
+
+  let isComparisonRangeAvailable = false;
   // create the right compareTopListParams.
-  $: if (!$topListQuery?.isFetching) {
+  $: if (!$topListQuery?.isFetching && hasTimeSeries) {
     const values = $topListQuery?.data?.data;
 
     const comparisonTimeRange = getTimeComparisonParametersForComponent(
@@ -181,7 +183,8 @@
       metricsExplorer.selectedTimeRange.end
     );
 
-    const { start, end, isComparisonRangeAvailable } = comparisonTimeRange;
+    const { start, end } = comparisonTimeRange;
+    isComparisonRangeAvailable = comparisonTimeRange.isComparisonRangeAvailable;
 
     // add all available leaderboard  values to the include filter.
     const updatedFilters = filterForDimension;
@@ -220,9 +223,9 @@
       metricViewName,
       comparisonParams
     );
+  } else if (!hasTimeSeries) {
+    isComparisonRangeAvailable = false;
   }
-
-  $: console.log($comparisonTopListQuery?.data);
 
   let values = [];
   let comparisonValues = [];
@@ -299,14 +302,15 @@
       dimensionDescription={dimension?.description}
       on:click={() => selectDimension(dimensionName)}
     />
-
     {#if values}
       <LeaderboardList>
         <!-- place the leaderboard entries that are above the fold here -->
         <DimensionLeaderboardEntrySet
+          {formatPreset}
           loading={$topListQuery?.isFetching}
           values={values.slice(0, slice)}
           comparisonValues={comparisonValues.slice(0, slice)}
+          showComparison={isComparisonRangeAvailable}
           {activeValues}
           {filterExcludeMode}
           {atLeastOneActive}
@@ -318,8 +322,11 @@
         {#if selectedValuesThatAreBelowTheFold?.length}
           <hr />
           <DimensionLeaderboardEntrySet
+            {formatPreset}
             loading={$topListQuery?.isFetching}
             values={selectedValuesThatAreBelowTheFold}
+            comparisonValues={comparisonValues.slice(0, slice)}
+            showComparison={isComparisonRangeAvailable}
             {activeValues}
             {filterExcludeMode}
             {atLeastOneActive}

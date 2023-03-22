@@ -10,6 +10,9 @@
   export let active;
   /** the measure value to be displayed on the right side */
   export let measureValue;
+
+  /** show the context number next to the actual value */
+  export let showContext = false;
   /** we'll use special styling when at least one value elsewhere is active */
   export let atLeastOneActive = false;
   /** if this value is a summable measure, we'll show the bar. Otherwise, don't. */
@@ -43,6 +46,7 @@
 <Tooltip location="right">
   <LeaderboardListItem
     value={renderedBarValue}
+    {showContext}
     isActive={active}
     {excluded}
     on:click
@@ -79,8 +83,10 @@
       </div>
       <!-- {/if} -->
     </div>
-    <div slot="context">
-      <slot name="context" />
+    <div slot="context" let:isActive>
+      <div class:ui-copy-strong={!excluded && isActive}>
+        <slot name="context" />
+      </div>
     </div>
   </LeaderboardListItem>
   <TooltipContent slot="tooltip-content">

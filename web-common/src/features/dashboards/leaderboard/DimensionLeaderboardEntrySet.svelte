@@ -18,10 +18,13 @@ see more button
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { PerRangeFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/per-range";
   import { createEventDispatcher } from "svelte";
+  import { humanizeDataType } from "../humanize-numbers";
   import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
 
   export let values;
   export let comparisonValues;
+  export let showComparison = false;
+
   export let activeValues: Array<unknown>;
   // false = include, true = exclude
   export let filterExcludeMode: boolean;
@@ -29,6 +32,7 @@ see more button
   export let referenceValue;
   export let atLeastOneActive;
   export let loading = false;
+  export let formatPreset;
 
   const { shiftClickAction } = createShiftClickAction();
 
@@ -50,6 +54,7 @@ see more button
     return { ...v, active, excluded, comparisonValue };
   });
 
+  // FIXME-COMPARISONS: move this to a util.
   const formatPercentage = (value) => {
     if (Math.abs(value * 100) < 0.1) {
       return `0%`;
@@ -68,9 +73,15 @@ see more button
       defaultMaxDigitsRight: 0,
       numberKind: NumberKind.PERCENT,
     });
-    console.log("formatting", value, factory.partsFormat(value));
     return factory.partsFormat(value);
   };
+
+  let comparisonLabelToReveal = undefined;
+  function revealComparisonNumber(value) {
+    return () => {
+      if (showComparison) comparisonLabelToReveal = value;
+    };
+  }
 </script>
 
 {#each renderValues as { label, value, __formatted_value, active, excluded, comparisonValue } (label)}
@@ -78,6 +89,8 @@ see more button
     comparisonValue && value && (value - comparisonValue) / comparisonValue}
   {@const diffIsPositive = percDiff >= 0}
   {@const diffParts = formatPercentage(percDiff)}
+  {@const showComparisonForThisValue = comparisonLabelToReveal === label}
+
   <div
     use:shiftClickAction
     on:click={() => {
@@ -85,6 +98,8 @@ see more button
         label,
       });
     }}
+    on:mouseenter={revealComparisonNumber(label)}
+    on:mouseleave={revealComparisonNumber(undefined)}
     on:keydown
     on:shift-click={async () => {
       await navigator.clipboard.writeText(label);
@@ -99,7 +114,7 @@ see more button
   >
     <DimensionLeaderboardEntry
       measureValue={value}
-      {comparisonValue}
+      showContext={showComparison}
       {loading}
       {isSummableMeasure}
       {referenceValue}
@@ -110,15 +125,17 @@ see more button
       <svelte:fragment slot="label">
         {label}
       </svelte:fragment>
-      <svelte:fragment slot="right">
+      <div slot="right" class="flex items-baseline gap-x-1">
+        {#if showComparisonForThisValue && comparisonValue !== undefined}
+          <span class="inline-block opacity-50">
+            {humanizeDataType(comparisonValue, formatPreset)}
+            →
+          </span>
+        {/if}
+
         {__formatted_value || value || "∅"}
-      </svelte:fragment>
-      <div
-        slot="context"
-        class:text-red-500={!diffIsPositive}
-        class:text-gray-700={diffIsPositive}
-        style:font-weight={diffIsPositive ? "normal" : "medium"}
-      >
+      </div>
+      <div slot="context" class:text-red-500={!diffIsPositive}>
         {#if percDiff !== undefined}
           {diffParts?.neg || ""}{diffParts?.int || ""}<span class="opacity-50"
             >{diffParts?.percent || ""}</span

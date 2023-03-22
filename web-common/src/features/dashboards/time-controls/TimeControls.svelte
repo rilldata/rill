@@ -199,7 +199,7 @@
   let comparisonOption;
   let isComparisonRangeAvailable;
   let availableComparisons;
-  $: if ($dashboardStore?.selectedTimeRange?.start) {
+  $: if ($dashboardStore?.selectedTimeRange?.start && hasTimeSeries) {
     const { start, end } = $dashboardStore?.selectedTimeRange;
 
     comparisonOption =
