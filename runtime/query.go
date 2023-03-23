@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"context"
-	"fmt"
 	"strings"
 )
 
@@ -38,7 +37,8 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	for i, dep := range deps {
 		entry, err := r.GetCatalogEntry(ctx, instanceID, dep)
 		if err != nil {
-			return fmt.Errorf("query dependency %q not found", dep)
+			// return fmt.Errorf("query dependency %q not found", dep)
+			continue
 		}
 		depKeys[i] = entry.Name + ":" + entry.RefreshedOn.String()
 	}
