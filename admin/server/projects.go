@@ -111,13 +111,17 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 
 	// TODO: Validate that req.ProductionSlots is an allowed tier for the caller.
 
+	// TODO: Validate that req.ProductionOlapDriver and req.ProductionOlapDsn are acceptable.
+
 	// Create the project
 	proj, err := s.admin.CreateProject(ctx, &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
 		Name:                 req.Name,
-		Region:               req.Region,
 		Description:          req.Description,
 		Public:               req.Public,
+		Region:               req.Region,
+		ProductionOLAPDriver: req.ProductionOlapDriver,
+		ProductionOLAPDSN:    req.ProductionOlapDsn,
 		ProductionSlots:      int(req.ProductionSlots),
 		ProductionBranch:     req.ProductionBranch,
 		GithubURL:            &req.GithubUrl,
@@ -206,6 +210,9 @@ func projToDTO(p *database.Project) *adminv1.Project {
 		Name:                   p.Name,
 		Description:            p.Description,
 		Public:                 p.Public,
+		Region:                 p.Region,
+		ProductionOlapDriver:   p.ProductionOLAPDriver,
+		ProductionOlapDsn:      p.ProductionOLAPDSN,
 		ProductionSlots:        int64(p.ProductionSlots),
 		ProductionBranch:       p.ProductionBranch,
 		GithubUrl:              safeStr(p.GithubURL),

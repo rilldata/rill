@@ -30,6 +30,8 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 
 	// Provision it
 	provOpts := &provisioner.ProvisionOptions{
+		OLAPDriver:           proj.ProductionOLAPDriver,
+		OLAPDSN:              proj.ProductionOLAPDSN,
 		Region:               proj.Region,
 		Slots:                proj.ProductionSlots,
 		GithubURL:            *proj.GithubURL,
@@ -56,7 +58,7 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 		Logs:              "",
 	})
 	if err != nil {
-		err2 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID)
+		err2 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID, proj.ProductionOLAPDriver)
 		err3 := s.DB.DeleteProject(ctx, proj.ID)
 		return nil, multierr.Combine(err, err2, err3)
 	}
@@ -73,7 +75,7 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 	})
 	if err != nil {
 		err2 := s.DB.DeleteDeployment(ctx, depl.ID)
-		err3 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID)
+		err3 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID, proj.ProductionOLAPDriver)
 		err4 := s.DB.DeleteProject(ctx, proj.ID)
 		return nil, multierr.Combine(err, err2, err3, err4)
 	}
@@ -97,7 +99,7 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 	}
 
 	for _, d := range ds {
-		err := s.provisioner.Teardown(ctx, d.RuntimeHost, d.RuntimeInstanceID)
+		err := s.provisioner.Teardown(ctx, d.RuntimeHost, d.RuntimeInstanceID, p.ProductionOLAPDriver)
 		if err != nil {
 			return err
 		}

@@ -25,6 +25,8 @@ type Instance struct {
 }
 
 type ProvisionOptions struct {
+	OLAPDriver           string
+	OLAPDSN              string
 	Slots                int
 	GithubURL            string
 	GitBranch            string
@@ -35,7 +37,7 @@ type ProvisionOptions struct {
 
 type Provisioner interface {
 	Provision(ctx context.Context, opts *ProvisionOptions) (*Instance, error)
-	Teardown(ctx context.Context, host, instanceID string) error
+	Teardown(ctx context.Context, host, instanceID, olapDriver string) error
 	Close() error
 }
 
@@ -131,23 +133,36 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 		return nil, err
 	}
 
-	// Build olap DSN
+	// Generate new instanceID
 	instanceID := strings.ReplaceAll(uuid.New().String(), "-", "")
-	cpus := 1 * opts.Slots
-	memory := 2 * opts.Slots
-	ingestLimit := datasize.GB * datasize.ByteSize(5*opts.Slots) // 5GB * slots
-	olapDSN := fmt.Sprintf("%s.db?rill_pool_size=%d&threads=%d&max_memory=%dGB", path.Join(target.DataDir, instanceID), cpus, cpus, memory)
+
+	// Build instance config DSN
+	var ingestLimit int64
+	var embedCatalog bool
+	if opts.OLAPDriver == "duckdb" {
+		if opts.OLAPDSN != "" {
+			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb'")
+		}
+
+		embedCatalog = true
+
+		ingestLimit = int64(datasize.GB * datasize.ByteSize(5*opts.Slots)) // 5GB * slots
+		cpus := 1 * opts.Slots
+		memory := 2 * opts.Slots
+
+		opts.OLAPDSN = fmt.Sprintf("%s.db?rill_pool_size=%d&threads=%d&max_memory=%dGB", path.Join(target.DataDir, instanceID), cpus, cpus, memory)
+	}
 
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:          instanceID,
-		OlapDriver:          "duckdb",
-		OlapDsn:             olapDSN,
+		OlapDriver:          opts.OLAPDriver,
+		OlapDsn:             opts.OLAPDSN,
 		RepoDriver:          "github",
 		RepoDsn:             string(repoDSN),
-		EmbedCatalog:        true,
+		EmbedCatalog:        embedCatalog,
 		Variables:           opts.Variables,
-		IngestionLimitBytes: int64(ingestLimit),
+		IngestionLimitBytes: ingestLimit,
 	})
 	if err != nil {
 		return nil, err
@@ -161,7 +176,7 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 	return inst, nil
 }
 
-func (p *staticProvisioner) Teardown(ctx context.Context, host, instanceID string) error {
+func (p *staticProvisioner) Teardown(ctx context.Context, host, instanceID, olapDriver string) error {
 	// Find audience
 	var audience string
 	for _, candidate := range p.spec.Runtimes {
@@ -191,10 +206,16 @@ func (p *staticProvisioner) Teardown(ctx context.Context, host, instanceID strin
 	}
 	defer rt.Close()
 
+	// Only drop DB if it's DuckDB
+	dropDB := false
+	if olapDriver == "duckdb" {
+		dropDB = true
+	}
+
 	// Delete the instance
 	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 		InstanceId: instanceID,
-		DropDb:     true,
+		DropDb:     dropDB,
 	})
 	if err != nil {
 		return err
