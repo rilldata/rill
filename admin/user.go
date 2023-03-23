@@ -26,6 +26,13 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		return nil, err
 	}
 
+	// Start a tx for creating org and adding the user
+	ctx, tx, err := s.DB.NewTx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
 	// User does not exist. Creating a new user.
 	user, err = s.DB.InsertUser(ctx, email, name, photoURL)
 	if err != nil {
@@ -39,17 +46,10 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		// continuing, since user was created successfully
 	}
 
-	return user, nil
+	return user, tx.Commit()
 }
 
 func (s *Service) createOrgForUser(ctx context.Context, email, userID, name string) error {
-	// Start a tx for creating org and adding the user
-	ctx, tx, err := s.DB.NewTx(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = tx.Rollback() }()
-
 	orgNameSeeds := nameseeds.ForUser(email, name)
 
 	org, err := s.DB.InsertOrganizationFromSeeds(ctx, orgNameSeeds, name)
@@ -60,8 +60,7 @@ func (s *Service) createOrgForUser(ctx context.Context, email, userID, name stri
 	if err != nil {
 		return err
 	}
-
-	return tx.Commit()
+	return nil
 }
 
 func (s *Service) CreateOrgForUser(ctx context.Context, userID, orgName, description string) (*database.Organization, error) {
@@ -106,7 +105,7 @@ func (s *Service) prepareOrg(ctx context.Context, orgID, userID string) (*databa
 		return nil, err
 	}
 	// Add user to all user group
-	err = s.DB.AddUserGroupMember(ctx, userGroup.ID, userID)
+	err = s.DB.AddUserGroupMember(ctx, userID, userGroup.ID)
 	if err != nil {
 		return nil, err
 	}

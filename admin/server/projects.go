@@ -72,6 +72,21 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	// Find User
+	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	// Find User groups
+	groups, err := s.admin.DB.FindUserGroups(ctx, user.ID, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	groupNames := make([]string, len(groups))
+	for _, group := range groups {
+		groupNames = append(groupNames, group.DisplayName)
+	}
+
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL: depl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
@@ -87,6 +102,8 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 				runtimeauth.ReadRepo,
 			},
 		},
+		Email:      user.Email,
+		GroupNames: groupNames,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())

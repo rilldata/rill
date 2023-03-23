@@ -159,7 +159,7 @@ func (c *authTokenClaims) CanProject(ctx context.Context, projectID string, p Pr
 }
 
 func (c *authTokenClaims) composeOrgPermissions(ctx context.Context, orgID string) (*database.OrganizationRole, error) {
-	var composite *database.OrganizationRole
+	composite := &database.OrganizationRole{}
 	directRole, err := c.admin.DB.ResolveUserOrganizationRole(ctx, c.token.OwnerID(), orgID)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {

@@ -123,6 +123,7 @@ type DB interface {
 	UpdateOrganizationAllUserGroup(ctx context.Context, orgID, groupID string) (*Organization, error)
 	AddUserGroupMember(ctx context.Context, userID, groupID string) error
 	AddUserGroupProjectRole(ctx context.Context, groupID, projectID, roleID string) error
+	FindUserGroups(ctx context.Context, userID, orgID string) ([]*UserGroup, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
