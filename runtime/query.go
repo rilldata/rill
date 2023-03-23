@@ -29,11 +29,13 @@ type queryCacheKey struct {
 }
 
 func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, priority int) error {
-	// if key is empty, skip caching
+	// If key is empty, skip caching
 	qk := query.Key()
 	if qk == "" {
 		return query.Resolve(ctx, r, instanceID, priority)
 	}
+
+	// Get dependency cache keys
 	deps := query.Deps()
 	depKeys := make([]string, len(deps))
 	for i, dep := range deps {
@@ -51,6 +53,13 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		}
 		depKeys[i] = entry.Name + ":" + entry.RefreshedOn.String()
 	}
+
+	// If there were no known dependencies, skip caching
+	if len(depKeys) == 0 {
+		return query.Resolve(ctx, r, instanceID, priority)
+	}
+
+	// Build cache key
 	depKey := strings.Join(depKeys, ";")
 	key := queryCacheKey{
 		instanceID:    instanceID,
@@ -61,6 +70,8 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	if ok {
 		return query.UnmarshalResult(val)
 	}
+
+	// Cache miss. Run the query.
 	err := query.Resolve(ctx, r, instanceID, priority)
 	if err != nil {
 		return err
