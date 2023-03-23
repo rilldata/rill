@@ -27,6 +27,9 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	if err != nil {
 		return err
 	}
+	if stmt.DryRun {
+		return nil
+	}
 	return res.Close()
 }
 

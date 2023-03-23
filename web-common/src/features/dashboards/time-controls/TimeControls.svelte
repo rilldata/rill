@@ -21,10 +21,11 @@
     ISODurationToTimePreset,
     prettyFormatTimeRange,
   } from "@rilldata/web-common/lib/time/ranges";
-  import type {
+  import {
     DashboardTimeControls,
     TimeGrainOption,
     TimeRange,
+    TimeRangePreset,
     TimeRangeType,
   } from "@rilldata/web-common/lib/time/types";
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
@@ -85,7 +86,7 @@
   $: allTimeRange = $allTimeRangeQuery?.data as TimeRange;
   // Once we have the allTimeRange, set the default time range and time grain.
   // This reactive statement feels a bit precarious!
-  $: if (allTimeRange && $dashboardStore !== undefined) {
+  $: if (allTimeRange && allTimeRange?.start && $dashboardStore !== undefined) {
     if (!$dashboardStore?.selectedTimeRange) {
       setDefaultTimeControls(allTimeRange);
     } else {
@@ -109,12 +110,22 @@
   }
 
   function setTimeControlsFromUrl(allTimeRange: TimeRange) {
-    baseTimeRange =
-      convertTimeRangePreset(
-        $dashboardStore?.selectedTimeRange.name,
-        allTimeRange.start,
-        allTimeRange.end
-      ) || allTimeRange;
+    if ($dashboardStore?.selectedTimeRange.name === TimeRangePreset.CUSTOM) {
+      /** set the time range to the fixed custom time range */
+      baseTimeRange = {
+        name: TimeRangePreset.CUSTOM,
+        start: new Date($dashboardStore?.selectedTimeRange.start),
+        end: new Date($dashboardStore?.selectedTimeRange.end),
+      };
+    } else {
+      /** rebuild off of relative time range */
+      baseTimeRange =
+        convertTimeRangePreset(
+          $dashboardStore?.selectedTimeRange.name,
+          allTimeRange.start,
+          allTimeRange.end
+        ) || allTimeRange;
+    }
 
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
