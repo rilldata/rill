@@ -353,3 +353,41 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     },
   },
 };
+
+/** The default configurations for time comparisons. */
+export const TIME_COMPARISON = {
+  [TimeComparisonOption.CONTIGUOUS]: {
+    label: "Last period",
+    description: "Compare the current time range to the previous time range",
+    comparisonType: TimeComparisonOption.CONTIGUOUS,
+  },
+  [TimeComparisonOption.CUSTOM]: {
+    label: "Custom",
+    description: "Compare the current time range to a custom time range",
+    comparisonType: TimeComparisonOption.CUSTOM,
+  },
+  [TimeComparisonOption.DAY]: {
+    label: "Previous day",
+    description:
+      "Compare the current time range to the same time range the day before",
+    comparisonType: TimeComparisonOption.DAY,
+  },
+  [TimeComparisonOption.WEEK]: {
+    label: "Previous week",
+    description:
+      "Compare the current time range to the same time range the week before",
+    comparisonType: TimeComparisonOption.WEEK,
+  },
+  [TimeComparisonOption.MONTH]: {
+    label: "Previous month",
+    description:
+      "Compare the current time range to the same time range the month before",
+    comparisonType: TimeComparisonOption.MONTH,
+  },
+  [TimeComparisonOption.YEAR]: {
+    label: "Previous year",
+    description:
+      "Compare the current time range to the same time range the year before",
+    comparisonType: TimeComparisonOption.YEAR,
+  },
+};
