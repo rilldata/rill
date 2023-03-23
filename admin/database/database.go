@@ -140,7 +140,7 @@ type Project struct {
 	ID                     string
 	OrganizationID         string `db:"organization_id"`
 	Name                   string
-	Region                  string
+	Region                 string
 	Description            string
 	Public                 bool
 	ProductionSlots        int       `db:"production_slots"`

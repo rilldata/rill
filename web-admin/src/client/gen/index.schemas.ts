@@ -19,11 +19,11 @@ export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
 export type AdminServiceCreateProjectBody = {
   description?: string;
   githubUrl?: string;
-  label?: string;
   name?: string;
   productionBranch?: string;
   productionSlots?: string;
   public?: boolean;
+  region?: string;
   variables?: AdminServiceCreateProjectBodyVariables;
 };
 

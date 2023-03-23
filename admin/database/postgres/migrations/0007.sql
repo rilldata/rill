@@ -1,1 +1,1 @@
-ALTER TABLE projects ADD COLUMN label TEXT;
+ALTER TABLE projects ADD COLUMN region TEXT;
