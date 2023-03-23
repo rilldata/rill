@@ -119,7 +119,7 @@ func (m *metricsViewMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLA
 
 func validateMeasure(ctx context.Context, olap drivers.OLAPStore, model *drivers.Table, measure *runtimev1.MetricsView_Measure) error {
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT %s from %s", measure.Expression, model.Name),
+		Query:  fmt.Sprintf("SELECT %s from \"%s\"", measure.Expression, model.Name),
 		DryRun: true,
 	})
 	return err
