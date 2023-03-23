@@ -142,7 +142,7 @@ export function convertTimeRangePreset(
     };
   }
   const timeRange = DEFAULT_TIME_RANGES[timeRangePreset];
-
+  console.log(timeRange);
   const timeRangeDates = relativePointInTimeToAbsolute(
     end,
     timeRange.start,
@@ -151,7 +151,7 @@ export function convertTimeRangePreset(
 
   return {
     name: timeRangePreset,
-    start: timeRangeDates.startDate,
+    start: timeRange.startDate,
     end: timeRangeDates.endDate,
   };
 }

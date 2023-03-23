@@ -255,10 +255,16 @@ export const ALL_TIME = {
   rangePreset: RangePresetType.ALL_TIME,
 };
 
+export const CUSTOM = {
+  label: "Custom",
+  rangePreset: RangePresetType.FIXED_RANGE,
+};
+
 export const DEFAULT_TIME_RANGES: Record<string, TimeRangeMeta> = {
   ...LATEST_WINDOW_TIME_RANGES,
   ...PERIOD_TO_DATE_RANGES,
   ALL_TIME,
+  CUSTOM,
 };
 
 // This is a temporary fix for the default time range setting.
