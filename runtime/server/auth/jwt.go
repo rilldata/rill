@@ -111,8 +111,6 @@ type TokenOptions struct {
 	TTL                 time.Duration
 	SystemPermissions   []Permission
 	InstancePermissions map[string][]Permission
-	Email               string
-	GroupNames          []string
 }
 
 // NewToken issues a new JWT based on the provided options.
@@ -127,10 +125,8 @@ func (i *Issuer) NewToken(opts TokenOptions) (string, error) {
 			Subject:   opts.Subject,
 			Audience:  []string{opts.AudienceURL},
 		},
-		System:     opts.SystemPermissions,
-		Instances:  opts.InstancePermissions,
-		Email:      opts.Email,
-		GroupNames: opts.GroupNames,
+		System:    opts.SystemPermissions,
+		Instances: opts.InstancePermissions,
 	}
 
 	token := jwt.NewWithClaims(jwt.GetSigningMethod(i.signingKey.Algorithm), claims)

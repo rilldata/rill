@@ -194,7 +194,7 @@ func unionOrgRoles(a, b *database.OrganizationRole) *database.OrganizationRole {
 }
 
 func (c *authTokenClaims) composeProjectPermissions(ctx context.Context, projectID string) (*database.ProjectRole, error) {
-	var composite *database.ProjectRole
+	composite := &database.ProjectRole{}
 	directRole, err := c.admin.DB.ResolveUserProjectRole(ctx, c.token.OwnerID(), projectID)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
