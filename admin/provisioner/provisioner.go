@@ -29,7 +29,7 @@ type ProvisionOptions struct {
 	GithubURL            string
 	GitBranch            string
 	GithubInstallationID int64
-	Label                string
+	Region               string
 	Variables            map[string]string
 }
 
@@ -41,13 +41,13 @@ type Provisioner interface {
 
 type staticSpec struct {
 	Runtimes []*staticRuntime `json:"runtimes"`
-	// Map of runtimes by label
-	runtimesByLabel map[string][]*staticRuntime
+	// Map of runtimes by Region
+	runtimesByRegion map[string][]*staticRuntime
 }
 
 type staticRuntime struct {
 	Host     string `json:"host"`
-	Label    string `json:"label"`
+	Region   string `json:"region"`
 	Slots    int    `json:"slots"`
 	DataDir  string `json:"data_dir"`
 	Audience string `json:"audience_url"`
@@ -62,20 +62,20 @@ type staticProvisioner struct {
 
 func NewStatic(spec string, logger *zap.Logger, db database.DB, issuer *auth.Issuer) (Provisioner, error) {
 	sps := &staticSpec{
-		runtimesByLabel: map[string][]*staticRuntime{},
+		runtimesByRegion: map[string][]*staticRuntime{},
 	}
 	err := json.Unmarshal([]byte(spec), sps)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse provisioner spec: %w", err)
 	}
 
-	// build the map of label to runtimes
+	// build the map of Region to runtimes
 	for _, runtime := range sps.Runtimes {
-		_, ok := sps.runtimesByLabel[runtime.Label]
+		_, ok := sps.runtimesByRegion[runtime.Region]
 		if !ok {
-			sps.runtimesByLabel[runtime.Label] = make([]*staticRuntime, 0)
+			sps.runtimesByRegion[runtime.Region] = make([]*staticRuntime, 0)
 		}
-		sps.runtimesByLabel[runtime.Label] = append(sps.runtimesByLabel[runtime.Label], runtime)
+		sps.runtimesByRegion[runtime.Region] = append(sps.runtimesByRegion[runtime.Region], runtime)
 	}
 
 	return &staticProvisioner{
@@ -94,13 +94,13 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 	}
 
 	runtimes := p.spec.Runtimes
-	// if label is passed lookup a subset of runtimes by that label
-	if opts.Label != "" {
-		runtimesByLabel, ok := p.spec.runtimesByLabel[opts.Label]
+	// if Region is passed lookup a subset of runtimes by that Region
+	if opts.Region != "" {
+		runtimesByRegion, ok := p.spec.runtimesByRegion[opts.Region]
 		if !ok {
-			return nil, fmt.Errorf("no runtimes found for %s", opts.Label)
+			return nil, fmt.Errorf("no runtimes found for %s", opts.Region)
 		}
-		runtimes = runtimesByLabel
+		runtimes = runtimesByRegion
 	}
 
 	// Find runtime with available capacity

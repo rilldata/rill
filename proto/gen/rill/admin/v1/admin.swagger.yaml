@@ -198,9 +198,6 @@ paths:
                 type: string
               githubUrl:
                 type: string
-              label:
-                type: string
-                title: A label to identify a specific deployment. <cloud provider>-<region>
               name:
                 type: string
               productionBranch:
@@ -210,6 +207,9 @@ paths:
                 format: int64
               public:
                 type: boolean
+              region:
+                type: string
+                title: A label to identify a specific deployment. <cloud provider>-<region>
               variables:
                 type: object
                 additionalProperties:

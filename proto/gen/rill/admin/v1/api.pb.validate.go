@@ -1977,7 +1977,7 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for Variables
 
-	// no validation rules for Label
+	// no validation rules for Region
 
 	if len(errors) > 0 {
 		return CreateProjectRequestMultiError(errors)

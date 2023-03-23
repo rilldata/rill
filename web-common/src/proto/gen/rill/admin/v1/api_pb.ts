@@ -743,9 +743,9 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   /**
    * A label to identify a specific deployment. <cloud provider>-<region>
    *
-   * @generated from field: string label = 9;
+   * @generated from field: string region = 9;
    */
-  label = "";
+  region = "";
 
   constructor(data?: PartialMessage<CreateProjectRequest>) {
     super();
@@ -763,7 +763,7 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 6, name: "production_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 9, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateProjectRequest {
