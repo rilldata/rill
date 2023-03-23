@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/connectors/localfile"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -19,6 +20,7 @@ import (
 const (
 	_iteratorBatch        = 8
 	_defaultIngestTimeout = 60 * time.Minute
+	_jsonObjectMaxSize    = datasize.KB * 100 // 100KB
 )
 
 // Ingest data from a source with a timeout
@@ -167,7 +169,7 @@ func sourceReader(paths []string, csvDelimiter, format string, hivePartition int
 	} else if strings.Contains(format, ".parquet") {
 		return fmt.Sprintf("read_parquet(['%s'], HIVE_PARTITIONING=%v)", strings.Join(paths, "','"), hivePartition), nil
 	} else if strings.Contains(format, ".json") || strings.Contains(format, ".ndjson") {
-		return fmt.Sprintf("read_json_auto(['%s'])", strings.Join(paths, "','")), nil
+		return fmt.Sprintf("read_json_auto(['%s'], maximum_object_size=%v)", strings.Join(paths, "','"), _jsonObjectMaxSize.Bytes()), nil
 	} else {
 		return "", fmt.Errorf("file type not supported : %s", format)
 	}

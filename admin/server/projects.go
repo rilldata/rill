@@ -115,6 +115,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	proj, err := s.admin.CreateProject(ctx, &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
 		Name:                 req.Name,
+		Region:               req.Region,
 		Description:          req.Description,
 		Public:               req.Public,
 		ProductionSlots:      int(req.ProductionSlots),

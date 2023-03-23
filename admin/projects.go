@@ -30,6 +30,7 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 
 	// Provision it
 	provOpts := &provisioner.ProvisionOptions{
+		Region:               proj.Region,
 		Slots:                proj.ProductionSlots,
 		GithubURL:            *proj.GithubURL,
 		GitBranch:            proj.ProductionBranch,

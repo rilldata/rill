@@ -9,6 +9,7 @@
     TimeSeriesMouseover,
   } from "@rilldata/web-common/components/data-graphic/guides";
   import { ChunkedLine } from "@rilldata/web-common/components/data-graphic/marks";
+  import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { previousValueStore } from "@rilldata/web-local/lib/store-utils";
   import { extent } from "d3-array";
   import { cubicOut } from "svelte/easing";
@@ -17,23 +18,25 @@
   import { niceMeasureExtents } from "./utils";
   export let width: number = undefined;
   export let height: number = undefined;
-  export let xMin;
-  export let xMax;
-  export let yMin;
-  export let yMax;
+  export let xMin: Date = undefined;
+  export let xMax: Date = undefined;
+  export let yMin: number = undefined;
+  export let yMax: number = undefined;
   export let data;
   export let xAccessor = "ts";
   export let yAccessor = "value";
   export let mouseoverValue;
   export let hovered = false;
-  export let mouseoverFormat: (d: number) => string = (v) => v.toString();
-  export let mouseoverTimeFormat: (d: number) => string = (v) => v.toString();
+  export let mouseoverFormat: (d: number | Date | string) => string = (v) =>
+    v.toString();
+  export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
+    v.toString();
+  export let numberKind: NumberKind = NumberKind.ANY;
 
   export let tweenProps = { duration: 400, easing: cubicOut };
 
   // control point for scrub functionality.
   export let scrubbing = false;
-  export let scrubStart = undefined;
   export let scrubEnd = undefined;
 
   $: [xExtentMin, xExtentMax] = extent(data, (d) => d[xAccessor]);
@@ -46,8 +49,6 @@
     ],
     6 / 5
   );
-
-  $: console.log(internalYMin, internalYMax);
 
   $: internalXMin = xMin || xExtentMin;
   $: internalXMax = xMax || xExtentMax;
@@ -111,7 +112,7 @@
   xMaxTweenProps={tweenProps}
   xMinTweenProps={tweenProps}
 >
-  <Axis side="right" format={mouseoverFormat} />
+  <Axis side="right" format={mouseoverFormat} {numberKind} />
   <Grid />
   <Body>
     <!-- key on the time range itself to prevent weird tweening animations.

@@ -29,6 +29,7 @@ type ProvisionOptions struct {
 	GithubURL            string
 	GitBranch            string
 	GithubInstallationID int64
+	Region               string
 	Variables            map[string]string
 }
 
@@ -44,6 +45,7 @@ type staticSpec struct {
 
 type staticRuntime struct {
 	Host     string `json:"host"`
+	Region   string `json:"region"`
 	Slots    int    `json:"slots"`
 	DataDir  string `json:"data_dir"`
 	Audience string `json:"audience_url"`
@@ -81,6 +83,10 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 	// Find runtime with available capacity
 	var target *staticRuntime
 	for _, candidate := range p.spec.Runtimes {
+		if opts.Region != "" && opts.Region != candidate.Region {
+			continue
+		}
+
 		available := true
 		for _, stat := range stats {
 			if stat.RuntimeHost == candidate.Host && stat.SlotsUsed+opts.Slots > candidate.Slots {

@@ -23,6 +23,7 @@ export type AdminServiceCreateProjectBody = {
   productionBranch?: string;
   productionSlots?: string;
   public?: boolean;
+  region?: string;
   variables?: AdminServiceCreateProjectBodyVariables;
 };
 

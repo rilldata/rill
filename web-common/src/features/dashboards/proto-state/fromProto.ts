@@ -1,9 +1,6 @@
 import type { Timestamp } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-import type {
-  TimeRangeName,
-  TimeSeriesTimeRange,
-} from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/catalog_pb";
 import type { MetricsViewFilter_Cond } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 import {
@@ -12,13 +9,17 @@ import {
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
-export function fromUrl(url: URL): Partial<MetricsExplorerEntity> {
+export function getDashboardStateFromUrl(
+  url: URL
+): Partial<MetricsExplorerEntity> {
   const state = url.searchParams.get("state");
   if (!state) return undefined;
-  return fromProto(base64ToProto(decodeURIComponent(state)));
+  return getDashboardStateFromProto(base64ToProto(decodeURIComponent(state)));
 }
 
-export function fromProto(binary: Uint8Array): Partial<MetricsExplorerEntity> {
+export function getDashboardStateFromProto(
+  binary: Uint8Array
+): Partial<MetricsExplorerEntity> {
   const dashboard = DashboardState.fromBinary(binary);
   const entity: Partial<MetricsExplorerEntity> = {
     filters: {
@@ -45,6 +46,7 @@ export function fromProto(binary: Uint8Array): Partial<MetricsExplorerEntity> {
   if (dashboard.selectedDimension) {
     entity.selectedDimensionName = dashboard.selectedDimension;
   }
+  console.log(entity);
 
   return entity;
 }
@@ -70,11 +72,11 @@ function fromFiltersProto(conditions: Array<MetricsViewFilter_Cond>) {
 }
 
 function fromTimeRangeProto(timeRange: DashboardTimeRange) {
-  const selectedTimeRange: TimeSeriesTimeRange = {
-    name: timeRange.name as TimeRangeName,
-  };
+  const selectedTimeRange: DashboardTimeControls = {
+    name: timeRange.name,
+  } as DashboardTimeControls;
 
-  selectedTimeRange.name = timeRange.name as TimeRangeName;
+  selectedTimeRange.name = timeRange.name;
   if (timeRange.timeStart) {
     selectedTimeRange.start = fromTimeProto(timeRange.timeStart);
   }
@@ -86,7 +88,7 @@ function fromTimeRangeProto(timeRange: DashboardTimeRange) {
 }
 
 function fromTimeProto(timestamp: Timestamp) {
-  return new Date(Number(timestamp.seconds)).toISOString();
+  return new Date(Number(timestamp.seconds));
 }
 
 function fromTimeGrainProto(timeGrain: TimeGrain): V1TimeGrain {

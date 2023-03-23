@@ -142,6 +142,7 @@ type Project struct {
 	Name                   string
 	Description            string
 	Public                 bool
+	Region                 string
 	ProductionSlots        int       `db:"production_slots"`
 	ProductionBranch       string    `db:"production_branch"`
 	ProductionVariables    Variables `db:"production_variables"`
@@ -169,6 +170,7 @@ type InsertProjectOptions struct {
 	Name                 string
 	Description          string
 	Public               bool
+	Region               string
 	ProductionSlots      int
 	ProductionBranch     string
 	GithubURL            *string
