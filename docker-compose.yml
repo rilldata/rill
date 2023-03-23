@@ -1,0 +1,40 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432:5432'
+
+  admin:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    ports:
+      - '8080:8080'
+      - '9090:9090'
+    command:
+      - "rill admin start"
+
+  runtime1:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    ports:
+      - '9020:9009'
+      - '9021:9010'
+    command:
+      - "rill runtime start"
+
+  runtime2:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    ports:
+      - '9022:9009'
+      - '9023:9010'
+    command:
+      - "rill runtime start"

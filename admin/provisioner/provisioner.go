@@ -29,6 +29,7 @@ type ProvisionOptions struct {
 	GithubURL            string
 	GitBranch            string
 	GithubInstallationID int64
+	Label                string
 	Variables            map[string]string
 }
 
@@ -40,10 +41,13 @@ type Provisioner interface {
 
 type staticSpec struct {
 	Runtimes []*staticRuntime `json:"runtimes"`
+	// Map of runtimes by label
+	runtimesByLabel map[string][]*staticRuntime
 }
 
 type staticRuntime struct {
 	Host     string `json:"host"`
+	Label    string `json:"label"`
 	Slots    int    `json:"slots"`
 	DataDir  string `json:"data_dir"`
 	Audience string `json:"audience_url"`
@@ -57,10 +61,21 @@ type staticProvisioner struct {
 }
 
 func NewStatic(spec string, logger *zap.Logger, db database.DB, issuer *auth.Issuer) (Provisioner, error) {
-	sps := &staticSpec{}
+	sps := &staticSpec{
+		runtimesByLabel: map[string][]*staticRuntime{},
+	}
 	err := json.Unmarshal([]byte(spec), sps)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse provisioner spec: %w", err)
+	}
+
+	// build the map of label to runtimes
+	for _, runtime := range sps.Runtimes {
+		_, ok := sps.runtimesByLabel[runtime.Label]
+		if !ok {
+			sps.runtimesByLabel[runtime.Label] = make([]*staticRuntime, 0)
+		}
+		sps.runtimesByLabel[runtime.Label] = append(sps.runtimesByLabel[runtime.Label], runtime)
 	}
 
 	return &staticProvisioner{
@@ -78,9 +93,19 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 		return nil, err
 	}
 
+	runtimes := p.spec.Runtimes
+	// if label is passed lookup a subset of runtimes by that label
+	if opts.Label != "" {
+		runtimesByLabel, ok := p.spec.runtimesByLabel[opts.Label]
+		if !ok {
+			return nil, fmt.Errorf("no runtimes found for %s", opts.Label)
+		}
+		runtimes = runtimesByLabel
+	}
+
 	// Find runtime with available capacity
 	var target *staticRuntime
-	for _, candidate := range p.spec.Runtimes {
+	for _, candidate := range runtimes {
 		available := true
 		for _, stat := range stats {
 			if stat.RuntimeHost == candidate.Host && stat.SlotsUsed+opts.Slots > candidate.Slots {
@@ -107,6 +132,8 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println(opts, target)
 
 	// Make runtime client
 	rt, err := client.New(target.Host, jwt)

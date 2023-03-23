@@ -27,7 +27,7 @@ const (
 )
 
 func ConnectCmd(cfg *config.Config) *cobra.Command {
-	var name, description, prodBranch, projectPath string
+	var name, description, prodBranch, projectPath, label string
 	var slots int
 	var public bool
 	var variables []string
@@ -138,6 +138,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			projRes, err := client.CreateProject(cmd.Context(), &adminv1.CreateProjectRequest{
 				OrganizationName: cfg.Org,
 				Name:             name,
+				Label:            label,
 				Description:      description,
 				ProductionSlots:  int64(slots),
 				ProductionBranch: prodBranch,
@@ -163,6 +164,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 	connectCmd.Flags().StringVar(&description, "description", "", "Project description")
 	connectCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	connectCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
+	connectCmd.Flags().StringVar(&label, "label", "", "A label of the deployment. <cloud provider>-<region>")
 
 	return connectCmd
 }

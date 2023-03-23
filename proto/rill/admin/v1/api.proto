@@ -173,6 +173,8 @@ message CreateProjectRequest {
   string production_branch = 6;
   string github_url = 7;
   map<string, string> variables = 8;
+  // A label to identify a specific deployment. <cloud provider>-<region>
+  string label = 9;
 }
 
 message CreateProjectResponse {

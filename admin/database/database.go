@@ -140,6 +140,7 @@ type Project struct {
 	ID                     string
 	OrganizationID         string `db:"organization_id"`
 	Name                   string
+	Label                  string
 	Description            string
 	Public                 bool
 	ProductionSlots        int       `db:"production_slots"`
@@ -167,6 +168,7 @@ func (e *Variables) Scan(value interface{}) error {
 type InsertProjectOptions struct {
 	OrganizationID       string
 	Name                 string
+	Label                string
 	Description          string
 	Public               bool
 	ProductionSlots      int
