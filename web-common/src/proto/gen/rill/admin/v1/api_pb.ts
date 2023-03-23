@@ -721,6 +721,21 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   public = false;
 
   /**
+   * @generated from field: string region = 9;
+   */
+  region = "";
+
+  /**
+   * @generated from field: string production_olap_driver = 10;
+   */
+  productionOlapDriver = "";
+
+  /**
+   * @generated from field: string production_olap_dsn = 11;
+   */
+  productionOlapDsn = "";
+
+  /**
    * @generated from field: int64 production_slots = 5;
    */
   productionSlots = protoInt64.zero;
@@ -740,13 +755,6 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
    */
   variables: { [key: string]: string } = {};
 
-  /**
-   * A label to identify a specific deployment. <cloud provider>-<region>
-   *
-   * @generated from field: string region = 9;
-   */
-  region = "";
-
   constructor(data?: PartialMessage<CreateProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -759,11 +767,13 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "production_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "production_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "production_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 6, name: "production_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 9, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateProjectRequest {
@@ -1316,6 +1326,21 @@ export class Project extends Message<Project> {
   public = false;
 
   /**
+   * @generated from field: string region = 12;
+   */
+  region = "";
+
+  /**
+   * @generated from field: string production_olap_driver = 13;
+   */
+  productionOlapDriver = "";
+
+  /**
+   * @generated from field: string production_olap_dsn = 14;
+   */
+  productionOlapDsn = "";
+
+  /**
    * @generated from field: int64 production_slots = 5;
    */
   productionSlots = protoInt64.zero;
@@ -1362,6 +1387,9 @@ export class Project extends Message<Project> {
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 12, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "production_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "production_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "production_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 6, name: "production_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },

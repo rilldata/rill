@@ -144,6 +144,8 @@ type Project struct {
 	Public                 bool
 	Region                 string
 	ProductionSlots        int       `db:"production_slots"`
+	ProductionOLAPDriver   string    `db:"production_olap_driver"`
+	ProductionOLAPDSN      string    `db:"production_olap_dsn"`
 	ProductionBranch       string    `db:"production_branch"`
 	ProductionVariables    Variables `db:"production_variables"`
 	GithubURL              *string   `db:"github_url"`
@@ -171,6 +173,8 @@ type InsertProjectOptions struct {
 	Description          string
 	Public               bool
 	Region               string
+	ProductionOLAPDriver string
+	ProductionOLAPDSN    string
 	ProductionSlots      int
 	ProductionBranch     string
 	GithubURL            *string

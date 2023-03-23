@@ -1969,6 +1969,12 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for Public
 
+	// no validation rules for Region
+
+	// no validation rules for ProductionOlapDriver
+
+	// no validation rules for ProductionOlapDsn
+
 	// no validation rules for ProductionSlots
 
 	// no validation rules for ProductionBranch
@@ -1976,8 +1982,6 @@ func (m *CreateProjectRequest) validate(all bool) error {
 	// no validation rules for GithubUrl
 
 	// no validation rules for Variables
-
-	// no validation rules for Region
 
 	if len(errors) > 0 {
 		return CreateProjectRequestMultiError(errors)
@@ -3490,6 +3494,12 @@ func (m *Project) validate(all bool) error {
 	// no validation rules for Description
 
 	// no validation rules for Public
+
+	// no validation rules for Region
+
+	// no validation rules for ProductionOlapDriver
+
+	// no validation rules for ProductionOlapDsn
 
 	// no validation rules for ProductionSlots
 

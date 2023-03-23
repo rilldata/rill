@@ -169,12 +169,13 @@ message CreateProjectRequest {
   string name = 2;
   string description = 3;
   bool public = 4;
+  string region = 9;
+  string production_olap_driver = 10;
+  string production_olap_dsn = 11;
   int64 production_slots = 5;
   string production_branch = 6;
   string github_url = 7;
   map<string, string> variables = 8;
-  // A label to identify a specific deployment. <cloud provider>-<region>
-  string region = 9;
 }
 
 message CreateProjectResponse {
@@ -237,6 +238,9 @@ message Project {
   string name = 2; // Unique in organization
   string description = 3;
   bool public = 4;
+  string region = 12;
+  string production_olap_driver = 13;
+  string production_olap_dsn = 14;
   int64 production_slots = 5;
   string production_branch = 6;
   string github_url = 7;
