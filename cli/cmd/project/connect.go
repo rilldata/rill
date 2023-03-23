@@ -138,8 +138,8 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			projRes, err := client.CreateProject(cmd.Context(), &adminv1.CreateProjectRequest{
 				OrganizationName: cfg.Org,
 				Name:             name,
-				Region:           region,
 				Description:      description,
+				Region:           region,
 				ProductionSlots:  int64(slots),
 				ProductionBranch: prodBranch,
 				Public:           public,
@@ -164,7 +164,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 	connectCmd.Flags().StringVar(&description, "description", "", "Project description")
 	connectCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	connectCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
-	connectCmd.Flags().StringVar(&region, "region", "", "A region of the deployment. <cloud provider>-<region>")
+	connectCmd.Flags().StringVar(&region, "region", "", "Deployment region")
 
 	return connectCmd
 }

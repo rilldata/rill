@@ -41,8 +41,6 @@ type Provisioner interface {
 
 type staticSpec struct {
 	Runtimes []*staticRuntime `json:"runtimes"`
-	// Map of runtimes by Region
-	runtimesByRegion map[string][]*staticRuntime
 }
 
 type staticRuntime struct {
@@ -61,21 +59,10 @@ type staticProvisioner struct {
 }
 
 func NewStatic(spec string, logger *zap.Logger, db database.DB, issuer *auth.Issuer) (Provisioner, error) {
-	sps := &staticSpec{
-		runtimesByRegion: map[string][]*staticRuntime{},
-	}
+	sps := &staticSpec{}
 	err := json.Unmarshal([]byte(spec), sps)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse provisioner spec: %w", err)
-	}
-
-	// build the map of Region to runtimes
-	for _, runtime := range sps.Runtimes {
-		_, ok := sps.runtimesByRegion[runtime.Region]
-		if !ok {
-			sps.runtimesByRegion[runtime.Region] = make([]*staticRuntime, 0)
-		}
-		sps.runtimesByRegion[runtime.Region] = append(sps.runtimesByRegion[runtime.Region], runtime)
 	}
 
 	return &staticProvisioner{
@@ -93,19 +80,13 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 		return nil, err
 	}
 
-	runtimes := p.spec.Runtimes
-	// if Region is passed lookup a subset of runtimes by that Region
-	if opts.Region != "" {
-		runtimesByRegion, ok := p.spec.runtimesByRegion[opts.Region]
-		if !ok {
-			return nil, fmt.Errorf("no runtimes found for %s", opts.Region)
-		}
-		runtimes = runtimesByRegion
-	}
-
 	// Find runtime with available capacity
 	var target *staticRuntime
-	for _, candidate := range runtimes {
+	for _, candidate := range p.spec.Runtimes {
+		if opts.Region != "" && opts.Region != candidate.Region {
+			continue
+		}
+
 		available := true
 		for _, stat := range stats {
 			if stat.RuntimeHost == candidate.Host && stat.SlotsUsed+opts.Slots > candidate.Slots {
