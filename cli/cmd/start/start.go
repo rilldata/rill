@@ -1,6 +1,7 @@
 package start
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -32,10 +33,13 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 		Short: "Build project and start web app",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := runtimeserver.InitOpenTelemetry(cfg.OtelExporterEndpoint)
+			mp, tp, err := runtimeserver.InitOpenTelemetry(cfg.OtelExporterEndpoint)
 			if err != nil {
 				return err
 			}
+
+			defer mp.Shutdown(context.Background())
+			defer tp.Shutdown(context.Background())
 
 			if len(args) > 0 {
 				projectPath = args[0]

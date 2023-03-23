@@ -249,9 +249,9 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 // Initializes providers and exporters.
 // Global providers accumulate metrics/traces.
 // The providers export data from Runtime using the exporters.
-func InitOpenTelemetry(endpoint string) error {
+func InitOpenTelemetry(endpoint string) (*metric.MeterProvider, *sdktrace.TracerProvider, error) {
 	if endpoint == "" {
-		return nil
+		return nil, nil, nil
 	}
 
 	exporter, err := otlpmetricgrpc.New(
@@ -260,16 +260,16 @@ func InitOpenTelemetry(endpoint string) error {
 		otlpmetricgrpc.WithEndpoint(endpoint),
 	)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
-	mp := metric.NewMeterProvider(
+	meterProvider := metric.NewMeterProvider(
 		metric.WithReader(
 			metric.NewPeriodicReader(exporter, metric.WithInterval(8*time.Second)),
 		),
 	)
 
-	global.SetMeterProvider(mp)
+	global.SetMeterProvider(meterProvider)
 
 	traceClient := otlptracegrpc.NewClient(
 		otlptracegrpc.WithInsecure(),
@@ -277,7 +277,7 @@ func InitOpenTelemetry(endpoint string) error {
 		otlptracegrpc.WithDialOption(grpc.WithBlock()))
 	traceExp, err := otlptrace.New(context.Background(), traceClient)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	bsp := sdktrace.NewBatchSpanProcessor(traceExp)
@@ -287,7 +287,7 @@ func InitOpenTelemetry(endpoint string) error {
 	)
 	otel.SetTracerProvider(tracerProvider)
 
-	return nil
+	return meterProvider, tracerProvider, nil
 }
 
 func OtelHandler(next http.Handler) http.Handler {

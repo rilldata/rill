@@ -66,11 +66,14 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}
 
 			// Open-Telemetry
-			err = server.InitOpenTelemetry(conf.OtelExporterEndpoint)
+			mp, tp, err := server.InitOpenTelemetry(conf.OtelExporterEndpoint)
 			if err != nil {
 				fmt.Printf("failed to load Open Telemetry: %s", err.Error())
 				os.Exit(1)
 			}
+
+			defer mp.Shutdown(context.Background())
+			defer tp.Shutdown(context.Background())
 
 			// Init logger
 			cfg := zap.NewProductionConfig()
