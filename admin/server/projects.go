@@ -111,8 +111,6 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 
 	// TODO: Validate that req.ProductionSlots is an allowed tier for the caller.
 
-	fmt.Println("Req", req)
-
 	// Create the project
 	proj, err := s.admin.CreateProject(ctx, &database.InsertProjectOptions{
 		OrganizationID:       org.ID,

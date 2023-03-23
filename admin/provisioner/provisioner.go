@@ -133,8 +133,6 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 		return nil, err
 	}
 
-	fmt.Println(opts, target)
-
 	// Make runtime client
 	rt, err := client.New(target.Host, jwt)
 	if err != nil {
