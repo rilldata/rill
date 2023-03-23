@@ -168,7 +168,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 	connectCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
 	connectCmd.Flags().StringVar(&region, "region", "", "Deployment region")
 	connectCmd.Flags().StringVar(&dbDriver, "prod-db-driver", "duckdb", "Database driver")
-	connectCmd.Flags().StringVar(&dbDSN, "prod-db-dsn", "", "Databse driver configuration")
+	connectCmd.Flags().StringVar(&dbDSN, "prod-db-dsn", "", "Database driver configuration")
 
 	return connectCmd
 }
