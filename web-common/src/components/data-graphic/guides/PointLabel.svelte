@@ -92,13 +92,16 @@
     {@const comparisonText = isNull
       ? "no data"
       : format
-      ? format(point[yComparisonAccessor])
-      : point[yComparisonAccessor]}
+      ? format(point[yAccessor] - point[yComparisonAccessor])
+      : point[yAccessor] - point[yComparisonAccessor]}
     {@const percentageDifference =
       isNull && comparisonIsNull
         ? undefined
         : (point[yAccessor] - point[yComparisonAccessor]) /
           point[yComparisonAccessor]}
+    {@const comparisonIsPositive = percentageDifference
+      ? percentageDifference >= 0
+      : undefined}
     {#if showReferenceLine}
       <line
         transition:fade|local={{ duration: 100 }}
@@ -133,12 +136,12 @@
         y1={showComparisonText ? output.cdy : yScale(0)}
         y2={output.y}
         stroke-width="4"
-        class={showComparisonText && percentageDifference < 0
+        class={showComparisonText && !comparisonIsPositive
           ? "stroke-red-300"
           : "stroke-blue-300"}
       />
       {#if showComparisonText}
-        {@const sign = percentageDifference < 0 ? -1 : 1}
+        {@const sign = !comparisonIsPositive ? -1 : 1}
         {@const dist = 6}
         {@const signedDist = sign * 6}
         {@const yLoc = output.y + signedDist}
@@ -150,7 +153,7 @@
             y1={yLoc}
             stroke-width="4"
             y2={yLoc + signedDist}
-            class={showComparisonText && percentageDifference < 0
+            class={showComparisonText && !comparisonIsPositive
               ? "stroke-red-300"
               : "stroke-blue-300"}
           />
@@ -160,7 +163,7 @@
             y1={yLoc}
             stroke-width="4"
             y2={yLoc + signedDist}
-            class={showComparisonText && percentageDifference < 0
+            class={showComparisonText && !comparisonIsPositive
               ? "stroke-red-300"
               : "stroke-blue-300"}
           />
@@ -173,7 +176,7 @@
         cx={output.x}
         cy={output.y}
         r="3"
-        class={showComparisonText && percentageDifference < 0
+        class={showComparisonText && !comparisonIsPositive
           ? "fill-red-600"
           : "fill-blue-500"}
       />
@@ -184,7 +187,7 @@
         cx={output.x}
         cy={output.cdy}
         r="3"
-        class={showComparisonText && percentageDifference < 0
+        class={showComparisonText && !comparisonIsPositive
           ? "fill-red-600"
           : "fill-blue-500"}
       />
@@ -193,7 +196,7 @@
       {@const diffParts =
         formatMeasurePercentageDifference(percentageDifference)}
       <text
-        class:fill-red-500={percentageDifference < 0}
+        class:fill-red-500={!comparisonIsPositive}
         class:italic={isNull}
         class="font-normal"
         use:outline

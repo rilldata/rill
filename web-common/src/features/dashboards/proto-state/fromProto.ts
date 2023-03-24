@@ -32,7 +32,6 @@ export function getDashboardStateFromProto(
     entity.filters.include = fromFiltersProto(dashboard.filters.include);
     entity.filters.exclude = fromFiltersProto(dashboard.filters.exclude);
   }
-  console.log(dashboard);
   if (dashboard.compareTimeRange) {
     entity.selectedComparisonTimeRange = fromTimeRangeProto(
       dashboard.compareTimeRange
