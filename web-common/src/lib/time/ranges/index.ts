@@ -79,7 +79,7 @@ export function getChildTimeRanges(
       const hasSomeGrainMatches = thisRangeAllowedGrains.some((grain) => {
         return (
           !isGrainBigger(minTimeGrain, grain.grain) &&
-          durationToMillis(grain.duration) <
+          durationToMillis(grain.duration) <=
             getTimeWidth(timeRangeDates.startDate, timeRangeDates.endDate)
         );
       });

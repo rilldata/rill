@@ -90,7 +90,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
       transformation: [
         { duration: "P1W", operationType: TimeOffsetType.SUBTRACT }, // operation
         {
-          period: Period.DAY, //TODO: How to handle user selected timegrains?
+          period: Period.HOUR, //TODO: How to handle user selected timegrains?
           truncationType: TimeTruncationType.START_OF_PERIOD,
         }, // truncation
       ],
@@ -114,7 +114,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
       transformation: [
         { duration: "P4W", operationType: TimeOffsetType.SUBTRACT }, // operation
         {
-          period: Period.DAY, //TODO: How to handle user selected timegrains?
+          period: Period.HOUR, //TODO: How to handle user selected timegrains?
           truncationType: TimeTruncationType.START_OF_PERIOD,
         }, // truncation
       ],
@@ -123,7 +123,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
         {
-          period: Period.DAY,
+          period: Period.HOUR,
           truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
@@ -138,7 +138,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
       transformation: [
         { duration: "P1Y", operationType: TimeOffsetType.SUBTRACT }, // operation
         {
-          period: Period.DAY, //TODO: How to handle user selected timegrains?
+          period: Period.HOUR, //TODO: How to handle user selected timegrains?
           truncationType: TimeTruncationType.START_OF_PERIOD,
         }, // truncation
       ],
@@ -147,7 +147,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
         {
-          period: Period.DAY,
+          period: Period.HOUR,
           truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
@@ -363,35 +363,42 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
 /** The default configurations for time comparisons. */
 export const TIME_COMPARISON = {
   [TimeComparisonOption.CONTIGUOUS]: {
-    label: "Last period",
+    label: "last period",
     description: "Compare the current time range to the previous time range",
     comparisonType: TimeComparisonOption.CONTIGUOUS,
   },
   [TimeComparisonOption.CUSTOM]: {
-    label: "Custom",
+    label: "last period",
     description: "Compare the current time range to a custom time range",
     comparisonType: TimeComparisonOption.CUSTOM,
   },
   [TimeComparisonOption.DAY]: {
-    label: "Previous day",
+    label: "previous day",
     description:
       "Compare the current time range to the same time range the day before",
     comparisonType: TimeComparisonOption.DAY,
   },
   [TimeComparisonOption.WEEK]: {
-    label: "Previous week",
+    label: "previous week",
     description:
       "Compare the current time range to the same time range the week before",
     comparisonType: TimeComparisonOption.WEEK,
   },
   [TimeComparisonOption.MONTH]: {
-    label: "Previous month",
+    label: "previous month",
     description:
       "Compare the current time range to the same time range the month before",
     comparisonType: TimeComparisonOption.MONTH,
   },
+  [TimeComparisonOption.QUARTER]: {
+    label: "previous quarter",
+    description:
+      "Compare the current time range to the same time range the quarter before",
+    comparisonType: TimeComparisonOption.QUARTER,
+  },
+
   [TimeComparisonOption.YEAR]: {
-    label: "Previous year",
+    label: "previous year",
     description:
       "Compare the current time range to the same time range the year before",
     comparisonType: TimeComparisonOption.YEAR,

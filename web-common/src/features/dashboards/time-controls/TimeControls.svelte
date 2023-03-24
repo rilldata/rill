@@ -23,12 +23,12 @@
   } from "@rilldata/web-common/lib/time/ranges";
   import {
     DashboardTimeControls,
+    TimeComparisonOption,
     TimeGrainOption,
     TimeRange,
     TimeRangePreset,
     TimeRangeType,
   } from "@rilldata/web-common/lib/time/types";
-  import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import {
     useRuntimeServiceGetCatalogEntry,
     V1TimeGrain,
@@ -38,6 +38,7 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
+  import TimeComparisonSelector from "./TimeComparisonSelector.svelte";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
 
@@ -213,9 +214,11 @@
   $: if ($dashboardStore?.selectedTimeRange?.start && hasTimeSeries) {
     const { start, end } = $dashboardStore?.selectedTimeRange;
 
-    comparisonOption =
-      DEFAULT_TIME_RANGES[$dashboardStore?.selectedTimeRange?.name]
-        .defaultComparison;
+    if (!comparisonOption) {
+      comparisonOption =
+        DEFAULT_TIME_RANGES[$dashboardStore?.selectedTimeRange?.name]
+          .defaultComparison;
+    }
 
     comparisonRange = getComparisonRange(start, end, comparisonOption);
     isComparisonRangeAvailable = isComparisonInsideBounds(
@@ -230,7 +233,8 @@
       allTimeRange.end,
       start,
       end,
-      [...Object.values(TimeComparisonOption)]
+      [...Object.values(TimeComparisonOption)],
+      [comparisonOption]
     );
   }
 </script>
@@ -255,6 +259,21 @@
       {timeGrainOptions}
       {minTimeGrain}
     />
+    {#if allTimeRange?.start}
+      <TimeComparisonSelector
+        on:select-comparison={(e) => {
+          comparisonOption = e.detail;
+        }}
+        currentStart={$dashboardStore?.selectedTimeRange?.start}
+        currentEnd={$dashboardStore?.selectedTimeRange?.end}
+        boundaryStart={allTimeRange.start}
+        boundaryEnd={allTimeRange.end}
+        {metricViewName}
+        {allTimeRange}
+        {comparisonOption}
+        comparisonOptions={availableComparisons}
+      />
+    {/if}
   {/if}
   <div class="flex gap-x-2">
     <div>
