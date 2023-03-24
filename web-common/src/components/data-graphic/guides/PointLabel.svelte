@@ -137,6 +137,35 @@
           ? "stroke-red-300"
           : "stroke-blue-300"}
       />
+      {#if showComparisonText}
+        {@const sign = percentageDifference < 0 ? -1 : 1}
+        {@const dist = 6}
+        {@const signedDist = sign * 6}
+        {@const yLoc = output.y + signedDist}
+        {@const show = Math.abs(output.y - output.cdy) > 24}
+        {#if show}
+          <line
+            x1={output.x}
+            x2={output.x + dist}
+            y1={yLoc}
+            stroke-width="4"
+            y2={yLoc + signedDist}
+            class={showComparisonText && percentageDifference < 0
+              ? "stroke-red-300"
+              : "stroke-blue-300"}
+          />
+          <line
+            x1={output.x}
+            x2={output.x - dist}
+            y1={yLoc}
+            stroke-width="4"
+            y2={yLoc + signedDist}
+            class={showComparisonText && percentageDifference < 0
+              ? "stroke-red-300"
+              : "stroke-blue-300"}
+          />
+        {/if}
+      {/if}
     {/if}
     {#if !isNull && showPoint}
       <circle
