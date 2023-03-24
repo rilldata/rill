@@ -179,6 +179,7 @@
           {yAccessor}
           {showComparison}
           {mouseoverFormat}
+          {numberKind}
         />
       </g>
 

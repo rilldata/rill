@@ -3,11 +3,13 @@
   import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
   import MultiMetricMouseoverLabel from "@rilldata/web-common/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/features/dashboards/humanize-numbers";
+  import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   export let point;
   export let xAccessor;
   export let yAccessor;
   export let showComparison = false;
   export let mouseoverFormat;
+  export let numberKind = NumberKind.ANY;
   $: comparisonYAccessor = `comparison.${yAccessor}`;
 
   $: x = point[xAccessor];
@@ -47,7 +49,10 @@
     yOverrideLabel: "no data",
     key: "main",
     label:
-      hasValidComparisonPoint && !currentPointIsNull && !comparisonPointIsNull
+      hasValidComparisonPoint &&
+      !currentPointIsNull &&
+      !comparisonPointIsNull &&
+      numberKind !== NumberKind.PERCENT
         ? `(${diffLabel})`
         : "",
     pointColorClass: "fill-blue-700",
@@ -82,10 +87,7 @@
 
 <WithGraphicContexts let:xScale let:yScale>
   {@const strokeWidth = showComparison ? 2 : 4}
-  {@const colorClass =
-    hasValidComparisonPoint && !comparisonIsPositive
-      ? "stroke-red-400"
-      : "stroke-blue-400"}
+  {@const colorClass = "stroke-gray-400"}
 
   {#if !(currentPointIsNull || comparisonPointIsNull)}
     <WithTween
