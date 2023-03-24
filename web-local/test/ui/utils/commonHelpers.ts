@@ -23,7 +23,7 @@ export async function renameEntityUsingMenu(
 ) {
   // open context menu and click rename
   await openEntityMenu(page, type, name);
-  await clickMenuButton(page, "rename");
+  await clickMenuButton(page, "Rename...");
 
   // wait for rename modal to open
   await page
@@ -54,6 +54,6 @@ export async function deleteEntity(
   await openEntityMenu(page, type, name);
   await Promise.all([
     page.waitForResponse(/delete-and-reconcile/),
-    clickMenuButton(page, "delete"),
+    clickMenuButton(page, "Delete"),
   ]);
 }

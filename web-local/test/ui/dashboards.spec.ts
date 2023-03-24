@@ -5,7 +5,7 @@ import { useRegisteredServer } from "./utils/serverConfigs";
 import { createOrReplaceSource } from "./utils/sourceHelpers";
 import { waitForEntity } from "./utils/waitHelpers";
 
-describe.skip("dashboards", () => {
+describe("dashboards", () => {
   const testBrowser = useRegisteredServer("dashboards");
 
   it("autogenerate dashboard", async () => {

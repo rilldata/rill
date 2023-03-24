@@ -1,3 +1,4 @@
+import { asyncWait } from "@rilldata/web-local/lib/util/waitUtils";
 import type { Page } from "playwright";
 
 export enum TestEntityType {
@@ -13,29 +14,15 @@ export async function openEntityMenu(
 ) {
   const entityLocator = page.locator(getEntityLink(page, type, name));
   await entityLocator.hover();
-  await page
-    // get the navigation entry for the entity
-    .locator(".navigation-entry-title", {
-      has: entityLocator,
-    })
-    .locator("div.contents div.contents button")
-    .click();
+  await entityLocator.locator("button").last().click();
 }
 
 export async function clickModalButton(page: Page, text: string) {
-  return page
-    .locator(".portal button", {
-      hasText: text,
-    })
-    .click();
+  return page.getByText(text).click();
 }
 
 export async function clickMenuButton(page: Page, text: string) {
-  await page
-    .locator(".portal button[role='menuitem'] div.text-left div", {
-      hasText: new RegExp(text),
-    })
-    .click();
+  await page.getByRole("menuitem", { name: text }).click();
 }
 
 export async function waitForProfiling(
@@ -51,7 +38,7 @@ export async function waitForProfiling(
       columns.map((column) =>
         page.waitForResponse(
           new RegExp(
-            `/queries/null-count/tables/${name}\\?column_name=${column}`
+            `/queries/null-count/tables/${name}\\?columnName=${column}`
           )
         )
       ),

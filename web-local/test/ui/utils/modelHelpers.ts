@@ -14,7 +14,7 @@ export async function createModel(page: Page, name: string) {
 
 export async function createModelFromSource(page: Page, source: string) {
   await openEntityMenu(page, TestEntityType.Source, source);
-  await clickMenuButton(page, "create new model");
+  await clickMenuButton(page, "Create New Model");
 }
 
 export async function updateModelSql(page: Page, sql: string) {
