@@ -334,9 +334,14 @@ function humanizeGroupValuesUtil2(
 }
 
 /** formatter for the comparison percentage differences */
-export function formatMeasurePercentageDifference(value) {
+export function formatMeasurePercentageDifference(
+  value,
+  method = "partsFormat"
+) {
   if (Math.abs(value * 100) < 0.1) {
-    return { percentage: "%", neg: "", int: 0 };
+    return method === "partsFormat"
+      ? { percentage: "%", neg: "", int: 0 }
+      : "0%";
   }
   const factory = new PerRangeFormatter([], {
     strategy: "perRange",
@@ -352,5 +357,5 @@ export function formatMeasurePercentageDifference(value) {
     defaultMaxDigitsRight: 0,
     numberKind: NumberKind.PERCENT,
   });
-  return factory.partsFormat(value);
+  return factory[method](value);
 }

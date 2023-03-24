@@ -74,6 +74,7 @@ export function outline(
     if (node.getAttribute("dy")) {
       clonedElement.setAttribute("dy", node.getAttribute("dy"));
     }
+
     // clone any animations that may be applied via svelte transitions.
     clonedElement.style.animation = node.style.animation;
     // copy the contents of the node.

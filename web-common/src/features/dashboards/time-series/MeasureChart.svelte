@@ -6,7 +6,6 @@
   import {
     Axis,
     Grid,
-    TimeSeriesMouseover,
   } from "@rilldata/web-common/components/data-graphic/guides";
   import { ChunkedLine } from "@rilldata/web-common/components/data-graphic/marks";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
@@ -14,8 +13,8 @@
   import { extent } from "d3-array";
   import { cubicOut } from "svelte/easing";
   import { writable } from "svelte/store";
-  import { fade, fly } from "svelte/transition";
-  import ComparisonMouseover from "./ComparisonMouseover.svelte";
+  import { fly } from "svelte/transition";
+  import MeasureMouseover from "./MeasureMouseover.svelte";
   import { niceMeasureExtents } from "./utils";
   export let width: number = undefined;
   export let height: number = undefined;
@@ -159,33 +158,22 @@
     />
   </Body>
   {#if !scrubbing && mouseoverValue?.x}
-    <g transition:fade|local={{ duration: 100 }}>
-      {#if showComparison}
-        <ComparisonMouseover
-          {data}
-          {mouseoverValue}
-          {xAccessor}
-          {yAccessor}
-          yComparisonAccessor={`comparison.${yAccessor}`}
-          format={mouseoverFormat}
-        />
-      {:else}
-        <TimeSeriesMouseover
-          {data}
-          {mouseoverValue}
-          {xAccessor}
-          {yAccessor}
-          format={mouseoverFormat}
-        />
-      {/if}
-    </g>
-
     <WithBisector
       {data}
       callback={(d) => d[xAccessor]}
       value={mouseoverValue.x}
       let:point
     >
+      <g transition:fly|local={{ duration: 100, x: -4 }}>
+        <MeasureMouseover
+          {point}
+          {xAccessor}
+          {yAccessor}
+          {showComparison}
+          {mouseoverFormat}
+        />
+      </g>
+
       <g transition:fly|local={{ duration: 100, x: -4 }}>
         <text
           use:outline
