@@ -38,6 +38,12 @@ export function getProtoFromDashboardState(
       state.timeGrain = toTimeGrainProto(metrics.selectedTimeRange.interval);
     }
   }
+  if (metrics.selectedComparisonTimeRange) {
+    state.compareTimeRange = toTimeRangeProto(
+      metrics.selectedComparisonTimeRange
+    );
+  }
+
   if (metrics.leaderboardMeasureName) {
     state.leaderboardMeasure = metrics.leaderboardMeasureName;
   }

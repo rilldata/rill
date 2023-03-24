@@ -7,6 +7,7 @@ import {
   FormatterFactoryOptions,
   NumberKind,
 } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+import { PerRangeFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/per-range";
 import type { LeaderboardValue } from "./dashboard-stores";
 
 const shortHandSymbols = ["Q", "T", "B", "M", "k", "none"] as const;
@@ -286,6 +287,7 @@ export function humanizeDataType(
   type: NicelyFormattedTypes,
   options?: FormatterFactoryOptions
 ): string {
+  if (value === undefined) return "";
   if (typeof value != "number") return value.toString();
 
   const numberKind = nicelyFormattedTypesToNumberKind(type);
@@ -329,4 +331,26 @@ function humanizeGroupValuesUtil2(
     if (v === null) return "∅";
     else return formatter.stringFormat(v);
   });
+}
+
+/** formatter for the comparison percentage differences */
+export function formatMeasurePercentageDifference(value) {
+  if (Math.abs(value * 100) < 0.1) {
+    return { percentage: "%", neg: "", int: 0 };
+  }
+  const factory = new PerRangeFormatter([], {
+    strategy: "perRange",
+    rangeSpecs: [
+      {
+        minMag: -2,
+        supMag: 3,
+        maxDigitsRight: 1,
+        baseMagnitude: 0,
+        padWithInsignificantZeros: false,
+      },
+    ],
+    defaultMaxDigitsRight: 0,
+    numberKind: NumberKind.PERCENT,
+  });
+  return factory.partsFormat(value);
 }

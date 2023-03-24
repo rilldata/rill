@@ -31,6 +31,9 @@ export interface MetricsExplorerEntity {
   dimensionFilterExcludeMode: Map<string, boolean>;
   // user selected time range
   selectedTimeRange?: DashboardTimeControls;
+  selectedComparisonTimeRange?: DashboardTimeControls;
+  // flag to show/hide comparison based on time range
+  showComparison?: boolean;
   // user selected dimension
   selectedDimensionName?: string;
   proto?: string;
@@ -156,6 +159,15 @@ const metricViewReducers = {
   setMetricDimensionName(name: string, dimensionName: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.selectedDimensionName = dimensionName;
+    });
+  },
+
+  setSelectedComparisonRange(
+    name: string,
+    comparisonTimeRange: DashboardTimeControls
+  ) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
     });
   },
 

@@ -15,6 +15,7 @@
   import { cubicOut } from "svelte/easing";
   import { writable } from "svelte/store";
   import { fade, fly } from "svelte/transition";
+  import ComparisonMouseover from "./ComparisonMouseover.svelte";
   import { niceMeasureExtents } from "./utils";
   export let width: number = undefined;
   export let height: number = undefined;
@@ -22,6 +23,8 @@
   export let xMax: Date = undefined;
   export let yMin: number = undefined;
   export let yMax: number = undefined;
+
+  export let showComparison = false;
   export let data;
   export let xAccessor = "ts";
   export let yAccessor = "value";
@@ -128,6 +131,19 @@
         {yAccessor}
         key={$timeRangeKey}
       />
+
+      {#if showComparison}
+        <ChunkedLine
+          area={false}
+          lineColor={`hsl(217, 10%, 60%)`}
+          delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
+          duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 200}
+          {data}
+          {xAccessor}
+          yAccessor="comparison.{yAccessor}"
+          key={$timeRangeKey}
+        />
+      {/if}
     {/key}
     <line
       x1={config.plotLeft}
@@ -138,15 +154,27 @@
     />
   </Body>
   {#if !scrubbing && mouseoverValue?.x}
-    <g transition:fade|local={{ duration: 100 }}>
-      <TimeSeriesMouseover
+    {#if showComparison}
+      abc
+      <ComparisonMouseover
         {data}
         {mouseoverValue}
         {xAccessor}
         {yAccessor}
+        yComparisonAccessor={`comparison.${yAccessor}`}
         format={mouseoverFormat}
       />
-    </g>
+    {:else}
+      <g transition:fade|local={{ duration: 100 }}>
+        <TimeSeriesMouseover
+          {data}
+          {mouseoverValue}
+          {xAccessor}
+          {yAccessor}
+          format={mouseoverFormat}
+        />
+      </g>
+    {/if}
     <WithBisector
       {data}
       callback={(d) => d[xAccessor]}

@@ -76,15 +76,22 @@
       </div>
     </div>
     <!-- right-hand metric value -->
-    <div slot="right">
+    <div slot="right" let:isActive>
       <!-- {#if !(atLeastOneActive && !active)} -->
-      <div class:ui-copy-disabled={excluded} in:fly={{ duration: 200, y: 4 }}>
+      <div
+        class:ui-copy-disabled={excluded}
+        class:ui-copy-strong={!excluded && isActive}
+        in:fly={{ duration: 200, y: 4 }}
+      >
         <slot name="right" />
       </div>
       <!-- {/if} -->
     </div>
     <div slot="context" let:isActive>
-      <div class:ui-copy-strong={!excluded && isActive}>
+      <div
+        class:ui-copy-disabled={excluded}
+        class:ui-copy-strong={!excluded && isActive}
+      >
         <slot name="context" />
       </div>
     </div>

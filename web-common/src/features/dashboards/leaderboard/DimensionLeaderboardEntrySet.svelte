@@ -13,12 +13,17 @@ see more button
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
+  import {
+    LIST_SLIDE_DURATION,
+    TOOLTIP_STRING_LIMIT,
+  } from "@rilldata/web-common/layout/config";
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
-  import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-  import { PerRangeFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/per-range";
+  import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { createEventDispatcher } from "svelte";
-  import { humanizeDataType } from "../humanize-numbers";
+  import {
+    formatMeasurePercentageDifference,
+    humanizeDataType,
+  } from "../humanize-numbers";
   import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
 
   export let values;
@@ -54,28 +59,6 @@ see more button
     return { ...v, active, excluded, comparisonValue };
   });
 
-  // FIXME-COMPARISONS: move this to a util.
-  const formatPercentage = (value) => {
-    if (Math.abs(value * 100) < 0.1) {
-      return `0%`;
-    }
-    const factory = new PerRangeFormatter([], {
-      strategy: "perRange",
-      rangeSpecs: [
-        {
-          minMag: -2,
-          supMag: 3,
-          maxDigitsRight: 1,
-          baseMagnitude: 0,
-          padWithInsignificantZeros: false,
-        },
-      ],
-      defaultMaxDigitsRight: 0,
-      numberKind: NumberKind.PERCENT,
-    });
-    return factory.partsFormat(value);
-  };
-
   let comparisonLabelToReveal = undefined;
   function revealComparisonNumber(value) {
     return () => {
@@ -89,7 +72,7 @@ see more button
   {@const percDiff =
     comparisonValue && value && (value - comparisonValue) / comparisonValue}
   {@const diffIsPositive = percDiff >= 0}
-  {@const diffParts = formatPercentage(percDiff)}
+  {@const diffParts = formatMeasurePercentageDifference(percDiff)}
   {@const showComparisonForThisValue = comparisonLabelToReveal === label}
 
   <div
@@ -128,7 +111,10 @@ see more button
       </svelte:fragment>
       <div slot="right" class="flex items-baseline gap-x-1">
         {#if showComparisonForThisValue && comparisonValue !== undefined}
-          <span class="inline-block opacity-50">
+          <span
+            class="inline-block opacity-50"
+            transition:slideRight={{ duration: LIST_SLIDE_DURATION }}
+          >
             {humanizeDataType(comparisonValue, formatPreset)}
             →
           </span>

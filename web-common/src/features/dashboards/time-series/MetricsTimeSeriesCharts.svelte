@@ -24,20 +24,23 @@
     TIME_GRAIN,
   } from "@rilldata/web-common/lib/time/config";
   import { getOffset } from "@rilldata/web-common/lib/time/transforms";
-  import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
+  import {
+    TimeComparisonOption,
+    TimeOffsetType,
+  } from "@rilldata/web-common/lib/time/types";
   import {
     useQueryServiceMetricsViewTimeSeries,
     useQueryServiceMetricsViewTotals,
     V1MetricsViewTimeSeriesResponse,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
+  import { prepareTimeSeries } from "./utils";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -73,6 +76,9 @@
 
   let isComparisonRangeAvailable = false;
 
+  let comparisonStart;
+  let comparisonEnd;
+  /** Generate the totals & big number comparison query */
   $: if (
     name &&
     metricsExplorer &&
@@ -81,14 +87,16 @@
     !$metaQuery.isRefetching
   ) {
     const comparisonParams = getTimeComparisonParametersForComponent(
-      DEFAULT_TIME_RANGES[name],
+      (metricsExplorer?.selectedComparisonTimeRange
+        ?.name as TimeComparisonOption) ||
+        (DEFAULT_TIME_RANGES[name].defaultComparison as TimeComparisonOption),
       $allTimeRangeQuery?.data?.start,
       $allTimeRangeQuery?.data?.end,
       metricsExplorer.selectedTimeRange.start,
       metricsExplorer.selectedTimeRange.end
     );
-
-    const { start, end } = comparisonParams;
+    comparisonStart = comparisonParams.start;
+    comparisonEnd = comparisonParams.end;
     isComparisonRangeAvailable = comparisonParams.isComparisonRangeAvailable;
 
     const totalsQueryParams = {
@@ -109,8 +117,12 @@
       metricViewName,
       {
         ...totalsQueryParams,
-        timeStart: isComparisonRangeAvailable ? start.toISOString() : undefined,
-        timeEnd: isComparisonRangeAvailable ? end.toISOString() : undefined,
+        timeStart: isComparisonRangeAvailable
+          ? comparisonStart.toISOString()
+          : undefined,
+        timeEnd: isComparisonRangeAvailable
+          ? comparisonEnd.toISOString()
+          : undefined,
       }
     );
   }
@@ -122,6 +134,12 @@
     V1MetricsViewTimeSeriesResponse,
     Error
   >;
+
+  let timeSeriesComparisonQuery: UseQueryStoreResult<
+    V1MetricsViewTimeSeriesResponse,
+    Error
+  >;
+
   $: if (
     metricsExplorer &&
     metaQuery &&
@@ -137,10 +155,26 @@
         filter: metricsExplorer?.filters,
         timeStart: metricsExplorer.selectedTimeRange?.start,
         timeEnd: metricsExplorer.selectedTimeRange?.end,
-        // Quick hack for now, API expects "day" instead of "1 day"
         timeGranularity: metricsExplorer.selectedTimeRange?.interval,
       }
     );
+    if (isComparisonRangeAvailable) {
+      timeSeriesComparisonQuery = useQueryServiceMetricsViewTimeSeries(
+        instanceId,
+        metricViewName,
+        {
+          measureNames: selectedMeasureNames,
+          filter: metricsExplorer?.filters,
+          timeStart: isComparisonRangeAvailable
+            ? comparisonStart.toISOString()
+            : undefined,
+          timeEnd: isComparisonRangeAvailable
+            ? comparisonEnd.toISOString()
+            : undefined,
+          timeGranularity: metricsExplorer.selectedTimeRange?.interval,
+        }
+      );
+    }
   }
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
@@ -149,16 +183,16 @@
   // we make a copy of the data that avoids `undefined` transition states.
   // TODO: instead, try using svelte-query's `keepPreviousData = True` option.
   let dataCopy;
+  let dataComparisonCopy;
 
   $: if ($timeSeriesQuery?.data?.data) dataCopy = $timeSeriesQuery.data.data;
+  $: if ($timeSeriesComparisonQuery?.data?.data)
+    dataComparisonCopy = $timeSeriesComparisonQuery.data.data;
 
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
   $: if (dataCopy && dataCopy?.length) {
-    formattedData = convertTimestampPreview(dataCopy, true).map((di, _i) => {
-      di = { ts: di.ts, bin: di.bin, ...di.records };
-      return di;
-    });
+    formattedData = prepareTimeSeries(dataCopy, dataComparisonCopy);
   }
 
   let mouseoverValue = undefined;
@@ -189,8 +223,6 @@
   }
 </script>
 
-{isComparisonRangeAvailable}
-<!-- {JSON.stringify($totalsComparisonQuery)} -->
 <WithBisector
   data={formattedData}
   callback={(datum) => datum.ts}
@@ -260,6 +292,7 @@
               xMax={endValue}
               start={startValue}
               end={endValue}
+              {showComparison}
               mouseoverTimeFormat={(value) => {
                 /** format the date according to the time grain */
                 return new Date(value).toLocaleDateString(

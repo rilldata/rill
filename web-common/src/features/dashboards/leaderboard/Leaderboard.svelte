@@ -18,6 +18,7 @@
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
   import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
+  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import {
     MetricsViewDimension,
     MetricsViewMeasure,
@@ -171,7 +172,11 @@
     const values = $topListQuery?.data?.data;
 
     const comparisonTimeRange = getTimeComparisonParametersForComponent(
-      DEFAULT_TIME_RANGES[timeRangeName],
+      (metricsExplorer?.selectedComparisonTimeRange
+        ?.name as TimeComparisonOption) ||
+        (DEFAULT_TIME_RANGES[timeRangeName]
+          .defaultComparison as TimeComparisonOption),
+      // DEFAULT_TIME_RANGES[timeRangeName],
       $allTimeRangeQuery?.data?.start,
       $allTimeRangeQuery?.data?.end,
       metricsExplorer.selectedTimeRange.start,

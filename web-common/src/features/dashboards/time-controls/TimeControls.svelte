@@ -207,10 +207,33 @@
     metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
   }
 
+  /** updates the application state to include a comparison trio, which operates like
+   * a time range trio. This includes a start, end, and a name, the latter of which
+   * is used to determine the comparison time range regardless of the specific range.
+   */
+  // FIXME: this should not be in a file.
+  function updateComparisonAppState(
+    start: Date,
+    end: Date,
+    comparisonOption: TimeComparisonOption
+  ) {
+    const comparisonTimeRange = getComparisonRange(
+      start,
+      end,
+      comparisonOption
+    );
+
+    metricsExplorerStore.setSelectedComparisonRange(metricViewName, {
+      ...comparisonTimeRange,
+      name: comparisonOption,
+    });
+  }
+
   let comparisonRange;
   let comparisonOption;
   let isComparisonRangeAvailable;
   let availableComparisons;
+
   $: if ($dashboardStore?.selectedTimeRange?.start && hasTimeSeries) {
     const { start, end } = $dashboardStore?.selectedTimeRange;
 
@@ -218,6 +241,9 @@
       comparisonOption =
         DEFAULT_TIME_RANGES[$dashboardStore?.selectedTimeRange?.name]
           .defaultComparison;
+    }
+    if ($dashboardStore?.selectedComparisonTimeRange?.name) {
+      comparisonOption = $dashboardStore?.selectedComparisonTimeRange?.name;
     }
 
     comparisonRange = getComparisonRange(start, end, comparisonOption);
@@ -262,7 +288,11 @@
     {#if allTimeRange?.start}
       <TimeComparisonSelector
         on:select-comparison={(e) => {
-          comparisonOption = e.detail;
+          updateComparisonAppState(
+            $dashboardStore?.selectedTimeRange?.start,
+            $dashboardStore?.selectedTimeRange?.end,
+            e.detail
+          );
         }}
         currentStart={$dashboardStore?.selectedTimeRange?.start}
         currentEnd={$dashboardStore?.selectedTimeRange?.end}
@@ -284,10 +314,5 @@
         )}
       {/if}
     </div>
-    <div>in range ? {JSON.stringify(isComparisonRangeAvailable)}</div>
   </div>
-</div>
-
-<div>
-  default: {comparisonOption} options: {JSON.stringify(availableComparisons)}
 </div>

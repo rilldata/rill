@@ -62,9 +62,11 @@ This component needs to do the following:
   let initialEndDate;
 
   const onCompareRangeSelect = (comparison) => {
+    intermediateSelection = comparison;
     dispatch("select-comparison", comparison);
   };
   // Define a better validation criteria
+  // FIXME: this is not consumed yet.
   function validateCustomTimeRange(start, end) {
     const customStartDate = new Date(start);
     const customEndDate = new Date(end);
@@ -94,11 +96,12 @@ This component needs to do the following:
   }
 
   $: label = TIME_COMPARISON[comparisonOption]?.label;
+  $: intermediateSelection = comparisonOption;
 </script>
 
 <WithTogglableFloatingElement let:toggleFloatingElement let:active>
   <SelectorButton {active} on:click={toggleFloatingElement}
-    >comparing to {label}</SelectorButton
+    ><span class="font-normal">Comparing to</span> {label}</SelectorButton
   >
   <Menu
     slot="floating-element"
@@ -107,13 +110,13 @@ This component needs to do the following:
   >
     {#each options as option}
       <MenuItem
-        selected={option.name === comparisonOption}
+        selected={option.name === intermediateSelection}
         on:select={() => {
           onCompareRangeSelect(option.name);
           toggleFloatingElement();
         }}
       >
-        <span class:font-bold={comparisonOption === option.name}>
+        <span class:font-bold={intermediateSelection === option.name}>
           {option.name}
         </span>
       </MenuItem>

@@ -32,6 +32,12 @@ export function getDashboardStateFromProto(
     entity.filters.include = fromFiltersProto(dashboard.filters.include);
     entity.filters.exclude = fromFiltersProto(dashboard.filters.exclude);
   }
+  console.log(dashboard);
+  if (dashboard.compareTimeRange) {
+    entity.selectedComparisonTimeRange = fromTimeRangeProto(
+      dashboard.compareTimeRange
+    );
+  }
 
   entity.selectedTimeRange = dashboard.timeRange
     ? fromTimeRangeProto(dashboard.timeRange)
@@ -46,7 +52,6 @@ export function getDashboardStateFromProto(
   if (dashboard.selectedDimension) {
     entity.selectedDimensionName = dashboard.selectedDimension;
   }
-  console.log(entity);
 
   return entity;
 }
