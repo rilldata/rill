@@ -3,7 +3,6 @@ package start
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/config"

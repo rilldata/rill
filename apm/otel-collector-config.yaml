@@ -26,8 +26,6 @@ extensions:
     endpoint: :55679
 
 service:
-  telemetry:
-    useOtelForInternalMetrics: false
   extensions: [pprof, zpages, health_check]
   pipelines:
     traces:

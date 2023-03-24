@@ -16,6 +16,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"github.com/rilldata/rill/runtime/server/metrics"
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -90,8 +91,14 @@ func (s *Server) Close() error {
 
 // ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
+	si, ui, err := metrics.InitCustomMetricsInterceptors(ctx)
+	if err != nil {
+		return err
+	}
+
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
+			si,
 			otelgrpc.StreamServerInterceptor(),
 			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
@@ -99,6 +106,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			auth.StreamServerInterceptor(s.aud),
 		),
 		grpc.ChainUnaryInterceptor(
+			ui,
 			otelgrpc.UnaryServerInterceptor(),
 			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),

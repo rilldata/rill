@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
+	"github.com/rilldata/rill/runtime/server/metrics"
 )
 
 type Query interface {
@@ -48,9 +50,18 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		queryKey:      query.Key(),
 		dependencyKey: depKey,
 	}
+
+	otelCfg, _ := ctx.Value(metrics.OtelCfgKey).(*metrics.OtelCfg)
+
 	val, ok := r.queryCache.get(key)
 	if ok {
+		if otelCfg != nil {
+			otelCfg.CacheHits.Add(ctx, 1)
+		}
+
 		return query.UnmarshalResult(val)
+	} else if otelCfg != nil {
+		otelCfg.CacheMisses.Add(ctx, 1)
 	}
 	err := query.Resolve(ctx, r, instanceID, priority)
 	if err != nil {
