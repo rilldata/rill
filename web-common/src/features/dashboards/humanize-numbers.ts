@@ -304,8 +304,13 @@ export function humanizeDataType(
       strategy: "default",
       numberKind,
     };
+  } else {
+    innerOptions = {
+      strategy: "default",
+      ...options,
+      numberKind,
+    };
   }
-
   return humanizedFormatterFactory([value], innerOptions).stringFormat(value);
 }
 
