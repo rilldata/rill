@@ -3,6 +3,8 @@
   import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
   import MultiMetricMouseoverLabel from "@rilldata/web-common/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/features/dashboards/humanize-numbers";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
+  import { fly } from "svelte/transition";
   export let point;
   export let xAccessor;
   export let yAccessor;
@@ -67,7 +69,7 @@
     let:output
   >
     {#if !showComparison || Math.abs(output.y - output.dy) > 8}
-      {@const bufferSize = Math.abs(output.y - output.dy) > 16 ? 6 : 3}
+      {@const bufferSize = Math.abs(output.y - output.dy) > 16 ? 8 : 4}
       {@const yBuffer = !showComparison
         ? 0
         : !comparisonIsPositive
@@ -81,30 +83,38 @@
         y2={output.dy - yBuffer}
         class={colorClass}
         stroke-width={strokeWidth}
+        stroke-linecap="round"
       />
       {@const sign = !comparisonIsPositive ? -1 : 1}
       {@const dist = 4}
       {@const signedDist = sign * 6}
-      {@const yLoc = output.y + signedDist}
-      {@const show = Math.abs(output.y - output.dy) > 16 && showComparison}
-      {#if show}
-        <line
-          x1={output.x}
-          x2={output.x + dist}
-          y1={yLoc}
-          stroke-width={strokeWidth}
-          y2={yLoc + signedDist}
-          class={colorClass}
-        />
-        <line
-          x1={output.x}
-          x2={output.x - dist}
-          y1={yLoc}
-          stroke-width={strokeWidth}
-          y2={yLoc + signedDist}
-          class={colorClass}
-        />
-      {/if}
+      {@const yLoc = output.y + bufferSize * sign}
+      {@const show = Math.abs(output.y - output.dy) > 24 && showComparison}
+      <!-- arrows -->
+      <g class:opacity-0={!show} class="transition-opacity">
+        <!-- {#if show} -->
+        <g transition:fly={{ duration: LIST_SLIDE_DURATION, y: sign * 4 }}>
+          <line
+            x1={output.x}
+            x2={output.x + dist}
+            y1={yLoc}
+            stroke-width={strokeWidth}
+            y2={yLoc + signedDist}
+            class={colorClass}
+            stroke-linecap="round"
+          />
+          <line
+            x1={output.x}
+            x2={output.x - dist}
+            y1={yLoc}
+            stroke-width={strokeWidth}
+            y2={yLoc + signedDist}
+            class={colorClass}
+            stroke-linecap="round"
+          />
+        </g>
+        <!-- {/if} -->
+      </g>
     {/if}
   </WithTween>
 
