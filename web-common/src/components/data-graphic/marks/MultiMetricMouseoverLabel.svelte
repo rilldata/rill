@@ -303,18 +303,19 @@ It is probably not the most up to date code; but it works very well in practice.
   {/if}
   {#if showPoints}
     {#each locations as { x, y, xRange, yRange, pointColorClass = '', label, key }, i (key || label)}
-      <WithTween
-        tweenProps={{ duration: 80 }}
-        value={[
-          keepPointsTrue ? $xScale(x) : xRange,
-          keepPointsTrue ? $yScale(y) : yRange,
-        ]}
-        let:output
-      >
-        <circle cx={output[0]} cy={output[1]} r={5} fill="white" />
-        <circle cx={output[0]} cy={output[1]} r={3} class={pointColorClass} />
-      </WithTween>
-      <!-- <Point scaling={false} {x} {y} {color} size={3} /> -->
+      {#if (keepPointsTrue && x !== undefined && y !== undefined) || (xRange !== undefined && yRange !== undefined)}
+        <WithTween
+          tweenProps={{ duration: 80 }}
+          value={[
+            keepPointsTrue ? $xScale(x) : xRange,
+            keepPointsTrue ? $yScale(y) : yRange,
+          ]}
+          let:output
+        >
+          <circle cx={output[0]} cy={output[1]} r={5} fill="white" />
+          <circle cx={output[0]} cy={output[1]} r={3} class={pointColorClass} />
+        </WithTween>
+      {/if}
     {/each}
   {/if}
 </g>

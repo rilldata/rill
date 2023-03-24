@@ -11,6 +11,9 @@
   export let showComparison = false;
   export let mouseoverFormat;
 
+  $: hasValidComparisonPoint =
+    showComparison && point?.[`comparison.${yAccessor}`] !== undefined;
+
   $: diff =
     (point[yAccessor] - point[`comparison.${yAccessor}`]) /
     point[`comparison.${yAccessor}`];
@@ -27,7 +30,7 @@
     x: point[xAccessor],
     y: point[yAccessor],
     key: "main",
-    label: showComparison ? `(${diffLabel})` : "",
+    label: hasValidComparisonPoint ? `(${diffLabel})` : "",
     pointColorClass: "fill-blue-700",
     valueStyleClass: "",
     valueColorClass: "fill-gray-600",
@@ -37,7 +40,7 @@
         : "fill-gray-600",
   };
 
-  $: comparisonPoint = showComparison
+  $: comparisonPoint = hasValidComparisonPoint
     ? {
         x: point[xAccessor],
         y: point[`comparison.${yAccessor}`],
@@ -50,13 +53,15 @@
     : undefined;
 
   /** get the final point set*/
-  $: pointSet = showComparison ? [mainPoint, comparisonPoint] : [mainPoint];
+  $: pointSet = hasValidComparisonPoint
+    ? [mainPoint, comparisonPoint]
+    : [mainPoint];
 </script>
 
-<WithGraphicContexts let:xScale let:yScale let:config>
+<WithGraphicContexts let:xScale let:yScale>
   {@const strokeWidth = showComparison ? 2 : 4}
   {@const colorClass =
-    showComparison && !comparisonIsPositive
+    hasValidComparisonPoint && !comparisonIsPositive
       ? "stroke-red-400"
       : "stroke-blue-400"}
   <WithTween
@@ -70,7 +75,7 @@
   >
     {#if !showComparison || Math.abs(output.y - output.dy) > 8}
       {@const bufferSize = Math.abs(output.y - output.dy) > 16 ? 8 : 4}
-      {@const yBuffer = !showComparison
+      {@const yBuffer = !hasValidComparisonPoint
         ? 0
         : !comparisonIsPositive
         ? -bufferSize
@@ -89,7 +94,8 @@
       {@const dist = 4}
       {@const signedDist = sign * 6}
       {@const yLoc = output.y + bufferSize * sign}
-      {@const show = Math.abs(output.y - output.dy) > 24 && showComparison}
+      {@const show =
+        Math.abs(output.y - output.dy) > 24 && hasValidComparisonPoint}
       <!-- arrows -->
       <g class:opacity-0={!show} class="transition-opacity">
         <!-- {#if show} -->
@@ -123,7 +129,7 @@
     flipAtEdge={"graphic"}
     keepPointsTrue
     formatValue={mouseoverFormat}
-    point={pointSet}
+    point={pointSet || []}
   />
 
   <!-- {/if} -->
