@@ -172,17 +172,15 @@
       value={mouseoverValue.x}
       let:point
     >
-      {#if mouseoverValue?.x && point}
-        <g transition:fly|local={{ duration: 100, x: -4 }}>
-          <MeasureMouseover
-            {point}
-            {xAccessor}
-            {yAccessor}
-            {showComparison}
-            {mouseoverFormat}
-          />
-        </g>
-      {/if}
+      <g transition:fly|local={{ duration: 100, x: -4 }}>
+        <MeasureMouseover
+          {point}
+          {xAccessor}
+          {yAccessor}
+          {showComparison}
+          {mouseoverFormat}
+        />
+      </g>
 
       <g transition:fly|local={{ duration: 100, x: -4 }}>
         <text

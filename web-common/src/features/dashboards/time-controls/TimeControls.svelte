@@ -279,12 +279,6 @@
       on:select-time-range={(e) =>
         onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
     />
-    <TimeGrainSelector
-      on:select-time-grain={(e) => onSelectTimeGrain(e.detail.timeGrain)}
-      {metricViewName}
-      {timeGrainOptions}
-      {minTimeGrain}
-    />
     {#if allTimeRange?.start}
       <TimeComparisonSelector
         on:select-comparison={(e) => {
@@ -304,6 +298,12 @@
         comparisonOptions={availableComparisons}
       />
     {/if}
+    <TimeGrainSelector
+      on:select-time-grain={(e) => onSelectTimeGrain(e.detail.timeGrain)}
+      {metricViewName}
+      {timeGrainOptions}
+      {minTimeGrain}
+    />
   {/if}
   <div class="flex gap-x-2">
     <div>

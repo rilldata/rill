@@ -19,7 +19,7 @@ It is probably not the most up to date code; but it works very well in practice.
     pointColorClass?: string;
   }
 
-  export let point = [];
+  export let point: Point[] = [];
 
   export let formatValue = (v) => v;
   export let xOffset = 0;
@@ -205,6 +205,7 @@ It is probably not the most up to date code; but it works very well in practice.
 <g bind:this={container}>
   {#if showLabels}
     {#each locations as location, i (location.key || location.label)}
+      <!-- <text x="20" y={70 + i * 20}> {JSON.stringify(location.xRange)}</text> -->
       <WithTween
         value={{
           y: location.yRange || 0,
@@ -226,28 +227,40 @@ It is probably not the most up to date code; but it works very well in practice.
           {#if internalDirection === "right"}
             <tspan
               dy=".35em"
-              style="font-weight: bold;"
               text-anchor="end"
-              class="widths"
+              class="widths {location?.valueStyleClass || 'font-bold'}"
               y={v.y}
               x={v.x}
             >
-              {formatValue(location.y)}
+              {#if !location?.yOverride}
+                {formatValue(location.y)}
+              {/if}
             </tspan>
-            <tspan dy=".35em" y={v.y} x={v.x}>{location.label}</tspan>
+            <tspan dy=".35em" y={v.y} x={v.x}>
+              {#if location?.yOverride}
+                {location.yOverrideLabel}
+              {:else}
+                {location.label}
+              {/if}</tspan
+            >
           {:else}
             <tspan dy=".35em" y={v.y} x={v.x - labelWidth} text-anchor="end">
-              {location.label}
+              {#if location?.yOverride}
+                {location.yOverrideLabel}
+              {:else}
+                {location.label}
+              {/if}
             </tspan>
             <tspan
               dy=".35em"
-              style="font-weight: bold;"
-              class="widths"
+              class="widths {location?.valueStyleClass || 'font-bold'}"
               text-anchor="end"
               y={v.y}
               x={v.x}
             >
-              {formatValue(location.y)}
+              {#if !location?.yOverride}
+                {formatValue(location.y)}
+              {/if}
             </tspan>
           {/if}
         </text>
@@ -256,23 +269,28 @@ It is probably not the most up to date code; but it works very well in practice.
           {#if internalDirection === "right"}
             <tspan
               dy=".35em"
-              style="font-weight: bold;"
               class="widths  {location?.valueStyleClass ||
-                ''} {location?.valueColorClass || ''}"
+                'font-bold'} {location?.valueColorClass || ''}"
               y={v.y}
               text-anchor="end"
               x={v.x}
             >
-              {formatValue(location.y)}
+              {#if !location?.yOverride}
+                {formatValue(location.y)}
+              {/if}
             </tspan>
             <tspan
               dy=".35em"
               y={v.y}
               x={v.x}
               class="mc-mouseover-label  {location?.labelStyleClass ||
-                ''} {location?.labelColorClass || ''}"
+                ''} {(!location?.yOverride && location?.labelColorClass) || ''}"
             >
-              {location.label}
+              {#if location?.yOverride}
+                {location.yOverrideLabel}
+              {:else}
+                {location.label}
+              {/if}
             </tspan>
           {:else}
             <tspan
@@ -280,21 +298,26 @@ It is probably not the most up to date code; but it works very well in practice.
               y={v.y}
               x={v.x - labelWidth}
               class="mc-mouseover-label  {location?.labelStyleClass ||
-                ''} {location?.labelColorClass || ''}"
+                ''} {(!location?.yOverride && location?.labelColorClass) || ''}"
               text-anchor="end"
             >
-              {location.label}
+              {#if location?.yOverride}
+                {location.yOverrideLabel}
+              {:else}
+                {location.label}
+              {/if}
             </tspan>
             <tspan
               dy=".35em"
-              style="font-weight: bold;"
               class="widths {location?.valueStyleClass ||
-                ''} {location?.valueColorClass || ''}"
+                'font-bold'} {location?.valueColorClass || ''}"
               text-anchor="end"
               y={v.y}
               x={v.x}
             >
-              {formatValue(location.y)}
+              {#if !location?.yOverride}
+                {formatValue(location.y)}
+              {/if}
             </tspan>
           {/if}
         </text>

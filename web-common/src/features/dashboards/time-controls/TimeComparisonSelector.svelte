@@ -109,6 +109,7 @@ This component needs to do the following:
     on:click-outside={toggleFloatingElement}
   >
     {#each options as option}
+      {@const preset = TIME_COMPARISON[option.name]}
       <MenuItem
         selected={option.name === intermediateSelection}
         on:select={() => {
@@ -117,9 +118,12 @@ This component needs to do the following:
         }}
       >
         <span class:font-bold={intermediateSelection === option.name}>
-          {option.name}
+          {preset?.label || option.name}
         </span>
       </MenuItem>
+      {#if option.name === TimeComparisonOption.CONTIGUOUS}
+        <Divider />
+      {/if}
     {/each}
     <Divider />
 
