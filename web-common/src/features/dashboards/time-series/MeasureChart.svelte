@@ -123,6 +123,24 @@
     the right way to "tile" together a time series with multiple pages of data.
     -->
     {#key $timeRangeKey}
+      {#if showComparison}
+        <g
+          class="transition-opacity"
+          class:opacity-80={mouseoverValue?.x}
+          class:opacity-40={!mouseoverValue?.x}
+        >
+          <ChunkedLine
+            area={false}
+            lineColor={`hsl(217, 10%, 60%)`}
+            delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
+            duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 200}
+            {data}
+            {xAccessor}
+            yAccessor="comparison.{yAccessor}"
+            key={$timeRangeKey}
+          />
+        </g>
+      {/if}
       <ChunkedLine
         delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
         duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 200}
@@ -131,19 +149,6 @@
         {yAccessor}
         key={$timeRangeKey}
       />
-
-      {#if showComparison}
-        <ChunkedLine
-          area={false}
-          lineColor={`hsl(217, 10%, 60%)`}
-          delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
-          duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 200}
-          {data}
-          {xAccessor}
-          yAccessor="comparison.{yAccessor}"
-          key={$timeRangeKey}
-        />
-      {/if}
     {/key}
     <line
       x1={config.plotLeft}
@@ -154,18 +159,17 @@
     />
   </Body>
   {#if !scrubbing && mouseoverValue?.x}
-    {#if showComparison}
-      abc
-      <ComparisonMouseover
-        {data}
-        {mouseoverValue}
-        {xAccessor}
-        {yAccessor}
-        yComparisonAccessor={`comparison.${yAccessor}`}
-        format={mouseoverFormat}
-      />
-    {:else}
-      <g transition:fade|local={{ duration: 100 }}>
+    <g transition:fade|local={{ duration: 100 }}>
+      {#if showComparison}
+        <ComparisonMouseover
+          {data}
+          {mouseoverValue}
+          {xAccessor}
+          {yAccessor}
+          yComparisonAccessor={`comparison.${yAccessor}`}
+          format={mouseoverFormat}
+        />
+      {:else}
         <TimeSeriesMouseover
           {data}
           {mouseoverValue}
@@ -173,8 +177,9 @@
           {yAccessor}
           format={mouseoverFormat}
         />
-      </g>
-    {/if}
+      {/if}
+    </g>
+
     <WithBisector
       {data}
       callback={(d) => d[xAccessor]}
@@ -190,6 +195,16 @@
         >
           {mouseoverTimeFormat(point[xAccessor])}
         </text>
+        {#if showComparison}
+          <text
+            use:outline
+            class="fill-gray-400"
+            x={config.plotLeft + config.bodyBuffer + 6}
+            y={config.plotTop + 24 + config.bodyBuffer}
+          >
+            {mouseoverTimeFormat(point[`comparison.${xAccessor}`])} prev.
+          </text>
+        {/if}
       </g></WithBisector
     >
   {/if}
