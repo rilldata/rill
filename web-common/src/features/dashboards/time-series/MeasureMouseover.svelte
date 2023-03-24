@@ -24,6 +24,7 @@
   $: mainPoint = {
     x: point[xAccessor],
     y: point[yAccessor],
+    key: "main",
     label: showComparison ? `(${diffLabel})` : "",
     pointColorClass: "fill-blue-700",
     valueStyleClass: "",
@@ -39,6 +40,7 @@
         x: point[xAccessor],
         y: point[`comparison.${yAccessor}`],
         label: "prev",
+        key: "comparison",
         pointColorClass: "fill-gray-400",
         valueColorClass: "fill-gray-500",
         labelColorClass: "fill-gray-500",
@@ -56,7 +58,7 @@
       ? "stroke-red-400"
       : "stroke-blue-400"}
   <WithTween
-    tweenProps={{ duration: 50 }}
+    tweenProps={{ duration: 80 }}
     value={{
       x: xScale(point[xAccessor]),
       y: yScale(point[yAccessor]),
@@ -84,7 +86,7 @@
       {@const dist = 4}
       {@const signedDist = sign * 6}
       {@const yLoc = output.y + signedDist}
-      {@const show = Math.abs(output.y - output.dy) > 24 && showComparison}
+      {@const show = Math.abs(output.y - output.dy) > 16 && showComparison}
       {#if show}
         <line
           x1={output.x}

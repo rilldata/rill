@@ -204,7 +204,7 @@ It is probably not the most up to date code; but it works very well in practice.
 
 <g bind:this={container}>
   {#if showLabels}
-    {#each locations as location, i (location.label)}
+    {#each locations as location, i (location.key || location.label)}
       <WithTween
         value={{
           y: location.yRange || 0,
@@ -215,7 +215,7 @@ It is probably not the most up to date code; but it works very well in practice.
               : location.xRange - xBuffer - xOffset,
         }}
         let:output={v}
-        tweenProps={{ duration: 50 }}
+        tweenProps={{ duration: 80 }}
       >
         <text
           filter="url(#outliner)"
@@ -302,9 +302,9 @@ It is probably not the most up to date code; but it works very well in practice.
     {/each}
   {/if}
   {#if showPoints}
-    {#each locations as { x, y, xRange, yRange, pointColorClass = '', label }, i (label)}
+    {#each locations as { x, y, xRange, yRange, pointColorClass = '', label, key }, i (key || label)}
       <WithTween
-        tweenProps={{ duration: 50 }}
+        tweenProps={{ duration: 80 }}
         value={[
           keepPointsTrue ? $xScale(x) : xRange,
           keepPointsTrue ? $yScale(y) : yRange,

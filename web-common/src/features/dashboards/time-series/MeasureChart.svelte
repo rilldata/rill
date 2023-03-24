@@ -43,6 +43,14 @@
 
   $: [xExtentMin, xExtentMax] = extent(data, (d) => d[xAccessor]);
   $: [yExtentMin, yExtentMax] = extent(data, (d) => d[yAccessor]);
+  let comparisonExtents;
+
+  /** if we are making a comparison, factor this into the extents calculation.*/
+  $: if (showComparison) {
+    comparisonExtents = extent(data, (d) => d[`comparison.${yAccessor}`]);
+    yExtentMin = Math.min(yExtentMin, comparisonExtents[0]);
+    yExtentMax = Math.max(yExtentMax, comparisonExtents[1]);
+  }
 
   $: [internalYMin, internalYMax] = niceMeasureExtents(
     [
