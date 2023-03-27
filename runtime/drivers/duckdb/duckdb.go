@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
+	"go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/metric/instrument"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
@@ -81,12 +84,19 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 		olapSemSize = 1
 	}
 
+	m := global.Meter("queue")
+	qlc, err := m.Int64Counter("latency")
+	if err != nil {
+		return nil, err
+	}
+
 	c := &connection{
-		db:      db,
-		metaSem: semaphore.NewWeighted(1),
-		olapSem: priorityqueue.NewSemaphore(olapSemSize),
-		logger:  logger,
-		config:  cfg,
+		db:                  db,
+		metaSem:             semaphore.NewWeighted(1),
+		olapSem:             priorityqueue.NewSemaphore(olapSemSize),
+		logger:              logger,
+		config:              cfg,
+		queueLatencyCounter: qlc,
 	}
 
 	conn, err := c.db.Connx(context.Background())
@@ -108,8 +118,9 @@ type connection struct {
 	// metaSem gates meta queries (like catalog and information schema)
 	metaSem *semaphore.Weighted
 	// olapSem gates OLAP queries
-	olapSem *priorityqueue.Semaphore
-	config  *config
+	olapSem             *priorityqueue.Semaphore
+	config              *config
+	queueLatencyCounter instrument.Int64Counter
 }
 
 // Close implements drivers.Connection.
@@ -146,11 +157,14 @@ func (c *connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() er
 		return conn, func() error { return nil }, nil
 	}
 
+	start := time.Now()
 	// Acquire semaphore
 	err := c.metaSem.Acquire(ctx, 1)
 	if err != nil {
 		return nil, nil, err
 	}
+	td := time.Since(start)
+	c.queueLatencyCounter.Add(ctx, td.Milliseconds())
 
 	// Get new conn
 	conn, err = c.db.Connx(ctx)
