@@ -20,6 +20,7 @@ import (
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -260,6 +261,11 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 func InitOpenTelemetry(endpoint string) (*metric.MeterProvider, *sdktrace.TracerProvider, error) {
 	if endpoint == "" {
 		return nil, nil, nil
+	}
+
+	err := otelruntime.Start(otelruntime.WithMinimumReadMemStatsInterval(time.Minute))
+	if err != nil {
+		return nil, nil, err
 	}
 
 	exporter, err := otlpmetricgrpc.New(
