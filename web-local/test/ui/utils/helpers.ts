@@ -1,4 +1,3 @@
-import { asyncWait } from "@rilldata/web-local/lib/util/waitUtils";
 import type { Page } from "playwright";
 
 export enum TestEntityType {

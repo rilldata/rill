@@ -15,16 +15,10 @@ describe("sources", () => {
   it("Import sources", async () => {
     const { page } = testBrowser;
 
-    // const cdp = await page.context().newCDPSession(page);
-    // await cdp.send("Profiler.enable");
-    // await cdp.send("Profiler.startPreciseCoverage");
-
     await Promise.all([
       waitForAdBids(page, "AdBids"),
       uploadFile(page, "AdBids.csv"),
     ]);
-
-    // const cov = await cdp.send("Profiler.takePreciseCoverage");
 
     await Promise.all([
       waitForAdImpressions(page, "AdImpressions"),

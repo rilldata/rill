@@ -1,5 +1,4 @@
 import { expect } from "@jest/globals";
-import { asyncWait } from "@rilldata/web-local/lib/util/waitUtils";
 import type { Page } from "playwright";
 import { renameEntityUsingTitle } from "./commonHelpers";
 import { clickMenuButton, openEntityMenu, TestEntityType } from "./helpers";
