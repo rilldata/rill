@@ -9,7 +9,7 @@
   export let yAccessor;
   export let showComparison = false;
   export let mouseoverFormat;
-  export let numberKind = NumberKind.ANY;
+  export let numberKind: NumberKind;
   $: comparisonYAccessor = `comparison.${yAccessor}`;
 
   $: x = point[xAccessor];

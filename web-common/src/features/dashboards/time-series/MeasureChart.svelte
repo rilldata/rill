@@ -14,7 +14,7 @@
   import { cubicOut } from "svelte/easing";
   import { writable } from "svelte/store";
   import { fly } from "svelte/transition";
-  import MeasureMouseover from "./MeasureMouseover.svelte";
+  import MeasureValueMouseover from "./MeasureValueMouseover.svelte";
   import { niceMeasureExtents } from "./utils";
   export let width: number = undefined;
   export let height: number = undefined;
@@ -99,6 +99,11 @@
   $: if (scrubbing) {
     scrubEnd = alwaysBetween(internalXMin, internalXMax, mouseoverValue);
   }
+
+  let something = true;
+  $: setTimeout(() => {
+    something = !something;
+  }, 1000);
 </script>
 
 <SimpleDataGraphic
@@ -173,7 +178,7 @@
       let:point
     >
       <g transition:fly|local={{ duration: 100, x: -4 }}>
-        <MeasureMouseover
+        <MeasureValueMouseover
           {point}
           {xAccessor}
           {yAccessor}

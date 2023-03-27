@@ -57,6 +57,7 @@
   $: interval = metricsExplorer?.selectedTimeRange?.interval;
 
   let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
+
   $: allTimeRangeQuery = useModelAllTimeRange(
     $runtime.instanceId,
     $metaQuery.data.model,
@@ -78,6 +79,7 @@
 
   let comparisonStart;
   let comparisonEnd;
+
   /** Generate the totals & big number comparison query */
   $: if (
     name &&

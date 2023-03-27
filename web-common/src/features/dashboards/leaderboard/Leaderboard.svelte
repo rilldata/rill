@@ -67,7 +67,7 @@
     $metaQuery.data.model,
     $metaQuery.data.timeDimension
   );
-  $: allTimeRange = $allTimeRangeQuery?.data?.data;
+  $: allTimeRange = $allTimeRangeQuery?.data;
 
   let filterExcludeMode: boolean;
   $: filterExcludeMode =
@@ -176,9 +176,8 @@
         ?.name as TimeComparisonOption) ||
         (DEFAULT_TIME_RANGES[timeRangeName]
           .defaultComparison as TimeComparisonOption),
-      // DEFAULT_TIME_RANGES[timeRangeName],
-      $allTimeRangeQuery?.data?.start,
-      $allTimeRangeQuery?.data?.end,
+      allTimeRange?.start,
+      allTimeRange?.end,
       metricsExplorer.selectedTimeRange.start,
       metricsExplorer.selectedTimeRange.end
     );
@@ -247,7 +246,6 @@
         label: val[dimension?.name],
       })) ?? [];
   }
-
   /** figure out how many selected values are currently hidden */
   // $: hiddenSelectedValues = values.filter((di, i) => {
   //   return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
