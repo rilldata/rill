@@ -4,6 +4,7 @@
   import MultiMetricMouseoverLabel from "@rilldata/web-common/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+  import { fade } from "svelte/transition";
   export let point;
   export let xAccessor;
   export let yAccessor;
@@ -89,7 +90,7 @@
   {@const strokeWidth = showComparison ? 2 : 4}
   {@const colorClass = "stroke-gray-400"}
 
-  {#if !(currentPointIsNull || comparisonPointIsNull)}
+  {#if !(currentPointIsNull || comparisonPointIsNull) || !showComparison}
     <WithTween
       tweenProps={{ duration: 50 }}
       value={{
@@ -124,7 +125,6 @@
           Math.abs(output.y - output.dy) > 16 && hasValidComparisonPoint}
         <!-- arrows -->
         <g class:opacity-0={!show} class="transition-opacity">
-          <!-- {#if show} -->
           <g>
             <line
               x1={output.x}
@@ -145,8 +145,18 @@
               stroke-linecap="round"
             />
           </g>
-          <!-- {/if} -->
         </g>
+        {#if !hasValidComparisonPoint}
+          <line
+            transition:fade|local={{ duration: 100 }}
+            x1={output.x}
+            x2={output.x}
+            y1={yScale(0)}
+            y2={output.y}
+            stroke-width="4"
+            class={"stroke-blue-300"}
+          />
+        {/if}
       {/if}
     </WithTween>
   {/if}
