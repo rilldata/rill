@@ -1,4 +1,5 @@
 import { describe, it } from "@jest/globals";
+import { asyncWait } from "@rilldata/web-local/lib/util/waitUtils";
 import {
   deleteEntity,
   gotoEntity,
@@ -47,7 +48,6 @@ describe("models", () => {
     // rename
     await renameEntityUsingMenu(
       page,
-      TestEntityType.Model,
       "AdBids_rename_delete",
       "AdBids_rename_delete_new"
     );
@@ -57,16 +57,12 @@ describe("models", () => {
       "AdBids_rename_delete_new",
       true
     );
-    await entityNotPresent(page, TestEntityType.Model, "AdBids_rename_delete");
+    await entityNotPresent(page, "AdBids_rename_delete");
 
     // delete
-    await deleteEntity(page, TestEntityType.Model, "AdBids_rename_delete_new");
-    await entityNotPresent(
-      page,
-      TestEntityType.Model,
-      "AdBids_rename_delete_new"
-    );
-    await entityNotPresent(page, TestEntityType.Model, "AdBids_rename_delete");
+    await deleteEntity(page, "AdBids_rename_delete_new");
+    await entityNotPresent(page, "AdBids_rename_delete_new");
+    await entityNotPresent(page, "AdBids_rename_delete");
   });
 
   it("Create model from source", async () => {
@@ -87,9 +83,9 @@ describe("models", () => {
     // navigate to another source
     await createOrReplaceSource(page, "AdImpressions.tsv", "AdImpressions");
     // delete the source of model
-    await deleteEntity(page, TestEntityType.Source, "AdBids");
+    await deleteEntity(page, "AdBids");
     // go to model
-    await gotoEntity(page, TestEntityType.Model, "AdBids_model");
+    await gotoEntity(page, "AdBids_model");
     // make sure error has propagated
     await modelHasError(page, true, "Catalog Error");
   });

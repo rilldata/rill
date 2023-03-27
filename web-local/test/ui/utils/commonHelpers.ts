@@ -4,25 +4,19 @@ import {
   clickModalButton,
   getEntityLink,
   openEntityMenu,
-  TestEntityType,
 } from "./helpers";
 
-export async function gotoEntity(
-  page: Page,
-  type: TestEntityType,
-  name: string
-) {
-  await page.locator(getEntityLink(page, type, name)).click();
+export async function gotoEntity(page: Page, name: string) {
+  await getEntityLink(page, name).click();
 }
 
 export async function renameEntityUsingMenu(
   page: Page,
-  type: TestEntityType,
   name: string,
   toName: string
 ) {
   // open context menu and click rename
-  await openEntityMenu(page, type, name);
+  await openEntityMenu(page, name);
   await clickMenuButton(page, "Rename...");
 
   // wait for rename modal to open
@@ -45,13 +39,9 @@ export async function renameEntityUsingTitle(page: Page, toName: string) {
   await page.keyboard.press("Enter");
 }
 
-export async function deleteEntity(
-  page: Page,
-  type: TestEntityType,
-  name: string
-) {
+export async function deleteEntity(page: Page, name: string) {
   // open context menu and click rename
-  await openEntityMenu(page, type, name);
+  await openEntityMenu(page, name);
   await Promise.all([
     page.waitForResponse(/delete-and-reconcile/),
     clickMenuButton(page, "Delete"),

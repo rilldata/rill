@@ -7,12 +7,8 @@ export enum TestEntityType {
   Dashboard = "dashboard",
 }
 
-export async function openEntityMenu(
-  page: Page,
-  type: TestEntityType,
-  name: string
-) {
-  const entityLocator = page.locator(getEntityLink(page, type, name));
+export async function openEntityMenu(page: Page, name: string) {
+  const entityLocator = getEntityLink(page, name);
   await entityLocator.hover();
   await entityLocator.locator("button").last().click();
 }
@@ -46,10 +42,6 @@ export async function waitForProfiling(
   );
 }
 
-export function getEntityLink(
-  page: Page,
-  type: TestEntityType,
-  name: string
-): string {
-  return `a[href='/${type}/${name}']`;
+export function getEntityLink(page: Page, name: string) {
+  return page.getByRole("link", { name, exact: true });
 }

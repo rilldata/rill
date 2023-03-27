@@ -75,11 +75,9 @@ export async function createOrReplaceSource(
   name: string
 ) {
   try {
-    await page
-      .locator(getEntityLink(page, TestEntityType.Source, name))
-      .waitFor({
-        timeout: 100,
-      });
+    await getEntityLink(page, name).waitFor({
+      timeout: 100,
+    });
     await uploadFile(page, file, true, false);
   } catch (err) {
     await uploadFile(page, file);
