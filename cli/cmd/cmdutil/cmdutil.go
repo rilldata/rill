@@ -76,8 +76,12 @@ func TextPrinter(str string) {
 
 // Create admin client
 func Client(cfg *config.Config) (*client.Client, error) {
-	userAgent := fmt.Sprintf("rill-cli/%s", cfg.Version.String())
+	cliVersion := cfg.Version.Number
+	if cfg.Version.Number == "" {
+		cliVersion = "unknown"
+	}
 
+	userAgent := fmt.Sprintf("rill-cli/%v", cliVersion)
 	c, err := client.New(cfg.AdminURL, cfg.AdminToken(), userAgent)
 	if err != nil {
 		return nil, err
