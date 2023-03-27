@@ -7,7 +7,8 @@ export function convertTimestampPreviewFcn(ts, removeTimezoneOffset = false) {
 /** used to convert a timestamp preview from the server for a sparkline. */
 export function convertTimestampPreview(d, removeTimezoneOffset = false) {
   return d.map((di) => {
-    pi = { ...di };
+    const pi = { ...di };
     pi.ts = convertTimestampPreviewFcn(di.ts, removeTimezoneOffset);
+    return pi;
   });
 }
