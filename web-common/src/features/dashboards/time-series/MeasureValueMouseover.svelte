@@ -91,7 +91,7 @@
 
   {#if !(currentPointIsNull || comparisonPointIsNull)}
     <WithTween
-      tweenProps={{ duration: 80 }}
+      tweenProps={{ duration: 50 }}
       value={{
         x: xScale(x),
         y: yScale(y),

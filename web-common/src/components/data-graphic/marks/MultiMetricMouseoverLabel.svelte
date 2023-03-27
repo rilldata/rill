@@ -216,7 +216,7 @@ It is probably not the most up to date code; but it works very well in practice.
               : location.xRange - xBuffer - xOffset,
         }}
         let:output={v}
-        tweenProps={{ duration: 80 }}
+        tweenProps={{ duration: 50 }}
       >
         <text
           filter="url(#outliner)"
@@ -328,7 +328,7 @@ It is probably not the most up to date code; but it works very well in practice.
     {#each locations as { x, y, xRange, yRange, pointColorClass = '', label, key }, i (key || label)}
       {#if (keepPointsTrue && x !== undefined && y !== undefined) || (xRange !== undefined && yRange !== undefined)}
         <WithTween
-          tweenProps={{ duration: 80 }}
+          tweenProps={{ duration: 50 }}
           value={[
             keepPointsTrue ? $xScale(x) : xRange,
             keepPointsTrue ? $yScale(y) : yRange,
