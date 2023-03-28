@@ -2,8 +2,8 @@
   import { SelectMenu } from "@rilldata/web-common/components/menu";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { MetricsViewMeasure } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { crossfade, fly } from "svelte/transition";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import {
     MetricsExplorerEntity,
@@ -13,7 +13,7 @@
 
   export let metricViewName;
 
-  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
   $: measures = $metaQuery.data?.measures;
 

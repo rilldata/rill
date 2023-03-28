@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -79,6 +80,13 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 	if err != nil {
 		return nil, err
 	}
+
+	if info, err := os.Stat(file); err == nil { // ignoring error since only possible error is path error
+		if info.Size() > env.StorageLimitInBytes {
+			return nil, connectors.ErrIngestionLimitExceeded
+		}
+	}
+
 	return &iterator{ctx: ctx, files: []string{file}}, nil
 }
 

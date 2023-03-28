@@ -18,30 +18,86 @@ func init() {
 
 type sourceMigrator struct{}
 
-func (m *sourceMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, e map[string]string, catalogObj *drivers.CatalogEntry) error {
-	apiSource := catalogObj.GetSource()
-
-	source := &connectors.Source{
-		Name:          apiSource.Name,
-		Connector:     apiSource.Connector,
-		Properties:    apiSource.Properties.AsMap(),
-		ExtractPolicy: apiSource.GetPolicy(),
-		Timeout:       apiSource.GetTimeoutSeconds(),
-	}
-
-	variables := convertUpper(e)
-	env := &connectors.Env{
-		RepoDriver:           repo.Driver(),
-		RepoDSN:              repo.DSN(),
-		Variables:            variables,
-		AllowHostCredentials: strings.EqualFold(variables["ALLOW_HOST_CREDENTIALS"], "true"),
-	}
-
-	return olap.Ingest(ctx, env, source)
+func (m *sourceMigrator) Create(
+	ctx context.Context,
+	olap drivers.OLAPStore,
+	repo drivers.RepoStore,
+	opts migrator.Options,
+	catalogObj *drivers.CatalogEntry,
+) error {
+	return ingestSource(ctx, olap, repo, opts, catalogObj, "")
 }
 
-func (m *sourceMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, env map[string]string, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
-	return m.Create(ctx, olap, repo, env, newCatalogObj)
+func (m *sourceMigrator) Update(ctx context.Context,
+	olap drivers.OLAPStore,
+	repo drivers.RepoStore,
+	opts migrator.Options,
+	oldCatalogObj, newCatalogObj *drivers.CatalogEntry,
+) error {
+	apiSource := newCatalogObj.GetSource()
+
+	tempName := fmt.Sprintf("__rill_temp_%s", apiSource.Name)
+
+	err := ingestSource(ctx, olap, repo, opts, newCatalogObj, tempName)
+	if err != nil {
+		// cleanup of temp table. can exist and still error out in incremental ingestion
+		_ = olap.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s", tempName),
+			Priority: 100,
+		})
+		// return the original error. error for dropping is less important for the user
+		return err
+	}
+
+	tempNameOrig := fmt.Sprintf("__rill_temp_orig_%s", apiSource.Name)
+	// drop the temp for original if exists
+	err = olap.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s", tempNameOrig),
+		Priority: 100,
+	})
+	if err != nil {
+		return err
+	}
+	// rename the original to temp original table
+	err = olap.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", apiSource.Name, tempNameOrig),
+		Priority: 100,
+	})
+	if err != nil {
+		return err
+	}
+
+	// finally rename the new temp table to actual table
+	err = olap.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", tempName, apiSource.Name),
+		Priority: 100,
+	})
+	if err != nil {
+		// revert the original table
+		_ = olap.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", apiSource.Name, tempNameOrig),
+			Priority: 100,
+		})
+
+		// cleanup of temp table
+		_ = olap.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s", tempName),
+			Priority: 100,
+		})
+		// original error is more important that the error from drop of temp table
+		return err
+	}
+
+	// cleanup the backup of original
+	err = olap.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("DROP TABLE %s", tempNameOrig),
+		Priority: 100,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {
@@ -126,4 +182,44 @@ func convertUpper(in map[string]string) map[string]string {
 		m[strings.ToUpper(key)] = value
 	}
 	return m
+}
+
+func ingestSource(
+	ctx context.Context,
+	olap drivers.OLAPStore,
+	repo drivers.RepoStore,
+	opts migrator.Options,
+	catalogObj *drivers.CatalogEntry,
+	name string,
+) error {
+	apiSource := catalogObj.GetSource()
+
+	if name == "" {
+		name = apiSource.Name
+	}
+
+	source := &connectors.Source{
+		Name:          name,
+		Connector:     apiSource.Connector,
+		Properties:    apiSource.Properties.AsMap(),
+		ExtractPolicy: apiSource.GetPolicy(),
+		Timeout:       apiSource.GetTimeoutSeconds(),
+	}
+
+	variables := convertUpper(opts.InstanceEnv)
+	env := &connectors.Env{
+		RepoDriver:           repo.Driver(),
+		RepoDSN:              repo.DSN(),
+		Variables:            variables,
+		AllowHostCredentials: strings.EqualFold(variables["ALLOW_HOST_CREDENTIALS"], "true"),
+		StorageLimitInBytes:  opts.IngestStorageLimitInBytes,
+	}
+
+	ingestionSummary, err := olap.Ingest(ctx, env, source)
+	if err != nil {
+		return err
+	}
+
+	catalogObj.BytesIngested = ingestionSummary.BytesIngested
+	return nil
 }

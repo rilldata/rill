@@ -10,27 +10,25 @@
   import {
     humanizeDataType,
     NicelyFormattedTypes,
+    nicelyFormattedTypesToNumberKind,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import { getOffset } from "@rilldata/web-common/lib/time/transforms";
+  import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import {
     useQueryServiceMetricsViewTimeSeries,
     useQueryServiceMetricsViewTotals,
     V1MetricsViewTimeSeriesResponse,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
-  import { extent } from "d3-array";
-  import { fly } from "svelte/transition";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
-  import {
-    addGrains,
-    formatDateByInterval,
-  } from "../time-controls/time-range-utils";
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   export let metricViewName;
@@ -39,7 +37,7 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  $: instanceId = $runtimeStore.instanceId;
+  $: instanceId = $runtime.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
@@ -105,7 +103,7 @@
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
   $: if (dataCopy && dataCopy?.length) {
-    formattedData = convertTimestampPreview(dataCopy, true).map((di, i) => {
+    formattedData = convertTimestampPreview(dataCopy, true).map((di, _i) => {
       di = { ts: di.ts, bin: di.bin, ...di.records };
       return di;
     });
@@ -115,18 +113,26 @@
 
   let startValue: Date;
   let endValue: Date;
-  $: if (metricsExplorer?.selectedTimeRange) {
+
+  // FIXME: move this logic to a function + write tests.
+  $: if (
+    metricsExplorer?.selectedTimeRange &&
+    metricsExplorer?.selectedTimeRange?.start
+  ) {
     startValue = removeTimezoneOffset(
       new Date(metricsExplorer?.selectedTimeRange?.start)
     );
+
     // selectedTimeRange.end is exclusive and rounded to the time grain ("interval").
     // Since values are grouped with DATE_TRUNC, we subtract one grain to get the (inclusive) axis end.
     endValue = new Date(metricsExplorer?.selectedTimeRange?.end);
-    endValue = addGrains(
-      endValue,
-      -1,
-      metricsExplorer?.selectedTimeRange?.interval
+
+    endValue = getOffset(
+      new Date(metricsExplorer?.selectedTimeRange?.end),
+      TIME_GRAIN[metricsExplorer?.selectedTimeRange?.interval].duration,
+      TimeOffsetType.SUBTRACT
     );
+
     endValue = removeTimezoneOffset(endValue);
   }
 </script>
@@ -138,22 +144,9 @@
   let:point
 >
   <TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
-    <!-- mouseover date elements-->
     <div class="bg-white sticky left-0 top-0" />
     <div class="bg-white sticky left-0 top-0">
-      <div style:padding-left="24px">
-        {#if point?.ts}
-          <div
-            class="absolute text-gray-500"
-            transition:fly|local={{ duration: 100, y: 4 }}
-          >
-            {formatDateByInterval(interval, point.ts)}
-          </div>
-          &nbsp;
-        {:else}
-          &nbsp;
-        {/if}
-      </div>
+      <div style:padding-left="24px" style:height="20px" />
       <!-- top axis element -->
       <div />
       {#if metricsExplorer?.selectedTimeRange}
@@ -173,7 +166,6 @@
       {#each $metaQuery.data?.measures as measure, index (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
         {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
-        {@const yExtents = extent(dataCopy ?? [], (d) => d[`measure_${index}`])}
         {@const formatPreset =
           NicelyFormattedTypes[measure?.format] ||
           NicelyFormattedTypes.HUMANIZE}
@@ -203,14 +195,21 @@
               yAccessor={measure.name}
               xMin={startValue}
               xMax={endValue}
-              timegrain={metricsExplorer.selectedTimeRange?.interval}
-              yMin={yExtents[0] < 0 ? yExtents[0] : 0}
               start={startValue}
               end={endValue}
+              mouseoverTimeFormat={(value) => {
+                /** format the date according to the time grain */
+                return new Date(value).toLocaleDateString(
+                  undefined,
+                  TIME_GRAIN[metricsExplorer?.selectedTimeRange?.interval]
+                    .formatDate
+                );
+              }}
+              numberKind={nicelyFormattedTypesToNumberKind(measure?.format)}
               mouseoverFormat={(value) =>
                 formatPreset === NicelyFormattedTypes.NONE
                   ? `${value}`
-                  : humanizeDataType(value, formatPreset, {
+                  : humanizeDataType(value, measure?.format, {
                       excludeDecimalZeros: true,
                     })}
             />

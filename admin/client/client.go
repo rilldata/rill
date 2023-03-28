@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -18,18 +19,23 @@ type Client struct {
 }
 
 // New creates a new Client and opens a connection. You must call Close() when done with the client.
-func New(adminHost, bearerToken string) (*Client, error) {
+func New(adminHost, bearerToken, userAgent string) (*Client, error) {
 	uri, err := url.Parse(adminHost)
 	if err != nil {
 		return nil, err
 	}
 
 	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithUserAgent(userAgent))
 
 	if uri.Scheme == "http" {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	} else {
 		opts = append(opts, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, ""))) // NOTE: Defaults to host's root certs
+		// There must be a port. Default to TLS port.
+		if uri.Port() == "" {
+			uri.Host = fmt.Sprintf("%s:443", uri.Host)
+		}
 	}
 
 	if bearerToken != "" {

@@ -6,16 +6,16 @@
     getRelativeTimeRangeOptions,
     ISODurationToTimeRange,
     isTimeRangeValidForTimeGrain,
-    timeGrainStringToEnum,
     timeRangeToISODuration,
   } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
+  import { unitToTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import {
     useQueryServiceColumnTimeRange,
     V1Model,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
+  import { runtime } from "../../../../runtime-client/runtime-store";
   import { supportedTimeRangeEnums } from "../../../dashboards/time-controls/time-control-types";
   import {
     CONFIG_SELECTOR,
@@ -38,7 +38,8 @@
     "__DEFAULT_VALUE__";
 
   $: timeColumn = $metricsInternalRep.getMetricKey("timeseries");
-  $: smallestTimeGrain = timeGrainStringToEnum(
+
+  $: smallestTimeGrain = unitToTimeGrain(
     $metricsInternalRep.getMetricKey("smallest_time_grain")
   );
 
@@ -49,7 +50,7 @@
   let timeRangeQuery;
   $: if (selectedModel?.name && timeColumn) {
     timeRangeQuery = useQueryServiceColumnTimeRange(
-      $runtimeStore.instanceId,
+      $runtime.instanceId,
       selectedModel.name,
       { columnName: timeColumn }
     );

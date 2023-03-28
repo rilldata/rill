@@ -28,7 +28,7 @@ to the props.
 
   // pull out the scrub action to be attached to the svg element
   const scrub = scrubActionObject.scrubAction;
-  const scrubCoordinates = scrubActionObject.coordinates;
+  // const scrubCoordinates = scrubActionObject.coordinates;
 
   // make sure to reactively update the action store
   $: scrubActionObject.updatePlotBounds({

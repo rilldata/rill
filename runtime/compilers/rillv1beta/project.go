@@ -39,7 +39,7 @@ func (c *Codec) InitEmpty(ctx context.Context, name, rillVersion string) error {
 	if gitignore != "" {
 		gitignore += "\n"
 	}
-	gitignore += "# Rill\n*.db\n*.db.wal\ndata/\n"
+	gitignore += "# Rill\n*.db\n*.db.tmp\n*.db.wal\ndata/\n"
 
 	err = c.Repo.Put(ctx, c.InstanceID, ".gitignore", strings.NewReader(gitignore))
 	if err != nil {
@@ -122,14 +122,14 @@ func (c *Codec) ProjectConfig(ctx context.Context) (*ProjectConfig, error) {
 	content, err := c.Repo.Get(ctx, c.InstanceID, "rill.yaml")
 	// rill.yaml is not guaranteed to exist in case of older projects
 	if os.IsNotExist(err) {
-		return &ProjectConfig{Env: make(map[string]string)}, nil
+		return &ProjectConfig{Variables: make(map[string]string)}, nil
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	r := &ProjectConfig{Env: make(map[string]string)}
+	r := &ProjectConfig{Variables: make(map[string]string)}
 	if err := yaml.Unmarshal([]byte(content), r); err != nil {
 		return nil, err
 	}

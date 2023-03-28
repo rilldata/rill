@@ -14,6 +14,7 @@ type Options struct {
 	MetastoreDSN         string
 	QueryCacheSize       int
 	AllowHostCredentials bool
+	SafeSourceRefresh    bool
 }
 
 type Runtime struct {

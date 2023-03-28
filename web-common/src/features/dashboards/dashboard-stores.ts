@@ -1,10 +1,11 @@
+import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import type {
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
 import { derived, Readable, Writable, writable } from "svelte/store";
-import type { TimeSeriesTimeRange } from "./time-controls/time-control-types";
 
 export interface LeaderboardValue {
   value: number;
@@ -29,9 +30,10 @@ export interface MetricsExplorerEntity {
   // false/absence = include, true = exclude
   dimensionFilterExcludeMode: Map<string, boolean>;
   // user selected time range
-  selectedTimeRange?: TimeSeriesTimeRange;
+  selectedTimeRange?: DashboardTimeControls;
   // user selected dimension
   selectedDimensionName?: string;
+  proto?: string;
 }
 
 export interface MetricsExplorerStoreType {
@@ -51,40 +53,79 @@ const updateMetricsExplorerByName = (
       if (absenceCallback) {
         state.entities[name] = absenceCallback();
       }
+      state.entities[name].proto = getProtoFromDashboardState(
+        state.entities[name]
+      );
       return state;
     }
+
     callback(state.entities[name]);
+    // every change triggers a proto update
+    state.entities[name].proto = getProtoFromDashboardState(
+      state.entities[name]
+    );
     return state;
   });
 };
 
+function includeExcludeModeFromFilters(filters: V1MetricsViewFilter) {
+  const map = new Map<string, boolean>();
+  filters?.exclude.forEach((cond) => map.set(cond.name, true));
+  return map;
+}
+
 const metricViewReducers = {
-  sync(name: string, meta: V1MetricsView) {
-    if (!name || !meta || !meta.measures) return;
+  syncFromUrl(name: string, partial: Partial<MetricsExplorerEntity>) {
+    updateMetricsExplorerByName(
+      name,
+      (metricsExplorer) => {
+        for (const key in partial) {
+          metricsExplorer[key] = partial[key];
+        }
+        metricsExplorer.dimensionFilterExcludeMode =
+          includeExcludeModeFromFilters(partial.filters);
+      },
+      () => ({
+        name,
+        selectedMeasureNames: [],
+        leaderboardMeasureName: "",
+        filters: {},
+        dimensionFilterExcludeMode: includeExcludeModeFromFilters(
+          partial.filters
+        ),
+        ...partial,
+      })
+    );
+  },
+
+  sync(name: string, metricsView: V1MetricsView) {
+    if (!name || !metricsView || !metricsView.measures) return;
     updateMetricsExplorerByName(
       name,
       (metricsExplorer) => {
         // sync measures with selected leaderboard measure.
         if (
-          meta.measures.length &&
+          metricsView.measures.length &&
           (!metricsExplorer.leaderboardMeasureName ||
-            !meta.measures.find(
+            !metricsView.measures.find(
               (measure) =>
                 measure.name === metricsExplorer.leaderboardMeasureName
             ))
         ) {
-          metricsExplorer.leaderboardMeasureName = meta.measures[0].name;
-        } else if (!meta.measures.length) {
+          metricsExplorer.leaderboardMeasureName = metricsView.measures[0].name;
+        } else if (!metricsView.measures.length) {
           metricsExplorer.leaderboardMeasureName = undefined;
         }
-        metricsExplorer.selectedMeasureNames = meta.measures.map(
+        metricsExplorer.selectedMeasureNames = metricsView.measures.map(
           (measure) => measure.name
         );
       },
       () => ({
         name,
-        selectedMeasureNames: meta.measures.map((measure) => measure.name),
-        leaderboardMeasureName: meta.measures[0]?.name,
+        selectedMeasureNames: metricsView.measures.map(
+          (measure) => measure.name
+        ),
+        leaderboardMeasureName: metricsView.measures[0]?.name,
         filters: {
           include: [],
           exclude: [],
@@ -106,7 +147,7 @@ const metricViewReducers = {
     });
   },
 
-  setSelectedTimeRange(name: string, timeRange: TimeSeriesTimeRange) {
+  setSelectedTimeRange(name: string, timeRange: DashboardTimeControls) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.selectedTimeRange = timeRange;
     });
@@ -229,10 +270,9 @@ export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
 export function useDashboardStore(
   name: string
 ): Readable<MetricsExplorerEntity> {
-  const derivedStore = derived(metricsExplorerStore, ($store) => {
+  return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
   });
-  return derivedStore;
 }
 
 export const calendlyModalStore: Writable<string> = writable("");

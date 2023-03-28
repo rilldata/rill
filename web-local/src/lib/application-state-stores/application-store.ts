@@ -5,12 +5,10 @@
  */
 import { writable } from "svelte/store";
 
-export type RuntimeState = {
-  instanceId: string;
+export type FeatureFlags = {
   readOnly: boolean;
 };
-export const runtimeStore = writable<RuntimeState>({
-  instanceId: null,
+export const featureFlags = writable<FeatureFlags>({
   readOnly: undefined,
 });
 

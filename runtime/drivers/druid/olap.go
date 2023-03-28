@@ -2,6 +2,7 @@ package druid
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -13,8 +14,8 @@ func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectDruid
 }
 
-func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
-	return drivers.ErrUnsupportedConnector
+func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) (*drivers.IngestionSummary, error) {
+	return nil, drivers.ErrUnsupportedConnector
 }
 
 func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
@@ -25,6 +26,9 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	res, err := c.Execute(ctx, stmt)
 	if err != nil {
 		return err
+	}
+	if stmt.DryRun {
+		return nil
 	}
 	return res.Close()
 }
@@ -50,6 +54,10 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	}
 
 	return &drivers.Result{Rows: rows, Schema: schema}, nil
+}
+
+func (c *connection) DropDB() error {
+	return fmt.Errorf("dropping database not supported")
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {

@@ -55,8 +55,8 @@
     useRuntimeServiceListCatalogEntries,
     V1Model,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { createEventDispatcher, onMount } from "svelte";
+  import { runtime } from "../../../runtime-client/runtime-store";
 
   export let modelName: string;
   export let content: string;
@@ -70,7 +70,7 @@
   // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
 
   $: getModel = useRuntimeServiceGetCatalogEntry(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     modelName
   );
   let model: V1Model;
@@ -155,7 +155,7 @@
   let autocompleteCompartment = new Compartment();
 
   $: sourceCatalogsQuery = useRuntimeServiceListCatalogEntries(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     {
       type: "OBJECT_TYPE_SOURCE",
     }
@@ -185,7 +185,7 @@
 
   function makeAutocompleteConfig(
     schema: { [table: string]: string[] },
-    embeddedSources: string[]
+    _embeddedSources: string[]
   ) {
     return autocompletion({
       override: [

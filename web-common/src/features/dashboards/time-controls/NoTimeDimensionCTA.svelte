@@ -6,21 +6,24 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import { useModelTimestampColumns } from "@rilldata/web-common/features/models/selectors";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { runtime } from "../../../runtime-client/runtime-store";
 
   export let metricViewName: string;
   export let modelName: string;
 
   let timestampColumns: Array<string>;
   const timestampColumnsQuery = useModelTimestampColumns(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     modelName
   );
   $: timestampColumns = $timestampColumnsQuery?.data;
+  $: isReadOnlyDashboard = $featureFlags.readOnly === true;
 
   $: redirectToScreen = timestampColumns?.length > 0 ? "metrics" : "model";
 
   function noTimeseriesCTA() {
+    if (isReadOnlyDashboard) return;
     if (timestampColumns?.length) {
       goto(`/dashboard/${metricViewName}/edit`);
     } else {
@@ -38,10 +41,14 @@
     <span class="ui-copy-disabled">No time dimension specified</span>
   </button>
   <TooltipContent slot="tooltip-content" maxWidth="250px">
-    Add a time dimension to your {redirectToScreen} to enable time series plots.
-    <TooltipShortcutContainer>
-      <div class="capitalize">Edit {redirectToScreen}</div>
-      <Shortcut>Click</Shortcut>
-    </TooltipShortcutContainer>
+    {#if isReadOnlyDashboard}
+      No time dimension available for this dashboard.
+    {:else}
+      Add a time dimension to your {redirectToScreen} to enable time series plots.
+      <TooltipShortcutContainer>
+        <div class="capitalize">Edit {redirectToScreen}</div>
+        <Shortcut>Click</Shortcut>
+      </TooltipShortcutContainer>
+    {/if}
   </TooltipContent>
 </Tooltip>

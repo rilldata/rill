@@ -9,15 +9,37 @@ consumes:
 produces:
   - application/json
 paths:
-  /v1/organizations:
+  /v1/github/repositories:
     get:
-      summary: findOrganizations lists all the organizations currently managed by the admin
-      operationId: AdminService_FindOrganizations
+      summary: |-
+        GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
+        If the caller has not granted access to the repository, instructions for granting access are returned.
+      operationId: AdminService_GetGithubRepoStatus
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1FindOrganizationsResponse'
+            $ref: '#/definitions/v1GetGithubRepoStatusResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: githubUrl
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations:
+    get:
+      summary: ListOrganizations lists all the organizations currently managed by the admin
+      operationId: AdminService_ListOrganizations
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListOrganizationsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -56,13 +78,13 @@ paths:
         - AdminService
   /v1/organizations/{name}:
     get:
-      summary: FindOrganization returns information about a specific organization
-      operationId: AdminService_FindOrganization
+      summary: GetOrganization returns information about a specific organization
+      operationId: AdminService_GetOrganization
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1FindOrganizationResponse'
+            $ref: '#/definitions/v1GetOrganizationResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -118,24 +140,23 @@ paths:
             properties:
               description:
                 type: string
-            title: Request message for AdminService.UpdateOrganization
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects:
+  /v1/organizations/{organizationName}/projects:
     get:
-      summary: FindProjects lists all the projects currently available for given organizations
-      operationId: AdminService_FindProjects
+      summary: ListProjects lists all the projects currently available for given organizations
+      operationId: AdminService_ListProjects
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1FindProjectsResponse'
+            $ref: '#/definitions/v1ListProjectsResponse'
         default:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: organization
+        - name: organizationName
           in: path
           required: true
           type: string
@@ -163,7 +184,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: organization
+        - name: organizationName
           in: path
           required: true
           type: string
@@ -173,35 +194,46 @@ paths:
           schema:
             type: object
             properties:
-              createdOn:
-                type: string
-                format: date-time
               description:
                 type: string
-              id:
+              githubUrl:
                 type: string
               name:
                 type: string
-              updatedOn:
+              productionBranch:
                 type: string
-                format: date-time
+              productionOlapDriver:
+                type: string
+              productionOlapDsn:
+                type: string
+              productionSlots:
+                type: string
+                format: int64
+              public:
+                type: boolean
+              region:
+                type: string
+              variables:
+                type: object
+                additionalProperties:
+                  type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{name}:
+  /v1/organizations/{organizationName}/projects/{name}:
     get:
-      summary: FindProject returns information about a specific project
-      operationId: AdminService_FindProject
+      summary: GetProject returns information about a specific project
+      operationId: AdminService_GetProject
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1FindProjectResponse'
+            $ref: '#/definitions/v1GetProjectResponse'
         default:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: organization
+        - name: organizationName
           in: path
           required: true
           type: string
@@ -224,7 +256,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: organization
+        - name: organizationName
           in: path
           required: true
           type: string
@@ -235,7 +267,7 @@ paths:
       tags:
         - AdminService
     put:
-      summary: UpdateProject update a project
+      summary: UpdateProject updates a project
       operationId: AdminService_UpdateProject
       responses:
         "200":
@@ -247,7 +279,7 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: organization
+        - name: organizationName
           in: path
           required: true
           type: string
@@ -263,18 +295,57 @@ paths:
             properties:
               description:
                 type: string
-            title: Request message for AdminService.UpdateOrganization
+              githubUrl:
+                type: string
+              productionBranch:
+                type: string
+              public:
+                type: boolean
+              variables:
+                type: object
+                additionalProperties:
+                  type: string
       tags:
         - AdminService
   /v1/ping:
     get:
-      summary: Ping returns information about the admin
+      summary: Ping returns information about the server
       operationId: AdminService_Ping
       responses:
         "200":
           description: A successful response.
           schema:
             $ref: '#/definitions/v1PingResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
+  /v1/tokens/current:
+    delete:
+      summary: RevokeCurrentAuthToken revoke the current auth token
+      operationId: AdminService_RevokeCurrentAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RevokeCurrentAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
+  /v1/users/current:
+    get:
+      summary: GetCurrentUser returns the currently authenticated user (if any)
+      operationId: AdminService_GetCurrentUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetCurrentUserResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -303,65 +374,99 @@ definitions:
   v1CreateOrganizationRequest:
     type: object
     properties:
-      createdOn:
-        type: string
-        format: date-time
       description:
         type: string
       id:
         type: string
       name:
         type: string
-      updatedOn:
-        type: string
-        format: date-time
   v1CreateOrganizationResponse:
     type: object
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
-    title: Response message for AdminService.CreateOrganization
   v1CreateProjectResponse:
     type: object
     properties:
       project:
         $ref: '#/definitions/v1Project'
-    title: Response message for AdminService.CreateOrganization
   v1DeleteOrganizationResponse:
     type: object
-    properties:
-      name:
-        type: string
-    title: Response message for AdminService.DeleteOrganization
   v1DeleteProjectResponse:
     type: object
+  v1Deployment:
+    type: object
     properties:
-      name:
+      branch:
         type: string
-    title: Response message for AdminService.DeleteOrganization
-  v1FindOrganizationResponse:
+      createdOn:
+        type: string
+        format: date-time
+      id:
+        type: string
+      logs:
+        type: string
+      projectId:
+        type: string
+      runtimeHost:
+        type: string
+      runtimeInstanceId:
+        type: string
+      slots:
+        type: string
+        format: int64
+      status:
+        $ref: '#/definitions/v1DeploymentStatus'
+      updatedOn:
+        type: string
+        format: date-time
+  v1DeploymentStatus:
+    type: string
+    enum:
+      - DEPLOYMENT_STATUS_UNSPECIFIED
+      - DEPLOYMENT_STATUS_PENDING
+      - DEPLOYMENT_STATUS_OK
+      - DEPLOYMENT_STATUS_RECONCILING
+      - DEPLOYMENT_STATUS_ERROR
+    default: DEPLOYMENT_STATUS_UNSPECIFIED
+  v1GetCurrentUserResponse:
+    type: object
+    properties:
+      user:
+        $ref: '#/definitions/v1User'
+  v1GetGithubRepoStatusResponse:
+    type: object
+    properties:
+      defaultBranch:
+        type: string
+      grantAccessUrl:
+        type: string
+      hasAccess:
+        type: boolean
+  v1GetOrganizationResponse:
     type: object
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
-    title: Response message for AdminService.GetInstance
-  v1FindOrganizationsResponse:
+  v1GetProjectResponse:
+    type: object
+    properties:
+      jwt:
+        type: string
+      productionDeployment:
+        $ref: '#/definitions/v1Deployment'
+      project:
+        $ref: '#/definitions/v1Project'
+  v1ListOrganizationsResponse:
     type: object
     properties:
       nextPageToken:
         type: string
-      organization:
+      organizations:
         type: array
         items:
           $ref: '#/definitions/v1Organization'
-    title: Response message for AdminService.FindOrganizations
-  v1FindProjectResponse:
-    type: object
-    properties:
-      project:
-        $ref: '#/definitions/v1Project'
-    title: Response message for AdminService.FindProject
-  v1FindProjectsResponse:
+  v1ListProjectsResponse:
     type: object
     properties:
       nextPageToken:
@@ -370,7 +475,6 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/v1Project'
-    title: Response message for AdminService.FindProjects
   v1Organization:
     type: object
     properties:
@@ -379,13 +483,11 @@ definitions:
         format: date-time
       description:
         type: string
-        title: Short description for the organization
       id:
         type: string
-        title: Identifier (UUID)
       name:
         type: string
-        title: Organization name
+        title: Globally unique
       updatedOn:
         type: string
         format: date-time
@@ -395,11 +497,8 @@ definitions:
       time:
         type: string
         format: date-time
-        title: Admin server time
       version:
         type: string
-        title: Admin version
-    title: Response message for AdminService.Ping
   v1Project:
     type: object
     properties:
@@ -408,25 +507,64 @@ definitions:
         format: date-time
       description:
         type: string
-        title: Short description for the project
+      githubUrl:
+        type: string
       id:
         type: string
-        title: Identifier (UUID)
       name:
         type: string
-        title: project name
+        title: Unique in organization
+      productionBranch:
+        type: string
+      productionDeploymentId:
+        type: string
+      productionOlapDriver:
+        type: string
+      productionOlapDsn:
+        type: string
+      productionSlots:
+        type: string
+        format: int64
+      public:
+        type: boolean
+      region:
+        type: string
       updatedOn:
         type: string
         format: date-time
+      variables:
+        type: object
+        additionalProperties:
+          type: string
+  v1RevokeCurrentAuthTokenResponse:
+    type: object
+    properties:
+      tokenId:
+        type: string
   v1UpdateOrganizationResponse:
     type: object
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
-    title: Response message for AdminService.UpdateOrganization
   v1UpdateProjectResponse:
     type: object
     properties:
       project:
         $ref: '#/definitions/v1Project'
-    title: Response message for AdminService.UpdateOrganization
+  v1User:
+    type: object
+    properties:
+      createdOn:
+        type: string
+        format: date-time
+      displayName:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      photoUrl:
+        type: string
+      updatedOn:
+        type: string
+        format: date-time

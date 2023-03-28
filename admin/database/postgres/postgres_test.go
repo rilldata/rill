@@ -6,11 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rilldata/rill/admin/database"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-
-	"github.com/rilldata/rill/admin/database"
 )
 
 // TestPostgres starts Postgres using testcontainers and runs all other tests in
@@ -48,6 +47,7 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestOrganizations", func(t *testing.T) { testOrganizations(t, db) })
 	t.Run("TestProjects", func(t *testing.T) { testProjects(t, db) })
 	// Add new tests here
+	t.Run("TestProjectsWithVariables", func(t *testing.T) { testProjectsWithVariables(t, db) })
 
 	require.NoError(t, db.Close())
 }
@@ -59,14 +59,14 @@ func testOrganizations(t *testing.T, db database.DB) {
 	require.Equal(t, database.ErrNotFound, err)
 	require.Nil(t, org)
 
-	org, err = db.CreateOrganization(ctx, "foo", "hello world")
+	org, err = db.InsertOrganization(ctx, "foo", "hello world")
 	require.NoError(t, err)
 	require.Equal(t, "foo", org.Name)
 	require.Equal(t, "hello world", org.Description)
 	require.Less(t, time.Since(org.CreatedOn), 10*time.Second)
 	require.Less(t, time.Since(org.UpdatedOn), 10*time.Second)
 
-	org, err = db.CreateOrganization(ctx, "bar", "")
+	org, err = db.InsertOrganization(ctx, "bar", "")
 	require.NoError(t, err)
 	require.Equal(t, "bar", org.Name)
 
@@ -96,7 +96,7 @@ func testOrganizations(t *testing.T, db database.DB) {
 func testProjects(t *testing.T, db database.DB) {
 	ctx := context.Background()
 
-	org, err := db.CreateOrganization(ctx, "foo", "")
+	org, err := db.InsertOrganization(ctx, "foo", "")
 	require.NoError(t, err)
 	require.Equal(t, "foo", org.Name)
 
@@ -104,7 +104,11 @@ func testProjects(t *testing.T, db database.DB) {
 	require.Equal(t, database.ErrNotFound, err)
 	require.Nil(t, proj)
 
-	proj, err = db.CreateProject(ctx, org.ID, "bar", "hello world")
+	proj, err = db.InsertProject(ctx, &database.InsertProjectOptions{
+		OrganizationID: org.ID,
+		Name:           "bar",
+		Description:    "hello world",
+	})
 	require.NoError(t, err)
 	require.Equal(t, org.ID, proj.OrganizationID)
 	require.Equal(t, "bar", proj.Name)
@@ -118,7 +122,10 @@ func testProjects(t *testing.T, db database.DB) {
 	require.Equal(t, "bar", proj.Name)
 	require.Equal(t, "hello world", proj.Description)
 
-	proj, err = db.UpdateProject(ctx, proj.ID, "")
+	proj.Description = ""
+	proj, err = db.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Description: proj.Description,
+	})
 	require.NoError(t, err)
 	require.Equal(t, org.ID, proj.OrganizationID)
 	require.Equal(t, "bar", proj.Name)
@@ -140,4 +147,26 @@ func testProjects(t *testing.T, db database.DB) {
 	org, err = db.FindOrganizationByName(ctx, "foo")
 	require.Equal(t, database.ErrNotFound, err)
 	require.Nil(t, org)
+}
+
+func testProjectsWithVariables(t *testing.T, db database.DB) {
+	ctx := context.Background()
+
+	org, err := db.InsertOrganization(ctx, "foo", "")
+	require.NoError(t, err)
+	require.Equal(t, "foo", org.Name)
+
+	opts := &database.InsertProjectOptions{
+		OrganizationID:      org.ID,
+		Name:                "bar",
+		Description:         "hello world",
+		ProductionVariables: map[string]string{"hello": "world"},
+	}
+	proj, err := db.InsertProject(ctx, opts)
+	require.NoError(t, err)
+	require.Equal(t, database.Variables(opts.ProductionVariables), proj.ProductionVariables)
+
+	proj, err = db.FindProjectByName(ctx, org.Name, proj.Name)
+	require.NoError(t, err)
+	require.Equal(t, database.Variables(opts.ProductionVariables), proj.ProductionVariables)
 }

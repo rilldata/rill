@@ -11,9 +11,7 @@ import (
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// FindOrganizations implements AdminService.
-// (GET /v1/organizations)
-func (s *Server) FindOrganizations(ctx context.Context, req *adminv1.FindOrganizationsRequest) (*adminv1.FindOrganizationsResponse, error) {
+func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganizationsRequest) (*adminv1.ListOrganizationsResponse, error) {
 	orgs, err := s.admin.DB.FindOrganizations(ctx)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -24,11 +22,10 @@ func (s *Server) FindOrganizations(ctx context.Context, req *adminv1.FindOrganiz
 		pbs[i] = orgToDTO(org)
 	}
 
-	return &adminv1.FindOrganizationsResponse{Organization: pbs}, nil
+	return &adminv1.ListOrganizationsResponse{Organizations: pbs}, nil
 }
 
-// (GET /organizations/{name})
-func (s *Server) FindOrganization(ctx context.Context, req *adminv1.FindOrganizationRequest) (*adminv1.FindOrganizationResponse, error) {
+func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizationRequest) (*adminv1.GetOrganizationResponse, error) {
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -37,15 +34,13 @@ func (s *Server) FindOrganization(ctx context.Context, req *adminv1.FindOrganiza
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &adminv1.FindOrganizationResponse{
+	return &adminv1.GetOrganizationResponse{
 		Organization: orgToDTO(org),
 	}, nil
 }
 
-// CreateOrganization implements AdminService.
-// (POST /organizations)
 func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrganizationRequest) (*adminv1.CreateOrganizationResponse, error) {
-	org, err := s.admin.DB.CreateOrganization(ctx, req.Name, req.Description)
+	org, err := s.admin.DB.InsertOrganization(ctx, req.Name, req.Description)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -55,19 +50,15 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 	}, nil
 }
 
-// (DELETE /organizations/{name})
 func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrganizationRequest) (*adminv1.DeleteOrganizationResponse, error) {
 	err := s.admin.DB.DeleteOrganization(ctx, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &adminv1.DeleteOrganizationResponse{
-		Name: req.Name,
-	}, nil
+	return &adminv1.DeleteOrganizationResponse{}, nil
 }
 
-// (PUT /organizations/{name})
 func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrganizationRequest) (*adminv1.UpdateOrganizationResponse, error) {
 	org, err := s.admin.DB.UpdateOrganization(ctx, req.Name, req.Description)
 	if err != nil {
@@ -85,6 +76,6 @@ func orgToDTO(o *database.Organization) *adminv1.Organization {
 		Name:        o.Name,
 		Description: o.Description,
 		CreatedOn:   timestamppb.New(o.CreatedOn),
-		UpdatedOn:   timestamppb.New(o.CreatedOn),
+		UpdatedOn:   timestamppb.New(o.UpdatedOn),
 	}
 }

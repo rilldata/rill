@@ -159,6 +159,26 @@ export type RuntimeServiceListCatalogEntriesParams = {
   type?: RuntimeServiceListCatalogEntriesType;
 };
 
+export type RuntimeServiceEditInstanceBodyVariables = { [key: string]: string };
+
+/**
+ * Request message for RuntimeService.EditInstance.
+See message Instance for field descriptions.
+ */
+export type RuntimeServiceEditInstanceBody = {
+  embedCatalog?: boolean;
+  ingestionLimitBytes?: string;
+  olapDriver?: string;
+  olapDsn?: string;
+  repoDriver?: string;
+  repoDsn?: string;
+  variables?: RuntimeServiceEditInstanceBodyVariables;
+};
+
+export type RuntimeServiceDeleteInstanceBody = {
+  dropDb?: boolean;
+};
+
 export type RuntimeServiceListInstancesParams = {
   pageSize?: number;
   pageToken?: string;
@@ -544,9 +564,9 @@ export interface V1ListCatalogEntriesResponse {
   entries?: V1CatalogEntry[];
 }
 
-export type V1InstanceProjectEnv = { [key: string]: string };
+export type V1InstanceVariables = { [key: string]: string };
 
-export type V1InstanceEnv = { [key: string]: string };
+export type V1InstanceProjectVariables = { [key: string]: string };
 
 /**
  * Instance represents a single data project, meaning one set of code artifacts,
@@ -560,15 +580,16 @@ export interface V1Instance {
   /** If true, the runtime will store the instance's catalog in its OLAP store instead
 of in the runtime's metadata store. Currently only supported for the duckdb driver. */
   embedCatalog?: boolean;
-  env?: V1InstanceEnv;
+  ingestionLimitBytes?: string;
   instanceId?: string;
   olapDriver?: string;
   olapDsn?: string;
-  projectEnv?: V1InstanceProjectEnv;
-  /** Driver for reading/editing code artifacts (options: file, metastore).
+  projectVariables?: V1InstanceProjectVariables;
+  /** Driver for reading/editing code artifacts (options: file, metastore, github).
 This enables virtualizing a file system in a cloud setting. */
   repoDriver?: string;
   repoDsn?: string;
+  variables?: V1InstanceVariables;
 }
 
 export type V1HistogramMethod =
@@ -588,6 +609,14 @@ export interface V1GetInstanceResponse {
 export interface V1GetFileResponse {
   blob?: string;
   updatedOn?: string;
+}
+
+export interface V1GetCatalogEntryResponse {
+  entry?: V1CatalogEntry;
+}
+
+export interface V1EditInstanceResponse {
+  instance?: V1Instance;
 }
 
 export interface V1DeleteInstanceResponse {
@@ -620,7 +649,7 @@ export interface V1CreateInstanceResponse {
   instance?: V1Instance;
 }
 
-export type V1CreateInstanceRequestEnv = { [key: string]: string };
+export type V1CreateInstanceRequestVariables = { [key: string]: string };
 
 /**
  * Request message for RuntimeService.CreateInstance.
@@ -628,12 +657,13 @@ See message Instance for field descriptions.
  */
 export interface V1CreateInstanceRequest {
   embedCatalog?: boolean;
-  env?: V1CreateInstanceRequestEnv;
+  ingestionLimitBytes?: string;
   instanceId?: string;
   olapDriver?: string;
   olapDsn?: string;
   repoDriver?: string;
   repoDsn?: string;
+  variables?: V1CreateInstanceRequestVariables;
 }
 
 /**
@@ -711,10 +741,6 @@ export interface V1CatalogEntry {
   source?: V1Source;
   table?: V1Table;
   updatedOn?: string;
-}
-
-export interface V1GetCatalogEntryResponse {
-  entry?: V1CatalogEntry;
 }
 
 export interface Runtimev1Type {

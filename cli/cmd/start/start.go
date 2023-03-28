@@ -23,7 +23,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	var noOpen bool
 	var strict bool
 	var logFormat string
-	var envVariables []string
+	var variables []string
 
 	startCmd := &cobra.Command{
 		Use:   "start",
@@ -47,7 +47,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 				return fmt.Errorf("invalid log format %q", logFormat)
 			}
 
-			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, envVariables)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, variables)
 			if err != nil {
 				return err
 			}
@@ -87,7 +87,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&strict, "strict", false, "Exit if project has build errors")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
-	startCmd.Flags().StringSliceVarP(&envVariables, "env", "e", []string{}, "Set project environment variables")
+	startCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
 
 	return startCmd
 }

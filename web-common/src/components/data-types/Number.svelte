@@ -8,7 +8,7 @@
 
 <Base
   {isNull}
-  classes="ui-copy-number font-semibold {customStyle} {inTable &&
+  classes="ui-copy-number font-normal {customStyle} {inTable &&
     'block text-right'}"
   {dark}
 >

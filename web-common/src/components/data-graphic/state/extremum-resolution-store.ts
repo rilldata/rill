@@ -17,37 +17,37 @@ const LINEAR_SCALE_STORE_DEFAULTS = {
   easing: cubicOut,
   direction: "min",
   namespace: undefined,
-  alwaysOverrideInitialValue: false
+  alwaysOverrideInitialValue: false,
 };
 
 interface extremumArgs {
   duration?: number;
   easing?: EasingFunction;
   direction?: string;
-  alwaysOverrideInitialValue?: boolean
+  alwaysOverrideInitialValue?: boolean;
 }
 
 interface Extremum {
-  value: (number | Date);
+  value: number | Date;
   override?: boolean;
 }
 
 interface ExtremaStoreValue {
-  [key: string]: Extremum
+  [key: string]: Extremum;
 }
 
 const extremaFunctions = { min, max };
 
 export function createExtremumResolutionStore(
-  initialValue: (number | Date) = undefined,
+  initialValue: number | Date = undefined,
   passedArgs: extremumArgs = {}
 ) {
   const args = { ...LINEAR_SCALE_STORE_DEFAULTS, ...passedArgs };
   const storedValues: Writable<ExtremaStoreValue> = writable({});
   let tweenProps = {
-    duration:args.duration,
-    easing: args.easing
-  }
+    duration: args.duration,
+    easing: args.easing,
+  };
   const valueTween = tweened(initialValue, tweenProps);
   function _update(key: string, value: number | Date, override = false) {
     // FIXME: there's an odd bug where if I don't check for equality first, I tend
@@ -62,13 +62,13 @@ export function createExtremumResolutionStore(
       storeValue[key].override = override;
       return storeValue;
     });
-  };
+  }
   /** add the initial value as its own key, if set by user. */
   if (initialValue && args.alwaysOverrideInitialValue === false) {
-    _update('__initial_value__', initialValue);
+    _update("__initial_value__", initialValue);
   }
 
-  function _remove(key:string) {
+  function _remove(key: string) {
     storedValues.update((storeValue) => {
       delete storeValue[key];
       return storeValue;
@@ -97,7 +97,7 @@ export function createExtremumResolutionStore(
   domainExtremum.subscribe((value) => {
     if (value !== undefined) {
       valueTween.set(value, tweenProps);
-    } 
+    }
   });
 
   const returnedStore = {
@@ -110,7 +110,7 @@ export function createExtremumResolutionStore(
     },
     setTweenProps(tweenPropsArgs) {
       tweenProps = tweenPropsArgs;
-    }
+    },
   };
   return returnedStore;
 }

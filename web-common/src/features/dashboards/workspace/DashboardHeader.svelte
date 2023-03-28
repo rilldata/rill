@@ -6,24 +6,25 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { calendlyModalStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { getContext } from "svelte";
-  import type { Tweened } from "svelte/motion";
+  //  import { getContext } from "svelte";
+  //  import type { Tweened } from "svelte/motion";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import Filters from "../filters/Filters.svelte";
   import { useMetaQuery } from "../selectors";
   import TimeControls from "../time-controls/TimeControls.svelte";
 
   export let metricViewName: string;
 
-  const navigationVisibilityTween = getContext(
-    "rill:app:navigation-visibility-tween"
-  ) as Tweened<number>;
+  //  const navigationVisibilityTween = getContext(
+  //    "rill:app:navigation-visibility-tween"
+  //  ) as Tweened<number>;
 
   const viewMetrics = (metricViewName: string) => {
     goto(`/dashboard/${metricViewName}/edit`);
@@ -37,9 +38,9 @@
     );
   };
 
-  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
   $: displayName = $metaQuery.data?.label;
-  $: isEditableDashboard = $runtimeStore.readOnly === false;
+  $: isEditableDashboard = $featureFlags.readOnly === false;
 
   function openCalendly() {
     calendlyModalStore.set(metricViewName);
