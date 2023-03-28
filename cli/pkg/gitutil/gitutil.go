@@ -16,14 +16,14 @@ import (
 
 var ErrGitRemoteNotFound = errors.New("no git remotes found")
 
-func CloneRepo(url string) (string, error) {
-	endpoint, err := transport.NewEndpoint(url)
+func CloneRepo(repoURL string) (string, error) {
+	endpoint, err := transport.NewEndpoint(repoURL)
 	if err != nil {
 		return "", err
 	}
 
 	repoName := fileutil.Stem(endpoint.Path)
-	cmd := exec.Command("git", "clone", url)
+	cmd := exec.Command("git", "clone", repoURL)
 	cmd.Stderr = os.Stderr
 	_, err = cmd.Output()
 	if err != nil {

@@ -15,6 +15,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
@@ -40,10 +41,10 @@ type connectOptions struct {
 	Public      bool
 	Variables   []string
 
-	projectPath string
-	region      string
-	dbDriver    string // should we take input ??
-	dbDSN       string
+	// projectPath string
+	region string
+	// dbDriver    string should we take input ??
+	dbDSN string
 }
 
 func Questions(projectName, prodBranch string, v *validator) []*survey.Question {
@@ -161,8 +162,15 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
+			// Create admin client
+			client, err := cmdutil.Client(cfg)
+			if err != nil {
+				return err
+			}
+			defer client.Close()
+
 			// select org
-			orgs, defaultOrg, err := listOrganisations(cfg)
+			orgs, defaultOrg, err := listOrganisations(client)
 			if err != nil {
 				return err
 			}
@@ -171,13 +179,6 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			if len(orgs) != 0 {
 				org = selectPrompt("Listing your orgs. Please select where do you want to deploy project?", orgs, defaultOrg)
 			}
-
-			// Create admin client
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
-			if err != nil {
-				return err
-			}
-			defer client.Close()
 
 			// if no org found create a org
 			if org == "" {
@@ -334,13 +335,7 @@ func loginPrompt(cmd *cobra.Command, cfg *config.Config) error {
 	return nil
 }
 
-func listOrganisations(cfg *config.Config) ([]string, string, error) {
-	c, err := client.New(cfg.AdminURL, cfg.AdminToken())
-	if err != nil {
-		return nil, "", err
-	}
-	defer c.Close()
-
+func listOrganisations(c *client.Client) ([]string, string, error) {
 	res, err := c.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
 	if err != nil {
 		return nil, "", err
