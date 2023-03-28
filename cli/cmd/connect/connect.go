@@ -125,7 +125,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				warn.Println("Your project is not pushed to github")
 				warn.Println("You can exit cli, push project to github and connect later or continue to push project to github repo")
 				if !commandExists("gh") {
-					info.Println("You dont not have github cli installed on your system. Please install github cli to push repo via rill connect or follow instructions below")
+					info.Println("You do not have github cli installed on your system. Please install github cli (instructions : https://cli.github.com/manual/installation) to push repo via rill connect or follow instructions below")
 					info.Print(githubSetupMsg)
 					return nil
 				}
