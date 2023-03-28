@@ -19,7 +19,6 @@
   import {
     convertTimeRangePreset,
     ISODurationToTimePreset,
-    prettyFormatTimeRange,
   } from "@rilldata/web-common/lib/time/ranges";
   import {
     DashboardTimeControls,
@@ -206,10 +205,10 @@
     // reset comparisonOption to the default for the new time range.
     comparisonOption =
       DEFAULT_TIME_RANGES[$dashboardStore?.selectedTimeRange?.name]
-        .defaultComparison;
+        ?.defaultComparison;
 
     cancelDashboardQueries(queryClient, metricViewName);
-    updateComparisonAppState(start, end, comparisonOption);
+    // updateComparisonAppState(start, end, comparisonOption);
     metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
   }
 
@@ -300,6 +299,7 @@
         boundaryEnd={allTimeRange.end}
         {metricViewName}
         {allTimeRange}
+        showComparison={isComparisonRangeAvailable}
         {comparisonOption}
         comparisonOptions={availableComparisons}
       />
@@ -311,14 +311,4 @@
       {minTimeGrain}
     />
   {/if}
-  <div class="flex gap-x-2">
-    <div>
-      {#if comparisonRange}
-        compared to {prettyFormatTimeRange(
-          comparisonRange.start,
-          comparisonRange.end
-        )}
-      {/if}
-    </div>
-  </div>
 </div>

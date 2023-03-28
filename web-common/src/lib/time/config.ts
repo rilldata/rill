@@ -270,6 +270,7 @@ export const ALL_TIME = {
 export const CUSTOM = {
   label: "Custom",
   rangePreset: RangePresetType.FIXED_RANGE,
+  defaultComparison: TimeComparisonOption.CONTIGUOUS,
 };
 
 export const DEFAULT_TIME_RANGES: Record<string, TimeRangeMeta> = {

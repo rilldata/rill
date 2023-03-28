@@ -11,6 +11,8 @@ This component needs to do the following:
     Menu,
     MenuItem,
   } from "@rilldata/web-common/components/menu";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
@@ -32,6 +34,7 @@ This component needs to do the following:
   export let boundaryStart: Date;
   export let boundaryEnd: Date;
 
+  export let showComparison = true;
   export let comparisonOption;
   export let comparisonOptions: TimeComparisonOption[];
 
@@ -57,9 +60,6 @@ This component needs to do the following:
         end: comparisonTimeRange.end,
       };
     });
-
-  let initialStartDate;
-  let initialEndDate;
 
   const onCompareRangeSelect = (comparison) => {
     intermediateSelection = comparison;
@@ -99,51 +99,80 @@ This component needs to do the following:
   $: intermediateSelection = comparisonOption;
 </script>
 
-<WithTogglableFloatingElement let:toggleFloatingElement let:active>
-  <SelectorButton {active} on:click={toggleFloatingElement}
-    ><span class="font-normal">Comparing to</span> {label}</SelectorButton
-  >
-  <Menu
-    slot="floating-element"
-    on:escape={toggleFloatingElement}
-    on:click-outside={toggleFloatingElement}
-  >
-    {#each options as option}
-      {@const preset = TIME_COMPARISON[option.name]}
-      <MenuItem
-        selected={option.name === intermediateSelection}
-        on:select={() => {
-          onCompareRangeSelect(option.name);
-          toggleFloatingElement();
-        }}
-      >
-        <span class:font-bold={intermediateSelection === option.name}>
-          {preset?.label || option.name}
-        </span>
-      </MenuItem>
-      {#if option.name === TimeComparisonOption.CONTIGUOUS}
+<Tooltip distance={8}>
+  <WithTogglableFloatingElement let:toggleFloatingElement let:active>
+    <SelectorButton
+      {active}
+      disabled={!showComparison}
+      on:click={() => {
+        if (showComparison) toggleFloatingElement();
+      }}
+      ><span class="font-normal">
+        {#if !showComparison}
+          <span class="italic text-gray-500">Time comparison not available</span
+          >
+        {:else}
+          Comparing to <span class="font-bold">{label}</span>
+        {/if}
+      </span>
+    </SelectorButton>
+    <Menu
+      slot="floating-element"
+      on:escape={toggleFloatingElement}
+      on:click-outside={toggleFloatingElement}
+    >
+      {#if showComparison}
+        {#each [...options] as option}
+          {@const preset = TIME_COMPARISON[option.name]}
+          <MenuItem
+            selected={option.name === intermediateSelection}
+            on:select={() => {
+              onCompareRangeSelect(option.name);
+              toggleFloatingElement();
+            }}
+          >
+            <span class:font-bold={intermediateSelection === option.name}>
+              {preset?.label || option.name}
+            </span>
+          </MenuItem>
+          {#if option.name === TimeComparisonOption.CONTIGUOUS}
+            <Divider />
+          {/if}
+        {/each}
+      {:else}
+        <MenuItem selected={comparisonOption !== TimeComparisonOption.CUSTOM}
+          >No comparison</MenuItem
+        >
+      {/if}
+      {#if options.length >= 1}
         <Divider />
       {/if}
-    {/each}
-    <Divider />
 
-    <CustomTimeRangeMenuItem
-      on:select={() => {
-        isCustomRangeOpen = !isCustomRangeOpen;
-      }}
-      open={isCustomRangeOpen}
-    />
-    {#if isCustomRangeOpen}
-      <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-        <CustomTimeRangeInput
-          {metricViewName}
-          minTimeGrain={/** FIXME-comparisons: */ V1TimeGrain.TIME_GRAIN_MINUTE}
-          on:apply={(e) => {
-            /** FIXME */
-          }}
-          on:close-calendar={onCalendarClose}
-        />
-      </div>
+      <CustomTimeRangeMenuItem
+        on:select={() => {
+          isCustomRangeOpen = !isCustomRangeOpen;
+        }}
+        open={isCustomRangeOpen}
+      />
+      {#if isCustomRangeOpen}
+        <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+          <CustomTimeRangeInput
+            {metricViewName}
+            minTimeGrain={/** FIXME-comparisons: */ V1TimeGrain.TIME_GRAIN_MINUTE}
+            on:apply={(e) => {
+              /** FIXME */
+            }}
+            on:close-calendar={onCalendarClose}
+          />
+        </div>
+      {/if}
+    </Menu>
+  </WithTogglableFloatingElement>
+  <TooltipContent slot="tooltip-content" maxWidth="220px">
+    {#if showComparison}
+      Select a time range to compare to the selected time range
+    {:else}
+      The specified time range does not have any viable comparisons
     {/if}
-  </Menu>
-</WithTogglableFloatingElement>
+  </TooltipContent>
+</Tooltip>
