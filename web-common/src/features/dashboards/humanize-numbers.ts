@@ -362,5 +362,7 @@ export function formatMeasurePercentageDifference(
     defaultMaxDigitsRight: 0,
     numberKind: NumberKind.PERCENT,
   });
+
+  console.log(factory[method](value));
   return factory[method](value);
 }

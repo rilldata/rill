@@ -20,6 +20,8 @@ see more button
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { createEventDispatcher } from "svelte";
+  import PercentageChange from "../../../components/data-types/PercentageChange.svelte";
+  import { PERCENTAGE } from "../../../components/data-types/type-utils";
   import {
     formatMeasurePercentageDifference,
     humanizeDataType,
@@ -71,7 +73,6 @@ see more button
   {@const formattedValue = humanizeDataType(value, formatPreset)}
   {@const percDiff =
     comparisonValue && value && (value - comparisonValue) / comparisonValue}
-  {@const diffIsPositive = percDiff >= 0}
   {@const diffParts = formatMeasurePercentageDifference(percDiff)}
   {@const showComparisonForThisValue = comparisonLabelToReveal === label}
 
@@ -122,13 +123,9 @@ see more button
 
         {formattedValue || value || "∅"}
       </div>
-      <div slot="context" class:text-red-500={!diffIsPositive}>
-        {#if percDiff !== undefined}
-          {diffParts?.neg || ""}{diffParts?.int || ""}<span class="opacity-50"
-            >{diffParts?.percent || ""}</span
-          >
-        {/if}
-      </div>
+      <span slot="context">
+        <PercentageChange value={percDiff ? diffParts : PERCENTAGE.NO_DATA} />
+      </span>
       <svelte:fragment slot="tooltip">
         <TooltipTitle>
           <svelte:fragment slot="name">

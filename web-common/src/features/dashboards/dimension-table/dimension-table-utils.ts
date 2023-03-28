@@ -1,8 +1,12 @@
+import { PERCENTAGE } from "../../../components/data-types/type-utils";
 import type {
   V1MetricsViewToplistResponse,
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
-import { NicelyFormattedTypes } from "../humanize-numbers";
+import {
+  formatMeasurePercentageDifference,
+  NicelyFormattedTypes,
+} from "../humanize-numbers";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -116,21 +120,33 @@ export function computeComparisonValues(
       ? value[measureName] - prevValue
       : null;
     value[measureName + "_delta_perc"] = prevValue
-      ? (value[measureName] - prevValue) / prevValue
-      : null;
+      ? formatMeasurePercentageDifference(
+          (value[measureName] - prevValue) / prevValue
+        )
+      : prevValue === 0
+      ? PERCENTAGE.PREV_VALUE_ZERO
+      : PERCENTAGE.NO_DATA;
   }
 
   return values;
 }
 
-export function getLabelForComparisonColumns(measureName: string) {
-  if (measureName.includes("_delta_perc")) return "Δ %";
-  else if (measureName.includes("_delta")) return "Δ";
-  else return measureName;
-}
+export const COMPARISON_COLUMNS = {
+  change_percentage: {
+    label: "Δ %",
+    type: "RILL_PERCENTAGE_CHANGE",
+    format: NicelyFormattedTypes.PERCENTAGE,
+  },
+  change_value: {
+    label: "Δ",
+    type: "INT",
+    format: NicelyFormattedTypes.HUMANIZE,
+  },
+};
 
-export function getFormatForComparisonColumns(measureName: string) {
+export function getComparisonProperties(measureName: string) {
   if (measureName.includes("_delta_perc"))
-    return NicelyFormattedTypes.PERCENTAGE;
-  else if (measureName.includes("_delta")) return NicelyFormattedTypes.HUMANIZE;
+    return COMPARISON_COLUMNS["change_percentage"];
+  else if (measureName.includes("_delta"))
+    return COMPARISON_COLUMNS["change_value"];
 }

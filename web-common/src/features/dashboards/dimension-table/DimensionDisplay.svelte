@@ -38,9 +38,8 @@
   import {
     computeComparisonValues,
     customSortMeasures,
+    getComparisonProperties,
     getFilterForComparsion,
-    getFormatForComparisonColumns,
-    getLabelForComparisonColumns,
     updateFilterOnSearch,
   } from "./dimension-table-utils";
   import DimensionContainer from "./DimensionContainer.svelte";
@@ -311,12 +310,13 @@
         };
       } else {
         // Handle delta and delta_perc
+        const comparison = getComparisonProperties(columnName);
         return {
           name: columnName,
-          type: "INT",
-          label: getLabelForComparisonColumns(columnName),
+          type: comparison.type,
+          label: comparison.label,
           enableResize: false,
-          format: getFormatForComparisonColumns(columnName),
+          format: comparison.format,
         };
       }
     });

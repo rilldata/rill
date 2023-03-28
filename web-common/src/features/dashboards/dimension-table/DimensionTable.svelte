@@ -107,6 +107,7 @@ TableCells – the cell contents.
     });
 
     estimateColumnSize = columns.map((column, i) => {
+      if (column.name.includes("delta")) return config.comparisonColumnWidth;
       if (i != 0) return config.defaultColumnWidth;
 
       const largestStringLength =
