@@ -1,11 +1,15 @@
 import { describe, it } from "@jest/globals";
-import { asyncWait } from "@rilldata/web-local/lib/util/waitUtils";
+import { createAdBidsModel } from "./utils/dataSpecifcHelpers";
 import {
   deleteEntity,
   gotoEntity,
   renameEntityUsingMenu,
 } from "./utils/commonHelpers";
-import { TestEntityType, waitForProfiling } from "./utils/helpers";
+import {
+  TestEntityType,
+  waitForProfiling,
+  wrapRetryAssertion,
+} from "./utils/helpers";
 import {
   createModel,
   createModelFromSource,
@@ -27,8 +31,15 @@ describe("models", () => {
 
     await createModel(page, "AdBids_model_t");
     await waitForEntity(page, TestEntityType.Model, "AdBids_model_t", true);
-    await updateModelSql(page, "select * from AdBids");
-    await modelHasError(page, false);
+    await Promise.all([
+      waitForProfiling(page, "AdBids_model_t", [
+        "publisher",
+        "domain",
+        "timestamp",
+      ]),
+      updateModelSql(page, "select * from AdBids"),
+    ]);
+    await wrapRetryAssertion(() => modelHasError(page, false));
 
     // Catalog error
     await updateModelSql(page, "select * from AdBid");
@@ -88,5 +99,10 @@ describe("models", () => {
     await gotoEntity(page, "AdBids_model");
     // make sure error has propagated
     await modelHasError(page, true, "Catalog Error");
+  });
+
+  it("Embedded source", async () => {
+    const { page } = testBrowser;
+    await createAdBidsModel(page);
   });
 });

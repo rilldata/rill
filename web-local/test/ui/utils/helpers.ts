@@ -1,3 +1,4 @@
+import { asyncWaitUntil } from "@rilldata/web-local/lib/util/waitUtils";
 import type { Page } from "playwright";
 
 export enum TestEntityType {
@@ -43,4 +44,31 @@ export async function waitForProfiling(
 
 export function getEntityLink(page: Page, name: string) {
   return page.getByRole("link", { name, exact: true });
+}
+
+/**
+ * Runs an assertion multiple times until a timeout.
+ * Throws the last thrown error by the assertion.
+ */
+export async function wrapRetryAssertion(
+  assertion: () => Promise<void>,
+  timeout = 1000,
+  interval = 100
+) {
+  let lastError: Error;
+  await asyncWaitUntil(
+    async () => {
+      try {
+        await assertion();
+        lastError = undefined;
+        return true;
+      } catch (err) {
+        lastError = err;
+        return false;
+      }
+    },
+    timeout,
+    interval
+  );
+  if (lastError) throw lastError;
 }
