@@ -199,8 +199,6 @@ It is probably not the most up to date code; but it works very well in practice.
       labelWidth = 0;
     }
   }
-
-  $: console.log(locations);
 </script>
 
 <filter id="outliner">
