@@ -57,67 +57,6 @@ export const nicelyFormattedTypesSelectorOptions = [
   },
 ];
 
-const DEFAULT_OPTIONS = {
-  locale: "en-US",
-  style: "decimal",
-  currency: "USD",
-  maximumFractionDigits: 2,
-  currencyDisplay: "narrowSymbol",
-  currencySign: "standard",
-};
-
-function getNumberFormatter(
-  type: NicelyFormattedTypes,
-  options?: formatterOptions
-): Intl.NumberFormat {
-  const o = { ...DEFAULT_OPTIONS, ...(options || {}) };
-
-  if (type == NicelyFormattedTypes.CURRENCY) {
-    o.style = "currency";
-  } else if (type == NicelyFormattedTypes.PERCENTAGE) {
-    o.style = "percent";
-    o.maximumFractionDigits = 4;
-  }
-  const { locale, ...opts } = o;
-  return new Intl.NumberFormat(locale, opts);
-}
-
-function formatNicely(
-  value: number,
-  type: NicelyFormattedTypes,
-  options?: formatterOptions
-): string {
-  const formatterOptions = Object.assign({}, options);
-  if (options?.excludeDecimalZeros) {
-    delete formatterOptions["excludeDecimalZeros"];
-  }
-
-  const formatter = getNumberFormatter(type, formatterOptions);
-  return formatter.format(value);
-}
-
-// FIXME/NOTE: `convertToShorthand` is used by `humanizeDataType_legacy`
-// which has been retained to avoid breaking
-// a dev route, but is not used in live client code
-function convertToShorthand(value: number): string | number {
-  // Fifteen Zeros for Quadrillion
-  return Math.abs(value) >= 1.0e15
-    ? (value / 1.0e15).toFixed(1) + "Q"
-    : // Twelve Zeros for Trillions
-    Math.abs(value) >= 1.0e12
-    ? (value / 1.0e12).toFixed(1) + "T"
-    : // Nine Zeroes for Billions
-    Math.abs(value) >= 1.0e9
-    ? (value / 1.0e9).toFixed(1) + "B"
-    : // Six Zeroes for Millions
-    Math.abs(value) >= 1.0e6
-    ? (value / 1.0e6).toFixed(1) + "M"
-    : // Three Zeroes for Thousands
-    Math.abs(value) >= 1.0e3
-    ? (value / 1.0e3).toFixed(1) + "k"
-    : value;
-}
-
 function getScaleForValue(value: number): ShortHandSymbols {
   return Math.abs(value) >= 1.0e15
     ? "Q"
@@ -130,35 +69,6 @@ function getScaleForValue(value: number): ShortHandSymbols {
     : Math.abs(value) >= 1.0e3
     ? "k"
     : "none";
-}
-
-/*
-  Format a single value using the given type and options
-
-  FIXME/NOTE: this function has been retained to avoid breaking
-  a dev route, but is not used in live client code
-*/
-export function humanizeDataType_legacy(
-  value: unknown,
-  type: NicelyFormattedTypes,
-  options?: formatterOptions
-) {
-  let formattedValue;
-  if (typeof value != "number" || type == NicelyFormattedTypes.NONE)
-    return value;
-  else if (type == NicelyFormattedTypes.HUMANIZE) {
-    formattedValue = convertToShorthand(value);
-  } else if (type == NicelyFormattedTypes.CURRENCY) {
-    formattedValue = "$" + convertToShorthand(value);
-  } else {
-    return formatNicely(value, type, options);
-  }
-
-  if (formattedValue && options?.excludeDecimalZeros) {
-    return formattedValue.replace(".0", "");
-  } else {
-    return formattedValue;
-  }
 }
 
 function determineScaleForValues(values: number[]): ShortHandSymbols {
