@@ -12,16 +12,14 @@
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
+  import { getModelOutOfPossiblyMalformedYAML } from "../utils";
 
-  export let metricsInternalRep;
+  export let yaml;
   export let metricsDefName;
 
   let metricsConfigErrorStore = getContext(
     "rill:metrics-config:errors"
   ) as Writable<any>;
-
-  $: measures = $metricsInternalRep.getMeasures();
-  $: dimensions = $metricsInternalRep.getDimensions();
 
   let buttonDisabled = true;
   let buttonStatus;
@@ -38,15 +36,12 @@
     );
   };
 
-  $: if ($metricsInternalRep.getMetricKey("model") === "") {
+  $: possibleModel = getModelOutOfPossiblyMalformedYAML(yaml);
+  $: if (possibleModel === null) {
     buttonDisabled = true;
     buttonStatus = ["Select a model before exploring metrics"];
-  } else if (
-    // check if all the measures have a valid expression
-    measures?.filter((measure) => measure?.expression?.length)?.length === 0 ||
-    // and if the dimensions all have a valid property
-    dimensions?.filter((dimension) => dimension?.property?.length)?.length === 0
-  ) {
+  } else if (!possibleModel) {
+    // FIXME: get these decision rules right
     buttonDisabled = true;
     buttonStatus = ["Add measures and dimensions before exploring metrics"];
   } else if (Object.values($metricsConfigErrorStore).some((error) => error)) {

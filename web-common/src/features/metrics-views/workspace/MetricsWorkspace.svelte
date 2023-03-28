@@ -2,35 +2,24 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
-    useRuntimeServiceGetCatalogEntry,
     useRuntimeServicePutFileAndReconcile,
     V1PutFileAndReconcileResponse,
-    V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import type { SelectorOption } from "@rilldata/web-local/lib/components/table-editable/ColumnConfig";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
   import { useQueryClient } from "@sveltestack/svelte-query";
-  import { onMount, setContext } from "svelte";
+  import { setContext } from "svelte";
   import { writable } from "svelte/store";
   import { WorkspaceContainer } from "../../../layout/workspace";
   import { createResizeListenerActionFactory } from "../../../lib/actions/create-resize-listener-factory";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { initDimensionColumns } from "../DimensionColumns";
-  import { initMeasuresColumns } from "../MeasuresColumns";
-  import { createInternalRepresentation } from "../metrics-internal-store";
-  import ConfigParameters from "./config-parameters/ConfigParameters.svelte";
-  import MetricsEntityTable from "./MetricsEntityTable.svelte";
-  import LayoutManager from "./MetricsLayoutManager.svelte";
+  import ConfigInspector from "./ConfigInspector.svelte";
   import MetricsWorkspaceHeader from "./MetricsWorkspaceHeader.svelte";
-
+  import YAMLEditor from "./YAMLEditor.svelte";
   // the runtime yaml string
   export let yaml: string;
   export let metricsDefName: string;
-  export let nonStandardError;
 
   // this store is used to store errors that are not related to the reconciliation/runtime
   // used to prevent the user from going to the dashboard.
@@ -44,10 +33,10 @@
   });
   setContext("rill:metrics-config:errors", configurationErrorStore);
 
-  $: dashboardConfig = useRuntimeServiceGetCatalogEntry(
-    instanceId,
-    metricsDefName
-  );
+  // $: dashboardConfig = useRuntimeServiceGetCatalogEntry(
+  //   instanceId,
+  //   metricsDefName
+  // );
 
   const queryClient = useQueryClient();
   const { listenToNodeResize } = createResizeListenerActionFactory();
@@ -63,7 +52,12 @@
   $: switchToMetrics(metricsDefName);
 
   const metricMigrate = useRuntimeServicePutFileAndReconcile();
-  async function callReconcileAndUpdateYaml(internalYamlString) {
+
+  async function callReconcileAndUpdateYaml(
+    instanceId: string,
+    metricsDefName: string,
+    yaml: string
+  ) {
     const filePath = getFilePathFromNameAndType(
       metricsDefName,
       EntityType.MetricsDefinition
@@ -72,7 +66,7 @@
       data: {
         instanceId,
         path: filePath,
-        blob: internalYamlString,
+        blob: yaml,
         create: false,
       },
     })) as V1PutFileAndReconcileResponse;
@@ -81,144 +75,24 @@
     invalidateAfterReconcile(queryClient, $runtime.instanceId, resp);
   }
 
-  // create initial internal representation
-  let metricsInternalRep = createInternalRepresentation(
-    yaml,
-    callReconcileAndUpdateYaml
-  );
-
-  onMount(() => {
-    // Reconcile on mount
-    callReconcileAndUpdateYaml(yaml);
-  });
-
-  function updateInternalRep() {
-    metricsInternalRep = createInternalRepresentation(
-      yaml,
-      callReconcileAndUpdateYaml
-    );
-    if (errors) $metricsInternalRep.updateErrors(errors);
+  function updateYAML(event) {
+    const { content } = event.detail;
+    callReconcileAndUpdateYaml(instanceId, metricsDefName, content);
   }
-
-  // reset internal representation in case of deviation from runtime YAML
-  $: if (yaml !== $metricsInternalRep.internalYAML) {
-    updateInternalRep();
-  }
-
-  $: measures = $metricsInternalRep.getMeasures();
-  $: dimensions = $metricsInternalRep.getDimensions();
-
-  $: modelName = $metricsInternalRep.getMetricKey("model");
-  $: getModel = useRuntimeServiceGetCatalogEntry(instanceId, modelName);
-  $: model = $getModel.data?.entry?.model;
-
-  function handleCreateMeasure() {
-    $metricsInternalRep.addNewMeasure();
-  }
-  function handleUpdateMeasure(index, name, value) {
-    $metricsInternalRep.updateMeasure(index, name, value);
-  }
-
-  function handleDeleteMeasure(evt) {
-    $metricsInternalRep.deleteMeasure(evt.detail);
-  }
-  function handleMeasureExpressionValidation(_index, _name, _value) {
-    // store.dispatch(
-    //   validateMeasureExpressionApi({
-    //     metricsDefId: metricsDefId,
-    //     measureId: $measures[index].id,
-    //     expression: value,
-    //   })
-    // );
-  }
-
-  function handleCreateDimension() {
-    $metricsInternalRep.addNewDimension();
-  }
-  function handleUpdateDimension(index, name, value) {
-    $metricsInternalRep.updateDimension(index, name, value);
-  }
-  function handleDeleteDimension(evt) {
-    $metricsInternalRep.deleteDimension(evt.detail);
-  }
-
-  let validDimensionSelectorOption: SelectorOption[] = [];
-  $: if (model) {
-    const selectedMetricsDefModelProfile = model?.schema?.fields ?? [];
-    validDimensionSelectorOption = selectedMetricsDefModelProfile
-      .filter((column) => CATEGORICALS.has(column.type.code as string))
-      .map((column) => ({ label: column.name, value: column.name }));
-  } else {
-    validDimensionSelectorOption = [];
-  }
-
-  $: MeasuresColumns = initMeasuresColumns(
-    handleUpdateMeasure,
-    handleMeasureExpressionValidation
-  );
-  $: DimensionColumns = initDimensionColumns(
-    handleUpdateDimension,
-    validDimensionSelectorOption
-  );
-
-  let errors: Array<V1ReconcileError>;
-  $: errors =
-    $fileArtifactsStore.entities[
-      getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
-    ]?.errors;
-
-  $: metricsSourceSelectionError = nonStandardError
-    ? nonStandardError
-    : MetricsSourceSelectionError(errors);
 </script>
 
-<WorkspaceContainer inspector={false} assetID={`${metricsDefName}-config`}>
-  <MetricsWorkspaceHeader slot="header" {metricsDefName} {metricsInternalRep} />
+<WorkspaceContainer inspector={true} assetID={`${metricsDefName}-config`}>
+  <MetricsWorkspaceHeader slot="header" {metricsDefName} {yaml} />
 
   <div use:listenToNodeResize slot="body">
     <div
       class="editor-pane bg-gray-100 p-6 flex flex-col"
       style:height="calc(100vh - var(--header-height))"
     >
-      <ConfigParameters
-        {metricsInternalRep}
-        {model}
-        {metricsSourceSelectionError}
-        updateRuntime={callReconcileAndUpdateYaml}
-      />
-
-      <div
-        style="display: flex; flex-direction:column; overflow:hidden;"
-        class="flex-1"
-      >
-        <LayoutManager let:topResizeCallback let:bottomResizeCallback>
-          <MetricsEntityTable
-            slot="top-item"
-            resizeCallback={topResizeCallback}
-            label={"Measures"}
-            addEntityHandler={handleCreateMeasure}
-            updateEntityHandler={handleUpdateMeasure}
-            deleteEntityHandler={handleDeleteMeasure}
-            rows={measures ?? []}
-            columnNames={MeasuresColumns}
-            tooltipText={"Add a new measure"}
-            addButtonId={"add-measure-button"}
-          />
-
-          <MetricsEntityTable
-            slot="bottom-item"
-            resizeCallback={bottomResizeCallback}
-            label={"Dimensions"}
-            addEntityHandler={handleCreateDimension}
-            updateEntityHandler={handleUpdateDimension}
-            deleteEntityHandler={handleDeleteDimension}
-            rows={dimensions ?? []}
-            columnNames={DimensionColumns}
-            tooltipText={"Add a new dimension"}
-            addButtonId={"add-dimension-button"}
-          />
-        </LayoutManager>
+      <div class="overflow-y-auto bg-white p-2 rounded">
+        <YAMLEditor content={yaml} on:update={updateYAML} />
       </div>
     </div>
   </div>
+  <ConfigInspector slot="inspector" {metricsDefName} {yaml} />
 </WorkspaceContainer>

@@ -31,7 +31,7 @@
             throw error(404, "Dashboard not found");
           }
 
-          throw error(err.response?.status || 500, err.message);
+          //throw error(err.response?.status || 500, err.message);
         },
       },
     }
@@ -53,7 +53,8 @@
           }
 
           // Throw all other errors
-          throw error(err.response?.status || 500, err.message);
+          console.log("big error!!!!");
+          //throw error(err.response?.status || 500, err.message);
         },
       },
     }
@@ -64,6 +65,6 @@
   <title>Rill Developer | {metricViewName}</title>
 </svelte:head>
 
-{#if $fileQuery.data && $catalogQuery.data && yaml}
+{#if $fileQuery.data && yaml}
   <MetricsWorkspace metricsDefName={metricViewName} {nonStandardError} {yaml} />
 {/if}
