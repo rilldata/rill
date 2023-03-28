@@ -12,7 +12,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport"
-	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
@@ -27,7 +27,7 @@ const (
 )
 
 func ConnectCmd(cfg *config.Config) *cobra.Command {
-	var name, description, prodBranch, projectPath string
+	var name, description, prodBranch, projectPath, region, dbDriver, dbDSN string
 	var slots int
 	var public bool
 	var variables []string
@@ -64,7 +64,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Create admin client
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
@@ -136,14 +136,17 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 
 			// Create the project (automatically deploys prod branch)
 			projRes, err := client.CreateProject(cmd.Context(), &adminv1.CreateProjectRequest{
-				OrganizationName: cfg.Org,
-				Name:             name,
-				Description:      description,
-				ProductionSlots:  int64(slots),
-				ProductionBranch: prodBranch,
-				Public:           public,
-				GithubUrl:        githubURL,
-				Variables:        parsedVariables,
+				OrganizationName:     cfg.Org,
+				Name:                 name,
+				Description:          description,
+				Region:               region,
+				ProductionOlapDriver: dbDriver,
+				ProductionOlapDsn:    dbDSN,
+				ProductionSlots:      int64(slots),
+				ProductionBranch:     prodBranch,
+				Public:               public,
+				GithubUrl:            githubURL,
+				Variables:            parsedVariables,
 			})
 			if err != nil {
 				return err
@@ -163,6 +166,9 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 	connectCmd.Flags().StringVar(&description, "description", "", "Project description")
 	connectCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	connectCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
+	connectCmd.Flags().StringVar(&region, "region", "", "Deployment region")
+	connectCmd.Flags().StringVar(&dbDriver, "prod-db-driver", "duckdb", "Database driver")
+	connectCmd.Flags().StringVar(&dbDSN, "prod-db-dsn", "", "Database driver configuration")
 
 	return connectCmd
 }

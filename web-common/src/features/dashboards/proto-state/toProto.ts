@@ -5,8 +5,8 @@ import {
   Value,
 } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-import { TimeRangeName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
-import type { TimeSeriesTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   TimeGrain,
   TimeGrain as TimeGrainProto,
@@ -25,7 +25,9 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
-export function toProto(metrics: MetricsExplorerEntity): string {
+export function getProtoFromDashboardState(
+  metrics: MetricsExplorerEntity
+): string {
   if (!metrics) return "";
 
   const state: PartialMessage<DashboardState> = {};
@@ -48,7 +50,7 @@ export function toProto(metrics: MetricsExplorerEntity): string {
   return protoToBase64(message.toBinary());
 }
 
-export function protoToBase64(proto: Uint8Array) {
+function protoToBase64(proto: Uint8Array) {
   return btoa(String.fromCharCode.apply(null, proto));
 }
 
@@ -59,20 +61,20 @@ function toFiltersProto(filters: V1MetricsViewFilter) {
   });
 }
 
-function toTimeRangeProto(range: TimeSeriesTimeRange) {
+function toTimeRangeProto(range: DashboardTimeControls) {
   const timeRangeArgs: PartialMessage<DashboardTimeRange> = {
     name: range.name,
   };
-  if (range.name === TimeRangeName.Custom) {
+  if (range.name === TimeRangePreset.CUSTOM) {
     timeRangeArgs.timeStart = toTimeProto(range.start);
     timeRangeArgs.timeEnd = toTimeProto(range.end);
   }
   return new DashboardTimeRange(timeRangeArgs);
 }
 
-function toTimeProto(time: string) {
+function toTimeProto(date: Date) {
   return new Timestamp({
-    seconds: BigInt(new Date(time).getTime()),
+    seconds: BigInt(date.getTime()),
   });
 }
 

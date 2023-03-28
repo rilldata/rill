@@ -21,8 +21,11 @@ export type AdminServiceCreateProjectBody = {
   githubUrl?: string;
   name?: string;
   productionBranch?: string;
+  productionOlapDriver?: string;
+  productionOlapDsn?: string;
   productionSlots?: string;
   public?: boolean;
+  region?: string;
   variables?: AdminServiceCreateProjectBodyVariables;
 };
 
@@ -73,8 +76,11 @@ export interface V1Project {
   name?: string;
   productionBranch?: string;
   productionDeploymentId?: string;
+  productionOlapDriver?: string;
+  productionOlapDsn?: string;
   productionSlots?: string;
   public?: boolean;
+  region?: string;
   updatedOn?: string;
   variables?: V1ProjectVariables;
 }

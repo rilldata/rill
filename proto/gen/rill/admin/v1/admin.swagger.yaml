@@ -202,11 +202,17 @@ paths:
                 type: string
               productionBranch:
                 type: string
+              productionOlapDriver:
+                type: string
+              productionOlapDsn:
+                type: string
               productionSlots:
                 type: string
                 format: int64
               public:
                 type: boolean
+              region:
+                type: string
               variables:
                 type: object
                 additionalProperties:
@@ -512,11 +518,17 @@ definitions:
         type: string
       productionDeploymentId:
         type: string
+      productionOlapDriver:
+        type: string
+      productionOlapDsn:
+        type: string
       productionSlots:
         type: string
         format: int64
       public:
         type: boolean
+      region:
+        type: string
       updatedOn:
         type: string
         format: date-time

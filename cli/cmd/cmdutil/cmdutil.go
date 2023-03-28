@@ -10,11 +10,26 @@ import (
 	"github.com/fatih/color"
 	"github.com/lensesio/tableprinter"
 	"github.com/manifoldco/promptui"
+	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-func CheckAuth(cfg *config.Config) func(cmd *cobra.Command, args []string) error {
+type PreRunCheck func(cmd *cobra.Command, args []string) error
+
+func CheckChain(chain ...PreRunCheck) PreRunCheck {
+	return func(cmd *cobra.Command, args []string) error {
+		for _, fn := range chain {
+			err := fn(cmd, args)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func CheckAuth(cfg *config.Config) PreRunCheck {
 	return func(cmd *cobra.Command, args []string) error {
 		// This will just check if token is present in the config
 		if cfg.IsAuthenticated() {
@@ -22,6 +37,16 @@ func CheckAuth(cfg *config.Config) func(cmd *cobra.Command, args []string) error
 		}
 
 		return fmt.Errorf("not authenticated, please run 'rill auth login'")
+	}
+}
+
+func CheckOrg(cfg *config.Config) PreRunCheck {
+	return func(cmd *cobra.Command, args []string) error {
+		if cfg.Org != "" {
+			return nil
+		}
+
+		return fmt.Errorf("no organization is set, pass `--org` or run `rill org switch`")
 	}
 }
 
@@ -47,6 +72,22 @@ func TablePrinter(v interface{}) {
 func TextPrinter(str string) {
 	boldGreen := color.New(color.FgGreen).Add(color.Underline).Add(color.Bold)
 	boldGreen.Fprintln(color.Output, str)
+}
+
+// Create admin client
+func Client(cfg *config.Config) (*client.Client, error) {
+	cliVersion := cfg.Version.Number
+	if cfg.Version.Number == "" {
+		cliVersion = "unknown"
+	}
+
+	userAgent := fmt.Sprintf("rill-cli/%v", cliVersion)
+	c, err := client.New(cfg.AdminURL, cfg.AdminToken(), userAgent)
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
 
 func PromptGetSelect(items []string, label string) string {

@@ -1,11 +1,11 @@
-import { toProto } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import type {
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
 import { derived, Readable, Writable, writable } from "svelte/store";
-import type { TimeSeriesTimeRange } from "./time-controls/time-control-types";
 
 export interface LeaderboardValue {
   value: number;
@@ -30,7 +30,7 @@ export interface MetricsExplorerEntity {
   // false/absence = include, true = exclude
   dimensionFilterExcludeMode: Map<string, boolean>;
   // user selected time range
-  selectedTimeRange?: TimeSeriesTimeRange;
+  selectedTimeRange?: DashboardTimeControls;
   // user selected dimension
   selectedDimensionName?: string;
   proto?: string;
@@ -54,14 +54,18 @@ const updateMetricsExplorerByName = (
         state.entities[name] = absenceCallback();
       }
       if (state.entities[name]) {
-        state.entities[name].proto = toProto(state.entities[name]);
+        state.entities[name].proto = getProtoFromDashboardState(
+          state.entities[name]
+        );
       }
       return state;
     }
 
     callback(state.entities[name]);
     // every change triggers a proto update
-    state.entities[name].proto = toProto(state.entities[name]);
+    state.entities[name].proto = getProtoFromDashboardState(
+      state.entities[name]
+    );
     return state;
   });
 };
@@ -145,7 +149,7 @@ const metricViewReducers = {
     });
   },
 
-  setSelectedTimeRange(name: string, timeRange: TimeSeriesTimeRange) {
+  setSelectedTimeRange(name: string, timeRange: DashboardTimeControls) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.selectedTimeRange = timeRange;
     });

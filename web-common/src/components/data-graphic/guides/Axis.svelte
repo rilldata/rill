@@ -2,6 +2,8 @@
 This component will draw an axis on the specified side.
 -->
 <script lang="ts">
+  import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+  import { IntTimesPowerOfTenFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/IntTimesPowerOfTen";
   import { timeFormat } from "d3-time-format";
   import { getContext } from "svelte";
   import { contexts } from "../constants";
@@ -20,6 +22,7 @@ This component will draw an axis on the specified side.
   export let placement = "middle";
 
   export let labelColor = "fill-gray-600 dark:fill-gray-400";
+  export let numberKind: NumberKind = NumberKind.ANY;
 
   // superlabel properties
   export let superlabel = false;
@@ -162,8 +165,19 @@ This component will draw an axis on the specified side.
     );
   } else {
     superlabel = false;
-    formatterFunction = format || ((v) => v);
+    // If this is a numeric axis, the d3 tick function used by
+    // getTicks offers us some guarantees about the numbers returned.
+    // In that case, we should be able to use the
+    // IntTimesPowerOfTenFormatter, which is taylored to this situation.
+    const formatter = new IntTimesPowerOfTenFormatter(ticks, {
+      strategy: "intTimesPowerOfTen",
+      numberKind,
+      onInvalidInput: "consoleWarn",
+      padWithInsignificantZeros: false,
+    });
+    formatterFunction = (x) => formatter.stringFormat(x);
   }
+
   let axisLength;
   let ticks = [];
   $: if ($plotConfig) {

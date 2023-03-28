@@ -65,7 +65,7 @@
   >
     <!-- title element -->
     <h1 style:line-height="1.1" style:margin-top="-1px">
-      <div style:font-family="InterDisplay" style:font-size="16px">
+      <div class="ui-copy-dashboard-header">
         {displayName || metricViewName}
       </div>
     </h1>

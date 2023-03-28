@@ -55,7 +55,7 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return err
 	}
 
-	if olap.Dialect() != drivers.DialectDuckDB {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 

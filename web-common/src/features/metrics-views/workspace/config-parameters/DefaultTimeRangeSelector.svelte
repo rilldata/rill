@@ -6,9 +6,9 @@
     getRelativeTimeRangeOptions,
     ISODurationToTimeRange,
     isTimeRangeValidForTimeGrain,
-    timeGrainStringToEnum,
     timeRangeToISODuration,
   } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils";
+  import { unitToTimeGrain } from "@rilldata/web-common/lib/time/grains";
   import {
     useQueryServiceColumnTimeRange,
     V1Model,
@@ -38,7 +38,8 @@
     "__DEFAULT_VALUE__";
 
   $: timeColumn = $metricsInternalRep.getMetricKey("timeseries");
-  $: smallestTimeGrain = timeGrainStringToEnum(
+
+  $: smallestTimeGrain = unitToTimeGrain(
     $metricsInternalRep.getMetricKey("smallest_time_grain")
   );
 

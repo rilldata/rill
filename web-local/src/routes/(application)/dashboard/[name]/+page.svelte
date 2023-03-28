@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-  import { fromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
+  import { StateSyncManager } from "@rilldata/web-common/features/dashboards/proto-state/StateSyncManager";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
@@ -19,42 +18,13 @@
   $: metricViewName = $page.params.name;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  let protoState: string;
-  let urlState: string;
-  let updating = false;
-
-  function handleStateChange() {
-    if (protoState === metricsExplorer.proto) return;
-    protoState = metricsExplorer.proto;
-
-    // if state didn't change do not call goto. this avoids adding unnecessary urls to history stack
-    if (protoState !== urlState) {
-      goto(`/dashboard/${metricViewName}/?state=${protoState}`);
-      updating = true;
-    }
-  }
-
-  function handleUrlChange() {
-    const newUrlState = $page.url.searchParams.get("state");
-    if (urlState === newUrlState) return;
-    urlState = newUrlState;
-
-    // run sync if we didn't change the url through a state change
-    // this can happen when url is updated directly by the user
-    if (!updating && urlState && urlState !== protoState) {
-      const partialDashboard = fromUrl($page.url);
-      if (partialDashboard) {
-        metricsExplorerStore.syncFromUrl(metricViewName, partialDashboard);
-      }
-    }
-    updating = false;
-  }
+  $: stateSyncManager = new StateSyncManager(metricViewName);
 
   $: if (metricsExplorer) {
-    handleStateChange();
+    stateSyncManager.handleStateChange(metricsExplorer);
   }
   $: if ($page) {
-    handleUrlChange();
+    stateSyncManager.handleUrlChange();
   }
 
   $: fileQuery = useRuntimeServiceGetFile(

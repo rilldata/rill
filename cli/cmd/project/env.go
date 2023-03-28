@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/lensesio/tableprinter"
-	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/variable"
@@ -35,7 +34,7 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 			projectName := args[0]
 			key := args[1]
 			value := args[2]
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
@@ -89,7 +88,7 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			projectName := args[0]
 			key := args[1]
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
@@ -138,7 +137,7 @@ func ShowEnvCmd(cfg *config.Config) *cobra.Command {
 		Short: "show variable for project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			projectName := args[0]
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
