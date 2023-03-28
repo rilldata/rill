@@ -109,8 +109,8 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 
 			githubURL := ""
 			if !hasRillProject(path) {
-				warn.Printf("Looks like current path %s doesn't have a valid rill project. Please select correct dir.\n", path)
-				warn.Println("In case there is no valid rill project present, Please use `rill init` to create an empty rill project")
+				warn.Printf("\nLooks like current path %s doesn't have a valid rill project. Please select correct dir.\n", path)
+				warn.Printf("In case there is no valid rill project present, Please use `rill init` to create an empty rill project\n\n")
 				// project path prompt
 				path = projectPathPrompt()
 			}
@@ -122,25 +122,25 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				warn.Println("Your project is not pushed to github")
-				warn.Println("You can exit cli, push project to github and connect later or continue to push project to github repo")
+				warn.Println("\nYour project is not pushed to github")
+				warn.Printf("You can exit cli, push project to github and connect later or continue to push project to github repo\n\n")
+
+				if !confirmPrompt("Confirm to push repo to github", false) {
+					return errUserCancelledGitFlow
+				}
+
 				if !commandExists("gh") {
-					info.Println("You do not have github cli installed on your system. Please install github cli (instructions : https://cli.github.com/manual/installation) to push repo via rill connect or follow instructions below")
+					warn.Println("\nYou do not have github cli installed on your system. Please install github cli (instructions : https://cli.github.com/manual/installation) to push repo via rill connect or follow instructions below")
 					info.Print(githubSetupMsg)
 					return nil
 				}
 
-				if confirmPrompt("Confirm to push repo to github", false) {
-					if err := repoCreatePrompt(path, info); err != nil {
-						return err
-					}
-					githubURL, err = extractRemote(path)
-					if err != nil {
-						return err
-					}
-				} else {
-					info.Print(githubSetupMsg)
-					return nil
+				if err := repoCreatePrompt(path, info); err != nil {
+					return err
+				}
+				githubURL, err = extractRemote(path)
+				if err != nil {
+					return err
 				}
 			}
 
@@ -550,13 +550,7 @@ func (v *validator) validateProjectName(val interface{}) error {
 }
 
 const (
-	githubSetupMsg = `No git remote was found.
-
-Rill projects deploy continuously when you push changes to Github.
-Therefore, your project must be on Github before you connect it to Rill.
-
-Follow these steps to push your project to Github.
-
+	githubSetupMsg = `
 1. Initialize git
 
 	git init
