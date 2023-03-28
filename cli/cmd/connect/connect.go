@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/cli/go-gh"
 	"github.com/fatih/color"
 	"github.com/go-git/go-git/v5"
 	"github.com/joho/godotenv"
@@ -28,11 +30,12 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+var errUserCancelledGitFlow = fmt.Errorf("user cancelled git flow")
+
 type connectOptions struct {
 	Name        string
 	Description string
 	ProdBranch  string
-	Slots       int
 	Public      bool
 	Variables   []string
 
@@ -40,97 +43,6 @@ type connectOptions struct {
 	region string
 	// dbDriver    string should we take input ??
 	dbDSN string
-}
-
-func Questions(projectName, prodBranch string, v *validator) []*survey.Question {
-	questions := make([]*survey.Question, 0)
-	questions = append(questions,
-		&survey.Question{
-			Name: "name",
-			Prompt: &survey.Input{
-				Message: "What is the project name?",
-				Default: projectName,
-			},
-			Validate: v.validateProjectName,
-		},
-		&survey.Question{
-			Name: "description",
-			Prompt: &survey.Input{
-				Message: "What is the project description?",
-				Default: "",
-			},
-		},
-		&survey.Question{
-			Name: "prodBranch",
-			Prompt: &survey.Input{
-				Message: "What branch will you deploy on rill cloud?",
-				Default: prodBranch,
-			},
-		},
-		&survey.Question{
-			Name: "slots",
-			Prompt: &survey.Input{
-				Message: "How many slots do you want for your project?",
-				Default: "2",
-			},
-		},
-		&survey.Question{
-			Name: "public",
-			Prompt: &survey.Confirm{
-				Message: "Do you want to deploy a public dashboard?",
-				Default: false,
-			},
-		},
-		&survey.Question{
-			Name: "variables",
-			Prompt: &survey.Editor{
-				Message:  "Add variables for your project in format KEY=VALUE. Enter each variable on a new line",
-				FileName: "*.env",
-			},
-			Validate: func(any interface{}) error {
-				val := any.(string)
-				envs, err := godotenv.Unmarshal(val)
-				for key := range envs {
-					if key == "" {
-						return fmt.Errorf("invalid format found empty key")
-					}
-				}
-				return err
-			},
-			Transform: func(any interface{}) interface{} {
-				val := any.(string)
-				// ignoring error since already validated
-				envs, _ := godotenv.Unmarshal(val)
-				return variable.Serialize(envs)
-			},
-		},
-	)
-
-	return questions
-}
-
-type validator struct {
-	ctx     context.Context
-	client  *client.Client
-	orgName string
-}
-
-func (v *validator) validateProjectName(val interface{}) error {
-	projectName := val.(string)
-	resp, err := v.client.GetProject(v.ctx, &adminv1.GetProjectRequest{OrganizationName: v.orgName, Name: projectName})
-	if err != nil {
-		if st, ok := status.FromError(err); ok {
-			if st.Code() == codes.InvalidArgument { // todo :: change to not found
-				return nil
-			}
-		}
-		return err
-	}
-	if resp.Project.Name == projectName {
-		// this should always be true but adding this check from completeness POV
-		return fmt.Errorf("project with name %v already exists in the org", projectName)
-	}
-	return nil
 }
 
 // ConnectCmd is the guided tour for connecting rill projects to rill cloud.
@@ -141,10 +53,10 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			warn := color.New(color.Bold).Add(color.FgYellow)
-			info := color.New(color.Bold)
+			info := color.New(color.Bold).Add(color.FgWhite)
 			success := color.New(color.Bold).Add(color.FgGreen)
 
-			// log in if not logged in yet
+			// log in if not logged in
 			if cfg.AdminTokenDefault == "" {
 				warn.Println("Looks like you are not authenticated with rill cloud!!")
 				if !confirmPrompt("Do you want to authenticate with rill cloud?", true) {
@@ -154,6 +66,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				if err := loginPrompt(ctx, cfg); err != nil {
 					exitWithFailure(err)
 				}
+				success.Println("you are now authenticated")
 			}
 
 			// Create admin client
@@ -164,23 +77,71 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			// select org
-			orgs, defaultOrg, err := listOrganisations(client)
+			org := ""
+			if confirmPrompt("Do you want to create a new org for this project?", false) {
+				if err := createOrgPrompt(ctx, cfg, client); err != nil {
+					return err
+				}
+				org, err = dotrill.GetDefaultOrg()
+				if err != nil {
+					return err
+				}
+			} else {
+				// select org
+				orgs, defaultOrg, err := listOrganisations(client)
+				if err != nil {
+					return err
+				}
+
+				if len(orgs) == 0 {
+					org = orgs[0]
+				} else {
+					org = selectPrompt("Listing your orgs. Please select where do you want to deploy project?", orgs, defaultOrg)
+				}
+			}
+			info.Printf("your current org is %v\n", org)
+
+			// verify current directory has rill project
+			path, err := os.Getwd()
 			if err != nil {
 				return err
 			}
 
-			// todo :: should we add a create org prompt as well ??
-			org := selectPrompt("Listing your orgs. Please select where do you want to deploy project?", orgs, defaultOrg)
-			info.Printf("your current org is %v\n", org)
-			// project path prompt
-			projectPath := projectPathPrompt()
-			githubURL, err := extractRemote(projectPath)
+			githubURL := ""
+			if !hasRillProject(path) {
+				warn.Printf("Looks like current path %s doesn't have a valid rill project. Please select correct dir.\n", path)
+				warn.Println("In case there is no valid rill project present, Please use `rill init` to create an empty rill project")
+				// project path prompt
+				path = projectPathPrompt()
+			}
+
+			// verify project dir is a git repo with remote on github
+			githubURL, err = extractRemote(path)
 			if err != nil {
-				if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
-					warn.Print(githubSetupMsg)
+				if !errors.Is(err, gitutil.ErrGitRemoteNotFound) && !errors.Is(err, git.ErrRepositoryNotExists) {
+					return err
+				}
+
+				warn.Println("Your project is not pushed to github")
+				warn.Println("You can exit cli, push project to github and connect later or continue to push project to github repo")
+				if !commandExists("gh") {
+					info.Println("You dont not have github cli installed on your system. Please install github cli to push repo via rill connect or follow instructions below")
+					info.Print(githubSetupMsg)
 					return nil
 				}
-				return err
+
+				if confirmPrompt("Confirm to push repo to github", false) {
+					if err := repoCreatePrompt(path, info); err != nil {
+						return err
+					}
+					githubURL, err = extractRemote(path)
+					if err != nil {
+						return err
+					}
+				} else {
+					info.Print(githubSetupMsg)
+					return nil
+				}
 			}
 
 			// Check for access to the Github URL
@@ -208,7 +169,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				Region:               opts.region,
 				ProductionOlapDriver: "duckdb",
 				ProductionOlapDsn:    opts.dbDSN,
-				ProductionSlots:      int64(opts.Slots),
+				ProductionSlots:      2,
 				ProductionBranch:     opts.ProdBranch,
 				Public:               opts.Public,
 				GithubUrl:            githubURL,
@@ -220,6 +181,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 
 			// Success!
 			success.Printf("Created project %s/%s\n", cfg.Org, projRes.Project.Name)
+			success.Printf("Rill projects deploy continuously when you push changes to Github.\n\n")
 			return nil
 		},
 	}
@@ -293,10 +255,131 @@ func listOrganisations(c *client.Client) ([]string, string, error) {
 	return names, defaultOrg, nil
 }
 
+func createOrgPrompt(ctx context.Context, cfg *config.Config, c *client.Client) error {
+	// the questions to ask
+	qs := []*survey.Question{
+		{
+			Name:   "name",
+			Prompt: &survey.Input{Message: "Please specify a org name"},
+			Validate: func(any interface{}) error {
+				org := any.(string)
+				resp, err := c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: org})
+				if err != nil {
+					if st, ok := status.FromError(err); ok {
+						if st.Code() == codes.InvalidArgument { // todo :: change to not found in admin server
+							return nil
+						}
+					}
+					return err
+				}
+				if resp.Organization.Name == org {
+					// this should always be true but adding this check from completeness POV
+					return fmt.Errorf("project with name %v already exists in the org", org)
+				}
+				return nil
+			},
+		},
+		{
+			Name:     "description",
+			Prompt:   &survey.Input{Message: "Please specify a org description", Default: ""},
+			Validate: survey.Required,
+		},
+	}
+
+	req := &adminv1.CreateOrganizationRequest{}
+	// perform the questions
+	err := survey.Ask(qs, &req)
+	if err != nil {
+		return err
+	}
+
+	org, err := c.CreateOrganization(context.Background(), req)
+	if err != nil {
+		return err
+	}
+
+	// Switching to the created org
+	return dotrill.SetDefaultOrg(org.Organization.Name)
+}
+
 func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubURL, prodBranch string) (*connectOptions, error) {
+	v := validator{
+		ctx:     ctx,
+		client:  c,
+		orgName: orgName,
+	}
+	projectName := path.Base(githubURL)
+
+	questions := []*survey.Question{
+		{
+			Name: "name",
+			Prompt: &survey.Input{
+				Message: "What is the project name?",
+				Default: projectName,
+			},
+			Validate: v.validateProjectName,
+		},
+		{
+			Name: "description",
+			Prompt: &survey.Input{
+				Message: "What is the project description?",
+				Default: "",
+			},
+		},
+		{
+			Name: "prodBranch",
+			Prompt: &survey.Input{
+				Message: "What branch will you deploy on rill cloud?",
+				Default: prodBranch,
+			},
+		},
+		{
+			Name: "public",
+			Prompt: &survey.Confirm{
+				Message: "Do you want to deploy a public dashboard?",
+				Default: false,
+			},
+		},
+		{
+			Name: "variables",
+			Prompt: &survey.Editor{
+				Message:       "Add variables for your project in format KEY=VALUE. Enter each variable on a new line",
+				FileName:      "*.env",
+				Default:       envFileDefault,
+				HideDefault:   true,
+				AppendDefault: true,
+			},
+			Validate: func(any interface{}) error {
+				val := any.(string)
+				envs, err := godotenv.Unmarshal(val)
+				for key, value := range envs {
+					if key == "" {
+						return fmt.Errorf("invalid format found empty key")
+					} else if key == "GCS_CREDENTIALS_FILE" {
+						if _, err := os.Stat(value); err != nil {
+							return err
+						}
+					}
+				}
+				return err
+			},
+			Transform: func(any interface{}) interface{} {
+				val := any.(string)
+				// ignoring error since already validated
+				envs, _ := godotenv.Unmarshal(val)
+				for k, v := range envs {
+					if k == "GCS_CREDENTIALS_FILE" {
+						content, _ := os.ReadFile(v)
+						envs[k] = string(content)
+					}
+				}
+				return variable.Serialize(envs)
+			},
+		},
+	}
+
 	opts := &connectOptions{}
-	name := path.Base(githubURL)
-	if err := survey.Ask(Questions(name, prodBranch, &validator{ctx: ctx, client: c, orgName: orgName}), opts); err != nil {
+	if err := survey.Ask(questions, opts); err != nil {
 		return nil, err
 	}
 
@@ -307,6 +390,7 @@ func projectPathPrompt() string {
 	prompt := &survey.Input{
 		Message: "What is your project path on local system?",
 		Default: ".",
+		Help:    "defaults to current directory",
 		Suggest: func(toComplete string) []string {
 			files, _ := filepath.Glob(toComplete + "*")
 			return files
@@ -318,8 +402,10 @@ func projectPathPrompt() string {
 			Prompt: prompt,
 			Validate: func(any interface{}) error {
 				path := any.(string)
-				_, err := os.Stat(path)
-				return err
+				if !hasRillProject(path) {
+					return fmt.Errorf("no rill project on path %v", path)
+				}
+				return nil
 			},
 		},
 	}
@@ -329,6 +415,58 @@ func projectPathPrompt() string {
 		exitWithFailure(err)
 	}
 	return result
+}
+
+func repoCreatePrompt(dir string, info *color.Color) error {
+	repo, err := git.PlainOpen(dir)
+	if err != nil {
+		if errors.Is(err, git.ErrRepositoryNotExists) {
+			if !confirmPrompt("Do you want to create a git repository?", true) {
+				return errUserCancelledGitFlow
+			}
+			repo, err = git.PlainInit(dir, false)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	w, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	fileGlob := ""
+	fileGlobInput := &survey.Input{
+		Message: "What files do you want to commit?",
+		Default: ".",
+	}
+	if err := survey.AskOne(fileGlobInput, &fileGlob); err != nil {
+		return err
+	}
+	if err := w.AddGlob(fileGlob); err != nil {
+		return err
+	}
+
+	// todo :: show staging area
+	if !confirmPrompt("Do you want to commit added files?", true) {
+		return errUserCancelledGitFlow
+	}
+
+	if _, err := w.Commit("files auto committed by rill cli", &git.CommitOptions{}); err != nil {
+		return err
+	}
+
+	if !confirmPrompt("Do you want to push committed files?", true) {
+		return errUserCancelledGitFlow
+	}
+
+	stdout, _, err := gh.Exec("repo", "create", "--source=../test", "--public", "--push")
+	if err != nil {
+		return err
+	}
+	info.Printf("created remote repo %s\n", stdout.String())
+	return nil
 }
 
 func selectPrompt(msg string, options []string, def string) string {
@@ -377,7 +515,42 @@ func exitWithFailure(err error) {
 	os.Exit(1)
 }
 
-const githubSetupMsg = `No git remote was found.
+func hasRillProject(dir string) bool {
+	_, err := os.Open(filepath.Join(dir, "rill.yaml"))
+	return err == nil
+}
+
+func commandExists(cmd string) bool {
+	_, err := exec.LookPath(cmd)
+	return err == nil
+}
+
+type validator struct {
+	ctx     context.Context
+	client  *client.Client
+	orgName string
+}
+
+func (v *validator) validateProjectName(val interface{}) error {
+	projectName := val.(string)
+	resp, err := v.client.GetProject(v.ctx, &adminv1.GetProjectRequest{OrganizationName: v.orgName, Name: projectName})
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			if st.Code() == codes.InvalidArgument { // todo :: change to not found
+				return nil
+			}
+		}
+		return err
+	}
+	if resp.Project.Name == projectName {
+		// this should always be true but adding this check from completeness POV
+		return fmt.Errorf("project with name %v already exists in the org", projectName)
+	}
+	return nil
+}
+
+const (
+	githubSetupMsg = `No git remote was found.
 
 Rill projects deploy continuously when you push changes to Github.
 Therefore, your project must be on Github before you connect it to Rill.
@@ -408,3 +581,17 @@ Follow these steps to push your project to Github.
 	rill connect
 
 `
+
+	envFileDefault = `## add any project specific variables in format KEY=VALUE
+## If using private s3 sources uncomment next three and set credentials
+# AWS_ACCESS_KEY_ID=
+# AWS_SECRET_ACCESS_KEY=
+# AWS_SESSION_TOKEN=
+
+## If using private gcs sources set GCS_CREDENTIALS_FILE to a location where credentials.json for gcs is stored on your local system
+## this creates an env GCS_CREDENTIALS with the file contents in env variable
+# GCS_CREDENTIALS_FILE=
+
+## add any other project specific credentials below:
+`
+)
