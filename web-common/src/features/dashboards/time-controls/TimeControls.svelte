@@ -203,7 +203,13 @@
       interval: timeGrain,
     };
 
+    // reset comparisonOption to the default for the new time range.
+    comparisonOption =
+      DEFAULT_TIME_RANGES[$dashboardStore?.selectedTimeRange?.name]
+        .defaultComparison;
+
     cancelDashboardQueries(queryClient, metricViewName);
+    updateComparisonAppState(start, end, comparisonOption);
     metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
   }
 
