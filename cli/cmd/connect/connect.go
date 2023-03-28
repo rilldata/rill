@@ -288,7 +288,7 @@ func createOrgPrompt(ctx context.Context, cfg *config.Config, c *client.Client) 
 
 	req := &adminv1.CreateOrganizationRequest{}
 	// perform the questions
-	err := survey.Ask(qs, &req)
+	err := survey.Ask(qs, req)
 	if err != nil {
 		return err
 	}
