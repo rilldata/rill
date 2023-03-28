@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -67,55 +68,12 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			// Check for access to the Github URL
-			ghRes, err := client.GetGithubRepoStatus(cmd.Context(), &adminv1.GetGithubRepoStatusRequest{
-				GithubUrl: githubURL,
-			})
+			ghRes, err := VerifyAccess(cmd.Context(), client, githubURL)
 			if err != nil {
 				return err
 			}
 
-			// If the user has not already granted access, open browser and poll for access
-			if !ghRes.HasAccess {
-				// Print instructions to grant access
-				fmt.Printf("Rill projects deploy continuously when you push changes to Github.\n\n")
-				fmt.Printf("Open this URL in your browser to grant Rill access to your Github repository:\n\n")
-				fmt.Printf("\t%s\n\n", ghRes.GrantAccessUrl)
-
-				// Open browser if possible
-				_ = browser.Open(ghRes.GrantAccessUrl)
-
-				// Poll for permission granted
-				pollCtx, cancel := context.WithTimeout(cmd.Context(), pollTimeout)
-				defer cancel()
-				for {
-					select {
-					case <-pollCtx.Done():
-						return pollCtx.Err()
-					case <-time.After(pollInterval):
-						// Ready to check again.
-					}
-
-					// Poll for access to the Github URL
-					pollRes, err := client.GetGithubRepoStatus(cmd.Context(), &adminv1.GetGithubRepoStatusRequest{
-						GithubUrl: githubURL,
-					})
-					if err != nil {
-						return err
-					}
-
-					if pollRes.HasAccess {
-						// Success
-						ghRes = pollRes
-						break
-					}
-
-					// Sleep and poll again
-				}
-			}
-
 			// We now have access to the Github repo
-
 			// Infer project name from Github remote (if not explicitly set)
 			if name == "" {
 				name = path.Base(githubURL)
@@ -168,6 +126,55 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 	connectCmd.Flags().StringVar(&dbDSN, "prod-db-dsn", "", "Database driver configuration")
 
 	return connectCmd
+}
+
+func VerifyAccess(ctx context.Context, c *client.Client, githubURL string) (*adminv1.GetGithubRepoStatusResponse, error) {
+	// Check for access to the Github URL
+	ghRes, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
+		GithubUrl: githubURL,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// If the user has not already granted access, open browser and poll for access
+	if !ghRes.HasAccess {
+		// Print instructions to grant access
+		fmt.Printf("Rill projects deploy continuously when you push changes to Github.\n\n")
+		fmt.Printf("Open this URL in your browser to grant Rill access to your Github repository:\n\n")
+		fmt.Printf("\t%s\n\n", ghRes.GrantAccessUrl)
+
+		// Open browser if possible
+		_ = browser.Open(ghRes.GrantAccessUrl)
+
+		// Poll for permission granted
+		pollCtx, cancel := context.WithTimeout(ctx, pollTimeout)
+		defer cancel()
+		for {
+			select {
+			case <-pollCtx.Done():
+				return nil, pollCtx.Err()
+			case <-time.After(pollInterval):
+				// Ready to check again.
+			}
+
+			// Poll for access to the Github URL
+			pollRes, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
+				GithubUrl: githubURL,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			if pollRes.HasAccess {
+				// Success
+				return pollRes, nil
+			}
+
+			// Sleep and poll again
+		}
+	}
+	return ghRes, nil
 }
 
 const githubSetupMsg = `No git remote was found.

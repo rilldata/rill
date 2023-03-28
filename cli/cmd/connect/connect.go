@@ -8,7 +8,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
@@ -16,6 +15,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
@@ -26,11 +26,6 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-)
-
-const (
-	pollTimeout  = 10 * time.Minute
-	pollInterval = 5 * time.Second
 )
 
 type connectOptions struct {
@@ -106,7 +101,6 @@ func Questions(projectName, prodBranch string, v *validator) []*survey.Question 
 				val := any.(string)
 				// ignoring error since already validated
 				envs, _ := godotenv.Unmarshal(val)
-				fmt.Printf("total %v variables\n", len(envs))
 				return variable.Serialize(envs)
 			},
 		},
@@ -154,11 +148,11 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			if cfg.AdminTokenDefault == "" {
 				warn.Println("Looks like you are not authenticated with rill cloud!!")
 				if !confirmPrompt("Do you want to authenticate with rill cloud?", true) {
-					fmt.Println("GoodBye!!!")
+					info.Println("GoodBye!!!")
+					return nil
 				}
-				if err := loginPrompt(cmd, cfg); err != nil {
-					fmt.Printf("Prompt failed %v\n", err)
-					os.Exit(1)
+				if err := loginPrompt(ctx, cfg); err != nil {
+					exitWithFailure(err)
 				}
 			}
 
@@ -175,30 +169,11 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			org := ""
-			if len(orgs) != 0 {
-				org = selectPrompt("Listing your orgs. Please select where do you want to deploy project?", orgs, defaultOrg)
-			}
-
-			// if no org found create a org
-			if org == "" {
-				warn.Println("Looks like you are not part of any existing org!!")
-				info.Println("Let us create a default org")
-				if err := createOrgPrompt(cmd.Context(), cfg, client); err != nil {
-					fmt.Printf("Prompt failed %v\n", err)
-					os.Exit(1)
-				}
-
-				org, err = dotrill.GetDefaultOrg()
-				if err != nil {
-					return err
-				}
-
-				info.Printf("created and switched to organisation %q\n", org)
-			}
-
+			// todo :: should we add a create org prompt as well ??
+			org := selectPrompt("Listing your orgs. Please select where do you want to deploy project?", orgs, defaultOrg)
+			info.Printf("your current org is %v\n", org)
 			// project path prompt
-			projectPath := inputPrompt("What is your project path on local system?", ".")
+			projectPath := projectPathPrompt()
 			githubURL, err := extractRemote(projectPath)
 			if err != nil {
 				if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
@@ -209,50 +184,9 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Check for access to the Github URL
-			ghRes, err := client.GetGithubRepoStatus(cmd.Context(), &adminv1.GetGithubRepoStatusRequest{
-				GithubUrl: githubURL,
-			})
+			ghRes, err := project.VerifyAccess(ctx, client, githubURL)
 			if err != nil {
 				return err
-			}
-
-			// If the user has not already granted access, open browser and poll for access
-			if !ghRes.HasAccess {
-				// Print instructions to grant access
-				info.Printf("Rill projects deploy continuously when you push changes to Github.\n\n")
-				info.Printf("Open this URL in your browser to grant Rill access to your Github repository:\n\n")
-				info.Printf("\t%s\n\n", ghRes.GrantAccessUrl)
-
-				// Open browser if possible
-				_ = browser.Open(ghRes.GrantAccessUrl)
-
-				// Poll for permission granted
-				pollCtx, cancel := context.WithTimeout(cmd.Context(), pollTimeout)
-				defer cancel()
-				for {
-					select {
-					case <-pollCtx.Done():
-						return pollCtx.Err()
-					case <-time.After(pollInterval):
-						// Ready to check again.
-					}
-
-					// Poll for access to the Github URL
-					pollRes, err := client.GetGithubRepoStatus(cmd.Context(), &adminv1.GetGithubRepoStatusRequest{
-						GithubUrl: githubURL,
-					})
-					if err != nil {
-						return err
-					}
-
-					if pollRes.HasAccess {
-						// Success
-						ghRes = pollRes
-						break
-					}
-
-					// Sleep and poll again
-				}
 			}
 
 			// We now have access to the Github repo
@@ -268,7 +202,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 
 			// Create the project (automatically deploys prod branch)
 			projRes, err := client.CreateProject(ctx, &adminv1.CreateProjectRequest{
-				OrganizationName:     cfg.Org,
+				OrganizationName:     org,
 				Name:                 opts.Name,
 				Description:          opts.Description,
 				Region:               opts.region,
@@ -293,7 +227,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 	return cmd
 }
 
-func loginPrompt(cmd *cobra.Command, cfg *config.Config) error {
+func loginPrompt(ctx context.Context, cfg *config.Config) error {
 	// In production, the REST and gRPC endpoints are the same, but in development, they're served on different ports.
 	// We plan to move to connect.build for gRPC, which will allow us to serve both on the same port in development as well.
 	// Until we make that change, this is a convenient hack for local development (assumes gRPC on port 9090 and REST on port 8080).
@@ -307,7 +241,6 @@ func loginPrompt(cmd *cobra.Command, cfg *config.Config) error {
 		return err
 	}
 
-	ctx := cmd.Context()
 	deviceVerification, err := authenticator.VerifyDevice(ctx)
 	if err != nil {
 		return err
@@ -348,47 +281,16 @@ func listOrganisations(c *client.Client) ([]string, string, error) {
 
 	defaultFound := false
 	names := make([]string, len(res.Organizations))
-	for _, org := range res.Organizations {
+	for i, org := range res.Organizations {
 		if org.Name == defaultOrg {
 			defaultFound = true
 		}
-		names = append(names, org.Name)
+		names[i] = org.Name
 	}
 	if !defaultFound {
 		defaultOrg = ""
 	}
 	return names, defaultOrg, nil
-}
-
-func createOrgPrompt(ctx context.Context, cfg *config.Config, c *client.Client) error {
-	// the questions to ask
-	qs := []*survey.Question{
-		{
-			Name:     "name",
-			Prompt:   &survey.Input{Message: "Please specify a org name"},
-			Validate: survey.Required,
-		},
-		{
-			Name:     "name",
-			Prompt:   &survey.Input{Message: "Please specify a org description", Default: ""},
-			Validate: survey.Required,
-		},
-	}
-
-	req := &adminv1.CreateOrganizationRequest{}
-	// perform the questions
-	err := survey.Ask(qs, &req)
-	if err != nil {
-		return err
-	}
-
-	org, err := c.CreateOrganization(context.Background(), req)
-	if err != nil {
-		return err
-	}
-
-	// Switching to the created org
-	return dotrill.SetDefaultOrg(org.Organization.Name)
 }
 
 func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubURL, prodBranch string) (*connectOptions, error) {
@@ -401,14 +303,51 @@ func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubUR
 	return opts, nil
 }
 
-func extractRemote(remotePath string) (string, error) {
-	remotes, err := gitutil.ExtractRemotes(remotePath)
-	if err != nil {
-		return "", err
+func projectPathPrompt() string {
+	prompt := &survey.Input{
+		Message: "What is your project path on local system?",
+		Default: ".",
+		Suggest: func(toComplete string) []string {
+			files, _ := filepath.Glob(toComplete + "*")
+			return files
+		},
+	}
+	q := []*survey.Question{
+		{
+			Name:   "pathParam",
+			Prompt: prompt,
+			Validate: func(any interface{}) error {
+				path := any.(string)
+				_, err := os.Stat(path)
+				return err
+			},
+		},
 	}
 
-	// Parse into a https://github.com/account/repo (no .git) format
-	return gitutil.RemotesToGithubURL(remotes)
+	result := ""
+	if err := survey.Ask(q, &result); err != nil {
+		exitWithFailure(err)
+	}
+	return result
+}
+
+func selectPrompt(msg string, options []string, def string) string {
+	prompt := &survey.Select{
+		Message: msg,
+		Options: options,
+		Default: def,
+		Description: func(value string, index int) string {
+			if value == def {
+				return "current default"
+			}
+			return ""
+		},
+	}
+	result := def
+	if err := survey.AskOne(prompt, &result); err != nil {
+		exitWithFailure(err)
+	}
+	return result
 }
 
 func confirmPrompt(msg string, def bool) bool {
@@ -418,47 +357,24 @@ func confirmPrompt(msg string, def bool) bool {
 	}
 	result := def
 	if err := survey.AskOne(prompt, &result); err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		os.Exit(1)
+		exitWithFailure(err)
 	}
 	return result
 }
 
-func inputPrompt(msg, def string) string {
-	prompt := &survey.Input{
-		Message: msg,
-		Default: def,
-		Suggest: func(toComplete string) []string {
-			files, _ := filepath.Glob(toComplete + "*")
-			return files
-		},
+func extractRemote(remotePath string) (string, error) {
+	remotes, err := gitutil.ExtractRemotes(remotePath)
+	if err != nil {
+		return "", err
 	}
-	result := def
-	if err := survey.AskOne(prompt, &result); err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		os.Exit(1)
-	}
-	return result
+	// Parse into a https://github.com/account/repo (no .git) format
+	return gitutil.RemotesToGithubURL(remotes)
 }
 
-func selectPrompt(msg string, options []string, def string) string {
-	prompt := &survey.Select{
-		Message: msg,
-		Default: def,
-		Options: options,
-		Description: func(value string, index int) string {
-			if value == def {
-				return "default"
-			}
-			return ""
-		},
-	}
-	result := def
-	if err := survey.AskOne(prompt, &result); err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		os.Exit(1)
-	}
-	return result
+func exitWithFailure(err error) {
+	errormsg := color.New(color.Bold).Add(color.FgRed)
+	errormsg.Printf("Prompt failed %v\n", err)
+	os.Exit(1)
 }
 
 const githubSetupMsg = `No git remote was found.
