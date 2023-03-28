@@ -168,7 +168,11 @@
 
   let isComparisonRangeAvailable = false;
   // create the right compareTopListParams.
-  $: if (!$topListQuery?.isFetching && hasTimeSeries) {
+  $: if (
+    !$topListQuery?.isFetching &&
+    hasTimeSeries &&
+    timeRangeName !== undefined
+  ) {
     const values = $topListQuery?.data?.data;
 
     const comparisonTimeRange = getTimeComparisonParametersForComponent(

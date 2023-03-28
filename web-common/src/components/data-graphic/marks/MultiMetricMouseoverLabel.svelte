@@ -7,6 +7,7 @@ It is probably not the most up to date code; but it works very well in practice.
   import { contexts } from "../constants";
 
   import { WithTween } from "../functional-components";
+  import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
 
   interface Point {
     x: number;
@@ -34,9 +35,9 @@ It is probably not the most up to date code; but it works very well in practice.
 
   // plot the middle and push out from there
 
-  const xScale = getContext(contexts.scale("x"));
-  const yScale = getContext(contexts.scale("y"));
-  const config = getContext(contexts.config);
+  const xScale = getContext(contexts.scale("x")) as ScaleStore;
+  const yScale = getContext(contexts.scale("y")) as ScaleStore;
+  const config = getContext(contexts.config) as SimpleConfigurationStore;
   $: plotLeft = $config?.plotLeft;
   $: plotRight = $config?.plotRight;
   $: plotTop = $config?.plotTop;
@@ -160,7 +161,7 @@ It is probably not the most up to date code; but it works very well in practice.
   // If all the containerWidth histories + the x location are greatre than right plot, then flip.
   // this prevents jitter at the border region of the flip.
 
-  let fcn = () => true;
+  let fcn = (c: any) => true;
   let internalDirection = direction;
   $: if (direction === "left") {
     let flip = !!flipAtEdge;
@@ -172,9 +173,17 @@ It is probably not the most up to date code; but it works very well in practice.
       flip &&
       c + locations[0].xRange >= (flipAtEdge === "body" ? plotRight : width);
   }
-  $: if (direction === "right" && containerWidths.every(fcn)) {
+  $: if (
+    direction === "right" &&
+    containerWidths.every(fcn) &&
+    flipAtEdge !== false
+  ) {
     internalDirection = "left";
-  } else if (direction === "left" && containerWidths.every(fcn)) {
+  } else if (
+    direction === "left" &&
+    containerWidths.every(fcn) &&
+    flipAtEdge !== false
+  ) {
     internalDirection = "right";
   } else {
     internalDirection = direction;
@@ -190,6 +199,8 @@ It is probably not the most up to date code; but it works very well in practice.
       labelWidth = 0;
     }
   }
+
+  $: console.log(locations);
 </script>
 
 <filter id="outliner">
@@ -205,138 +216,146 @@ It is probably not the most up to date code; but it works very well in practice.
 <g bind:this={container}>
   {#if showLabels}
     {#each locations as location, i (location.key || location.label)}
-      <!-- <text x="20" y={70 + i * 20}> {JSON.stringify(location.xRange)}</text> -->
-      <WithTween
-        value={{
-          y: location.yRange || 0,
-          x:
-            internalDirection === "right"
-              ? location.xRange +
-                (xBuffer + xOffset + (alignLabels ? labelWidth : 0))
-              : location.xRange - xBuffer - xOffset,
-        }}
-        let:output={v}
-        tweenProps={{ duration: 50 }}
-      >
-        <text
-          filter="url(#outliner)"
-          fill="white"
-          data-location={location.yRange}
-          font-size={fontSize}
+      {#if (location.y || location.rangeY) && (location.x || location.rangeX)}
+        <WithTween
+          value={{
+            y: location.yRange || 0,
+            x:
+              internalDirection === "right"
+                ? location.xRange +
+                  (xBuffer + xOffset + (alignLabels ? labelWidth : 0))
+                : location.xRange - xBuffer - xOffset,
+          }}
+          let:output={v}
+          tweenProps={{ duration: 50 }}
         >
-          {#if internalDirection === "right"}
-            <tspan
-              dy=".35em"
-              text-anchor="end"
-              class="widths {location?.valueStyleClass || 'font-bold'}"
-              y={v.y}
-              x={v.x}
-            >
-              {#if !location?.yOverride}
-                {formatValue(location.y)}
-              {/if}
-            </tspan>
-            <tspan dy=".35em" y={v.y} x={v.x}>
-              {#if location?.yOverride}
-                {location.yOverrideLabel}
-              {:else}
-                {location.label}
-              {/if}</tspan
-            >
-          {:else}
-            <tspan dy=".35em" y={v.y} x={v.x - labelWidth} text-anchor="end">
-              {#if location?.yOverride}
-                {location.yOverrideLabel}
-              {:else}
-                {location.label}
-              {/if}
-            </tspan>
-            <tspan
-              dy=".35em"
-              class="widths {location?.valueStyleClass || 'font-bold'}"
-              text-anchor="end"
-              y={v.y}
-              x={v.x}
-            >
-              {#if !location?.yOverride}
-                {formatValue(location.y)}
-              {/if}
-            </tspan>
-          {/if}
-        </text>
+          <text
+            filter="url(#outliner)"
+            fill="white"
+            data-location={location.yRange}
+            font-size={fontSize}
+          >
+            {#if internalDirection === "right"}
+              <tspan
+                dy=".35em"
+                text-anchor="end"
+                class="widths {location?.valueStyleClass || 'font-bold'}"
+                y={v.y}
+                x={v.x}
+              >
+                {#if !location?.yOverride}
+                  {formatValue(location.y)}
+                {/if}
+              </tspan>
+              <tspan dy=".35em" y={v.y} x={v.x}>
+                {#if location?.yOverride}
+                  {location.yOverrideLabel}
+                {:else}
+                  {location.label}
+                {/if}</tspan
+              >
+            {:else}
+              <tspan dy=".35em" y={v.y} x={v.x - labelWidth} text-anchor="end">
+                {#if location?.yOverride}
+                  {location.yOverrideLabel}
+                {:else}
+                  {location.label}
+                {/if}
+              </tspan>
+              <tspan
+                dy=".35em"
+                class="widths {location?.valueStyleClass || 'font-bold'}"
+                text-anchor="end"
+                y={v.y}
+                x={v.x}
+              >
+                {#if !location?.yOverride}
+                  {formatValue(location.y)}
+                {/if}
+              </tspan>
+            {/if}
+          </text>
 
-        <text font-size={fontSize}>
-          {#if internalDirection === "right"}
-            <tspan
-              dy=".35em"
-              class="widths  {location?.valueStyleClass ||
-                'font-bold'} {location?.valueColorClass || ''}"
-              y={v.y}
-              text-anchor="end"
-              x={v.x}
-            >
-              {#if !location?.yOverride}
-                {formatValue(location.y)}
-              {/if}
-            </tspan>
-            <tspan
-              dy=".35em"
-              y={v.y}
-              x={v.x}
-              class="mc-mouseover-label  {location?.labelStyleClass ||
-                ''} {(!location?.yOverride && location?.labelColorClass) || ''}"
-            >
-              {#if location?.yOverride}
-                {location.yOverrideLabel}
-              {:else}
-                {location.label}
-              {/if}
-            </tspan>
-          {:else}
-            <tspan
-              dy=".35em"
-              y={v.y}
-              x={v.x - labelWidth}
-              class="mc-mouseover-label  {location?.labelStyleClass ||
-                ''} {(!location?.yOverride && location?.labelColorClass) || ''}"
-              text-anchor="end"
-            >
-              {#if location?.yOverride}
-                {location.yOverrideLabel}
-              {:else}
-                {location.label}
-              {/if}
-            </tspan>
-            <tspan
-              dy=".35em"
-              class="widths {location?.valueStyleClass ||
-                'font-bold'} {location?.valueColorClass || ''}"
-              text-anchor="end"
-              y={v.y}
-              x={v.x}
-            >
-              {#if !location?.yOverride}
-                {formatValue(location.y)}
-              {/if}
-            </tspan>
-          {/if}
-        </text>
-      </WithTween>
+          <text font-size={fontSize}>
+            {#if internalDirection === "right"}
+              <tspan
+                dy=".35em"
+                class="widths  {location?.valueStyleClass ||
+                  'font-bold'} {location?.valueColorClass || ''}"
+                y={v.y}
+                text-anchor="end"
+                x={v.x}
+              >
+                {#if !location?.yOverride}
+                  {formatValue(location.y)}
+                {/if}
+              </tspan>
+              <tspan
+                dy=".35em"
+                y={v.y}
+                x={v.x}
+                class="mc-mouseover-label  {location?.labelStyleClass ||
+                  ''} {(!location?.yOverride && location?.labelColorClass) ||
+                  ''}"
+              >
+                {#if location?.yOverride}
+                  {location.yOverrideLabel}
+                {:else}
+                  {location.label}
+                {/if}
+              </tspan>
+            {:else}
+              <tspan
+                dy=".35em"
+                y={v.y}
+                x={v.x - labelWidth}
+                class="mc-mouseover-label  {location?.labelStyleClass ||
+                  ''} {(!location?.yOverride && location?.labelColorClass) ||
+                  ''}"
+                text-anchor="end"
+              >
+                {#if location?.yOverride}
+                  {location.yOverrideLabel}
+                {:else}
+                  {location.label}
+                {/if}
+              </tspan>
+              <tspan
+                dy=".35em"
+                class="widths {location?.valueStyleClass ||
+                  'font-bold'} {location?.valueColorClass || ''}"
+                text-anchor="end"
+                y={v.y}
+                x={v.x}
+              >
+                {#if !location?.yOverride}
+                  {formatValue(location.y)}
+                {/if}
+              </tspan>
+            {/if}
+          </text>
+        </WithTween>
+      {/if}
     {/each}
   {/if}
   {#if showPoints}
-    {#each locations as { x, y, xRange, yRange, pointColorClass = '', label, key }, i (key || label)}
-      {#if (keepPointsTrue && x !== undefined && y !== undefined) || (xRange !== undefined && yRange !== undefined)}
+    {#each locations as location, i (location.key || location.label)}
+      {#if (keepPointsTrue && location.x !== undefined && location.y !== undefined) || (location.xRange !== undefined && location.yRange !== undefined)}
         <WithTween
           tweenProps={{ duration: 50 }}
           value={[
-            keepPointsTrue ? $xScale(x) : xRange,
-            keepPointsTrue ? $yScale(y) : yRange,
+            keepPointsTrue ? $xScale(location.x) : location.xRange,
+            keepPointsTrue ? $yScale(location.y) : location.yRange,
           ]}
           let:output
         >
           <circle cx={output[0]} cy={output[1]} r={5} fill="white" />
-          <circle cx={output[0]} cy={output[1]} r={3} class={pointColorClass} />
+          <circle
+            cx={output[0]}
+            cy={output[1]}
+            r={3}
+            class={location.pointColorClass}
+          />
         </WithTween>
       {/if}
     {/each}

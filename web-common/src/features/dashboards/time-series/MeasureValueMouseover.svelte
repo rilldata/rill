@@ -17,7 +17,7 @@
   $: y = point[yAccessor];
   $: comparisonY = point?.[comparisonYAccessor];
 
-  $: hasValidComparisonPoint = showComparison && comparisonY !== undefined;
+  $: hasValidComparisonPoint = comparisonY !== undefined;
 
   $: diff = (y - comparisonY) / comparisonY;
 
@@ -50,6 +50,7 @@
     yOverrideLabel: "no data",
     key: "main",
     label:
+      showComparison &&
       hasValidComparisonPoint &&
       !currentPointIsNull &&
       !comparisonPointIsNull &&
@@ -65,32 +66,43 @@
         : "fill-gray-600",
   };
 
-  $: comparisonPoint = hasValidComparisonPoint
-    ? {
-        x,
-        y: comparisonPointIsNull ? lastAvailableComparisonY : comparisonY,
-        yOverride: comparisonPointIsNull,
-        yOverrideLabel: "no comparison data",
-        label: "prev.",
-        key: "comparison",
-        valueStyleClass: "font-normal",
-        pointColorClass: "fill-gray-400",
-        valueColorClass: "fill-gray-500",
-        labelColorClass: "fill-gray-500",
-      }
-    : undefined;
+  $: comparisonPoint =
+    showComparison && hasValidComparisonPoint
+      ? {
+          x,
+          y: comparisonPointIsNull ? lastAvailableComparisonY : comparisonY,
+          yOverride: comparisonPointIsNull,
+          yOverrideLabel: "no comparison data",
+          label: "prev.",
+          key: "comparison",
+          valueStyleClass: "font-normal",
+          pointColorClass: "fill-gray-400",
+          valueColorClass: "fill-gray-500",
+          labelColorClass: "fill-gray-500",
+        }
+      : undefined;
 
   /** get the final point set*/
   $: pointSet = hasValidComparisonPoint
     ? [mainPoint, comparisonPoint]
     : [mainPoint];
+
+  /** modes
+   * 1. comparison not activated b/c not valid for time range
+   * 2. no comparison point available even if comparison is activated
+   * 3. no comparison point available, but current is null
+   * 4. comparison point available, but current point is null
+   * 5. comparison point available, but current point is not null
+   * 6. comparisoin point available, neither points are null.
+   */
 </script>
 
 <WithGraphicContexts let:xScale let:yScale>
   {@const strokeWidth = showComparison ? 2 : 4}
   {@const colorClass = "stroke-gray-400"}
-
-  {#if !(currentPointIsNull || comparisonPointIsNull) || !showComparison}
+  <!-- compariso npoint should be activated here -->
+  <!-- <text x={20} y={60}>{hasValidComparisonPoint}</text> -->
+  {#if !(currentPointIsNull || comparisonPointIsNull) && x !== undefined && y !== undefined}
     <WithTween
       tweenProps={{ duration: 50 }}
       value={{
@@ -146,23 +158,27 @@
             />
           </g>
         </g>
-        {#if !hasValidComparisonPoint}
-          <line
-            transition:fade|local={{ duration: 100 }}
-            x1={output.x}
-            x2={output.x}
-            y1={yScale(0)}
-            y2={output.y}
-            stroke-width="4"
-            class={"stroke-blue-300"}
-          />
-        {/if}
       {/if}
     </WithTween>
   {/if}
+  <text x={40} y={60}>{y}</text>
+  {#if !hasValidComparisonPoint && x !== undefined && y !== null && y !== undefined && !currentPointIsNull}
+    <WithTween value={{ x: xScale(x), y: yScale(y) }} let:output>
+      <line
+        transition:fade|local={{ duration: 100 }}
+        x1={output.x}
+        x2={output.x}
+        y1={yScale(0)}
+        y2={output.y}
+        stroke-width="4"
+        class={"stroke-blue-300"}
+      />
+    </WithTween>
+  {/if}
+
   <MultiMetricMouseoverLabel
     direction="right"
-    flipAtEdge={"graphic"}
+    flipAtEdge={false}
     keepPointsTrue
     formatValue={mouseoverFormat}
     point={pointSet || []}
