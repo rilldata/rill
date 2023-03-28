@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	cloud.google.com/go/storage v1.27.0
+	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/MicahParks/keyfunc v1.9.0
 	github.com/NYTimes/gziphandler v1.1.1
@@ -142,6 +143,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.2 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
+	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/minio/asm2plan9s v0.0.0-20200509001527-cdd76441f9d8 // indirect
 	github.com/minio/c2goasm v0.0.0-20190812172519-36a3d3bbc4f3 // indirect
 	github.com/mitchellh/copystructure v1.0.0 // indirect
