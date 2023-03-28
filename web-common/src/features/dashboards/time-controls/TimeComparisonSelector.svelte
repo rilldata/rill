@@ -122,7 +122,7 @@ This component needs to do the following:
       on:click-outside={toggleFloatingElement}
     >
       {#if showComparison}
-        {#each [...options] as option}
+        {#each options as option}
           {@const preset = TIME_COMPARISON[option.name]}
           <MenuItem
             selected={option.name === intermediateSelection}
@@ -135,7 +135,7 @@ This component needs to do the following:
               {preset?.label || option.name}
             </span>
           </MenuItem>
-          {#if option.name === TimeComparisonOption.CONTIGUOUS}
+          {#if option.name === TimeComparisonOption.CONTIGUOUS && options.length > 2}
             <Divider />
           {/if}
         {/each}
