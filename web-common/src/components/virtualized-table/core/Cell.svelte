@@ -29,6 +29,7 @@
   export let rowActive = false;
   export let suppressTooltip = false;
   export let rowSelected = false;
+  export let colSelected = false;
   export let atLeastOneSelected = false;
   export let excludeMode = false;
   export let positionStatic = false;
@@ -66,6 +67,8 @@
       activityStatus = "bg-gray-200 dark:bg-gray-600";
     } else if (rowActive && !cellActive) {
       activityStatus = "bg-gray-100 dark:bg-gray-700";
+    } else if (colSelected) {
+      activityStatus = "bg-gray-50";
     } else {
       activityStatus = "surface";
     }
