@@ -343,10 +343,12 @@ export function formatMeasurePercentageDifference(
   value,
   method = "partsFormat"
 ) {
-  if (Math.abs(value * 100) < 0.1) {
+  if (Math.abs(value * 100) < 1 && value !== 0) {
     return method === "partsFormat"
-      ? { percentage: "%", neg: "", int: 0 }
-      : "0%";
+      ? { percent: "%", neg: "", int: "<1" }
+      : "<1%";
+  } else if (value === 0) {
+    return method === "partsFormat" ? { percent: "%", neg: "", int: 0 } : "0%";
   }
   const factory = new PerRangeFormatter([], {
     strategy: "perRange",
@@ -362,5 +364,6 @@ export function formatMeasurePercentageDifference(
     defaultMaxDigitsRight: 0,
     numberKind: NumberKind.PERCENT,
   });
+
   return factory[method](value);
 }

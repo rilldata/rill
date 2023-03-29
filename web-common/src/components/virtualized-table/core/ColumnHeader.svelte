@@ -24,6 +24,7 @@
   export let position: HeaderPosition = "top";
   export let enableResize = true;
   export let isSelected = false;
+  export let bgClass = "surface";
 
   const config: VirtualizedTableConfig = getContext("config");
   const dispatch = createEventDispatcher();
@@ -45,6 +46,7 @@
 
 <StickyHeader
   {enableResize}
+  {bgClass}
   on:reset-column-width={() => {
     dispatch("reset-column-size", { name });
   }}
@@ -76,7 +78,7 @@
         message: `copied column name "${name}" to clipboard`,
       });
     }}
-    class="
+    class=" 
            flex
            justify-stretch
            select-none
