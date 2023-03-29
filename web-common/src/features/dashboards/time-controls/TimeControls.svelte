@@ -8,7 +8,6 @@
   import {
     getAvailableComparisonsForTimeRange,
     getComparisonRange,
-    isComparisonInsideBounds,
   } from "@rilldata/web-common/lib/time/comparisons";
   import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
   import {
@@ -107,7 +106,11 @@
       baseTimeRange.start,
       baseTimeRange.end
     );
-    makeTimeSeriesTimeRangeAndUpdateAppState(baseTimeRange, timeGrain.grain);
+    makeTimeSeriesTimeRangeAndUpdateAppState(
+      baseTimeRange,
+      timeGrain.grain,
+      {}
+    );
   }
 
   function setTimeControlsFromUrl(allTimeRange: TimeRange) {
@@ -130,7 +133,9 @@
 
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
-      $dashboardStore?.selectedTimeRange.interval
+      $dashboardStore?.selectedTimeRange.interval,
+      // do not reset the comparison state when pullling from the URL
+      $dashboardStore?.selectedComparisonTimeRange
     );
   }
 
@@ -151,12 +156,18 @@
     };
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
-      $dashboardStore.selectedTimeRange?.interval
+      $dashboardStore.selectedTimeRange?.interval,
+      // reset the comparison range
+      {}
     );
   }
 
   function onSelectTimeGrain(timeGrain: V1TimeGrain) {
-    makeTimeSeriesTimeRangeAndUpdateAppState(baseTimeRange, timeGrain);
+    makeTimeSeriesTimeRangeAndUpdateAppState(
+      baseTimeRange,
+      timeGrain,
+      $dashboardStore?.selectedComparisonTimeRange
+    );
   }
 
   function onSelectComparisonRange(
@@ -173,7 +184,12 @@
 
   function makeTimeSeriesTimeRangeAndUpdateAppState(
     timeRange: TimeRange,
-    timeGrain: V1TimeGrain
+    timeGrain: V1TimeGrain,
+    /** we should only reset the comparison range when the user has explicitly chosen a new
+     * time range. Otherwise, the current comparison state should continue to be the
+     * source of truth.
+     */
+    comparisonTimeRange: DashboardTimeControls
   ) {
     const { name, start, end } = timeRange;
 
@@ -215,29 +231,45 @@
       interval: timeGrain,
     };
 
-    // reset comparisonOption to the default for the new time range.
-    comparisonOption = DEFAULT_TIME_RANGES[name]?.defaultComparison;
-    const comparisonTimeRange = getComparisonRange(
-      start,
-      end,
-      comparisonOption
-    );
-
-    const selectedComparisonTimeRange = {
-      ...comparisonTimeRange,
-      name: comparisonOption,
-    };
-
     cancelDashboardQueries(queryClient, metricViewName);
 
     metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
-    metricsExplorerStore.setSelectedComparisonRange(
-      metricViewName,
-      selectedComparisonTimeRange
-    );
+
+    // reset comparisonOption to the default for the new time range.
+
+    // if no name in comprisonTimeRange, set selectedComparisonTimeRange to default.
+    if (comparisonTimeRange !== undefined) {
+      let selectedComparisonTimeRange;
+      if (!comparisonTimeRange?.name) {
+        const comparisonOption = DEFAULT_TIME_RANGES[name]
+          ?.defaultComparison as TimeComparisonOption;
+        const range = getComparisonRange(start, end, comparisonOption);
+
+        selectedComparisonTimeRange = {
+          ...range,
+          name: comparisonOption,
+        };
+      } else if (comparisonTimeRange.name === TimeComparisonOption.CUSTOM) {
+        selectedComparisonTimeRange = comparisonTimeRange;
+      } else {
+        // variable time range of some kind.
+        const comparisonOption =
+          comparisonTimeRange.name as TimeComparisonOption;
+        const range = getComparisonRange(start, end, comparisonOption);
+
+        selectedComparisonTimeRange = {
+          ...range,
+          name: comparisonOption,
+        };
+      }
+
+      metricsExplorerStore.setSelectedComparisonRange(
+        metricViewName,
+        selectedComparisonTimeRange
+      );
+    }
   }
 
-  let comparisonOption;
   let isComparisonRangeAvailable;
   let availableComparisons;
 
@@ -246,17 +278,6 @@
     $dashboardStore?.selectedTimeRange?.start &&
     hasTimeSeries
   ) {
-    const { start, end } = $dashboardStore?.selectedTimeRange;
-
-    if (!comparisonOption) {
-      comparisonOption =
-        DEFAULT_TIME_RANGES[$dashboardStore?.selectedTimeRange?.name]
-          .defaultComparison;
-    }
-    if ($dashboardStore?.selectedComparisonTimeRange?.name) {
-      comparisonOption = $dashboardStore?.selectedComparisonTimeRange?.name;
-    }
-
     isComparisonRangeAvailable = isRangeInsideOther(
       allTimeRange.start,
       allTimeRange.end,
@@ -264,20 +285,16 @@
       $dashboardStore?.selectedComparisonTimeRange?.end
     );
 
-    console.log(
-      "isComparisonRangeAvailable",
-      isComparisonRangeAvailable,
-      allTimeRange,
-      $dashboardStore?.selectedComparisonTimeRange
-    );
-
     availableComparisons = getAvailableComparisonsForTimeRange(
       allTimeRange.start,
       allTimeRange.end,
-      start,
-      end,
+      $dashboardStore?.selectedTimeRange?.start,
+      $dashboardStore?.selectedTimeRange?.end,
       [...Object.values(TimeComparisonOption)],
-      [comparisonOption]
+      [
+        $dashboardStore?.selectedComparisonTimeRange
+          ?.name as TimeComparisonOption,
+      ]
     );
   }
 </script>
@@ -308,7 +325,7 @@
       boundaryEnd={allTimeRange.end}
       {metricViewName}
       showComparison={isComparisonRangeAvailable}
-      {comparisonOption}
+      comparisonOption={$dashboardStore?.selectedComparisonTimeRange?.name}
       comparisonOptions={availableComparisons}
     />
     <TimeGrainSelector

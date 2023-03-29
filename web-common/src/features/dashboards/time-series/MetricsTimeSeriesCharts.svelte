@@ -3,11 +3,7 @@
   import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
-  import {
-    $dashboardStoreEntity,
-    $dashboardStoreStore,
-    useDashboardStore,
-  } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import {
     humanizeDataType,
     NicelyFormattedTypes,
@@ -19,16 +15,9 @@
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
-  import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
-  import {
-    DEFAULT_TIME_RANGES,
-    TIME_GRAIN,
-  } from "@rilldata/web-common/lib/time/config";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { getOffset } from "@rilldata/web-common/lib/time/transforms";
-  import {
-    TimeComparisonOption,
-    TimeOffsetType,
-  } from "@rilldata/web-common/lib/time/types";
+  import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import {
     useQueryServiceMetricsViewTimeSeries,
     useQueryServiceMetricsViewTotals,
@@ -86,7 +75,9 @@
     $dashboardStore &&
     metaQuery &&
     $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching
+    !$metaQuery.isRefetching &&
+    allTimeRange?.start &&
+    $dashboardStore?.selectedTimeRange?.start
   ) {
     isComparisonRangeAvailable = isRangeInsideOther(
       allTimeRange?.start,
@@ -117,7 +108,7 @@
           ? $dashboardStore?.selectedComparisonTimeRange?.start.toISOString()
           : undefined,
         timeEnd: isComparisonRangeAvailable
-          ? $dashboardStore?.selectedComparisonTimeRange?.start.toISOString()
+          ? $dashboardStore?.selectedComparisonTimeRange?.end.toISOString()
           : undefined,
       }
     );

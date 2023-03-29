@@ -128,7 +128,8 @@ This component needs to do the following:
       on:click={() => {
         if (showComparison) toggleFloatingElement();
       }}
-      ><span class="font-normal">
+    >
+      <span class="font-normal">
         {#if !showComparison}
           <span class="italic text-gray-500">Time comparison not available</span
           >
@@ -140,13 +141,16 @@ This component needs to do the following:
     <Menu
       slot="floating-element"
       on:escape={toggleFloatingElement}
-      on:click-outside={toggleFloatingElement}
+      on:click-outside={() => onClickOutside(toggleFloatingElement)}
     >
       {#if showComparison}
-        {#each [...options] as option}
+        {#each options as option}
           {@const preset = TIME_COMPARISON[option.name]}
           <MenuItem
             selected={option.name === intermediateSelection}
+            on:before-select={() => {
+              intermediateSelection = option.name;
+            }}
             on:select={() => {
               onCompareRangeSelect(option.name);
               toggleFloatingElement();
@@ -184,8 +188,8 @@ This component needs to do the following:
             {minTimeGrain}
             on:apply={(e) => {
               onSelectCustomComparisonRange(
-                e.detail.start,
-                e.detail.end,
+                e.detail.startDate,
+                e.detail.endDate,
                 toggleFloatingElement
               );
             }}
