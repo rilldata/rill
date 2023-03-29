@@ -119,9 +119,9 @@ export interface V1GetOrganizationResponse {
 }
 
 export interface V1GetGithubRepoStatusResponse {
+  accessStatus?: GetGithubRepoStatusResponseAccessStatus;
   defaultBranch?: string;
   grantAccessUrl?: string;
-  hasAccess?: boolean;
 }
 
 export interface V1GetCurrentUserResponse {
@@ -185,3 +185,14 @@ export interface RpcStatus {
   details?: ProtobufAny[];
   message?: string;
 }
+
+export type GetGithubRepoStatusResponseAccessStatus =
+  typeof GetGithubRepoStatusResponseAccessStatus[keyof typeof GetGithubRepoStatusResponseAccessStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetGithubRepoStatusResponseAccessStatus = {
+  ACCESS_STATUS_UNSPECIFIED: "ACCESS_STATUS_UNSPECIFIED",
+  ACCESS_STATUS_REJECTED: "ACCESS_STATUS_REJECTED",
+  ACCESS_STATUS_REQUESTED: "ACCESS_STATUS_REQUESTED",
+  ACCESS_STATUS_GRANTED: "ACCESS_STATUS_GRANTED",
+} as const;

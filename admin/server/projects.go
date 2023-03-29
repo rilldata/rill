@@ -98,12 +98,12 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	// Get Github installation ID for the repo
-	installationID, ok, err := s.admin.GetUserGithubInstallation(ctx, claims.OwnerID(), req.GithubUrl)
+	installation, err := s.admin.GetUserGithubInstallation(ctx, claims.OwnerID(), req.GithubUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Github installation: %w", err)
 	}
 	// Check that the user has access to the installation
-	if !ok {
+	if !installation.HasAccess() {
 		return nil, fmt.Errorf("you have not granted Rill access to %q", req.GithubUrl)
 	}
 
@@ -125,7 +125,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProductionSlots:      int(req.ProductionSlots),
 		ProductionBranch:     req.ProductionBranch,
 		GithubURL:            &req.GithubUrl,
-		GithubInstallationID: &installationID,
+		GithubInstallationID: &installation.InstallationID,
 		ProductionVariables:  req.Variables,
 	})
 	if err != nil {
@@ -172,11 +172,11 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 
 	// If changing the Github URL, check the caller has access
 	if safeStr(proj.GithubURL) != req.GithubUrl {
-		_, ok, err := s.admin.GetUserGithubInstallation(ctx, claims.OwnerID(), req.GithubUrl)
+		installation, err := s.admin.GetUserGithubInstallation(ctx, claims.OwnerID(), req.GithubUrl)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get Github installation: %w", err)
 		}
-		if !ok {
+		if !installation.HasAccess() {
 			return nil, fmt.Errorf("you have not granted Rill access to %q", req.GithubUrl)
 		}
 	}

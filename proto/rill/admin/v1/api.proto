@@ -220,7 +220,13 @@ message GetGithubRepoStatusRequest {
 }
 
 message GetGithubRepoStatusResponse {
-  bool has_access = 1;
+  enum AccessStatus {
+    ACCESS_STATUS_UNSPECIFIED = 0;
+    ACCESS_STATUS_REJECTED = 1;
+    ACCESS_STATUS_REQUESTED = 2;
+    ACCESS_STATUS_GRANTED = 3;
+  }
+  AccessStatus access_status = 1;
   string grant_access_url = 2;
   string default_branch = 3;
 }

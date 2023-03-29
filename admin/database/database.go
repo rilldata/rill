@@ -85,7 +85,7 @@ type DB interface {
 	DeleteAuthCode(ctx context.Context, deviceCode string) error
 
 	FindUserGithubInstallation(ctx context.Context, userID string, installationID int64) (*UserGithubInstallation, error)
-	UpsertUserGithubInstallation(ctx context.Context, userID string, installationID int64) error
+	UpsertUserGithubInstallation(ctx context.Context, userID string, installationID int64, accessState AccessState) error
 	DeleteUserGithubInstallations(ctx context.Context, installationID int64) error
 
 	FindDeployments(ctx context.Context, projectID string) ([]*Deployment, error)
@@ -260,12 +260,27 @@ type AuthCode struct {
 	UpdatedOn     time.Time     `db:"updated_on"`
 }
 
+// AccessState is an enum representing the access state of the github installation
+type AccessState int
+
+const (
+	AccessStateUnspecified AccessState = 0
+	AccessStateRejected    AccessState = 1
+	AccessStateRequested   AccessState = 2
+	AccessStateGranted     AccessState = 3
+)
+
 // UserGithubInstallation represents a confirmed user relationship to an installation of our Github app
 type UserGithubInstallation struct {
-	ID             string    `db:"id"`
-	UserID         string    `db:"user_id"`
-	InstallationID int64     `db:"installation_id"`
-	CreatedOn      time.Time `db:"created_on"`
+	ID             string      `db:"id"`
+	UserID         string      `db:"user_id"`
+	InstallationID int64       `db:"installation_id"`
+	AccessState    AccessState `db:"access_state"`
+	CreatedOn      time.Time   `db:"created_on"`
+}
+
+func (u *UserGithubInstallation) HasAccess() bool {
+	return u != nil && u.AccessState == AccessStateGranted
 }
 
 // DeploymentStatus is an enum representing the state of a deployment

@@ -353,6 +353,14 @@ paths:
       tags:
         - AdminService
 definitions:
+  GetGithubRepoStatusResponseAccessStatus:
+    type: string
+    enum:
+      - ACCESS_STATUS_UNSPECIFIED
+      - ACCESS_STATUS_REJECTED
+      - ACCESS_STATUS_REQUESTED
+      - ACCESS_STATUS_GRANTED
+    default: ACCESS_STATUS_UNSPECIFIED
   protobufAny:
     type: object
     properties:
@@ -437,12 +445,12 @@ definitions:
   v1GetGithubRepoStatusResponse:
     type: object
     properties:
+      accessStatus:
+        $ref: '#/definitions/GetGithubRepoStatusResponseAccessStatus'
       defaultBranch:
         type: string
       grantAccessUrl:
         type: string
-      hasAccess:
-        type: boolean
   v1GetOrganizationResponse:
     type: object
     properties:

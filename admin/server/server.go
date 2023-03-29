@@ -48,6 +48,7 @@ type Options struct {
 type URLRegistry struct {
 	githubConnect            *url.URL
 	githubConnectRetry       *url.URL
+	githubConnectRequest     *url.URL
 	githubAppInstallationURL *url.URL
 }
 
@@ -74,13 +75,24 @@ func NewURLRegistry(opts *Options) (*URLRegistry, error) {
 
 	retryURL, err := url.Parse(retryURLString)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create github app installation URL: %w", err)
+		return nil, fmt.Errorf("failed to create retry URL: %w", err)
+	}
+
+	requestURLString, err := url.JoinPath(opts.FrontendURL, "/github/connect/request")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request URL: %w", err)
+	}
+
+	requestURL, err := url.Parse(requestURLString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request URL: %w", err)
 	}
 
 	return &URLRegistry{
 		githubConnect:            grantAccessURL,
 		githubConnectRetry:       retryURL,
 		githubAppInstallationURL: installationURL,
+		githubConnectRequest:     requestURL,
 	}, nil
 }
 
@@ -94,6 +106,10 @@ func (r *URLRegistry) GithubAppInstallationURL() url.URL {
 
 func (r *URLRegistry) GithubConnectRetry() url.URL {
 	return *r.githubConnectRetry
+}
+
+func (r *URLRegistry) GithubConnectRequest() url.URL {
+	return *r.githubConnectRequest
 }
 
 type Server struct {

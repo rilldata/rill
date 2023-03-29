@@ -338,9 +338,9 @@ func (c *connection) FindUserGithubInstallation(ctx context.Context, userID stri
 	return res, nil
 }
 
-func (c *connection) UpsertUserGithubInstallation(ctx context.Context, userID string, installationID int64) error {
+func (c *connection) UpsertUserGithubInstallation(ctx context.Context, userID string, installationID int64, accessState database.AccessState) error {
 	// TODO: Handle updated_on
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_github_installations (user_id, installation_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", userID, installationID)
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_github_installations (user_id, installation_id, access_state) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING", userID, installationID, accessState)
 	if err != nil {
 		return parseErr(err)
 	}

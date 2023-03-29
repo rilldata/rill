@@ -11,48 +11,49 @@ import (
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"go.uber.org/zap"
 )
 
 // ProcessGithubInstallation tracks a confirmed relationship between a user and an installation of the Github App.
-func (s *Service) ProcessUserGithubInstallation(ctx context.Context, userID string, installationID int64) error {
-	return s.DB.UpsertUserGithubInstallation(ctx, userID, installationID)
+func (s *Service) ProcessUserGithubInstallation(ctx context.Context, userID string, installationID int64, state adminv1.GetGithubRepoStatusResponse_AccessStatus) error {
+	return s.DB.UpsertUserGithubInstallation(ctx, userID, installationID, accessStatus(state))
 }
 
 // GetUserGithubInstallation returns a Github installation ID iff the Github App is installed on the repository AND we have a confirmed relationship between the user and that installation.
 // The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
-func (s *Service) GetUserGithubInstallation(ctx context.Context, userID, githubURL string) (int64, bool, error) {
+func (s *Service) GetUserGithubInstallation(ctx context.Context, userID, githubURL string) (*database.UserGithubInstallation, error) {
 	account, repo, ok := gitutil.SplitGithubURL(githubURL)
 	if !ok {
-		return 0, false, fmt.Errorf("invalid Github URL %q", githubURL)
+		return nil, fmt.Errorf("invalid Github URL %q", githubURL)
 	}
 
 	installation, resp, err := s.Github.Apps.FindRepositoryInstallation(ctx, account, repo)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
 			// We don't have an installation on the repo
-			return 0, false, nil
+			return nil, nil
 		}
-		return 0, false, fmt.Errorf("failed to lookup repo info: %w", err)
+		return nil, fmt.Errorf("failed to lookup repo info: %w", err)
 	}
 
 	installationID := installation.GetID()
 	if installationID == 0 {
 		// Do we have to check for this?
-		return 0, false, fmt.Errorf("received invalid installation from Github")
+		return nil, fmt.Errorf("received invalid installation from Github")
 	}
 
-	_, err = s.DB.FindUserGithubInstallation(ctx, userID, installationID)
+	u, err := s.DB.FindUserGithubInstallation(ctx, userID, installationID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// The user doesn't have access to the installation
-			return 0, false, nil
+			return nil, nil
 		}
-		return 0, false, err // Unexpected error
+		return nil, err // Unexpected error
 	}
 
 	// The user has access to the installation
-	return installationID, true, nil
+	return u, nil
 }
 
 // LookupGithubRepo calls the Github API using an installation token to get information about a Github repo.
@@ -162,4 +163,17 @@ func (s *Service) githubInstallationClient(installationID int64) (*github.Client
 		return nil, err
 	}
 	return github.NewClient(&http.Client{Transport: itr}), nil
+}
+
+func accessStatus(s adminv1.GetGithubRepoStatusResponse_AccessStatus) database.AccessState {
+	switch s {
+	case adminv1.GetGithubRepoStatusResponse_ACCESS_STATUS_REJECTED:
+		return database.AccessStateRejected
+	case adminv1.GetGithubRepoStatusResponse_ACCESS_STATUS_REQUESTED:
+		return database.AccessStateRequested
+	case adminv1.GetGithubRepoStatusResponse_ACCESS_STATUS_GRANTED:
+		return database.AccessStateGranted
+	default:
+		return database.AccessStateUnspecified
+	}
 }

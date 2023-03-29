@@ -3216,7 +3216,7 @@ func (m *GetGithubRepoStatusResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for HasAccess
+	// no validation rules for AccessStatus
 
 	// no validation rules for GrantAccessUrl
 

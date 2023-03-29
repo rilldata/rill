@@ -78,8 +78,14 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
+			// user has already requested for access from admin
+			if ghRes.AccessStatus == adminv1.GetGithubRepoStatusResponse_ACCESS_STATUS_REQUESTED {
+				fmt.Printf("You have already requested access to the repository and admin is yet to grant it\n\n")
+				return nil
+			}
+
 			// If the user has not already granted access, open browser and poll for access
-			if !ghRes.HasAccess {
+			if ghRes.AccessStatus != adminv1.GetGithubRepoStatusResponse_ACCESS_STATUS_GRANTED {
 				// Print instructions to grant access
 				fmt.Printf("Rill projects deploy continuously when you push changes to Github.\n\n")
 				fmt.Printf("Open this URL in your browser to grant Rill access to your Github repository:\n\n")
@@ -107,7 +113,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 						return err
 					}
 
-					if pollRes.HasAccess {
+					if pollRes.AccessStatus == adminv1.GetGithubRepoStatusResponse_ACCESS_STATUS_GRANTED {
 						// Success
 						ghRes = pollRes
 						break

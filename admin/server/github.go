@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-github/v50/github"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -24,33 +25,39 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 	}
 
 	// Check whether user has granted access
-	installationID, ok, err := s.admin.GetUserGithubInstallation(ctx, claims.OwnerID(), req.GithubUrl)
+	installation, err := s.admin.GetUserGithubInstallation(ctx, claims.OwnerID(), req.GithubUrl)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to check Github access: %s", err.Error())
 	}
 
 	// If the user has not granted access, return instructions for granting access
-	if !ok {
+	if installation == nil {
 		grantAccessURL := s.urls.GithubConnect()
 		qry := grantAccessURL.Query()
 		qry.Set("remote", req.GithubUrl)
 		grantAccessURL.RawQuery = qry.Encode()
 
 		res := &adminv1.GetGithubRepoStatusResponse{
-			HasAccess:      false,
+			AccessStatus:   adminv1.GetGithubRepoStatusResponse_ACCESS_STATUS_UNSPECIFIED,
 			GrantAccessUrl: grantAccessURL.String(),
 		}
 		return res, nil
 	}
 
+	if installation.AccessState == database.AccessStateRequested {
+		return &adminv1.GetGithubRepoStatusResponse{
+			AccessStatus: adminv1.GetGithubRepoStatusResponse_ACCESS_STATUS_REQUESTED,
+		}, nil
+	}
+
 	// The user has granted access. Get repo info and return.
-	repo, err := s.admin.LookupGithubRepo(ctx, installationID, req.GithubUrl)
+	repo, err := s.admin.LookupGithubRepo(ctx, installation.InstallationID, req.GithubUrl)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	res := &adminv1.GetGithubRepoStatusResponse{
-		HasAccess:     true,
+		AccessStatus:  adminv1.GetGithubRepoStatusResponse_ACCESS_STATUS_GRANTED,
 		DefaultBranch: *repo.DefaultBranch,
 	}
 	return res, nil
@@ -117,7 +124,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 	// Extract info from query string
 	qry := r.URL.Query()
 	setupAction := qry.Get("setup_action")
-	if setupAction != "install" && setupAction != "update" { // TODO: Also handle "request"
+	if setupAction != "install" && setupAction != "update" && setupAction != "request" {
 		http.Error(w, fmt.Sprintf("unexpected setup_action=%q", setupAction), http.StatusBadRequest)
 		return
 	}
@@ -135,14 +142,14 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
+	state := accessState(setupAction)
 	// Associate the user with the installation
-	err = s.admin.ProcessUserGithubInstallation(r.Context(), claims.OwnerID(), int64(installationID))
+	err = s.admin.ProcessUserGithubInstallation(r.Context(), claims.OwnerID(), int64(installationID), state)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to track github install: %s", err), http.StatusInternalServerError)
 		return
 	}
 
-	// Verify that user installed the app on the right repo and we have access now
 	remoteURL := qry.Get("state")
 	account, repo, ok := gitutil.SplitGithubURL(remoteURL)
 	if !ok {
@@ -150,6 +157,17 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
+	if state == adminv1.GetGithubRepoStatusResponse_ACCESS_STATUS_REQUESTED {
+		// access requested
+		redirectURL := s.urls.GithubConnectRequest()
+		qry := redirectURL.Query()
+		qry.Set("remote", remoteURL)
+		redirectURL.RawQuery = qry.Encode()
+		http.Redirect(w, r, redirectURL.String(), http.StatusTemporaryRedirect)
+		return
+	}
+
+	// Verify that user installed/requested the app on the right repo and we have access now
 	_, resp, err := s.admin.Github.Apps.FindRepositoryInstallation(r.Context(), account, repo)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
@@ -160,6 +178,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 			qry.Set("remote", remoteURL)
 			redirectURL.RawQuery = qry.Encode()
 			http.Redirect(w, r, redirectURL.String(), http.StatusTemporaryRedirect)
+			return
 		}
 		http.Error(w, fmt.Sprintf("failed to check github repo status: %s", err), http.StatusInternalServerError)
 		return
@@ -197,4 +216,17 @@ func (s *Server) githubWebhook(w http.ResponseWriter, r *http.Request, pathParam
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func accessState(state string) adminv1.GetGithubRepoStatusResponse_AccessStatus {
+	switch state {
+	case "install":
+		return adminv1.GetGithubRepoStatusResponse_ACCESS_STATUS_GRANTED
+	case "update":
+		return adminv1.GetGithubRepoStatusResponse_ACCESS_STATUS_GRANTED
+	case "request":
+		return adminv1.GetGithubRepoStatusResponse_ACCESS_STATUS_REQUESTED
+	default:
+		return adminv1.GetGithubRepoStatusResponse_ACCESS_STATUS_UNSPECIFIED
+	}
 }
