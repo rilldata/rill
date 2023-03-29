@@ -8,19 +8,19 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/cli/go-gh"
+	"github.com/cli/go-gh/pkg/api"
 	"github.com/fatih/color"
 	"github.com/go-git/go-git/v5"
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/cmd/project"
-	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
-	"github.com/rilldata/rill/cli/pkg/deviceauth"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/variable"
@@ -39,10 +39,12 @@ type connectOptions struct {
 	Public      bool
 	Variables   []string
 
-	// projectPath string
-	region string
-	// dbDriver    string should we take input ??
-	dbDSN string
+	// projectPath string input taken interactively
+	// no input taken from user for below
+	region   string
+	dbDriver string
+	dbDSN    string
+	slots    int64
 }
 
 // ConnectCmd is the guided tour for connecting rill projects to rill cloud.
@@ -55,20 +57,6 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			warn := color.New(color.Bold).Add(color.FgYellow)
 			info := color.New(color.Bold).Add(color.FgWhite)
 			success := color.New(color.Bold).Add(color.FgGreen)
-
-			// log in if not logged in
-			if cfg.AdminTokenDefault == "" {
-				warn.Println("Looks like you are not authenticated with rill cloud!!")
-				if !confirmPrompt("Do you want to authenticate with rill cloud?", true) {
-					info.Println("GoodBye!!!")
-					return nil
-				}
-				if err := loginPrompt(ctx, cfg); err != nil {
-					exitWithFailure(err)
-				}
-				success.Println("you are now authenticated")
-			}
-
 			// Create admin client
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -76,38 +64,59 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			// select org
-			org := ""
-			if confirmPrompt("Do you want to create a new org for this project?", false) {
-				if err := createOrgPrompt(ctx, cfg, client); err != nil {
-					return err
+			// log in if not logged in
+			if cfg.AdminTokenDefault == "" {
+				warn.Println("You are not authenticated with rill cloud!!")
+				if !cmdutil.ConfirmPrompt("Press enter to signup or login", true) {
+					info.Println("GoodBye!!!")
+					return nil
 				}
-				org, err = dotrill.GetDefaultOrg()
-				if err != nil {
-					return err
+
+				// NOTE : calling commands within commands has both pros and cons
+				// PRO : No duplicated code
+				// CON : Need to make sure that UX under sub command verifies with UX on this command
+				loginCmd := auth.LoginCmd(cfg)
+				// command on failure prints usage by default. Need to stop since user didn't run this command
+				loginCmd.SilenceUsage = true
+				loginCmd.SetContext(ctx)
+				if err := loginCmd.RunE(loginCmd, nil); err != nil {
+					exitWithFailure(err)
 				}
 			} else {
-				// select org
-				orgs, defaultOrg, err := listOrganisations(client)
+				// switch is already part of login cmd so running this only when user is already logged in
+				defaultOrg, err := dotrill.GetDefaultOrg()
 				if err != nil {
 					return err
 				}
 
-				if len(orgs) == 0 {
-					org = orgs[0]
-				} else {
-					org = selectPrompt("Listing your orgs. Please select where do you want to deploy project?", orgs, defaultOrg)
+				multipleOrgs, err := multipleOrgs(client)
+				if err != nil {
+					return fmt.Errorf("listing orgs failed with error %w", err)
+				}
+
+				if multipleOrgs {
+					msg := fmt.Sprintf("This project will be deployed under %s. Press Y to confirm and N to select a different org", defaultOrg)
+					if !cmdutil.ConfirmPrompt(msg, true) {
+						switchCmd := org.SwitchCmd(cfg)
+						switchCmd.SilenceUsage = true
+						if err := switchCmd.ExecuteContext(ctx); err != nil {
+							exitWithFailure(err)
+						}
+					}
 				}
 			}
-			info.Printf("your current org is %v\n", org)
 
-			// verify current directory has rill project
+			org, err := dotrill.GetDefaultOrg()
+			if err != nil {
+				return err
+			}
+
 			path, err := os.Getwd()
 			if err != nil {
 				return err
 			}
 
-			githubURL := ""
+			// verify current directory has rill project
 			if !hasRillProject(path) {
 				warn.Printf("\nLooks like current path %s doesn't have a valid rill project. Please select correct dir.\n", path)
 				warn.Printf("In case there is no valid rill project present, Please use `rill init` to create an empty rill project\n\n")
@@ -116,7 +125,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// verify project dir is a git repo with remote on github
-			githubURL, err = extractRemote(path)
+			githubURL, err := extractRemote(path)
 			if err != nil {
 				if !errors.Is(err, gitutil.ErrGitRemoteNotFound) && !errors.Is(err, git.ErrRepositoryNotExists) {
 					return err
@@ -125,8 +134,11 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				warn.Println("\nYour project is not pushed to github")
 				warn.Printf("You can exit cli, push project to github and connect later or continue to push project to github repo\n\n")
 
-				if !confirmPrompt("Confirm to push repo to github", false) {
-					return errUserCancelledGitFlow
+				if !cmdutil.ConfirmPrompt("Confirm to push repo to github", false) {
+					info.Print(`Rill projects deploy continuously when you push changes to Github.
+						Therefore, your project must be on Github before you connect it to Rill.
+						Follow these steps to push your project to Github.`)
+					info.Print(githubSetupMsg)
 				}
 
 				if !commandExists("gh") {
@@ -147,7 +159,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			// Check for access to the Github URL
 			ghRes, err := project.VerifyAccess(ctx, client, githubURL)
 			if err != nil {
-				return err
+				return fmt.Errorf("access to github repo failed with error %w", err)
 			}
 
 			// We now have access to the Github repo
@@ -161,22 +173,25 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
+			// fixing these for now
+			opts.dbDriver = "duckdb"
+			opts.slots = 2
 			// Create the project (automatically deploys prod branch)
 			projRes, err := client.CreateProject(ctx, &adminv1.CreateProjectRequest{
 				OrganizationName:     org,
 				Name:                 opts.Name,
 				Description:          opts.Description,
 				Region:               opts.region,
-				ProductionOlapDriver: "duckdb",
+				ProductionOlapDriver: opts.dbDriver,
 				ProductionOlapDsn:    opts.dbDSN,
-				ProductionSlots:      2,
+				ProductionSlots:      opts.slots,
 				ProductionBranch:     opts.ProdBranch,
 				Public:               opts.Public,
 				GithubUrl:            githubURL,
 				Variables:            parsedVariables,
 			})
 			if err != nil {
-				return err
+				return fmt.Errorf("create project failed with error %w", err)
 			}
 
 			// Success!
@@ -189,125 +204,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 	return cmd
 }
 
-func loginPrompt(ctx context.Context, cfg *config.Config) error {
-	// In production, the REST and gRPC endpoints are the same, but in development, they're served on different ports.
-	// We plan to move to connect.build for gRPC, which will allow us to serve both on the same port in development as well.
-	// Until we make that change, this is a convenient hack for local development (assumes gRPC on port 9090 and REST on port 8080).
-	authURL := cfg.AdminURL
-	if strings.Contains(authURL, "http://localhost:9090") {
-		authURL = "http://localhost:8080"
-	}
-
-	authenticator, err := deviceauth.New(authURL)
-	if err != nil {
-		return err
-	}
-
-	deviceVerification, err := authenticator.VerifyDevice(ctx)
-	if err != nil {
-		return err
-	}
-
-	bold := color.New(color.Bold)
-	bold.Printf("\nConfirmation Code: ")
-	boldGreen := color.New(color.FgGreen).Add(color.Bold)
-	boldGreen.Fprintln(color.Output, deviceVerification.UserCode)
-
-	bold.Printf("\nOpen this URL in your browser to confirm the login: %s\n\n", deviceVerification.VerificationCompleteURL)
-
-	// TODO :: we are asking to open browser and opening as well ??
-	_ = browser.Open(deviceVerification.VerificationCompleteURL)
-
-	res1, err := authenticator.GetAccessTokenForDevice(ctx, deviceVerification)
-	if err != nil {
-		return err
-	}
-
-	if err := dotrill.SetAccessToken(res1.AccessToken); err != nil {
-		return err
-	}
-	boldGreen.Printf("\nLogged in successfully")
-	return nil
-}
-
-func listOrganisations(c *client.Client) ([]string, string, error) {
-	res, err := c.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
-	if err != nil {
-		return nil, "", err
-	}
-
-	defaultOrg, err := dotrill.GetDefaultOrg()
-	if err != nil {
-		return nil, "", err
-	}
-
-	defaultFound := false
-	names := make([]string, len(res.Organizations))
-	for i, org := range res.Organizations {
-		if org.Name == defaultOrg {
-			defaultFound = true
-		}
-		names[i] = org.Name
-	}
-	if !defaultFound {
-		defaultOrg = ""
-	}
-	return names, defaultOrg, nil
-}
-
-func createOrgPrompt(ctx context.Context, cfg *config.Config, c *client.Client) error {
-	// the questions to ask
-	qs := []*survey.Question{
-		{
-			Name:   "name",
-			Prompt: &survey.Input{Message: "Please specify a org name"},
-			Validate: func(any interface{}) error {
-				org := any.(string)
-				resp, err := c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: org})
-				if err != nil {
-					if st, ok := status.FromError(err); ok {
-						if st.Code() == codes.InvalidArgument { // todo :: change to not found in admin server
-							return nil
-						}
-					}
-					return err
-				}
-				if resp.Organization.Name == org {
-					// this should always be true but adding this check from completeness POV
-					return fmt.Errorf("project with name %v already exists in the org", org)
-				}
-				return nil
-			},
-		},
-		{
-			Name:     "description",
-			Prompt:   &survey.Input{Message: "Please specify a org description", Default: ""},
-			Validate: survey.Required,
-		},
-	}
-
-	req := &adminv1.CreateOrganizationRequest{}
-	// perform the questions
-	err := survey.Ask(qs, req)
-	if err != nil {
-		return err
-	}
-
-	org, err := c.CreateOrganization(context.Background(), req)
-	if err != nil {
-		return err
-	}
-
-	// Switching to the created org
-	return dotrill.SetDefaultOrg(org.Organization.Name)
-}
-
 func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubURL, prodBranch string) (*connectOptions, error) {
-	v := validator{
-		ctx:     ctx,
-		client:  c,
-		orgName: orgName,
-	}
 	projectName := path.Base(githubURL)
 
 	questions := []*survey.Question{
@@ -317,7 +214,23 @@ func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubUR
 				Message: "What is the project name?",
 				Default: projectName,
 			},
-			Validate: v.validateProjectName,
+			Validate: func(any interface{}) error {
+				projectName := any.(string)
+				resp, err := c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: orgName, Name: projectName})
+				if err != nil {
+					if st, ok := status.FromError(err); ok {
+						if st.Code() == codes.InvalidArgument { // todo :: change to not found in admin
+							return nil
+						}
+					}
+					return err
+				}
+				if resp.Project.Name == projectName {
+					// this should always be true but adding this check from completeness POV
+					return fmt.Errorf("project with name %v already exists in the org", projectName)
+				}
+				return nil
+			},
 		},
 		{
 			Name: "description",
@@ -421,7 +334,7 @@ func repoCreatePrompt(dir string, info *color.Color) error {
 	repo, err := git.PlainOpen(dir)
 	if err != nil {
 		if errors.Is(err, git.ErrRepositoryNotExists) {
-			if !confirmPrompt("Do you want to create a git repository?", true) {
+			if !cmdutil.ConfirmPrompt("Do you want to create a git repository?", true) {
 				return errUserCancelledGitFlow
 			}
 			repo, err = git.PlainInit(dir, false)
@@ -436,32 +349,54 @@ func repoCreatePrompt(dir string, info *color.Color) error {
 		return err
 	}
 
-	fileGlob := ""
-	fileGlobInput := &survey.Input{
-		Message: "What files do you want to commit?",
-		Default: ".",
-	}
-	if err := survey.AskOne(fileGlobInput, &fileGlob); err != nil {
-		return err
-	}
-	if err := w.AddGlob(fileGlob); err != nil {
+	repoStatus, err := w.Status()
+	if err != nil {
 		return err
 	}
 
-	// todo :: show staging area
-	if !confirmPrompt("Do you want to commit added files?", true) {
+	if !repoStatus.IsClean() {
+		if hasUncommittedFiles(repoStatus) {
+			fileGlob := ""
+			fileGlobInput := &survey.Input{
+				Message: "What files do you want to commit?",
+				Default: ".",
+			}
+			if err := survey.AskOne(fileGlobInput, &fileGlob); err != nil {
+				return err
+			}
+			if err := w.AddGlob(fileGlob); err != nil {
+				return err
+			}
+		}
+
+		msg := fmt.Sprintf("Do you want to commit modified files?\n%s\n", repoStatus.String())
+		if !cmdutil.ConfirmPrompt(msg, true) {
+			return errUserCancelledGitFlow
+		}
+
+		if _, err := w.Commit("files auto committed by rill cli", &git.CommitOptions{}); err != nil {
+			return err
+		}
+	}
+
+	if !cmdutil.ConfirmPrompt("Do you want to push committed files?", true) {
 		return errUserCancelledGitFlow
 	}
 
-	if _, err := w.Commit("files auto committed by rill cli", &git.CommitOptions{}); err != nil {
+	ghClient, err := gh.GQLClient(nil)
+	if err != nil {
+		return err
+	}
+	user, orgs, err := currentLoginNameAndOrgs(ghClient)
+	if err != nil {
 		return err
 	}
 
-	if !confirmPrompt("Do you want to push committed files?", true) {
-		return errUserCancelledGitFlow
-	}
+	name := cmdutil.InputPrompt("Repository name", filepath.Base(dir))
+	orgs = append(orgs, user)
+	owner := cmdutil.SelectPrompt("Repository owner", orgs, user)
 
-	stdout, _, err := gh.Exec("repo", "create", "--source=../test", "--public", "--push")
+	stdout, _, err := gh.Exec("repo", "create", fmt.Sprintf("%s/%s", owner, name), fmt.Sprintf("--source=%s", dir), "--private", "--push")
 	if err != nil {
 		return err
 	}
@@ -469,35 +404,13 @@ func repoCreatePrompt(dir string, info *color.Color) error {
 	return nil
 }
 
-func selectPrompt(msg string, options []string, def string) string {
-	prompt := &survey.Select{
-		Message: msg,
-		Options: options,
-		Default: def,
-		Description: func(value string, index int) string {
-			if value == def {
-				return "current default"
-			}
-			return ""
-		},
+func multipleOrgs(c *client.Client) (bool, error) {
+	res, err := c.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{PageSize: 2})
+	if err != nil {
+		return false, err
 	}
-	result := def
-	if err := survey.AskOne(prompt, &result); err != nil {
-		exitWithFailure(err)
-	}
-	return result
-}
 
-func confirmPrompt(msg string, def bool) bool {
-	prompt := &survey.Confirm{
-		Message: msg,
-		Default: def,
-	}
-	result := def
-	if err := survey.AskOne(prompt, &result); err != nil {
-		exitWithFailure(err)
-	}
-	return result
+	return len(res.Organizations) > 1, nil
 }
 
 func extractRemote(remotePath string) (string, error) {
@@ -525,28 +438,38 @@ func commandExists(cmd string) bool {
 	return err == nil
 }
 
-type validator struct {
-	ctx     context.Context
-	client  *client.Client
-	orgName string
+func currentLoginNameAndOrgs(ghClient api.GQLClient) (string, []string, error) {
+	type organization struct {
+		Login string
+	}
+
+	var query struct {
+		Viewer struct {
+			Login         string
+			Organizations struct {
+				Nodes []organization
+			} `graphql:"organizations(first: 100)"`
+		}
+	}
+	err := ghClient.Query("UserCurrent", &query, nil)
+	if err != nil {
+		return "", nil, err
+	}
+	orgNames := []string{}
+	for _, org := range query.Viewer.Organizations.Nodes {
+		orgNames = append(orgNames, org.Login)
+	}
+	return query.Viewer.Login, orgNames, err
 }
 
-func (v *validator) validateProjectName(val interface{}) error {
-	projectName := val.(string)
-	resp, err := v.client.GetProject(v.ctx, &adminv1.GetProjectRequest{OrganizationName: v.orgName, Name: projectName})
-	if err != nil {
-		if st, ok := status.FromError(err); ok {
-			if st.Code() == codes.InvalidArgument { // todo :: change to not found
-				return nil
-			}
+func hasUncommittedFiles(s git.Status) bool {
+	for _, status := range s {
+		if status.Worktree != git.Unmodified {
+			return true
 		}
-		return err
 	}
-	if resp.Project.Name == projectName {
-		// this should always be true but adding this check from completeness POV
-		return fmt.Errorf("project with name %v already exists in the org", projectName)
-	}
-	return nil
+
+	return false
 }
 
 const (

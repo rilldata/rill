@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/lensesio/tableprinter"
@@ -90,6 +91,7 @@ func Client(cfg *config.Config) (*client.Client, error) {
 	return c, nil
 }
 
+// TODO :: check if this can be removed and survey/v2 can be used for all cases
 func PromptGetSelect(items []string, label string) string {
 	prompt := promptui.Select{
 		Label: label,
@@ -102,5 +104,45 @@ func PromptGetSelect(items []string, label string) string {
 		os.Exit(1)
 	}
 
+	return result
+}
+
+func SelectPrompt(msg string, options []string, def string) string {
+	prompt := &survey.Select{
+		Message: msg,
+		Options: options,
+		Default: def,
+	}
+	result := def
+	if err := survey.AskOne(prompt, &result); err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
+	return result
+}
+
+func ConfirmPrompt(msg string, def bool) bool {
+	prompt := &survey.Confirm{
+		Message: msg,
+		Default: def,
+	}
+	result := def
+	if err := survey.AskOne(prompt, &result); err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
+	return result
+}
+
+func InputPrompt(msg, def string) string {
+	prompt := &survey.Input{
+		Message: msg,
+		Default: def,
+	}
+	result := def
+	if err := survey.AskOne(prompt, &result); err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
 	return result
 }
