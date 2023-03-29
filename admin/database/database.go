@@ -99,13 +99,13 @@ type DB interface {
 
 	FindOrganizationMembers(ctx context.Context, orgID string) ([]*User, error)
 	FindOrganizationMembersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
-	AddOrganizationMember(ctx context.Context, orgID, userID, roleID string) error
-	RemoveOrganizationMember(ctx context.Context, orgID, userID string) error
+	InsertOrganizationMember(ctx context.Context, orgID, userID, roleID string) error
+	DeleteOrganizationMember(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberRole(ctx context.Context, orgID, userID, roleID string) error
 
 	FindProjectMembers(ctx context.Context, projectID string) ([]*User, error)
-	AddProjectMember(ctx context.Context, projectID, userID, roleID string) error
-	RemoveProjectMember(ctx context.Context, projectID, userID string) error
+	InsertProjectMember(ctx context.Context, projectID, userID, roleID string) error
+	DeleteProjectMember(ctx context.Context, projectID, userID string) error
 	UpdateProjectMemberRole(ctx context.Context, projectID, userID, roleID string) error
 
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
@@ -114,16 +114,16 @@ type DB interface {
 	ResolveUserOrganizationRole(ctx context.Context, userID, orgID string) (*OrganizationRole, error)
 	// ResolveUserProjectRole resolves the role of a user in a project.
 	ResolveUserProjectRole(ctx context.Context, userID, projectID string) (*ProjectRole, error)
-	// ResolveUserGroupOrgRoles resolves the roles of user groups of the user in an organization.
-	ResolveUserGroupOrgRoles(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
-	// ResolveUserGroupProjectRoles resolves the roles of user groups of the user in a project.
-	ResolveUserGroupProjectRoles(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
+	// ResolveUsergroupOrgRoles resolves the roles of user groups of the user in an organization.
+	ResolveUsergroupOrgRoles(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
+	// ResolveUsergroupProjectRoles resolves the roles of user groups of the user in a project.
+	ResolveUsergroupProjectRoles(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
 
-	InsertUserGroup(ctx context.Context, name, orgID, description string) (*UserGroup, error)
-	UpdateOrganizationAllUserGroup(ctx context.Context, orgID, groupID string) (*Organization, error)
-	AddUserGroupMember(ctx context.Context, userID, groupID string) error
-	AddUserGroupProjectRole(ctx context.Context, groupID, projectID, roleID string) error
-	FindUserGroups(ctx context.Context, userID, orgID string) ([]*UserGroup, error)
+	InsertUsergroup(ctx context.Context, name, orgID string) (*Usergroup, error)
+	UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
+	InsertUsergroupMember(ctx context.Context, userID, groupID string) error
+	InsertProjectUsergroup(ctx context.Context, groupID, projectID, roleID string) error
+	FindUsergroups(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -156,12 +156,12 @@ const (
 
 // Organization represents a tenant.
 type Organization struct {
-	ID          string
-	Name        string
-	Description string
-	CreatedOn   time.Time `db:"created_on"`
-	UpdatedOn   time.Time `db:"updated_on"`
-	AllGroupID  *string   `db:"all_group_id"`
+	ID             string
+	Name           string
+	Description    string
+	CreatedOn      time.Time `db:"created_on"`
+	UpdatedOn      time.Time `db:"updated_on"`
+	AllUserGroupID *string   `db:"all_usergroup_id"`
 }
 
 // Project represents one Git connection.
@@ -344,15 +344,15 @@ type RuntimeSlotsUsed struct {
 }
 
 type OrganizationRole struct {
-	ID                 string `db:"id"`
-	Name               string
-	ReadOrganization   bool `db:"read_org"`
-	ManageOrganization bool `db:"manage_org"`
-	ReadProjects       bool `db:"read_projects"`
-	CreateProjects     bool `db:"create_projects"`
-	ManageProjects     bool `db:"manage_projects"`
-	ReadOrgMembers     bool `db:"read_org_members"`
-	ManageOrgMembers   bool `db:"manage_org_members"`
+	ID               string `db:"id"`
+	Name             string
+	ReadOrg          bool `db:"read_org"`
+	ManageOrg        bool `db:"manage_org"`
+	ReadProjects     bool `db:"read_projects"`
+	CreateProjects   bool `db:"create_projects"`
+	ManageProjects   bool `db:"manage_projects"`
+	ReadOrgMembers   bool `db:"read_org_members"`
+	ManageOrgMembers bool `db:"manage_org_members"`
 }
 
 type ProjectRole struct {
@@ -369,17 +369,16 @@ type ProjectRole struct {
 }
 
 const (
-	RoleIDOrgAdmin            = "12345678-0000-0000-0000-000000000001"
-	RoleIDOrgCollaborator     = "12345678-0000-0000-0000-000000000002"
-	RoleIDOrgReader           = "12345678-0000-0000-0000-000000000003"
-	RoleIDProjectAdmin        = "12345678-0000-0000-0000-000000000001"
-	RoleIDProjectCollaborator = "12345678-0000-0000-0000-000000000002"
-	RoleIDProjectReader       = "12345678-0000-0000-0000-000000000003"
+	RoleIDOrgAdmin            = "12345678-0000-0000-0000-000000000011"
+	RoleIDOrgCollaborator     = "12345678-0000-0000-0000-000000000012"
+	RoleIDOrgReader           = "12345678-0000-0000-0000-000000000013"
+	RoleIDProjectAdmin        = "12345678-0000-0000-0000-000000000021"
+	RoleIDProjectCollaborator = "12345678-0000-0000-0000-000000000022"
+	RoleIDProjectReader       = "12345678-0000-0000-0000-000000000023"
 )
 
-type UserGroup struct {
+type Usergroup struct {
 	ID          string `db:"id"`
 	OrgID       string `db:"org_id"`
 	DisplayName string `db:"display_name"`
-	Description string `db:"description"`
 }

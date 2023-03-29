@@ -30,7 +30,7 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 	if err != nil {
 		return nil, err
 	}
-	err = s.DB.AddUserGroupProjectRole(ctx, *org.AllGroupID, proj.ID, database.RoleIDProjectCollaborator)
+	err = s.DB.InsertProjectUsergroup(ctx, *org.AllUserGroupID, proj.ID, database.RoleIDProjectCollaborator)
 	if err != nil {
 		return nil, err
 	}

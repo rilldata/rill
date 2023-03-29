@@ -99,9 +99,9 @@ func (c *authTokenClaims) CanOrganization(ctx context.Context, orgID string, p O
 		}
 		switch p {
 		case ReadOrg:
-			return role.ReadOrganization
+			return role.ReadOrg
 		case ManageOrg:
-			return role.ManageOrganization
+			return role.ManageOrg
 		case ReadProjects:
 			return role.ReadProjects
 		case CreateProjects:
@@ -116,7 +116,7 @@ func (c *authTokenClaims) CanOrganization(ctx context.Context, orgID string, p O
 			panic(fmt.Errorf("unexpected organization permission %q", p))
 		}
 	case authtoken.TypeService:
-		return false
+		panic(errors.New("service tokens not supported"))
 	default:
 		panic(fmt.Errorf("unexpected token type %q", t))
 	}
@@ -149,12 +149,12 @@ func (c *authTokenClaims) CanProject(ctx context.Context, projectID string, p Pr
 		case ManageProjectMembers:
 			return role.ManageProjectMembers
 		default:
-			// TODO: log error
-			return false
+			panic(fmt.Errorf("unexpected organization permission %q", p))
 		}
+	case authtoken.TypeService:
+		panic(errors.New("service tokens not supported"))
 	default:
-		// TODO: log error
-		return false
+		panic(fmt.Errorf("unexpected token type %q", t))
 	}
 }
 
@@ -170,7 +170,7 @@ func (c *authTokenClaims) composeOrgPermissions(ctx context.Context, orgID strin
 	if directRole != nil {
 		composite = unionOrgRoles(composite, directRole)
 	}
-	groupRoles, err := c.admin.DB.ResolveUserGroupOrgRoles(ctx, c.token.OwnerID(), orgID)
+	groupRoles, err := c.admin.DB.ResolveUsergroupOrgRoles(ctx, c.token.OwnerID(), orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -183,13 +183,13 @@ func (c *authTokenClaims) composeOrgPermissions(ctx context.Context, orgID strin
 
 func unionOrgRoles(a, b *database.OrganizationRole) *database.OrganizationRole {
 	return &database.OrganizationRole{
-		ReadOrganization:   a.ReadOrganization || b.ReadOrganization,
-		ManageOrganization: a.ManageOrganization || b.ManageOrganization,
-		ReadProjects:       a.ReadProjects || b.ReadProjects,
-		CreateProjects:     a.CreateProjects || b.CreateProjects,
-		ManageProjects:     a.ManageProjects || b.ManageProjects,
-		ReadOrgMembers:     a.ReadOrgMembers || b.ReadOrgMembers,
-		ManageOrgMembers:   a.ManageOrgMembers || b.ManageOrgMembers,
+		ReadOrg:          a.ReadOrg || b.ReadOrg,
+		ManageOrg:        a.ManageOrg || b.ManageOrg,
+		ReadProjects:     a.ReadProjects || b.ReadProjects,
+		CreateProjects:   a.CreateProjects || b.CreateProjects,
+		ManageProjects:   a.ManageProjects || b.ManageProjects,
+		ReadOrgMembers:   a.ReadOrgMembers || b.ReadOrgMembers,
+		ManageOrgMembers: a.ManageOrgMembers || b.ManageOrgMembers,
 	}
 }
 
@@ -205,7 +205,7 @@ func (c *authTokenClaims) composeProjectPermissions(ctx context.Context, project
 	if directRole != nil {
 		composite = unionProjectRoles(composite, directRole)
 	}
-	groupRoles, err := c.admin.DB.ResolveUserGroupProjectRoles(ctx, c.token.OwnerID(), projectID)
+	groupRoles, err := c.admin.DB.ResolveUsergroupProjectRoles(ctx, c.token.OwnerID(), projectID)
 	if err != nil {
 		return nil, err
 	}

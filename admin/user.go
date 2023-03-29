@@ -89,23 +89,23 @@ func (s *Service) CreateOrgForUser(ctx context.Context, userID, orgName, descrip
 
 func (s *Service) prepareOrg(ctx context.Context, orgID, userID string) (*database.Organization, error) {
 	// create all user group for this org
-	userGroup, err := s.DB.InsertUserGroup(ctx, "all_user_group", orgID, "All users in the organization")
+	userGroup, err := s.DB.InsertUsergroup(ctx, "all_user_group", orgID)
 	if err != nil {
 		return nil, err
 	}
 	// update org with all user group
-	org, err := s.DB.UpdateOrganizationAllUserGroup(ctx, orgID, userGroup.ID)
+	org, err := s.DB.UpdateOrganizationAllUsergroup(ctx, orgID, userGroup.ID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Add user to created org with org admin role
-	err = s.DB.AddOrganizationMember(ctx, orgID, userID, database.RoleIDOrgAdmin)
+	err = s.DB.InsertOrganizationMember(ctx, orgID, userID, database.RoleIDOrgAdmin)
 	if err != nil {
 		return nil, err
 	}
 	// Add user to all user group
-	err = s.DB.AddUserGroupMember(ctx, userID, userGroup.ID)
+	err = s.DB.InsertUsergroupMember(ctx, userID, userGroup.ID)
 	if err != nil {
 		return nil, err
 	}

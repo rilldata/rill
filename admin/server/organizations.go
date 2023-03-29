@@ -66,9 +66,6 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrganizationRequest) (*adminv1.CreateOrganizationResponse, error) {
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
 
 	org, err := s.admin.CreateOrgForUser(ctx, claims.OwnerID(), req.Name, req.Description)
 	if err != nil {
@@ -199,7 +196,7 @@ func (s *Server) AddOrgMember(ctx context.Context, req *adminv1.AddOrgMemberRequ
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.addOrgUser(ctx, org.ID, user.ID, role.ID, *org.AllGroupID)
+	err = s.addOrgUser(ctx, org.ID, user.ID, role.ID, *org.AllUserGroupID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -213,12 +210,12 @@ func (s *Server) addOrgUser(ctx context.Context, orgID, userID, roleID, allUserG
 		return err
 	}
 	defer func() { _ = tx.Rollback() }()
-	err = s.admin.DB.AddOrganizationMember(ctx, orgID, userID, roleID)
+	err = s.admin.DB.InsertOrganizationMember(ctx, orgID, userID, roleID)
 	if err != nil {
 		return err
 	}
 
-	err = s.admin.DB.AddUserGroupMember(ctx, allUserGroupID, userID)
+	err = s.admin.DB.InsertUsergroupMember(ctx, allUserGroupID, userID)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return err
@@ -267,7 +264,7 @@ func (s *Server) RemoveOrgMember(ctx context.Context, req *adminv1.RemoveOrgMemb
 		return nil, status.Error(codes.InvalidArgument, "cannot remove the last owner")
 	}
 
-	err = s.admin.DB.RemoveOrganizationMember(ctx, org.ID, user.ID)
+	err = s.admin.DB.DeleteOrganizationMember(ctx, org.ID, user.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -333,7 +330,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 		return nil, status.Error(codes.InvalidArgument, "cannot remove the last owner")
 	}
 
-	err = s.admin.DB.RemoveOrganizationMember(ctx, org.ID, claims.OwnerID())
+	err = s.admin.DB.DeleteOrganizationMember(ctx, org.ID, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

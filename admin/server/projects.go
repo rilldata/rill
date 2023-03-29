@@ -320,7 +320,7 @@ func (s *Server) addProjectUser(ctx context.Context, projectID, userID, roleID, 
 		return err
 	}
 	defer func() { _ = tx.Rollback() }()
-	err = s.admin.DB.AddProjectMember(ctx, projectID, userID, roleID)
+	err = s.admin.DB.InsertProjectMember(ctx, projectID, userID, roleID)
 	if err != nil {
 		return err
 	}
@@ -330,7 +330,7 @@ func (s *Server) addProjectUser(ctx context.Context, projectID, userID, roleID, 
 		return err
 	}
 
-	err = s.admin.DB.AddUserGroupMember(ctx, userID, *org.AllGroupID)
+	err = s.admin.DB.InsertUsergroupMember(ctx, userID, *org.AllUserGroupID)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return err
@@ -367,7 +367,7 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.admin.DB.RemoveProjectMember(ctx, proj.ID, user.ID)
+	err = s.admin.DB.DeleteProjectMember(ctx, proj.ID, user.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

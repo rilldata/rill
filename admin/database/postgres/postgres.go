@@ -447,7 +447,7 @@ func (c *connection) FindOrganizationMembersByRole(ctx context.Context, orgID, r
 	return res, nil
 }
 
-func (c *connection) AddOrganizationMember(ctx context.Context, orgID, userID, roleID string) error {
+func (c *connection) InsertOrganizationMember(ctx context.Context, orgID, userID, roleID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_orgs_roles (user_id, org_id, org_role_id) VALUES ($1, $2, $3)", userID, orgID, roleID)
 	if err != nil {
 		return parseErr(err)
@@ -462,7 +462,7 @@ func (c *connection) AddOrganizationMember(ctx context.Context, orgID, userID, r
 	return nil
 }
 
-func (c *connection) RemoveOrganizationMember(ctx context.Context, orgID, userID string) error {
+func (c *connection) DeleteOrganizationMember(ctx context.Context, orgID, userID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM users_orgs_roles WHERE user_id = $1 AND org_id = $2", userID, orgID)
 	if err != nil {
 		return parseErr(err)
@@ -492,7 +492,7 @@ func (c *connection) FindProjectMembers(ctx context.Context, projectID string) (
 	return res, nil
 }
 
-func (c *connection) AddProjectMember(ctx context.Context, projectID, userID, roleID string) error {
+func (c *connection) InsertProjectMember(ctx context.Context, projectID, userID, roleID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_projects_roles (user_id, project_id, project_role_id) VALUES ($1, $2, $3)", userID, projectID, roleID)
 	if err != nil {
 		return parseErr(err)
@@ -507,7 +507,7 @@ func (c *connection) AddProjectMember(ctx context.Context, projectID, userID, ro
 	return nil
 }
 
-func (c *connection) RemoveProjectMember(ctx context.Context, projectID, userID string) error {
+func (c *connection) DeleteProjectMember(ctx context.Context, projectID, userID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM users_projects_roles WHERE user_id = $1 AND project_id = $2", userID, projectID)
 	if err != nil {
 		return parseErr(err)
@@ -554,12 +554,12 @@ func (c *connection) ResolveUserProjectRole(ctx context.Context, userID, project
 	return res, nil
 }
 
-func (c *connection) ResolveUserGroupOrgRoles(ctx context.Context, userID, orgID string) ([]*database.OrganizationRole, error) {
+func (c *connection) ResolveUsergroupOrgRoles(ctx context.Context, userID, orgID string) ([]*database.OrganizationRole, error) {
 	var res []*database.OrganizationRole
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT * FROM org_roles WHERE id IN (
 			SELECT org_role_id FROM usergroups_orgs_roles uor JOIN users_usergroups uug 
-			ON uor.usergroup_id = uug.group_id WHERE uug.user_id = $1 AND uor.org_id = $2
+			ON uor.usergroup_id = uug.usergroup_id WHERE uug.user_id = $1 AND uor.org_id = $2
 	)`, userID, orgID)
 	if err != nil {
 		return nil, parseErr(err)
@@ -567,12 +567,12 @@ func (c *connection) ResolveUserGroupOrgRoles(ctx context.Context, userID, orgID
 	return res, nil
 }
 
-func (c *connection) ResolveUserGroupProjectRoles(ctx context.Context, userID, projectID string) ([]*database.ProjectRole, error) {
+func (c *connection) ResolveUsergroupProjectRoles(ctx context.Context, userID, projectID string) ([]*database.ProjectRole, error) {
 	var res []*database.ProjectRole
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT * FROM project_roles WHERE id IN (
 			SELECT project_role_id FROM usergroups_projects_roles upr JOIN users_usergroups uug 
-			ON upr.usergroup_id = uug.group_id WHERE uug.user_id = $1 AND upr.project_id = $2
+			ON upr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $1 AND upr.project_id = $2
 	)`, userID, projectID)
 	if err != nil {
 		return nil, parseErr(err)
@@ -598,21 +598,21 @@ func (c *connection) FindProjectRole(ctx context.Context, name string) (*databas
 	return role, nil
 }
 
-func (c *connection) InsertUserGroup(ctx context.Context, name, orgID, description string) (*database.UserGroup, error) {
-	res := &database.UserGroup{}
+func (c *connection) InsertUsergroup(ctx context.Context, name, orgID string) (*database.Usergroup, error) {
+	res := &database.Usergroup{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO usergroups (display_name, org_id, description) VALUES ($1, $2, $3) RETURNING *
-	`, name, orgID, description).StructScan(res)
+		INSERT INTO usergroups (display_name, org_id) VALUES ($1, $2) RETURNING *
+	`, name, orgID).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
 	return res, nil
 }
 
-func (c *connection) UpdateOrganizationAllUserGroup(ctx context.Context, orgID, groupID string) (*database.Organization, error) {
+func (c *connection) UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*database.Organization, error) {
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE organizations SET all_group_id = $1 WHERE id = $2 RETURNING *
+		UPDATE organizations SET all_usergroup_id = $1 WHERE id = $2 RETURNING *
 	`, groupID, orgID).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
@@ -620,15 +620,15 @@ func (c *connection) UpdateOrganizationAllUserGroup(ctx context.Context, orgID, 
 	return res, nil
 }
 
-func (c *connection) AddUserGroupMember(ctx context.Context, userID, groupID string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_usergroups (user_id, group_id) VALUES ($1, $2)", userID, groupID)
+func (c *connection) InsertUsergroupMember(ctx context.Context, userID, groupID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_usergroups (user_id, usergroup_id) VALUES ($1, $2)", userID, groupID)
 	if err != nil {
 		return parseErr(err)
 	}
 	return nil
 }
 
-func (c *connection) AddUserGroupProjectRole(ctx context.Context, groupID, projectID, roleID string) error {
+func (c *connection) InsertProjectUsergroup(ctx context.Context, groupID, projectID, roleID string) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO usergroups_projects_roles (usergroup_id, project_id, project_role_id) VALUES ($1, $2, $3)", groupID, projectID, roleID)
 	if err != nil {
 		return parseErr(err)
@@ -636,10 +636,10 @@ func (c *connection) AddUserGroupProjectRole(ctx context.Context, groupID, proje
 	return nil
 }
 
-func (c *connection) FindUserGroups(ctx context.Context, userID, orgID string) ([]*database.UserGroup, error) {
-	var res []*database.UserGroup
+func (c *connection) FindUsergroups(ctx context.Context, userID, orgID string) ([]*database.Usergroup, error) {
+	var res []*database.Usergroup
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT ug.* FROM usergroups ug JOIN users_usergroups uug ON ug.id = uug.group_id
+		SELECT ug.* FROM usergroups ug JOIN users_usergroups uug ON ug.id = uug.usergroup_id
 		WHERE uug.user_id = $1 AND ug.org_id = $2
 	`, userID, orgID)
 	if err != nil {
