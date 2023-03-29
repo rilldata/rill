@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-github/v50/github"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"google.golang.org/grpc/codes"
@@ -30,14 +31,14 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 
 	// If the user has not granted access, return instructions for granting access
 	if !ok {
-		grantAccessURL, err := url.JoinPath(s.opts.FrontendURL, "/github/connect")
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to create redirect URL: %s", err)
-		}
+		grantAccessURL := s.urls.GithubConnect()
+		qry := grantAccessURL.Query()
+		qry.Set("remote", req.GithubUrl)
+		grantAccessURL.RawQuery = qry.Encode()
 
 		res := &adminv1.GetGithubRepoStatusResponse{
 			HasAccess:      false,
-			GrantAccessUrl: grantAccessURL,
+			GrantAccessUrl: grantAccessURL.String(),
 		}
 		return res, nil
 	}
@@ -88,11 +89,24 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request, pathParam
 		return
 	}
 
-	// NOTE: If needed, we can add a `state` query parameter that will be passed through to githubConnectCallback.
+	query := r.URL.Query()
+	remote := query.Get("remote")
+	// Should we add any other validation for remote ?
+	// Should we return bad request if remote not set ?
+	if remote == "" {
+		http.Error(w, "no remote set", http.StatusBadRequest)
+		return
+	}
+
+	redirectURL := s.urls.GithubAppInstallationURL()
+	values := redirectURL.Query()
+	// `state` query parameter will be passed through to githubConnectCallback.
+	// we will use this state parameter to verify that the user installed the app on right repo
+	values.Add("state", remote)
+	redirectURL.RawQuery = values.Encode()
 
 	// Redirect to Github App for installation
-	redirectURL := fmt.Sprintf("https://github.com/apps/%s/installations/new", s.opts.GithubAppName)
-	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, redirectURL.String(), http.StatusTemporaryRedirect)
 }
 
 // githubConnectCallback is called after a Github App authorization flow initiated by githubConnect has completed.
@@ -125,6 +139,29 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 	err = s.admin.ProcessUserGithubInstallation(r.Context(), claims.OwnerID(), int64(installationID))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to track github install: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Verify that user installed the app on the right repo and we have access now
+	remoteURL := qry.Get("state")
+	account, repo, ok := gitutil.SplitGithubURL(remoteURL)
+	if !ok {
+		http.Error(w, fmt.Sprintf("unexpected state=%q", remoteURL), http.StatusBadRequest)
+		return
+	}
+
+	_, resp, err := s.admin.Github.Apps.FindRepositoryInstallation(r.Context(), account, repo)
+	if err != nil {
+		if resp.StatusCode == http.StatusNotFound {
+			// no access
+			// Redirect to UI retry page
+			redirectURL := s.urls.GithubConnectRetry()
+			qry := redirectURL.Query()
+			qry.Set("remote", remoteURL)
+			redirectURL.RawQuery = qry.Encode()
+			http.Redirect(w, r, redirectURL.String(), http.StatusTemporaryRedirect)
+		}
+		http.Error(w, fmt.Sprintf("failed to check github repo status: %s", err), http.StatusInternalServerError)
 		return
 	}
 

@@ -24,7 +24,7 @@ type Service struct {
 	DB             database.DB
 	opts           *Options
 	logger         *zap.Logger
-	github         *github.Client
+	Github         *github.Client
 	provisioner    provisioner.Provisioner
 	issuer         *auth.Issuer
 	closeCtx       context.Context
@@ -64,7 +64,7 @@ func New(opts *Options, logger *zap.Logger, issuer *auth.Issuer) (*Service, erro
 		DB:             db,
 		opts:           opts,
 		logger:         logger,
-		github:         gh,
+		Github:         gh,
 		provisioner:    prov,
 		issuer:         issuer,
 		closeCtx:       ctx,
