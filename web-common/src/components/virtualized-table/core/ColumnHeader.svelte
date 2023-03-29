@@ -18,7 +18,7 @@
   export let pinned = false;
   export let noPin = false;
   export let showDataIcon = false;
-  export let name: string;
+  export let name;
   export let type: string;
   export let header;
   export let position: HeaderPosition = "top";
@@ -108,13 +108,25 @@
             : 'overflow-hidden whitespace-nowrap'}
           "
         >
-          {name}
+          {#if typeof name !== "string"}
+            <div class="flex justify-end">
+              <svelte:component this={name} />
+            </div>
+          {:else}
+            {name}
+          {/if}
         </span>
       </div>
       <TooltipContent slot="tooltip-content">
         <TooltipTitle>
           <svelte:fragment slot="name">
-            {name}
+            {#if typeof name !== "string"}
+              <div>
+                <svelte:component this={name} />
+              </div>
+            {:else}
+              {name}
+            {/if}
           </svelte:fragment>
           <svelte:fragment slot="description">
             {isDimensionTable || showDataIcon ? "" : type}
@@ -139,14 +151,14 @@
             in:fly={{ duration: 200, y: -8 }}
             style:opacity={isSelected ? 1 : 0}
           >
-            <ArrowDown size="16px" />
+            <ArrowDown size="12px" />
           </div>
         {:else}
           <div
             in:fly={{ duration: 200, y: 8 }}
             style:opacity={isSelected ? 1 : 0}
           >
-            <ArrowDown transform="scale(1 -1)" size="16px" />
+            <ArrowDown transform="scale(1 -1)" size="12px" />
           </div>
         {/if}
       </div>

@@ -8,6 +8,8 @@ import {
   formatMeasurePercentageDifference,
   NicelyFormattedTypes,
 } from "../humanize-numbers";
+import DeltaChange from "./DeltaChange.svelte";
+import DeltaChangePercentage from "./DeltaChangePercentage.svelte";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -152,13 +154,13 @@ export function getComparisonProperties(
 ) {
   if (measureName.includes("_delta_perc"))
     return {
-      label: "Δ %",
+      label: DeltaChangePercentage,
       type: "RILL_PERCENTAGE_CHANGE",
       format: NicelyFormattedTypes.PERCENTAGE,
     };
   else if (measureName.includes("_delta")) {
     return {
-      label: "Δ",
+      label: DeltaChange,
       type: "INT",
       format: selectedMeasure.format,
     };
