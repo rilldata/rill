@@ -29,7 +29,8 @@
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
 
   export let metricViewName: string;
-  export let allTimeRange: TimeRange;
+  export let boundaryStart: Date;
+  export let boundaryEnd: Date;
   export let minTimeGrain: V1TimeGrain;
 
   const dispatch = createEventDispatcher();
@@ -43,20 +44,20 @@
   let periodToDateTimeRanges: TimeRangeOption[];
 
   // get the available latest-window time ranges
-  $: if (allTimeRange) {
+  $: if (boundaryStart && boundaryEnd) {
     latestWindowTimeRanges = getChildTimeRanges(
-      allTimeRange.start,
-      allTimeRange.end,
+      boundaryStart,
+      boundaryEnd,
       LATEST_WINDOW_TIME_RANGES,
       minTimeGrain
     );
   }
 
   // get the the available period-to-date time ranges
-  $: if (allTimeRange) {
+  $: if (boundaryStart && boundaryEnd) {
     periodToDateTimeRanges = getChildTimeRanges(
-      allTimeRange.start,
-      allTimeRange.end,
+      boundaryStart,
+      boundaryEnd,
       PERIOD_TO_DATE_RANGES,
       minTimeGrain
     );
@@ -161,8 +162,8 @@
     {@const allTime = {
       name: TimeRangePreset.ALL_TIME,
       label: ALL_TIME.label,
-      start: allTimeRange.start,
-      end: allTimeRange.end,
+      start: boundaryStart,
+      end: boundaryEnd,
     }}
     <MenuItem
       on:before-select={setIntermediateSelection(allTime.name)}
@@ -213,7 +214,8 @@
     {#if isCustomRangeOpen}
       <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
         <CustomTimeRangeInput
-          {allTimeRange}
+          {boundaryStart}
+          {boundaryEnd}
           {metricViewName}
           {minTimeGrain}
           on:apply={(e) =>

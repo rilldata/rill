@@ -369,7 +369,7 @@ export const TIME_COMPARISON = {
     comparisonType: TimeComparisonOption.CONTIGUOUS,
   },
   [TimeComparisonOption.CUSTOM]: {
-    label: "last period",
+    label: "custom range",
     description: "Compare the current time range to a custom time range",
     comparisonType: TimeComparisonOption.CUSTOM,
   },

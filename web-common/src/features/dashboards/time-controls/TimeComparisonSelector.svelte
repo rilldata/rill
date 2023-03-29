@@ -19,8 +19,7 @@ This component needs to do the following:
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
-  import { V1TimeGrain } from "../../../runtime-client";
-  import { useDashboardStore } from "../dashboard-stores";
+  import type { V1TimeGrain } from "../../../runtime-client";
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
   import SelectorButton from "./SelectorButton.svelte";
@@ -33,12 +32,11 @@ This component needs to do the following:
   export let currentEnd: Date;
   export let boundaryStart: Date;
   export let boundaryEnd: Date;
+  export let minTimeGrain: V1TimeGrain;
 
   export let showComparison = true;
   export let comparisonOption;
   export let comparisonOptions: TimeComparisonOption[];
-
-  $: dashboardStore = useDashboardStore(metricViewName);
 
   /** compile the comparison options */
   let options: {
@@ -61,12 +59,35 @@ This component needs to do the following:
       };
     });
 
-  const onCompareRangeSelect = (comparison) => {
-    intermediateSelection = comparison;
-    dispatch("select-comparison", comparison);
+  function onSelectCustomComparisonRange(
+    startDate: string,
+    endDate: string,
+    closeMenu: () => void
+  ) {
+    intermediateSelection = TimeComparisonOption.CUSTOM;
+    closeMenu();
+    dispatch("select-comparison", {
+      name: TimeComparisonOption.CUSTOM,
+      start: new Date(startDate),
+      end: new Date(endDate),
+    });
+  }
+
+  const onCompareRangeSelect = (comparisonOption) => {
+    const comparisonTimeRange = getComparisonRange(
+      currentStart,
+      currentEnd,
+      comparisonOption
+    );
+
+    dispatch("select-comparison", {
+      name: comparisonOption,
+      start: comparisonTimeRange.start,
+      end: comparisonTimeRange.end,
+    });
   };
-  // Define a better validation criteria
-  // FIXME: this is not consumed yet.
+
+  //
   function validateCustomTimeRange(start, end) {
     const customStartDate = new Date(start);
     const customEndDate = new Date(end);
@@ -74,7 +95,7 @@ This component needs to do the following:
     if (customStartDate > customEndDate)
       return "Start date must be before end date";
     else if (customEndDate > selectedEndDate)
-      return "End date must be before selected date";
+      return "End date must be before sele1cted date";
     else return undefined;
   }
 
@@ -107,7 +128,8 @@ This component needs to do the following:
       on:click={() => {
         if (showComparison) toggleFloatingElement();
       }}
-      ><span class="font-normal">
+    >
+      <span class="font-normal">
         {#if !showComparison}
           <span class="italic text-gray-500">Time comparison not available</span
           >
@@ -119,13 +141,16 @@ This component needs to do the following:
     <Menu
       slot="floating-element"
       on:escape={toggleFloatingElement}
-      on:click-outside={toggleFloatingElement}
+      on:click-outside={() => onClickOutside(toggleFloatingElement)}
     >
       {#if showComparison}
         {#each options as option}
           {@const preset = TIME_COMPARISON[option.name]}
           <MenuItem
             selected={option.name === intermediateSelection}
+            on:before-select={() => {
+              intermediateSelection = option.name;
+            }}
             on:select={() => {
               onCompareRangeSelect(option.name);
               toggleFloatingElement();
@@ -158,9 +183,15 @@ This component needs to do the following:
         <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
           <CustomTimeRangeInput
             {metricViewName}
-            minTimeGrain={/** FIXME-comparisons: */ V1TimeGrain.TIME_GRAIN_MINUTE}
+            {boundaryStart}
+            {boundaryEnd}
+            {minTimeGrain}
             on:apply={(e) => {
-              /** FIXME */
+              onSelectCustomComparisonRange(
+                e.detail.startDate,
+                e.detail.endDate,
+                toggleFloatingElement
+              );
             }}
             on:close-calendar={onCalendarClose}
           />
