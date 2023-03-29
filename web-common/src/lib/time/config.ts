@@ -365,34 +365,40 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
 export const TIME_COMPARISON = {
   [TimeComparisonOption.CONTIGUOUS]: {
     label: "last period",
+    shorthand: "prev. period",
     description: "Compare the current time range to the previous time range",
     comparisonType: TimeComparisonOption.CONTIGUOUS,
   },
   [TimeComparisonOption.CUSTOM]: {
     label: "custom range",
+    shorthand: "comparing",
     description: "Compare the current time range to a custom time range",
     comparisonType: TimeComparisonOption.CUSTOM,
   },
   [TimeComparisonOption.DAY]: {
     label: "previous day",
+    shorthand: "prev. day",
     description:
       "Compare the current time range to the same time range the day before",
     comparisonType: TimeComparisonOption.DAY,
   },
   [TimeComparisonOption.WEEK]: {
     label: "previous week",
+    shorthand: "prev. wk",
     description:
       "Compare the current time range to the same time range the week before",
     comparisonType: TimeComparisonOption.WEEK,
   },
   [TimeComparisonOption.MONTH]: {
     label: "previous month",
+    shorthand: "prev. month",
     description:
       "Compare the current time range to the same time range the month before",
     comparisonType: TimeComparisonOption.MONTH,
   },
   [TimeComparisonOption.QUARTER]: {
     label: "previous quarter",
+    shorthand: "prev. qtr",
     description:
       "Compare the current time range to the same time range the quarter before",
     comparisonType: TimeComparisonOption.QUARTER,
@@ -400,6 +406,7 @@ export const TIME_COMPARISON = {
 
   [TimeComparisonOption.YEAR]: {
     label: "previous year",
+    shorthand: "prev. yr",
     description:
       "Compare the current time range to the same time range the year before",
     comparisonType: TimeComparisonOption.YEAR,

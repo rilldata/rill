@@ -250,6 +250,7 @@
         <MeasureBigNumber
           value={bigNum}
           {showComparison}
+          comparisonOption={$dashboardStore?.selectedComparisonTimeRange?.name}
           {comparisonValue}
           {comparisonPercChange}
           description={measure?.description ||

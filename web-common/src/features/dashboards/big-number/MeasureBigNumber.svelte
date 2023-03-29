@@ -1,14 +1,22 @@
 <script lang="ts">
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
+  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { crossfade, fly } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
-  import { humanizeDataType, NicelyFormattedTypes } from "../humanize-numbers";
+  import {
+    formatMeasurePercentageDifference,
+    humanizeDataType,
+    NicelyFormattedTypes,
+  } from "../humanize-numbers";
 
   export let value: number;
+  export let comparisonOption: TimeComparisonOption;
   export let comparisonValue: number;
   export let comparisonPercChange: number;
   export let showComparison: boolean;
@@ -64,9 +72,9 @@
             </TooltipContent>
           </Tooltip>
           {#if showComparison}
-            <div class="flex items-baseline gap-x-2">
-              {#if comparisonValue != null}
-                <Tooltip distance={8} location="bottom" alignment="start">
+            <Tooltip distance={8} location="bottom" alignment="start">
+              <div class="flex items-baseline gap-x-3">
+                {#if comparisonValue != null}
                   <div
                     class="w-max text-sm ui-copy-inactive "
                     class:font-semibold={isComparisonPositive}
@@ -78,18 +86,13 @@
                     >
                       {@const formattedValue =
                         formatPresetEnum !== NicelyFormattedTypes.NONE
-                          ? humanizeDataType(output, formatPresetEnum)
+                          ? humanizeDataType(value - output, formatPresetEnum)
                           : output}
-                      {formattedValue}
+                      {isComparisonPositive ? "+" : ""}{formattedValue}
                     </WithTween>
                   </div>
-                  <TooltipContent slot="tooltip-content"
-                    >the previous period's aggregate value</TooltipContent
-                  >
-                </Tooltip>
-              {/if}
-              {#if comparisonPercChange != null}
-                <Tooltip distance={16} location="right" alignment="center">
+                {/if}
+                {#if comparisonPercChange != null}
                   <div
                     class="w-max text-sm 
               {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
@@ -99,18 +102,45 @@
                       tweenProps={{ duration: 500 }}
                       let:output
                     >
-                      ({humanizeDataType(
-                        output,
-                        NicelyFormattedTypes.PERCENTAGE
-                      )})
+                      <PercentageChange
+                        tabularNumber={false}
+                        value={formatMeasurePercentageDifference(output)}
+                      />
                     </WithTween>
                   </div>
-                  <TooltipContent slot="tooltip-content">
-                    the percentage change over the previous period
-                  </TooltipContent>
-                </Tooltip>
-              {/if}
-            </div>
+                {/if}
+              </div>
+              <TooltipContent slot="tooltip-content" maxWidth="300px">
+                {@const tooltipPercentage =
+                  formatMeasurePercentageDifference(comparisonPercChange)}
+
+                {TIME_COMPARISON[comparisonOption].shorthand}
+                <span class="font-semibold pr-2"
+                  >{formatPresetEnum !== NicelyFormattedTypes.NONE
+                    ? humanizeDataType(comparisonValue, formatPresetEnum)
+                    : comparisonValue}</span
+                >
+                <!-- <span class="opacity-70">-></span> 
+                current
+                <span class="font-bold"
+                  >{humanizeDataType(value, formatPresetEnum)}</span
+                > -->
+                <span
+                  >{tooltipPercentage.neg ? "-" : ""}{tooltipPercentage.int}% {isComparisonPositive
+                    ? "increase"
+                    : "decrease"}</span
+                >
+                <!-- The previous period's value was {formatPresetEnum !==
+                NicelyFormattedTypes.NONE
+                  ? humanizeDataType(comparisonValue, formatPresetEnum)
+                  : comparisonValue}, <br /> which was {tooltipPercentage.int}%
+                {isComparisonPositive ? "lower" : "higher"}
+                than the current period's value of {humanizeDataType(
+                  value,
+                  formatPresetEnum
+                )} -->
+              </TooltipContent>
+            </Tooltip>
           {/if}
         {:else if status === EntityStatus.Error}
           <CrossIcon />
