@@ -19,3 +19,8 @@ In production, the frontend is built into a static site and embedded in the CLI.
 More resources:
 - [Contributor's guide](../CONTRIBUTING.md) for installing any missing dependencies (like Go)
 - [Runtime's README](../runtime/README.md) for how to contribute to the runtime code
+
+## Testing
+
+1. Build the application and the rill cli for E2E tests: `make cli`
+2. Run all the tests `npm run test`

@@ -9,19 +9,13 @@ export async function waitForEntity(
   name: string,
   navigated: boolean
 ) {
-  await page.locator(getEntityLink(page, type, name)).waitFor();
+  await getEntityLink(page, name).waitFor();
   if (navigated) {
     await page.waitForURL(new RegExp(`/${type}/${name}`));
   }
 }
 
-export async function entityNotPresent(
-  page: Page,
-  type: TestEntityType,
-  name: string
-) {
+export async function entityNotPresent(page: Page, name: string) {
   await asyncWait(100);
-  await playwrightExpect(
-    page.locator(getEntityLink(page, type, name))
-  ).toBeHidden();
+  await playwrightExpect(getEntityLink(page, name)).toBeHidden();
 }
