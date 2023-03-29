@@ -31,6 +31,10 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";
+  import {
+    getFilterForComparisonTable,
+    getFilterForComparsion,
+  } from "../dimension-table/dimension-table-utils";
   import type { NicelyFormattedTypes } from "../humanize-numbers";
   import DimensionLeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
@@ -164,8 +168,41 @@
     );
   }
 
-  let comparisonTopListQuery;
+  let values = [];
+  let comparisonValues = [];
 
+  /** replace data after fetched. */
+  $: if (!$topListQuery?.isFetching) {
+    values =
+      $topListQuery?.data?.data.map((val) => ({
+        value: val[measure?.name],
+        label: val[dimension?.name],
+      })) ?? [];
+    setLeaderboardValues(values);
+  }
+
+  // get all values that are selected but not visible.
+  // we'll put these at the bottom w/ a divider.
+  $: selectedValuesThatAreBelowTheFold = activeValues
+    ?.filter((label) => {
+      return (
+        // the value is visible within the fold.
+        !values.slice(0, slice).some((value) => {
+          return value.label === label;
+        })
+      );
+    })
+    .map((label) => {
+      const existingValue = values.find((value) => value.label === label);
+      // return the existing value, or if it does not exist, just return the label.
+      // FIX ME return values for label which are not in the query
+      return existingValue ? { ...existingValue } : { label };
+    })
+    .sort((a, b) => {
+      return b.value - a.value;
+    });
+
+  let comparisonTopListQuery;
   let isComparisonRangeAvailable = false;
   // create the right compareTopListParams.
   $: if (
@@ -173,8 +210,6 @@
     hasTimeSeries &&
     timeRangeName !== undefined
   ) {
-    const values = $topListQuery?.data?.data;
-
     const comparisonTimeRange = getTimeComparisonParametersForComponent(
       (metricsExplorer?.selectedComparisonTimeRange
         ?.name as TimeComparisonOption) ||
@@ -189,17 +224,22 @@
     const { start, end } = comparisonTimeRange;
     isComparisonRangeAvailable = comparisonTimeRange.isComparisonRangeAvailable;
 
-    // add all available leaderboard  values to the include filter.
-    const updatedFilters = filterForDimension;
-    updatedFilters.include = [
-      ...(updatedFilters.include ?? []),
-      { in: values.map((v) => v[dimensionName]), name: dimensionName },
-    ];
+    // add all sliced and active values to the include filter.
+    const currentVisibleValues = values
+      ?.slice(0, slice)
+      .concat(selectedValuesThatAreBelowTheFold)
+      .map((v) => v.label);
+
+    const updatedFilters = getFilterForComparsion(
+      filterForDimension,
+      dimensionName,
+      currentVisibleValues
+    );
 
     let comparisonParams = {
       dimensionName: dimensionName,
       measureNames: [measure.name],
-      limit: "250",
+      limit: currentVisibleValues.length.toString(),
       offset: "0",
       sort: [
         {
@@ -230,19 +270,6 @@
     isComparisonRangeAvailable = false;
   }
 
-  let values = [];
-  let comparisonValues = [];
-
-  /** replace data after fetched. */
-  $: if (!$topListQuery?.isFetching) {
-    values =
-      $topListQuery?.data?.data.map((val) => ({
-        value: val[measure?.name],
-        label: val[dimension?.name],
-      })) ?? [];
-    setLeaderboardValues(values);
-  }
-
   $: if (!$comparisonTopListQuery?.isFetching) {
     comparisonValues =
       $comparisonTopListQuery?.data?.data?.map((val) => ({
@@ -250,31 +277,6 @@
         label: val[dimension?.name],
       })) ?? [];
   }
-  /** figure out how many selected values are currently hidden */
-  // $: hiddenSelectedValues = values.filter((di, i) => {
-  //   return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
-  // });
-
-  // get all values that are selected but not visible.
-  // we'll put these at the bottom w/ a divider.
-  $: selectedValuesThatAreBelowTheFold = activeValues
-    ?.filter((label) => {
-      return (
-        // the value is visible within the fold.
-        !values.slice(0, slice).some((value) => {
-          return value.label === label;
-        })
-      );
-    })
-    .map((label) => {
-      const existingValue = values.find((value) => value.label === label);
-      // return the existing value, or if it does not exist, just return the label.
-      // FIX ME return values for label which are not in the query
-      return existingValue ? { ...existingValue } : { label };
-    })
-    .sort((a, b) => {
-      return b.value - a.value;
-    });
 
   let hovered: boolean;
 </script>
@@ -301,7 +303,7 @@
           {formatPreset}
           loading={$topListQuery?.isFetching}
           values={values.slice(0, slice)}
-          comparisonValues={comparisonValues.slice(0, slice)}
+          {comparisonValues}
           showComparison={isComparisonRangeAvailable}
           {activeValues}
           {filterExcludeMode}
@@ -317,7 +319,7 @@
             {formatPreset}
             loading={$topListQuery?.isFetching}
             values={selectedValuesThatAreBelowTheFold}
-            comparisonValues={comparisonValues.slice(0, slice)}
+            {comparisonValues}
             showComparison={isComparisonRangeAvailable}
             {activeValues}
             {filterExcludeMode}

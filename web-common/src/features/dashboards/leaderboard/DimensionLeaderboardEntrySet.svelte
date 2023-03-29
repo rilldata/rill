@@ -46,10 +46,10 @@ see more button
   const dispatch = createEventDispatcher();
   let renderValues = [];
 
+  $: comparsionMap = new Map(comparisonValues?.map((v) => [v.label, v.value]));
   $: renderValues = values.map((v, i) => {
     const active = activeValues.findIndex((value) => value === v.label) >= 0;
-    // pray to god
-    const comparisonValue = comparisonValues?.[i]?.value;
+    const comparisonValue = comparsionMap.get(v.label);
 
     // Super important special case: if there is not at least one "active" (selected) value,
     // we need to set *all* items to be included, because by default if a user has not
