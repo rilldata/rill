@@ -5,6 +5,7 @@
 
   let user;
   let userCode;
+  let remote;
   // let actionTaken = false;
   // let successMsg = "";
   // let errorMsg = "";
@@ -12,6 +13,7 @@
   async function fetchUserData() {
     const urlParams = new URLSearchParams(window.location.search);
     userCode = urlParams.get("user_code");
+    remote = urlParams.get("remote")
 
     const response = await fetch(ADMIN_URL + "/v1/users/current", {
       method: "GET",
@@ -27,7 +29,7 @@
   }
 
   function handleGoToGithub() {
-    window.location.href = ADMIN_URL + "/github/connect";
+    window.location.href = encodeURI(ADMIN_URL + "/github/connect?remote=" + remote);
   }
 
   onMount(fetchUserData);

@@ -5,13 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"path"
 	"strings"
 
 	"github.com/bradleyfalzon/ghinstallation"
-	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"go.uber.org/zap"
 )
 
@@ -23,12 +22,12 @@ func (s *Service) ProcessUserGithubInstallation(ctx context.Context, userID stri
 // GetUserGithubInstallation returns a Github installation ID iff the Github App is installed on the repository AND we have a confirmed relationship between the user and that installation.
 // The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
 func (s *Service) GetUserGithubInstallation(ctx context.Context, userID, githubURL string) (int64, bool, error) {
-	account, repo, ok := splitGithubURL(githubURL)
+	account, repo, ok := gitutil.SplitGithubURL(githubURL)
 	if !ok {
 		return 0, false, fmt.Errorf("invalid Github URL %q", githubURL)
 	}
 
-	installation, resp, err := s.github.Apps.FindRepositoryInstallation(ctx, account, repo)
+	installation, resp, err := s.Github.Apps.FindRepositoryInstallation(ctx, account, repo)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
 			// We don't have an installation on the repo
@@ -59,7 +58,7 @@ func (s *Service) GetUserGithubInstallation(ctx context.Context, userID, githubU
 // LookupGithubRepo calls the Github API using an installation token to get information about a Github repo.
 // The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
 func (s *Service) LookupGithubRepo(ctx context.Context, installationID int64, githubURL string) (*github.Repository, error) {
-	account, repo, ok := splitGithubURL(githubURL)
+	account, repo, ok := gitutil.SplitGithubURL(githubURL)
 	if !ok {
 		return nil, fmt.Errorf("invalid Github URL %q", githubURL)
 	}
@@ -163,23 +162,4 @@ func (s *Service) githubInstallationClient(installationID int64) (*github.Client
 		return nil, err
 	}
 	return github.NewClient(&http.Client{Transport: itr}), nil
-}
-
-func splitGithubURL(githubURL string) (account, repo string, ok bool) {
-	ep, err := transport.NewEndpoint(githubURL)
-	if err != nil {
-		return "", "", false
-	}
-
-	if ep.Host != "github.com" {
-		return "", "", false
-	}
-
-	account, repo = path.Split(ep.Path)
-	account = strings.Trim(account, "/")
-	if account == "" || repo == "" || strings.Contains(account, "/") {
-		return "", "", false
-	}
-
-	return account, repo, true
 }

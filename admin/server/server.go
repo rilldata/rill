@@ -45,6 +45,57 @@ type Options struct {
 	GithubAppWebhookSecret string
 }
 
+type URLRegistry struct {
+	githubConnect            *url.URL
+	githubConnectRetry       *url.URL
+	githubAppInstallationURL *url.URL
+}
+
+func NewURLRegistry(opts *Options) (*URLRegistry, error) {
+	grantAccessURLString, err := url.JoinPath(opts.FrontendURL, "/github/connect")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create github connect URL: %w", err)
+	}
+
+	grantAccessURL, err := url.Parse(grantAccessURLString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create github connect URL: %w", err)
+	}
+
+	installationURL, err := url.Parse(fmt.Sprintf("https://github.com/apps/%s/installations/new", opts.GithubAppName))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create github app installation URL: %w", err)
+	}
+
+	retryURLString, err := url.JoinPath(opts.FrontendURL, "/github/connect/retry")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create retry URL: %w", err)
+	}
+
+	retryURL, err := url.Parse(retryURLString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create github app installation URL: %w", err)
+	}
+
+	return &URLRegistry{
+		githubConnect:            grantAccessURL,
+		githubConnectRetry:       retryURL,
+		githubAppInstallationURL: installationURL,
+	}, nil
+}
+
+func (r *URLRegistry) GithubConnect() url.URL {
+	return *r.githubConnect
+}
+
+func (r *URLRegistry) GithubAppInstallationURL() url.URL {
+	return *r.githubAppInstallationURL
+}
+
+func (r *URLRegistry) GithubConnectRetry() url.URL {
+	return *r.githubConnectRetry
+}
+
 type Server struct {
 	adminv1.UnsafeAdminServiceServer
 	logger        *zap.Logger
@@ -53,6 +104,7 @@ type Server struct {
 	cookies       *sessions.CookieStore
 	authenticator *auth.Authenticator
 	issuer        *runtimeauth.Issuer
+	urls          *URLRegistry
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
@@ -83,6 +135,11 @@ func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimea
 		return nil, err
 	}
 
+	registry, err := NewURLRegistry(opts)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Server{
 		logger:        logger,
 		admin:         adm,
@@ -90,6 +147,7 @@ func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimea
 		cookies:       cookies,
 		authenticator: authenticator,
 		issuer:        issuer,
+		urls:          registry,
 	}, nil
 }
 
