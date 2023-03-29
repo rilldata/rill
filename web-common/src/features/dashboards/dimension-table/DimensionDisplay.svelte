@@ -39,7 +39,7 @@
     computeComparisonValues,
     customSortMeasures,
     getComparisonProperties,
-    getFilterForComparsion,
+    getFilterForComparisonTable,
     updateFilterOnSearch,
   } from "./dimension-table-utils";
   import DimensionContainer from "./DimensionContainer.svelte";
@@ -187,7 +187,7 @@
     const { start, end } = comparisonTimeRange;
     isComparisonRangeAvailable = comparisonTimeRange.isComparisonRangeAvailable;
 
-    let comparisonFilterSet = getFilterForComparsion(
+    let comparisonFilterSet = getFilterForComparisonTable(
       filterForDimension,
       dimensionName,
       values

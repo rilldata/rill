@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/fatih/color"
-	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -24,7 +24,7 @@ func LogoutCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-			client, err := client.New(cfg.AdminURL, token)
+			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}

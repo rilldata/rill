@@ -8,6 +8,10 @@ export const MEASURE_CONFIG = {
   },
   bigNumber: {
     widthWithChart: 140,
-    widthWithoutChart: 175,
+    widthWithoutChart: {
+      1: "250px",
+      2: "400px",
+      3: "580px",
+    },
   },
 };

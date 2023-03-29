@@ -160,7 +160,7 @@ This component needs to do the following:
               {preset?.label || option.name}
             </span>
           </MenuItem>
-          {#if option.name === TimeComparisonOption.CONTIGUOUS}
+          {#if option.name === TimeComparisonOption.CONTIGUOUS && options.length > 2}
             <Divider />
           {/if}
         {/each}

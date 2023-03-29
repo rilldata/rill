@@ -1,3 +1,4 @@
+import { asyncWaitUntil } from "@rilldata/web-local/lib/util/waitUtils";
 import type { Page } from "playwright";
 
 export enum TestEntityType {
@@ -6,36 +7,18 @@ export enum TestEntityType {
   Dashboard = "dashboard",
 }
 
-export async function openEntityMenu(
-  page: Page,
-  type: TestEntityType,
-  name: string
-) {
-  const entityLocator = page.locator(getEntityLink(page, type, name));
+export async function openEntityMenu(page: Page, name: string) {
+  const entityLocator = getEntityLink(page, name);
   await entityLocator.hover();
-  await page
-    // get the navigation entry for the entity
-    .locator(".navigation-entry-title", {
-      has: entityLocator,
-    })
-    .locator("div.contents div.contents button")
-    .click();
+  await entityLocator.locator("button").last().click();
 }
 
 export async function clickModalButton(page: Page, text: string) {
-  return page
-    .locator(".portal button", {
-      hasText: text,
-    })
-    .click();
+  return page.getByText(text).click();
 }
 
 export async function clickMenuButton(page: Page, text: string) {
-  await page
-    .locator(".portal button[role='menuitem'] div.text-left div", {
-      hasText: new RegExp(text),
-    })
-    .click();
+  await page.getByRole("menuitem", { name: text }).click();
 }
 
 export async function waitForProfiling(
@@ -51,7 +34,7 @@ export async function waitForProfiling(
       columns.map((column) =>
         page.waitForResponse(
           new RegExp(
-            `/queries/null-count/tables/${name}\\?column_name=${column}`
+            `/queries/null-count/tables/${name}\\?columnName=${column}`
           )
         )
       ),
@@ -59,10 +42,33 @@ export async function waitForProfiling(
   );
 }
 
-export function getEntityLink(
-  page: Page,
-  type: TestEntityType,
-  name: string
-): string {
-  return `a[href='/${type}/${name}']`;
+export function getEntityLink(page: Page, name: string) {
+  return page.getByRole("link", { name, exact: true });
+}
+
+/**
+ * Runs an assertion multiple times until a timeout.
+ * Throws the last thrown error by the assertion.
+ */
+export async function wrapRetryAssertion(
+  assertion: () => Promise<void>,
+  timeout = 1000,
+  interval = 100
+) {
+  let lastError: Error;
+  await asyncWaitUntil(
+    async () => {
+      try {
+        await assertion();
+        lastError = undefined;
+        return true;
+      } catch (err) {
+        lastError = err;
+        return false;
+      }
+    },
+    timeout,
+    interval
+  );
+  if (lastError) throw lastError;
 }

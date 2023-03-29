@@ -16,9 +16,6 @@
     useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
-  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
-  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import {
     MetricsViewDimension,
     MetricsViewMeasure,
@@ -28,11 +25,8 @@
   import { createEventDispatcher } from "svelte";
   import { isRangeInsideOther } from "../../../lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-    useDashboardStore,
-  } from "../dashboard-stores";
+  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
   import type { NicelyFormattedTypes } from "../humanize-numbers";
   import DimensionLeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
@@ -165,67 +159,6 @@
     );
   }
 
-  let comparisonTopListQuery;
-
-  let isComparisonRangeAvailable = false;
-  // create the right compareTopListParams.
-  $: if (
-    !$topListQuery?.isFetching &&
-    hasTimeSeries &&
-    timeRangeName !== undefined &&
-    $dashboardStore?.selectedComparisonTimeRange?.start
-  ) {
-    const values = $topListQuery?.data?.data;
-
-    isComparisonRangeAvailable = isRangeInsideOther(
-      allTimeRange?.start,
-      allTimeRange?.end,
-      $dashboardStore?.selectedComparisonTimeRange?.start,
-      $dashboardStore?.selectedComparisonTimeRange?.end
-    );
-    const { start, end } = $dashboardStore?.selectedComparisonTimeRange;
-
-    // add all available leaderboard  values to the include filter.
-    const updatedFilters = filterForDimension;
-    updatedFilters.include = [
-      ...(updatedFilters.include ?? []),
-      { in: values.map((v) => v[dimensionName]), name: dimensionName },
-    ];
-
-    let comparisonParams = {
-      dimensionName: dimensionName,
-      measureNames: [measure.name],
-      limit: "250",
-      offset: "0",
-      sort: [
-        {
-          name: measure.name,
-          ascending: false,
-        },
-      ],
-      filter: updatedFilters,
-    };
-
-    if (hasTimeSeries) {
-      comparisonParams = {
-        ...comparisonParams,
-
-        ...{
-          timeStart: isComparisonRangeAvailable ? start : undefined,
-          timeEnd: isComparisonRangeAvailable ? end : undefined,
-        },
-      };
-    }
-
-    comparisonTopListQuery = useQueryServiceMetricsViewToplist(
-      $runtime.instanceId,
-      metricViewName,
-      comparisonParams
-    );
-  } else if (!hasTimeSeries) {
-    isComparisonRangeAvailable = false;
-  }
-
   let values = [];
   let comparisonValues = [];
 
@@ -238,18 +171,6 @@
       })) ?? [];
     setLeaderboardValues(values);
   }
-
-  $: if (!$comparisonTopListQuery?.isFetching) {
-    comparisonValues =
-      $comparisonTopListQuery?.data?.data?.map((val) => ({
-        value: val[measure?.name],
-        label: val[dimension?.name],
-      })) ?? [];
-  }
-  /** figure out how many selected values are currently hidden */
-  // $: hiddenSelectedValues = values.filter((di, i) => {
-  //   return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
-  // });
 
   // get all values that are selected but not visible.
   // we'll put these at the bottom w/ a divider.
@@ -271,6 +192,78 @@
     .sort((a, b) => {
       return b.value - a.value;
     });
+
+  let comparisonTopListQuery;
+  let isComparisonRangeAvailable = false;
+  // create the right compareTopListParams.
+  $: if (
+    !$topListQuery?.isFetching &&
+    hasTimeSeries &&
+    timeRangeName !== undefined &&
+    $dashboardStore?.selectedComparisonTimeRange?.start
+  ) {
+    const values = $topListQuery?.data?.data;
+
+    isComparisonRangeAvailable = isRangeInsideOther(
+      allTimeRange?.start,
+      allTimeRange?.end,
+      $dashboardStore?.selectedComparisonTimeRange?.start,
+      $dashboardStore?.selectedComparisonTimeRange?.end
+    );
+    const { start, end } = $dashboardStore?.selectedComparisonTimeRange;
+    // add all sliced and active values to the include filter.
+    const currentVisibleValues = values
+      ?.slice(0, slice)
+      .concat(selectedValuesThatAreBelowTheFold)
+      .map((v) => v[dimensionName]);
+
+    const updatedFilters = getFilterForComparsion(
+      filterForDimension,
+      dimensionName,
+      currentVisibleValues
+    );
+
+    let comparisonParams = {
+      dimensionName: dimensionName,
+      measureNames: [measure.name],
+      limit: currentVisibleValues.length.toString(),
+      offset: "0",
+      sort: [
+        {
+          name: measure.name,
+          ascending: false,
+        },
+      ],
+      filter: updatedFilters,
+    };
+
+    if (hasTimeSeries) {
+      comparisonParams = {
+        ...comparisonParams,
+
+        ...{
+          timeStart: start,
+          timeEnd: end,
+        },
+      };
+    }
+
+    comparisonTopListQuery = useQueryServiceMetricsViewToplist(
+      $runtime.instanceId,
+      metricViewName,
+      comparisonParams
+    );
+  } else if (!hasTimeSeries) {
+    isComparisonRangeAvailable = false;
+  }
+
+  $: if (!$comparisonTopListQuery?.isFetching) {
+    comparisonValues =
+      $comparisonTopListQuery?.data?.data?.map((val) => ({
+        value: val[measure?.name],
+        label: val[dimension?.name],
+      })) ?? [];
+  }
 
   let hovered: boolean;
 </script>
@@ -297,7 +290,7 @@
           {formatPreset}
           loading={$topListQuery?.isFetching}
           values={values.slice(0, slice)}
-          comparisonValues={comparisonValues.slice(0, slice)}
+          {comparisonValues}
           showComparison={isComparisonRangeAvailable}
           {activeValues}
           {filterExcludeMode}
@@ -313,7 +306,7 @@
             {formatPreset}
             loading={$topListQuery?.isFetching}
             values={selectedValuesThatAreBelowTheFold}
-            comparisonValues={comparisonValues.slice(0, slice)}
+            {comparisonValues}
             showComparison={isComparisonRangeAvailable}
             {activeValues}
             {filterExcludeMode}

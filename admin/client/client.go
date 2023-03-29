@@ -19,13 +19,14 @@ type Client struct {
 }
 
 // New creates a new Client and opens a connection. You must call Close() when done with the client.
-func New(adminHost, bearerToken string) (*Client, error) {
+func New(adminHost, bearerToken, userAgent string) (*Client, error) {
 	uri, err := url.Parse(adminHost)
 	if err != nil {
 		return nil, err
 	}
 
 	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithUserAgent(userAgent))
 
 	if uri.Scheme == "http" {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
