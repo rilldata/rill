@@ -1,83 +1,22 @@
 import { describe, it } from "@jest/globals";
 import {
-  AdBidsMirrorName,
+  AdBidsBaseFilter,
+  AdBidsBidPriceMeasure,
+  AdBidsClearedFilter,
   AdBidsDomainDimension,
+  AdBidsExcludedFilter,
+  AdBidsMirrorName,
   AdBidsName,
   AdBidsPublisherDimension,
+  AllTimeParsedTestControls,
   assertMetricsView,
-  createAdBidsMirrorInStore,
   createAdBidsInStore,
-  TestTimeConstants,
-  AdBidsBidPriceMeasure,
+  createAdBidsMirrorInStore,
+  CustomTestControls,
+  Last6HoursTestControls,
+  Last6HoursTestParsedControls,
 } from "@rilldata/web-common/features/dashboard-stores-test-data";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-import { CUSTOM } from "@rilldata/web-common/lib/time/config";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { get } from "svelte/store";
-
-const BaseFilter = {
-  include: [
-    {
-      name: AdBidsPublisherDimension,
-      in: ["Google", "Facebook"],
-    },
-    {
-      name: AdBidsDomainDimension,
-      in: ["google.com"],
-    },
-  ],
-  exclude: [],
-};
-const ExcludedFilter = {
-  include: [
-    {
-      name: AdBidsDomainDimension,
-      in: ["google.com"],
-    },
-  ],
-  exclude: [
-    {
-      name: AdBidsPublisherDimension,
-      in: ["Google", "Facebook"],
-    },
-  ],
-};
-const ClearedFilter = {
-  include: [],
-  exclude: [
-    {
-      name: AdBidsPublisherDimension,
-      in: ["Google", "Facebook"],
-    },
-  ],
-};
-
-// parsed time controls won't have start & end
-const AllTimeParsedControls = {
-  name: TimeRangePreset.ALL_TIME,
-  interval: V1TimeGrain.TIME_GRAIN_MINUTE,
-} as DashboardTimeControls;
-
-const Last6HoursControls = {
-  name: TimeRangePreset.LAST_SIX_HOURS,
-  interval: V1TimeGrain.TIME_GRAIN_HOUR,
-  start: TestTimeConstants.Last6Hours,
-  end: TestTimeConstants.Now,
-} as DashboardTimeControls;
-// parsed time controls won't have start & end
-const Last6HoursParsedControls = {
-  name: TimeRangePreset.LAST_SIX_HOURS,
-  interval: V1TimeGrain.TIME_GRAIN_HOUR,
-} as DashboardTimeControls;
-
-const CustomControls = {
-  name: TimeRangePreset.CUSTOM,
-  interval: V1TimeGrain.TIME_GRAIN_MINUTE,
-  start: TestTimeConstants.Last18Hours,
-  end: TestTimeConstants.Last12Hours,
-} as DashboardTimeControls;
 
 describe("dashboard-stores", () => {
   it("Toggle filters", () => {
@@ -100,19 +39,27 @@ describe("dashboard-stores", () => {
       AdBidsDomainDimension,
       "google.com"
     );
-    assertMetricsView(AdBidsName, BaseFilter);
+    assertMetricsView(AdBidsName, AdBidsBaseFilter);
 
     // create a mirror using the proto and assert that the filters are persisted
     createAdBidsMirrorInStore();
-    assertMetricsView(AdBidsMirrorName, BaseFilter, AllTimeParsedControls);
+    assertMetricsView(
+      AdBidsMirrorName,
+      AdBidsBaseFilter,
+      AllTimeParsedTestControls
+    );
 
     // toggle to exclude
     metricsExplorerStore.toggleFilterMode(AdBidsName, AdBidsPublisherDimension);
-    assertMetricsView(AdBidsName, ExcludedFilter);
+    assertMetricsView(AdBidsName, AdBidsExcludedFilter);
 
     // create a mirror using the proto and assert that the filters are persisted
     createAdBidsMirrorInStore();
-    assertMetricsView(AdBidsMirrorName, ExcludedFilter, AllTimeParsedControls);
+    assertMetricsView(
+      AdBidsMirrorName,
+      AdBidsExcludedFilter,
+      AllTimeParsedTestControls
+    );
 
     // clear for Domain
     metricsExplorerStore.clearFilterForDimension(
@@ -120,11 +67,15 @@ describe("dashboard-stores", () => {
       AdBidsDomainDimension,
       true
     );
-    assertMetricsView(AdBidsName, ClearedFilter);
+    assertMetricsView(AdBidsName, AdBidsClearedFilter);
 
     // create a mirror using the proto and assert that the filters are persisted
     createAdBidsMirrorInStore();
-    assertMetricsView(AdBidsMirrorName, ClearedFilter, AllTimeParsedControls);
+    assertMetricsView(
+      AdBidsMirrorName,
+      AdBidsClearedFilter,
+      AllTimeParsedTestControls
+    );
 
     // clear
     metricsExplorerStore.clearFilters(AdBidsName);
@@ -132,7 +83,7 @@ describe("dashboard-stores", () => {
 
     // create a mirror using the proto and assert that the filters are persisted
     createAdBidsMirrorInStore();
-    assertMetricsView(AdBidsMirrorName, undefined, AllTimeParsedControls);
+    assertMetricsView(AdBidsMirrorName, undefined, AllTimeParsedTestControls);
   });
 
   it("Update time selections", () => {
@@ -140,22 +91,29 @@ describe("dashboard-stores", () => {
     assertMetricsView(AdBidsName);
 
     // select a different time
-    metricsExplorerStore.setSelectedTimeRange(AdBidsName, Last6HoursControls);
-    assertMetricsView(AdBidsName, undefined, Last6HoursControls);
+    metricsExplorerStore.setSelectedTimeRange(
+      AdBidsName,
+      Last6HoursTestControls
+    );
+    assertMetricsView(AdBidsName, undefined, Last6HoursTestControls);
 
     // create a mirror using the proto and assert that the time controls are persisted
     createAdBidsMirrorInStore();
     // start and end are not persisted
-    assertMetricsView(AdBidsMirrorName, undefined, Last6HoursParsedControls);
+    assertMetricsView(
+      AdBidsMirrorName,
+      undefined,
+      Last6HoursTestParsedControls
+    );
 
     // select custom time
-    metricsExplorerStore.setSelectedTimeRange(AdBidsName, CustomControls);
-    assertMetricsView(AdBidsName, undefined, CustomControls);
+    metricsExplorerStore.setSelectedTimeRange(AdBidsName, CustomTestControls);
+    assertMetricsView(AdBidsName, undefined, CustomTestControls);
 
     // create a mirror using the proto and assert that the time controls are persisted
     createAdBidsMirrorInStore();
     // start and end are persisted for custom
-    assertMetricsView(AdBidsMirrorName, undefined, CustomControls);
+    assertMetricsView(AdBidsMirrorName, undefined, CustomTestControls);
   });
 
   it("Select different measure", () => {
@@ -174,7 +132,7 @@ describe("dashboard-stores", () => {
     assertMetricsView(
       AdBidsMirrorName,
       undefined,
-      AllTimeParsedControls,
+      AllTimeParsedTestControls,
       AdBidsBidPriceMeasure
     );
   });

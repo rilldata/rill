@@ -1,7 +1,7 @@
 import { expect } from "@jest/globals";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   V1MetricsViewFilter,
   V1TimeGrain,
@@ -85,3 +85,68 @@ export function assertMetricsView(
   expect(metricsView.selectedTimeRange).toEqual(timeRange);
   expect(metricsView.leaderboardMeasureName).toEqual(selectedMeasure);
 }
+
+export const AdBidsBaseFilter = {
+  include: [
+    {
+      name: AdBidsPublisherDimension,
+      in: ["Google", "Facebook"],
+    },
+    {
+      name: AdBidsDomainDimension,
+      in: ["google.com"],
+    },
+  ],
+  exclude: [],
+};
+
+export const AdBidsExcludedFilter = {
+  include: [
+    {
+      name: AdBidsDomainDimension,
+      in: ["google.com"],
+    },
+  ],
+  exclude: [
+    {
+      name: AdBidsPublisherDimension,
+      in: ["Google", "Facebook"],
+    },
+  ],
+};
+
+export const AdBidsClearedFilter = {
+  include: [],
+  exclude: [
+    {
+      name: AdBidsPublisherDimension,
+      in: ["Google", "Facebook"],
+    },
+  ],
+};
+
+// parsed time controls won't have start & end
+export const AllTimeParsedTestControls = {
+  name: TimeRangePreset.ALL_TIME,
+  interval: V1TimeGrain.TIME_GRAIN_MINUTE,
+} as DashboardTimeControls;
+
+export const Last6HoursTestControls = {
+  name: TimeRangePreset.LAST_SIX_HOURS,
+  interval: V1TimeGrain.TIME_GRAIN_HOUR,
+  start: TestTimeConstants.Last6Hours,
+  end: TestTimeConstants.Now,
+} as DashboardTimeControls;
+
+// parsed time controls won't have start & end
+export const Last6HoursTestParsedControls = {
+  name: TimeRangePreset.LAST_SIX_HOURS,
+  interval: V1TimeGrain.TIME_GRAIN_HOUR,
+} as DashboardTimeControls;
+
+export const CustomTestControls = {
+  name: TimeRangePreset.CUSTOM,
+  interval: V1TimeGrain.TIME_GRAIN_MINUTE,
+  start: TestTimeConstants.Last18Hours,
+  end: TestTimeConstants.Last12Hours,
+} as DashboardTimeControls;
