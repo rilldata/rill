@@ -26,10 +26,12 @@
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
+  import { isRangeInsideOther } from "../../../lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
+    useDashboardStore,
   } from "../dashboard-stores";
   import type { NicelyFormattedTypes } from "../humanize-numbers";
   import DimensionLeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
@@ -56,11 +58,10 @@
 
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: dashboardStore = useDashboardStore(metricViewName);
 
   // the timeRangeName is the key to a selected time range's associated presets.
-  $: timeRangeName = metricsExplorer?.selectedTimeRange?.name;
+  $: timeRangeName = $dashboardStore?.selectedTimeRange?.name;
   // we'll need to get the entire time range.
   $: allTimeRangeQuery = useModelAllTimeRange(
     $runtime.instanceId,
@@ -71,7 +72,7 @@
 
   let filterExcludeMode: boolean;
   $: filterExcludeMode =
-    metricsExplorer?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
+    $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
   let filterKey: "exclude" | "include";
   $: filterKey = filterExcludeMode ? "exclude" : "include";
 
@@ -87,19 +88,19 @@
   $: measureQuery = useMetaMeasure(
     $runtime.instanceId,
     metricViewName,
-    metricsExplorer?.leaderboardMeasureName
+    $dashboardStore?.leaderboardMeasureName
   );
   let measure: MetricsViewMeasure;
   $: measure = $measureQuery?.data;
 
   $: filterForDimension = getFilterForDimension(
-    metricsExplorer?.filters,
+    $dashboardStore?.filters,
     dimensionName
   );
 
   let activeValues: Array<unknown>;
   $: activeValues =
-    metricsExplorer?.filters[filterKey]?.find((d) => d.name === dimension?.name)
+    $dashboardStore?.filters[filterKey]?.find((d) => d.name === dimension?.name)
       ?.in ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
@@ -129,7 +130,7 @@
 
   $: if (
     measure?.name &&
-    metricsExplorer &&
+    $dashboardStore &&
     $metaQuery?.isSuccess &&
     !$metaQuery?.isRefetching
   ) {
@@ -151,8 +152,8 @@
       topListParams = {
         ...topListParams,
         ...{
-          timeStart: metricsExplorer.selectedTimeRange?.start,
-          timeEnd: metricsExplorer.selectedTimeRange?.end,
+          timeStart: $dashboardStore.selectedTimeRange?.start,
+          timeEnd: $dashboardStore.selectedTimeRange?.end,
         },
       };
     }
@@ -171,23 +172,18 @@
   $: if (
     !$topListQuery?.isFetching &&
     hasTimeSeries &&
-    timeRangeName !== undefined
+    timeRangeName !== undefined &&
+    $dashboardStore?.selectedComparisonTimeRange?.start
   ) {
     const values = $topListQuery?.data?.data;
 
-    const comparisonTimeRange = getTimeComparisonParametersForComponent(
-      (metricsExplorer?.selectedComparisonTimeRange
-        ?.name as TimeComparisonOption) ||
-        (DEFAULT_TIME_RANGES[timeRangeName]
-          .defaultComparison as TimeComparisonOption),
+    isComparisonRangeAvailable = isRangeInsideOther(
       allTimeRange?.start,
       allTimeRange?.end,
-      metricsExplorer.selectedTimeRange.start,
-      metricsExplorer.selectedTimeRange.end
+      $dashboardStore?.selectedComparisonTimeRange?.start,
+      $dashboardStore?.selectedComparisonTimeRange?.end
     );
-
-    const { start, end } = comparisonTimeRange;
-    isComparisonRangeAvailable = comparisonTimeRange.isComparisonRangeAvailable;
+    const { start, end } = $dashboardStore?.selectedComparisonTimeRange;
 
     // add all available leaderboard  values to the include filter.
     const updatedFilters = filterForDimension;

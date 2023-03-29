@@ -19,6 +19,7 @@
   import {
     convertTimeRangePreset,
     ISODurationToTimePreset,
+    isRangeInsideOther,
   } from "@rilldata/web-common/lib/time/ranges";
   import {
     DashboardTimeControls,
@@ -142,7 +143,7 @@
     new Date($dashboardStore?.selectedTimeRange?.end)
   );
 
-  function onSelectTimeRange(name: TimeRangeType, start: string, end: string) {
+  function onSelectTimeRange(name: TimeRangeType, start: Date, end: Date) {
     baseTimeRange = {
       name,
       start: new Date(start),
@@ -156,6 +157,18 @@
 
   function onSelectTimeGrain(timeGrain: V1TimeGrain) {
     makeTimeSeriesTimeRangeAndUpdateAppState(baseTimeRange, timeGrain);
+  }
+
+  function onSelectComparisonRange(
+    name: TimeComparisonOption,
+    start: Date,
+    end: Date
+  ) {
+    metricsExplorerStore.setSelectedComparisonRange(metricViewName, {
+      name,
+      start,
+      end,
+    });
   }
 
   function makeTimeSeriesTimeRangeAndUpdateAppState(
@@ -203,43 +216,36 @@
     };
 
     // reset comparisonOption to the default for the new time range.
-    comparisonOption =
-      DEFAULT_TIME_RANGES[$dashboardStore?.selectedTimeRange?.name]
-        ?.defaultComparison;
-
-    cancelDashboardQueries(queryClient, metricViewName);
-    // updateComparisonAppState(start, end, comparisonOption);
-    metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
-  }
-
-  /** updates the application state to include a comparison trio, which operates like
-   * a time range trio. This includes a start, end, and a name, the latter of which
-   * is used to determine the comparison time range regardless of the specific range.
-   */
-  // FIXME: this should not be in a file.
-  function updateComparisonAppState(
-    start: Date,
-    end: Date,
-    comparisonOption: TimeComparisonOption
-  ) {
+    comparisonOption = DEFAULT_TIME_RANGES[name]?.defaultComparison;
     const comparisonTimeRange = getComparisonRange(
       start,
       end,
       comparisonOption
     );
 
-    metricsExplorerStore.setSelectedComparisonRange(metricViewName, {
+    const selectedComparisonTimeRange = {
       ...comparisonTimeRange,
       name: comparisonOption,
-    });
+    };
+
+    cancelDashboardQueries(queryClient, metricViewName);
+
+    metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
+    metricsExplorerStore.setSelectedComparisonRange(
+      metricViewName,
+      selectedComparisonTimeRange
+    );
   }
 
-  let comparisonRange;
   let comparisonOption;
   let isComparisonRangeAvailable;
   let availableComparisons;
 
-  $: if ($dashboardStore?.selectedTimeRange?.start && hasTimeSeries) {
+  $: if (
+    allTimeRange?.start &&
+    $dashboardStore?.selectedTimeRange?.start &&
+    hasTimeSeries
+  ) {
     const { start, end } = $dashboardStore?.selectedTimeRange;
 
     if (!comparisonOption) {
@@ -251,14 +257,20 @@
       comparisonOption = $dashboardStore?.selectedComparisonTimeRange?.name;
     }
 
-    comparisonRange = getComparisonRange(start, end, comparisonOption);
-    isComparisonRangeAvailable = isComparisonInsideBounds(
+    isComparisonRangeAvailable = isRangeInsideOther(
       allTimeRange.start,
       allTimeRange.end,
-      start,
-      end,
-      comparisonOption
+      $dashboardStore?.selectedComparisonTimeRange?.start,
+      $dashboardStore?.selectedComparisonTimeRange?.end
     );
+
+    console.log(
+      "isComparisonRangeAvailable",
+      isComparisonRangeAvailable,
+      allTimeRange,
+      $dashboardStore?.selectedComparisonTimeRange
+    );
+
     availableComparisons = getAvailableComparisonsForTimeRange(
       allTimeRange.start,
       allTimeRange.end,
@@ -276,34 +288,29 @@
       {metricViewName}
       modelName={$metricsViewQuery?.data?.entry?.metricsView?.model}
     />
-  {:else}
+  {:else if allTimeRange?.start}
     <TimeRangeSelector
       {metricViewName}
-      {allTimeRange}
       {minTimeGrain}
+      boundaryStart={allTimeRange.start}
+      boundaryEnd={allTimeRange.end}
       on:select-time-range={(e) =>
         onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
     />
-    {#if allTimeRange?.start}
-      <TimeComparisonSelector
-        on:select-comparison={(e) => {
-          updateComparisonAppState(
-            $dashboardStore?.selectedTimeRange?.start,
-            $dashboardStore?.selectedTimeRange?.end,
-            e.detail
-          );
-        }}
-        currentStart={$dashboardStore?.selectedTimeRange?.start}
-        currentEnd={$dashboardStore?.selectedTimeRange?.end}
-        boundaryStart={allTimeRange.start}
-        boundaryEnd={allTimeRange.end}
-        {metricViewName}
-        {allTimeRange}
-        showComparison={isComparisonRangeAvailable}
-        {comparisonOption}
-        comparisonOptions={availableComparisons}
-      />
-    {/if}
+    <TimeComparisonSelector
+      on:select-comparison={(e) => {
+        onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
+      }}
+      {minTimeGrain}
+      currentStart={$dashboardStore?.selectedTimeRange?.start}
+      currentEnd={$dashboardStore?.selectedTimeRange?.end}
+      boundaryStart={allTimeRange.start}
+      boundaryEnd={allTimeRange.end}
+      {metricViewName}
+      showComparison={isComparisonRangeAvailable}
+      {comparisonOption}
+      comparisonOptions={availableComparisons}
+    />
     <TimeGrainSelector
       on:select-time-grain={(e) => onSelectTimeGrain(e.detail.timeGrain)}
       {metricViewName}

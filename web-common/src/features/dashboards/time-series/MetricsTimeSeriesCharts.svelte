@@ -4,8 +4,9 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
+    $dashboardStoreEntity,
+    $dashboardStoreStore,
+    useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import {
     humanizeDataType,
@@ -35,6 +36,7 @@
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
   import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
+  import { isRangeInsideOther } from "../../../lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -45,16 +47,15 @@
   export let metricViewName;
   export let workspaceWidth: number;
 
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: dashboardStore = useDashboardStore(metricViewName);
 
   $: instanceId = $runtime.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
   $: timeDimension = $metaQuery.data?.timeDimension;
-  $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
-  $: interval = metricsExplorer?.selectedTimeRange?.interval;
+  $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
+  $: interval = $dashboardStore?.selectedTimeRange?.interval;
 
   let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
 
@@ -66,8 +67,10 @@
 
   // get the time range name, which is the preset.
   let name;
+  let allTimeRange;
   $: if ($allTimeRangeQuery?.isSuccess) {
-    name = metricsExplorer.selectedTimeRange.name;
+    allTimeRange = $allTimeRangeQuery.data;
+    name = $dashboardStore.selectedTimeRange.name;
   }
 
   let totalsComparisonQuery: UseQueryStoreResult<
@@ -77,35 +80,26 @@
 
   let isComparisonRangeAvailable = false;
 
-  let comparisonStart;
-  let comparisonEnd;
-
   /** Generate the totals & big number comparison query */
   $: if (
     name &&
-    metricsExplorer &&
+    $dashboardStore &&
     metaQuery &&
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    const comparisonParams = getTimeComparisonParametersForComponent(
-      (metricsExplorer?.selectedComparisonTimeRange
-        ?.name as TimeComparisonOption) ||
-        (DEFAULT_TIME_RANGES[name].defaultComparison as TimeComparisonOption),
-      $allTimeRangeQuery?.data?.start,
-      $allTimeRangeQuery?.data?.end,
-      metricsExplorer.selectedTimeRange.start,
-      metricsExplorer.selectedTimeRange.end
+    isComparisonRangeAvailable = isRangeInsideOther(
+      allTimeRange?.start,
+      allTimeRange?.end,
+      $dashboardStore?.selectedComparisonTimeRange?.start,
+      $dashboardStore?.selectedComparisonTimeRange?.end
     );
-    comparisonStart = comparisonParams.start;
-    comparisonEnd = comparisonParams.end;
-    isComparisonRangeAvailable = comparisonParams.isComparisonRangeAvailable;
 
     const totalsQueryParams = {
       measureNames: selectedMeasureNames,
-      filter: metricsExplorer?.filters,
-      timeStart: metricsExplorer.selectedTimeRange?.start,
-      timeEnd: metricsExplorer.selectedTimeRange?.end,
+      filter: $dashboardStore?.filters,
+      timeStart: $dashboardStore.selectedTimeRange?.start.toISOString(),
+      timeEnd: $dashboardStore.selectedTimeRange?.end.toISOString(),
     };
 
     totalsQuery = useQueryServiceMetricsViewTotals(
@@ -120,10 +114,10 @@
       {
         ...totalsQueryParams,
         timeStart: isComparisonRangeAvailable
-          ? comparisonStart.toISOString()
+          ? $dashboardStore?.selectedComparisonTimeRange?.start.toISOString()
           : undefined,
         timeEnd: isComparisonRangeAvailable
-          ? comparisonEnd.toISOString()
+          ? $dashboardStore?.selectedComparisonTimeRange?.start.toISOString()
           : undefined,
       }
     );
@@ -143,21 +137,21 @@
   >;
 
   $: if (
-    metricsExplorer &&
+    $dashboardStore &&
     metaQuery &&
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching &&
-    metricsExplorer.selectedTimeRange
+    $dashboardStore?.selectedTimeRange?.start
   ) {
     timeSeriesQuery = useQueryServiceMetricsViewTimeSeries(
       instanceId,
       metricViewName,
       {
         measureNames: selectedMeasureNames,
-        filter: metricsExplorer?.filters,
-        timeStart: metricsExplorer.selectedTimeRange?.start,
-        timeEnd: metricsExplorer.selectedTimeRange?.end,
-        timeGranularity: metricsExplorer.selectedTimeRange?.interval,
+        filter: $dashboardStore?.filters,
+        timeStart: $dashboardStore.selectedTimeRange?.start.toISOString(),
+        timeEnd: $dashboardStore.selectedTimeRange?.end.toISOString(),
+        timeGranularity: $dashboardStore.selectedTimeRange?.interval,
       }
     );
     if (isComparisonRangeAvailable) {
@@ -166,14 +160,12 @@
         metricViewName,
         {
           measureNames: selectedMeasureNames,
-          filter: metricsExplorer?.filters,
-          timeStart: isComparisonRangeAvailable
-            ? comparisonStart.toISOString()
-            : undefined,
-          timeEnd: isComparisonRangeAvailable
-            ? comparisonEnd.toISOString()
-            : undefined,
-          timeGranularity: metricsExplorer.selectedTimeRange?.interval,
+          filter: $dashboardStore?.filters,
+          timeStart:
+            $dashboardStore?.selectedComparisonTimeRange?.start.toISOString(),
+          timeEnd:
+            $dashboardStore?.selectedComparisonTimeRange?.end.toISOString(),
+          timeGranularity: $dashboardStore.selectedTimeRange?.interval,
         }
       );
     }
@@ -204,20 +196,20 @@
 
   // FIXME: move this logic to a function + write tests.
   $: if (
-    metricsExplorer?.selectedTimeRange &&
-    metricsExplorer?.selectedTimeRange?.start
+    $dashboardStore?.selectedTimeRange &&
+    $dashboardStore?.selectedTimeRange?.start
   ) {
     startValue = removeTimezoneOffset(
-      new Date(metricsExplorer?.selectedTimeRange?.start)
+      new Date($dashboardStore?.selectedTimeRange?.start)
     );
 
     // selectedTimeRange.end is exclusive and rounded to the time grain ("interval").
     // Since values are grouped with DATE_TRUNC, we subtract one grain to get the (inclusive) axis end.
-    endValue = new Date(metricsExplorer?.selectedTimeRange?.end);
+    endValue = new Date($dashboardStore?.selectedTimeRange?.end);
 
     endValue = getOffset(
-      new Date(metricsExplorer?.selectedTimeRange?.end),
-      TIME_GRAIN[metricsExplorer?.selectedTimeRange?.interval].duration,
+      new Date($dashboardStore?.selectedTimeRange?.end),
+      TIME_GRAIN[$dashboardStore?.selectedTimeRange?.interval].duration,
       TimeOffsetType.SUBTRACT
     );
 
@@ -237,7 +229,7 @@
       <div style:padding-left="24px" style:height="20px" />
       <!-- top axis element -->
       <div />
-      {#if metricsExplorer?.selectedTimeRange}
+      {#if $dashboardStore?.selectedTimeRange}
         <SimpleDataGraphic
           height={32}
           top={34}
@@ -299,7 +291,7 @@
                 /** format the date according to the time grain */
                 return new Date(value).toLocaleDateString(
                   undefined,
-                  TIME_GRAIN[metricsExplorer?.selectedTimeRange?.interval]
+                  TIME_GRAIN[$dashboardStore?.selectedTimeRange?.interval]
                     .formatDate
                 );
               }}

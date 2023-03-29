@@ -32,7 +32,7 @@ export function isRangeInsideOther(
   otherStart: Date,
   otherEnd: Date
 ) {
-  return start >= otherStart && end <= otherEnd;
+  return otherStart >= start && otherEnd <= end;
 }
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
@@ -64,10 +64,10 @@ export function getChildTimeRanges(
       );
 
       const timeRangeIsSmallerThanAllTime = isRangeInsideOther(
-        timeRangeDates.startDate,
-        timeRangeDates.endDate,
         start,
-        end
+        end,
+        timeRangeDates.startDate,
+        timeRangeDates.endDate
       );
 
       // check if time range is possible with given minTimeGrain
