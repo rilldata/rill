@@ -51,27 +51,37 @@ export function updateFilterOnSearch(
 export function getFilterForComparsion(
   filterForDimension,
   dimensionName,
-  values
+  filterValues
 ) {
   const comparisonFilterSet = JSON.parse(JSON.stringify(filterForDimension));
 
-  if (!values.length) return comparisonFilterSet;
+  if (!filterValues.length) return comparisonFilterSet;
 
   let foundDimension = false;
   comparisonFilterSet["include"].forEach((filter) => {
     if (filter.name === dimensionName) {
       foundDimension = true;
-      filter.in = values.map((v) => v[dimensionName]);
+      filter.in = filterValues;
     }
   });
 
   if (!foundDimension) {
     comparisonFilterSet["include"].push({
       name: dimensionName,
-      in: values.map((v) => v[dimensionName]),
+      in: filterValues,
     });
   }
   return comparisonFilterSet;
+}
+
+export function getFilterForComparisonTable(
+  filterForDimension,
+  dimensionName,
+  values
+) {
+  if (!values || !values.length) return filterForDimension;
+  const filterValues = values.map((v) => v[dimensionName]);
+  getFilterForComparsion(filterForDimension, dimensionName, filterValues);
 }
 
 // Custom sort that implements the following logic:
@@ -110,9 +120,7 @@ export function computeComparisonValues(
     : comparisonData?.meta[0].name;
 
   const dimensionToValueMap = new Map(
-    comparisonData?.data?.map((obj) => {
-      return [obj[dimensionName], obj[measureName]];
-    })
+    comparisonData?.data?.map((obj) => [obj[dimensionName], obj[measureName]])
   );
 
   for (const value of values) {
