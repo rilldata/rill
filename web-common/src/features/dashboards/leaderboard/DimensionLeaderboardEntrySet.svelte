@@ -21,7 +21,7 @@ see more button
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { createEventDispatcher } from "svelte";
   import PercentageChange from "../../../components/data-types/PercentageChange.svelte";
-  import { PERCENTAGE } from "../../../components/data-types/type-utils";
+  import { PERC_DIFF } from "../../../components/data-types/type-utils";
   import {
     formatMeasurePercentageDifference,
     humanizeDataType,
@@ -67,13 +67,20 @@ see more button
       if (showComparison) comparisonLabelToReveal = value;
     };
   }
+
+  function getFormatterValueForPercDiff(comparisonValue, value) {
+    if (comparisonValue === 0) return PERC_DIFF.PREV_VALUE_ZERO;
+    if (!comparisonValue) return PERC_DIFF.PREV_VALUE_NO_DATA;
+    if (value === null || value === undefined)
+      return PERC_DIFF.CURRENT_VALUE_NO_DATA;
+
+    const percDiff = (value - comparisonValue) / comparisonValue;
+    return formatMeasurePercentageDifference(percDiff);
+  }
 </script>
 
 {#each renderValues as { label, value, active, excluded, comparisonValue } (label)}
   {@const formattedValue = humanizeDataType(value, formatPreset)}
-  {@const percDiff =
-    comparisonValue && value && (value - comparisonValue) / comparisonValue}
-  {@const diffParts = formatMeasurePercentageDifference(percDiff)}
   {@const showComparisonForThisValue = comparisonLabelToReveal === label}
 
   <div
@@ -124,7 +131,9 @@ see more button
         {formattedValue || value || "∅"}
       </div>
       <span slot="context">
-        <PercentageChange value={percDiff ? diffParts : PERCENTAGE.NO_DATA} />
+        <PercentageChange
+          value={getFormatterValueForPercDiff(comparisonValue, value)}
+        />
       </span>
       <svelte:fragment slot="tooltip">
         <TooltipTitle>

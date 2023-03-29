@@ -1,5 +1,6 @@
-import { PERCENTAGE } from "../../../components/data-types/type-utils";
+import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import type {
+  MetricsViewMeasure,
   V1MetricsViewToplistResponse,
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
@@ -116,37 +117,42 @@ export function computeComparisonValues(
 
   for (const value of values) {
     const prevValue = dimensionToValueMap.get(value[dimensionName]);
-    value[measureName + "_delta"] = prevValue
-      ? value[measureName] - prevValue
-      : null;
-    value[measureName + "_delta_perc"] = prevValue
-      ? formatMeasurePercentageDifference(
-          (value[measureName] - prevValue) / prevValue
-        )
-      : prevValue === 0
-      ? PERCENTAGE.PREV_VALUE_ZERO
-      : PERCENTAGE.NO_DATA;
+
+    if (prevValue === undefined) {
+      value[measureName + "_delta"] = null;
+      value[measureName + "_delta_perc"] = PERC_DIFF.PREV_VALUE_NO_DATA;
+    } else if (prevValue === null) {
+      value[measureName + "_delta"] = null;
+      value[measureName + "_delta_perc"] = PERC_DIFF.PREV_VALUE_NULL;
+    } else if (prevValue === 0) {
+      value[measureName + "_delta"] = value[measureName];
+      value[measureName + "_delta_perc"] = PERC_DIFF.PREV_VALUE_ZERO;
+    } else {
+      value[measureName + "_delta"] = value[measureName] - prevValue;
+      value[measureName + "_delta_perc"] = formatMeasurePercentageDifference(
+        (value[measureName] - prevValue) / prevValue
+      );
+    }
   }
 
   return values;
 }
 
-export const COMPARISON_COLUMNS = {
-  change_percentage: {
-    label: "Δ %",
-    type: "RILL_PERCENTAGE_CHANGE",
-    format: NicelyFormattedTypes.PERCENTAGE,
-  },
-  change_value: {
-    label: "Δ",
-    type: "INT",
-    format: NicelyFormattedTypes.HUMANIZE,
-  },
-};
-
-export function getComparisonProperties(measureName: string) {
+export function getComparisonProperties(
+  measureName: string,
+  selectedMeasure: MetricsViewMeasure
+) {
   if (measureName.includes("_delta_perc"))
-    return COMPARISON_COLUMNS["change_percentage"];
-  else if (measureName.includes("_delta"))
-    return COMPARISON_COLUMNS["change_value"];
+    return {
+      label: "Δ %",
+      type: "RILL_PERCENTAGE_CHANGE",
+      format: NicelyFormattedTypes.PERCENTAGE,
+    };
+  else if (measureName.includes("_delta")) {
+    return {
+      label: "Δ",
+      type: "INT",
+      format: selectedMeasure.format,
+    };
+  }
 }

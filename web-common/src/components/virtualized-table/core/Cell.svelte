@@ -150,6 +150,7 @@
       >
         <FormattedDataType
           value={formattedValue || value}
+          isNull={value === null || value === undefined}
           {type}
           customStyle={formattedDataTypeStyle}
           inTable

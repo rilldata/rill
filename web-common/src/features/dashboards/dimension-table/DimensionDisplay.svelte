@@ -310,7 +310,10 @@
         };
       } else {
         // Handle delta and delta_perc
-        const comparison = getComparisonProperties(columnName);
+        const selectedMeasure = allMeasures.find(
+          (m) => m.name === sortByColumn
+        );
+        const comparison = getComparisonProperties(columnName, selectedMeasure);
         return {
           name: columnName,
           type: comparison.type,
