@@ -118,6 +118,69 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 	return nil
 }
 
+// New method for refresh source
+func (s *Service) TriggerRefreshSource(ctx context.Context, deploymentID string) error {
+	// Run it all in the background
+	go func() {
+		// Use s.closeCtx to cancel if the service is stopped
+		ctx := s.closeCtx
+
+		s.logger.Info("refresh source: starting", zap.String("deployment_id", deploymentID))
+
+		// Get deployment
+		depl, err := s.DB.FindDeployment(ctx, deploymentID)
+		if err != nil {
+			s.logger.Error("refresh source: could not find deployment", zap.String("deployment_id", deploymentID), zap.Error(err))
+			return
+		}
+
+		// Check status
+		if depl.Status == database.DeploymentStatusSourceRefresh && time.Since(depl.UpdatedOn) < 30*time.Minute {
+			s.logger.Error("refresh source: skipping because it is already running", zap.String("deployment_id", deploymentID))
+			return
+		}
+
+		// Set deployment status to reconciling
+		depl, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusSourceRefresh, "")
+		if err != nil {
+			s.logger.Error("refresh source: could not update status", zap.String("deployment_id", deploymentID), zap.Error(err))
+			return
+		}
+
+		// Get superuser token for runtime host
+		jwt, err := s.issuer.NewToken(auth.TokenOptions{
+			AudienceURL:         depl.RuntimeAudience,
+			TTL:                 time.Hour,
+			InstancePermissions: map[string][]auth.Permission{depl.RuntimeInstanceID: {auth.EditInstance}},
+		})
+		if err != nil {
+			s.logger.Error("refresh source: could not get token", zap.String("deployment_id", deploymentID), zap.Error(err))
+			return
+		}
+
+		// Make runtime client
+		rt, err := client.New(depl.RuntimeHost, jwt)
+		if err != nil {
+			s.logger.Error("refresh source: could not create client", zap.String("deployment_id", deploymentID), zap.Error(err))
+			return
+		}
+
+		// Call refresh source
+		_, err = rt.TriggerRefresh(ctx, &runtimev1.TriggerRefreshRequest{InstanceId: depl.RuntimeInstanceID})
+		if err != nil {
+			s.logger.Error("refresh source: rpc error", zap.String("deployment_id", deploymentID), zap.Error(err))
+			_, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusError, err.Error())
+			if err != nil {
+				s.logger.Error("refresh source: could not update logs", zap.String("deployment_id", deploymentID), zap.Error(err))
+			}
+			return
+		}
+
+		s.logger.Info("refresh source: completed", zap.String("deployment_id", deploymentID))
+	}()
+	return nil
+}
+
 func (s *Service) TriggerReconcile(ctx context.Context, deploymentID string) error {
 	// TODO: Make this actually fault tolerant
 

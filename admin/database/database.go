@@ -272,11 +272,12 @@ type UserGithubInstallation struct {
 type DeploymentStatus int
 
 const (
-	DeploymentStatusUnspecified DeploymentStatus = 0
-	DeploymentStatusPending     DeploymentStatus = 1
-	DeploymentStatusOK          DeploymentStatus = 2
-	DeploymentStatusReconciling DeploymentStatus = 3
-	DeploymentStatusError       DeploymentStatus = 4
+	DeploymentStatusUnspecified   DeploymentStatus = 0
+	DeploymentStatusPending       DeploymentStatus = 1
+	DeploymentStatusOK            DeploymentStatus = 2
+	DeploymentStatusReconciling   DeploymentStatus = 3
+	DeploymentStatusError         DeploymentStatus = 4
+	DeploymentStatusSourceRefresh DeploymentStatus = 5
 )
 
 // Deployment is a single deployment of a git branch.
