@@ -9,7 +9,7 @@
   // let successMsg = "";
   // let errorMsg = "";
 
-  async function fetchUserData() {
+  async function init() {
     const urlParams = new URLSearchParams(window.location.search);
     userCode = urlParams.get("user_code");
 
@@ -24,13 +24,18 @@
     } else {
       user = data.user;
     }
+    
+    let autoredirect = urlParams.get("auto_redirect");
+    if (autoredirect === 'true') {
+      handleGoToGithub()
+    }
   }
 
   function handleGoToGithub() {
     window.location.href = ADMIN_URL + "/github/connect";
   }
 
-  onMount(fetchUserData);
+  onMount(init);
 </script>
 
 <svelte:head>
