@@ -14,6 +14,7 @@
     prettyFormatTimeRange,
   } from "@rilldata/web-common/lib/time/ranges";
   import {
+    DashboardTimeControls,
     TimeRange,
     TimeRangeOption,
     TimeRangePreset,
@@ -32,6 +33,7 @@
   export let boundaryStart: Date;
   export let boundaryEnd: Date;
   export let minTimeGrain: V1TimeGrain;
+  export let selectedRange: DashboardTimeControls;
 
   const dispatch = createEventDispatcher();
 
@@ -216,8 +218,8 @@
         <CustomTimeRangeInput
           {boundaryStart}
           {boundaryEnd}
-          {metricViewName}
           {minTimeGrain}
+          defaultDate={selectedRange}
           on:apply={(e) =>
             onSelectCustomTimeRange(
               e.detail.startDate,

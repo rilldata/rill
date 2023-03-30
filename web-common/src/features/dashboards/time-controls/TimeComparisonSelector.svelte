@@ -26,8 +26,6 @@ This component needs to do the following:
 
   const dispatch = createEventDispatcher();
 
-  export let metricViewName;
-
   export let currentStart: Date;
   export let currentEnd: Date;
   export let boundaryStart: Date;
@@ -35,8 +33,10 @@ This component needs to do the following:
   export let minTimeGrain: V1TimeGrain;
 
   export let showComparison = true;
-  export let comparisonOption;
+  export let selectedComparison;
   export let comparisonOptions: TimeComparisonOption[];
+
+  $: comparisonOption = selectedComparison?.name;
 
   /** compile the comparison options */
   let options: {
@@ -86,18 +86,6 @@ This component needs to do the following:
       end: comparisonTimeRange.end,
     });
   };
-
-  //
-  function validateCustomTimeRange(start, end) {
-    const customStartDate = new Date(start);
-    const customEndDate = new Date(end);
-    const selectedEndDate = new Date(currentEnd);
-    if (customStartDate > customEndDate)
-      return "Start date must be before end date";
-    else if (customEndDate > selectedEndDate)
-      return "End date must be before sele1cted date";
-    else return undefined;
-  }
 
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
@@ -182,9 +170,9 @@ This component needs to do the following:
       {#if isCustomRangeOpen}
         <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
           <CustomTimeRangeInput
-            {metricViewName}
             {boundaryStart}
             {boundaryEnd}
+            defaultDate={selectedComparison}
             {minTimeGrain}
             on:apply={(e) => {
               onSelectCustomComparisonRange(

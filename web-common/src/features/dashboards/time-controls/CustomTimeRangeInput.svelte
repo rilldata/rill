@@ -6,27 +6,21 @@
   import { createEventDispatcher } from "svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { useDashboardStore } from "../dashboard-stores";
+  import type { DashboardTimeControls } from "../../../lib/time/types";
 
-  export let metricViewName: string;
   export let minTimeGrain: V1TimeGrain;
   export let boundaryStart: Date;
   export let boundaryEnd: Date;
+  export let defaultDate: DashboardTimeControls;
 
   const dispatch = createEventDispatcher();
 
   let start: string;
   let end: string;
 
-  $: dashboardStore = useDashboardStore(metricViewName);
-
-  $: if (!start && !end && $dashboardStore?.selectedTimeRange.start) {
-    start = getDateFromISOString(
-      $dashboardStore.selectedTimeRange.start.toISOString()
-    );
-    end = getDateFromISOString(
-      $dashboardStore.selectedTimeRange.end.toISOString()
-    );
+  $: if (!start && !end && defaultDate) {
+    start = getDateFromObject(defaultDate.start);
+    end = getDateFromObject(defaultDate.end);
   }
 
   // functions for extracting the right kind of date string out of
