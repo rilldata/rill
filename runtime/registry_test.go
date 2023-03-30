@@ -249,9 +249,9 @@ func NewTestRunTime(t *testing.T) *Runtime {
 		MetastoreDriver:     "sqlite",
 		// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 		// "cache=shared" is needed to prevent threading problems.
-		MetastoreDSN:        fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
-		QueryCacheSize:      10000,
-		DisableAbsolutePath: true,
+		MetastoreDSN:                 fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
+		QueryCacheSize:               10000,
+		DisablePathAccessOutsideRepo: true,
 	}
 	rt, err := New(opts, zap.NewNop())
 	require.NoError(t, err)
