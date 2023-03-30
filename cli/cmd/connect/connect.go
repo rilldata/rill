@@ -48,6 +48,7 @@ type connectOptions struct {
 }
 
 // ConnectCmd is the guided tour for connecting rill projects to rill cloud.
+// TODO :: add non interactive mode
 func ConnectCmd(cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "connect",
@@ -196,6 +197,7 @@ Follow these steps to push your project to Github.`)
 			// Success!
 			success.Printf("Created project %s/%s\n", cfg.Org, projRes.Project.Name)
 			success.Printf("Rill projects deploy continuously when you push changes to Github.\n\n")
+			// TODO :: add project UI link and rill docs here
 			return nil
 		},
 	}
