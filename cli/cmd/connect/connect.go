@@ -136,9 +136,10 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 
 				if !cmdutil.ConfirmPrompt("Confirm to push repo to github", false) {
 					info.Print(`Rill projects deploy continuously when you push changes to Github.
-						Therefore, your project must be on Github before you connect it to Rill.
-						Follow these steps to push your project to Github.`)
+Therefore, your project must be on Github before you connect it to Rill.
+Follow these steps to push your project to Github.`)
 					info.Print(githubSetupMsg)
+					return nil
 				}
 
 				if !commandExists("gh") {
@@ -396,7 +397,7 @@ func repoCreatePrompt(dir string, info *color.Color) error {
 	orgs = append(orgs, user)
 	owner := cmdutil.SelectPrompt("Repository owner", orgs, user)
 
-	stdout, _, err := gh.Exec("repo", "create", fmt.Sprintf("%s/%s", owner, name), fmt.Sprintf("--source=%s", dir), "--private", "--push")
+	stdout, _, err := gh.Exec("repo", "create", fmt.Sprintf("%s/%s", owner, name), fmt.Sprintf("--source=%s", dir), "--private", "--push", "--remote=origin")
 	if err != nil {
 		return err
 	}
