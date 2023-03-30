@@ -20,7 +20,7 @@ describe("updateFilterOnSearch", () => {
   it("should return the filter set with search text for an empty filter", () => {
     const updatedfilter = updateFilterOnSearch(emptyFilter, "apple", "fruit");
     expect(updatedfilter).toEqual({
-      include: [{ name: "fruit", like: ["%apple%"] }],
+      include: [{ name: "fruit", in: [], like: ["%apple%"] }],
       exclude: [],
     });
   });
@@ -86,7 +86,7 @@ const expectedMeasures = [
 describe("customSortMeasures", () => {
   it("should sort the measures in the correct order", () => {
     const sortedMeasures = measures.sort(customSortMeasures);
-    expect(sortedMeasures).toEqual({ expectedMeasures });
+    expect(sortedMeasures).toEqual(expectedMeasures);
   });
 });
 
@@ -125,19 +125,37 @@ const expectedData = [
     fruit: "banana",
     measure_0: 20,
     measure_0_delta: 5,
-    measure_0_delta_perc: 33.33,
+    measure_0_delta_perc: {
+      dot: ".",
+      frac: "3",
+      int: "33",
+      neg: undefined,
+      percent: "%",
+      suffix: "",
+    },
   },
   {
     fruit: "grapes",
     measure_0: 15,
     measure_0_delta: -5,
-    measure_0_delta_perc: -25,
+    measure_0_delta_perc: {
+      dot: "",
+      frac: "",
+      int: "25",
+      neg: "-",
+      percent: "%",
+      suffix: "",
+    },
   },
   {
     fruit: "oranges",
     measure_0: 25,
     measure_0_delta: 0,
-    measure_0_delta_perc: 0,
+    measure_0_delta_perc: {
+      int: 0,
+      neg: "",
+      percent: "%",
+    },
   },
   {
     fruit: "apple",
@@ -148,7 +166,7 @@ const expectedData = [
   {
     fruit: "guvava",
     measure_0: 35,
-    measure_0_delta: null,
+    measure_0_delta: 35,
     measure_0_delta_perc: PERC_DIFF.PREV_VALUE_ZERO,
   },
 ];
