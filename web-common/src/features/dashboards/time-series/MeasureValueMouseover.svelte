@@ -100,8 +100,6 @@
 <WithGraphicContexts let:xScale let:yScale>
   {@const strokeWidth = showComparison ? 2 : 4}
   {@const colorClass = "stroke-gray-400"}
-  <!-- compariso npoint should be activated here -->
-  <!-- <text x={20} y={60}>{hasValidComparisonPoint}</text> -->
   {#if !(currentPointIsNull || comparisonPointIsNull) && x !== undefined && y !== undefined}
     <WithTween
       tweenProps={{ duration: 50 }}
@@ -120,15 +118,6 @@
           ? -bufferSize
           : bufferSize}
 
-        <line
-          x1={output.x}
-          x2={output.x}
-          y1={output.y + yBuffer}
-          y2={output.dy - yBuffer}
-          class={colorClass}
-          stroke-width={strokeWidth}
-          stroke-linecap="round"
-        />
         {@const sign = !comparisonIsPositive ? -1 : 1}
         {@const dist = 3}
         {@const signedDist = sign * dist}
@@ -136,32 +125,90 @@
         {@const show =
           Math.abs(output.y - output.dy) > 16 && hasValidComparisonPoint}
         <!-- arrows -->
-        <g class:opacity-0={!show} class="transition-opacity">
-          <g>
+        <g>
+          {#if show}
             <line
               x1={output.x}
               x2={output.x + dist}
               y1={yLoc}
-              stroke-width={strokeWidth}
               y2={yLoc + signedDist}
-              class={colorClass}
+              stroke="white"
+              stroke-width={strokeWidth + 3}
               stroke-linecap="round"
             />
             <line
               x1={output.x}
               x2={output.x - dist}
               y1={yLoc}
-              stroke-width={strokeWidth}
               y2={yLoc + signedDist}
-              class={colorClass}
+              stroke="white"
+              stroke-width={strokeWidth + 3}
               stroke-linecap="round"
             />
+          {/if}
+
+          <line
+            x1={output.x}
+            x2={output.x}
+            y1={output.y + yBuffer}
+            y2={output.dy - yBuffer}
+            stroke="white"
+            stroke-width={strokeWidth + 3}
+            stroke-linecap="round"
+          />
+
+          <line
+            x1={output.x}
+            x2={output.x}
+            y1={output.y + yBuffer}
+            y2={output.dy - yBuffer}
+            class={colorClass}
+            stroke-width={strokeWidth}
+            stroke-linecap="round"
+          />
+
+          <g class:opacity-0={!show} class="transition-opacity">
+            <g>
+              <line
+                x1={output.x}
+                x2={output.x + dist}
+                y1={yLoc}
+                stroke-width={strokeWidth}
+                y2={yLoc + signedDist}
+                class={colorClass}
+                stroke-linecap="round"
+              />
+              <line
+                x1={output.x}
+                x2={output.x - dist}
+                y1={yLoc}
+                stroke-width={strokeWidth}
+                y2={yLoc + signedDist}
+                class={colorClass}
+                stroke-linecap="round"
+              />
+              <!-- <path
+                d="M {output.x} {yLoc} L {output.x + signedDist} {yLoc +
+                  signedDist} L {output.x - signedDist} {yLoc +
+                  signedDist} M {output.x} {yLoc} L {output.x} {output.dy -
+                  yBuffer} Z"
+                stroke="white"
+                stroke-width="5"
+              /> -->
+              <!-- <path
+                d="M {output.x} {yLoc} L {output.x + signedDist} {yLoc +
+                  signedDist} L {output.x - signedDist} {yLoc +
+                  signedDist} {output.x} {yLoc} M {output.x} {yLoc +
+                  2} L {output.x} {output.dy - yBuffer} Z"
+                stroke-linecap="round"
+                class={colorClass}
+              /> -->
+            </g>
           </g>
         </g>
       {/if}
     </WithTween>
   {/if}
-  <text x={40} y={60}>{y}</text>
   {#if !hasValidComparisonPoint && x !== undefined && y !== null && y !== undefined && !currentPointIsNull}
     <WithTween value={{ x: xScale(x), y: yScale(y) }} let:output>
       <line

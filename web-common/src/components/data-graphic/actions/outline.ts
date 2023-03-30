@@ -28,6 +28,7 @@ export function outline(
       "http://www.w3.org/2000/svg",
       "filter"
     );
+
     outlineFilter.id = "outline-filter";
 
     const morph = document.createElementNS(

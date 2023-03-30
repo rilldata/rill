@@ -27,7 +27,6 @@ It is probably not the most up to date code; but it works very well in practice.
   export let fontSize = 11;
   export let xBuffer = 8;
   export let yBuffer = 3;
-  export let alignLabels = true;
   export let showPoints = true;
   export let showLabels = true;
 
@@ -42,11 +41,12 @@ It is probably not the most up to date code; but it works very well in practice.
   $: plotRight = $config?.plotRight;
   $: plotTop = $config?.plotTop;
   $: plotBottom = $config?.plotBottom;
-  $: width = $config?.plotRight - $config?.plotLeft;
+  $: width = $config?.width;
 
   export let direction = "right";
   export let flipAtEdge: "body" | "graphic" | false = "graphic"; // "body", "graphic", or undefined
 
+  // FIXME – we should replace this with preventVerticalOverlap!
   function toLocations(pt, xs, ys, left, right, top, bottom, elementHeight) {
     // this is where the boundary condition lives.
     let locations = [
@@ -135,7 +135,7 @@ It is probably not the most up to date code; but it works very well in practice.
   );
   let container;
   let containerWidths = [];
-  let labelWidth = 0;
+  // let labelWidth = 0;
 
   // update locations.
   $: locations = toLocations(
@@ -162,16 +162,29 @@ It is probably not the most up to date code; but it works very well in practice.
   // this prevents jitter at the border region of the flip.
 
   let fcn = (c: any) => true;
+
   let internalDirection = direction;
+
   $: if (direction === "left") {
     let flip = !!flipAtEdge;
     fcn = (c) =>
-      flip && locations[0].xRange - c <= (flipAtEdge === "body" ? plotLeft : 0);
+      flip &&
+      locations[0].xRange - c <=
+        (flipAtEdge === "body"
+          ? plotLeft
+          : flipAtEdge === "graphic"
+          ? 0
+          : false);
   } else {
     let flip = !!flipAtEdge;
     fcn = (c) =>
       flip &&
-      c + locations[0].xRange >= (flipAtEdge === "body" ? plotRight : width);
+      c + locations[0].xRange >=
+        (flipAtEdge === "body"
+          ? plotRight
+          : flipAtEdge === "graphic"
+          ? width
+          : false);
   }
   $: if (
     direction === "right" &&
@@ -189,27 +202,28 @@ It is probably not the most up to date code; but it works very well in practice.
     internalDirection = direction;
   }
 
+  let labelWidth = 0;
+  /** the full text width */
+  let textWidths = [];
+  let transitionalTimeoutForCalculatingLabelWidth;
   $: if (container && locations && $xScale && $yScale) {
-    labelWidth = Math.max(
-      ...Array.from(container.querySelectorAll(".widths")).map(
+    clearTimeout(transitionalTimeoutForCalculatingLabelWidth);
+    transitionalTimeoutForCalculatingLabelWidth = setTimeout(() => {
+      labelWidth = Math.max(
+        ...Array.from(container.querySelectorAll(".widths")).map(
+          (q: SVGElement) => q.getBoundingClientRect().width
+        )
+      );
+
+      textWidths = Array.from(container.querySelectorAll(".text-elements")).map(
         (q) => q.getBoundingClientRect().width
-      )
-    );
-    if (!Number.isFinite(labelWidth)) {
-      labelWidth = 0;
-    }
+      );
+      if (!Number.isFinite(labelWidth)) {
+        labelWidth = 0;
+      }
+    }, 0);
   }
 </script>
-
-<filter id="outliner">
-  <feMorphology
-    operator="dilate"
-    radius="2"
-    in="SourceGraphic"
-    result="THICKNESS"
-  />
-  <feComposite operator="out" in="THICKNESS" in2="SourceGraphic" />
-</filter>
 
 <g bind:this={container}>
   {#if showLabels}
@@ -220,65 +234,17 @@ It is probably not the most up to date code; but it works very well in practice.
             y: location.yRange || 0,
             x:
               internalDirection === "right"
-                ? location.xRange +
-                  (xBuffer + xOffset + (alignLabels ? labelWidth : 0))
+                ? location.xRange + (xBuffer + xOffset + labelWidth)
                 : location.xRange - xBuffer - xOffset,
           }}
           let:output={v}
           tweenProps={{ duration: 50 }}
         >
-          <text
-            filter="url(#outliner)"
-            fill="white"
-            data-location={location.yRange}
-            font-size={fontSize}
-          >
+          <text font-size={fontSize} class="text-elements pointer-events-none">
             {#if internalDirection === "right"}
               <tspan
                 dy=".35em"
-                text-anchor="end"
-                class="widths {location?.valueStyleClass || 'font-bold'}"
-                y={v.y}
-                x={v.x}
-              >
-                {#if !location?.yOverride}
-                  {formatValue(location.y)}
-                {/if}
-              </tspan>
-              <tspan dy=".35em" y={v.y} x={v.x}>
-                {#if location?.yOverride}
-                  {location.yOverrideLabel}
-                {:else}
-                  {location.label}
-                {/if}</tspan
-              >
-            {:else}
-              <tspan dy=".35em" y={v.y} x={v.x - labelWidth} text-anchor="end">
-                {#if location?.yOverride}
-                  {location.yOverrideLabel}
-                {:else}
-                  {location.label}
-                {/if}
-              </tspan>
-              <tspan
-                dy=".35em"
-                class="widths {location?.valueStyleClass || 'font-bold'}"
-                text-anchor="end"
-                y={v.y}
-                x={v.x}
-              >
-                {#if !location?.yOverride}
-                  {formatValue(location.y)}
-                {/if}
-              </tspan>
-            {/if}
-          </text>
-
-          <text font-size={fontSize}>
-            {#if internalDirection === "right"}
-              <tspan
-                dy=".35em"
-                class="widths  {location?.valueStyleClass ||
+                class="widths {location?.valueStyleClass ||
                   'font-bold'} {location?.valueColorClass || ''}"
                 y={v.y}
                 text-anchor="end"
@@ -364,5 +330,11 @@ It is probably not the most up to date code; but it works very well in practice.
   .mc-mouseover-label {
     cursor: pointer;
     transition: fill 200ms;
+  }
+
+  text {
+    paint-order: stroke;
+    stroke: white;
+    stroke-width: 3px;
   }
 </style>
