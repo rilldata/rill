@@ -1,20 +1,17 @@
 export type SelectableItem = {
   label: string;
   selected: boolean;
-  visibleInMenu: boolean;
 };
 
-// export type SelectableItem = Required<SelectableItemObject>;
-
-export const getNumSelectedNotShown = (items: SelectableItem[]): number =>
-  items?.filter((x) => x.selected && !x.visibleInMenu)?.length || 0;
+export const getNumSelectedNotShown = (
+  items: SelectableItem[],
+  visibleInSearch: boolean[]
+): number =>
+  items?.filter((x, i) => x.selected && !visibleInSearch[i])?.length || 0;
 
 export const setItemsVisibleBySearchString = (
-  items: SelectableItem[],
+  items: string[],
   searchText: string
-): SelectableItem[] => {
-  return items?.map((x) => ({
-    ...x,
-    visibleInMenu: x.label.includes(searchText.trim()),
-  }));
+): boolean[] => {
+  return items?.map((x) => x.includes(searchText.trim()));
 };

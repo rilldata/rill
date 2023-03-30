@@ -3,6 +3,7 @@
   import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
+  import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -135,8 +136,40 @@
 
     endValue = removeTimezoneOffset(endValue);
   }
+
+  let availableMeasureLabels = [];
+  let visibleMeasures = [];
+  $: {
+    console.log("$totalsQuery?.isSuccess", $totalsQuery?.isSuccess);
+  }
+  $: {
+    console.log("$metaQuery.data?.measures", $metaQuery.data?.measures);
+  }
+
+  const initVisible = () =>
+    (visibleMeasures = availableMeasureLabels?.map((_, i) => i % 2 == 0));
+
+  $: {
+    availableMeasureLabels =
+      $totalsQuery?.isSuccess && $metaQuery.data?.measures.map((m) => m.label);
+  }
+
+  $: {
+    console.log("availableMeasureLabels updated", availableMeasureLabels);
+    initVisible();
+  }
+
+  $: {
+    console.log("visibleMeasures updated", visibleMeasures);
+  }
 </script>
 
+<SeachableFilterButton
+  selectableItems={availableMeasureLabels}
+  bind:selectedItems={visibleMeasures}
+  label="Measures"
+  tooltipText="Choose measures to display"
+/>
 <WithBisector
   data={formattedData}
   callback={(datum) => datum.ts}

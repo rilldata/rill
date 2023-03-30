@@ -830,6 +830,9 @@ export const ModelDialect = {
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
 
+// FIXME: add docs to these fields. In particular:
+// what is the difference between `label` and `name`,
+// and when should each be used?
 export interface MetricsViewMeasure {
   description?: string;
   expression?: string;

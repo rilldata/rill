@@ -7,56 +7,39 @@
   import { Menu, MenuItem } from "../menu";
   import { Search } from "../search";
   import Footer from "./Footer.svelte";
+  import Button from "../button/Button.svelte";
   import {
     getNumSelectedNotShown,
-    SelectableItem,
+    // SelectableItem,
     setItemsVisibleBySearchString,
   } from "./types-and-utils";
 
-  export let selectableItems: SelectableItem[];
+  export let selectableItems: string[];
+  export let selectedItems: boolean[];
+  // let visibleInSearch = selectableItems.map((_) => true);
 
-  export let selectableItemsOutput: SelectableItem[];
-  // export let searchedValues: string[] = [];
-
-  $: selectableItemsOutput = [...selectableItems];
+  // $: selectedItems = selectableItems.map((x) => x.selected);
 
   let searchText = "";
 
   $: {
-    console.log("selectableItemsInner", selectableItems);
+    console.log("selectedItems Inner", selectedItems);
   }
 
-  $: {
-    selectableItems = setItemsVisibleBySearchString(
-      selectableItems,
-      searchText
-    );
-  }
+  $: visibleInSearch = setItemsVisibleBySearchString(
+    selectableItems,
+    searchText
+  );
 
-  /** On instantiation, only take the exact current selectedValues, so that
-   * when the user unchecks a menu item, it still persists in the FilterMenu
-   * until the user closes.
-   */
-  // let candidateValues = selectableItems.;
-  // let valuesToDisplay = [...candidateValues];
+  const deselectAll = () => {
+    selectedItems = selectedItems.map((_) => false);
+    // selectableItems = selectableItems.map((x) => ({ ...x, selected: false }));
+  };
 
-  // $: if (searchText) {
-  //   valuesToDisplay = [...searchedValues];
-  // } else valuesToDisplay = [...candidateValues];
-
-  // $: numSelectedNotInSearch = selectedValues.filter(
-  //   (v) => !valuesToDisplay.includes(v)
-  // ).length;
-
-  $: numSelectedNotShown = getNumSelectedNotShown(selectableItems);
-
-  // function toggleValue(value) {
-  //   dispatch("apply", value);
-
-  //   if (!candidateValues.includes(value)) {
-  //     candidateValues = [...candidateValues, value];
-  //   }
-  // }
+  $: numSelectedNotShown = getNumSelectedNotShown(
+    selectableItems,
+    visibleInSearch
+  );
 </script>
 
 <Menu
@@ -76,37 +59,38 @@
 
   <!-- apply a wrapped flex element to ensure proper bottom spacing between body and footer -->
   <div class="flex flex-col flex-1 overflow-auto w-full pb-1">
-    {#if selectableItems?.length}
-      {#each selectableItems.filter((x) => x.visibleInMenu) as selectableItem}
-        <MenuItem
-          icon
-          animateSelect={false}
-          focusOnMount={false}
-          on:select={() => {
-            selectableItem.selected = !selectableItem.selected;
-          }}
-        >
-          <svelte:fragment slot="icon">
-            {#if selectableItem.selected}
-              <Check size="20px" color="#15141A" />
-            {:else}
-              <Spacer size="20px" />
-            {/if}
-          </svelte:fragment>
-          <span class:ui-copy-disabled={!selectableItem.selected}>
-            {#if selectableItem.label?.length > 240}
-              {selectableItem.labelselectableItem.label.slice(0, 240)}...
-            {:else}
-              {selectableItem.label}
-            {/if}
-          </span>
-        </MenuItem>
-      {/each}
+    {#each selectableItems.filter((_, i) => visibleInSearch[i]) as selectableItem, i}
+      <MenuItem
+        icon
+        animateSelect={false}
+        focusOnMount={false}
+        on:select={() => {
+          selectedItems[i] = !selectedItems[i];
+        }}
+      >
+        <svelte:fragment slot="icon">
+          {#if selectedItems[i]}
+            <Check size="20px" color="#15141A" />
+          {:else}
+            <Spacer size="20px" />
+          {/if}
+        </svelte:fragment>
+        <span class:ui-copy-disabled={!selectedItems[i]}>
+          {#if selectableItem.length > 240}
+            {selectableItem.slice(0, 240)}...
+          {:else}
+            {selectableItem}
+          {/if}
+        </span>
+      </MenuItem>
     {:else}
       <div class="mt-5 ui-copy-disabled text-center">no results</div>
-    {/if}
+    {/each}
   </div>
   <Footer>
+    <span class="ui-copy">
+      <Button type="text" compact on:click={deselectAll}>Deselect all</Button>
+    </span>
     {#if numSelectedNotShown}
       <div class="ui-label">
         {numSelectedNotShown} other value{numSelectedNotShown > 1 ? "s" : ""} selected
