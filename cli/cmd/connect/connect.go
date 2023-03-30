@@ -76,8 +76,6 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				// PRO : No duplicated code
 				// CON : Need to make sure that UX under sub command verifies with UX on this command
 				loginCmd := auth.LoginCmd(cfg)
-				// command on failure prints usage by default. Need to stop since user didn't run this command
-				loginCmd.SilenceUsage = true
 				loginCmd.SetContext(ctx)
 				if err := loginCmd.RunE(loginCmd, nil); err != nil {
 					exitWithFailure(err)
@@ -98,8 +96,8 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 					msg := fmt.Sprintf("This project will be deployed under %s. Press Y to confirm and N to select a different org", defaultOrg)
 					if !cmdutil.ConfirmPrompt(msg, true) {
 						switchCmd := org.SwitchCmd(cfg)
-						switchCmd.SilenceUsage = true
-						if err := switchCmd.ExecuteContext(ctx); err != nil {
+						switchCmd.SetContext(ctx)
+						if err := switchCmd.RunE(switchCmd, nil); err != nil {
 							exitWithFailure(err)
 						}
 					}
@@ -118,8 +116,8 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 
 			// verify current directory has rill project
 			if !hasRillProject(path) {
-				warn.Printf("\nLooks like current path %s doesn't have a valid rill project. Please select correct dir.\n", path)
-				warn.Printf("In case there is no valid rill project present, Please use `rill init` to create an empty rill project\n\n")
+				warn.Printf("\nCurrent path %s doesn't have a valid rill project. Please select correct path.\n", path)
+				warn.Printf("In case there is no valid rill project present, Please use `rill init` to create an empty rill project.\n\n")
 				// project path prompt
 				path = projectPathPrompt()
 			}
@@ -132,9 +130,9 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				warn.Println("\nYour project is not pushed to github")
-				warn.Printf("You can exit cli, push project to github and connect later or continue to push project to github repo\n\n")
+				warn.Printf("You can exit cli, push project to github and connect later or continue to push project to a github repo\n\n")
 
-				if !cmdutil.ConfirmPrompt("Confirm to push repo to github", false) {
+				if !cmdutil.ConfirmPrompt("Confirm to push project to github", false) {
 					info.Print(`Rill projects deploy continuously when you push changes to Github.
 Therefore, your project must be on Github before you connect it to Rill.
 Follow these steps to push your project to Github.`)
