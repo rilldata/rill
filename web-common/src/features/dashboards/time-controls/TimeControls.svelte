@@ -311,6 +311,7 @@
       {minTimeGrain}
       boundaryStart={allTimeRange.start}
       boundaryEnd={allTimeRange.end}
+      selectedRange={$dashboardStore?.selectedTimeRange}
       on:select-time-range={(e) =>
         onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
     />
@@ -323,9 +324,8 @@
       currentEnd={$dashboardStore?.selectedTimeRange?.end}
       boundaryStart={allTimeRange.start}
       boundaryEnd={allTimeRange.end}
-      {metricViewName}
       showComparison={isComparisonRangeAvailable}
-      comparisonOption={$dashboardStore?.selectedComparisonTimeRange?.name}
+      selectedComparison={$dashboardStore?.selectedComparisonTimeRange}
       comparisonOptions={availableComparisons}
     />
     <TimeGrainSelector
