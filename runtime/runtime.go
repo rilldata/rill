@@ -15,6 +15,7 @@ type Options struct {
 	QueryCacheSize       int
 	AllowHostCredentials bool
 	SafeSourceRefresh    bool
+	DisableAbsolutePath  bool // disables absolute path in sources
 }
 
 type Runtime struct {

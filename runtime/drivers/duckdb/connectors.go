@@ -188,20 +188,15 @@ func resolveLocalPath(env *connectors.Env, path, sourceName string) (string, err
 	if err != nil {
 		return "", err
 	}
-	// resolve paths as per repo driver
+
 	// May be a better design is to just add the repo driver in connectors and use repo.Get/repo.ListRecursive ??
-	if env.RepoDriver == "github" {
-		// all paths for github repo are relative to the repo root
-		// TODO :: we should surface this to the user as well, may be during rill connect ??
-		if filepath.IsAbs(path) {
-			return "", fmt.Errorf("file connector cannot ingest source '%s': abosulte path not allowed", sourceName)
-		}
-		return filepath.Join(env.RepoRoot, path), nil
+	if filepath.IsAbs(path) && env.DisableAbsolutePath {
+		return "", fmt.Errorf("file connector cannot ingest source '%s': abosulte path not allowed", sourceName)
 	}
 
 	if !filepath.IsAbs(path) {
 		// If the path is relative, it's relative to the repo root
-		if env.RepoDriver != "file" || env.RepoRoot == "" {
+		if env.RepoRoot == "" {
 			return "", fmt.Errorf("file connector cannot ingest source '%s': path is relative, but repo is not available", sourceName)
 		}
 		return filepath.Join(env.RepoRoot, path), nil

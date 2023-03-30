@@ -111,8 +111,9 @@ func TestConnectorWithGithubRepoDriver(t *testing.T) {
 			props["path"] = tt.Path
 
 			e := &connectors.Env{
-				RepoDriver: "github",
-				RepoRoot:   tt.repoRoot,
+				RepoDriver:          "github",
+				RepoRoot:            tt.repoRoot,
+				DisableAbsolutePath: true,
 			}
 			s := &connectors.Source{
 				Name:       "foo",

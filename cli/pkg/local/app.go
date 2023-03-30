@@ -94,6 +94,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		MetastoreDSN:         "file:rill?mode=memory&cache=shared",
 		QueryCacheSize:       10000,
 		AllowHostCredentials: true,
+		DisableAbsolutePath:  true,
 	}
 	rt, err := runtime.New(rtOpts, logger)
 	if err != nil {

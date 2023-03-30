@@ -85,6 +85,7 @@ type Env struct {
 	Variables            map[string]string
 	AllowHostCredentials bool
 	StorageLimitInBytes  int64
+	DisableAbsolutePath  bool
 }
 
 // Source represents a dataset to ingest using a specific connector (like a connector instance).

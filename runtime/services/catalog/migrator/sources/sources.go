@@ -213,6 +213,7 @@ func ingestSource(
 		Variables:            variables,
 		AllowHostCredentials: strings.EqualFold(variables["ALLOW_HOST_CREDENTIALS"], "true"),
 		StorageLimitInBytes:  opts.IngestStorageLimitInBytes,
+		DisableAbsolutePath:  strings.EqualFold(variables["DISABLE_ABSOLUTE_PATH"], "true"),
 	}
 
 	ingestionSummary, err := olap.Ingest(ctx, env, source)

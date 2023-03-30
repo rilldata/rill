@@ -45,6 +45,7 @@ type Config struct {
 	ConnectionCacheSize  int           `default:"100" split_words:"true"`
 	QueryCacheSize       int           `default:"10000" split_words:"true"`
 	AllowHostCredentials bool          `default:"false" split_words:"true"`
+	DisableAbsolutePath  bool          `default:"true" split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -81,6 +82,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				QueryCacheSize:       conf.QueryCacheSize,
 				AllowHostCredentials: conf.AllowHostCredentials,
 				SafeSourceRefresh:    conf.SafeSourceRefresh,
+				DisableAbsolutePath:  conf.DisableAbsolutePath,
 			}
 			rt, err := runtime.New(opts, logger)
 			if err != nil {
