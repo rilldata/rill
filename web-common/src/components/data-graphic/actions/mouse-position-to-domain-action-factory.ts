@@ -8,10 +8,10 @@ import { getContext } from "svelte";
 import { get, Readable, writable } from "svelte/store";
 import { DEFAULT_COORDINATES } from "../constants";
 
-import { contexts } from "../constants";
-import type { ScaleStore } from "../state/types";
 import type { Action, ActionReturn } from "svelte/action";
+import { contexts } from "../constants";
 import type { DomainCoordinates } from "../constants/types";
+import type { ScaleStore } from "../state/types";
 
 export interface MousePositionToDomainActionSet {
   coordinates: Readable<DomainCoordinates>;
@@ -45,6 +45,7 @@ export function mousePositionToDomainActionFactory(): MousePositionToDomainActio
   });
 
   function onMouseMove(event) {
+    /** fixme: use  */
     offsetX = event.offsetX;
     offsetY = event.offsetY;
 

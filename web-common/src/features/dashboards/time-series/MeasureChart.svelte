@@ -1,14 +1,15 @@
 <script lang="ts">
-  import { outline } from "@rilldata/web-common/components/data-graphic/actions/outline";
   import Body from "@rilldata/web-common/components/data-graphic/elements/Body.svelte";
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import WithBisector from "@rilldata/web-common/components/data-graphic/functional-components/WithBisector.svelte";
+  import WithRoundToTimegrain from "@rilldata/web-common/components/data-graphic/functional-components/WithRoundToTimegrain.svelte";
   import {
     Axis,
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
   import { ChunkedLine } from "@rilldata/web-common/components/data-graphic/marks";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { previousValueStore } from "@rilldata/web-local/lib/store-utils";
   import { extent } from "d3-array";
   import { cubicOut } from "svelte/easing";
@@ -22,6 +23,8 @@
   export let xMax: Date = undefined;
   export let yMin: number = undefined;
   export let yMax: number = undefined;
+
+  export let timeGrain: V1TimeGrain;
 
   export let showComparison = false;
   export let data;
@@ -171,43 +174,49 @@
     />
   </Body>
   {#if !scrubbing && mouseoverValue?.x}
-    <WithBisector
-      {data}
-      callback={(d) => d[xAccessor]}
-      value={mouseoverValue.x}
-      let:point
-    >
-      <g transition:fly|local={{ duration: 100, x: -4 }}>
-        <MeasureValueMouseover
-          {point}
-          {xAccessor}
-          {yAccessor}
-          {showComparison}
-          {mouseoverFormat}
-          {numberKind}
-        />
-      </g>
+    <WithRoundToTimegrain value={mouseoverValue.x} {timeGrain} let:roundedValue>
+      <WithBisector
+        {data}
+        callback={(d) => d[xAccessor]}
+        value={roundedValue}
+        let:point
+      >
+        <g transition:fly|local={{ duration: 100, x: -4 }}>
+          <MeasureValueMouseover
+            {point}
+            {xAccessor}
+            {yAccessor}
+            {showComparison}
+            {mouseoverFormat}
+            {numberKind}
+          />
+        </g>
 
-      <g transition:fly|local={{ duration: 100, x: -4 }}>
-        <text
-          use:outline
-          class="fill-gray-600"
-          x={config.plotLeft + config.bodyBuffer + 6}
-          y={config.plotTop + 10 + config.bodyBuffer}
-        >
-          {mouseoverTimeFormat(point[xAccessor])}
-        </text>
-        {#if showComparison}
+        <g transition:fly|local={{ duration: 100, x: -4 }}>
           <text
-            use:outline
-            class="fill-gray-400"
+            class="fill-gray-600"
+            style:paint-order="stroke"
+            stroke="white"
+            stroke-width="3px"
             x={config.plotLeft + config.bodyBuffer + 6}
-            y={config.plotTop + 24 + config.bodyBuffer}
+            y={config.plotTop + 10 + config.bodyBuffer}
           >
-            {mouseoverTimeFormat(point[`comparison.${xAccessor}`])} prev.
+            {mouseoverTimeFormat(point[xAccessor])}
           </text>
-        {/if}
-      </g></WithBisector
-    >
+          {#if showComparison}
+            <text
+              style:paint-order="stroke"
+              stroke="white"
+              stroke-width="3px"
+              class="fill-gray-400"
+              x={config.plotLeft + config.bodyBuffer + 6}
+              y={config.plotTop + 24 + config.bodyBuffer}
+            >
+              {mouseoverTimeFormat(point[`comparison.${xAccessor}`])} prev.
+            </text>
+          {/if}
+        </g>
+      </WithBisector>
+    </WithRoundToTimegrain>
   {/if}
 </SimpleDataGraphic>

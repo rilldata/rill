@@ -1,6 +1,5 @@
 <script lang="ts">
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
-  import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
@@ -208,100 +207,93 @@
   }
 </script>
 
-<WithBisector
-  data={formattedData}
-  callback={(datum) => datum.ts}
-  value={mouseoverValue?.x}
-  let:point
->
-  <TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
-    <div class="bg-white sticky left-0 top-0" />
-    <div class="bg-white sticky left-0 top-0">
-      <div style:padding-left="24px" style:height="20px" />
-      <!-- top axis element -->
-      <div />
-      {#if $dashboardStore?.selectedTimeRange}
-        <SimpleDataGraphic
-          height={32}
-          top={34}
-          bottom={0}
-          xMin={startValue}
-          xMax={endValue}
-        >
-          <Axis superlabel side="top" />
-        </SimpleDataGraphic>
-      {/if}
-    </div>
-    <!-- bignumbers and line charts -->
-    {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
-      {#each $metaQuery.data?.measures as measure, index (measure.name)}
-        <!-- FIXME: I can't select the big number by the measure id. -->
-        {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
-        {@const showComparison = isComparisonRangeAvailable}
-        {@const comparisonValue = totalsComparisons?.[measure.name]}
-        {@const comparisonPercChange =
-          comparisonValue && bigNum
-            ? (bigNum - comparisonValue) / comparisonValue
-            : undefined}
-        {@const formatPreset =
-          NicelyFormattedTypes[measure?.format] ||
-          NicelyFormattedTypes.HUMANIZE}
-        <!-- FIXME: I can't select a time series by measure id. -->
-        <MeasureBigNumber
-          value={bigNum}
-          {showComparison}
-          comparisonOption={$dashboardStore?.selectedComparisonTimeRange?.name}
-          {comparisonValue}
-          {comparisonPercChange}
-          description={measure?.description ||
-            measure?.label ||
-            measure?.expression}
-          formatPreset={measure?.format}
-          status={$totalsQuery?.isFetching
-            ? EntityStatus.Running
-            : EntityStatus.Idle}
-        >
-          <svelte:fragment slot="name">
-            {measure?.label || measure?.expression}
-          </svelte:fragment>
-        </MeasureBigNumber>
-        <div class="time-series-body" style:height="125px">
-          {#if $timeSeriesQuery?.isError}
-            <div class="p-5"><CrossIcon /></div>
-          {:else if formattedData}
-            <MeasureChart
-              bind:mouseoverValue
-              data={formattedData}
-              xAccessor="ts"
-              yAccessor={measure.name}
-              xMin={startValue}
-              xMax={endValue}
-              start={startValue}
-              end={endValue}
-              {showComparison}
-              mouseoverTimeFormat={(value) => {
-                /** format the date according to the time grain */
-                return new Date(value).toLocaleDateString(
-                  undefined,
-                  TIME_GRAIN[$dashboardStore?.selectedTimeRange?.interval]
-                    .formatDate
-                );
-              }}
-              numberKind={nicelyFormattedTypesToNumberKind(measure?.format)}
-              mouseoverFormat={(value) =>
-                formatPreset === NicelyFormattedTypes.NONE
-                  ? `${value}`
-                  : humanizeDataType(value, measure?.format, {
-                      excludeDecimalZeros: true,
-                    })}
-            />
-          {:else}
-            <div>
-              <Spinner status={EntityStatus.Running} />
-            </div>
-          {/if}
-        </div>
-      {/each}
+<TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
+  <div class="bg-white sticky left-0 top-0" />
+  <div class="bg-white sticky left-0 top-0">
+    <div style:padding-left="24px" style:height="20px" />
+    <!-- top axis element -->
+    <div />
+    {#if $dashboardStore?.selectedTimeRange}
+      <SimpleDataGraphic
+        height={32}
+        top={34}
+        bottom={0}
+        xMin={startValue}
+        xMax={endValue}
+      >
+        <Axis superlabel side="top" />
+      </SimpleDataGraphic>
     {/if}
-  </TimeSeriesChartContainer>
-</WithBisector>
+  </div>
+  <!-- bignumbers and line charts -->
+  {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
+    {#each $metaQuery.data?.measures as measure, index (measure.name)}
+      <!-- FIXME: I can't select the big number by the measure id. -->
+      {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
+      {@const showComparison = isComparisonRangeAvailable}
+      {@const comparisonValue = totalsComparisons?.[measure.name]}
+      {@const comparisonPercChange =
+        comparisonValue && bigNum
+          ? (bigNum - comparisonValue) / comparisonValue
+          : undefined}
+      {@const formatPreset =
+        NicelyFormattedTypes[measure?.format] || NicelyFormattedTypes.HUMANIZE}
+      <!-- FIXME: I can't select a time series by measure id. -->
+      <MeasureBigNumber
+        value={bigNum}
+        {showComparison}
+        comparisonOption={$dashboardStore?.selectedComparisonTimeRange?.name}
+        {comparisonValue}
+        {comparisonPercChange}
+        description={measure?.description ||
+          measure?.label ||
+          measure?.expression}
+        formatPreset={measure?.format}
+        status={$totalsQuery?.isFetching
+          ? EntityStatus.Running
+          : EntityStatus.Idle}
+      >
+        <svelte:fragment slot="name">
+          {measure?.label || measure?.expression}
+        </svelte:fragment>
+      </MeasureBigNumber>
+      <div class="time-series-body" style:height="125px">
+        {#if $timeSeriesQuery?.isError}
+          <div class="p-5"><CrossIcon /></div>
+        {:else if formattedData}
+          <MeasureChart
+            bind:mouseoverValue
+            data={formattedData}
+            xAccessor="ts"
+            timeGrain={$dashboardStore?.selectedTimeRange?.interval}
+            yAccessor={measure.name}
+            xMin={startValue}
+            xMax={endValue}
+            start={startValue}
+            end={endValue}
+            {showComparison}
+            mouseoverTimeFormat={(value) => {
+              /** format the date according to the time grain */
+              return new Date(value).toLocaleDateString(
+                undefined,
+                TIME_GRAIN[$dashboardStore?.selectedTimeRange?.interval]
+                  .formatDate
+              );
+            }}
+            numberKind={nicelyFormattedTypesToNumberKind(measure?.format)}
+            mouseoverFormat={(value) =>
+              formatPreset === NicelyFormattedTypes.NONE
+                ? `${value}`
+                : humanizeDataType(value, measure?.format, {
+                    excludeDecimalZeros: true,
+                  })}
+          />
+        {:else}
+          <div>
+            <Spinner status={EntityStatus.Running} />
+          </div>
+        {/if}
+      </div>
+    {/each}
+  {/if}
+</TimeSeriesChartContainer>
