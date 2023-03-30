@@ -208,12 +208,12 @@ func ingestSource(
 
 	variables := convertUpper(opts.InstanceEnv)
 	env := &connectors.Env{
-		RepoDriver:           repo.Driver(),
-		RepoRoot:             repo.Root(),
-		Variables:            variables,
-		AllowHostCredentials: strings.EqualFold(variables["ALLOW_HOST_CREDENTIALS"], "true"),
-		StorageLimitInBytes:  opts.IngestStorageLimitInBytes,
-		DisableAbsolutePath:  strings.EqualFold(variables["DISABLE_ABSOLUTE_PATH"], "true"),
+		RepoDriver:                   repo.Driver(),
+		RepoRoot:                     repo.Root(),
+		Variables:                    variables,
+		AllowHostCredentials:         strings.EqualFold(variables["ALLOW_HOST_CREDENTIALS"], "true"),
+		StorageLimitInBytes:          opts.IngestStorageLimitInBytes,
+		DisablePathAccessOutsideRepo: strings.EqualFold(variables["DISABLE_PATH_ACCESS_OUTSIDE_REPO"], "true"),
 	}
 
 	ingestionSummary, err := olap.Ingest(ctx, env, source)

@@ -9,13 +9,13 @@ import (
 )
 
 type Options struct {
-	ConnectionCacheSize  int
-	MetastoreDriver      string
-	MetastoreDSN         string
-	QueryCacheSize       int
-	AllowHostCredentials bool
-	SafeSourceRefresh    bool
-	DisableAbsolutePath  bool // disables absolute path in sources
+	ConnectionCacheSize          int
+	MetastoreDriver              string
+	MetastoreDSN                 string
+	QueryCacheSize               int
+	AllowHostCredentials         bool
+	SafeSourceRefresh            bool
+	DisablePathAccessOutsideRepo bool // disables path access outside repo root
 }
 
 type Runtime struct {

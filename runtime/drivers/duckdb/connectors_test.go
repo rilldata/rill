@@ -31,6 +31,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		{"local_file", filepath.Join(testdataPathRel, "AdBids.parquet"), nil},
 		{"local_file", filepath.Join(testdataPathAbs, "AdBids.parquet"), nil},
 		{"local_file", filepath.Join(testdataPathAbs, "AdBids.txt"), nil},
+		{"local_file", "../../../runtime/testruntime/testdata/ad_bids/data/AdBids.csv.gz", nil},
 		// something wrong with this particular file. duckdb fails to extract
 		// TODO: move the generator to go and fix the parquet file
 		//{"local_file", testdataPath + "AdBids.parquet.gz", nil},
@@ -96,8 +97,9 @@ func TestConnectorWithGithubRepoDriver(t *testing.T) {
 		isError   bool
 	}{
 		{"local_file", "AdBids.csv", testdataPathAbs, false},
-		{"local_file", filepath.Join(testdataPathAbs, "AdBids.csv"), testdataPathAbs, true},
-		{"local_file", filepath.Join(testdataPathAbs, "AdBids.csv"), "", true},
+		{"local_file", filepath.Join(testdataPathAbs, "AdBids.csv"), testdataPathAbs, false},
+		{"local_file", "../../../runtime/testruntime/testdata/ad_bids/data/AdBids.csv.gz", testdataPathAbs, true},
+		{"local_file", filepath.Join(testdataPathRel, "AdBids.csv"), "", true},
 	}
 
 	ctx := context.Background()
@@ -111,9 +113,9 @@ func TestConnectorWithGithubRepoDriver(t *testing.T) {
 			props["path"] = tt.Path
 
 			e := &connectors.Env{
-				RepoDriver:          "github",
-				RepoRoot:            tt.repoRoot,
-				DisableAbsolutePath: true,
+				RepoDriver:                   "github",
+				RepoRoot:                     tt.repoRoot,
+				DisablePathAccessOutsideRepo: true,
 			}
 			s := &connectors.Source{
 				Name:       "foo",

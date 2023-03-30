@@ -80,12 +80,12 @@ func (ps PropertySchema) ValidateType(val any) bool {
 // and (in the future) secrets configured by the user.
 type Env struct {
 	RepoDriver string
-	RepoRoot   string
+	RepoRoot   string // should be absolute
 	// user provided env variables kept with keys converted to uppercase
-	Variables            map[string]string
-	AllowHostCredentials bool
-	StorageLimitInBytes  int64
-	DisableAbsolutePath  bool
+	Variables                    map[string]string
+	AllowHostCredentials         bool
+	StorageLimitInBytes          int64
+	DisablePathAccessOutsideRepo bool
 }
 
 // Source represents a dataset to ingest using a specific connector (like a connector instance).

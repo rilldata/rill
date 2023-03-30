@@ -64,7 +64,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 		inst.Variables = make(map[string]string)
 	}
 	inst.Variables["allow_host_credentials"] = strconv.FormatBool(r.opts.AllowHostCredentials)
-	inst.Variables["disable_absolute_path"] = strconv.FormatBool(r.opts.DisableAbsolutePath)
+	inst.Variables["disable_path_access_outside_repo"] = strconv.FormatBool(r.opts.DisablePathAccessOutsideRepo)
 
 	// Create instance
 	err = r.Registry().CreateInstance(ctx, inst)
@@ -174,7 +174,7 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 		inst.Variables = make(map[string]string)
 	}
 	inst.Variables["allow_host_credentials"] = strconv.FormatBool(r.opts.AllowHostCredentials)
-	inst.Variables["disable_absolute_path"] = strconv.FormatBool(r.opts.DisableAbsolutePath)
+	inst.Variables["disable_path_access_outside_repo"] = strconv.FormatBool(r.opts.DisablePathAccessOutsideRepo)
 
 	// update the entire instance for now to avoid building queries in some complicated way
 	return r.Registry().EditInstance(ctx, inst)
