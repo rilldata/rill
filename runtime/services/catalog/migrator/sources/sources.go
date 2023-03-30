@@ -209,7 +209,7 @@ func ingestSource(
 	variables := convertUpper(opts.InstanceEnv)
 	env := &connectors.Env{
 		RepoDriver:           repo.Driver(),
-		RepoDSN:              repo.DSN(),
+		RepoRoot:             repo.Root(),
 		Variables:            variables,
 		AllowHostCredentials: strings.EqualFold(variables["ALLOW_HOST_CREDENTIALS"], "true"),
 		StorageLimitInBytes:  opts.IngestStorageLimitInBytes,

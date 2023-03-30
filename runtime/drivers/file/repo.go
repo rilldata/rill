@@ -27,6 +27,11 @@ func (c *connection) DSN() string {
 	return c.root
 }
 
+// Root implements drivers.RepoStore.
+func (c *connection) Root() string {
+	return c.root
+}
+
 // ListRecursive implements drivers.RepoStore.
 func (c *connection) ListRecursive(ctx context.Context, instID, glob string) ([]string, error) {
 	// Check that folder hasn't been moved

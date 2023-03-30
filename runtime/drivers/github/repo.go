@@ -26,6 +26,11 @@ func (c *connection) DSN() string {
 	return c.dsnStr
 }
 
+// Root implements drivers.RepoStore.
+func (c *connection) Root() string {
+	return c.tempdir
+}
+
 // ListRecursive implements drivers.RepoStore.
 func (c *connection) ListRecursive(ctx context.Context, instID, glob string) ([]string, error) {
 	fsRoot := os.DirFS(c.tempdir)

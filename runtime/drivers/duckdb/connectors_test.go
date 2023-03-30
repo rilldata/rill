@@ -62,7 +62,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 
 			e := &connectors.Env{
 				RepoDriver: "file",
-				RepoDSN:    ".",
+				RepoRoot:   ".",
 			}
 			s := &connectors.Source{
 				Name:       "foo",
@@ -70,6 +70,60 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 				Properties: props,
 			}
 			_, err = olap.Ingest(ctx, e, s)
+			require.NoError(t, err)
+
+			var count int
+			rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT count(timestamp) FROM foo"})
+			require.NoError(t, err)
+			require.True(t, rows.Next())
+			require.NoError(t, rows.Scan(&count))
+			require.GreaterOrEqual(t, count, 100)
+			require.False(t, rows.Next())
+			require.NoError(t, rows.Close())
+		})
+	}
+}
+
+func TestConnectorWithGithubRepoDriver(t *testing.T) {
+	testdataPathRel := "../../../web-local/test/data"
+	testdataPathAbs, err := filepath.Abs(testdataPathRel)
+	require.NoError(t, err)
+
+	sources := []struct {
+		Connector string
+		Path      string
+		repoRoot  string
+		isError   bool
+	}{
+		{"local_file", "AdBids.csv", testdataPathAbs, false},
+		{"local_file", filepath.Join(testdataPathAbs, "AdBids.csv"), testdataPathAbs, true},
+		{"local_file", filepath.Join(testdataPathAbs, "AdBids.csv"), "", true},
+	}
+
+	ctx := context.Background()
+	conn, err := Driver{}.Open("?access_mode=read_write", zap.NewNop())
+	require.NoError(t, err)
+	olap, _ := conn.OLAPStore()
+
+	for _, tt := range sources {
+		t.Run(fmt.Sprintf("%s - %s", tt.Connector, tt.Path), func(t *testing.T) {
+			props := make(map[string]any)
+			props["path"] = tt.Path
+
+			e := &connectors.Env{
+				RepoDriver: "github",
+				RepoRoot:   tt.repoRoot,
+			}
+			s := &connectors.Source{
+				Name:       "foo",
+				Connector:  tt.Connector,
+				Properties: props,
+			}
+			_, err = olap.Ingest(ctx, e, s)
+			if tt.isError {
+				require.Error(t, err)
+				return
+			}
 			require.NoError(t, err)
 
 			var count int
@@ -96,7 +150,7 @@ func TestCSVDelimiter(t *testing.T) {
 
 	_, err = olap.Ingest(ctx, &connectors.Env{
 		RepoDriver: "file",
-		RepoDSN:    ".",
+		RepoRoot:   ".",
 	}, &connectors.Source{
 		Name:      "foo",
 		Connector: "local_file",
@@ -115,7 +169,7 @@ func TestCSVDelimiter(t *testing.T) {
 
 	_, err = olap.Ingest(ctx, &connectors.Env{
 		RepoDriver: "file",
-		RepoDSN:    ".",
+		RepoRoot:   ".",
 	}, &connectors.Source{
 		Name:      "foo",
 		Connector: "local_file",
@@ -146,7 +200,7 @@ func TestFileFormatAndDelimiter(t *testing.T) {
 
 	_, err = olap.Ingest(ctx, &connectors.Env{
 		RepoDriver: "file",
-		RepoDSN:    ".",
+		RepoRoot:   ".",
 	}, &connectors.Source{
 		Name:      "foo",
 		Connector: "local_file",
