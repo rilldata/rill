@@ -14,6 +14,7 @@ It is probably not the most up to date code; but it works very well in practice.
     x: number;
     y: number;
     label: string;
+    key: string;
     valueColorClass?: string;
     valueStyleClass?: string;
     labelColorClass?: string;
@@ -56,8 +57,8 @@ It is probably not the most up to date code; but it works very well in practice.
 
   // update locations.
   $: nonOverlappingLocations = preventVerticalOverlap(
-    point.map((p, i) => ({
-      key: `${p.x}-${p.y}-${i}`,
+    point.map((p) => ({
+      key: p.key,
       value: $yScale(p.y),
     })),
     plotTop,
@@ -66,13 +67,11 @@ It is probably not the most up to date code; but it works very well in practice.
     yBuffer
   );
 
-  $: locations = point.map((p, i) => {
-    const key = `${p.x}-${p.y}-${i}`;
+  $: locations = point.map((p) => {
     return {
       ...p,
-      key,
       xRange: $xScale(p.x),
-      yRange: nonOverlappingLocations.find((l) => l.key === key).value,
+      yRange: nonOverlappingLocations.find((l) => l.key === p.key).value,
     };
   });
 
@@ -241,12 +240,14 @@ It is probably not the most up to date code; but it works very well in practice.
           ]}
           let:output
         >
-          <circle cx={output[0]} cy={output[1]} r={5} fill="white" />
           <circle
             cx={output[0]}
             cy={output[1]}
             r={3}
+            paint-order="stroke"
             class={location.pointColorClass}
+            stroke="white"
+            stroke-width="3"
           />
         </WithTween>
       {/if}

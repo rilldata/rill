@@ -101,16 +101,16 @@
 <WithGraphicContexts let:xScale let:yScale>
   {@const strokeWidth = showComparison ? 2 : 4}
   {@const colorClass = "stroke-gray-400"}
-  {#if !(currentPointIsNull || comparisonPointIsNull) && x !== undefined && y !== undefined}
-    <WithTween
-      tweenProps={{ duration: 50 }}
-      value={{
-        x: xScale(x),
-        y: yScale(y),
-        dy: yScale(comparisonY) || yScale(0),
-      }}
-      let:output
-    >
+  <WithTween
+    tweenProps={{ duration: 0 }}
+    value={{
+      x: xScale(x),
+      y: yScale(y),
+      dy: yScale(comparisonY) || yScale(0),
+    }}
+    let:output
+  >
+    {#if !(currentPointIsNull || comparisonPointIsNull) && x !== undefined && y !== undefined}
       {#if !showComparison || Math.abs(output.y - output.dy) > 8}
         {@const bufferSize = Math.abs(output.y - output.dy) > 16 ? 8 : 4}
         {@const yBuffer = !hasValidComparisonPoint
@@ -208,19 +208,19 @@
           </g>
         </g>
       {/if}
-      {#if !hasValidComparisonPoint && x !== undefined && y !== null && y !== undefined && !currentPointIsNull}
-        <line
-          transition:fade|local={{ duration: 100 }}
-          x1={output.x}
-          x2={output.x}
-          y1={yScale(0)}
-          y2={output.y}
-          stroke-width="4"
-          class={"stroke-blue-300"}
-        />
-      {/if}
-    </WithTween>
-  {/if}
+    {/if}
+    {#if !hasValidComparisonPoint && x !== undefined && y !== null && y !== undefined && !currentPointIsNull}
+      <line
+        transition:fade|local={{ duration: 100 }}
+        x1={output.x}
+        x2={output.x}
+        y1={yScale(0)}
+        y2={output.y}
+        stroke-width="4"
+        class={"stroke-blue-300"}
+      />
+    {/if}
+  </WithTween>
 
   <MultiMetricMouseoverLabel
     direction="right"
