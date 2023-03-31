@@ -76,7 +76,7 @@
         </div>
       </div>
       <div
-        class="justify-self-end overflow-hidden ui-copy-number flex gap-x-2 items-baseline"
+        class="justify-self-end overflow-hidden ui-copy-number flex gap-x-4 items-baseline"
       >
         <slot {isActive} name="right" />
         {#if $$slots["context"] && showContext}

@@ -22,7 +22,7 @@
 >
   <slot name="value">
     {#if value === PERC_DIFF.PREV_VALUE_NO_DATA || value === PERC_DIFF.PREV_VALUE_NULL}
-      <span class="opacity-50 italic">no data</span>
+      <span class="opacity-50 italic" style:font-size=".925em">no data</span>
     {:else if value !== undefined}
       <span class:text-red-500={diffIsNegative}>
         {value?.neg || ""}{intValue}<span class="opacity-50"
