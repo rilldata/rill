@@ -35,8 +35,6 @@ It is probably not the most up to date code; but it works very well in practice.
   export let showPoints = true;
   export let showLabels = true;
 
-  export let keepPointsTrue = false;
-
   // plot the middle and push out from there
 
   const xScale = getContext(contexts.scale("x")) as ScaleStore;
@@ -157,79 +155,98 @@ It is probably not the most up to date code; but it works very well in practice.
     {#each locations as location, i (location.key || location.label)}
       {#if (location.y || location.yRange) && (location.x || location.xRange)}
         <WithTween
-          value={{
-            y: location.yRange || 0,
-            x:
-              internalDirection === "right"
-                ? location.xRange + (xBuffer + xOffset + labelWidth)
-                : location.xRange - xBuffer - xOffset,
-          }}
-          let:output={v}
+          value={location.xRange}
+          let:output={x}
           tweenProps={{ duration: 50 }}
         >
-          <text font-size={fontSize} class="text-elements pointer-events-none">
-            {#if internalDirection === "right"}
-              <tspan
-                dy=".35em"
-                class="widths {location?.valueStyleClass ||
-                  'font-bold'} {location?.valueColorClass || ''}"
-                y={v.y}
-                text-anchor="end"
-                x={v.x}
-              >
-                {#if !location?.yOverride}
-                  {formatValue(location.y)}
-                {/if}
-              </tspan>
-              <tspan
-                dy=".35em"
-                y={v.y}
-                x={v.x - (location?.yOverride ? labelWidth : 0)}
-                class="mc-mouseover-label  {location?.labelStyleClass ||
-                  ''} {(!location?.yOverride && location?.labelColorClass) ||
-                  ''}"
-              >
-                {#if location?.yOverride}
-                  {location.yOverrideLabel}
-                {:else}
-                  {location.label}
-                {/if}
-              </tspan>
-            {:else}
-              <tspan
-                dy=".35em"
-                y={v.y}
-                x={v.x - labelWidth}
-                class="mc-mouseover-label  {location?.labelStyleClass ||
-                  ''} {(!location?.yOverride && location?.labelColorClass) ||
-                  ''}"
-                text-anchor="end"
-              >
-                {#if location?.yOverride}
-                  {location.yOverrideLabel}
-                {:else}
-                  {location.label}
-                {/if}
-              </tspan>
-              <tspan
-                dy=".35em"
-                class="widths {location?.valueStyleClass ||
-                  'font-bold'} {location?.valueColorClass || ''}"
-                text-anchor="end"
-                y={v.y}
-                x={v.x}
-              >
-                {#if !location?.yOverride}
-                  {formatValue(location.y)}
-                {/if}
-              </tspan>
-            {/if}
-          </text>
+          {@const xText =
+            internalDirection === "right"
+              ? location.xRange + (xBuffer + xOffset + labelWidth)
+              : location.xRange - xBuffer - xOffset}
+          <WithTween
+            tweenProps={{ duration: 1000 }}
+            value={{
+              label: location.yRange || 0,
+              point: $yScale(location.y),
+            }}
+            let:output={y}
+          >
+            <text
+              font-size={fontSize}
+              class="text-elements pointer-events-none"
+            >
+              {#if internalDirection === "right"}
+                <tspan
+                  dy=".35em"
+                  class="widths {location?.valueStyleClass ||
+                    'font-bold'} {location?.valueColorClass || ''}"
+                  y={y.label}
+                  text-anchor="end"
+                  x={xText}
+                >
+                  {#if !location?.yOverride}
+                    {formatValue(location.y)}
+                  {/if}
+                </tspan>
+                <tspan
+                  dy=".35em"
+                  y={y.label}
+                  x={xText - (location?.yOverride ? labelWidth : 0)}
+                  class="mc-mouseover-label  {location?.labelStyleClass ||
+                    ''} {(!location?.yOverride && location?.labelColorClass) ||
+                    ''}"
+                >
+                  {#if location?.yOverride}
+                    {location.yOverrideLabel}
+                  {:else}
+                    {location.label}
+                  {/if}
+                </tspan>
+              {:else}
+                <tspan
+                  dy=".35em"
+                  y={y.label}
+                  x={xText - labelWidth}
+                  class="mc-mouseover-label  {location?.labelStyleClass ||
+                    ''} {(!location?.yOverride && location?.labelColorClass) ||
+                    ''}"
+                  text-anchor="end"
+                >
+                  {#if location?.yOverride}
+                    {location.yOverrideLabel}
+                  {:else}
+                    {location.label}
+                  {/if}
+                </tspan>
+                <tspan
+                  dy=".35em"
+                  class="widths {location?.valueStyleClass ||
+                    'font-bold'} {location?.valueColorClass || ''}"
+                  text-anchor="end"
+                  y={y.label}
+                  x={xText}
+                >
+                  {#if !location?.yOverride}
+                    {formatValue(location.y)}
+                  {/if}
+                </tspan>
+              {/if}
+            </text>
+            <circle
+              cx={x}
+              cy={y.point}
+              r={3}
+              paint-order="stroke"
+              class={location.pointColorClass}
+              stroke="white"
+              stroke-width="3"
+            />
+          </WithTween>
         </WithTween>
       {/if}
     {/each}
   {/if}
-  {#if showPoints}
+  <!-- {#if showPoints}
     {#each locations as location, i (location.key || location.label)}
       {#if (keepPointsTrue && location.x !== undefined && location.y !== undefined) || (location.xRange !== undefined && location.yRange !== undefined)}
         <WithTween
@@ -252,7 +269,7 @@ It is probably not the most up to date code; but it works very well in practice.
         </WithTween>
       {/if}
     {/each}
-  {/if}
+  {/if} -->
 </g>
 
 <style>

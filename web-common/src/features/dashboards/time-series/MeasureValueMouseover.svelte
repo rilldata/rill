@@ -85,7 +85,7 @@
   /** get the final point set*/
   $: pointSet =
     showComparison && hasValidComparisonPoint
-      ? [mainPoint, comparisonPoint]
+      ? [comparisonPoint, mainPoint]
       : [mainPoint];
 
   /** modes
@@ -102,130 +102,134 @@
   {@const strokeWidth = showComparison ? 2 : 4}
   {@const colorClass = "stroke-gray-400"}
   <WithTween
-    tweenProps={{ duration: 50 }}
+    tweenProps={{ duration: 1000 }}
     value={{
-      x: xScale(x),
       y: yScale(y),
       dy: yScale(comparisonY) || yScale(0),
     }}
     let:output
   >
-    {#if !(currentPointIsNull || comparisonPointIsNull) && x !== undefined && y !== undefined}
-      {#if !showComparison || Math.abs(output.y - output.dy) > 8}
-        {@const bufferSize = Math.abs(output.y - output.dy) > 16 ? 8 : 4}
-        {@const yBuffer = !hasValidComparisonPoint
-          ? 0
-          : !comparisonIsPositive
-          ? -bufferSize
-          : bufferSize}
+    <WithTween
+      tweenProps={{ duration: 50 }}
+      value={xScale(x)}
+      let:output={xArrow}
+    >
+      {#if !(currentPointIsNull || comparisonPointIsNull) && x !== undefined && y !== undefined}
+        {#if !showComparison || Math.abs(output.y - output.dy) > 8}
+          {@const bufferSize = Math.abs(output.y - output.dy) > 16 ? 8 : 4}
+          {@const yBuffer = !hasValidComparisonPoint
+            ? 0
+            : !comparisonIsPositive
+            ? -bufferSize
+            : bufferSize}
 
-        {@const sign = !comparisonIsPositive ? -1 : 1}
-        {@const dist = 3}
-        {@const signedDist = sign * dist}
-        {@const yLoc = output.y + bufferSize * sign}
-        {@const show =
-          Math.abs(output.y - output.dy) > 16 && hasValidComparisonPoint}
-        <!-- arrows -->
-        <g>
-          {#if show}
+          {@const sign = !comparisonIsPositive ? -1 : 1}
+          {@const dist = 3}
+          {@const signedDist = sign * dist}
+          {@const yLoc = output.y + bufferSize * sign}
+          {@const show =
+            Math.abs(output.y - output.dy) > 16 && hasValidComparisonPoint}
+          <!-- arrows -->
+          <g>
+            {#if show}
+              <line
+                x1={xArrow}
+                x2={xArrow + dist}
+                y1={yLoc}
+                y2={yLoc + signedDist}
+                stroke="white"
+                stroke-width={strokeWidth + 3}
+                stroke-linecap="round"
+              />
+              <line
+                x1={xArrow}
+                x2={xArrow - dist}
+                y1={yLoc}
+                y2={yLoc + signedDist}
+                stroke="white"
+                stroke-width={strokeWidth + 3}
+                stroke-linecap="round"
+              />
+            {/if}
+
             <line
-              x1={output.x}
-              x2={output.x + dist}
-              y1={yLoc}
-              y2={yLoc + signedDist}
+              x1={xArrow}
+              x2={xArrow}
+              y1={output.y + yBuffer}
+              y2={output.dy - yBuffer}
               stroke="white"
               stroke-width={strokeWidth + 3}
               stroke-linecap="round"
             />
+
             <line
-              x1={output.x}
-              x2={output.x - dist}
-              y1={yLoc}
-              y2={yLoc + signedDist}
-              stroke="white"
-              stroke-width={strokeWidth + 3}
+              x1={xArrow}
+              x2={xArrow}
+              y1={output.y + yBuffer}
+              y2={output.dy - yBuffer}
+              class={colorClass}
+              stroke-width={strokeWidth}
               stroke-linecap="round"
             />
-          {/if}
 
-          <line
-            x1={output.x}
-            x2={output.x}
-            y1={output.y + yBuffer}
-            y2={output.dy - yBuffer}
-            stroke="white"
-            stroke-width={strokeWidth + 3}
-            stroke-linecap="round"
-          />
-
-          <line
-            x1={output.x}
-            x2={output.x}
-            y1={output.y + yBuffer}
-            y2={output.dy - yBuffer}
-            class={colorClass}
-            stroke-width={strokeWidth}
-            stroke-linecap="round"
-          />
-
-          <g class:opacity-0={!show} class="transition-opacity">
-            <g>
-              <line
-                x1={output.x}
-                x2={output.x + dist}
-                y1={yLoc}
-                stroke-width={strokeWidth}
-                y2={yLoc + signedDist}
-                class={colorClass}
-                stroke-linecap="round"
-              />
-              <line
-                x1={output.x}
-                x2={output.x - dist}
-                y1={yLoc}
-                stroke-width={strokeWidth}
-                y2={yLoc + signedDist}
-                class={colorClass}
-                stroke-linecap="round"
-              />
-              <!-- <path
-                d="M {output.x} {yLoc} L {output.x + signedDist} {yLoc +
-                  signedDist} L {output.x - signedDist} {yLoc +
-                  signedDist} M {output.x} {yLoc} L {output.x} {output.dy -
+            <g class:opacity-0={!show} class="transition-opacity">
+              <g>
+                <line
+                  x1={xArrow}
+                  x2={xArrow + dist}
+                  y1={yLoc}
+                  stroke-width={strokeWidth}
+                  y2={yLoc + signedDist}
+                  class={colorClass}
+                  stroke-linecap="round"
+                />
+                <line
+                  x1={xArrow}
+                  x2={xArrow - dist}
+                  y1={yLoc}
+                  stroke-width={strokeWidth}
+                  y2={yLoc + signedDist}
+                  class={colorClass}
+                  stroke-linecap="round"
+                />
+                <!-- <path
+                d="M {xArrow} {yLoc} L {xArrow + signedDist} {yLoc +
+                  signedDist} L {xArrow - signedDist} {yLoc +
+                  signedDist} M {xArrow} {yLoc} L {xArrow} {output.dy -
                   yBuffer} Z"
                 stroke="white"
                 stroke-width="5"
               /> -->
-              <!-- <path
-                d="M {output.x} {yLoc} L {output.x + signedDist} {yLoc +
-                  signedDist} L {output.x - signedDist} {yLoc +
-                  signedDist} {output.x} {yLoc} M {output.x} {yLoc +
-                  2} L {output.x} {output.dy - yBuffer} Z"
+                <!-- <path
+                d="M {xArrow} {yLoc} L {xArrow + signedDist} {yLoc +
+                  signedDist} L {xArrow - signedDist} {yLoc +
+                  signedDist} {xArrow} {yLoc} M {xArrow} {yLoc +
+                  2} L {xArrow} {output.dy - yBuffer} Z"
                 stroke-linecap="round"
                 class={colorClass}
               /> -->
+              </g>
             </g>
           </g>
-        </g>
+        {/if}
       {/if}
-    {/if}
-    {#if !hasValidComparisonPoint && x !== undefined && y !== null && y !== undefined && !currentPointIsNull}
-      <line
-        transition:fade|local={{ duration: 100 }}
-        x1={output.x}
-        x2={output.x}
-        y1={yScale(0)}
-        y2={output.y}
-        stroke-width="4"
-        class={"stroke-blue-300"}
-      />
-    {/if}
+      {#if !hasValidComparisonPoint && x !== undefined && y !== null && y !== undefined && !currentPointIsNull}
+        <line
+          transition:fade|local={{ duration: 100 }}
+          x1={xArrow}
+          x2={xArrow}
+          y1={yScale(0)}
+          y2={output.y}
+          stroke-width="4"
+          class={"stroke-blue-300"}
+        />
+      {/if}
+    </WithTween>
   </WithTween>
 
   <MultiMetricMouseoverLabel
     direction="right"
     flipAtEdge={false}
-    keepPointsTrue
     formatValue={mouseoverFormat}
     point={pointSet || []}
   />
