@@ -4,9 +4,17 @@ lists of items that are small enough to be handled comfortably
 the client, for example selecting visible measures and dimensions
 in the dashboard, where in the the worst existing cases in the
 legacy dash, the number of measures is not more than a few dozen
-and the number of dimensions does not exceed a few hundered.
+and the number of dimensions does not exceed a few hundred.
 
-This component takes an array of strings as it's `selectableItems` prop, and expose a `selectedItems` boolean array prop that you should `bind` to watch for changes.
+This component takes props:
+- `selectableItems`:string[], an array of item names to be shown in the menu.
+- `selectedItems`:boolean[], a bit mask indicating which items are currently selected.
+These arrays must be the same length or the 
+
+This component emits events:
+- `itemClicked`, which has a number `detail` field with the index of the item that was clicked.
+- `deselectAll`, with no `detail`
+In both cases, it is up to the containing component to handle the toggling the selection state and updating the `selectedItems` prop as needed.
 
 -->
 <script lang="ts">
@@ -23,6 +31,13 @@ This component takes an array of strings as it's `selectableItems` prop, and exp
   export let tooltipText: string;
   export let label: string;
 
+  $: {
+    if (selectableItems?.length !== selectedItems?.length) {
+      throw new Error(
+        "SearchableFilterButton component requires props `selectableItems` and `selectedItems` to be arrays of equal length"
+      );
+    }
+  }
   let active = false;
 </script>
 
