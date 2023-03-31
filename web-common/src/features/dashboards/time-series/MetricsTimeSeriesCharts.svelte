@@ -140,14 +140,15 @@
   let availableMeasureLabels = [];
   let visibleMeasures = [];
 
-  const initVisible = () =>
-    (visibleMeasures = availableMeasureLabels?.map((_, i) => i % 2 == 0));
+  // FIXME: this is just for demo, to have some measures hidden at start
+  // const initVisible = () =>
+  //   (visibleMeasures = availableMeasureLabels?.map((_, i) => i % 2 == 0));
 
   $: {
     availableMeasureLabels =
       $totalsQuery?.isSuccess && $metaQuery.data?.measures.map((m) => m.label);
 
-    initVisible();
+    // initVisible();
   }
 
   $: visibleMeasures = metricsExplorer.visibleMeasures;
