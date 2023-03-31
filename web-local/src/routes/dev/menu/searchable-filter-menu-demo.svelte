@@ -1,37 +1,34 @@
 <script lang="ts">
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
-  import { SelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/types-and-utils";
 
-  let selectableItemsObjs: SelectableItem[] = [
-    { label: "sales", selected: true },
-    { label: "sales", selected: true },
-    { label: "sales", selected: true },
-    { label: "2returns", selected: true },
-    { label: "3new customers", selected: true },
-    { label: "4asdfa", selected: true },
-    { label: "5asdfwet", selected: true },
-    { label: "6qwrtqwer", selected: true },
-    { label: "7salesol;", selected: true },
-    { label: "8returns,n;o;", selected: true },
-    { label: "9new customers6l,", selected: true },
-    { label: "10vbafdg", selected: true },
-    { label: "11wetafasdfwet", selected: true },
-    { label: "12qwrbafbatqwer", selected: true },
-    { label: "13sales", selected: true },
-    { label: "14returagfbvans", selected: true },
-    { label: "15new cwebvaaustomers", selected: true },
-    { label: "16aaeasdfa", selected: true },
-    { label: "17asdfwzxcvawseet", selected: true },
-    { label: "18qwasdfasdrtqwer", selected: true },
-    { label: "19sasdfgalesol;", selected: true },
-    { label: "20retuasdfrns,n;o;", selected: true },
-    { label: "21asdfnew customers6l,", selected: true },
-    { label: "22vbafdfasddg", selected: true },
-    { label: "23wetafasdfasdfwet", selected: true },
-    { label: "24qwrbafbasdfatqwer", selected: true },
+  let selectableItems = [
+    "sales",
+    "sales",
+    "sales",
+    "2returns",
+    "3new customers",
+    "4asdfa",
+    "5asdfwet",
+    "6qwrtqwer",
+    "7salesol;",
+    "8returns,n;o;",
+    "9new customers6l,",
+    "10vbafdg",
+    "11wetafasdfwet",
+    "12qwrbafbatqwer",
+    "13sales",
+    "14returagfbvans",
+    "15new cwebvaaustomers",
+    "16aaeasdfa",
+    "17asdfwzxcvawseet",
+    "18qwasdfasdrtqwer",
+    "19sasdfgalesol;",
+    "20retuasdfrns,n;o;",
+    "21asdfnew customers6l,",
+    "22vbafdfasddg",
+    "23wetafasdfasdfwet",
+    "24qwrbafbasdfatqwer",
   ];
-
-  let selectableItems = selectableItemsObjs.map((x) => x.label);
 
   let selectedItems: boolean[] = selectableItems.map((_, i) => i % 2 == 0);
 
@@ -49,7 +46,16 @@
     label="Measures"
     tooltipText="Choose measures to display"
     {selectableItems}
-    bind:selectedItems
+    {selectedItems}
+    on:itemClicked={(ev) => {
+      console.log("selectedItemsChanged", ev);
+      const index = ev.detail;
+      selectedItems = selectedItems.map((x, i) => (i === index ? !x : x));
+      // selectedItems = ev.detail;
+    }}
+    on:deselectAll={() => {
+      selectedItems = selectedItems.map((_) => false);
+    }}
   />
   {#each selectableItems.filter((_, i) => selectedItems[i]) as item}
     {item}&nbsp;

@@ -139,12 +139,6 @@
 
   let availableMeasureLabels = [];
   let visibleMeasures = [];
-  $: {
-    console.log("$totalsQuery?.isSuccess", $totalsQuery?.isSuccess);
-  }
-  $: {
-    console.log("$metaQuery.data?.measures", $metaQuery.data?.measures);
-  }
 
   const initVisible = () =>
     (visibleMeasures = availableMeasureLabels?.map((_, i) => i % 2 == 0));
@@ -152,24 +146,17 @@
   $: {
     availableMeasureLabels =
       $totalsQuery?.isSuccess && $metaQuery.data?.measures.map((m) => m.label);
-  }
 
-  $: {
-    console.log("availableMeasureLabels updated", availableMeasureLabels);
     initVisible();
   }
 
-  $: {
-    console.log("visibleMeasures updated", visibleMeasures);
-  }
+  $: visibleMeasures = metricsExplorer.visibleMeasures;
+  const toggleMeasureVisibility = (e) =>
+    metricsExplorerStore.toggleMeasureVisibility(metricViewName, e.detail);
+  const setAllMeasuresNotVisible = () =>
+    metricsExplorerStore.setAllMeasuresNotVisible(metricViewName);
 </script>
 
-<SeachableFilterButton
-  selectableItems={availableMeasureLabels}
-  bind:selectedItems={visibleMeasures}
-  label="Measures"
-  tooltipText="Choose measures to display"
-/>
 <WithBisector
   data={formattedData}
   callback={(datum) => datum.ts}
@@ -177,7 +164,16 @@
   let:point
 >
   <TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
-    <div class="bg-white sticky left-0 top-0" />
+    <div class="bg-white  left-0 top-0">
+      <SeachableFilterButton
+        selectableItems={availableMeasureLabels}
+        selectedItems={visibleMeasures}
+        on:itemClicked={toggleMeasureVisibility}
+        on:deselectAll={setAllMeasuresNotVisible}
+        label="Measures"
+        tooltipText="Choose measures to display"
+      />
+    </div>
     <div class="bg-white sticky left-0 top-0">
       <div style:padding-left="24px" style:height="20px" />
       <!-- top axis element -->
@@ -196,7 +192,7 @@
     </div>
     <!-- bignumbers and line charts -->
     {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
-      {#each $metaQuery.data?.measures as measure, index (measure.name)}
+      {#each $metaQuery.data?.measures.filter((_, i) => visibleMeasures[i]) as measure, index (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
         {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
         {@const formatPreset =

@@ -1,45 +1,61 @@
 <script lang="ts">
-  // import { createEventDispatcher } from "svelte";
-  // import { Switch } from "../button";
-  // import Cancel from "../icons/Cancel.svelte";
   import Check from "../icons/Check.svelte";
   import Spacer from "../icons/Spacer.svelte";
   import { Menu, MenuItem } from "../menu";
   import { Search } from "../search";
   import Footer from "./Footer.svelte";
   import Button from "../button/Button.svelte";
-  import {
-    getNumSelectedNotShown,
-    // SelectableItem,
-    setItemsVisibleBySearchString,
-  } from "./types-and-utils";
+  import { createEventDispatcher } from "svelte";
+  const dispatch = createEventDispatcher();
 
   export let selectableItems: string[];
   export let selectedItems: boolean[];
-  // let visibleInSearch = selectableItems.map((_) => true);
 
-  // $: selectedItems = selectableItems.map((x) => x.selected);
+  export const getNumSelectedNotShown = (
+    selectedItems: boolean[],
+    visibleInSearch: boolean[]
+  ): number =>
+    selectedItems?.filter((s, i) => s && !visibleInSearch[i])?.length || 0;
+
+  export const setItemsVisibleBySearchString = (
+    items: string[],
+    searchText: string
+  ): boolean[] => {
+    return items?.map((x) => x.includes(searchText.trim()));
+  };
 
   let searchText = "";
 
-  $: {
-    console.log("selectedItems Inner", selectedItems);
-  }
-
+  let visibleInSearch: boolean[];
   $: visibleInSearch = setItemsVisibleBySearchString(
     selectableItems,
     searchText
   );
 
   const deselectAll = () => {
-    selectedItems = selectedItems.map((_) => false);
-    // selectableItems = selectableItems.map((x) => ({ ...x, selected: false }));
+    dispatch("deselectAll");
+    // selectedItems = selectedItems.map((_) => false);
   };
 
   $: numSelectedNotShown = getNumSelectedNotShown(
-    selectableItems,
+    selectedItems,
     visibleInSearch
   );
+
+  $: dispatch("selectedItemsChanged", selectedItems);
+
+  $: menuItems = selectableItems
+    .map((item, i) => ({
+      label: item,
+      visible: visibleInSearch[i],
+      selected: selectedItems[i],
+      index: i,
+    }))
+    .filter((item) => item.visible);
+
+  // const updateSelectedItemsByIndex = (index) => {
+  //   selectedItems = selectedItems.map((x, i) => (i === index ? !x : x));
+  // };
 </script>
 
 <Menu
@@ -59,27 +75,29 @@
 
   <!-- apply a wrapped flex element to ensure proper bottom spacing between body and footer -->
   <div class="flex flex-col flex-1 overflow-auto w-full pb-1">
-    {#each selectableItems.filter((_, i) => visibleInSearch[i]) as selectableItem, i}
+    {#each menuItems as { label, visible, selected, index } (label + index)}
       <MenuItem
         icon
         animateSelect={false}
         focusOnMount={false}
         on:select={() => {
-          selectedItems[i] = !selectedItems[i];
+          // selectedItems[index] = !selectedItems[index];
+          // updateSelectedItemsByIndex(index);
+          dispatch("itemClicked", index);
         }}
       >
         <svelte:fragment slot="icon">
-          {#if selectedItems[i]}
+          {#if selected}
             <Check size="20px" color="#15141A" />
           {:else}
             <Spacer size="20px" />
           {/if}
         </svelte:fragment>
-        <span class:ui-copy-disabled={!selectedItems[i]}>
-          {#if selectableItem.length > 240}
-            {selectableItem.slice(0, 240)}...
+        <span class:ui-copy-disabled={!selected}>
+          {#if label.length > 240}
+            {label.slice(0, 240)}...
           {:else}
-            {selectableItem}
+            {label}
           {/if}
         </span>
       </MenuItem>

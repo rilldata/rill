@@ -24,6 +24,10 @@ export interface MetricsExplorerEntity {
   name: string;
   // selected measure names to be shown
   selectedMeasureNames: Array<string>;
+  // This array controls which measures are visible in
+  // explorer on the client.
+  // FIXME should this be consolidated with selectedMeasureNames
+  visibleMeasures: boolean[];
   // this is used to show leaderboard values
   leaderboardMeasureName: string;
   filters: V1MetricsViewFilter;
@@ -96,6 +100,7 @@ const metricViewReducers = {
       () => ({
         name,
         selectedMeasureNames: [],
+        visibleMeasures: [],
         leaderboardMeasureName: "",
         filters: {},
         dimensionFilterExcludeMode: includeExcludeModeFromFilters(
@@ -127,25 +132,57 @@ const metricViewReducers = {
         metricsExplorer.selectedMeasureNames = metricsView.measures.map(
           (measure) => measure.name
         );
+        metricsExplorer.visibleMeasures = metricsView.measures.map(
+          (measure) => true
+        );
+        console.log(
+          "metricsExplorer.visibleMeasures sync",
+          metricsExplorer.visibleMeasures
+        );
       },
-      () => ({
-        name,
-        selectedMeasureNames: metricsView.measures.map(
-          (measure) => measure.name
-        ),
-        leaderboardMeasureName: metricsView.measures[0]?.name,
-        filters: {
-          include: [],
-          exclude: [],
-        },
-        dimensionFilterExcludeMode: new Map(),
-      })
+      () => {
+        console.log("metricsExplorer.visibleMeasures absence?");
+
+        return {
+          name,
+          selectedMeasureNames: metricsView.measures.map(
+            (measure) => measure.name
+          ),
+          visibleMeasures: metricsView.measures.map((measure) => true),
+          leaderboardMeasureName: metricsView.measures[0]?.name,
+          filters: {
+            include: [],
+            exclude: [],
+          },
+          dimensionFilterExcludeMode: new Map(),
+        };
+      }
     );
   },
 
   setLeaderboardMeasureName(name: string, measureName: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.leaderboardMeasureName = measureName;
+    });
+  },
+
+  // Updates the bitmask that sets the client-side visibility
+  // of measures in the dashboard.
+  toggleMeasureVisibility(name: string, measureIndex: number) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.visibleMeasures = metricsExplorer.visibleMeasures.map(
+        (x, i) => (i === measureIndex ? !x : x)
+      );
+    });
+  },
+
+  // Updates the bitmask that sets the client-side visibility
+  // of measures in the dashboard.
+  setAllMeasuresNotVisible(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.visibleMeasures = metricsExplorer.visibleMeasures.map(
+        (_) => false
+      );
     });
   },
 

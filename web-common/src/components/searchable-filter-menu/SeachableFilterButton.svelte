@@ -17,19 +17,13 @@ This component takes an array of strings as it's `selectableItems` prop, and exp
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
   import SearchableFilterDropdown from "./SearchableFilterDropdown.svelte";
-  // import type { SelectableItem } from "./types-and-utils";
 
   export let selectableItems: string[];
   export let selectedItems: boolean[];
-  // export let selectedValues: boolean[];
   export let tooltipText: string;
   export let label: string;
 
   let active = false;
-
-  $: {
-    console.log("selectedItems L2", selectedItems);
-  }
 </script>
 
 <WithTogglableFloatingElement
@@ -57,12 +51,14 @@ This component takes an array of strings as it's `selectableItems` prop, and exp
     </div>
   </Tooltip>
   <SearchableFilterDropdown
-    bind:selectedItems
+    {selectedItems}
     {selectableItems}
     slot="floating-element"
     on:escape={toggleFloatingElement}
     on:click-outside={toggleFloatingElement}
     on:apply
     on:search
+    on:itemClicked
+    on:deselectAll
   />
 </WithTogglableFloatingElement>
