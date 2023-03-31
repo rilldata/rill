@@ -173,7 +173,7 @@
   style:min-width="365px"
 >
   <div
-    class="grid grid-auto-cols justify-start grid-flow-col items-end p-1 pb-3"
+    class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3"
   >
     <LeaderboardMeasureSelector {metricViewName} />
     <SeachableFilterButton
