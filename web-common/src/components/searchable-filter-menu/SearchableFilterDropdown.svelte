@@ -6,56 +6,61 @@
   import Footer from "./Footer.svelte";
   import Button from "../button/Button.svelte";
   import { createEventDispatcher } from "svelte";
+  import Fuse from "fuse.js";
+
   const dispatch = createEventDispatcher();
 
   export let selectableItems: string[];
   export let selectedItems: boolean[];
 
-  export const getNumSelectedNotShown = (
-    selectedItems: boolean[],
-    visibleInSearch: boolean[]
-  ): number =>
-    selectedItems?.filter((s, i) => s && !visibleInSearch[i])?.length || 0;
+  const fuse = new Fuse(selectableItems);
+
+  type MenuItemData = {
+    label: string;
+    selected: boolean;
+    index: number;
+  };
 
   export const setItemsVisibleBySearchString = (
     items: string[],
+    selected: boolean[],
     searchText: string
-  ): boolean[] => {
-    return items?.map((x) => x.includes(searchText.trim()));
+  ): MenuItemData[] => {
+    // if no search text, return all items in usual order
+    if (searchText === "" || !searchText) {
+      return items.map((item, i) => ({
+        label: item,
+        selected: selected[i],
+        index: i,
+      }));
+    }
+
+    // if yes search text, return items in ranked order
+    const results = fuse.search(searchText);
+    console.log(results);
+    return results.map((result) => ({
+      label: result.item,
+      selected: selected[result.refIndex],
+      index: result.refIndex,
+    }));
   };
 
   let searchText = "";
 
-  let visibleInSearch: boolean[];
-  $: visibleInSearch = setItemsVisibleBySearchString(
+  const deselectAll = () => {
+    dispatch("deselectAll");
+  };
+
+  $: menuItems = setItemsVisibleBySearchString(
     selectableItems,
+    selectedItems,
     searchText
   );
 
-  const deselectAll = () => {
-    dispatch("deselectAll");
-    // selectedItems = selectedItems.map((_) => false);
-  };
-
-  $: numSelectedNotShown = getNumSelectedNotShown(
-    selectedItems,
-    visibleInSearch
-  );
-
-  $: dispatch("selectedItemsChanged", selectedItems);
-
-  $: menuItems = selectableItems
-    .map((item, i) => ({
-      label: item,
-      visible: visibleInSearch[i],
-      selected: selectedItems[i],
-      index: i,
-    }))
-    .filter((item) => item.visible);
-
-  // const updateSelectedItemsByIndex = (index) => {
-  //   selectedItems = selectedItems.map((x, i) => (i === index ? !x : x));
-  // };
+  // (total num selected) - (num shown and selected)
+  $: numSelectedNotShown =
+    (selectedItems?.filter((s) => s)?.length || 0) -
+    (menuItems?.filter((item) => item.selected)?.length || 0);
 </script>
 
 <Menu
@@ -75,14 +80,12 @@
 
   <!-- apply a wrapped flex element to ensure proper bottom spacing between body and footer -->
   <div class="flex flex-col flex-1 overflow-auto w-full pb-1">
-    {#each menuItems as { label, visible, selected, index } (label + index)}
+    {#each menuItems as { label, selected, index }}
       <MenuItem
         icon
         animateSelect={false}
         focusOnMount={false}
         on:select={() => {
-          // selectedItems[index] = !selectedItems[index];
-          // updateSelectedItemsByIndex(index);
           dispatch("itemClicked", index);
         }}
       >
