@@ -157,14 +157,14 @@ It is probably not the most up to date code; but it works very well in practice.
         <WithTween
           value={location.xRange}
           let:output={x}
-          tweenProps={{ duration: 50 }}
+          tweenProps={{ duration: 25 }}
         >
           {@const xText =
             internalDirection === "right"
               ? location.xRange + (xBuffer + xOffset + labelWidth)
               : location.xRange - xBuffer - xOffset}
           <WithTween
-            tweenProps={{ duration: 1000 }}
+            tweenProps={{ duration: 100 }}
             value={{
               label: location.yRange || 0,
               point: $yScale(location.y),
