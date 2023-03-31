@@ -5,13 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/cli/go-gh"
-	"github.com/cli/go-gh/pkg/api"
 	"github.com/fatih/color"
 	"github.com/go-git/go-git/v5"
 	"github.com/joho/godotenv"
@@ -29,8 +26,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
-
-var errUserCancelledGitFlow = fmt.Errorf("user cancelled git flow")
 
 type connectOptions struct {
 	Name        string
@@ -66,13 +61,9 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			// log in if not logged in
-			if cfg.AdminTokenDefault == "" {
-				warn.Println("You are not authenticated with rill cloud!!")
-				if !cmdutil.ConfirmPrompt("Press enter to signup or login", true) {
-					info.Println("GoodBye!!!")
-					return nil
-				}
-
+			if !cfg.IsAuthenticated() {
+				msg := fmt.Sprintf("You aren't authenticated into Rill. Opening your browsers to %s to login or sign up...", cfg.AdminURL)
+				warn.Println(msg)
 				// NOTE : calling commands within commands has both pros and cons
 				// PRO : No duplicated code
 				// CON : Need to make sure that UX under sub command verifies with UX on this command
@@ -126,34 +117,12 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 			// verify project dir is a git repo with remote on github
 			githubURL, err := extractRemote(path)
 			if err != nil {
-				if !errors.Is(err, gitutil.ErrGitRemoteNotFound) && !errors.Is(err, git.ErrRepositoryNotExists) {
-					return err
-				}
-
-				warn.Println("\nYour project is not pushed to github")
-				warn.Printf("You can exit cli, push project to github and connect later or continue to push project to a github repo\n\n")
-
-				if !cmdutil.ConfirmPrompt("Confirm to push project to github", false) {
-					info.Print(`Rill projects deploy continuously when you push changes to Github.
-Therefore, your project must be on Github before you connect it to Rill.
-Follow these steps to push your project to Github.`)
+				if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
 					info.Print(githubSetupMsg)
 					return nil
 				}
 
-				if !commandExists("gh") {
-					warn.Println("\nYou do not have github cli installed on your system. Please install github cli (instructions : https://cli.github.com/manual/installation) to push repo via rill connect or follow instructions below")
-					info.Print(githubSetupMsg)
-					return nil
-				}
-
-				if err := repoCreatePrompt(path, info); err != nil {
-					return err
-				}
-				githubURL, err = extractRemote(path)
-				if err != nil {
-					return err
-				}
+				return err
 			}
 
 			// Check for access to the Github URL
@@ -331,80 +300,6 @@ func projectPathPrompt() string {
 	return result
 }
 
-func repoCreatePrompt(dir string, info *color.Color) error {
-	repo, err := git.PlainOpen(dir)
-	if err != nil {
-		if errors.Is(err, git.ErrRepositoryNotExists) {
-			if !cmdutil.ConfirmPrompt("Do you want to create a git repository?", true) {
-				return errUserCancelledGitFlow
-			}
-			repo, err = git.PlainInit(dir, false)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	w, err := repo.Worktree()
-	if err != nil {
-		return err
-	}
-
-	repoStatus, err := w.Status()
-	if err != nil {
-		return err
-	}
-
-	if !repoStatus.IsClean() {
-		if hasUncommittedFiles(repoStatus) {
-			fileGlob := ""
-			fileGlobInput := &survey.Input{
-				Message: "What files do you want to commit?",
-				Default: ".",
-			}
-			if err := survey.AskOne(fileGlobInput, &fileGlob); err != nil {
-				return err
-			}
-			if err := w.AddGlob(fileGlob); err != nil {
-				return err
-			}
-		}
-
-		msg := fmt.Sprintf("Do you want to commit modified files?\n%s\n", repoStatus.String())
-		if !cmdutil.ConfirmPrompt(msg, true) {
-			return errUserCancelledGitFlow
-		}
-
-		if _, err := w.Commit("files auto committed by rill cli", &git.CommitOptions{}); err != nil {
-			return err
-		}
-	}
-
-	if !cmdutil.ConfirmPrompt("Do you want to push committed files?", true) {
-		return errUserCancelledGitFlow
-	}
-
-	ghClient, err := gh.GQLClient(nil)
-	if err != nil {
-		return err
-	}
-	user, orgs, err := currentLoginNameAndOrgs(ghClient)
-	if err != nil {
-		return err
-	}
-
-	name := cmdutil.InputPrompt("Repository name", filepath.Base(dir))
-	orgs = append(orgs, user)
-	owner := cmdutil.SelectPrompt("Repository owner", orgs, user)
-
-	stdout, _, err := gh.Exec("repo", "create", fmt.Sprintf("%s/%s", owner, name), fmt.Sprintf("--source=%s", dir), "--private", "--push", "--remote=origin")
-	if err != nil {
-		return err
-	}
-	info.Printf("created remote repo %s\n", stdout.String())
-	return nil
-}
-
 func multipleOrgs(c *client.Client) (bool, error) {
 	res, err := c.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{PageSize: 2})
 	if err != nil {
@@ -434,71 +329,38 @@ func hasRillProject(dir string) bool {
 	return err == nil
 }
 
-func commandExists(cmd string) bool {
-	_, err := exec.LookPath(cmd)
-	return err == nil
-}
-
-func currentLoginNameAndOrgs(ghClient api.GQLClient) (string, []string, error) {
-	type organization struct {
-		Login string
-	}
-
-	var query struct {
-		Viewer struct {
-			Login         string
-			Organizations struct {
-				Nodes []organization
-			} `graphql:"organizations(first: 100)"`
-		}
-	}
-	err := ghClient.Query("UserCurrent", &query, nil)
-	if err != nil {
-		return "", nil, err
-	}
-	orgNames := []string{}
-	for _, org := range query.Viewer.Organizations.Nodes {
-		orgNames = append(orgNames, org.Login)
-	}
-	return query.Viewer.Login, orgNames, err
-}
-
-func hasUncommittedFiles(s git.Status) bool {
-	for _, status := range s {
-		if status.Worktree != git.Unmodified {
-			return true
-		}
-	}
-
-	return false
-}
-
 const (
-	githubSetupMsg = `
-1. Initialize git
+	githubSetupMsg = `No git remote was found.
 
-	git init
-
-2. Add and commit files
-
-	git add .
-	git commit -m 'initial commit'
-
-3. Create a new GitHub repository on https://github.com/new
-
-4. Link git to the remote repository
-
-	git remote add origin https://github.com/your-account/your-repo.git
-
-5. Push your repository
-
-	git push -u origin main
-
-6. Connect Rill to your repository
-
-	rill connect
-
-`
+	Rill projects deploy continuously when you push changes to Github.
+	Therefore, your project must be on Github before you connect it to Rill.
+	
+	Follow these steps to push your project to Github.
+	
+	1. Initialize git
+	
+		git init
+	
+	2. Add and commit files
+	
+		git add .
+		git commit -m 'initial commit'
+	
+	3. Create a new GitHub repository on https://github.com/new
+	
+	4. Link git to the remote repository
+	
+		git remote add origin https://github.com/your-account/your-repo.git
+	
+	5. Push your repository
+	
+		git push -u origin main
+	
+	6. Connect Rill to your repository
+	
+		rill project connect
+	
+	`
 
 	envFileDefault = `## add any project specific variables in format KEY=VALUE
 ## If using private s3 sources uncomment next three and set credentials
