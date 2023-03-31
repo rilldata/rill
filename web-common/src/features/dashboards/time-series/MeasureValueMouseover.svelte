@@ -208,19 +208,17 @@
           </g>
         </g>
       {/if}
-    </WithTween>
-  {/if}
-  {#if !hasValidComparisonPoint && x !== undefined && y !== null && y !== undefined && !currentPointIsNull}
-    <WithTween value={{ x: xScale(x), y: yScale(y) }} let:output>
-      <line
-        transition:fade|local={{ duration: 100 }}
-        x1={output.x}
-        x2={output.x}
-        y1={yScale(0)}
-        y2={output.y}
-        stroke-width="4"
-        class={"stroke-blue-300"}
-      />
+      {#if !hasValidComparisonPoint && x !== undefined && y !== null && y !== undefined && !currentPointIsNull}
+        <line
+          transition:fade|local={{ duration: 100 }}
+          x1={output.x}
+          x2={output.x}
+          y1={yScale(0)}
+          y2={output.y}
+          stroke-width="4"
+          class={"stroke-blue-300"}
+        />
+      {/if}
     </WithTween>
   {/if}
 
