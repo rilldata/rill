@@ -83,9 +83,10 @@
       : undefined;
 
   /** get the final point set*/
-  $: pointSet = hasValidComparisonPoint
-    ? [mainPoint, comparisonPoint]
-    : [mainPoint];
+  $: pointSet =
+    showComparison && hasValidComparisonPoint
+      ? [mainPoint, comparisonPoint]
+      : [mainPoint];
 
   /** modes
    * 1. comparison not activated b/c not valid for time range
