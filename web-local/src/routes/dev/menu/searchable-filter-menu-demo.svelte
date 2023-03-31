@@ -48,7 +48,6 @@
     {selectableItems}
     {selectedItems}
     on:itemClicked={(ev) => {
-      console.log("selectedItemsChanged", ev);
       const index = ev.detail;
       selectedItems = selectedItems.map((x, i) => (i === index ? !x : x));
       // selectedItems = ev.detail;
