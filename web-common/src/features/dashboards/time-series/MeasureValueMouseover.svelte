@@ -102,7 +102,7 @@
   {@const strokeWidth = showComparison ? 2 : 4}
   {@const colorClass = "stroke-gray-400"}
   <WithTween
-    tweenProps={{ duration: 0 }}
+    tweenProps={{ duration: 50 }}
     value={{
       x: xScale(x),
       y: yScale(y),
