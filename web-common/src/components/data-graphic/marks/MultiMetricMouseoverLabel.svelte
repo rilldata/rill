@@ -185,7 +185,7 @@ It is probably not the most up to date code; but it works very well in practice.
               <tspan
                 dy=".35em"
                 y={v.y}
-                x={v.x}
+                x={v.x - (location?.yOverride ? labelWidth : 0)}
                 class="mc-mouseover-label  {location?.labelStyleClass ||
                   ''} {(!location?.yOverride && location?.labelColorClass) ||
                   ''}"
