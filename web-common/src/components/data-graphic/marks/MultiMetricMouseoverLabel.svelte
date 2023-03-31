@@ -164,7 +164,7 @@ It is probably not the most up to date code; but it works very well in practice.
               ? location.xRange + (xBuffer + xOffset + labelWidth)
               : location.xRange - xBuffer - xOffset}
           <WithTween
-            tweenProps={{ duration: 100 }}
+            tweenProps={{ duration: 60 }}
             value={{
               label: location.yRange || 0,
               point: $yScale(location.y),

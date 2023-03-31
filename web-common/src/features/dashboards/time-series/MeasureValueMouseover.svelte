@@ -102,7 +102,7 @@
   {@const strokeWidth = showComparison ? 2 : 4}
   {@const colorClass = "stroke-gray-400"}
   <WithTween
-    tweenProps={{ duration: 100 }}
+    tweenProps={{ duration: 60 }}
     value={{
       y: yScale(y),
       dy: yScale(comparisonY) || yScale(0),
@@ -115,7 +115,7 @@
       let:output={xArrow}
     >
       {#if !(currentPointIsNull || comparisonPointIsNull) && x !== undefined && y !== undefined}
-        {#if !showComparison || Math.abs(output.y - output.dy) > 8}
+        {#if showComparison && Math.abs(output.y - output.dy) > 8}
           {@const bufferSize = Math.abs(output.y - output.dy) > 16 ? 8 : 4}
           {@const yBuffer = !hasValidComparisonPoint
             ? 0
@@ -213,7 +213,7 @@
           </g>
         {/if}
       {/if}
-      {#if !hasValidComparisonPoint && x !== undefined && y !== null && y !== undefined && !currentPointIsNull}
+      {#if !showComparison && x !== undefined && y !== null && y !== undefined && !currentPointIsNull}
         <line
           transition:fade|local={{ duration: 100 }}
           x1={xArrow}
