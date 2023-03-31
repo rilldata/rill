@@ -1,5 +1,8 @@
 import { DateTime, DateTimeUnit } from "luxon";
-export function roundToNearestTimeUnit(date, unit: keyof DateTime) {
+export function roundToNearestTimeUnit(
+  date,
+  unit: DateTimeUnit | keyof DateTime
+) {
   const dateTime = DateTime.fromJSDate(date);
   if (!DateTime.isDateTime(dateTime)) {
     throw new Error("Invalid Luxon DateTime object");
@@ -8,7 +11,7 @@ export function roundToNearestTimeUnit(date, unit: keyof DateTime) {
   const unitMap = {
     year: "month",
     month: "day",
-    week: "day",
+    week: "weekday",
     day: "hour",
     hour: "minute",
     minute: "second",
@@ -28,18 +31,28 @@ export function roundToNearestTimeUnit(date, unit: keyof DateTime) {
   } else if (smallerUnit === "hour") {
     roundUp = smallestValue >= 12;
   } else if (smallerUnit === "day") {
-    roundUp = unit === "month" ? smallestValue >= 15 : smallestValue >= 3;
+    roundUp = smallestValue >= 15;
   } else if (smallerUnit === "week") {
+    roundUp = smallestValue >= 3;
+  } else if (smallerUnit === "weekday") {
     roundUp = smallestValue >= 3;
   } else if (smallerUnit === "month") {
     roundUp = smallestValue >= 6;
   }
 
-  const unitValue = dateTime.get(unit);
+  const unitValue = dateTime.get(unit as keyof DateTime);
   const roundedValue = roundUp ? unitValue + 1 : unitValue;
-  const roundedDateTime = dateTime
-    .startOf(unit as DateTimeUnit)
-    .set({ [unit]: roundedValue });
+
+  let roundedDateTime;
+  if (unit === "week") {
+    roundedDateTime = dateTime.startOf("day")[roundUp ? "plus" : "minus"]({
+      day: roundUp ? 7 - smallestValue : smallestValue,
+    });
+  } else {
+    roundedDateTime = dateTime
+      .startOf(unit as DateTimeUnit)
+      .set({ [unit]: roundedValue });
+  }
 
   return roundedDateTime.toJSDate();
 }

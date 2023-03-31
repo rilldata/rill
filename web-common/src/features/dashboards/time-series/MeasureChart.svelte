@@ -182,17 +182,6 @@
         let:point
       >
         <g transition:fly|local={{ duration: 100, x: -4 }}>
-          <MeasureValueMouseover
-            {point}
-            {xAccessor}
-            {yAccessor}
-            {showComparison}
-            {mouseoverFormat}
-            {numberKind}
-          />
-        </g>
-
-        <g transition:fly|local={{ duration: 100, x: -4 }}>
           <text
             class="fill-gray-600"
             style:paint-order="stroke"
@@ -215,6 +204,16 @@
               {mouseoverTimeFormat(point[`comparison.${xAccessor}`])} prev.
             </text>
           {/if}
+        </g>
+        <g transition:fly|local={{ duration: 100, x: -4 }}>
+          <MeasureValueMouseover
+            {point}
+            {xAccessor}
+            {yAccessor}
+            {showComparison}
+            {mouseoverFormat}
+            {numberKind}
+          />
         </g>
       </WithBisector>
     </WithRoundToTimegrain>

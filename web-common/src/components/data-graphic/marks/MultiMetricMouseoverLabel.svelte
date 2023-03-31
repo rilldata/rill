@@ -8,16 +8,20 @@ It is probably not the most up to date code; but it works very well in practice.
 
   import { WithTween } from "../functional-components";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
+  import { preventVerticalOverlap } from "./prevent-vertical-overlap";
 
   interface Point {
     x: number;
     y: number;
     label: string;
+    key: string;
     valueColorClass?: string;
     valueStyleClass?: string;
     labelColorClass?: string;
     labelStyleClass?: string;
     pointColorClass?: string;
+    yOverride?: boolean;
+    yOverrideLabel?: string;
   }
 
   export let point: Point[] = [];
@@ -26,11 +30,10 @@ It is probably not the most up to date code; but it works very well in practice.
   export let xOffset = 0;
   export let fontSize = 11;
   export let xBuffer = 8;
-  export let yBuffer = 3;
+  export let elementHeight = 12;
+  export let yBuffer = 4;
   export let showPoints = true;
   export let showLabels = true;
-
-  export let keepPointsTrue = false;
 
   // plot the middle and push out from there
 
@@ -46,108 +49,30 @@ It is probably not the most up to date code; but it works very well in practice.
   export let direction = "right";
   export let flipAtEdge: "body" | "graphic" | false = "graphic"; // "body", "graphic", or undefined
 
-  // FIXME – we should replace this with preventVerticalOverlap!
-  function toLocations(pt, xs, ys, left, right, top, bottom, elementHeight) {
-    // this is where the boundary condition lives.
-    let locations = [
-      ...pt.map((p) => ({
-        ...p,
-        xRange: Math.max(left, xs(p.x)) || 0,
-        yRange: ys(p.y),
-      })),
-    ];
-    // sort order makes all the difference here
-    locations.sort((a, b) => {
-      if (a.y < b.y) return 1;
-      if (a.y > b.y) return -1;
-      return 0;
-    });
-    if (locations.length === 1) {
-      locations[0].yRange = Math.min(
-        bottom,
-        Math.max(top, locations[0].yRange)
-      );
-      return locations;
-    }
-    if (!locations.length) return locations;
-
-    const middle = ~~(locations.length / 2); // eslint-disable-line
-
-    // STEP 1: inside up to top label.
-    let i = middle;
-    while (i >= 0) {
-      if (i !== middle) {
-        const diff = locations[i + 1].yRange - locations[i].yRange;
-        if (diff <= elementHeight + yBuffer) {
-          locations[i].yRange -= elementHeight + yBuffer - diff;
-        }
-      }
-      i -= 1;
-    }
-
-    // STEP 2: top label shuffle down to reasonable place, shift to middle.
-    if (locations[0].yRange < top + yBuffer) {
-      locations[0].yRange = top + yBuffer;
-      i = 0;
-      while (i < middle) {
-        const diff = locations[i + 1].yRange - locations[i].yRange;
-        if (diff <= elementHeight + yBuffer) {
-          locations[i + 1].yRange += elementHeight + yBuffer - diff;
-        }
-        i += 1;
-      }
-    }
-
-    // STEP 3: inside down to bottom label;
-    i = middle;
-    while (i < locations.length) {
-      if (i !== middle) {
-        const diff = locations[i].yRange - locations[i - 1].yRange;
-        if (diff < elementHeight + yBuffer) {
-          locations[i].yRange += elementHeight + yBuffer - diff;
-        }
-      }
-      i += 1;
-    }
-    if (locations[locations.length - 1].yRange > bottom - yBuffer) {
-      locations[locations.length - 1].yRange = bottom - yBuffer;
-      i = locations.length - 1;
-      while (i > 0) {
-        const diff = locations[i].yRange - locations[i - 1].yRange;
-        if (diff <= fontSize + yBuffer) {
-          locations[i - 1].yRange -= elementHeight + yBuffer - diff;
-        }
-        i -= 1;
-      }
-    }
-    return locations;
-  }
-
-  let locations = toLocations(
-    point,
-    $xScale,
-    $yScale,
-    plotLeft,
-    plotRight,
-    plotTop,
-    plotBottom,
-    fontSize
-  );
   let container;
   let containerWidths = [];
   // let labelWidth = 0;
 
   // update locations.
-  $: locations = toLocations(
-    point,
-    $xScale,
-    $yScale,
-    plotLeft,
-    plotRight,
+  $: nonOverlappingLocations = preventVerticalOverlap(
+    point.map((p) => ({
+      key: p.key,
+      value: $yScale(p.y),
+    })),
     plotTop,
     plotBottom,
-    fontSize
+    elementHeight,
+    yBuffer
   );
+
+  $: locations = point.map((p) => {
+    return {
+      ...p,
+      xRange: $xScale(p.x),
+      yRange: nonOverlappingLocations.find((l) => l.key === p.key).value,
+    };
+  });
+
   // update containerWidths. We keep track of the last 6 points.
   $: if (container && locations) {
     containerWidths = [
@@ -216,7 +141,7 @@ It is probably not the most up to date code; but it works very well in practice.
       );
 
       textWidths = Array.from(container.querySelectorAll(".text-elements")).map(
-        (q) => q.getBoundingClientRect().width
+        (q: SVGElement) => q.getBoundingClientRect().width
       );
       if (!Number.isFinite(labelWidth)) {
         labelWidth = 0;
@@ -228,81 +153,100 @@ It is probably not the most up to date code; but it works very well in practice.
 <g bind:this={container}>
   {#if showLabels}
     {#each locations as location, i (location.key || location.label)}
-      {#if (location.y || location.rangeY) && (location.x || location.rangeX)}
+      {#if (location.y || location.yRange) && (location.x || location.xRange)}
         <WithTween
-          value={{
-            y: location.yRange || 0,
-            x:
-              internalDirection === "right"
-                ? location.xRange + (xBuffer + xOffset + labelWidth)
-                : location.xRange - xBuffer - xOffset,
-          }}
-          let:output={v}
-          tweenProps={{ duration: 50 }}
+          value={location.xRange}
+          let:output={x}
+          tweenProps={{ duration: 25 }}
         >
-          <text font-size={fontSize} class="text-elements pointer-events-none">
-            {#if internalDirection === "right"}
-              <tspan
-                dy=".35em"
-                class="widths {location?.valueStyleClass ||
-                  'font-bold'} {location?.valueColorClass || ''}"
-                y={v.y}
-                text-anchor="end"
-                x={v.x}
-              >
-                {#if !location?.yOverride}
-                  {formatValue(location.y)}
-                {/if}
-              </tspan>
-              <tspan
-                dy=".35em"
-                y={v.y}
-                x={v.x}
-                class="mc-mouseover-label  {location?.labelStyleClass ||
-                  ''} {(!location?.yOverride && location?.labelColorClass) ||
-                  ''}"
-              >
-                {#if location?.yOverride}
-                  {location.yOverrideLabel}
-                {:else}
-                  {location.label}
-                {/if}
-              </tspan>
-            {:else}
-              <tspan
-                dy=".35em"
-                y={v.y}
-                x={v.x - labelWidth}
-                class="mc-mouseover-label  {location?.labelStyleClass ||
-                  ''} {(!location?.yOverride && location?.labelColorClass) ||
-                  ''}"
-                text-anchor="end"
-              >
-                {#if location?.yOverride}
-                  {location.yOverrideLabel}
-                {:else}
-                  {location.label}
-                {/if}
-              </tspan>
-              <tspan
-                dy=".35em"
-                class="widths {location?.valueStyleClass ||
-                  'font-bold'} {location?.valueColorClass || ''}"
-                text-anchor="end"
-                y={v.y}
-                x={v.x}
-              >
-                {#if !location?.yOverride}
-                  {formatValue(location.y)}
-                {/if}
-              </tspan>
-            {/if}
-          </text>
+          {@const xText =
+            internalDirection === "right"
+              ? location.xRange + (xBuffer + xOffset + labelWidth)
+              : location.xRange - xBuffer - xOffset}
+          <WithTween
+            tweenProps={{ duration: 60 }}
+            value={{
+              label: location.yRange || 0,
+              point: $yScale(location.y),
+            }}
+            let:output={y}
+          >
+            <text
+              font-size={fontSize}
+              class="text-elements pointer-events-none"
+            >
+              {#if internalDirection === "right"}
+                <tspan
+                  dy=".35em"
+                  class="widths {location?.valueStyleClass ||
+                    'font-bold'} {location?.valueColorClass || ''}"
+                  y={y.label}
+                  text-anchor="end"
+                  x={xText}
+                >
+                  {#if !location?.yOverride}
+                    {formatValue(location.y)}
+                  {/if}
+                </tspan>
+                <tspan
+                  dy=".35em"
+                  y={y.label}
+                  x={xText - (location?.yOverride ? labelWidth : 0)}
+                  class="mc-mouseover-label  {location?.labelStyleClass ||
+                    ''} {(!location?.yOverride && location?.labelColorClass) ||
+                    ''}"
+                >
+                  {#if location?.yOverride}
+                    {location.yOverrideLabel}
+                  {:else}
+                    {location.label}
+                  {/if}
+                </tspan>
+              {:else}
+                <tspan
+                  dy=".35em"
+                  y={y.label}
+                  x={xText - labelWidth}
+                  class="mc-mouseover-label  {location?.labelStyleClass ||
+                    ''} {(!location?.yOverride && location?.labelColorClass) ||
+                    ''}"
+                  text-anchor="end"
+                >
+                  {#if location?.yOverride}
+                    {location.yOverrideLabel}
+                  {:else}
+                    {location.label}
+                  {/if}
+                </tspan>
+                <tspan
+                  dy=".35em"
+                  class="widths {location?.valueStyleClass ||
+                    'font-bold'} {location?.valueColorClass || ''}"
+                  text-anchor="end"
+                  y={y.label}
+                  x={xText}
+                >
+                  {#if !location?.yOverride}
+                    {formatValue(location.y)}
+                  {/if}
+                </tspan>
+              {/if}
+            </text>
+            <circle
+              cx={x}
+              cy={y.point}
+              r={3}
+              paint-order="stroke"
+              class={location.pointColorClass}
+              stroke="white"
+              stroke-width="3"
+            />
+          </WithTween>
         </WithTween>
       {/if}
     {/each}
   {/if}
-  {#if showPoints}
+  <!-- {#if showPoints}
     {#each locations as location, i (location.key || location.label)}
       {#if (keepPointsTrue && location.x !== undefined && location.y !== undefined) || (location.xRange !== undefined && location.yRange !== undefined)}
         <WithTween
@@ -313,17 +257,19 @@ It is probably not the most up to date code; but it works very well in practice.
           ]}
           let:output
         >
-          <circle cx={output[0]} cy={output[1]} r={5} fill="white" />
           <circle
             cx={output[0]}
             cy={output[1]}
             r={3}
+            paint-order="stroke"
             class={location.pointColorClass}
+            stroke="white"
+            stroke-width="3"
           />
         </WithTween>
       {/if}
     {/each}
-  {/if}
+  {/if} -->
 </g>
 
 <style>
