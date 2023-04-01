@@ -22,6 +22,7 @@ It is probably not the most up to date code; but it works very well in practice.
     pointColorClass?: string;
     yOverride?: boolean;
     yOverrideLabel?: string;
+    yOverrideStyleClass?: string;
   }
 
   export let point: Point[] = [];
@@ -32,7 +33,6 @@ It is probably not the most up to date code; but it works very well in practice.
   export let xBuffer = 8;
   export let elementHeight = 12;
   export let yBuffer = 4;
-  export let showPoints = true;
   export let showLabels = true;
 
   // plot the middle and push out from there
@@ -167,7 +167,7 @@ It is probably not the most up to date code; but it works very well in practice.
             tweenProps={{ duration: 60 }}
             value={{
               label: location.yRange || 0,
-              point: $yScale(location.y),
+              point: $yScale(location?.y) || 0,
             }}
             let:output={y}
           >
@@ -192,8 +192,10 @@ It is probably not the most up to date code; but it works very well in practice.
                   dy=".35em"
                   y={y.label}
                   x={xText - (location?.yOverride ? labelWidth : 0)}
-                  class="mc-mouseover-label  {location?.labelStyleClass ||
-                    ''} {(!location?.yOverride && location?.labelColorClass) ||
+                  class="mc-mouseover-label  {location?.yOverride
+                    ? location?.yOverrideStyleClass
+                    : location?.labelStyleClass || ''} {(!location?.yOverride &&
+                    location?.labelColorClass) ||
                     ''}"
                 >
                   {#if location?.yOverride}
@@ -232,44 +234,23 @@ It is probably not the most up to date code; but it works very well in practice.
                 </tspan>
               {/if}
             </text>
-            <circle
-              cx={x}
-              cy={y.point}
-              r={3}
-              paint-order="stroke"
-              class={location.pointColorClass}
-              stroke="white"
-              stroke-width="3"
-            />
+            {#if location.yRange}
+              <circle
+                cx={x}
+                cy={y.point}
+                r={3}
+                paint-order="stroke"
+                class={location.pointColorClass}
+                stroke="white"
+                stroke-width="3"
+                opacity={location?.yOverride ? 0.7 : 1}
+              />
+            {/if}
           </WithTween>
         </WithTween>
       {/if}
     {/each}
   {/if}
-  <!-- {#if showPoints}
-    {#each locations as location, i (location.key || location.label)}
-      {#if (keepPointsTrue && location.x !== undefined && location.y !== undefined) || (location.xRange !== undefined && location.yRange !== undefined)}
-        <WithTween
-          tweenProps={{ duration: 50 }}
-          value={[
-            keepPointsTrue ? $xScale(location.x) : location.xRange,
-            keepPointsTrue ? $yScale(location.y) : location.yRange,
-          ]}
-          let:output
-        >
-          <circle
-            cx={output[0]}
-            cy={output[1]}
-            r={3}
-            paint-order="stroke"
-            class={location.pointColorClass}
-            stroke="white"
-            stroke-width="3"
-          />
-        </WithTween>
-      {/if}
-    {/each}
-  {/if} -->
 </g>
 
 <style>

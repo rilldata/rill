@@ -47,7 +47,8 @@
     x,
     y: currentPointIsNull ? lastAvailableCurrentY : y,
     yOverride: currentPointIsNull,
-    yOverrideLabel: "no data",
+    yOverrideLabel: "no current data",
+    yOverrideStyleClass: "fill-gray-400 italic",
     key: "main",
     label:
       showComparison &&
@@ -102,17 +103,17 @@
   {@const strokeWidth = showComparison ? 2 : 4}
   {@const colorClass = "stroke-gray-400"}
   <WithTween
-    tweenProps={{ duration: 60 }}
-    value={{
-      y: yScale(y),
-      dy: yScale(comparisonY) || yScale(0),
-    }}
-    let:output
+    tweenProps={{ duration: 25 }}
+    value={xScale(x)}
+    let:output={xArrow}
   >
     <WithTween
-      tweenProps={{ duration: 25 }}
-      value={xScale(x)}
-      let:output={xArrow}
+      tweenProps={{ duration: 60 }}
+      value={{
+        y: yScale(y) || yScale(0),
+        dy: yScale(comparisonY) || yScale(0),
+      }}
+      let:output
     >
       {#if !(currentPointIsNull || comparisonPointIsNull) && x !== undefined && y !== undefined}
         {#if showComparison && Math.abs(output.y - output.dy) > 8}
