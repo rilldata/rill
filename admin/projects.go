@@ -18,19 +18,30 @@ import (
 func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
 	// TODO: Make this actually fault tolerant.
 
+	ctx, tx, err := s.DB.NewTx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
 	// Create the project
 	proj, err := s.DB.InsertProject(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: use transaction
 	// add project collaborator role to the all user group of the org
 	org, err := s.DB.FindOrganizationByID(ctx, proj.OrganizationID)
 	if err != nil {
 		return nil, err
 	}
 	err = s.DB.InsertProjectUsergroup(ctx, *org.AllUserGroupID, proj.ID, database.RoleIDProjectCollaborator)
+	if err != nil {
+		return nil, err
+	}
+
+	// add project admin role to the user
+	err = s.DB.InsertProjectMember(ctx, proj.ID, opts.UserID, database.RoleIDProjectAdmin)
 	if err != nil {
 		return nil, err
 	}
@@ -98,6 +109,10 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 		return nil, err
 	}
 
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
 	return res, nil
 }
 

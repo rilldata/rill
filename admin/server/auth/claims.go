@@ -25,6 +25,7 @@ type Claims interface {
 	AuthTokenID() string
 	CanOrganization(ctx context.Context, orgID string, p OrganizationPermission) bool
 	CanProject(ctx context.Context, projectID string, p ProjectPermission) bool
+	Can(ctx context.Context, orgID string, op OrganizationPermission, projID string, pp ProjectPermission) bool
 }
 
 // claimsContextKey is used to set and get Claims on a request context.
@@ -61,6 +62,10 @@ func (c anonClaims) CanOrganization(ctx context.Context, orgID string, p Organiz
 }
 
 func (c anonClaims) CanProject(ctx context.Context, projectID string, p ProjectPermission) bool {
+	return false
+}
+
+func (c anonClaims) Can(ctx context.Context, orgID string, op OrganizationPermission, projectID string, pp ProjectPermission) bool {
 	return false
 }
 
@@ -156,6 +161,10 @@ func (c *authTokenClaims) CanProject(ctx context.Context, projectID string, p Pr
 	default:
 		panic(fmt.Errorf("unexpected token type %q", t))
 	}
+}
+
+func (c *authTokenClaims) Can(ctx context.Context, orgID string, op OrganizationPermission, projectID string, pp ProjectPermission) bool {
+	return c.CanOrganization(ctx, orgID, op) || c.CanProject(ctx, projectID, pp)
 }
 
 func (c *authTokenClaims) composeOrgPermissions(ctx context.Context, orgID string) (*database.OrganizationRole, error) {

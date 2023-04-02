@@ -200,6 +200,7 @@ func (e *Variables) Scan(value interface{}) error {
 type InsertProjectOptions struct {
 	OrganizationID       string
 	Name                 string
+	UserID               string
 	Description          string
 	Public               bool
 	Region               string

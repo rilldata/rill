@@ -27,7 +27,7 @@ func (s *Server) ListProjects(ctx context.Context, req *adminv1.ListProjectsRequ
 	}
 	filteredProjs := make([]*database.Project, 0, len(projs))
 	for _, proj := range projs {
-		if claims.CanProject(ctx, proj.ID, auth.ReadProject) {
+		if claims.Can(ctx, proj.OrganizationID, auth.ReadProjects, proj.ID, auth.ReadProject) {
 			filteredProjs = append(filteredProjs, proj)
 		}
 	}
@@ -54,7 +54,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if !claims.CanProject(ctx, proj.ID, auth.ReadProject) {
+	if !claims.Can(ctx, proj.OrganizationID, auth.ReadProjects, proj.ID, auth.ReadProject) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
@@ -140,6 +140,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	proj, err := s.admin.CreateProject(ctx, &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
 		Name:                 req.Name,
+		UserID:               claims.OwnerID(),
 		Description:          req.Description,
 		Public:               req.Public,
 		Region:               req.Region,
@@ -175,7 +176,7 @@ func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if !claims.CanProject(ctx, proj.ID, auth.ManageProject) {
+	if !claims.Can(ctx, proj.OrganizationID, auth.ManageProjects, proj.ID, auth.ManageProject) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
 
@@ -203,7 +204,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if !claims.CanProject(ctx, proj.ID, auth.ManageProject) {
+	if !claims.Can(ctx, proj.OrganizationID, auth.ManageProjects, proj.ID, auth.ManageProject) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
 
@@ -255,7 +256,7 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if !claims.CanProject(ctx, proj.ID, auth.ReadProjectMembers) {
+	if !claims.Can(ctx, proj.OrganizationID, auth.ReadOrgMembers, proj.ID, auth.ReadProjectMembers) {
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read project members")
 	}
 
@@ -286,7 +287,7 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if !claims.CanProject(ctx, proj.ID, auth.ManageProjectMembers) {
+	if !claims.Can(ctx, proj.OrganizationID, auth.ManageOrgMembers, proj.ID, auth.ManageProjectMembers) {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add project members")
 	}
 
@@ -355,7 +356,7 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if !claims.CanProject(ctx, proj.ID, auth.ManageProjectMembers) {
+	if !claims.Can(ctx, proj.OrganizationID, auth.ManageOrgMembers, proj.ID, auth.ManageProjectMembers) {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to remove project members")
 	}
 
@@ -389,7 +390,7 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if !claims.CanProject(ctx, proj.ID, auth.ManageProjectMembers) {
+	if !claims.Can(ctx, proj.OrganizationID, auth.ManageOrgMembers, proj.ID, auth.ManageProjectMembers) {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to set project member roles")
 	}
 
