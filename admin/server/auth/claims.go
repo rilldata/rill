@@ -169,22 +169,13 @@ func (c *authTokenClaims) Can(ctx context.Context, orgID string, op Organization
 
 func (c *authTokenClaims) composeOrgPermissions(ctx context.Context, orgID string) (*database.OrganizationRole, error) {
 	composite := &database.OrganizationRole{}
-	directRole, err := c.admin.DB.ResolveUserOrganizationRole(ctx, c.token.OwnerID(), orgID)
+	roles, err := c.admin.DB.ResolveUserOrganizationRoles(ctx, c.token.OwnerID(), orgID)
 	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
+		if errors.Is(err, database.ErrNotFound) {
 			return nil, err
 		}
-		// no direct role, check group roles
 	}
-	if directRole != nil {
-		composite = unionOrgRoles(composite, directRole)
-	}
-	groupRoles, err := c.admin.DB.ResolveUsergroupOrgRoles(ctx, c.token.OwnerID(), orgID)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, role := range groupRoles {
+	for _, role := range roles {
 		composite = unionOrgRoles(composite, role)
 	}
 	return composite, nil
@@ -204,22 +195,13 @@ func unionOrgRoles(a, b *database.OrganizationRole) *database.OrganizationRole {
 
 func (c *authTokenClaims) composeProjectPermissions(ctx context.Context, projectID string) (*database.ProjectRole, error) {
 	composite := &database.ProjectRole{}
-	directRole, err := c.admin.DB.ResolveUserProjectRole(ctx, c.token.OwnerID(), projectID)
+	roles, err := c.admin.DB.ResolveUserProjectRoles(ctx, c.token.OwnerID(), projectID)
 	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
+		if errors.Is(err, database.ErrNotFound) {
 			return nil, err
 		}
-		// no direct role, check group roles
 	}
-	if directRole != nil {
-		composite = unionProjectRoles(composite, directRole)
-	}
-	groupRoles, err := c.admin.DB.ResolveUsergroupProjectRoles(ctx, c.token.OwnerID(), projectID)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, role := range groupRoles {
+	for _, role := range roles {
 		composite = unionProjectRoles(composite, role)
 	}
 	return composite, nil

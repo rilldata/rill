@@ -21,19 +21,13 @@ func (s *Server) ListProjects(ctx context.Context, req *adminv1.ListProjectsRequ
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
-	projs, err := s.admin.DB.FindProjects(ctx, req.OrganizationName)
+	projs, err := s.admin.DB.FindMemberProjects(ctx, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	filteredProjs := make([]*database.Project, 0, len(projs))
-	for _, proj := range projs {
-		if claims.Can(ctx, proj.OrganizationID, auth.ReadProjects, proj.ID, auth.ReadProject) {
-			filteredProjs = append(filteredProjs, proj)
-		}
-	}
 
-	dtos := make([]*adminv1.Project, len(filteredProjs))
-	for i, proj := range filteredProjs {
+	dtos := make([]*adminv1.Project, len(projs))
+	for i, proj := range projs {
 		dtos[i] = projToDTO(proj)
 	}
 

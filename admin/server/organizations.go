@@ -19,20 +19,13 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
-	orgs, err := s.admin.DB.FindOrganizations(ctx)
+	orgs, err := s.admin.DB.FindMemberOrganizations(ctx, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	// filter out orgs that the user doesn't have access to
-	filteredOrgs := make([]*database.Organization, 0, len(orgs))
-	for _, org := range orgs {
-		if claims.CanOrganization(ctx, org.ID, auth.ReadOrg) {
-			filteredOrgs = append(filteredOrgs, org)
-		}
-	}
 
-	pbs := make([]*adminv1.Organization, len(filteredOrgs))
-	for i, org := range filteredOrgs {
+	pbs := make([]*adminv1.Organization, len(orgs))
+	for i, org := range orgs {
 		pbs[i] = orgToDTO(org)
 	}
 

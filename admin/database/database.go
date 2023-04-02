@@ -110,20 +110,20 @@ type DB interface {
 
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
-	// ResolveUserOrganizationRole resolves the role of a user in an organization.
-	ResolveUserOrganizationRole(ctx context.Context, userID, orgID string) (*OrganizationRole, error)
-	// ResolveUserProjectRole resolves the role of a user in a project.
-	ResolveUserProjectRole(ctx context.Context, userID, projectID string) (*ProjectRole, error)
-	// ResolveUsergroupOrgRoles resolves the roles of user groups of the user in an organization.
-	ResolveUsergroupOrgRoles(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
-	// ResolveUsergroupProjectRoles resolves the roles of user groups of the user in a project.
-	ResolveUsergroupProjectRoles(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
+
+	// ResolveUserOrganizationRoles resolves the direct and group roles of a user in an organization
+	ResolveUserOrganizationRoles(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
+	// ResolveUserProjectRoles resolves the direct and group roles of a user in a project
+	ResolveUserProjectRoles(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
 
 	InsertUsergroup(ctx context.Context, name, orgID string) (*Usergroup, error)
 	UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
 	InsertUsergroupMember(ctx context.Context, userID, groupID string) error
 	InsertProjectUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	FindUsergroups(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
+
+	FindMemberOrganizations(ctx context.Context, userID string) ([]*Organization, error)
+	FindMemberProjects(ctx context.Context, userID string) ([]*Project, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
