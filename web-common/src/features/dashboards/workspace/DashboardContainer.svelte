@@ -23,7 +23,7 @@
 
 <section
   use:listenToNodeResize
-  class="grid items-stretch leaderboard-layout surface"
+  class="grid items-stretch surface"
   style:grid-template-columns={gridConfig}
   style:padding-left={leftSide}
 >
