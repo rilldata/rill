@@ -120,25 +120,11 @@
                     ? humanizeDataType(comparisonValue, formatPresetEnum)
                     : comparisonValue}</span
                 >
-                <!-- <span class="opacity-70">-></span> 
-                current
-                <span class="font-bold"
-                  >{humanizeDataType(value, formatPresetEnum)}</span
-                > -->
                 <span
                   >{tooltipPercentage.neg ? "-" : ""}{tooltipPercentage.int}% {isComparisonPositive
                     ? "increase"
                     : "decrease"}</span
                 >
-                <!-- The previous period's value was {formatPresetEnum !==
-                NicelyFormattedTypes.NONE
-                  ? humanizeDataType(comparisonValue, formatPresetEnum)
-                  : comparisonValue}, <br /> which was {tooltipPercentage.int}%
-                {isComparisonPositive ? "lower" : "higher"}
-                than the current period's value of {humanizeDataType(
-                  value,
-                  formatPresetEnum
-                )} -->
               </TooltipContent>
             </Tooltip>
           {/if}

@@ -21,6 +21,8 @@
   export let format = justEnoughPrecision;
 
   let lastAvailablePoint;
+
+  const COMPARISON_DIST = 6;
   /**
    * If the point is null, we want to use the last available point to
    * calculate the y position of the label. This is so that the label
@@ -141,15 +143,15 @@
           : "stroke-blue-300"}
       />
       {#if showComparisonText}
-        {@const sign = !comparisonIsPositive ? -1 : 1}
-        {@const dist = 6}
-        {@const signedDist = sign * 6}
+        {@const signedDist = !comparisonIsPositive
+          ? -1 * COMPARISON_DIST
+          : 1 * COMPARISON_DIST}
         {@const yLoc = output.y + signedDist}
         {@const show = Math.abs(output.y - output.cdy) > 24}
         {#if show}
           <line
             x1={output.x}
-            x2={output.x + dist}
+            x2={output.x + COMPARISON_DIST}
             y1={yLoc}
             stroke-width="4"
             y2={yLoc + signedDist}
@@ -159,7 +161,7 @@
           />
           <line
             x1={output.x}
-            x2={output.x - dist}
+            x2={output.x - COMPARISON_DIST}
             y1={yLoc}
             stroke-width="4"
             y2={yLoc + signedDist}

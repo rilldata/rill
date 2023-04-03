@@ -45,7 +45,6 @@ export function mousePositionToDomainActionFactory(): MousePositionToDomainActio
   });
 
   function onMouseMove(event) {
-    /** fixme: use  */
     offsetX = event.offsetX;
     offsetY = event.offsetY;
 
