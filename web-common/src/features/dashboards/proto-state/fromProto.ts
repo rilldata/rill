@@ -46,7 +46,6 @@ export function getDashboardStateFromProto(
   if (dashboard.selectedDimension) {
     entity.selectedDimensionName = dashboard.selectedDimension;
   }
-  console.log(entity);
 
   return entity;
 }
