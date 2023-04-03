@@ -32,7 +32,11 @@ In both cases, it is up to the containing component to handle the toggling the s
   export let label: string;
 
   $: {
-    if (selectableItems?.length !== selectedItems?.length) {
+    if (
+      selectableItems?.length > 0 &&
+      selectedItems?.length > 0 &&
+      selectableItems?.length !== selectedItems?.length
+    ) {
       throw new Error(
         "SearchableFilterButton component requires props `selectableItems` and `selectedItems` to be arrays of equal length"
       );

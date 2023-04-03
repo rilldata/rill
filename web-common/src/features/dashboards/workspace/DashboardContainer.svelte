@@ -31,7 +31,7 @@
     <slot name="header" />
   </div>
   <hr class="pb-3 pt-1 ui-divider -ml-12" />
-  <div class="explore-metrics mb-8">
+  <div class="explore-metrics">
     <slot
       name="metrics"
       width={$observedNode?.getBoundingClientRect()?.width}

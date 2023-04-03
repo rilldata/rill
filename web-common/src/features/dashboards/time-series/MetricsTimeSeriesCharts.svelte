@@ -165,7 +165,7 @@
   let:point
 >
   <TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
-    <div class="bg-white  left-0 top-0">
+    <div class="bg-white sticky left-0 top-0" style="z-index:100">
       <SeachableFilterButton
         selectableItems={availableMeasureLabels}
         selectedItems={visibleMeasures}
@@ -176,7 +176,7 @@
       />
     </div>
     <div class="bg-white sticky left-0 top-0">
-      <div style:padding-left="24px" style:height="20px" />
+      <!-- <div style:padding-left="24px" style:height="20px" /> -->
       <!-- top axis element -->
       <div />
       {#if metricsExplorer?.selectedTimeRange}

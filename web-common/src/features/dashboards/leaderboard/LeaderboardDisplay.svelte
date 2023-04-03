@@ -151,18 +151,18 @@
   let availableDimensionLabels = [];
   let visibleDimensions = [];
   $: availableDimensionLabels = dimensions?.map((d) => d.label) || [];
-  $: visibleDimensions = metricsExplorer.visibleDimensions;
+  $: visibleDimensions = metricsExplorer?.visibleDimensions ?? [];
   const toggleDimensionVisibility = (e) =>
     metricsExplorerStore.toggleDimensionVisibility(metricViewName, e.detail);
   const setAllDimensionsNotVisible = () =>
     metricsExplorerStore.setAllDimensionsNotVisible(metricViewName);
 
   $: dimensionsShown = dimensions?.filter((_, i) => visibleDimensions[i]) ?? [];
-  $: console.log({
-    availableDimensionLabels,
-    visibleDimensions,
-    dimensionsShown,
-  });
+  // $: console.log({
+  //   availableDimensionLabels,
+  //   visibleDimensions,
+  //   dimensionsShown,
+  // });
 </script>
 
 <svelte:window on:resize={onResize} />
@@ -173,7 +173,7 @@
   style:min-width="365px"
 >
   <div
-    class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3"
+    class="grid grid-auto-cols justify-between grid-flow-col items-center pl-1 pb-3"
   >
     <LeaderboardMeasureSelector {metricViewName} />
     <SeachableFilterButton
