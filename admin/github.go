@@ -112,7 +112,7 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 
 	// TODO: remove this log once we finish debugging reconcile not firing
 	s.logger.Info(fmt.Sprintf(
-		"Have github event. url=%s branch=%s deploymentId=%s",
+		"Have github event. url=%s branch=%s deploymentId=%v",
 		githubURL,
 		project.ProductionBranch,
 		project.ProductionDeploymentID,
