@@ -23,6 +23,4 @@
   <title>Rill | {metricViewName}</title>
 </svelte:head>
 
-<div class="p-2">
-  <Dashboard {metricViewName} hasTitle={false} />
-</div>
+<Dashboard {metricViewName} hasTitle={false} />
