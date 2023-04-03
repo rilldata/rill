@@ -44,7 +44,7 @@
 
 <style>
   section {
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto auto 1fr;
     height: 100vh;
     overflow-x: auto;
     overflow-y: hidden;
