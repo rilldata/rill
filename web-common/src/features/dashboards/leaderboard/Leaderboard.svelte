@@ -209,7 +209,10 @@
       $dashboardStore?.selectedComparisonTimeRange?.start,
       $dashboardStore?.selectedComparisonTimeRange?.end
     );
-    const { start, end } = $dashboardStore?.selectedComparisonTimeRange;
+
+    const selectedComparisonTimeRange =
+      $dashboardStore?.selectedComparisonTimeRange;
+    const { start, end } = selectedComparisonTimeRange;
     // add all sliced and active values to the include filter.
     const currentVisibleValues = values
       ?.slice(0, slice)
