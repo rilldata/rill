@@ -189,18 +189,26 @@ func resolveLocalPath(env *connectors.Env, path, sourceName string) (string, err
 		return "", err
 	}
 
+	repoRoot := env.RepoRoot
+	if repoRoot != "" {
+		repoRoot, err = filepath.Abs(repoRoot)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	// May be a better design is to just add the repo driver in connectors and use repo.Get/repo.ListRecursive ??
 	finalPath := path
 	if !filepath.IsAbs(path) {
 		// If the path is relative, it's relative to the repo root
-		if env.RepoRoot == "" {
+		if repoRoot == "" {
 			return "", fmt.Errorf("file connector cannot ingest source '%s': path is relative, but repo is not available", sourceName)
 		}
-		finalPath = filepath.Join(env.RepoRoot, path)
+		finalPath = filepath.Join(repoRoot, path)
 	}
 
 	if env.DisablePathAccessOutsideRepo {
-		if !strings.HasPrefix(finalPath, env.RepoRoot) {
+		if !strings.HasPrefix(finalPath, repoRoot) {
 			// path is outside the repo root
 			return "", fmt.Errorf("file connector cannot ingest source '%s': path is outside repo root", sourceName)
 		}

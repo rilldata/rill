@@ -80,7 +80,7 @@ func (ps PropertySchema) ValidateType(val any) bool {
 // and (in the future) secrets configured by the user.
 type Env struct {
 	RepoDriver string
-	RepoRoot   string // should be absolute
+	RepoRoot   string
 	// user provided env variables kept with keys converted to uppercase
 	Variables                    map[string]string
 	AllowHostCredentials         bool
