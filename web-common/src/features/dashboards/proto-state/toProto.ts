@@ -47,7 +47,7 @@ export function getProtoFromDashboardState(
     state.selectedDimension = metrics.selectedDimensionName;
   }
   const message = new DashboardState(state);
-  return protoToBase64(message.toBinary());
+  return encodeURIComponent(protoToBase64(message.toBinary()));
 }
 
 function protoToBase64(proto: Uint8Array) {
