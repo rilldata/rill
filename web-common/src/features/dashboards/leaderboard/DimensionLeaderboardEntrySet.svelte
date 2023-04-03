@@ -47,7 +47,7 @@ see more button
   let renderValues = [];
 
   $: comparsionMap = new Map(comparisonValues?.map((v) => [v.label, v.value]));
-  $: renderValues = values.map((v, i) => {
+  $: renderValues = values.map((v) => {
     const active = activeValues.findIndex((value) => value === v.label) >= 0;
     const comparisonValue = comparsionMap.get(v.label);
 

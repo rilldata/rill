@@ -86,7 +86,7 @@ It is probably not the most up to date code; but it works very well in practice.
   // If all the containerWidth histories + the x location are greatre than right plot, then flip.
   // this prevents jitter at the border region of the flip.
 
-  let fcn = (c: any) => true;
+  let fcn: (c: number) => boolean = () => true;
 
   let internalDirection = direction;
 

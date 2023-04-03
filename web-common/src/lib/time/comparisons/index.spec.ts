@@ -143,9 +143,6 @@ describe("isComparisonInsideBounds", () => {
   });
 });
 
-const availableComparisonsStart = new Date("2020-03-05T00:00:00.000Z");
-const availableComparisonsEnd = new Date("2023-03-05T00:00:00.000Z");
-
 const getAvailableComparisonsForTimeRangeTests = [
   {
     description:

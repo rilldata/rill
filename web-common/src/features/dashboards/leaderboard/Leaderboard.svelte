@@ -45,7 +45,6 @@
   export let isSummableMeasure = false;
 
   let slice = 7;
-  let seeMore = false;
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
@@ -214,8 +213,8 @@
     // add all sliced and active values to the include filter.
     const currentVisibleValues = values
       ?.slice(0, slice)
-      .concat(selectedValuesThatAreBelowTheFold)
-      .map((v) => v[dimensionName]);
+      ?.concat(selectedValuesThatAreBelowTheFold)
+      ?.map((v) => v[dimensionName]);
 
     const updatedFilters = getFilterForComparsion(
       filterForDimension,
