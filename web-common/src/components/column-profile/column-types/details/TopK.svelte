@@ -50,6 +50,10 @@
       .join("")}${str}`;
   }
 
+  function getCopyValue(type, value) {
+    return isNested(type) ? formatDataType(value, type) : value;
+  }
+
   let tooltipProps = { location: "right", distance: 16 };
 
   function handleFocus(value: TopKEntry) {
@@ -86,13 +90,11 @@
               use:shiftClickAction
               on:shift-click={() =>
                 copyToClipboard(
-                  item.value,
+                  getCopyValue(type, item.value),
                   `copied column value "${
                     item.value === null
                       ? "NULL"
-                      : isNested(type)
-                      ? formatDataType(item.value, type)
-                      : item.value
+                      : getCopyValue(type, item.value)
                   }" to clipboard`
                 )}
             >
