@@ -66,13 +66,19 @@ export function base64ToProto(message: string) {
 }
 
 function fromFiltersProto(conditions: Array<MetricsViewFilter_Cond>) {
-  return conditions.map((condition) => ({
-    name: condition.name,
-    like: condition.like,
-    in: condition.in.map((v) =>
-      v.kind.case === "nullValue" ? null : v.kind.value
-    ),
-  }));
+  return conditions.map((condition) => {
+    return {
+      name: condition.name,
+      ...(condition.like?.length ? { like: condition.like } : {}),
+      ...(condition.in?.length
+        ? {
+            in: condition.in.map((v) =>
+              v.kind.case === "nullValue" ? null : v.kind.value
+            ),
+          }
+        : {}),
+    };
+  });
 }
 
 function fromTimeRangeProto(timeRange: DashboardTimeRange) {

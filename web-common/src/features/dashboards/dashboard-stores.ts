@@ -1,3 +1,4 @@
+import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import type {
@@ -80,7 +81,12 @@ function includeExcludeModeFromFilters(filters: V1MetricsViewFilter) {
 }
 
 const metricViewReducers = {
-  syncFromUrl(name: string, partial: Partial<MetricsExplorerEntity>) {
+  syncFromUrl(name: string, url: URL) {
+    // not all data for MetricsExplorerEntity will be filled out here.
+    // Hence, it is a Partial<MetricsExplorerEntity>
+    const partial = getDashboardStateFromUrl(url);
+    if (!partial) return;
+
     updateMetricsExplorerByName(
       name,
       (metricsExplorer) => {
