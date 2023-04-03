@@ -2,7 +2,6 @@ package triggers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -17,12 +16,12 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 		Short: "Reconcile",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("reconcile called")
-
 			adm, err := remote.NewAdminService()
 			if err != nil {
 				return err
 			}
+
+			defer adm.Close()
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {

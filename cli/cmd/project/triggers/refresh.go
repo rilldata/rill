@@ -2,7 +2,6 @@ package triggers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -16,12 +15,12 @@ func RefreshCmd(cfg *config.Config) *cobra.Command {
 		Use:   "refresh",
 		Short: "Refresh",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("refresh called")
-
 			adm, err := remote.NewAdminService()
 			if err != nil {
 				return err
 			}
+
+			defer adm.Close()
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {

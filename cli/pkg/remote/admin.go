@@ -45,8 +45,6 @@ func NewAdminService() (*admin.Service, error) {
 	err := envconfig.Process("rill_admin", &conf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
-		// fmt.Printf("failed to load config: %s", err.Error())
-		// os.Exit(1)
 	}
 
 	// Init logger
@@ -55,15 +53,12 @@ func NewAdminService() (*admin.Service, error) {
 	logger, err := cfg.Build()
 	if err != nil {
 		return nil, fmt.Errorf("error: failed to create logger: %w", err)
-		// fmt.Printf("error: failed to create logger: %s", err.Error())
-		// os.Exit(1)
 	}
 
 	// Init runtime JWT issuer
 	issuer, err := auth.NewIssuer(conf.ExternalURL, conf.SigningKeyID, []byte(conf.SigningJWKS))
 	if err != nil {
 		return nil, fmt.Errorf("error creating runtime jwt issuer: %w", err)
-		// logger.Fatal("error creating runtime jwt issuer", zap.Error(err))
 	}
 
 	// Init admin service
@@ -77,7 +72,6 @@ func NewAdminService() (*admin.Service, error) {
 	adm, err := admin.New(admOpts, logger, issuer)
 	if err != nil {
 		return nil, fmt.Errorf("error creating service: %w", err)
-		// logger.Fatal("error creating service", zap.Error(err))
 	}
 	return adm, nil
 }

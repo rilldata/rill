@@ -90,6 +90,7 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 	return res, nil
 }
 
+// Create a new meth for teardown
 func (s *Service) TeardownProject(ctx context.Context, p *database.Project) error {
 	// TODO: Make this actually fault tolerant.
 
@@ -118,6 +119,54 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 	return nil
 }
 
+// New method for trigger redeploy (tear down instance and deploy again)
+func (s *Service) TriggerRedeploy(ctx context.Context, orgName, name string) error {
+	// Run it all in the background
+	go func() {
+		// Use s.closeCtx to cancel if the service is stopped
+		ctx := s.closeCtx
+
+		proj, err := s.DB.FindProjectByName(ctx, orgName, name)
+		if err != nil {
+			s.logger.Error("trigger redeploy: could not find project", zap.String("project name", name), zap.Error(err))
+			return
+		}
+
+		deploymentID := *proj.ProductionDeploymentID
+
+		s.logger.Info("trigger redeploy: starting", zap.String("deployment_id", deploymentID))
+
+		// Get deployment
+		depl, err := s.DB.FindDeployment(ctx, deploymentID)
+		if err != nil {
+			s.logger.Error("trigger redeploy: could not find deployment", zap.String("deployment_id", deploymentID), zap.Error(err))
+			return
+		}
+
+		// Check status
+		if depl.Status == database.DeploymentStatusReconciling && time.Since(depl.UpdatedOn) < 30*time.Minute {
+			s.logger.Error("trigger redeploy: skipping because it is already running", zap.String("deployment_id", deploymentID))
+			return
+		}
+
+		// Set deployment status to reconciling
+		depl, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusReconciling, "")
+		if err != nil {
+			s.logger.Error("trigger redeploy: could not update status", zap.String("deployment_id", deploymentID), zap.Error(err))
+			return
+		}
+
+		err = s.provisioner.Teardown(ctx, depl.RuntimeHost, depl.RuntimeInstanceID, proj.ProductionOLAPDriver)
+		if err != nil {
+			s.logger.Error("trigger redeploy: could not tear down instance", zap.String("deployment_id", deploymentID), zap.Error(err))
+			return
+		}
+
+		// Just tearing down the instance for now, todo: add steps fir redeploy as well
+	}()
+	return nil
+}
+
 // New method for refresh source
 func (s *Service) TriggerRefreshSource(ctx context.Context, deploymentID string) error {
 	// Run it all in the background
@@ -135,13 +184,13 @@ func (s *Service) TriggerRefreshSource(ctx context.Context, deploymentID string)
 		}
 
 		// Check status
-		if depl.Status == database.DeploymentStatusSourceRefresh && time.Since(depl.UpdatedOn) < 30*time.Minute {
+		if depl.Status == database.DeploymentStatusReconciling && time.Since(depl.UpdatedOn) < 30*time.Minute {
 			s.logger.Error("refresh source: skipping because it is already running", zap.String("deployment_id", deploymentID))
 			return
 		}
 
 		// Set deployment status to reconciling
-		depl, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusSourceRefresh, "")
+		depl, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusReconciling, "")
 		if err != nil {
 			s.logger.Error("refresh source: could not update status", zap.String("deployment_id", deploymentID), zap.Error(err))
 			return
@@ -166,7 +215,7 @@ func (s *Service) TriggerRefreshSource(ctx context.Context, deploymentID string)
 		}
 
 		// Call refresh source
-		_, err = rt.TriggerRefresh(ctx, &runtimev1.TriggerRefreshRequest{InstanceId: depl.RuntimeInstanceID})
+		res, err := rt.TriggerRefresh(ctx, &runtimev1.TriggerRefreshRequest{InstanceId: depl.RuntimeInstanceID})
 		if err != nil {
 			s.logger.Error("refresh source: rpc error", zap.String("deployment_id", deploymentID), zap.Error(err))
 			_, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusError, err.Error())
@@ -174,6 +223,27 @@ func (s *Service) TriggerRefreshSource(ctx context.Context, deploymentID string)
 				s.logger.Error("refresh source: could not update logs", zap.String("deployment_id", deploymentID), zap.Error(err))
 			}
 			return
+		}
+
+		// Set status
+		if len(res.Errors) > 0 {
+			json, err := protojson.Marshal(res)
+			if err != nil {
+				s.logger.Error("refresh source: json error", zap.String("deployment_id", deploymentID), zap.Error(err))
+				return
+			}
+
+			_, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusError, string(json))
+			if err != nil {
+				s.logger.Error("refresh source: could not update logs", zap.String("deployment_id", deploymentID), zap.Error(err))
+				return
+			}
+		} else {
+			_, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusOK, "")
+			if err != nil {
+				s.logger.Error("refresh source: could not clear logs", zap.String("deployment_id", deploymentID), zap.Error(err))
+				return
+			}
 		}
 
 		s.logger.Info("refresh source: completed", zap.String("deployment_id", deploymentID))
