@@ -5,7 +5,6 @@ import {
   incrementedNameGetter,
 } from "@rilldata/web-common/features/sources/add-source/duplicateNameUtils";
 import {
-  AllFileExtensions,
   fileHasValidExtension,
   PossibleFileExtensions,
   PossibleZipExtensions,
