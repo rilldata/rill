@@ -24,5 +24,5 @@
 </svelte:head>
 
 <div class="p-2">
-  <Dashboard {metricViewName} />
+  <Dashboard {metricViewName} hasTitle={false} />
 </div>
