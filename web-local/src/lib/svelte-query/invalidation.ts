@@ -100,9 +100,16 @@ export const invalidateMetricsViewData = (
   queryClient: QueryClient,
   metricsViewName: string
 ) => {
+  // remove inactive queries, this is needed since these would be re-fetched with incorrect filter
+  queryClient.removeQueries({
+    predicate: (query) =>
+      invalidationForMetricsViewData(query, metricsViewName),
+    active: false,
+  });
   return queryClient.refetchQueries({
     predicate: (query) =>
       invalidationForMetricsViewData(query, metricsViewName),
+    active: true,
   });
 };
 
@@ -110,10 +117,13 @@ export function invalidateProfilingQueries(
   queryClient: QueryClient,
   name: string
 ) {
+  queryClient.removeQueries({
+    predicate: (query) => isProfilingQuery(query.queryHash, name),
+    active: false,
+  });
   return queryClient.refetchQueries({
-    predicate: (query) => {
-      return isProfilingQuery(query.queryHash, name);
-    },
+    predicate: (query) => isProfilingQuery(query.queryHash, name),
+    active: true,
   });
 }
 

@@ -75,7 +75,7 @@
     metaQuery &&
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching &&
-    metricsExplorer.selectedTimeRange
+    metricsExplorer.selectedTimeRange?.start
   ) {
     timeSeriesQuery = useQueryServiceMetricsViewTimeSeries(
       instanceId,
