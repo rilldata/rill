@@ -21,10 +21,10 @@ import type {
   QueryServiceTableColumnsParams,
   V1ColumnDescriptiveStatisticsResponse,
   QueryServiceColumnDescriptiveStatisticsParams,
-  V1MetricsViewToplistResponse,
-  QueryServiceMetricsViewToplistBody,
   V1MetricsViewTimeSeriesResponse,
   QueryServiceMetricsViewTimeSeriesBody,
+  V1MetricsViewToplistResponse,
+  QueryServiceMetricsViewToplistBody,
   V1MetricsViewTotalsResponse,
   QueryServiceMetricsViewTotalsBody,
   V1ColumnNullCountResponse,
@@ -302,95 +302,6 @@ export const useQueryServiceColumnDescriptiveStatistics = <
 };
 
 /**
- * @summary MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
-It's a convenience API for querying a metrics view.
- */
-export const queryServiceMetricsViewToplist = (
-  instanceId: string,
-  metricsViewName: string,
-  queryServiceMetricsViewToplistBody: QueryServiceMetricsViewToplistBody
-) => {
-  return httpClient<V1MetricsViewToplistResponse>({
-    url: `/v1/instances/${instanceId}/queries/metric-views/${metricsViewName}/toplist`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: queryServiceMetricsViewToplistBody,
-  });
-};
-
-export const getQueryServiceMetricsViewToplistQueryKey = (
-  instanceId: string,
-  metricsViewName: string,
-  queryServiceMetricsViewToplistBody: QueryServiceMetricsViewToplistBody
-) => [
-  `/v1/instances/${instanceId}/queries/metric-views/${metricsViewName}/toplist`,
-  queryServiceMetricsViewToplistBody,
-];
-
-export type QueryServiceMetricsViewToplistQueryResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>
->;
-export type QueryServiceMetricsViewToplistQueryError = RpcStatus;
-
-export const useQueryServiceMetricsViewToplist = <
-  TData = Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>,
-  TError = RpcStatus
->(
-  instanceId: string,
-  metricsViewName: string,
-  queryServiceMetricsViewToplistBody: QueryServiceMetricsViewToplistBody,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>,
-      TError,
-      TData
-    >;
-  }
-): UseQueryStoreResult<
-  Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>,
-  TError,
-  TData,
-  QueryKey
-> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getQueryServiceMetricsViewToplistQueryKey(
-      instanceId,
-      metricsViewName,
-      queryServiceMetricsViewToplistBody
-    );
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>
-  > = () =>
-    queryServiceMetricsViewToplist(
-      instanceId,
-      metricsViewName,
-      queryServiceMetricsViewToplistBody
-    );
-
-  const query = useQuery<
-    Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>,
-    TError,
-    TData
-  >(queryKey, queryFn, {
-    enabled: !!(instanceId && metricsViewName),
-    ...queryOptions,
-  }) as UseQueryStoreResult<
-    Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>,
-    TError,
-    TData,
-    QueryKey
-  > & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
  * @summary MetricsViewTimeSeries returns time series for the measures in the metrics view.
 It's a convenience API for querying a metrics view.
  */
@@ -469,6 +380,95 @@ export const useQueryServiceMetricsViewTimeSeries = <
     ...queryOptions,
   }) as UseQueryStoreResult<
     Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>,
+    TError,
+    TData,
+    QueryKey
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
+It's a convenience API for querying a metrics view.
+ */
+export const queryServiceMetricsViewToplist = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewToplistBody: QueryServiceMetricsViewToplistBody
+) => {
+  return httpClient<V1MetricsViewToplistResponse>({
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/toplist`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceMetricsViewToplistBody,
+  });
+};
+
+export const getQueryServiceMetricsViewToplistQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewToplistBody: QueryServiceMetricsViewToplistBody
+) => [
+  `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/toplist`,
+  queryServiceMetricsViewToplistBody,
+];
+
+export type QueryServiceMetricsViewToplistQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>
+>;
+export type QueryServiceMetricsViewToplistQueryError = RpcStatus;
+
+export const useQueryServiceMetricsViewToplist = <
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewToplistBody: QueryServiceMetricsViewToplistBody,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryStoreResult<
+  Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>,
+  TError,
+  TData,
+  QueryKey
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceMetricsViewToplistQueryKey(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewToplistBody
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>
+  > = () =>
+    queryServiceMetricsViewToplist(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewToplistBody
+    );
+
+  const query = useQuery<
+    Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>,
+    TError,
+    TData
+  >(queryKey, queryFn, {
+    enabled: !!(instanceId && metricsViewName),
+    ...queryOptions,
+  }) as UseQueryStoreResult<
+    Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>,
     TError,
     TData,
     QueryKey
