@@ -191,7 +191,7 @@ This component needs to do the following:
     {#if showComparison}
       Select a time range to compare to the selected time range
     {:else}
-      The specified time range does not have any viable comparisons
+      Select a shorter or more recent time range to enable comparisons.
     {/if}
   </TooltipContent>
 </Tooltip>

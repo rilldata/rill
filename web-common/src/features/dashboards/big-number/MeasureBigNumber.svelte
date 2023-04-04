@@ -33,6 +33,9 @@
   $: isComparisonPositive = comparisonPercChange && comparisonPercChange >= 0;
 
   const [send, receive] = crossfade({ fallback: fly });
+
+  $: diff = comparisonValue ? value - comparisonValue : false;
+  $: noChange = !diff;
 </script>
 
 <div class="flex flex-col {withTimeseries ? 'mt-2' : 'justify-between'}">
@@ -86,13 +89,20 @@
                     >
                       {@const formattedValue =
                         formatPresetEnum !== NicelyFormattedTypes.NONE
-                          ? humanizeDataType(value - output, formatPresetEnum)
-                          : output}
-                      {isComparisonPositive ? "+" : ""}{formattedValue}
+                          ? humanizeDataType(diff, formatPresetEnum)
+                          : diff}
+                      {#if !noChange}
+                        {isComparisonPositive ? "+" : ""}{formattedValue}
+                      {:else}
+                        <span
+                          class="ui-copy-disabled-faint italic"
+                          style:font-size=".9em">no change</span
+                        >
+                      {/if}
                     </WithTween>
                   </div>
                 {/if}
-                {#if comparisonPercChange != null}
+                {#if comparisonPercChange != null && !noChange}
                   <div
                     class="w-max text-sm 
               {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
@@ -114,31 +124,22 @@
                 {@const tooltipPercentage =
                   formatMeasurePercentageDifference(comparisonPercChange)}
 
-                {TIME_COMPARISON[comparisonOption].shorthand}
-                <span class="font-semibold pr-2"
-                  >{formatPresetEnum !== NicelyFormattedTypes.NONE
-                    ? humanizeDataType(comparisonValue, formatPresetEnum)
-                    : comparisonValue}</span
-                >
-                <!-- <span class="opacity-70">-></span> 
-                current
-                <span class="font-bold"
-                  >{humanizeDataType(value, formatPresetEnum)}</span
-                > -->
-                <span
-                  >{tooltipPercentage.neg ? "-" : ""}{tooltipPercentage.int}% {isComparisonPositive
-                    ? "increase"
-                    : "decrease"}</span
-                >
-                <!-- The previous period's value was {formatPresetEnum !==
-                NicelyFormattedTypes.NONE
-                  ? humanizeDataType(comparisonValue, formatPresetEnum)
-                  : comparisonValue}, <br /> which was {tooltipPercentage.int}%
-                {isComparisonPositive ? "lower" : "higher"}
-                than the current period's value of {humanizeDataType(
-                  value,
-                  formatPresetEnum
-                )} -->
+                {#if noChange}
+                  no change over {TIME_COMPARISON[comparisonOption].shorthand}
+                {:else}
+                  {TIME_COMPARISON[comparisonOption].shorthand}
+                  <span class="font-semibold"
+                    >{formatPresetEnum !== NicelyFormattedTypes.NONE
+                      ? humanizeDataType(comparisonValue, formatPresetEnum)
+                      : comparisonValue}</span
+                  ><span class="text-gray-300">,</span>
+
+                  <span
+                    >{tooltipPercentage.int}% {isComparisonPositive
+                      ? "increase"
+                      : "decrease"}</span
+                  >
+                {/if}
               </TooltipContent>
             </Tooltip>
           {/if}
