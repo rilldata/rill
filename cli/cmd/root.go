@@ -18,6 +18,7 @@ import (
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/spf13/cobra"
 )
 
@@ -50,6 +51,16 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	// Build CLI config
 	cfg := &config.Config{
 		Version: ver,
+	}
+
+	// Check version
+	info, err := update.CheckVersion(ctx, cfg.Version.Number)
+	if err != nil {
+		return err
+	}
+
+	if info != "" {
+		fmt.Println("Updater info:", info)
 	}
 
 	// Load admin token from .rill (may later be overridden by flag --api-token)
