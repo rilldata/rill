@@ -105,6 +105,30 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
   },
+  LAST_14_DAYS: {
+    label: "Last 14 Days",
+    rangePreset: RangePresetType.OFFSET_ANCHORED,
+    defaultComparison: TimeComparisonOption.WEEK,
+    start: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: [
+        { duration: "P2W", operationType: TimeOffsetType.SUBTRACT }, // operation
+        {
+          period: Period.HOUR, //TODO: How to handle user selected timegrains?
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        }, // truncation
+      ],
+    },
+    end: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: [
+        {
+          period: Period.HOUR,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+      ],
+    },
+  },
   LAST_4_WEEKS: {
     label: "Last 4 Weeks",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
