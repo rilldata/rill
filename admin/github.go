@@ -92,7 +92,7 @@ func (s *Service) ProcessGithubEvent(ctx context.Context, rawEvent any) error {
 		return s.processGithubInstallationRepositoriesEvent(ctx, event)
 	default:
 		// TODO: remove this log once we finish debugging reconcile not firing
-		s.logger.Warn("Unknown github event.")
+		s.logger.Warn(fmt.Sprintf("Unknown github event. %T", rawEvent))
 		return nil
 	}
 }
