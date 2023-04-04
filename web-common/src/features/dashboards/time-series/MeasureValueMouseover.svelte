@@ -74,6 +74,7 @@
           y: comparisonPointIsNull ? lastAvailableComparisonY : comparisonY,
           yOverride: comparisonPointIsNull,
           yOverrideLabel: "no comparison data",
+          yOverrideStyleClass: "fill-gray-400 italic",
           label: "prev.",
           key: "comparison",
           valueStyleClass: "font-normal",
@@ -193,22 +194,6 @@
                   class={colorClass}
                   stroke-linecap="round"
                 />
-                <!-- <path
-                d="M {xArrow} {yLoc} L {xArrow + signedDist} {yLoc +
-                  signedDist} L {xArrow - signedDist} {yLoc +
-                  signedDist} M {xArrow} {yLoc} L {xArrow} {output.dy -
-                  yBuffer} Z"
-                stroke="white"
-                stroke-width="5"
-              /> -->
-                <!-- <path
-                d="M {xArrow} {yLoc} L {xArrow + signedDist} {yLoc +
-                  signedDist} L {xArrow - signedDist} {yLoc +
-                  signedDist} {xArrow} {yLoc} M {xArrow} {yLoc +
-                  2} L {xArrow} {output.dy - yBuffer} Z"
-                stroke-linecap="round"
-                class={colorClass}
-              /> -->
               </g>
             </g>
           </g>

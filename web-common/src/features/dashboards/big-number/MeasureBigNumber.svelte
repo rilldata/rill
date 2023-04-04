@@ -36,6 +36,9 @@
 
   $: diff = comparisonValue ? value - comparisonValue : false;
   $: noChange = !diff;
+
+  /** when the measure is a percentage, we don't show a percentage change. */
+  $: measureIsPercentage = formatPresetEnum === NicelyFormattedTypes.PERCENTAGE;
 </script>
 
 <div class="flex flex-col {withTimeseries ? 'mt-2' : 'justify-between'}">
@@ -102,7 +105,7 @@
                     </WithTween>
                   </div>
                 {/if}
-                {#if comparisonPercChange != null && !noChange}
+                {#if comparisonPercChange != null && !noChange && !measureIsPercentage}
                   <div
                     class="w-max text-sm 
               {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
@@ -132,13 +135,14 @@
                     >{formatPresetEnum !== NicelyFormattedTypes.NONE
                       ? humanizeDataType(comparisonValue, formatPresetEnum)
                       : comparisonValue}</span
-                  ><span class="text-gray-300">,</span>
-
-                  <span
-                    >{tooltipPercentage.int}% {isComparisonPositive
-                      ? "increase"
-                      : "decrease"}</span
-                  >
+                  >{#if !measureIsPercentage}
+                    <span class="text-gray-300">,</span>
+                    <span
+                      >{tooltipPercentage.int}% {isComparisonPositive
+                        ? "increase"
+                        : "decrease"}</span
+                    >
+                  {/if}
                 {/if}
               </TooltipContent>
             </Tooltip>

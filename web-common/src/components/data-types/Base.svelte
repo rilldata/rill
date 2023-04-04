@@ -8,7 +8,7 @@
 
 <span class="{classes} {isNull ? `${nullColor}` : '{color}'}">
   {#if isNull}
-    <span class="opacity-50 italic">no data</span>
+    <span style:font-size=".925em" class="opacity-50 italic">no data</span>
   {:else}
     <slot />
   {/if}
