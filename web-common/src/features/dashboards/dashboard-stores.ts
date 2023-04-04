@@ -143,14 +143,8 @@ const metricViewReducers = {
         metricsExplorer.visibleDimensions = metricsView.dimensions.map(
           (measure) => true
         );
-        console.log(
-          "metricsExplorer.visibleMeasures sync",
-          metricsExplorer.visibleMeasures
-        );
       },
       () => {
-        console.log("metricsExplorer.visibleMeasures absence?");
-
         return {
           name,
           selectedMeasureNames: metricsView.measures.map(
@@ -187,10 +181,10 @@ const metricViewReducers = {
 
   // Updates the bitmask that sets the client-side visibility
   // of measures in the dashboard.
-  setAllMeasuresNotVisible(name: string) {
+  setAllMeasuresVisibility(name: string, visible: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.visibleMeasures = metricsExplorer.visibleMeasures.map(
-        (_) => false
+        (_) => visible
       );
     });
   },
@@ -207,10 +201,10 @@ const metricViewReducers = {
 
   // Updates the bitmask that sets the client-side visibility
   // of dimensions in the dashboard.
-  setAllDimensionsNotVisible(name: string) {
+  setAllDimensionsVisiblility(name: string, visible: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.visibleDimensions = metricsExplorer.visibleDimensions.map(
-        (_) => false
+        (_) => visible
       );
     });
   },

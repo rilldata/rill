@@ -34,20 +34,23 @@
 
   let searchText = "";
 
-  const deselectAll = () => {
-    dispatch("deselectAll");
-  };
-
   $: menuItems = setItemsVisibleBySearchString(
     selectableItems,
     selectedItems,
     searchText
   );
 
-  // num selected not shown = (total num selected) - (num shown and selected)
+  $: numSelected = selectedItems?.filter((s) => s)?.length || 0;
+
   $: numSelectedNotShown =
-    (selectedItems?.filter((s) => s)?.length || 0) -
-    (menuItems?.filter((item) => item.selected)?.length || 0);
+    numSelected - (menuItems?.filter((item) => item.selected)?.length || 0);
+
+  $: allToggleText = numSelected === 0 ? "Select all" : "Deselect all";
+
+  $: allToggleEvt = numSelected === 0 ? "selectAll" : "deselectAll";
+  $: dispatchAllToggleEvt = () => {
+    dispatch(allToggleEvt);
+  };
 </script>
 
 <Menu
@@ -95,7 +98,9 @@
   </div>
   <Footer>
     <span class="ui-copy">
-      <Button type="text" compact on:click={deselectAll}>Deselect all</Button>
+      <Button type="text" compact on:click={dispatchAllToggleEvt}
+        >{allToggleText}</Button
+      >
     </span>
     {#if numSelectedNotShown}
       <div class="ui-label">

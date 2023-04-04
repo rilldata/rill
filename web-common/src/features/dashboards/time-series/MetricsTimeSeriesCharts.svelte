@@ -155,7 +155,9 @@
   const toggleMeasureVisibility = (e) =>
     metricsExplorerStore.toggleMeasureVisibility(metricViewName, e.detail);
   const setAllMeasuresNotVisible = () =>
-    metricsExplorerStore.setAllMeasuresNotVisible(metricViewName);
+    metricsExplorerStore.setAllMeasuresVisibility(metricViewName, false);
+  const setAllMeasuresVisible = () =>
+    metricsExplorerStore.setAllMeasuresVisibility(metricViewName, true);
 </script>
 
 <WithBisector
@@ -171,6 +173,7 @@
         selectedItems={visibleMeasures}
         on:itemClicked={toggleMeasureVisibility}
         on:deselectAll={setAllMeasuresNotVisible}
+        on:selectAll={setAllMeasuresVisible}
         label="Measures"
         tooltipText="Choose measures to display"
       />

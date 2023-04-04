@@ -155,14 +155,12 @@
   const toggleDimensionVisibility = (e) =>
     metricsExplorerStore.toggleDimensionVisibility(metricViewName, e.detail);
   const setAllDimensionsNotVisible = () =>
-    metricsExplorerStore.setAllDimensionsNotVisible(metricViewName);
+    metricsExplorerStore.setAllDimensionsVisiblility(metricViewName, false);
+
+  const setAllDimensionsVisible = () =>
+    metricsExplorerStore.setAllDimensionsVisiblility(metricViewName, true);
 
   $: dimensionsShown = dimensions?.filter((_, i) => visibleDimensions[i]) ?? [];
-  // $: console.log({
-  //   availableDimensionLabels,
-  //   visibleDimensions,
-  //   dimensionsShown,
-  // });
 </script>
 
 <svelte:window on:resize={onResize} />
@@ -181,6 +179,7 @@
       selectedItems={visibleDimensions}
       on:itemClicked={toggleDimensionVisibility}
       on:deselectAll={setAllDimensionsNotVisible}
+      on:selectAll={setAllDimensionsVisible}
       label="Dimensions"
       tooltipText="Choose dimensions to display"
     />

@@ -13,6 +13,7 @@ These arrays must be the same length or the
 
 This component emits events:
 - `itemClicked`, which has a number `detail` field with the index of the item that was clicked.
+- `selectAll`, with no `detail`
 - `deselectAll`, with no `detail`
 In both cases, it is up to the containing component to handle the toggling the selection state and updating the `selectedItems` prop as needed.
 
@@ -20,11 +21,11 @@ In both cases, it is up to the containing component to handle the toggling the s
 <script lang="ts">
   import { fly } from "svelte/transition";
   import WithTogglableFloatingElement from "../floating-element/WithTogglableFloatingElement.svelte";
-  import Button from "../button/Button.svelte";
 
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
   import SearchableFilterDropdown from "./SearchableFilterDropdown.svelte";
+  import SelectButton from "../menu/triggers/SelectButton.svelte";
 
   export let selectableItems: string[];
   export let selectedItems: boolean[];
@@ -43,6 +44,11 @@ In both cases, it is up to the containing component to handle the toggling the s
     }
   }
   let active = false;
+  $: numAvailable = selectableItems?.length ?? 0;
+  $: numShown = selectedItems?.filter((x) => x).length ?? 0;
+
+  $: numShownString =
+    numAvailable === numShown ? "all" : `${numShown} of ${numAvailable}`;
 </script>
 
 <WithTogglableFloatingElement
@@ -58,10 +64,8 @@ In both cases, it is up to the containing component to handle the toggling the s
     activeDelay={60}
     suppress={active}
   >
-    <!-- <div on:click={toggleFloatingElement}>fake button</div> -->
-
-    <Button type="secondary" compact on:click={toggleFloatingElement}
-      >{label}</Button
+    <SelectButton type="secondary" compact on:click={toggleFloatingElement}
+      >Showing {numShownString} {label}</SelectButton
     >
     <div slot="tooltip-content" transition:fly|local={{ duration: 300, y: 4 }}>
       <TooltipContent maxWidth="400px">
@@ -79,5 +83,6 @@ In both cases, it is up to the containing component to handle the toggling the s
     on:search
     on:itemClicked
     on:deselectAll
+    on:selectAll
   />
 </WithTogglableFloatingElement>
