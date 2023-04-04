@@ -75,6 +75,6 @@
     bgClass="bg-white"
     inspector={false}
   >
-    <Dashboard {metricViewName} slot="body" />
+    <Dashboard {metricViewName} hasTitle slot="body" />
   </WorkspaceContainer>
 {/if}
