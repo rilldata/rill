@@ -1,4 +1,4 @@
-package connect
+package deploy
 
 import (
 	"context"
@@ -27,7 +27,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type connectOptions struct {
+type options struct {
 	Name        string
 	Description string
 	ProdBranch  string
@@ -42,12 +42,12 @@ type connectOptions struct {
 	slots    int64
 }
 
-// ConnectCmd is the guided tour for connecting rill projects to rill cloud.
+// DeployCmd is the guided tour for deploying rill projects to rill cloud.
 // TODO :: add non interactive mode
-func ConnectCmd(cfg *config.Config) *cobra.Command {
+func DeployCmd(cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "connect",
-		Short: "Guided tour for connecting rill projects to rill cloud",
+		Use:   "deploy",
+		Short: "Guided tour for deploying rill projects to rill cloud",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			warn := color.New(color.Bold).Add(color.FgYellow)
@@ -174,7 +174,7 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 	return cmd
 }
 
-func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubURL, prodBranch string) (*connectOptions, error) {
+func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubURL, prodBranch string) (*options, error) {
 	projectName := path.Base(githubURL)
 
 	questions := []*survey.Question{
@@ -261,7 +261,7 @@ func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubUR
 		},
 	}
 
-	opts := &connectOptions{}
+	opts := &options{}
 	if err := survey.Ask(questions, opts); err != nil {
 		return nil, err
 	}
@@ -333,7 +333,7 @@ const (
 	githubSetupMsg = `No git remote was found.
 
 	Rill projects deploy continuously when you push changes to Github.
-	Therefore, your project must be on Github before you connect it to Rill.
+	Therefore, your project must be on Github before you deploy it to Rill.
 	
 	Follow these steps to push your project to Github.
 	
@@ -356,9 +356,9 @@ const (
 	
 		git push -u origin main
 	
-	6. Connect Rill to your repository
+	6. Deploy Rill to your repository
 	
-		rill project connect
+		rill deploy
 	
 	`
 
