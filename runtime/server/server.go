@@ -5,20 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
-	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	metrics "github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2"
 	grpczaplog "github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2"
-	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/hashicorp/go-version"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -95,7 +91,6 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
-			grpc_auth.StreamServerInterceptor(CheckUserAgent),
 			auth.StreamServerInterceptor(s.aud),
 		),
 		grpc.ChainUnaryInterceptor(
@@ -104,7 +99,6 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
-			grpc_auth.UnaryServerInterceptor(CheckUserAgent),
 			auth.UnaryServerInterceptor(s.aud),
 		),
 	)
@@ -246,31 +240,4 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
-}
-
-func CheckUserAgent(ctx context.Context) (context.Context, error) {
-	userAgent := strings.Split(metautils.ExtractIncoming(ctx).Get("user-agent"), " ")[0]
-	ver := strings.TrimPrefix(userAgent, "rill-cli/")
-
-	// Check if build from source
-	if ver == "unknown" {
-		return ctx, nil
-	}
-
-	v1, err := version.NewVersion(ver)
-	if err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
-	}
-
-	// Compare between two hard coded versions (we can also put only >= MinVersion to pass)
-	constraints, err := version.NewConstraint(">= 0.20.0, < 0.25.0")
-	if err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
-	}
-
-	if !constraints.Check(v1) {
-		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("%s not satisfies the constraints %s, please upgrade the rill version\n", v1, constraints))
-	}
-
-	return ctx, nil
 }

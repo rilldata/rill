@@ -35,6 +35,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const cliVersionConstraint = ">= 0.20.0"
+
 type Options struct {
 	HTTPPort               int
 	GRPCPort               int
@@ -257,8 +259,13 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 }
 
 func CheckUserAgent(ctx context.Context) (context.Context, error) {
-	userAgent := strings.Split(metautils.ExtractIncoming(ctx).Get("user-agent"), " ")[0]
-	ver := strings.TrimPrefix(userAgent, "rill-cli/")
+	userAgent := strings.Split(metautils.ExtractIncoming(ctx).Get("user-agent"), " ")
+	var ver string
+	for _, s := range userAgent {
+		if strings.HasPrefix(s, "rill-cli/") {
+			ver = strings.TrimPrefix(s, "rill-cli/")
+		}
+	}
 
 	// Check if build from source
 	if ver == "unknown" {
@@ -270,14 +277,13 @@ func CheckUserAgent(ctx context.Context) (context.Context, error) {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 
-	// Compare between two hard coded versions (we can also put only >= MinVersion to pass)
-	constraints, err := version.NewConstraint(">= 0.20.0, < 0.25.0")
+	constraints, err := version.NewConstraint(cliVersionConstraint)
 	if err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
+		panic(err)
 	}
 
 	if !constraints.Check(v1) {
-		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("%s not satisfies the constraints %s, please upgrade the rill version\n", v1, constraints))
+		panic(fmt.Errorf("Rill %s is no longer supported, please upgrade to the latest version", v1))
 	}
 
 	return ctx, nil
