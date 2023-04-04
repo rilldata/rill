@@ -30,6 +30,14 @@ func (s *Server) ListProjects(ctx context.Context, req *adminv1.ListProjectsRequ
 }
 
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
+	_, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "org not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	claims := auth.GetClaims(ctx)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
