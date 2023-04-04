@@ -6,14 +6,12 @@
   import Footer from "./Footer.svelte";
   import Button from "../button/Button.svelte";
   import { createEventDispatcher } from "svelte";
-  import Fuse from "fuse.js";
+  import { matchSorter } from "match-sorter";
 
   const dispatch = createEventDispatcher();
 
   export let selectableItems: string[];
   export let selectedItems: boolean[];
-
-  const fuse = new Fuse(selectableItems);
 
   type MenuItemData = {
     label: string;
@@ -26,23 +24,12 @@
     selected: boolean[],
     searchText: string
   ): MenuItemData[] => {
-    // if no search text, return all items in usual order
-    if (searchText === "" || !searchText) {
-      return items.map((item, i) => ({
-        label: item,
-        selected: selected[i],
-        index: i,
-      }));
-    }
-
-    // if yes search text, return items in ranked order
-    const results = fuse.search(searchText);
-    console.log(results);
-    return results.map((result) => ({
-      label: result.item,
-      selected: selected[result.refIndex],
-      index: result.refIndex,
+    let menuEntries = items.map((item, i) => ({
+      label: item,
+      selected: selected[i],
+      index: i,
     }));
+    return matchSorter(menuEntries, searchText, { keys: ["label"] });
   };
 
   let searchText = "";
@@ -57,7 +44,7 @@
     searchText
   );
 
-  // (total num selected) - (num shown and selected)
+  // num selected not shown = (total num selected) - (num shown and selected)
   $: numSelectedNotShown =
     (selectedItems?.filter((s) => s)?.length || 0) -
     (menuItems?.filter((item) => item.selected)?.length || 0);
@@ -75,9 +62,7 @@
   on:click-outside
 >
   <!-- the min-height is set to have about 3 entries in it -->
-
   <Search bind:value={searchText} />
-
   <!-- apply a wrapped flex element to ensure proper bottom spacing between body and footer -->
   <div class="flex flex-col flex-1 overflow-auto w-full pb-1">
     {#each menuItems as { label, selected, index }}
