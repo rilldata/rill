@@ -82,7 +82,7 @@ export async function waitForTopLists(
   dimensions: Array<string>,
   filterMatcher?: RequestMatcher
 ) {
-  const topListUrlRegex = new RegExp(`/metric-views/${metricsView}/toplist`);
+  const topListUrlRegex = new RegExp(`/metrics-views/${metricsView}/toplist`);
   await Promise.all(
     dimensions.map((dimension) =>
       page.waitForResponse(
