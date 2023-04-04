@@ -8,7 +8,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/admin"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/build"
-	"github.com/rilldata/rill/cli/cmd/connect"
+	"github.com/rilldata/rill/cli/cmd/deploy"
 	"github.com/rilldata/rill/cli/cmd/docs"
 	"github.com/rilldata/rill/cli/cmd/initialize"
 	"github.com/rilldata/rill/cli/cmd/org"
@@ -87,7 +87,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	adminCmds := []*cobra.Command{
 		org.OrgCmd(cfg),
 		project.ProjectCmd(cfg),
-		connect.ConnectCmd(cfg),
+		deploy.DeployCmd(cfg),
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", "https://admin.rilldata.io", "Base URL for the admin API")
