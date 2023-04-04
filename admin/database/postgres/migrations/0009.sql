@@ -64,26 +64,13 @@ CREATE TABLE usergroups (
     display_name TEXT NOT NULL
 );
 
--- create all users group for existing organizations
-INSERT INTO usergroups (org_id, display_name) SELECT id, 'all_users' FROM organizations;
-
 -- add all_usergroup_id column to the organizations table referencing usergroups table
 ALTER TABLE organizations ADD COLUMN all_usergroup_id UUID REFERENCES usergroups (id) ON DELETE RESTRICT;
-
--- insert all_usergroup_id into the organizations table for existing organizations
-UPDATE organizations SET all_usergroup_id = (SELECT id FROM usergroups WHERE org_id = organizations.id);
 
 CREATE TABLE users_usergroups (
     user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     usergroup_id UUID NOT NULL REFERENCES usergroups (id) ON DELETE CASCADE
 );
-
--- insert all users into all_users_group of corresponding organizations
-WITH user_org AS (
-    SELECT users.id as user_id, users_orgs_roles.org_id as org_id FROM users JOIN users_orgs_roles ON users_orgs_roles.user_id = users.id
-)
-INSERT INTO users_usergroups (user_id, usergroup_id)
-SELECT user_org.user_id, org.all_usergroup_id FROM user_org JOIN organizations org ON org.id = user_org.org_id;
 
 CREATE TABLE usergroups_orgs_roles (
     usergroup_id UUID NOT NULL REFERENCES usergroups (id) ON DELETE CASCADE,
@@ -96,8 +83,3 @@ CREATE TABLE usergroups_projects_roles (
     project_id UUID NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
     project_role_id UUID NOT NULL REFERENCES project_roles (id) ON DELETE CASCADE
 );
-
--- add all all_user_groups to projects with 'project collaborator' role
-INSERT INTO usergroups_projects_roles (usergroup_id, project_id, project_role_id)
-SELECT o.all_usergroup_id, p.id, '12345678-0000-0000-0000-000000000022'
-FROM projects p JOIN organizations o ON p.organization_id = o.id;

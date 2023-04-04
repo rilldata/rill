@@ -60,7 +60,7 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
 
-	org, err := s.admin.CreateOrgForUser(ctx, claims.OwnerID(), req.Name, req.Description)
+	org, err := s.admin.CreateOrganizationForUser(ctx, claims.OwnerID(), req.Name, req.Description)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
