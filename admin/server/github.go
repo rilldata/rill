@@ -12,6 +12,8 @@ import (
 	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"golang.org/x/oauth2"
+	githuboauth "golang.org/x/oauth2/github"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -112,7 +114,7 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request, pathParam
 // githubConnectCallback is called after a Github App authorization flow initiated by githubConnect has completed.
 // It's implemented as a non-gRPC endpoint mounted directly on /github/connect/callback.
 func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-	// TODO: Enable user authorization and verify user per https://roadie.io/blog/avoid-leaking-github-org-data/
+	ctx := r.Context()
 
 	// Extract info from query string
 	qry := r.URL.Query()
@@ -128,6 +130,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
+	// todo :: check this for user request flow
 	// Check there's an authenticated user (this should always be the case for flows initiated by githubConnect)
 	claims := auth.GetClaims(r.Context())
 	if claims.OwnerType() != auth.OwnerTypeUser {
@@ -135,14 +138,12 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	// Associate the user with the installation
-	err = s.admin.ProcessUserGithubInstallation(r.Context(), claims.OwnerID(), int64(installationID))
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to track github install: %s", err), http.StatusInternalServerError)
+	code := qry.Get("code")
+	if code == "" {
+		http.Error(w, "unauthorised user", http.StatusUnauthorized)
 		return
 	}
 
-	// Verify that user installed the app on the right repo and we have access now
 	remoteURL := qry.Get("state")
 	account, repo, ok := gitutil.SplitGithubURL(remoteURL)
 	if !ok {
@@ -150,6 +151,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
+	// Verify that user installed the app on the right repo and we have access now
 	_, resp, err := s.admin.Github.Apps.FindRepositoryInstallation(r.Context(), account, repo)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
@@ -162,6 +164,26 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 			http.Redirect(w, r, redirectURL.String(), http.StatusTemporaryRedirect)
 		}
 		http.Error(w, fmt.Sprintf("failed to check github repo status: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	// verify there is no spoofing and the user is a collaborator to the repo
+	isCollaborator, err := s.isCollaborator(ctx, account, repo, code)
+	if err != nil {
+		// todo :: separate unauthorised user error from other errors
+		http.Error(w, fmt.Sprintf("failed to verify ownership: %s", err), http.StatusUnauthorized)
+		return
+	}
+
+	if !isCollaborator {
+		http.Error(w, "unauthorised user", http.StatusUnauthorized)
+		return
+	}
+
+	// Associate the user with the installation
+	err = s.admin.ProcessUserGithubInstallation(r.Context(), claims.OwnerID(), int64(installationID))
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to track github install: %s", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -197,4 +219,34 @@ func (s *Server) githubWebhook(w http.ResponseWriter, r *http.Request, pathParam
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) isCollaborator(ctx context.Context, owner, repo, code string) (bool, error) {
+	oauthConf := &oauth2.Config{
+		ClientID:     s.opts.GithubClientID,
+		ClientSecret: s.opts.GithubClientSecret,
+		Endpoint:     githuboauth.Endpoint,
+	}
+
+	token, err := oauthConf.Exchange(ctx, code)
+	if err != nil {
+		return false, err
+	}
+
+
+	oauthClient := oauthConf.Client(ctx, token)
+	client := github.NewClient(oauthClient)
+	user, _, err := client.Users.Get(ctx, "")
+	if err != nil {
+		return false, err
+	}
+
+	// repo belongs to the user's personal account
+	if owner == user.GetLogin() {
+		return true, nil
+	}
+
+	// repo belongs to an org
+	isCollaborator, _, err := client.Repositories.IsCollaborator(ctx, owner, repo, user.GetLogin())
+	return isCollaborator, err
 }

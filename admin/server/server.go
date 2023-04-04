@@ -43,6 +43,8 @@ type Options struct {
 	AuthClientSecret       string
 	GithubAppName          string
 	GithubAppWebhookSecret string
+	GithubClientID         string
+	GithubClientSecret     string
 }
 
 type URLRegistry struct {
