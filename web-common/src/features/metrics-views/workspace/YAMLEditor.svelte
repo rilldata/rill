@@ -39,6 +39,8 @@
   import * as yamlMode from "@codemirror/legacy-modes/mode/yaml";
 
   export let content;
+  export let plugins = [];
+
   let latestContent = content;
 
   // const yaml = new LanguageSupport(
@@ -73,6 +75,7 @@
           rectangularSelection(),
           highlightActiveLine(),
           highlightSelectionMatches(),
+          ...plugins,
           keymap.of([
             ...closeBracketsKeymap,
             ...defaultKeymap,

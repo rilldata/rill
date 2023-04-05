@@ -16,6 +16,10 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import ConfigInspector from "./ConfigInspector.svelte";
   import MetricsWorkspaceHeader from "./MetricsWorkspaceHeader.svelte";
+  import {
+    createPlaceholderElement,
+    rillEditorPlaceholder,
+  } from "./rill-editor-placeholder";
   import YAMLEditor from "./YAMLEditor.svelte";
   // the runtime yaml string
   export let yaml: string;
@@ -79,6 +83,14 @@
     const { content } = event.detail;
     callReconcileAndUpdateYaml(instanceId, metricsDefName, content);
   }
+
+  const placeholderSet = createPlaceholderElement(yaml);
+  const placeholder = rillEditorPlaceholder(placeholderSet.DOMElement);
+  $: placeholderSet.set(yaml);
+  //placeholderSet.
+  placeholderSet.on("test", (event) => {
+    console.log(event.detail);
+  });
 </script>
 
 <WorkspaceContainer inspector={true} assetID={`${metricsDefName}-config`}>
@@ -89,7 +101,11 @@
       style:height="calc(100vh - var(--header-height))"
     >
       <div class="overflow-y-auto bg-white p-2 rounded">
-        <YAMLEditor content={yaml} on:update={updateYAML} />
+        <YAMLEditor
+          content={yaml}
+          on:update={updateYAML}
+          plugins={[placeholder]}
+        />
       </div>
     </div>
   </div>

@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { useRuntimeServiceGetCatalogEntry } from "@rilldata/web-common/runtime-client";
+  import {
+    useRuntimeServiceGetCatalogEntry,
+    useRuntimeServiceListCatalogEntries,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import ModelInspector from "../../models/workspace/inspector/ModelInspector.svelte";
+  import ModelInspectorModelProfile from "../../models/workspace/inspector/ModelInspectorModelProfile.svelte";
   import { getModelOutOfPossiblyMalformedYAML } from "../utils";
 
   export let yaml: string;
@@ -15,10 +18,21 @@
     $runtime.instanceId,
     modelName
   );
+
+  $: models = useRuntimeServiceListCatalogEntries($runtime.instanceId, {
+    type: "OBJECT_TYPE_MODEL",
+  });
+
+  let isValidModel = false;
+  $: if ($models?.data?.entries) {
+    isValidModel = $models?.data.entries.some(
+      (model) => model.name === modelName
+    );
+  }
 </script>
 
-{#if modelName && !$modelQuery?.isError}
-  <ModelInspector {modelName} />
+{#if modelName && !$modelQuery?.isError && isValidModel}
+  <ModelInspectorModelProfile {modelName} />
 {:else if modelName !== undefined}
   Model {modelName} not found.
 {:else}
