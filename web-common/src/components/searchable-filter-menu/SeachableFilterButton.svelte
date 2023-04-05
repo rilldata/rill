@@ -1,21 +1,24 @@
 <!-- @component 
 This component is intended for filtering and selecting over 
 lists of items that are small enough to be handled comfortably
-the client, for example selecting visible measures and dimensions
-in the dashboard, where in the the worst existing cases in the
-legacy dash, the number of measures is not more than a few dozen
-and the number of dimensions does not exceed a few hundred.
+the clientInformation. The canonical example is
+selecting visible measures and dimensions
+in the dashboard, where in the the worst existing cases from the
+legacy dash, the number items does not exceed a few hundred.
 
 This component takes props:
 - `selectableItems`:string[], an array of item names to be shown in the menu.
 - `selectedItems`:boolean[], a bit mask indicating which items are currently selected.
-These arrays must be the same length or the 
+These arrays must be the same length or the the component will
+throw an error.
 
 This component emits events:
 - `itemClicked`, which has a number `detail` field with the index of the item that was clicked.
 - `selectAll`, with no `detail`
 - `deselectAll`, with no `detail`
-In both cases, it is up to the containing component to handle the toggling the selection state and updating the `selectedItems` prop as needed.
+In both cases, it is up to the containing component to handle these
+events, toggling the selection state and passing in new component
+props as needed.
 
 -->
 <script lang="ts">

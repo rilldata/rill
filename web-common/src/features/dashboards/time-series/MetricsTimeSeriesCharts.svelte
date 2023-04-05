@@ -140,16 +140,8 @@
   let availableMeasureLabels = [];
   let visibleMeasures = [];
 
-  // FIXME: this is just for demo, to have some measures hidden at start
-  // const initVisible = () =>
-  //   (visibleMeasures = availableMeasureLabels?.map((_, i) => i % 2 == 0));
-
-  $: {
-    availableMeasureLabels =
-      $totalsQuery?.isSuccess && $metaQuery.data?.measures.map((m) => m.label);
-
-    // initVisible();
-  }
+  $: availableMeasureLabels =
+    $totalsQuery?.isSuccess && $metaQuery.data?.measures.map((m) => m.label);
 
   $: visibleMeasures = metricsExplorer.visibleMeasures;
   const toggleMeasureVisibility = (e) =>
@@ -179,7 +171,6 @@
       />
     </div>
     <div class="bg-white sticky left-0 top-0">
-      <!-- <div style:padding-left="24px" style:height="20px" /> -->
       <!-- top axis element -->
       <div />
       {#if metricsExplorer?.selectedTimeRange}

@@ -43,7 +43,7 @@
 <section class="grid grid-flow-row gap-y-4" style="margin-top:40px">
   <h1 class="text-lg">Searchable Filter Menus</h1>
   <SeachableFilterButton
-    label="Measures"
+    label="Widgets"
     tooltipText="Choose measures to display"
     {selectableItems}
     {selectedItems}
@@ -54,6 +54,9 @@
     }}
     on:deselectAll={() => {
       selectedItems = selectedItems.map((_) => false);
+    }}
+    on:selectAll={() => {
+      selectedItems = selectedItems.map((_) => true);
     }}
   />
   {#each selectableItems.filter((_, i) => selectedItems[i]) as item}
