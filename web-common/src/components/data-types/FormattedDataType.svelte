@@ -19,7 +19,7 @@
   export let value = undefined;
   export let customStyle = "";
 
-  let dataType = Varchar;
+  let dataType;
   $: {
     if (type === "RILL_PERCENTAGE_CHANGE") {
       dataType = PercentageChange;
