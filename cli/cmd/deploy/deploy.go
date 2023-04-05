@@ -62,7 +62,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			// log in if not logged in
 			if !cfg.IsAuthenticated() {
-				msg := fmt.Sprintf("You aren't authenticated into Rill. Opening your browsers to %s to login or sign up...", cfg.AdminURL)
+				msg := fmt.Sprintf("In order to deploy to Rill Cloud, you must login. Opening your browsers to %s to login or sign up...", cfg.AdminURL)
 				warn.Println(msg)
 				// NOTE : calling commands within commands has both pros and cons
 				// PRO : No duplicated code

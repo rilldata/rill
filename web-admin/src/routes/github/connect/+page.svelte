@@ -4,15 +4,11 @@
   import { ADMIN_URL } from "../../../client/http-client";
 
   let user;
-  let userCode;
   // let actionTaken = false;
   // let successMsg = "";
   // let errorMsg = "";
 
   async function init() {
-    const urlParams = new URLSearchParams(window.location.search);
-    userCode = urlParams.get("user_code");
-
     const response = await fetch(ADMIN_URL + "/v1/users/current", {
       method: "GET",
       credentials: "include",
@@ -24,10 +20,11 @@
     } else {
       user = data.user;
     }
-    
+
+    const urlParams = new URLSearchParams(window.location.search);
     let autoredirect = urlParams.get("auto_redirect");
-    if (autoredirect === 'true') {
-      handleGoToGithub()
+    if (autoredirect === "true") {
+      handleGoToGithub();
     }
   }
 

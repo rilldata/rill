@@ -7,6 +7,7 @@
     Github connected successfully
   </h1>
   <p class="text-md text-green-700 font-bold mb-6">
-    Return to the CLI to continue setting up your project. The page can be closed now.
+    Return to the CLI to continue setting up your project. The page can be
+    closed now.
   </p>
 </div>
