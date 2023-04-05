@@ -19,25 +19,21 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
-	orgs, err := s.admin.DB.FindMemberOrganizations(ctx, claims.OwnerID())
+	orgs, err := s.admin.DB.FindOrganizationsForUser(ctx, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	pbs := make([]*adminv1.Organization, len(orgs))
 	for i, org := range orgs {
-		pbs[i] = orgToDTO(org)
+		pbs[i] = organizationToDTO(org)
 	}
 
 	return &adminv1.ListOrganizationsResponse{Organizations: pbs}, nil
 }
 
 func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizationRequest) (*adminv1.GetOrganizationResponse, error) {
-	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
@@ -52,13 +48,16 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 	}
 
 	return &adminv1.GetOrganizationResponse{
-		Organization: orgToDTO(org),
+		Organization: organizationToDTO(org),
 	}, nil
 }
 
 func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrganizationRequest) (*adminv1.CreateOrganizationResponse, error) {
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	}
 
 	org, err := s.admin.CreateOrganizationForUser(ctx, claims.OwnerID(), req.Name, req.Description)
 	if err != nil {
@@ -66,16 +65,12 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 	}
 
 	return &adminv1.CreateOrganizationResponse{
-		Organization: orgToDTO(org),
+		Organization: organizationToDTO(org),
 	}, nil
 }
 
 func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrganizationRequest) (*adminv1.DeleteOrganizationResponse, error) {
-	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
@@ -98,11 +93,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 }
 
 func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrganizationRequest) (*adminv1.UpdateOrganizationResponse, error) {
-	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
@@ -122,11 +113,11 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	}
 
 	return &adminv1.UpdateOrganizationResponse{
-		Organization: orgToDTO(org),
+		Organization: organizationToDTO(org),
 	}, nil
 }
 
-func (s *Server) ListOrgMembers(ctx context.Context, req *adminv1.ListOrgMembersRequest) (*adminv1.ListOrgMembersResponse, error) {
+func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListOrganizationMembersRequest) (*adminv1.ListOrganizationMembersResponse, error) {
 	claims := auth.GetClaims(ctx)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
@@ -141,25 +132,21 @@ func (s *Server) ListOrgMembers(ctx context.Context, req *adminv1.ListOrgMembers
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
 	}
 
-	users, err := s.admin.DB.FindOrganizationMembers(ctx, org.ID)
+	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	dtos := make([]*adminv1.User, len(users))
-	for i, user := range users {
-		dtos[i] = userToPB(user)
+	dtos := make([]*adminv1.Member, len(members))
+	for i, user := range members {
+		dtos[i] = organizationMemberToPB(user)
 	}
 
-	return &adminv1.ListOrgMembersResponse{Users: dtos}, nil
+	return &adminv1.ListOrganizationMembersResponse{Members: dtos}, nil
 }
 
-func (s *Server) AddOrgMember(ctx context.Context, req *adminv1.AddOrgMemberRequest) (*adminv1.AddOrgMemberResponse, error) {
-	// Check the request is made by an authenticated user
+func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrganizationMemberRequest) (*adminv1.AddOrganizationMemberResponse, error) {
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
@@ -189,42 +176,34 @@ func (s *Server) AddOrgMember(ctx context.Context, req *adminv1.AddOrgMemberRequ
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.addOrgUser(ctx, org.ID, user.ID, role.ID, *org.AllUserGroupID)
+	ctx, tx, err := s.admin.DB.NewTx(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	defer func() { _ = tx.Rollback() }()
+	err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.AddOrgMemberResponse{}, nil
-}
-
-func (s *Server) addOrgUser(ctx context.Context, orgID, userID, roleID, allUserGroupID string) error {
-	ctx, tx, err := s.admin.DB.NewTx(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = tx.Rollback() }()
-	err = s.admin.DB.InsertOrganizationMember(ctx, orgID, userID, roleID)
-	if err != nil {
-		return err
-	}
-
-	err = s.admin.DB.InsertUsergroupMember(ctx, allUserGroupID, userID)
+	err = s.admin.DB.InsertUserInUsergroup(ctx, *org.AllUsergroupID, user.ID)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
-			return err
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 		// If the user is already in the all user group, we can ignore the error
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.AddOrganizationMemberResponse{}, nil
 }
 
-func (s *Server) RemoveOrgMember(ctx context.Context, req *adminv1.RemoveOrgMemberRequest) (*adminv1.RemoveOrgMemberResponse, error) {
-	// Check the request is made by an authenticated user
+func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.RemoveOrganizationMemberRequest) (*adminv1.RemoveOrganizationMemberResponse, error) {
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
@@ -249,28 +228,24 @@ func (s *Server) RemoveOrgMember(ctx context.Context, req *adminv1.RemoveOrgMemb
 	// check if the user is the last owner
 	// TODO optimize this, may be extract roles during auth token validation
 	//  and store as part of the claims and fetch admins only if the user is an admin
-	users, err := s.admin.DB.FindOrganizationMembersByRole(ctx, org.ID, database.RoleIDOrgAdmin)
+	users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, database.RoleIDOrgAdmin)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	if len(users) == 1 && users[0].Email == req.Email {
+	if len(users) == 1 && users[0].ID == user.ID {
 		return nil, status.Error(codes.InvalidArgument, "cannot remove the last owner")
 	}
 
-	err = s.admin.DB.DeleteOrganizationMember(ctx, org.ID, user.ID)
+	err = s.admin.DB.DeleteOrganizationMemberUser(ctx, org.ID, user.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &adminv1.RemoveOrgMemberResponse{}, nil
+	return &adminv1.RemoveOrganizationMemberResponse{}, nil
 }
 
-func (s *Server) SetOrgMemberRole(ctx context.Context, req *adminv1.SetOrgMemberRoleRequest) (*adminv1.SetOrgMemberRoleResponse, error) {
-	// Check the request is made by an authenticated user
+func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.SetOrganizationMemberRoleRequest) (*adminv1.SetOrganizationMemberRoleResponse, error) {
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
@@ -284,12 +259,12 @@ func (s *Server) SetOrgMemberRole(ctx context.Context, req *adminv1.SetOrgMember
 		return nil, status.Error(codes.PermissionDenied, "not allowed to set org members role")
 	}
 
-	err = s.admin.DB.UpdateOrganizationMemberRole(ctx, org.ID, req.Email, req.Role)
+	err = s.admin.DB.UpdateOrganizationMemberUserRole(ctx, org.ID, req.Email, req.Role)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &adminv1.SetOrgMemberRoleResponse{}, nil
+	return &adminv1.SetOrganizationMemberRoleResponse{}, nil
 }
 
 func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrganizationRequest) (*adminv1.LeaveOrganizationResponse, error) {
@@ -314,7 +289,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 	// check if the user is the last owner
 	// TODO optimize this, may be extract roles during auth token validation
 	//  and store as part of the claims and fetch admins only if the user is an admin
-	users, err := s.admin.DB.FindOrganizationMembersByRole(ctx, org.ID, database.RoleIDOrgAdmin)
+	users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, database.RoleIDOrgAdmin)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -323,7 +298,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 		return nil, status.Error(codes.InvalidArgument, "cannot remove the last owner")
 	}
 
-	err = s.admin.DB.DeleteOrganizationMember(ctx, org.ID, claims.OwnerID())
+	err = s.admin.DB.DeleteOrganizationMemberUser(ctx, org.ID, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -331,7 +306,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 	return &adminv1.LeaveOrganizationResponse{}, nil
 }
 
-func orgToDTO(o *database.Organization) *adminv1.Organization {
+func organizationToDTO(o *database.Organization) *adminv1.Organization {
 	return &adminv1.Organization{
 		Id:          o.ID,
 		Name:        o.Name,

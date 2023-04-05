@@ -51,14 +51,14 @@ type AdminServiceClient interface {
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
 	GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error)
-	// ListOrgMembers lists all the org members
-	ListOrgMembers(ctx context.Context, in *ListOrgMembersRequest, opts ...grpc.CallOption) (*ListOrgMembersResponse, error)
-	// AddOrgMember lists all the org members
-	AddOrgMember(ctx context.Context, in *AddOrgMemberRequest, opts ...grpc.CallOption) (*AddOrgMemberResponse, error)
-	// RemoveOrgMember removes member from the organization
-	RemoveOrgMember(ctx context.Context, in *RemoveOrgMemberRequest, opts ...grpc.CallOption) (*RemoveOrgMemberResponse, error)
-	// SetOrgMemberRole sets the role for the member
-	SetOrgMemberRole(ctx context.Context, in *SetOrgMemberRoleRequest, opts ...grpc.CallOption) (*SetOrgMemberRoleResponse, error)
+	// ListOrganizationMembers lists all the org members
+	ListOrganizationMembers(ctx context.Context, in *ListOrganizationMembersRequest, opts ...grpc.CallOption) (*ListOrganizationMembersResponse, error)
+	// AddOrganizationMember lists all the org members
+	AddOrganizationMember(ctx context.Context, in *AddOrganizationMemberRequest, opts ...grpc.CallOption) (*AddOrganizationMemberResponse, error)
+	// RemoveOrganizationMember removes member from the organization
+	RemoveOrganizationMember(ctx context.Context, in *RemoveOrganizationMemberRequest, opts ...grpc.CallOption) (*RemoveOrganizationMemberResponse, error)
+	// SetOrganizationMemberRole sets the role for the member
+	SetOrganizationMemberRole(ctx context.Context, in *SetOrganizationMemberRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberRoleResponse, error)
 	// LeaveOrganization removes the current user from the organization
 	LeaveOrganization(ctx context.Context, in *LeaveOrganizationRequest, opts ...grpc.CallOption) (*LeaveOrganizationResponse, error)
 	// ListProjectMembers lists all the project members
@@ -205,36 +205,36 @@ func (c *adminServiceClient) GetGithubRepoStatus(ctx context.Context, in *GetGit
 	return out, nil
 }
 
-func (c *adminServiceClient) ListOrgMembers(ctx context.Context, in *ListOrgMembersRequest, opts ...grpc.CallOption) (*ListOrgMembersResponse, error) {
-	out := new(ListOrgMembersResponse)
-	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/ListOrgMembers", in, out, opts...)
+func (c *adminServiceClient) ListOrganizationMembers(ctx context.Context, in *ListOrganizationMembersRequest, opts ...grpc.CallOption) (*ListOrganizationMembersResponse, error) {
+	out := new(ListOrganizationMembersResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/ListOrganizationMembers", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *adminServiceClient) AddOrgMember(ctx context.Context, in *AddOrgMemberRequest, opts ...grpc.CallOption) (*AddOrgMemberResponse, error) {
-	out := new(AddOrgMemberResponse)
-	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/AddOrgMember", in, out, opts...)
+func (c *adminServiceClient) AddOrganizationMember(ctx context.Context, in *AddOrganizationMemberRequest, opts ...grpc.CallOption) (*AddOrganizationMemberResponse, error) {
+	out := new(AddOrganizationMemberResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/AddOrganizationMember", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *adminServiceClient) RemoveOrgMember(ctx context.Context, in *RemoveOrgMemberRequest, opts ...grpc.CallOption) (*RemoveOrgMemberResponse, error) {
-	out := new(RemoveOrgMemberResponse)
-	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/RemoveOrgMember", in, out, opts...)
+func (c *adminServiceClient) RemoveOrganizationMember(ctx context.Context, in *RemoveOrganizationMemberRequest, opts ...grpc.CallOption) (*RemoveOrganizationMemberResponse, error) {
+	out := new(RemoveOrganizationMemberResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/RemoveOrganizationMember", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *adminServiceClient) SetOrgMemberRole(ctx context.Context, in *SetOrgMemberRoleRequest, opts ...grpc.CallOption) (*SetOrgMemberRoleResponse, error) {
-	out := new(SetOrgMemberRoleResponse)
-	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/SetOrgMemberRole", in, out, opts...)
+func (c *adminServiceClient) SetOrganizationMemberRole(ctx context.Context, in *SetOrganizationMemberRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberRoleResponse, error) {
+	out := new(SetOrganizationMemberRoleResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/SetOrganizationMemberRole", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -319,14 +319,14 @@ type AdminServiceServer interface {
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
 	GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error)
-	// ListOrgMembers lists all the org members
-	ListOrgMembers(context.Context, *ListOrgMembersRequest) (*ListOrgMembersResponse, error)
-	// AddOrgMember lists all the org members
-	AddOrgMember(context.Context, *AddOrgMemberRequest) (*AddOrgMemberResponse, error)
-	// RemoveOrgMember removes member from the organization
-	RemoveOrgMember(context.Context, *RemoveOrgMemberRequest) (*RemoveOrgMemberResponse, error)
-	// SetOrgMemberRole sets the role for the member
-	SetOrgMemberRole(context.Context, *SetOrgMemberRoleRequest) (*SetOrgMemberRoleResponse, error)
+	// ListOrganizationMembers lists all the org members
+	ListOrganizationMembers(context.Context, *ListOrganizationMembersRequest) (*ListOrganizationMembersResponse, error)
+	// AddOrganizationMember lists all the org members
+	AddOrganizationMember(context.Context, *AddOrganizationMemberRequest) (*AddOrganizationMemberResponse, error)
+	// RemoveOrganizationMember removes member from the organization
+	RemoveOrganizationMember(context.Context, *RemoveOrganizationMemberRequest) (*RemoveOrganizationMemberResponse, error)
+	// SetOrganizationMemberRole sets the role for the member
+	SetOrganizationMemberRole(context.Context, *SetOrganizationMemberRoleRequest) (*SetOrganizationMemberRoleResponse, error)
 	// LeaveOrganization removes the current user from the organization
 	LeaveOrganization(context.Context, *LeaveOrganizationRequest) (*LeaveOrganizationResponse, error)
 	// ListProjectMembers lists all the project members
@@ -386,17 +386,17 @@ func (UnimplementedAdminServiceServer) RevokeCurrentAuthToken(context.Context, *
 func (UnimplementedAdminServiceServer) GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGithubRepoStatus not implemented")
 }
-func (UnimplementedAdminServiceServer) ListOrgMembers(context.Context, *ListOrgMembersRequest) (*ListOrgMembersResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListOrgMembers not implemented")
+func (UnimplementedAdminServiceServer) ListOrganizationMembers(context.Context, *ListOrganizationMembersRequest) (*ListOrganizationMembersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationMembers not implemented")
 }
-func (UnimplementedAdminServiceServer) AddOrgMember(context.Context, *AddOrgMemberRequest) (*AddOrgMemberResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddOrgMember not implemented")
+func (UnimplementedAdminServiceServer) AddOrganizationMember(context.Context, *AddOrganizationMemberRequest) (*AddOrganizationMemberResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddOrganizationMember not implemented")
 }
-func (UnimplementedAdminServiceServer) RemoveOrgMember(context.Context, *RemoveOrgMemberRequest) (*RemoveOrgMemberResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RemoveOrgMember not implemented")
+func (UnimplementedAdminServiceServer) RemoveOrganizationMember(context.Context, *RemoveOrganizationMemberRequest) (*RemoveOrganizationMemberResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveOrganizationMember not implemented")
 }
-func (UnimplementedAdminServiceServer) SetOrgMemberRole(context.Context, *SetOrgMemberRoleRequest) (*SetOrgMemberRoleResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetOrgMemberRole not implemented")
+func (UnimplementedAdminServiceServer) SetOrganizationMemberRole(context.Context, *SetOrganizationMemberRoleRequest) (*SetOrganizationMemberRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetOrganizationMemberRole not implemented")
 }
 func (UnimplementedAdminServiceServer) LeaveOrganization(context.Context, *LeaveOrganizationRequest) (*LeaveOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LeaveOrganization not implemented")
@@ -678,74 +678,74 @@ func _AdminService_GetGithubRepoStatus_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_ListOrgMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListOrgMembersRequest)
+func _AdminService_ListOrganizationMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListOrganizationMembersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).ListOrgMembers(ctx, in)
+		return srv.(AdminServiceServer).ListOrganizationMembers(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.admin.v1.AdminService/ListOrgMembers",
+		FullMethod: "/rill.admin.v1.AdminService/ListOrganizationMembers",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).ListOrgMembers(ctx, req.(*ListOrgMembersRequest))
+		return srv.(AdminServiceServer).ListOrganizationMembers(ctx, req.(*ListOrganizationMembersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_AddOrgMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddOrgMemberRequest)
+func _AdminService_AddOrganizationMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddOrganizationMemberRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).AddOrgMember(ctx, in)
+		return srv.(AdminServiceServer).AddOrganizationMember(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.admin.v1.AdminService/AddOrgMember",
+		FullMethod: "/rill.admin.v1.AdminService/AddOrganizationMember",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).AddOrgMember(ctx, req.(*AddOrgMemberRequest))
+		return srv.(AdminServiceServer).AddOrganizationMember(ctx, req.(*AddOrganizationMemberRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_RemoveOrgMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RemoveOrgMemberRequest)
+func _AdminService_RemoveOrganizationMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveOrganizationMemberRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).RemoveOrgMember(ctx, in)
+		return srv.(AdminServiceServer).RemoveOrganizationMember(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.admin.v1.AdminService/RemoveOrgMember",
+		FullMethod: "/rill.admin.v1.AdminService/RemoveOrganizationMember",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).RemoveOrgMember(ctx, req.(*RemoveOrgMemberRequest))
+		return srv.(AdminServiceServer).RemoveOrganizationMember(ctx, req.(*RemoveOrganizationMemberRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_SetOrgMemberRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SetOrgMemberRoleRequest)
+func _AdminService_SetOrganizationMemberRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetOrganizationMemberRoleRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).SetOrgMemberRole(ctx, in)
+		return srv.(AdminServiceServer).SetOrganizationMemberRole(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/rill.admin.v1.AdminService/SetOrgMemberRole",
+		FullMethod: "/rill.admin.v1.AdminService/SetOrganizationMemberRole",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).SetOrgMemberRole(ctx, req.(*SetOrgMemberRoleRequest))
+		return srv.(AdminServiceServer).SetOrganizationMemberRole(ctx, req.(*SetOrganizationMemberRoleRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -904,20 +904,20 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetGithubRepoStatus_Handler,
 		},
 		{
-			MethodName: "ListOrgMembers",
-			Handler:    _AdminService_ListOrgMembers_Handler,
+			MethodName: "ListOrganizationMembers",
+			Handler:    _AdminService_ListOrganizationMembers_Handler,
 		},
 		{
-			MethodName: "AddOrgMember",
-			Handler:    _AdminService_AddOrgMember_Handler,
+			MethodName: "AddOrganizationMember",
+			Handler:    _AdminService_AddOrganizationMember_Handler,
 		},
 		{
-			MethodName: "RemoveOrgMember",
-			Handler:    _AdminService_RemoveOrgMember_Handler,
+			MethodName: "RemoveOrganizationMember",
+			Handler:    _AdminService_RemoveOrganizationMember_Handler,
 		},
 		{
-			MethodName: "SetOrgMemberRole",
-			Handler:    _AdminService_SetOrgMemberRole_Handler,
+			MethodName: "SetOrganizationMemberRole",
+			Handler:    _AdminService_SetOrganizationMemberRole_Handler,
 		},
 		{
 			MethodName: "LeaveOrganization",

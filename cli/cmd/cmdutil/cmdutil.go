@@ -41,7 +41,7 @@ func CheckAuth(cfg *config.Config) PreRunCheck {
 	}
 }
 
-func CheckOrg(cfg *config.Config) PreRunCheck {
+func CheckOrganization(cfg *config.Config) PreRunCheck {
 	return func(cmd *cobra.Command, args []string) error {
 		if cfg.Org != "" {
 			return nil
@@ -111,38 +111,44 @@ func WarnPrinter(str string) {
 	boldYellow.Fprintln(color.Output, str)
 }
 
-func PrintUsers(users []*adminv1.User) {
-	if len(users) == 0 {
+func PrintMembers(members []*adminv1.Member) {
+	if len(members) == 0 {
 		WarnPrinter("No members found")
 		return
 	}
 
 	SuccessPrinter("Members list \n")
-	TablePrinter(toUserTable(users))
+	TablePrinter(toMemberTable(members))
 }
 
-func toUserTable(users []*adminv1.User) []*user {
-	allUsers := make([]*user, 0, len(users))
+func toMemberTable(members []*adminv1.Member) []*member {
+	allMembers := make([]*member, 0, len(members))
 
-	for _, usr := range users {
-		allUsers = append(allUsers, toUserRow(usr))
+	for _, m := range members {
+		allMembers = append(allMembers, toMemberRow(m))
 	}
 
-	return allUsers
+	return allMembers
 }
 
-func toUserRow(u *adminv1.User) *user {
-	return &user{
-		Name:      u.DisplayName,
-		Email:     u.Email,
-		CreatedOn: u.CreatedOn.AsTime().String(),
-		UpdatedOn: u.UpdatedOn.AsTime().String(),
+func toMemberRow(m *adminv1.Member) *member {
+	return &member{
+		ID:        m.UserId,
+		Name:      m.UserName,
+		Email:     m.UserEmail,
+		RoleID:    m.RoleId,
+		RoleName:  m.RoleName,
+		CreatedOn: m.CreatedOn.AsTime().String(),
+		UpdatedOn: m.UpdatedOn.AsTime().String(),
 	}
 }
 
-type user struct {
+type member struct {
+	ID        string `header:"id" json:"id"`
 	Name      string `header:"name" json:"display_name"`
 	Email     string `header:"email" json:"email"`
+	RoleID    string `header:"role_id" json:"role_id"`
+	RoleName  string `header:"role_name" json:"role_name"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
 	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_on"`
 }

@@ -48,16 +48,16 @@ export type AdminServiceListProjectMembersParams = {
   pageToken?: string;
 };
 
-export type AdminServiceSetOrgMemberRoleBody = {
+export type AdminServiceSetOrganizationMemberRoleBody = {
   role?: string;
 };
 
-export type AdminServiceAddOrgMemberBody = {
+export type AdminServiceAddOrganizationMemberBody = {
   email?: string;
   role?: string;
 };
 
-export type AdminServiceListOrgMembersParams = {
+export type AdminServiceListOrganizationMembersParams = {
   pageSize?: number;
   pageToken?: string;
 };
@@ -90,7 +90,7 @@ export interface V1SetProjectMemberRoleResponse {
   [key: string]: any;
 }
 
-export interface V1SetOrgMemberRoleResponse {
+export interface V1SetOrganizationMemberRoleResponse {
   [key: string]: any;
 }
 
@@ -102,7 +102,7 @@ export interface V1RemoveProjectMemberResponse {
   [key: string]: any;
 }
 
-export interface V1RemoveOrgMemberResponse {
+export interface V1RemoveOrganizationMemberResponse {
   [key: string]: any;
 }
 
@@ -142,14 +142,24 @@ export interface V1Organization {
   updatedOn?: string;
 }
 
+export interface V1Member {
+  createdOn?: string;
+  roleId?: string;
+  roleName?: string;
+  updatedOn?: string;
+  userEmail?: string;
+  userId?: string;
+  userName?: string;
+}
+
 export interface V1ListProjectsResponse {
   nextPageToken?: string;
   projects?: V1Project[];
 }
 
 export interface V1ListProjectMembersResponse {
+  members?: V1Member[];
   nextPageToken?: string;
-  users?: V1User[];
 }
 
 export interface V1ListOrganizationsResponse {
@@ -157,9 +167,9 @@ export interface V1ListOrganizationsResponse {
   organizations?: V1Organization[];
 }
 
-export interface V1ListOrgMembersResponse {
+export interface V1ListOrganizationMembersResponse {
+  members?: V1Member[];
   nextPageToken?: string;
-  users?: V1User[];
 }
 
 export interface V1LeaveOrganizationResponse {
@@ -237,7 +247,7 @@ export interface V1AddProjectMemberResponse {
   [key: string]: any;
 }
 
-export interface V1AddOrgMemberResponse {
+export interface V1AddOrganizationMemberResponse {
   [key: string]: any;
 }
 

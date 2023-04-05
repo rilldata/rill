@@ -26,13 +26,6 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		return nil, err
 	}
 
-	// Start a tx for creating org and adding the user
-	ctx, tx, err := s.DB.NewTx(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = tx.Rollback() }()
-
 	// User does not exist. Creating a new user.
 	user, err = s.DB.InsertUser(ctx, email, name, photoURL)
 	if err != nil {
@@ -46,10 +39,17 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		// continuing, since user was created successfully
 	}
 
-	return user, tx.Commit()
+	return user, nil
 }
 
 func (s *Service) createOrganizationForUser(ctx context.Context, email, userID, name string) error {
+	// Start a tx for creating org and adding the user
+	ctx, tx, err := s.DB.NewTx(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
 	orgNameSeeds := nameseeds.ForUser(email, name)
 
 	org, err := s.DB.InsertOrganizationFromSeeds(ctx, orgNameSeeds, name)
@@ -60,7 +60,7 @@ func (s *Service) createOrganizationForUser(ctx context.Context, email, userID, 
 	if err != nil {
 		return err
 	}
-	return nil
+	return tx.Commit()
 }
 
 func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName, description string) (*database.Organization, error) {
@@ -89,23 +89,23 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 
 func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string) (*database.Organization, error) {
 	// create all user group for this org
-	userGroup, err := s.DB.InsertUsergroup(ctx, "all_user_group", orgID)
+	userGroup, err := s.DB.InsertOrganizationMemberUsergroup(ctx, orgID, "all-users")
 	if err != nil {
 		return nil, err
 	}
 	// update org with all user group
-	org, err := s.DB.UpdateOrganizationAllUsergroup(ctx, orgID, userGroup.ID)
+	org, err := s.DB.UpdateOrganizationMemberAllUsergroup(ctx, orgID, userGroup.ID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Add user to created org with org admin role
-	err = s.DB.InsertOrganizationMember(ctx, orgID, userID, database.RoleIDOrgAdmin)
+	err = s.DB.InsertOrganizationMemberUser(ctx, orgID, userID, database.RoleIDOrgAdmin)
 	if err != nil {
 		return nil, err
 	}
 	// Add user to all user group
-	err = s.DB.InsertUsergroupMember(ctx, userID, userGroup.ID)
+	err = s.DB.InsertUserInUsergroup(ctx, userID, userGroup.ID)
 	if err != nil {
 		return nil, err
 	}

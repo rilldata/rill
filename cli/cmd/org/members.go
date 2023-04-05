@@ -32,14 +32,14 @@ func ListMembersCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			defer client.Close()
-			resp, err := client.ListOrgMembers(cmd.Context(), &adminv1.ListOrgMembersRequest{
+			resp, err := client.ListOrganizationMembers(cmd.Context(), &adminv1.ListOrganizationMembersRequest{
 				Organization: orgName,
 			})
 			if err != nil {
 				return err
 			}
 
-			cmdutil.PrintUsers(resp.Users)
+			cmdutil.PrintMembers(resp.Members)
 			return nil
 		},
 	}
@@ -60,7 +60,7 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			defer client.Close()
-			_, err = client.AddOrgMember(cmd.Context(), &adminv1.AddOrgMemberRequest{
+			_, err = client.AddOrganizationMember(cmd.Context(), &adminv1.AddOrganizationMemberRequest{
 				Organization: orgName,
 				Email:        args[0],
 				Role:         args[1],
@@ -88,7 +88,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			defer client.Close()
-			_, err = client.RemoveOrgMember(cmd.Context(), &adminv1.RemoveOrgMemberRequest{
+			_, err = client.RemoveOrganizationMember(cmd.Context(), &adminv1.RemoveOrganizationMemberRequest{
 				Organization: orgName,
 				Email:        args[0],
 			})
@@ -115,7 +115,7 @@ func SetRoleCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			defer client.Close()
-			_, err = client.SetOrgMemberRole(cmd.Context(), &adminv1.SetOrgMemberRoleRequest{
+			_, err = client.SetOrganizationMemberRole(cmd.Context(), &adminv1.SetOrganizationMemberRoleRequest{
 				Organization: orgName,
 				Email:        args[0],
 				Role:         args[1],

@@ -45,7 +45,7 @@ func ListMembersCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintUsers(resp.Users)
+			cmdutil.PrintMembers(resp.Members)
 			return nil
 		},
 	}

@@ -21,7 +21,7 @@ func (s *Server) ListProjects(ctx context.Context, req *adminv1.ListProjectsRequ
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
-	projs, err := s.admin.DB.FindMemberProjects(ctx, claims.OwnerID())
+	projs, err := s.admin.DB.FindProjectsForUser(ctx, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -36,9 +36,6 @@ func (s *Server) ListProjects(ctx context.Context, req *adminv1.ListProjectsRequ
 
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
@@ -109,7 +106,6 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// TODO do we need to consider dev branches here ?
 	if !claims.CanOrganization(ctx, org.ID, auth.CreateProjects) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
 	}
@@ -156,11 +152,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 }
 
 func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRequest) (*adminv1.DeleteProjectResponse, error) {
-	// Check the request is made by a user
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated")
-	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
@@ -183,11 +175,7 @@ func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRe
 }
 
 func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRequest) (*adminv1.UpdateProjectResponse, error) {
-	// Check the request is made by a user
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated")
-	}
 
 	// Find project
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
@@ -238,9 +226,6 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 
 func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjectMembersRequest) (*adminv1.ListProjectMembersResponse, error) {
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
@@ -254,24 +239,21 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read project members")
 	}
 
-	users, err := s.admin.DB.FindProjectMembers(ctx, proj.ID)
+	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	dtos := make([]*adminv1.User, len(users))
-	for i, user := range users {
-		dtos[i] = userToPB(user)
+	dtos := make([]*adminv1.Member, len(members))
+	for i, member := range members {
+		dtos[i] = projectMemberToPB(member)
 	}
 
-	return &adminv1.ListProjectMembersResponse{Users: dtos}, nil
+	return &adminv1.ListProjectMembersResponse{Members: dtos}, nil
 }
 
 func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMemberRequest) (*adminv1.AddProjectMemberResponse, error) {
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
@@ -301,7 +283,7 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.addProjectUser(ctx, proj.ID, user.ID, role.ID, proj.OrganizationID)
+	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -309,38 +291,8 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 	return &adminv1.AddProjectMemberResponse{}, nil
 }
 
-func (s *Server) addProjectUser(ctx context.Context, projectID, userID, roleID, orgID string) error {
-	ctx, tx, err := s.admin.DB.NewTx(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = tx.Rollback() }()
-	err = s.admin.DB.InsertProjectMember(ctx, projectID, userID, roleID)
-	if err != nil {
-		return err
-	}
-
-	org, err := s.admin.DB.FindOrganizationByID(ctx, orgID)
-	if err != nil {
-		return err
-	}
-
-	err = s.admin.DB.InsertUsergroupMember(ctx, userID, *org.AllUserGroupID)
-	if err != nil {
-		if !errors.Is(err, database.ErrNotUnique) {
-			return err
-		}
-		// If the user is already in the all user group, we can ignore the error
-	}
-
-	return tx.Commit()
-}
-
 func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemoveProjectMemberRequest) (*adminv1.RemoveProjectMemberResponse, error) {
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
@@ -362,7 +314,7 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.admin.DB.DeleteProjectMember(ctx, proj.ID, user.ID)
+	err = s.admin.DB.DeleteProjectMemberUser(ctx, proj.ID, user.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -372,9 +324,6 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 
 func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProjectMemberRoleRequest) (*adminv1.SetProjectMemberRoleResponse, error) {
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
@@ -404,7 +353,7 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.admin.DB.UpdateProjectMemberRole(ctx, proj.ID, user.ID, role.ID)
+	err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

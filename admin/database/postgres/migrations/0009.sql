@@ -61,7 +61,7 @@ CREATE INDEX users_projects_roles_project_user_idx ON users_projects_roles (proj
 CREATE TABLE usergroups (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     org_id UUID NOT NULL REFERENCES organizations (id) ON DELETE CASCADE,
-    display_name TEXT NOT NULL
+    name TEXT NOT NULL
 );
 
 -- add all_usergroup_id column to the organizations table referencing usergroups table
@@ -69,17 +69,27 @@ ALTER TABLE organizations ADD COLUMN all_usergroup_id UUID REFERENCES usergroups
 
 CREATE TABLE users_usergroups (
     user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    usergroup_id UUID NOT NULL REFERENCES usergroups (id) ON DELETE CASCADE
+    usergroup_id UUID NOT NULL REFERENCES usergroups (id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, usergroup_id)
 );
+
+CREATE INDEX users_usergroups_usergroup_idx ON users_usergroups (usergroup_id);
 
 CREATE TABLE usergroups_orgs_roles (
     usergroup_id UUID NOT NULL REFERENCES usergroups (id) ON DELETE CASCADE,
     org_id UUID NOT NULL REFERENCES organizations (id) ON DELETE CASCADE,
-    org_role_id UUID NOT NULL REFERENCES org_roles (id) ON DELETE CASCADE
+    org_role_id UUID NOT NULL REFERENCES org_roles (id) ON DELETE CASCADE,
+    PRIMARY KEY (usergroup_id, org_id)
 );
+
+CREATE INDEX usergroups_orgs_roles_org_usergroup_idx ON usergroups_orgs_roles (org_id, usergroup_id);
 
 CREATE TABLE usergroups_projects_roles (
     usergroup_id UUID NOT NULL REFERENCES usergroups (id) ON DELETE CASCADE,
     project_id UUID NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
-    project_role_id UUID NOT NULL REFERENCES project_roles (id) ON DELETE CASCADE
+    project_role_id UUID NOT NULL REFERENCES project_roles (id) ON DELETE CASCADE,
+    PRIMARY KEY (usergroup_id, project_id)
 );
+
+CREATE INDEX usergroups_projects_roles_project_usergroup_idx ON usergroups_projects_roles (project_id, usergroup_id);
+

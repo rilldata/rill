@@ -91,26 +91,26 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/repositories"};
   }
 
-  // ListOrgMembers lists all the org members
-  rpc ListOrgMembers(ListOrgMembersRequest) returns (ListOrgMembersResponse) {
+  // ListOrganizationMembers lists all the org members
+  rpc ListOrganizationMembers(ListOrganizationMembersRequest) returns (ListOrganizationMembersResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/members"};
   }
 
-  // AddOrgMember lists all the org members
-  rpc AddOrgMember(AddOrgMemberRequest) returns (AddOrgMemberResponse) {
+  // AddOrganizationMember lists all the org members
+  rpc AddOrganizationMember(AddOrganizationMemberRequest) returns (AddOrganizationMemberResponse) {
     option (google.api.http) = {
       post: "/v1/organizations/{organization}/members",
       body: "*"
     };
   }
 
-  // RemoveOrgMember removes member from the organization
-  rpc RemoveOrgMember(RemoveOrgMemberRequest) returns (RemoveOrgMemberResponse) {
+  // RemoveOrganizationMember removes member from the organization
+  rpc RemoveOrganizationMember(RemoveOrganizationMemberRequest) returns (RemoveOrganizationMemberResponse) {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/members/{email}"};
   }
 
-  // SetOrgMemberRole sets the role for the member
-  rpc SetOrgMemberRole(SetOrgMemberRoleRequest) returns (SetOrgMemberRoleResponse) {
+  // SetOrganizationMemberRole sets the role for the member
+  rpc SetOrganizationMemberRole(SetOrganizationMemberRoleRequest) returns (SetOrganizationMemberRoleResponse) {
     option (google.api.http) = {
       put: "/v1/organizations/{organization}/members/{email}",
       body: "*"
@@ -337,54 +337,54 @@ message Deployment {
   google.protobuf.Timestamp updated_on = 10;
 }
 
-// Request message for AdminService.ListOrgMembers
-message ListOrgMembersRequest {
+// Request message for AdminService.ListOrganizationMembers
+message ListOrganizationMembersRequest {
   string organization = 1;
   uint32 page_size = 2;
   string page_token = 3;
 }
 
-// Response message for AdminService.ListOrgMembers
-message ListOrgMembersResponse {
-  repeated User users = 1;
+// Response message for AdminService.ListOrganizationMembers
+message ListOrganizationMembersResponse {
+  repeated Member members = 1;
   string next_page_token = 2;
 }
 
-// Request message for AdminService.AddOrgMember
-message AddOrgMemberRequest {
+// Request message for AdminService.AddOrganizationMember
+message AddOrganizationMemberRequest {
   string organization = 1;
   string email = 2;
   string role = 3;
 }
 
-// Response message for AdminService.AddOrgMember
-message AddOrgMemberResponse {}
+// Response message for AdminService.AddOrganizationMember
+message AddOrganizationMemberResponse {}
 
-// Request message for AdminService.RemoveOrgMember
-message RemoveOrgMemberRequest {
+// Request message for AdminService.RemoveOrganizationMember
+message RemoveOrganizationMemberRequest {
   string organization = 1;
   string email = 2;
 }
 
-// Response message for AdminService.RemoveOrgMember
-message RemoveOrgMemberResponse {}
+// Response message for AdminService.RemoveOrganizationMember
+message RemoveOrganizationMemberResponse {}
 
-// Request message for AdminService.SetOrgMemberRole
-message SetOrgMemberRoleRequest {
+// Request message for AdminService.SetOrganizationMemberRole
+message SetOrganizationMemberRoleRequest {
   string organization = 1;
   string email = 2;
   string role = 3;
 }
 
-// Response message for AdminService.SetOrgMemberRole
-message SetOrgMemberRoleResponse {}
+// Response message for AdminService.SetOrganizationMemberRole
+message SetOrganizationMemberRoleResponse {}
 
-// Request message for AdminService.LeaveOrg
+// Request message for AdminService.LeaveOrganization
 message LeaveOrganizationRequest {
   string organization = 1;
 }
 
-// Response message for AdminService.LeaveOrg
+// Response message for AdminService.LeaveOrganization
 message LeaveOrganizationResponse {}
 
 // Request message for AdminService.ListProjectMembers
@@ -397,7 +397,7 @@ message ListProjectMembersRequest {
 
 // Response message for AdminService.ListProjectMembers
 message ListProjectMembersResponse {
-  repeated User users = 1;
+  repeated Member members = 1;
   string next_page_token = 2;
 }
 
@@ -432,3 +432,13 @@ message SetProjectMemberRoleRequest {
 
 // Response message for AdminService.SetProjectMemberRole
 message SetProjectMemberRoleResponse {}
+
+message Member {
+  string user_id = 1;
+  string user_name = 2;
+  string user_email = 3;
+  string role_id = 4;
+  string role_name = 5;
+  google.protobuf.Timestamp created_on = 6;
+  google.protobuf.Timestamp updated_on = 7;
+}

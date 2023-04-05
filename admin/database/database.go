@@ -97,33 +97,33 @@ type DB interface {
 
 	QueryRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
 
-	FindOrganizationMembers(ctx context.Context, orgID string) ([]*User, error)
-	FindOrganizationMembersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
-	InsertOrganizationMember(ctx context.Context, orgID, userID, roleID string) error
-	DeleteOrganizationMember(ctx context.Context, orgID, userID string) error
-	UpdateOrganizationMemberRole(ctx context.Context, orgID, userID, roleID string) error
+	FindOrganizationMemberUsers(ctx context.Context, orgID string) ([]*OrganizationMember, error)
+	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
+	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string) error
+	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
+	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 
-	FindProjectMembers(ctx context.Context, projectID string) ([]*User, error)
-	InsertProjectMember(ctx context.Context, projectID, userID, roleID string) error
-	DeleteProjectMember(ctx context.Context, projectID, userID string) error
-	UpdateProjectMemberRole(ctx context.Context, projectID, userID, roleID string) error
+	FindProjectMemberUsers(ctx context.Context, projectID string) ([]*ProjectMember, error)
+	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
+	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
+	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
 
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
 
-	// ResolveUserOrganizationRoles resolves the direct and group roles of a user in an organization
-	ResolveUserOrganizationRoles(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
-	// ResolveUserProjectRoles resolves the direct and group roles of a user in a project
-	ResolveUserProjectRoles(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
+	// ResolveOrganizationMemberUserRoles resolves the direct and group roles of a user in an organization
+	ResolveOrganizationMemberUserRoles(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
+	// ResolveProjectMemberUserRoles resolves the direct and group roles of a user in a project
+	ResolveProjectMemberUserRoles(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
 
-	InsertUsergroup(ctx context.Context, name, orgID string) (*Usergroup, error)
-	UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
-	InsertUsergroupMember(ctx context.Context, userID, groupID string) error
-	InsertProjectUsergroup(ctx context.Context, groupID, projectID, roleID string) error
-	FindUsergroups(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
+	InsertOrganizationMemberUsergroup(ctx context.Context, orgID, name string) (*Usergroup, error)
+	UpdateOrganizationMemberAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
+	InsertUserInUsergroup(ctx context.Context, userID, groupID string) error
+	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
+	FindUsersUsergroups(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
 
-	FindMemberOrganizations(ctx context.Context, userID string) ([]*Organization, error)
-	FindMemberProjects(ctx context.Context, userID string) ([]*Project, error)
+	FindOrganizationsForUser(ctx context.Context, userID string) ([]*Organization, error)
+	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -161,7 +161,7 @@ type Organization struct {
 	Description    string
 	CreatedOn      time.Time `db:"created_on"`
 	UpdatedOn      time.Time `db:"updated_on"`
-	AllUserGroupID *string   `db:"all_usergroup_id"`
+	AllUsergroupID *string   `db:"all_usergroup_id"`
 }
 
 // Project represents one Git connection.
@@ -382,4 +382,16 @@ type Usergroup struct {
 	ID          string `db:"id"`
 	OrgID       string `db:"org_id"`
 	DisplayName string `db:"display_name"`
+}
+
+// OrganizationMember For CLI
+type OrganizationMember struct {
+	User *User
+	Role *OrganizationRole
+}
+
+// ProjectMember For CLI
+type ProjectMember struct {
+	User *User
+	Role *ProjectRole
 }

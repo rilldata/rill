@@ -169,11 +169,9 @@ func (c *authTokenClaims) Can(ctx context.Context, orgID string, op Organization
 
 func (c *authTokenClaims) composeOrgPermissions(ctx context.Context, orgID string) (*database.OrganizationRole, error) {
 	composite := &database.OrganizationRole{}
-	roles, err := c.admin.DB.ResolveUserOrganizationRoles(ctx, c.token.OwnerID(), orgID)
+	roles, err := c.admin.DB.ResolveOrganizationMemberUserRoles(ctx, c.token.OwnerID(), orgID)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, err
-		}
+		return nil, err
 	}
 	for _, role := range roles {
 		composite = unionOrgRoles(composite, role)
@@ -195,11 +193,9 @@ func unionOrgRoles(a, b *database.OrganizationRole) *database.OrganizationRole {
 
 func (c *authTokenClaims) composeProjectPermissions(ctx context.Context, projectID string) (*database.ProjectRole, error) {
 	composite := &database.ProjectRole{}
-	roles, err := c.admin.DB.ResolveUserProjectRoles(ctx, c.token.OwnerID(), projectID)
+	roles, err := c.admin.DB.ResolveProjectMemberUserRoles(ctx, c.token.OwnerID(), projectID)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, err
-		}
+		return nil, err
 	}
 	for _, role := range roles {
 		composite = unionProjectRoles(composite, role)

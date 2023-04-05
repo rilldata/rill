@@ -144,13 +144,13 @@ paths:
         - AdminService
   /v1/organizations/{organization}/members:
     get:
-      summary: ListOrgMembers lists all the org members
-      operationId: AdminService_ListOrgMembers
+      summary: ListOrganizationMembers lists all the org members
+      operationId: AdminService_ListOrganizationMembers
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListOrgMembersResponse'
+            $ref: '#/definitions/v1ListOrganizationMembersResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -172,13 +172,13 @@ paths:
       tags:
         - AdminService
     post:
-      summary: AddOrgMember lists all the org members
-      operationId: AdminService_AddOrgMember
+      summary: AddOrganizationMember lists all the org members
+      operationId: AdminService_AddOrganizationMember
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1AddOrgMemberResponse'
+            $ref: '#/definitions/v1AddOrganizationMemberResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -198,18 +198,18 @@ paths:
                 type: string
               role:
                 type: string
-            title: Request message for AdminService.AddOrgMember
+            title: Request message for AdminService.AddOrganizationMember
       tags:
         - AdminService
   /v1/organizations/{organization}/members/{email}:
     delete:
-      summary: RemoveOrgMember removes member from the organization
-      operationId: AdminService_RemoveOrgMember
+      summary: RemoveOrganizationMember removes member from the organization
+      operationId: AdminService_RemoveOrganizationMember
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1RemoveOrgMemberResponse'
+            $ref: '#/definitions/v1RemoveOrganizationMemberResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -226,13 +226,13 @@ paths:
       tags:
         - AdminService
     put:
-      summary: SetOrgMemberRole sets the role for the member
-      operationId: AdminService_SetOrgMemberRole
+      summary: SetOrganizationMemberRole sets the role for the member
+      operationId: AdminService_SetOrganizationMemberRole
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1SetOrgMemberRoleResponse'
+            $ref: '#/definitions/v1SetOrganizationMemberRoleResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -254,7 +254,7 @@ paths:
             properties:
               role:
                 type: string
-            title: Request message for AdminService.SetOrgMemberRole
+            title: Request message for AdminService.SetOrganizationMemberRole
       tags:
         - AdminService
   /v1/organizations/{organization}/members/current:
@@ -637,9 +637,9 @@ definitions:
           $ref: '#/definitions/protobufAny'
       message:
         type: string
-  v1AddOrgMemberResponse:
+  v1AddOrganizationMemberResponse:
     type: object
-    title: Response message for AdminService.AddOrgMember
+    title: Response message for AdminService.AddOrganizationMember
   v1AddProjectMemberResponse:
     type: object
     title: Response message for AdminService.AddProjectMember
@@ -731,17 +731,17 @@ definitions:
         $ref: '#/definitions/v1Project'
   v1LeaveOrganizationResponse:
     type: object
-    title: Response message for AdminService.LeaveOrg
-  v1ListOrgMembersResponse:
+    title: Response message for AdminService.LeaveOrganization
+  v1ListOrganizationMembersResponse:
     type: object
     properties:
-      nextPageToken:
-        type: string
-      users:
+      members:
         type: array
         items:
-          $ref: '#/definitions/v1User'
-    title: Response message for AdminService.ListOrgMembers
+          $ref: '#/definitions/v1Member'
+      nextPageToken:
+        type: string
+    title: Response message for AdminService.ListOrganizationMembers
   v1ListOrganizationsResponse:
     type: object
     properties:
@@ -754,12 +754,12 @@ definitions:
   v1ListProjectMembersResponse:
     type: object
     properties:
-      nextPageToken:
-        type: string
-      users:
+      members:
         type: array
         items:
-          $ref: '#/definitions/v1User'
+          $ref: '#/definitions/v1Member'
+      nextPageToken:
+        type: string
     title: Response message for AdminService.ListProjectMembers
   v1ListProjectsResponse:
     type: object
@@ -770,6 +770,25 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/v1Project'
+  v1Member:
+    type: object
+    properties:
+      createdOn:
+        type: string
+        format: date-time
+      roleId:
+        type: string
+      roleName:
+        type: string
+      updatedOn:
+        type: string
+        format: date-time
+      userEmail:
+        type: string
+      userId:
+        type: string
+      userName:
+        type: string
   v1Organization:
     type: object
     properties:
@@ -831,9 +850,9 @@ definitions:
         type: object
         additionalProperties:
           type: string
-  v1RemoveOrgMemberResponse:
+  v1RemoveOrganizationMemberResponse:
     type: object
-    title: Response message for AdminService.RemoveOrgMember
+    title: Response message for AdminService.RemoveOrganizationMember
   v1RemoveProjectMemberResponse:
     type: object
     title: Response message for AdminService.RemoveProjectMember
@@ -842,9 +861,9 @@ definitions:
     properties:
       tokenId:
         type: string
-  v1SetOrgMemberRoleResponse:
+  v1SetOrganizationMemberRoleResponse:
     type: object
-    title: Response message for AdminService.SetOrgMemberRole
+    title: Response message for AdminService.SetOrganizationMemberRole
   v1SetProjectMemberRoleResponse:
     type: object
     title: Response message for AdminService.SetProjectMemberRole
