@@ -138,10 +138,10 @@ const metricViewReducers = {
           (measure) => measure.name
         );
         metricsExplorer.visibleMeasures = metricsView.measures.map(
-          (measure) => true
+          (_visibility) => true
         );
         metricsExplorer.visibleDimensions = metricsView.dimensions.map(
-          (measure) => true
+          (_visibility) => true
         );
       },
       () => {
@@ -150,8 +150,8 @@ const metricViewReducers = {
           selectedMeasureNames: metricsView.measures.map(
             (measure) => measure.name
           ),
-          visibleMeasures: metricsView.measures.map((measure) => true),
-          visibleDimensions: metricsView.dimensions.map((dim) => true),
+          visibleMeasures: metricsView.measures.map((_visibility) => true),
+          visibleDimensions: metricsView.dimensions.map((_visibility) => true),
           leaderboardMeasureName: metricsView.measures[0]?.name,
           filters: {
             include: [],
