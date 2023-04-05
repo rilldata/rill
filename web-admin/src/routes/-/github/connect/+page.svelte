@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import { onMount } from "svelte";
-  import { ADMIN_URL } from "../../../client/http-client";
+  import { ADMIN_URL } from "../../../../client/http-client";
 
   let user;
   let userCode;

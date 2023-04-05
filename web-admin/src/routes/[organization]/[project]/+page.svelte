@@ -2,7 +2,7 @@
   import { page } from "$app/stores";
   import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useAdminServiceGetProject } from "../../../../client";
+  import { useAdminServiceGetProject } from "../../../client";
 
   const proj = useAdminServiceGetProject(
     $page.params.organization,
@@ -31,8 +31,7 @@
     {#if $dashboardsQuery.data}
       {#each $dashboardsQuery.data as dashboard}
         <a
-          href="/-/{$page.params.organization}/{$page.params
-            .project}/dashboard/{dashboard}"
+          href="/{$page.params.organization}/{$page.params.project}/{dashboard}"
           class="text-lg">{dashboard}</a
         >
       {/each}
