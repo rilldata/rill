@@ -9,8 +9,8 @@ import { useRegisteredServer } from "./utils/serverConfigs";
 import { createOrReplaceSource, uploadFile } from "./utils/sourceHelpers";
 import { entityNotPresent, waitForEntity } from "./utils/waitHelpers";
 
-describe.skip("sources", () => {
-  const testBrowser = useRegisteredServer("models");
+describe("sources", () => {
+  const testBrowser = useRegisteredServer("sources");
 
   it("Import sources", async () => {
     const { page } = testBrowser;
@@ -33,32 +33,23 @@ describe.skip("sources", () => {
     ]);
 
     // upload existing table and replace
-    await Promise.all([
-      waitForAdBids(page, "AdBids"),
-      uploadFile(page, "AdBids.csv", true, false),
-    ]);
-    await entityNotPresent(page, TestEntityType.Source, "AdBids_2");
+    await uploadFile(page, "AdBids.csv", true, false);
+    await entityNotPresent(page, "AdBids_2");
   });
 
   it("Rename and delete sources", async () => {
     const { page } = testBrowser;
 
-    // make sure AdBids is present
     await createOrReplaceSource(page, "AdBids.csv", "AdBids");
 
     // rename
-    await renameEntityUsingMenu(
-      page,
-      TestEntityType.Source,
-      "AdBids",
-      "AdBids_new"
-    );
+    await renameEntityUsingMenu(page, "AdBids", "AdBids_new");
     await waitForEntity(page, TestEntityType.Source, "AdBids_new", true);
-    await entityNotPresent(page, TestEntityType.Source, "AdBids");
+    await entityNotPresent(page, "AdBids");
 
     // delete
-    await deleteEntity(page, TestEntityType.Source, "AdBids_new");
-    await entityNotPresent(page, TestEntityType.Source, "AdBids_new");
-    await entityNotPresent(page, TestEntityType.Source, "AdBids");
+    await deleteEntity(page, "AdBids_new");
+    await entityNotPresent(page, "AdBids_new");
+    await entityNotPresent(page, "AdBids");
   });
 });

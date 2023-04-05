@@ -1566,7 +1566,7 @@ func RegisterQueryServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.QueryService/MetricsViewToplist", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/metric-views/{metrics_view_name}/toplist"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.QueryService/MetricsViewToplist", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/toplist"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2027,7 +2027,7 @@ func RegisterQueryServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.QueryService/MetricsViewToplist", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/metric-views/{metrics_view_name}/toplist"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.QueryService/MetricsViewToplist", runtime.WithHTTPPathPattern("/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/toplist"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -2379,7 +2379,7 @@ func RegisterQueryServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 var (
 	pattern_QueryService_Query_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "instances", "instance_id", "query"}, ""))
 
-	pattern_QueryService_MetricsViewToplist_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1", "instances", "instance_id", "queries", "metric-views", "metrics_view_name", "toplist"}, ""))
+	pattern_QueryService_MetricsViewToplist_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1", "instances", "instance_id", "queries", "metrics-views", "metrics_view_name", "toplist"}, ""))
 
 	pattern_QueryService_MetricsViewTimeSeries_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"v1", "instances", "instance_id", "queries", "metrics-views", "metrics_view_name", "timeseries"}, ""))
 

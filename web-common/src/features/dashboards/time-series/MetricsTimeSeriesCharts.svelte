@@ -195,8 +195,6 @@
               yAccessor={measure.name}
               xMin={startValue}
               xMax={endValue}
-              start={startValue}
-              end={endValue}
               mouseoverTimeFormat={(value) => {
                 /** format the date according to the time grain */
                 return new Date(value).toLocaleDateString(
