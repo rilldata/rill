@@ -3,7 +3,6 @@ package admin
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -13,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
@@ -179,16 +179,13 @@ func (s *Service) TriggerReconcile(ctx context.Context, deploymentID string) err
 
 		// Set status
 		if len(res.Errors) > 0 {
-			var errors []string
-			for i := range res.Errors {
-				errors = append(errors, res.Errors[i].String())
+			json, err := protojson.Marshal(res)
+			if err != nil {
+				s.logger.Error("reconcile: json error", zap.String("deployment_id", deploymentID), zap.Error(err))
+				return
 			}
 
-			logs := fmt.Sprintf("Errors:\n\t%s\n\n\tAffectedPaths:\n\t%s",
-				strings.Join(errors, "\n\t"),
-				strings.Join(res.AffectedPaths, "\n\t"))
-
-			_, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusError, logs)
+			_, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusError, string(json))
 			if err != nil {
 				s.logger.Error("reconcile: could not update logs", zap.String("deployment_id", deploymentID), zap.Error(err))
 				return
