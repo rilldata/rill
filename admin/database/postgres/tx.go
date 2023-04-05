@@ -24,6 +24,10 @@ func (c *connection) NewTx(ctx context.Context) (context.Context, database.Tx, e
 	return contextWithTx(ctx, tx), tx, nil
 }
 
+func (c *connection) RemoveTx(ctx context.Context) context.Context {
+	return context.WithValue(ctx, txCtxKey{}, nil)
+}
+
 // txCtxKey is used for saving a DB transaction in a context.
 type txCtxKey struct{}
 

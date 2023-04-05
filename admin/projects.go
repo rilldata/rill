@@ -52,6 +52,9 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 		return nil, err
 	}
 
+	// remove transaction from the context, since we have already committed otherwise provisioner will complain
+	ctx = s.DB.RemoveTx(ctx)
+
 	if proj.GithubURL == nil || proj.GithubInstallationID == nil {
 		return nil, fmt.Errorf("cannot create project without github info")
 	}

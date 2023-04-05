@@ -43,6 +43,7 @@ type Driver interface {
 type DB interface {
 	Close() error
 	NewTx(ctx context.Context) (context.Context, Tx, error)
+	RemoveTx(ctx context.Context) context.Context
 
 	Migrate(ctx context.Context) error
 	FindMigrationVersion(ctx context.Context) (int, error)
