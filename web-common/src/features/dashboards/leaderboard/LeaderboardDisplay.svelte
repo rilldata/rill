@@ -27,7 +27,6 @@
   } from "../humanize-numbers";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardMeasureSelector from "./LeaderboardMeasureSelector.svelte";
-  import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
 
   export let metricViewName: string;
 
@@ -148,18 +147,8 @@
     observer?.disconnect();
   });
 
-  let availableDimensionLabels = [];
   let visibleDimensions = [];
-  $: availableDimensionLabels = dimensions?.map((d) => d.label) || [];
   $: visibleDimensions = metricsExplorer?.visibleDimensions ?? [];
-  const toggleDimensionVisibility = (e) =>
-    metricsExplorerStore.toggleDimensionVisibility(metricViewName, e.detail);
-  const setAllDimensionsNotVisible = () =>
-    metricsExplorerStore.setAllDimensionsVisiblility(metricViewName, false);
-
-  const setAllDimensionsVisible = () =>
-    metricsExplorerStore.setAllDimensionsVisiblility(metricViewName, true);
-
   $: dimensionsShown = dimensions?.filter((_, i) => visibleDimensions[i]) ?? [];
 </script>
 
@@ -174,15 +163,6 @@
     class="grid grid-auto-cols justify-between grid-flow-col items-center pl-1 pb-3"
   >
     <LeaderboardMeasureSelector {metricViewName} />
-    <SeachableFilterButton
-      selectableItems={availableDimensionLabels}
-      selectedItems={visibleDimensions}
-      on:itemClicked={toggleDimensionVisibility}
-      on:deselectAll={setAllDimensionsNotVisible}
-      on:selectAll={setAllDimensionsVisible}
-      label="Dimensions"
-      tooltipText="Choose dimensions to display"
-    />
   </div>
   {#if metricsExplorer}
     <VirtualizedGrid {columns} height="100%" items={dimensionsShown} let:item>

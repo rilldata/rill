@@ -11,10 +11,13 @@
   } from "../dashboard-stores";
   import { useMetaQuery } from "../selectors";
 
+  import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
+
   export let metricViewName;
 
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
+  $: dimensions = $metaQuery.data?.dimensions;
   $: measures = $metaQuery.data?.measures;
 
   let metricsExplorer: MetricsExplorerEntity;
@@ -64,6 +67,20 @@
 
   /** set the selection only if measures is not undefined */
   $: selection = measures ? activeLeaderboardMeasure : [];
+
+  let availableDimensionLabels = [];
+  let visibleDimensions = [];
+  $: availableDimensionLabels = dimensions?.map((d) => d.label) || [];
+  $: visibleDimensions = metricsExplorer?.visibleDimensions ?? [];
+
+  const toggleDimensionVisibility = (e) =>
+    metricsExplorerStore.toggleDimensionVisibility(metricViewName, e.detail);
+  const setAllDimensionsNotVisible = () =>
+    metricsExplorerStore.setAllDimensionsVisiblility(metricViewName, false);
+  const setAllDimensionsVisible = () =>
+    metricsExplorerStore.setAllDimensionsVisiblility(metricViewName, true);
+
+  $: dimensionsShown = dimensions?.filter((_, i) => visibleDimensions[i]) ?? [];
 </script>
 
 <div>
@@ -72,9 +89,19 @@
       class="flex flex-row items-center ui-copy-muted"
       style:grid-column-gap=".4rem"
       in:send={{ key: "leaderboard-metric" }}
-      style:max-width="355px"
+      style:max-width="400px"
     >
-      <div class="whitespace-nowrap">Dimension Leaders by</div>
+      <SeachableFilterButton
+        selectableItems={availableDimensionLabels}
+        selectedItems={visibleDimensions}
+        on:itemClicked={toggleDimensionVisibility}
+        on:deselectAll={setAllDimensionsNotVisible}
+        on:selectAll={setAllDimensionsVisible}
+        label="Dimensions"
+        tooltipText="Choose dimensions to display"
+      />
+
+      <div class="whitespace-nowrap">sorted by</div>
 
       <SelectMenu
         paddingTop={2}

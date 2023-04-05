@@ -48,7 +48,7 @@ In both cases, it is up to the containing component to handle the toggling the s
   $: numShown = selectedItems?.filter((x) => x).length ?? 0;
 
   $: numShownString =
-    numAvailable === numShown ? "all" : `${numShown} of ${numAvailable}`;
+    numAvailable === numShown ? "All" : `${numShown} of ${numAvailable}`;
 </script>
 
 <WithTogglableFloatingElement
@@ -65,7 +65,7 @@ In both cases, it is up to the containing component to handle the toggling the s
     suppress={active}
   >
     <SelectButton type="secondary" compact on:click={toggleFloatingElement}
-      >Showing {numShownString} {label}</SelectButton
+      ><strong>{numShownString} {label}</strong></SelectButton
     >
     <div slot="tooltip-content" transition:fly|local={{ duration: 300, y: 4 }}>
       <TooltipContent maxWidth="400px">
