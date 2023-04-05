@@ -162,7 +162,7 @@ export function getComparisonProperties(
   else if (measureName.includes("_delta")) {
     return {
       label: DeltaChange,
-      type: "INT",
+      type: "RILL_CHANGE",
       format: selectedMeasure.format,
       description: "Change over compared period",
     };

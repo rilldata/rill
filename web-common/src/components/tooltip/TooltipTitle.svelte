@@ -6,7 +6,7 @@
   <div class="font-bold truncate">
     <slot name="name" />
   </div>
-  <div class="text-gray-300 justify-self-end pl-3" style:max-width="350px">
+  <div class="text-gray-300 justify-self-end pl-3" style:max-width="280px">
     <slot name="description" />
   </div>
 </div>

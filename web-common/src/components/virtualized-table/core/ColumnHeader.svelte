@@ -12,6 +12,7 @@
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { createEventDispatcher, getContext } from "svelte";
   import { fly } from "svelte/transition";
+  import TooltipDescription from "../../tooltip/TooltipDescription.svelte";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
 
@@ -119,21 +120,22 @@
           {/if}
         </span>
       </div>
-      <TooltipContent slot="tooltip-content">
-        <TooltipTitle>
-          <svelte:fragment slot="name">
-            {#if typeof name !== "string"}
-              <div>
-                <svelte:component this={name} />
-              </div>
-            {:else}
+      <TooltipContent slot="tooltip-content" maxWidth="280px">
+        {#if !isDimensionTable}
+          <TooltipTitle>
+            <svelte:fragment slot="name">
               {name}
-            {/if}
-          </svelte:fragment>
-          <svelte:fragment slot="description">
-            {isDimensionTable ? description : type}
-          </svelte:fragment>
-        </TooltipTitle>
+            </svelte:fragment>
+            <svelte:fragment slot="description">
+              {showDataIcon ? type : ""}
+            </svelte:fragment>
+          </TooltipTitle>
+        {/if}
+        {#if isDimensionTable && description?.length}
+          <TooltipDescription>
+            {description}
+          </TooltipDescription>
+        {/if}
         <TooltipShortcutContainer>
           {#if !isDeltaColumn && isDimensionTable}
             <div>Sort column</div>
