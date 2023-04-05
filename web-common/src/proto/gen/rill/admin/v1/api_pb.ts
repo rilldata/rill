@@ -2374,22 +2374,17 @@ export class Member extends Message<Member> {
   userEmail = "";
 
   /**
-   * @generated from field: string role_id = 4;
-   */
-  roleId = "";
-
-  /**
-   * @generated from field: string role_name = 5;
+   * @generated from field: string role_name = 4;
    */
   roleName = "";
 
   /**
-   * @generated from field: google.protobuf.Timestamp created_on = 6;
+   * @generated from field: google.protobuf.Timestamp created_on = 5;
    */
   createdOn?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp updated_on = 7;
+   * @generated from field: google.protobuf.Timestamp updated_on = 6;
    */
   updatedOn?: Timestamp;
 
@@ -2404,10 +2399,9 @@ export class Member extends Message<Member> {
     { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "role_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "created_on", kind: "message", T: Timestamp },
-    { no: 7, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 4, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "created_on", kind: "message", T: Timestamp },
+    { no: 6, name: "updated_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Member {

@@ -144,7 +144,6 @@ export interface V1Organization {
 
 export interface V1Member {
   createdOn?: string;
-  roleId?: string;
   roleName?: string;
   updatedOn?: string;
   userEmail?: string;

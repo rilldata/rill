@@ -776,8 +776,6 @@ definitions:
       createdOn:
         type: string
         format: date-time
-      roleId:
-        type: string
       roleName:
         type: string
       updatedOn:

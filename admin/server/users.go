@@ -72,20 +72,22 @@ func userToPB(u *database.User) *adminv1.User {
 
 func organizationMemberToPB(m *database.OrganizationMember) *adminv1.Member {
 	return &adminv1.Member{
-		UserId:    m.User.ID,
-		UserEmail: m.User.Email,
-		UserName:  m.User.DisplayName,
-		RoleId:    m.Role.ID,
-		RoleName:  m.Role.Name,
+		UserId:    m.ID,
+		UserEmail: m.Email,
+		UserName:  m.DisplayName,
+		RoleName:  m.Name,
+		CreatedOn: timestamppb.New(m.CreatedOn),
+		UpdatedOn: timestamppb.New(m.UpdatedOn),
 	}
 }
 
 func projectMemberToPB(m *database.ProjectMember) *adminv1.Member {
 	return &adminv1.Member{
-		UserId:    m.User.ID,
-		UserEmail: m.User.Email,
-		UserName:  m.User.DisplayName,
-		RoleId:    m.Role.ID,
-		RoleName:  m.Role.Name,
+		UserId:    m.ID,
+		UserEmail: m.Email,
+		UserName:  m.DisplayName,
+		RoleName:  m.Name,
+		CreatedOn: timestamppb.New(m.CreatedOn),
+		UpdatedOn: timestamppb.New(m.UpdatedOn),
 	}
 }

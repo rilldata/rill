@@ -136,7 +136,6 @@ func toMemberRow(m *adminv1.Member) *member {
 		ID:        m.UserId,
 		Name:      m.UserName,
 		Email:     m.UserEmail,
-		RoleID:    m.RoleId,
 		RoleName:  m.RoleName,
 		CreatedOn: m.CreatedOn.AsTime().String(),
 		UpdatedOn: m.UpdatedOn.AsTime().String(),
@@ -147,7 +146,6 @@ type member struct {
 	ID        string `header:"id" json:"id"`
 	Name      string `header:"name" json:"display_name"`
 	Email     string `header:"email" json:"email"`
-	RoleID    string `header:"role_id" json:"role_id"`
 	RoleName  string `header:"role_name" json:"role_name"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
 	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_on"`

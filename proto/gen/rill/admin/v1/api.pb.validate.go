@@ -5989,8 +5989,6 @@ func (m *Member) validate(all bool) error {
 
 	// no validation rules for UserEmail
 
-	// no validation rules for RoleId
-
 	// no validation rules for RoleName
 
 	if all {

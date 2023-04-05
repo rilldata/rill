@@ -181,7 +181,7 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	defer func() { _ = tx.Rollback() }()
-	err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
+	err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.Name)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -259,7 +259,23 @@ func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.Set
 		return nil, status.Error(codes.PermissionDenied, "not allowed to set org members role")
 	}
 
-	err = s.admin.DB.UpdateOrganizationMemberUserRole(ctx, org.ID, req.Email, req.Role)
+	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "role not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "user not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	err = s.admin.DB.UpdateOrganizationMemberUserRole(ctx, org.ID, user.ID, role.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

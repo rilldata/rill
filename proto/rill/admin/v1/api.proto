@@ -437,8 +437,7 @@ message Member {
   string user_id = 1;
   string user_name = 2;
   string user_email = 3;
-  string role_id = 4;
-  string role_name = 5;
-  google.protobuf.Timestamp created_on = 6;
-  google.protobuf.Timestamp updated_on = 7;
+  string role_name = 4;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
 }

@@ -478,9 +478,9 @@ func (c *connection) DeleteOrganizationMemberUser(ctx context.Context, orgID, us
 	return nil
 }
 
-func (c *connection) UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, `UPDATE users_orgs_roles SET org_role_id = $1 WHERE user_id = $2 AND org_id = $3`,
-		roleID, userID, orgID)
+func (c *connection) UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleName string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `UPDATE users_orgs_roles SET org_role_name = $1 WHERE user_id = $2 AND org_id = $3`,
+		roleName, userID, orgID)
 	return parseErr(err)
 }
 
@@ -546,7 +546,7 @@ func (c *connection) ResolveOrganizationMemberUserRoles(ctx context.Context, use
 		JOIN org_roles r ON uor.org_role_name = r.name
 		WHERE uor.user_id = $1 AND uor.org_id = $2
 		UNION
-		SELECT * FROM org_roles WHERE id IN (
+		SELECT * FROM org_roles WHERE name IN (
 			SELECT org_role_name FROM usergroups_orgs_roles uor JOIN users_usergroups uug 
 			ON uor.usergroup_id = uug.usergroup_id WHERE uug.user_id = $1 AND uor.org_id = $2
 		)`, userID, orgID)
@@ -563,7 +563,7 @@ func (c *connection) ResolveProjectMemberUserRoles(ctx context.Context, userID, 
 		JOIN project_roles r ON upr.project_role_name = r.name
 		WHERE upr.user_id = $1 AND upr.project_id = $2
 		UNION
-		SELECT * FROM project_roles WHERE id IN (
+		SELECT * FROM project_roles WHERE name IN (
 			SELECT project_role_name FROM usergroups_projects_roles upr JOIN users_usergroups uug 
 			ON upr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $1 AND upr.project_id = $2
 		)`, userID, projectID)

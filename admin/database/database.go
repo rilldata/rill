@@ -345,7 +345,6 @@ type RuntimeSlotsUsed struct {
 }
 
 type OrganizationRole struct {
-	ID               string `db:"id"`
 	Name             string
 	ReadOrg          bool `db:"read_org"`
 	ManageOrg        bool `db:"manage_org"`
@@ -357,7 +356,6 @@ type OrganizationRole struct {
 }
 
 type ProjectRole struct {
-	ID                   string `db:"id"`
 	Name                 string
 	ReadProject          bool `db:"read_project"`
 	ManageProject        bool `db:"manage_project"`
@@ -379,19 +377,44 @@ const (
 )
 
 type Usergroup struct {
-	ID          string `db:"id"`
-	OrgID       string `db:"org_id"`
-	DisplayName string `db:"display_name"`
+	ID    string `db:"id"`
+	OrgID string `db:"org_id"`
+	Name  string `db:"name"`
 }
 
 // OrganizationMember For CLI
 type OrganizationMember struct {
-	User *User
-	Role *OrganizationRole
+	ID               string
+	Email            string
+	DisplayName      string    `db:"display_name"`
+	PhotoURL         string    `db:"photo_url"`
+	CreatedOn        time.Time `db:"created_on"`
+	UpdatedOn        time.Time `db:"updated_on"`
+	Name             string
+	ReadOrg          bool `db:"read_org"`
+	ManageOrg        bool `db:"manage_org"`
+	ReadProjects     bool `db:"read_projects"`
+	CreateProjects   bool `db:"create_projects"`
+	ManageProjects   bool `db:"manage_projects"`
+	ReadOrgMembers   bool `db:"read_org_members"`
+	ManageOrgMembers bool `db:"manage_org_members"`
 }
 
 // ProjectMember For CLI
 type ProjectMember struct {
-	User *User
-	Role *ProjectRole
+	ID                   string
+	Email                string
+	DisplayName          string    `db:"display_name"`
+	PhotoURL             string    `db:"photo_url"`
+	CreatedOn            time.Time `db:"created_on"`
+	UpdatedOn            time.Time `db:"updated_on"`
+	Name                 string
+	ReadProject          bool `db:"read_project"`
+	ManageProject        bool `db:"manage_project"`
+	ReadProdBranch       bool `db:"read_prod_branch"`
+	ManageProdBranch     bool `db:"manage_prod_branch"`
+	ReadDevBranches      bool `db:"read_dev_branches"`
+	ManageDevBranches    bool `db:"manage_dev_branches"`
+	ReadProjectMembers   bool `db:"read_project_members"`
+	ManageProjectMembers bool `db:"manage_project_members"`
 }

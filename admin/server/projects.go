@@ -283,7 +283,7 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
+	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.Name)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -353,7 +353,7 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID)
+	err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.Name)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
