@@ -82,10 +82,9 @@ type Env struct {
 	RepoDriver string
 	RepoRoot   string
 	// user provided env variables kept with keys converted to uppercase
-	Variables                    map[string]string
-	AllowHostCredentials         bool
-	StorageLimitInBytes          int64
-	DisablePathAccessOutsideRepo bool
+	Variables           map[string]string
+	AllowHostAccess     bool
+	StorageLimitInBytes int64
 }
 
 // Source represents a dataset to ingest using a specific connector (like a connector instance).

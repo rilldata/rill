@@ -22,11 +22,6 @@ func (c *connection) Driver() string {
 	return "file"
 }
 
-// DSN implements drivers.RepoStore.
-func (c *connection) DSN() string {
-	return c.root
-}
-
 // Root implements drivers.RepoStore.
 func (c *connection) Root() string {
 	return c.root

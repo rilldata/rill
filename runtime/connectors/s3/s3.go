@@ -226,7 +226,7 @@ func getCredentials(env *connectors.Env) (*credentials.Credentials, error) {
 	// the credential lookup will proceed to next provider in chain
 	providers = append(providers, staticProvider)
 
-	if env.AllowHostCredentials {
+	if env.AllowHostAccess {
 		// allowed to access host credentials so we add them in chain
 		// The chain used here is a duplicate of defaults.CredProviders(), but without the remote credentials lookup (since they resolve too slowly).
 		providers = append(providers, &credentials.EnvProvider{}, &credentials.SharedCredentialsProvider{Filename: "", Profile: ""})

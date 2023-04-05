@@ -62,8 +62,9 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 			props["path"] = tt.Path
 
 			e := &connectors.Env{
-				RepoDriver: "file",
-				RepoRoot:   ".",
+				RepoDriver:      "file",
+				RepoRoot:        ".",
+				AllowHostAccess: true,
 			}
 			s := &connectors.Source{
 				Name:       "foo",
@@ -113,9 +114,9 @@ func TestConnectorWithGithubRepoDriver(t *testing.T) {
 			props["path"] = tt.Path
 
 			e := &connectors.Env{
-				RepoDriver:                   "github",
-				RepoRoot:                     tt.repoRoot,
-				DisablePathAccessOutsideRepo: true,
+				RepoDriver:      "github",
+				RepoRoot:        tt.repoRoot,
+				AllowHostAccess: false,
 			}
 			s := &connectors.Source{
 				Name:       "foo",
@@ -152,8 +153,9 @@ func TestCSVDelimiter(t *testing.T) {
 	testDelimiterCsvPath := filepath.Join(testdataPathAbs, "test-delimiter.csv")
 
 	_, err = olap.Ingest(ctx, &connectors.Env{
-		RepoDriver: "file",
-		RepoRoot:   ".",
+		RepoDriver:      "file",
+		RepoRoot:        ".",
+		AllowHostAccess: true,
 	}, &connectors.Source{
 		Name:      "foo",
 		Connector: "local_file",
@@ -171,8 +173,9 @@ func TestCSVDelimiter(t *testing.T) {
 	require.NoError(t, rows.Close())
 
 	_, err = olap.Ingest(ctx, &connectors.Env{
-		RepoDriver: "file",
-		RepoRoot:   ".",
+		RepoDriver:      "file",
+		RepoRoot:        ".",
+		AllowHostAccess: true,
 	}, &connectors.Source{
 		Name:      "foo",
 		Connector: "local_file",
@@ -202,8 +205,9 @@ func TestFileFormatAndDelimiter(t *testing.T) {
 	testDelimiterCsvPath := filepath.Join(testdataPathAbs, "test-format.log")
 
 	_, err = olap.Ingest(ctx, &connectors.Env{
-		RepoDriver: "file",
-		RepoRoot:   ".",
+		RepoDriver:      "file",
+		RepoRoot:        ".",
+		AllowHostAccess: true,
 	}, &connectors.Source{
 		Name:      "foo",
 		Connector: "local_file",

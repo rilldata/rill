@@ -207,11 +207,9 @@ func resolveLocalPath(env *connectors.Env, path, sourceName string) (string, err
 		finalPath = filepath.Join(repoRoot, path)
 	}
 
-	if env.DisablePathAccessOutsideRepo {
-		if !strings.HasPrefix(finalPath, repoRoot) {
-			// path is outside the repo root
-			return "", fmt.Errorf("file connector cannot ingest source '%s': path is outside repo root", sourceName)
-		}
+	if !env.AllowHostAccess && !strings.HasPrefix(finalPath, repoRoot) {
+		// path is outside the repo root
+		return "", fmt.Errorf("file connector cannot ingest source '%s': path is outside repo root", sourceName)
 	}
 	return finalPath, nil
 }

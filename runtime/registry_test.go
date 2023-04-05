@@ -39,7 +39,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				OLAPDSN:      "",
 				RepoDriver:   "file",
 				EmbedCatalog: true,
-				Variables:    map[string]string{"host": "localhost", "allow_host_credentials": "false", "disable_path_access_outside_repo": "true"},
+				Variables:    map[string]string{"host": "localhost", "allow_host_access": "true"},
 			},
 		},
 		{
@@ -57,7 +57,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				OLAPDSN:      "",
 				RepoDriver:   "file",
 				EmbedCatalog: false,
-				Variables:    map[string]string{"host": "localhost", "allow_host_credentials": "false", "disable_path_access_outside_repo": "true"},
+				Variables:    map[string]string{"host": "localhost", "allow_host_access": "true"},
 			},
 		},
 		{
@@ -75,7 +75,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				OLAPDSN:      "?access_mode=read_write",
 				RepoDriver:   "file",
 				EmbedCatalog: false,
-				Variables:    map[string]string{"host": "localhost", "allow_host_credentials": "false", "disable_path_access_outside_repo": "true"},
+				Variables:    map[string]string{"host": "localhost", "allow_host_access": "true"},
 			},
 			clearCache: true,
 		},
@@ -94,7 +94,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				OLAPDSN:      "",
 				RepoDriver:   "file",
 				EmbedCatalog: false,
-				Variables:    map[string]string{"host": "localhost", "allow_host_credentials": "false", "disable_path_access_outside_repo": "true"},
+				Variables:    map[string]string{"host": "localhost", "allow_host_access": "true"},
 			},
 			clearCache: true,
 		},
@@ -249,9 +249,9 @@ func NewTestRunTime(t *testing.T) *Runtime {
 		MetastoreDriver:     "sqlite",
 		// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 		// "cache=shared" is needed to prevent threading problems.
-		MetastoreDSN:                 fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
-		QueryCacheSize:               10000,
-		DisablePathAccessOutsideRepo: true,
+		MetastoreDSN:    fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
+		QueryCacheSize:  10000,
+		AllowHostAccess: true,
 	}
 	rt, err := New(opts, zap.NewNop())
 	require.NoError(t, err)

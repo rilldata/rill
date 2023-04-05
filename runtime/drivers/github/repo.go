@@ -21,11 +21,6 @@ func (c *connection) Driver() string {
 	return "github"
 }
 
-// DSN implements drivers.RepoStore.
-func (c *connection) DSN() string {
-	return c.dsnStr
-}
-
 // Root implements drivers.RepoStore.
 func (c *connection) Root() string {
 	return c.tempdir
