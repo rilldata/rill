@@ -1,6 +1,5 @@
 CREATE TABLE org_roles (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    name TEXT NOT NULL,
+    name TEXT NOT NULL PRIMARY KEY,
     read_org boolean,
     manage_org boolean,
     read_projects boolean,
@@ -13,8 +12,7 @@ CREATE TABLE org_roles (
 CREATE UNIQUE INDEX org_role_name_idx ON org_roles (name);
 
 CREATE TABLE project_roles (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    name TEXT NOT NULL,
+    name TEXT NOT NULL PRIMARY KEY,
     read_project boolean,
     manage_project boolean,
     read_prod_branch boolean,
@@ -27,22 +25,22 @@ CREATE TABLE project_roles (
 
 CREATE UNIQUE INDEX project_role_name_idx ON project_roles (name);
 
-INSERT INTO org_roles (id, name, read_org, manage_org, read_projects, create_projects, manage_projects, read_org_members, manage_org_members)
+INSERT INTO org_roles (name, read_org, manage_org, read_projects, create_projects, manage_projects, read_org_members, manage_org_members)
 VALUES
-    ('12345678-0000-0000-0000-000000000011', 'admin', true, true, true, true, true, true, true),
-    ('12345678-0000-0000-0000-000000000012', 'collaborator', true, false, true, true, false, true, false),
-    ('12345678-0000-0000-0000-000000000013', 'reader', true, false, true, false, false, true, false);
+    ('admin', true, true, true, true, true, true, true),
+    ('collaborator', true, false, true, true, false, true, false),
+    ('reader', true, false, true, false, false, true, false);
 
-INSERT INTO project_roles (id, name, read_project, manage_project, read_prod_branch, manage_prod_branch, read_dev_branches, manage_dev_branches, read_project_members, manage_project_members)
+INSERT INTO project_roles (name, read_project, manage_project, read_prod_branch, manage_prod_branch, read_dev_branches, manage_dev_branches, read_project_members, manage_project_members)
 VALUES
-    ('12345678-0000-0000-0000-000000000021', 'admin', true, true, true, true, true, true, true, true),
-    ('12345678-0000-0000-0000-000000000022', 'collaborator', true, false, true, false, true, true, true, false),
-    ('12345678-0000-0000-0000-000000000023', 'reader', true, false, true, false, true, false, false, false);
+    ('admin', true, true, true, true, true, true, true, true),
+    ('collaborator', true, false, true, false, true, true, true, false),
+    ('reader', true, false, true, false, true, false, false, false);
 
 CREATE TABLE users_orgs_roles (
     user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     org_id UUID NOT NULL REFERENCES organizations (id) ON DELETE CASCADE,
-    org_role_id UUID NOT NULL REFERENCES org_roles (id) ON DELETE CASCADE,
+    org_role_name UUID NOT NULL REFERENCES org_roles (name) ON DELETE CASCADE,
     PRIMARY KEY (user_id, org_id)
 );
 
@@ -51,7 +49,7 @@ CREATE INDEX users_orgs_roles_org_user_idx ON users_orgs_roles (org_id, user_id)
 CREATE TABLE users_projects_roles (
     user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     project_id UUID NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
-    project_role_id UUID NOT NULL REFERENCES project_roles (id) ON DELETE CASCADE,
+    project_role_name UUID NOT NULL REFERENCES project_roles (name) ON DELETE CASCADE,
     PRIMARY KEY (user_id, project_id)
 );
 
@@ -78,7 +76,7 @@ CREATE INDEX users_usergroups_usergroup_idx ON users_usergroups (usergroup_id);
 CREATE TABLE usergroups_orgs_roles (
     usergroup_id UUID NOT NULL REFERENCES usergroups (id) ON DELETE CASCADE,
     org_id UUID NOT NULL REFERENCES organizations (id) ON DELETE CASCADE,
-    org_role_id UUID NOT NULL REFERENCES org_roles (id) ON DELETE CASCADE,
+    org_role_name UUID NOT NULL REFERENCES org_roles (name) ON DELETE CASCADE,
     PRIMARY KEY (usergroup_id, org_id)
 );
 
@@ -87,7 +85,7 @@ CREATE INDEX usergroups_orgs_roles_org_usergroup_idx ON usergroups_orgs_roles (o
 CREATE TABLE usergroups_projects_roles (
     usergroup_id UUID NOT NULL REFERENCES usergroups (id) ON DELETE CASCADE,
     project_id UUID NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
-    project_role_id UUID NOT NULL REFERENCES project_roles (id) ON DELETE CASCADE,
+    project_role_name UUID NOT NULL REFERENCES project_roles (name) ON DELETE CASCADE,
     PRIMARY KEY (usergroup_id, project_id)
 );
 

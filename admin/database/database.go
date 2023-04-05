@@ -98,15 +98,15 @@ type DB interface {
 	QueryRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
 
 	FindOrganizationMemberUsers(ctx context.Context, orgID string) ([]*OrganizationMember, error)
-	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
-	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string) error
+	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleName string) ([]*User, error)
+	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleName string) error
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
-	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
+	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleName string) error
 
 	FindProjectMemberUsers(ctx context.Context, projectID string) ([]*ProjectMember, error)
-	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
+	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleName string) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
-	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
+	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleName string) error
 
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
@@ -116,10 +116,10 @@ type DB interface {
 	// ResolveProjectMemberUserRoles resolves the direct and group roles of a user in a project
 	ResolveProjectMemberUserRoles(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
 
-	InsertOrganizationMemberUsergroup(ctx context.Context, orgID, name string) (*Usergroup, error)
+	InsertOrganizationMemberUsergroup(ctx context.Context, orgID, groupName string) (*Usergroup, error)
 	UpdateOrganizationMemberAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
 	InsertUserInUsergroup(ctx context.Context, userID, groupID string) error
-	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
+	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleName string) error
 	FindUsersUsergroups(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
 
 	FindOrganizationsForUser(ctx context.Context, userID string) ([]*Organization, error)
@@ -370,12 +370,9 @@ type ProjectRole struct {
 }
 
 const (
-	RoleIDOrgAdmin            = "12345678-0000-0000-0000-000000000011"
-	RoleIDOrgCollaborator     = "12345678-0000-0000-0000-000000000012"
-	RoleIDOrgReader           = "12345678-0000-0000-0000-000000000013"
-	RoleIDProjectAdmin        = "12345678-0000-0000-0000-000000000021"
-	RoleIDProjectCollaborator = "12345678-0000-0000-0000-000000000022"
-	RoleIDProjectReader       = "12345678-0000-0000-0000-000000000023"
+	RoleNameAdmin        = "admin"
+	RoleNameCollaborator = "collaborator"
+	RoleNameReader       = "reader"
 )
 
 type Usergroup struct {
