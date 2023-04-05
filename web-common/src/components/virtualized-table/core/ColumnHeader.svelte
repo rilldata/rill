@@ -20,6 +20,7 @@
   export let showDataIcon = false;
   export let name;
   export let type: string;
+  export let description: string;
   export let header;
   export let position: HeaderPosition = "top";
   export let enableResize = true;
@@ -36,6 +37,7 @@
 
   $: isDimensionTable = config.table === "DimensionTable";
   $: isDimensionColumn = isDimensionTable && type === "VARCHAR";
+  $: isDeltaColumn = isDimensionTable && typeof name !== "string";
 
   $: textAlignment = isDimensionColumn ? "text-left pl-1" : "text-right pr-1";
 
@@ -129,10 +131,14 @@
             {/if}
           </svelte:fragment>
           <svelte:fragment slot="description">
-            {isDimensionTable || showDataIcon ? "" : type}
+            {isDimensionTable ? description : type}
           </svelte:fragment>
         </TooltipTitle>
         <TooltipShortcutContainer>
+          {#if !isDeltaColumn && isDimensionTable}
+            <div>Sort column</div>
+            <Shortcut>Click</Shortcut>
+          {/if}
           <div>
             <StackingWord key="shift">Copy</StackingWord>
             column name to clipboard

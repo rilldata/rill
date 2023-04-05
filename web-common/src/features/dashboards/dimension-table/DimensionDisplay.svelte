@@ -298,6 +298,7 @@
           name: columnName,
           type: "INT",
           label: measure?.label || measure?.expression,
+          description: measure?.description,
           total: referenceValues[measure.name] || 0,
           enableResize: false,
           format: measure?.format,
@@ -317,6 +318,7 @@
           name: columnName,
           type: comparison.type,
           label: comparison.label,
+          description: comparison.description,
           enableResize: false,
           format: comparison.format,
         };

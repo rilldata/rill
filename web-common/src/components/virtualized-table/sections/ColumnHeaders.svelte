@@ -22,6 +22,7 @@
       name,
       enableResize,
       type: columns[header.index]?.type,
+      description: columns[header.index]?.description || "",
       pinned: pinnedColumns.some((column) => column.name === name),
       isSelected: selectedColumn === columns[header.index]?.name,
     };
