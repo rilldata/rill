@@ -443,6 +443,8 @@ definitions:
         type: string
       hasAccess:
         type: boolean
+      userAuthorisationUrl:
+        type: string
   v1GetOrganizationResponse:
     type: object
     properties:

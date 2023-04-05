@@ -213,9 +213,13 @@ func (c *connection) InsertUser(ctx context.Context, email, displayName, photoUR
 	return res, nil
 }
 
-func (c *connection) UpdateUser(ctx context.Context, id, displayName, photoURL string) (*database.User, error) {
+func (c *connection) UpdateUser(ctx context.Context, id, displayName, photoURL, githubUserName string) (*database.User, error) {
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$1, photo_url=$2, updated_on=now() WHERE id=$3 RETURNING *", displayName, photoURL, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_user_name=$4, updated_on=now() WHERE id=$1 RETURNING *",
+		id,
+		displayName,
+		photoURL,
+		githubUserName).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -327,29 +331,6 @@ func (c *connection) DeleteAuthCode(ctx context.Context, deviceCode string) erro
 		return fmt.Errorf("problem in deleting auth code, expected 1 row to be affected, got %d", rows)
 	}
 	return nil
-}
-
-func (c *connection) FindUserGithubInstallation(ctx context.Context, userID string, installationID int64) (*database.UserGithubInstallation, error) {
-	res := &database.UserGithubInstallation{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM users_github_installations WHERE user_id=$1 AND installation_id=$2", userID, installationID).StructScan(res)
-	if err != nil {
-		return nil, parseErr(err)
-	}
-	return res, nil
-}
-
-func (c *connection) UpsertUserGithubInstallation(ctx context.Context, userID string, installationID int64) error {
-	// TODO: Handle updated_on
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_github_installations (user_id, installation_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", userID, installationID)
-	if err != nil {
-		return parseErr(err)
-	}
-	return nil
-}
-
-func (c *connection) DeleteUserGithubInstallations(ctx context.Context, installationID int64) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM users_github_installations WHERE installation_id=$1", installationID)
-	return parseErr(err)
 }
 
 func (c *connection) FindDeployments(ctx context.Context, projectID string) ([]*database.Deployment, error) {

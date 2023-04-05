@@ -19,6 +19,8 @@ import (
 	"github.com/rilldata/rill/cli/pkg/variable"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -75,18 +77,32 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 				GithubUrl: githubURL,
 			})
 			if err != nil {
+				if status, ok := status.FromError(err); ok && status.Code() == codes.PermissionDenied {
+					fmt.Println(status.Message())
+					return nil
+				}
 				return err
 			}
 
+			userAuthRequested := false
 			// If the user has not already granted access, open browser and poll for access
 			if !ghRes.HasAccess {
-				// Print instructions to grant access
-				fmt.Printf("Rill projects deploy continuously when you push changes to Github.\n\n")
-				fmt.Printf("Open this URL in your browser to grant Rill access to your Github repository:\n\n")
-				fmt.Printf("\t%s\n\n", ghRes.GrantAccessUrl)
+				if ghRes.GrantAccessUrl != "" {
+					// Print instructions to grant access
+					fmt.Printf("Rill projects deploy continuously when you push changes to Github.\n\n")
+					fmt.Printf("Open this URL in your browser to grant Rill access to your Github repository:\n\n")
+					fmt.Printf("\t%s\n\n", ghRes.GrantAccessUrl)
 
-				// Open browser if possible
-				_ = browser.Open(ghRes.GrantAccessUrl)
+					// Open browser if possible
+					_ = browser.Open(ghRes.GrantAccessUrl)
+				} else if ghRes.UserAuthorisationUrl != "" {
+					userAuthRequested = true
+					fmt.Printf("Open this URL in your browser to grant Rill access to your account:\n\n")
+					fmt.Printf("\t%s\n\n", ghRes.UserAuthorisationUrl)
+
+					// Open browser if possible
+					_ = browser.Open(ghRes.UserAuthorisationUrl)
+				}
 
 				// Poll for permission granted
 				pollCtx, cancel := context.WithTimeout(cmd.Context(), pollTimeout)
@@ -104,6 +120,10 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 						GithubUrl: githubURL,
 					})
 					if err != nil {
+						if status, ok := status.FromError(err); ok && status.Code() == codes.PermissionDenied {
+							fmt.Println(status.Message())
+							return nil
+						}
 						return err
 					}
 
@@ -111,6 +131,16 @@ func ConnectCmd(cfg *config.Config) *cobra.Command {
 						// Success
 						ghRes = pollRes
 						break
+					}
+
+					// open user authorisation url once per invocation
+					if pollRes.UserAuthorisationUrl != "" && !userAuthRequested {
+						userAuthRequested = true
+						fmt.Printf("Open this URL in your browser to grant Rill access to your account:\n\n")
+						fmt.Printf("\t%s\n\n", ghRes.UserAuthorisationUrl)
+
+						// Open browser if possible
+						_ = browser.Open(ghRes.GrantAccessUrl)
 					}
 
 					// Sleep and poll again

@@ -21,7 +21,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	// Update user if exists
 	user, err := s.DB.FindUserByEmail(ctx, email)
 	if err == nil {
-		return s.DB.UpdateUser(ctx, user.ID, name, photoURL)
+		return s.DB.UpdateUser(ctx, user.ID, name, photoURL, user.GithubUserName)
 	} else if !errors.Is(err, database.ErrNotFound) {
 		return nil, err
 	}

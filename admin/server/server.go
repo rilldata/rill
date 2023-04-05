@@ -50,7 +50,10 @@ type Options struct {
 type URLRegistry struct {
 	githubConnect            *url.URL
 	githubConnectRetry       *url.URL
+	githubConnectRequest     *url.URL
 	githubAppInstallationURL *url.URL
+	githubAuthoriseURL       *url.URL
+	githubLoginCallbackURL   *url.URL
 }
 
 func NewURLRegistry(opts *Options) (*URLRegistry, error) {
@@ -79,10 +82,43 @@ func NewURLRegistry(opts *Options) (*URLRegistry, error) {
 		return nil, fmt.Errorf("failed to create github app installation URL: %w", err)
 	}
 
+	requestURLString, err := url.JoinPath(opts.FrontendURL, "/github/connect/request")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request URL: %w", err)
+	}
+
+	requestURL, err := url.Parse(requestURLString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request URL: %w", err)
+	}
+
+	authoriseURLString, err := url.JoinPath(opts.FrontendURL, "/github/auth")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create retry URL: %w", err)
+	}
+
+	authoriseURL, err := url.Parse(authoriseURLString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create github app installation URL: %w", err)
+	}
+
+	githubCallbackURLString, err := url.JoinPath(opts.ExternalURL, "/github/auth/callback")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create retry URL: %w", err)
+	}
+
+	githubLoginCallbackURL, err := url.Parse(githubCallbackURLString)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create github app installation URL: %w", err)
+	}
+
 	return &URLRegistry{
 		githubConnect:            grantAccessURL,
 		githubConnectRetry:       retryURL,
+		githubConnectRequest:     requestURL,
 		githubAppInstallationURL: installationURL,
+		githubAuthoriseURL:       authoriseURL,
+		githubLoginCallbackURL:   githubLoginCallbackURL,
 	}, nil
 }
 
@@ -96,6 +132,18 @@ func (r *URLRegistry) GithubAppInstallationURL() url.URL {
 
 func (r *URLRegistry) GithubConnectRetry() url.URL {
 	return *r.githubConnectRetry
+}
+
+func (r *URLRegistry) GithubConnectRequest() url.URL {
+	return *r.githubConnectRequest
+}
+
+func (r *URLRegistry) GithubAuthorise() url.URL {
+	return *r.githubAuthoriseURL
+}
+
+func (r *URLRegistry) GithubLoginCallbackURL() url.URL {
+	return *r.githubLoginCallbackURL
 }
 
 type Server struct {

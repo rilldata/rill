@@ -122,6 +122,7 @@ export interface V1GetGithubRepoStatusResponse {
   defaultBranch?: string;
   grantAccessUrl?: string;
   hasAccess?: boolean;
+  userAuthorisationUrl?: string;
 }
 
 export interface V1GetCurrentUserResponse {
