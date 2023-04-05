@@ -36,13 +36,13 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 	}
 
 	// add project admin role to the user
-	err = s.DB.InsertProjectMemberUser(ctx, proj.ID, opts.UserID, database.RoleNameAdmin)
+	err = s.DB.InsertProjectMemberUser(ctx, proj.ID, opts.UserID, database.ProjectAdminRoleName)
 	if err != nil {
 		return nil, err
 	}
 
 	// add project collaborator role to the all_user_group of the org
-	err = s.DB.InsertProjectMemberUsergroup(ctx, *org.AllUsergroupID, proj.ID, database.RoleNameCollaborator)
+	err = s.DB.InsertProjectMemberUsergroup(ctx, *org.AllUsergroupID, proj.ID, database.ProjectCollaboratorRoleName)
 	if err != nil {
 		return nil, err
 	}

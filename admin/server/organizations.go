@@ -228,7 +228,7 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 	// check if the user is the last owner
 	// TODO optimize this, may be extract roles during auth token validation
 	//  and store as part of the claims and fetch admins only if the user is an admin
-	users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, database.RoleNameAdmin)
+	users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, database.OrganizationAdminRoleName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -289,7 +289,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 	// check if the user is the last owner
 	// TODO optimize this, may be extract roles during auth token validation
 	//  and store as part of the claims and fetch admins only if the user is an admin
-	users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, database.RoleNameAdmin)
+	users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, database.OrganizationAdminRoleName)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

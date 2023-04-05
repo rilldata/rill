@@ -100,7 +100,7 @@ func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string)
 	}
 
 	// Add user to created org with org admin role
-	err = s.DB.InsertOrganizationMemberUser(ctx, orgID, userID, database.RoleNameAdmin)
+	err = s.DB.InsertOrganizationMemberUser(ctx, orgID, userID, database.OrganizationAdminRoleName)
 	if err != nil {
 		return nil, err
 	}
