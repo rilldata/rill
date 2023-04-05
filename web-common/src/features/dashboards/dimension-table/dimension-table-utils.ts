@@ -157,12 +157,14 @@ export function getComparisonProperties(
       label: DeltaChangePercentage,
       type: "RILL_PERCENTAGE_CHANGE",
       format: NicelyFormattedTypes.PERCENTAGE,
+      description: "Percentage change over compared period",
     };
   else if (measureName.includes("_delta")) {
     return {
       label: DeltaChange,
-      type: "INT",
+      type: "RILL_CHANGE",
       format: selectedMeasure.format,
+      description: "Change over compared period",
     };
   }
 }

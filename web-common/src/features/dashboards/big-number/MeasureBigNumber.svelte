@@ -4,6 +4,7 @@
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipDescription from "@rilldata/web-common/components/tooltip/TooltipDescription.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
@@ -42,15 +43,17 @@
 </script>
 
 <div class="flex flex-col {withTimeseries ? 'mt-2' : 'justify-between'}">
-  <Tooltip distance={16} location="top">
+  <Tooltip distance={16} location="top" alignment="start">
     <h2
       class="break-words line-clamp-2"
       style:font-size={withTimeseries ? "" : "0.8rem"}
     >
       <slot name="name" />
     </h2>
-    <TooltipContent slot="tooltip-content">
-      {description}
+    <TooltipContent slot="tooltip-content" maxWidth="280px">
+      <TooltipDescription>
+        {description}
+      </TooltipDescription>
     </TooltipContent>
   </Tooltip>
   <div

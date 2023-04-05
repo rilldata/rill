@@ -275,12 +275,14 @@
       .map((c) => c.name)
       .filter((name) => name !== dimension?.name);
 
+    const selectedMeasure = allMeasures.find((m) => m.name === sortByColumn);
     // Add comparison columns if available
     if (isComparisonRangeAvailable) {
-      columnNames = columnNames.concat([
-        `${sortByColumn}_delta`,
-        `${sortByColumn}_delta_perc`,
-      ]);
+      columnNames.push(`${sortByColumn}_delta`);
+
+      // Only push percentage delta column if selected measure is not a percentage
+      if (selectedMeasure?.format != NicelyFormattedTypes.PERCENTAGE)
+        columnNames.push(`${sortByColumn}_delta_perc`);
     }
     columnNames = columnNames.sort(customSortMeasures);
 
@@ -296,6 +298,7 @@
           name: columnName,
           type: "INT",
           label: measure?.label || measure?.expression,
+          description: measure?.description,
           total: referenceValues[measure.name] || 0,
           enableResize: false,
           format: measure?.format,
@@ -310,14 +313,12 @@
         };
       } else {
         // Handle delta and delta_perc
-        const selectedMeasure = allMeasures.find(
-          (m) => m.name === sortByColumn
-        );
         const comparison = getComparisonProperties(columnName, selectedMeasure);
         return {
           name: columnName,
           type: comparison.type,
           label: comparison.label,
+          description: comparison.description,
           enableResize: false,
           format: comparison.format,
         };

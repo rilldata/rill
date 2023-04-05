@@ -9,6 +9,7 @@
   import Number from "./Number.svelte";
   import Timestamp from "./Timestamp.svelte";
   import PercentageChange from "./PercentageChange.svelte";
+  import MeasureChange from "./MeasureChange.svelte";
   import Varchar from "./Varchar.svelte";
 
   export let type = "VARCHAR";
@@ -18,10 +19,12 @@
   export let value = undefined;
   export let customStyle = "";
 
-  let dataType = Varchar;
+  let dataType;
   $: {
     if (type === "RILL_PERCENTAGE_CHANGE") {
       dataType = PercentageChange;
+    } else if (type === "RILL_CHANGE") {
+      dataType = MeasureChange;
     } else if (NUMERICS.has(type)) {
       dataType = Number;
     } else if (TIMESTAMPS.has(type)) {
