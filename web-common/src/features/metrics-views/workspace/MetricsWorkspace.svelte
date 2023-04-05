@@ -83,8 +83,7 @@
 
 <WorkspaceContainer inspector={true} assetID={`${metricsDefName}-config`}>
   <MetricsWorkspaceHeader slot="header" {metricsDefName} {yaml} />
-
-  <div use:listenToNodeResize slot="body">
+  <div slot="body" use:listenToNodeResize>
     <div
       class="editor-pane bg-gray-100 p-6 flex flex-col"
       style:height="calc(100vh - var(--header-height))"
