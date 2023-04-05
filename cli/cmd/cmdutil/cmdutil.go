@@ -10,7 +10,6 @@ import (
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/lensesio/tableprinter"
-	"github.com/manifoldco/promptui"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
@@ -89,22 +88,6 @@ func Client(cfg *config.Config) (*client.Client, error) {
 	}
 
 	return c, nil
-}
-
-// TODO :: check if this can be removed and survey/v2 can be used for all cases
-func PromptGetSelect(items []string, label string) string {
-	prompt := promptui.Select{
-		Label: label,
-		Items: items,
-	}
-
-	_, result, err := prompt.Run()
-	if err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		os.Exit(1)
-	}
-
-	return result
 }
 
 func SelectPrompt(msg string, options []string, def string) string {

@@ -189,7 +189,7 @@ func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubUR
 				resp, err := c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: orgName, Name: projectName})
 				if err != nil {
 					if st, ok := status.FromError(err); ok {
-						if st.Code() == codes.InvalidArgument { // todo :: change to not found in admin
+						if st.Code() == codes.NotFound {
 							return nil
 						}
 					}

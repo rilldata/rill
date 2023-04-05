@@ -35,7 +35,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "proj not found")
+			return nil, status.Error(codes.NotFound, "proj not found")
 		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
