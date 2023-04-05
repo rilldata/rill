@@ -246,7 +246,7 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 
 	dtos := make([]*adminv1.Member, len(members))
 	for i, member := range members {
-		dtos[i] = projectMemberToPB(member)
+		dtos[i] = memberToPB(member)
 	}
 
 	return &adminv1.ListProjectMembersResponse{Members: dtos}, nil

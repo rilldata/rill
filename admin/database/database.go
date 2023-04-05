@@ -98,13 +98,13 @@ type DB interface {
 
 	QueryRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
 
-	FindOrganizationMemberUsers(ctx context.Context, orgID string) ([]*OrganizationMember, error)
+	FindOrganizationMemberUsers(ctx context.Context, orgID string) ([]*Member, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleName string) ([]*User, error)
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleName string) error
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleName string) error
 
-	FindProjectMemberUsers(ctx context.Context, projectID string) ([]*ProjectMember, error)
+	FindProjectMemberUsers(ctx context.Context, projectID string) ([]*Member, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleName string) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleName string) error
@@ -383,39 +383,11 @@ type Usergroup struct {
 	Name  string `db:"name"`
 }
 
-// OrganizationMember For CLI
-type OrganizationMember struct {
-	ID               string
-	Email            string
-	DisplayName      string    `db:"display_name"`
-	PhotoURL         string    `db:"photo_url"`
-	CreatedOn        time.Time `db:"created_on"`
-	UpdatedOn        time.Time `db:"updated_on"`
-	Name             string
-	ReadOrg          bool `db:"read_org"`
-	ManageOrg        bool `db:"manage_org"`
-	ReadProjects     bool `db:"read_projects"`
-	CreateProjects   bool `db:"create_projects"`
-	ManageProjects   bool `db:"manage_projects"`
-	ReadOrgMembers   bool `db:"read_org_members"`
-	ManageOrgMembers bool `db:"manage_org_members"`
-}
-
-// ProjectMember For CLI
-type ProjectMember struct {
-	ID                   string
-	Email                string
-	DisplayName          string    `db:"display_name"`
-	PhotoURL             string    `db:"photo_url"`
-	CreatedOn            time.Time `db:"created_on"`
-	UpdatedOn            time.Time `db:"updated_on"`
-	Name                 string
-	ReadProject          bool `db:"read_project"`
-	ManageProject        bool `db:"manage_project"`
-	ReadProdBranch       bool `db:"read_prod_branch"`
-	ManageProdBranch     bool `db:"manage_prod_branch"`
-	ReadDevBranches      bool `db:"read_dev_branches"`
-	ManageDevBranches    bool `db:"manage_dev_branches"`
-	ReadProjectMembers   bool `db:"read_project_members"`
-	ManageProjectMembers bool `db:"manage_project_members"`
+type Member struct {
+	ID          string
+	Email       string
+	DisplayName string    `db:"display_name"`
+	CreatedOn   time.Time `db:"created_on"`
+	UpdatedOn   time.Time `db:"updated_on"`
+	RoleName    string    `db:"name"`
 }

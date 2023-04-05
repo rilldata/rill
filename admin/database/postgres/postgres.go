@@ -428,9 +428,10 @@ func parseErr(err error) error {
 	return err
 }
 
-func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID string) ([]*database.OrganizationMember, error) {
-	var res []*database.OrganizationMember
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.*, r.* FROM users u JOIN users_orgs_roles uor ON u.id = uor.user_id
+func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID string) ([]*database.Member, error) {
+	var res []*database.Member
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u 
+    	JOIN users_orgs_roles uor ON u.id = uor.user_id
 		JOIN org_roles r ON r.name = uor.org_role_name WHERE uor.org_id=$1`, orgID)
 	if err != nil {
 		return nil, parseErr(err)
@@ -484,9 +485,10 @@ func (c *connection) UpdateOrganizationMemberUserRole(ctx context.Context, orgID
 	return parseErr(err)
 }
 
-func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID string) ([]*database.ProjectMember, error) {
-	var res []*database.ProjectMember
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.*, r.* FROM users u JOIN users_projects_roles upr ON u.id = upr.user_id
+func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID string) ([]*database.Member, error) {
+	var res []*database.Member
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u 
+    	JOIN users_projects_roles upr ON u.id = upr.user_id
 		JOIN project_roles r ON r.name = upr.project_role_name WHERE upr.project_id=$1`, projectID)
 	if err != nil {
 		return nil, parseErr(err)

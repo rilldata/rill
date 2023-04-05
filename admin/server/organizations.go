@@ -139,7 +139,7 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 
 	dtos := make([]*adminv1.Member, len(members))
 	for i, user := range members {
-		dtos[i] = organizationMemberToPB(user)
+		dtos[i] = memberToPB(user)
 	}
 
 	return &adminv1.ListOrganizationMembersResponse{Members: dtos}, nil
