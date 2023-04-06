@@ -20,11 +20,7 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";
-  import {
-    getScaleForLeaderboard,
-    NicelyFormattedTypes,
-    ShortHandSymbols,
-  } from "../humanize-numbers";
+  import { NicelyFormattedTypes } from "../humanize-numbers";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardMeasureSelector from "./LeaderboardMeasureSelector.svelte";
 
