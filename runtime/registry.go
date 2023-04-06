@@ -99,7 +99,9 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 	if dropDB {
 		// ignoring the dropDB error since if db is already dropped it may not be possible to retry
 		err = svc.Olap.DropDB()
-		r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID))
+		if err != nil {
+			r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID))
+		}
 	}
 
 	r.evictCaches(ctx, inst)

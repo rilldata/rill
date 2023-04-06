@@ -1,4 +1,4 @@
-package org
+package project
 
 import (
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
@@ -16,7 +16,7 @@ func MembersCmd(cfg *config.Config) *cobra.Command {
 	membersCmd.AddCommand(AddCmd(cfg))
 	membersCmd.AddCommand(RemoveCmd(cfg))
 	membersCmd.AddCommand(SetRoleCmd(cfg))
-	membersCmd.AddCommand(LeaveOrgCmd(cfg))
+
 	return membersCmd
 }
 
@@ -24,16 +24,22 @@ func ListMembersCmd(cfg *config.Config) *cobra.Command {
 	membersCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List Members",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			sp := cmdutil.Spinner("Listing members...")
+			sp.Start()
+
 			orgName := cfg.Org
+			projectName := args[0]
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
-			resp, err := client.ListOrganizationMembers(cmd.Context(), &adminv1.ListOrganizationMembersRequest{
+			resp, err := client.ListProjectMembers(cmd.Context(), &adminv1.ListProjectMembersRequest{
 				Organization: orgName,
+				Project:      projectName,
 			})
 			if err != nil {
 				return err
@@ -51,7 +57,7 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 	addCmd := &cobra.Command{
 		Use:   "add",
 		Short: "Add Member",
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			orgName := cfg.Org
 
@@ -60,10 +66,11 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			defer client.Close()
-			_, err = client.AddOrganizationMember(cmd.Context(), &adminv1.AddOrganizationMemberRequest{
+			_, err = client.AddProjectMember(cmd.Context(), &adminv1.AddProjectMemberRequest{
 				Organization: orgName,
-				Email:        args[0],
-				Role:         args[1],
+				Project:      args[0],
+				Email:        args[1],
+				Role:         args[2],
 			})
 			if err != nil {
 				return err
@@ -79,7 +86,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 	removeCmd := &cobra.Command{
 		Use:   "remove",
 		Short: "Remove Member",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			orgName := cfg.Org
 
@@ -88,9 +95,10 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			defer client.Close()
-			_, err = client.RemoveOrganizationMember(cmd.Context(), &adminv1.RemoveOrganizationMemberRequest{
+			_, err = client.RemoveProjectMember(cmd.Context(), &adminv1.RemoveProjectMemberRequest{
 				Organization: orgName,
-				Email:        args[0],
+				Project:      args[0],
+				Email:        args[1],
 			})
 			if err != nil {
 				return err
@@ -106,7 +114,7 @@ func SetRoleCmd(cfg *config.Config) *cobra.Command {
 	setRoleCmd := &cobra.Command{
 		Use:   "set-role",
 		Short: "Set role of Member",
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			orgName := cfg.Org
 
@@ -115,10 +123,11 @@ func SetRoleCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			defer client.Close()
-			_, err = client.SetOrganizationMemberRole(cmd.Context(), &adminv1.SetOrganizationMemberRoleRequest{
+			_, err = client.SetProjectMemberRole(cmd.Context(), &adminv1.SetProjectMemberRoleRequest{
 				Organization: orgName,
-				Email:        args[0],
-				Role:         args[1],
+				Project:      args[0],
+				Email:        args[1],
+				Role:         args[2],
 			})
 			if err != nil {
 				return err
@@ -128,30 +137,4 @@ func SetRoleCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 	return setRoleCmd
-}
-
-func LeaveOrgCmd(cfg *config.Config) *cobra.Command {
-	leaveOrgCmd := &cobra.Command{
-		Use:   "leave",
-		Short: "Leave Organization",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			orgName := cfg.Org
-
-			client, err := cmdutil.Client(cfg)
-			if err != nil {
-				return err
-			}
-			defer client.Close()
-			_, err = client.LeaveOrganization(cmd.Context(), &adminv1.LeaveOrganizationRequest{
-				Organization: orgName,
-			})
-			if err != nil {
-				return err
-			}
-			cmdutil.SuccessPrinter("Removed")
-			return nil
-		},
-	}
-	return leaveOrgCmd
 }

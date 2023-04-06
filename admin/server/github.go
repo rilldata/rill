@@ -30,7 +30,7 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 
 	// If the user has not granted access, return instructions for granting access
 	if !ok {
-		grantAccessURL, err := url.JoinPath(s.opts.FrontendURL, "/-/github/connect")
+		grantAccessURL, err := url.JoinPath(s.opts.ExternalURL, "/github/connect")
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create redirect URL: %s", err)
 		}

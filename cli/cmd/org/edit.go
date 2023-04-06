@@ -31,7 +31,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.TextPrinter("Updated organization \n")
+			cmdutil.SuccessPrinter("Updated organization \n")
 			cmdutil.TablePrinter(toRow(org.Organization))
 			return nil
 		},
