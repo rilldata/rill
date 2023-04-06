@@ -63,19 +63,19 @@ jobs:
         if: steps.filter.outputs.common == 'true'
         run: |-
           npx prettier --check "web-common/**/*"
-          npx eslint web-common --quiet
+          npx eslint web-common --config .eslintrc.cjs --quiet
 
       - name: Prettier checks and lint for web local
         if: steps.filter.outputs.local == 'true'
         run: |-
           npx prettier --check "web-local/**/*"
-          npx eslint web-local --quiet
+          npx eslint web-local --config .eslintrc.cjs --quiet
 
       - name: Prettier checks and lint for web admin
         if: steps.filter.outputs.admin == 'true'
         run: |-
           npx prettier --check "web-admin/**/*"
-          npx eslint web-admin --quiet
+          npx eslint web-admin --config .eslintrc.cjs --quiet
 
       - name: Build & Test the web local
         if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}
