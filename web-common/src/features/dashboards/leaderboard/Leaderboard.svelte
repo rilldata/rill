@@ -324,7 +324,7 @@
             {$topListQuery?.error}
           </div>
         {:else if values.length === 0}
-          <div style:padding-left="28px" class="p-1 ui-copy-disabled">
+          <div style:padding-left="30px" class="p-1 ui-copy-disabled">
             no available values
           </div>
         {/if}
