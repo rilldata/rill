@@ -3,9 +3,9 @@ package admin
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"net/mail"
 
+	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/nameseeds"
 	"go.uber.org/zap"

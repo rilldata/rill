@@ -80,6 +80,7 @@ func (s *Service) LookupGithubRepo(ctx context.Context, installationID int64, gi
 // ProcessGithubEvent processes a Github event (usually received over webhooks).
 // After validating that the event is a valid Github event, it moves further processing to the background and returns a nil error.
 func (s *Service) ProcessGithubEvent(ctx context.Context, rawEvent any) error {
+	s.logger.Warn(fmt.Sprintf("Have github event. %T", rawEvent))
 	switch event := rawEvent.(type) {
 	// Triggered on push to repository
 	case *github.PushEvent:
@@ -91,8 +92,6 @@ func (s *Service) ProcessGithubEvent(ctx context.Context, rawEvent any) error {
 	case *github.InstallationRepositoriesEvent:
 		return s.processGithubInstallationRepositoriesEvent(ctx, event)
 	default:
-		// TODO: remove this log once we finish debugging reconcile not firing
-		s.logger.Warn(fmt.Sprintf("Unknown github event. %T", rawEvent))
 		return nil
 	}
 }
@@ -104,6 +103,7 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 	project, err := s.DB.FindProjectByGithubURL(ctx, githubURL)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
+			s.logger.Info(fmt.Sprintf("Project not found. url=%s", githubURL))
 			// App is installed on repo not currently deployed. Do nothing.
 			return nil
 		}
@@ -112,7 +112,7 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 
 	// TODO: remove this log once we finish debugging reconcile not firing
 	s.logger.Info(fmt.Sprintf(
-		"Have github event. url=%s branch=%s deploymentId=%v",
+		"Have github push event. url=%s branch=%s deploymentId=%v",
 		githubURL,
 		project.ProductionBranch,
 		project.ProductionDeploymentID,
