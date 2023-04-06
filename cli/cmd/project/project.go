@@ -18,7 +18,6 @@ func ProjectCmd(cfg *config.Config) *cobra.Command {
 	projectCmd.PersistentFlags().StringVar(&cfg.Org, "org", cfg.Org, "Organization Name")
 	projectCmd.AddCommand(ShowCmd(cfg))
 	projectCmd.AddCommand(StatusCmd(cfg))
-	projectCmd.AddCommand(ConnectCmd(cfg))
 	projectCmd.AddCommand(EditCmd(cfg))
 	projectCmd.AddCommand(DeleteCmd(cfg))
 	projectCmd.AddCommand(ListCmd(cfg))

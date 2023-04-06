@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
@@ -16,7 +17,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/cmd/org"
-	"github.com/rilldata/rill/cli/cmd/project"
+	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
@@ -27,24 +28,24 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type options struct {
+const (
+	pollTimeout  = 10 * time.Minute
+	pollInterval = 5 * time.Second
+)
+
+type promptOptions struct {
 	Name       string
 	ProdBranch string
 	Public     bool
 	Variables  []string
-
-	// projectPath string input taken interactively
-	// no input taken from user for below
-	description string
-	region      string
-	dbDriver    string
-	dbDSN       string
-	slots       int64
 }
 
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
 func DeployCmd(cfg *config.Config) *cobra.Command {
-	cmd := &cobra.Command{
+	var description, projectPath, region, dbDriver, dbDSN string
+	var slots int
+
+	deployCmd := &cobra.Command{
 		Use:   "deploy",
 		Short: "Guided tour for deploying rill projects to rill cloud",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -57,6 +58,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			// log in if not logged in
 			if !cfg.IsAuthenticated() {
 				warn.Println("In order to deploy to Rill Cloud, you must login.")
+				time.Sleep(2 * time.Second)
 				// NOTE : calling commands within commands has both pros and cons
 				// PRO : No duplicated code
 				// CON : Need to make sure that UX under sub command verifies with UX on this command
@@ -107,21 +109,20 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			path, err := os.Getwd()
-			if err != nil {
-				return err
-			}
-
 			// verify current directory has rill project
-			if !hasRillProject(path) {
-				warn.Printf("\nCurrent path %s doesn't have a valid rill project. Please select correct path.\n", path)
+			if !hasRillProject(projectPath) {
+				fullpath, err := filepath.Abs(projectPath)
+				if err != nil {
+					return err
+				}
+
+				warn.Printf("\nCurrent path `%s` doesn't have a valid rill project.\n\nPlease run `rill deploy` from correct path or pass correct path via `--project` flag.\n\n", fullpath)
 				warn.Printf("In case there is no valid rill project present, Please use `rill init` to create an empty rill project.\n\n")
-				// project path prompt
-				path = projectPathPrompt()
+				return nil
 			}
 
 			// verify project dir is a git repo with remote on github
-			githubURL, err := extractRemote(path)
+			githubURL, err := extractRemote(projectPath)
 			if err != nil {
 				if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
 					info.Print(githubSetupMsg)
@@ -132,7 +133,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Check for access to the Github URL
-			ghRes, err := project.VerifyAccess(ctx, adminClient, githubURL)
+			ghRes, err := verifyAccess(ctx, adminClient, githubURL)
 			if err != nil {
 				return fmt.Errorf("failed to verify access to github repo, error = %w", err)
 			}
@@ -148,18 +149,15 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			// fixing these for now
-			opts.dbDriver = "duckdb"
-			opts.slots = 2
 			// Create the project (automatically deploys prod branch)
 			projRes, err := adminClient.CreateProject(ctx, &adminv1.CreateProjectRequest{
 				OrganizationName:     org,
 				Name:                 opts.Name,
-				Description:          opts.description,
-				Region:               opts.region,
-				ProductionOlapDriver: opts.dbDriver,
-				ProductionOlapDsn:    opts.dbDSN,
-				ProductionSlots:      opts.slots,
+				Description:          description,
+				Region:               region,
+				ProductionOlapDriver: dbDriver,
+				ProductionOlapDsn:    dbDSN,
+				ProductionSlots:      int64(slots),
 				ProductionBranch:     opts.ProdBranch,
 				Public:               opts.Public,
 				GithubUrl:            githubURL,
@@ -180,10 +178,17 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	return cmd
+	deployCmd.Flags().SortFlags = false
+	deployCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
+	deployCmd.Flags().IntVar(&slots, "prod-slots", 2, "Slots to allocate for production deployments")
+	deployCmd.Flags().StringVar(&description, "description", "", "Project description")
+	deployCmd.Flags().StringVar(&region, "region", "", "Deployment region")
+	deployCmd.Flags().StringVar(&dbDriver, "prod-db-driver", "duckdb", "Database driver")
+	deployCmd.Flags().StringVar(&dbDSN, "prod-db-dsn", "", "Database driver configuration")
+	return deployCmd
 }
 
-func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubURL, prodBranch string) (*options, error) {
+func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubURL, prodBranch string) (*promptOptions, error) {
 	projectName := path.Base(githubURL)
 
 	questions := []*survey.Question{
@@ -263,43 +268,12 @@ func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubUR
 		},
 	}
 
-	opts := &options{}
+	opts := &promptOptions{}
 	if err := survey.Ask(questions, opts); err != nil {
 		return nil, err
 	}
 
 	return opts, nil
-}
-
-func projectPathPrompt() string {
-	prompt := &survey.Input{
-		Message: "What is your project path on local system?",
-		Default: ".",
-		Help:    "defaults to current directory",
-		Suggest: func(toComplete string) []string {
-			files, _ := filepath.Glob(toComplete + "*")
-			return files
-		},
-	}
-	q := []*survey.Question{
-		{
-			Name:   "pathParam",
-			Prompt: prompt,
-			Validate: func(any interface{}) error {
-				path := any.(string)
-				if !hasRillProject(path) {
-					return fmt.Errorf("no rill project on path %v", path)
-				}
-				return nil
-			},
-		},
-	}
-
-	result := ""
-	if err := survey.Ask(q, &result); err != nil {
-		exitWithFailure(err)
-	}
-	return result
 }
 
 func multipleOrgs(c *client.Client) (bool, error) {
@@ -329,6 +303,55 @@ func exitWithFailure(err error) {
 func hasRillProject(dir string) bool {
 	_, err := os.Open(filepath.Join(dir, "rill.yaml"))
 	return err == nil
+}
+
+func verifyAccess(ctx context.Context, c *client.Client, githubURL string) (*adminv1.GetGithubRepoStatusResponse, error) {
+	// Check for access to the Github URL
+	ghRes, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
+		GithubUrl: githubURL,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// If the user has not already granted access, open browser and poll for access
+	if !ghRes.HasAccess {
+		// Print instructions to grant access
+		fmt.Printf("Rill projects deploy continuously when you push changes to Github.\n\n")
+		fmt.Printf("Open this URL in your browser to grant Rill access to your Github repository:\n\n")
+		fmt.Printf("\t%s\n\n", ghRes.GrantAccessUrl)
+
+		// Open browser if possible
+		_ = browser.Open(ghRes.GrantAccessUrl)
+
+		// Poll for permission granted
+		pollCtx, cancel := context.WithTimeout(ctx, pollTimeout)
+		defer cancel()
+		for {
+			select {
+			case <-pollCtx.Done():
+				return nil, pollCtx.Err()
+			case <-time.After(pollInterval):
+				// Ready to check again.
+			}
+
+			// Poll for access to the Github URL
+			pollRes, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
+				GithubUrl: githubURL,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			if pollRes.HasAccess {
+				// Success
+				return pollRes, nil
+			}
+
+			// Sleep and poll again
+		}
+	}
+	return ghRes, nil
 }
 
 const (
