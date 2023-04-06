@@ -49,6 +49,7 @@ type DB interface {
 
 	FindOrganizations(ctx context.Context) ([]*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
+	FindOrganizationByID(ctx context.Context, id string) (*Organization, error)
 	InsertOrganization(ctx context.Context, name string, description string) (*Organization, error)
 	InsertOrganizationFromSeeds(ctx context.Context, nameSeeds []string, description string) (*Organization, error)
 	UpdateOrganization(ctx context.Context, name string, description string) (*Organization, error)
@@ -95,6 +96,34 @@ type DB interface {
 	DeleteDeployment(ctx context.Context, id string) error
 
 	QueryRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
+
+	FindOrganizationMemberUsers(ctx context.Context, orgID string) ([]*Member, error)
+	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
+	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string) error
+	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
+	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
+
+	FindProjectMemberUsers(ctx context.Context, projectID string) ([]*Member, error)
+	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
+	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
+	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
+
+	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
+	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
+
+	// ResolveOrganizationMemberUserRoles resolves the direct and group roles of a user in an organization
+	ResolveOrganizationMemberUserRoles(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
+	// ResolveProjectMemberUserRoles resolves the direct and group roles of a user in a project
+	ResolveProjectMemberUserRoles(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
+
+	InsertOrganizationMemberUsergroup(ctx context.Context, orgID, groupName string) (*Usergroup, error)
+	UpdateOrganizationMemberAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
+	InsertUserInUsergroup(ctx context.Context, userID, groupID string) error
+	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
+	FindUsersUsergroups(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
+
+	FindOrganizationsForUser(ctx context.Context, userID string) ([]*Organization, error)
+	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -127,11 +156,12 @@ const (
 
 // Organization represents a tenant.
 type Organization struct {
-	ID          string
-	Name        string
-	Description string
-	CreatedOn   time.Time `db:"created_on"`
-	UpdatedOn   time.Time `db:"updated_on"`
+	ID             string
+	Name           string
+	Description    string
+	CreatedOn      time.Time `db:"created_on"`
+	UpdatedOn      time.Time `db:"updated_on"`
+	AllUsergroupID *string   `db:"all_usergroup_id"`
 }
 
 // Project represents one Git connection.
@@ -170,6 +200,7 @@ func (e *Variables) Scan(value interface{}) error {
 type InsertProjectOptions struct {
 	OrganizationID       string
 	Name                 string
+	UserID               string
 	Description          string
 	Public               bool
 	Region               string
@@ -311,4 +342,53 @@ type InsertDeploymentOptions struct {
 type RuntimeSlotsUsed struct {
 	RuntimeHost string `db:"runtime_host"`
 	SlotsUsed   int    `db:"slots_used"`
+}
+
+type OrganizationRole struct {
+	ID               string
+	Name             string
+	ReadOrg          bool `db:"read_org"`
+	ManageOrg        bool `db:"manage_org"`
+	ReadProjects     bool `db:"read_projects"`
+	CreateProjects   bool `db:"create_projects"`
+	ManageProjects   bool `db:"manage_projects"`
+	ReadOrgMembers   bool `db:"read_org_members"`
+	ManageOrgMembers bool `db:"manage_org_members"`
+}
+
+type ProjectRole struct {
+	ID                   string
+	Name                 string
+	ReadProject          bool `db:"read_project"`
+	ManageProject        bool `db:"manage_project"`
+	ReadProdBranch       bool `db:"read_prod_branch"`
+	ManageProdBranch     bool `db:"manage_prod_branch"`
+	ReadDevBranches      bool `db:"read_dev_branches"`
+	ManageDevBranches    bool `db:"manage_dev_branches"`
+	ReadProjectMembers   bool `db:"read_project_members"`
+	ManageProjectMembers bool `db:"manage_project_members"`
+}
+
+const (
+	OrganizationAdminRoleName        = "admin"
+	OrganizationCollaboratorRoleName = "collaborator"
+	OrganizationReaderRoleName       = "reader"
+	ProjectAdminRoleName             = "admin"
+	ProjectCollaboratorRoleName      = "collaborator"
+	ProjectReaderRoleName            = "reader"
+)
+
+type Usergroup struct {
+	ID    string `db:"id"`
+	OrgID string `db:"org_id"`
+	Name  string `db:"name"`
+}
+
+type Member struct {
+	ID          string
+	Email       string
+	DisplayName string    `db:"display_name"`
+	CreatedOn   time.Time `db:"created_on"`
+	UpdatedOn   time.Time `db:"updated_on"`
+	RoleName    string    `db:"name"`
 }

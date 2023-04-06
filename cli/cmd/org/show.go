@@ -41,7 +41,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.TextPrinter("Found organization \n")
+			cmdutil.SuccessPrinter("Found organization \n")
 			cmdutil.TablePrinter(toRow(org.Organization))
 			return nil
 		},

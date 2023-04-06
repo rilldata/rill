@@ -12,6 +12,7 @@ import (
 	"github.com/lensesio/tableprinter"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/config"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +41,7 @@ func CheckAuth(cfg *config.Config) PreRunCheck {
 	}
 }
 
-func CheckOrg(cfg *config.Config) PreRunCheck {
+func CheckOrganization(cfg *config.Config) PreRunCheck {
 	return func(cmd *cobra.Command, args []string) error {
 		if cfg.Org != "" {
 			return nil
@@ -69,8 +70,8 @@ func TablePrinter(v interface{}) {
 	fmt.Fprintln(os.Stdout, b.String())
 }
 
-func TextPrinter(str string) {
-	boldGreen := color.New(color.FgGreen).Add(color.Underline).Add(color.Bold)
+func SuccessPrinter(str string) {
+	boldGreen := color.New(color.FgGreen).Add(color.Bold)
 	boldGreen.Fprintln(color.Output, str)
 }
 
@@ -128,4 +129,49 @@ func InputPrompt(msg, def string) string {
 		os.Exit(1)
 	}
 	return result
+}
+
+func WarnPrinter(str string) {
+	boldYellow := color.New(color.FgYellow).Add(color.Bold)
+	boldYellow.Fprintln(color.Output, str)
+}
+
+func PrintMembers(members []*adminv1.Member) {
+	if len(members) == 0 {
+		WarnPrinter("No members found")
+		return
+	}
+
+	SuccessPrinter("Members list \n")
+	TablePrinter(toMemberTable(members))
+}
+
+func toMemberTable(members []*adminv1.Member) []*member {
+	allMembers := make([]*member, 0, len(members))
+
+	for _, m := range members {
+		allMembers = append(allMembers, toMemberRow(m))
+	}
+
+	return allMembers
+}
+
+func toMemberRow(m *adminv1.Member) *member {
+	return &member{
+		ID:        m.UserId,
+		Name:      m.UserName,
+		Email:     m.UserEmail,
+		RoleName:  m.RoleName,
+		CreatedOn: m.CreatedOn.AsTime().String(),
+		UpdatedOn: m.UpdatedOn.AsTime().String(),
+	}
+}
+
+type member struct {
+	ID        string `header:"id" json:"id"`
+	Name      string `header:"name" json:"display_name"`
+	Email     string `header:"email" json:"email"`
+	RoleName  string `header:"role_name" json:"role_name"`
+	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
+	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_on"`
 }

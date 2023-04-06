@@ -64,6 +64,8 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			// set the default token to the one we just got
+			cfg.AdminTokenDefault = res1.AccessToken
 
 			// Set default org after login
 			client, err := cmdutil.Client(cfg)
