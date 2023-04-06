@@ -40,7 +40,12 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 					orgNames = append(orgNames, org.Name)
 				}
 
-				defaultOrg = cmdutil.PromptGetSelect(orgNames, "Select default org.")
+				org, err := dotrill.GetDefaultOrg()
+				if err != nil {
+					return err
+				}
+
+				defaultOrg = cmdutil.SelectPrompt("Select default org.", orgNames, org)
 			} else {
 				_, err = client.GetOrganization(context.Background(), &adminv1.GetOrganizationRequest{
 					Name: args[0],

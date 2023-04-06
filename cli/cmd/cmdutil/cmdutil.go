@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/lensesio/tableprinter"
-	"github.com/manifoldco/promptui"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -91,18 +91,47 @@ func Client(cfg *config.Config) (*client.Client, error) {
 	return c, nil
 }
 
-func PromptGetSelect(items []string, label string) string {
-	prompt := promptui.Select{
-		Label: label,
-		Items: items,
+func SelectPrompt(msg string, options []string, def string) string {
+	prompt := &survey.Select{
+		Message: msg,
+		Options: options,
 	}
 
-	_, result, err := prompt.Run()
-	if err != nil {
+	if contains(options, def) {
+		prompt.Default = def
+	}
+
+	result := ""
+	if err := survey.AskOne(prompt, &result); err != nil {
 		fmt.Printf("Prompt failed %v\n", err)
 		os.Exit(1)
 	}
+	return result
+}
 
+func ConfirmPrompt(msg string, def bool) bool {
+	prompt := &survey.Confirm{
+		Message: msg,
+		Default: def,
+	}
+	result := def
+	if err := survey.AskOne(prompt, &result); err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
+	return result
+}
+
+func InputPrompt(msg, def string) string {
+	prompt := &survey.Input{
+		Message: msg,
+		Default: def,
+	}
+	result := def
+	if err := survey.AskOne(prompt, &result); err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
 	return result
 }
 
@@ -149,4 +178,13 @@ type member struct {
 	RoleName  string `header:"role_name" json:"role_name"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
 	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_on"`
+}
+
+func contains(vals []string, key string) bool {
+	for _, s := range vals {
+		if key == s {
+			return true
+		}
+	}
+	return false
 }

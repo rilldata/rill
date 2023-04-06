@@ -237,6 +237,7 @@ message CreateProjectRequest {
 
 message CreateProjectResponse {
   Project project = 1;
+  string project_url = 2;
 }
 
 message DeleteProjectRequest {

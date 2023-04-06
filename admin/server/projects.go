@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -40,7 +41,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "proj not found")
+			return nil, status.Error(codes.NotFound, "proj not found")
 		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -146,8 +147,14 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	projectURL, err := url.JoinPath(s.opts.FrontendURL, org.Name, proj.Name)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("project url generation failed with error %s", err.Error()))
+	}
+
 	return &adminv1.CreateProjectResponse{
-		Project: projToDTO(proj),
+		Project:    projToDTO(proj),
+		ProjectUrl: projectURL,
 	}, nil
 }
 

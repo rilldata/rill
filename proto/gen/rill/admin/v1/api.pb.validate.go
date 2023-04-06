@@ -2114,6 +2114,8 @@ func (m *CreateProjectResponse) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for ProjectUrl
+
 	if len(errors) > 0 {
 		return CreateProjectResponseMultiError(errors)
 	}
