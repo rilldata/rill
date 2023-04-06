@@ -3,7 +3,7 @@
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
   import { useAdminServiceGetProject } from "../../../client";
 
-  const proj = useAdminServiceGetProject(
+  $: proj = useAdminServiceGetProject(
     $page.params.organization,
     $page.params.project
   );
