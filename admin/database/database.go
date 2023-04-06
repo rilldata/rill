@@ -43,7 +43,6 @@ type Driver interface {
 type DB interface {
 	Close() error
 	NewTx(ctx context.Context) (context.Context, Tx, error)
-	RemoveTx(ctx context.Context) context.Context
 
 	Migrate(ctx context.Context) error
 	FindMigrationVersion(ctx context.Context) (int, error)
@@ -99,15 +98,15 @@ type DB interface {
 	QueryRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
 
 	FindOrganizationMemberUsers(ctx context.Context, orgID string) ([]*Member, error)
-	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleName string) ([]*User, error)
-	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleName string) error
+	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
+	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string) error
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
-	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleName string) error
+	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 
 	FindProjectMemberUsers(ctx context.Context, projectID string) ([]*Member, error)
-	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleName string) error
+	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
-	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleName string) error
+	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
 
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
@@ -120,7 +119,7 @@ type DB interface {
 	InsertOrganizationMemberUsergroup(ctx context.Context, orgID, groupName string) (*Usergroup, error)
 	UpdateOrganizationMemberAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
 	InsertUserInUsergroup(ctx context.Context, userID, groupID string) error
-	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleName string) error
+	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	FindUsersUsergroups(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
 
 	FindOrganizationsForUser(ctx context.Context, userID string) ([]*Organization, error)
@@ -346,6 +345,7 @@ type RuntimeSlotsUsed struct {
 }
 
 type OrganizationRole struct {
+	ID               string
 	Name             string
 	ReadOrg          bool `db:"read_org"`
 	ManageOrg        bool `db:"manage_org"`
@@ -357,6 +357,7 @@ type OrganizationRole struct {
 }
 
 type ProjectRole struct {
+	ID                   string
 	Name                 string
 	ReadProject          bool `db:"read_project"`
 	ManageProject        bool `db:"manage_project"`

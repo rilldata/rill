@@ -2,8 +2,7 @@ package server
 
 import (
 	"context"
-	"errors"
-
+	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -181,7 +180,7 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	defer func() { _ = tx.Rollback() }()
-	err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.Name)
+	err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -225,10 +224,15 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationAdminRoleName)
+	if err != nil {
+		panic(errors.Wrap(err, "failed to find organization admin role"))
+	}
+
 	// check if the user is the last owner
 	// TODO optimize this, may be extract roles during auth token validation
 	//  and store as part of the claims and fetch admins only if the user is an admin
-	users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, database.OrganizationAdminRoleName)
+	users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, role.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -275,7 +279,7 @@ func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.Set
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.admin.DB.UpdateOrganizationMemberUserRole(ctx, org.ID, user.ID, role.Name)
+	err = s.admin.DB.UpdateOrganizationMemberUserRole(ctx, org.ID, user.ID, role.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -302,10 +306,15 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 		return nil, status.Error(codes.PermissionDenied, "not allowed to remove org members")
 	}
 
+	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationAdminRoleName)
+	if err != nil {
+		panic(errors.Wrap(err, "failed to find organization admin role"))
+	}
+
 	// check if the user is the last owner
 	// TODO optimize this, may be extract roles during auth token validation
 	//  and store as part of the claims and fetch admins only if the user is an admin
-	users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, database.OrganizationAdminRoleName)
+	users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, role.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
