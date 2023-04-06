@@ -33,6 +33,10 @@ import type {
   V1DeleteProjectResponse,
   V1UpdateProjectResponse,
   AdminServiceUpdateProjectBody,
+  V1TriggerReconcileResponse,
+  AdminServiceTriggerReconcileBodyBody,
+  V1TriggerRefreshSourceResponse,
+  V1TriggerRedeployResponse,
   V1PingResponse,
   V1RevokeCurrentAuthTokenResponse,
   V1GetCurrentUserResponse,
@@ -700,6 +704,198 @@ export const useAdminServiceUpdateProject = <
       organizationName: string;
       name: string;
       data: AdminServiceUpdateProjectBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary CreateProject creates a new project
+ */
+export const adminServiceTriggerReconcile = (
+  organizationName: string,
+  name: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody
+) => {
+  return httpClient<V1TriggerReconcileResponse>({
+    url: `/v1/organizations/${organizationName}/projects/${name}/reconcile`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+  });
+};
+
+export type AdminServiceTriggerReconcileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceTriggerReconcile>>
+>;
+export type AdminServiceTriggerReconcileMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceTriggerReconcileMutationError = RpcStatus;
+
+export const useAdminServiceTriggerReconcile = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
+    TError,
+    {
+      organizationName: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
+    {
+      organizationName: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    }
+  > = (props) => {
+    const { organizationName, name, data } = props ?? {};
+
+    return adminServiceTriggerReconcile(organizationName, name, data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
+    TError,
+    {
+      organizationName: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary CreateProject creates a new project
+ */
+export const adminServiceTriggerRefreshSource = (
+  organizationName: string,
+  name: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody
+) => {
+  return httpClient<V1TriggerRefreshSourceResponse>({
+    url: `/v1/organizations/${organizationName}/projects/${name}/refresh`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+  });
+};
+
+export type AdminServiceTriggerRefreshSourceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceTriggerRefreshSource>>
+>;
+export type AdminServiceTriggerRefreshSourceMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceTriggerRefreshSourceMutationError = RpcStatus;
+
+export const useAdminServiceTriggerRefreshSource = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminServiceTriggerRefreshSource>>,
+    TError,
+    {
+      organizationName: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceTriggerRefreshSource>>,
+    {
+      organizationName: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    }
+  > = (props) => {
+    const { organizationName, name, data } = props ?? {};
+
+    return adminServiceTriggerRefreshSource(organizationName, name, data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof adminServiceTriggerRefreshSource>>,
+    TError,
+    {
+      organizationName: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary CreateProject creates a new project
+ */
+export const adminServiceTriggerRedeploy = (
+  organizationName: string,
+  name: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody
+) => {
+  return httpClient<V1TriggerRedeployResponse>({
+    url: `/v1/organizations/${organizationName}/projects/${name}/reset`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+  });
+};
+
+export type AdminServiceTriggerRedeployMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceTriggerRedeploy>>
+>;
+export type AdminServiceTriggerRedeployMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceTriggerRedeployMutationError = RpcStatus;
+
+export const useAdminServiceTriggerRedeploy = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminServiceTriggerRedeploy>>,
+    TError,
+    {
+      organizationName: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceTriggerRedeploy>>,
+    {
+      organizationName: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    }
+  > = (props) => {
+    const { organizationName, name, data } = props ?? {};
+
+    return adminServiceTriggerRedeploy(organizationName, name, data);
+  };
+
+  return useMutation<
+    Awaited<ReturnType<typeof adminServiceTriggerRedeploy>>,
+    TError,
+    {
+      organizationName: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
     },
     TContext
   >(mutationFn, mutationOptions);

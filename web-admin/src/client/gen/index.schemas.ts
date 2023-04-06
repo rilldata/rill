@@ -45,6 +45,8 @@ export type AdminServiceListOrganizationsParams = {
 
 export type AdminServiceGetGithubRepoStatusParams = { githubUrl?: string };
 
+export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
+
 export interface V1User {
   createdOn?: string;
   displayName?: string;
@@ -54,12 +56,20 @@ export interface V1User {
   updatedOn?: string;
 }
 
-export interface V1UpdateProjectResponse {
-  project?: V1Project;
-}
-
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
+}
+
+export interface V1TriggerRefreshSourceResponse {
+  [key: string]: any;
+}
+
+export interface V1TriggerRedeployResponse {
+  [key: string]: any;
+}
+
+export interface V1TriggerReconcileResponse {
+  [key: string]: any;
 }
 
 export interface V1RevokeCurrentAuthTokenResponse {
@@ -83,6 +93,10 @@ export interface V1Project {
   region?: string;
   updatedOn?: string;
   variables?: V1ProjectVariables;
+}
+
+export interface V1UpdateProjectResponse {
+  project?: V1Project;
 }
 
 export interface V1PingResponse {

@@ -44,6 +44,12 @@ type AdminServiceClient interface {
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error)
+	// CreateProject creates a new project
+	TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error)
+	// CreateProject creates a new project
+	TriggerRefreshSource(ctx context.Context, in *TriggerRefreshSourceRequest, opts ...grpc.CallOption) (*TriggerRefreshSourceResponse, error)
+	// CreateProject creates a new project
+	TriggerRedeploy(ctx context.Context, in *TriggerRedeployRequest, opts ...grpc.CallOption) (*TriggerRedeployResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
 	// RevokeCurrentAuthToken revoke the current auth token
@@ -160,6 +166,33 @@ func (c *adminServiceClient) UpdateProject(ctx context.Context, in *UpdateProjec
 	return out, nil
 }
 
+func (c *adminServiceClient) TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error) {
+	out := new(TriggerReconcileResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/TriggerReconcile", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) TriggerRefreshSource(ctx context.Context, in *TriggerRefreshSourceRequest, opts ...grpc.CallOption) (*TriggerRefreshSourceResponse, error) {
+	out := new(TriggerRefreshSourceResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/TriggerRefreshSource", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) TriggerRedeploy(ctx context.Context, in *TriggerRedeployRequest, opts ...grpc.CallOption) (*TriggerRedeployResponse, error) {
+	out := new(TriggerRedeployResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/TriggerRedeploy", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error) {
 	out := new(GetCurrentUserResponse)
 	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/GetCurrentUser", in, out, opts...)
@@ -213,6 +246,12 @@ type AdminServiceServer interface {
 	DeleteProject(context.Context, *DeleteProjectRequest) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
+	// CreateProject creates a new project
+	TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error)
+	// CreateProject creates a new project
+	TriggerRefreshSource(context.Context, *TriggerRefreshSourceRequest) (*TriggerRefreshSourceResponse, error)
+	// CreateProject creates a new project
+	TriggerRedeploy(context.Context, *TriggerRedeployRequest) (*TriggerRedeployResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
 	// RevokeCurrentAuthToken revoke the current auth token
@@ -259,6 +298,15 @@ func (UnimplementedAdminServiceServer) DeleteProject(context.Context, *DeletePro
 }
 func (UnimplementedAdminServiceServer) UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateProject not implemented")
+}
+func (UnimplementedAdminServiceServer) TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerReconcile not implemented")
+}
+func (UnimplementedAdminServiceServer) TriggerRefreshSource(context.Context, *TriggerRefreshSourceRequest) (*TriggerRefreshSourceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerRefreshSource not implemented")
+}
+func (UnimplementedAdminServiceServer) TriggerRedeploy(context.Context, *TriggerRedeployRequest) (*TriggerRedeployResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerRedeploy not implemented")
 }
 func (UnimplementedAdminServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
@@ -480,6 +528,60 @@ func _AdminService_UpdateProject_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_TriggerReconcile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerReconcileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).TriggerReconcile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.admin.v1.AdminService/TriggerReconcile",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).TriggerReconcile(ctx, req.(*TriggerReconcileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_TriggerRefreshSource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerRefreshSourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).TriggerRefreshSource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.admin.v1.AdminService/TriggerRefreshSource",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).TriggerRefreshSource(ctx, req.(*TriggerRefreshSourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_TriggerRedeploy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerRedeployRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).TriggerRedeploy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.admin.v1.AdminService/TriggerRedeploy",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).TriggerRedeploy(ctx, req.(*TriggerRedeployRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_GetCurrentUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetCurrentUserRequest)
 	if err := dec(in); err != nil {
@@ -584,6 +686,18 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateProject",
 			Handler:    _AdminService_UpdateProject_Handler,
+		},
+		{
+			MethodName: "TriggerReconcile",
+			Handler:    _AdminService_TriggerReconcile_Handler,
+		},
+		{
+			MethodName: "TriggerRefreshSource",
+			Handler:    _AdminService_TriggerRefreshSource_Handler,
+		},
+		{
+			MethodName: "TriggerRedeploy",
+			Handler:    _AdminService_TriggerRedeploy_Handler,
 		},
 		{
 			MethodName: "GetCurrentUser",

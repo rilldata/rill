@@ -3,8 +3,9 @@ package triggers
 import (
 	"fmt"
 
+	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
-	"github.com/rilldata/rill/cli/pkg/remote"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -13,18 +14,18 @@ func ResetCmd(cfg *config.Config) *cobra.Command {
 		Use:   "reset",
 		Short: "Reset",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("reset called")
-			adm, err := remote.NewAdminService()
+			client, err := cmdutil.Client(cfg)
+			if err != nil {
+				return err
+			}
+			defer client.Close()
+
+			res, err := client.TriggerRedeploy(cmd.Context(), &adminv1.TriggerRedeployRequest{OrganizationName: cfg.Org, Name: args[0]})
 			if err != nil {
 				return err
 			}
 
-			defer adm.Close()
-
-			err = adm.TriggerRedeploy(cmd.Context(), cfg.Org, args[0])
-			if err != nil {
-				return err
-			}
+			fmt.Println("reset done", res)
 
 			return nil
 		},

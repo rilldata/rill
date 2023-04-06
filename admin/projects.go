@@ -90,7 +90,6 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 	return res, nil
 }
 
-// Create a new meth for teardown
 func (s *Service) TeardownProject(ctx context.Context, p *database.Project) error {
 	// TODO: Make this actually fault tolerant.
 
@@ -132,11 +131,10 @@ func (s *Service) TriggerRedeploy(ctx context.Context, orgName, name string) err
 			return
 		}
 
+		// Get current deployment_id
 		deploymentID := *proj.ProductionDeploymentID
 
-		s.logger.Info("trigger redeploy: starting", zap.String("deployment_id", deploymentID))
-
-		// Get deployment
+		// Get current deployment
 		depl, err := s.DB.FindDeployment(ctx, deploymentID)
 		if err != nil {
 			s.logger.Error("trigger redeploy: could not find deployment", zap.String("deployment_id", deploymentID), zap.Error(err))
@@ -149,7 +147,14 @@ func (s *Service) TriggerRedeploy(ctx context.Context, orgName, name string) err
 			return
 		}
 
-		// Set deployment status to reconciling
+		// Trigger a new deployment
+		err = s.triggerDeployment(ctx, proj)
+		if err != nil {
+			s.logger.Error("Error in new deployment", zap.Error(err))
+			return
+		}
+
+		// Set old deployment status to reconciling
 		depl, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusReconciling, "")
 		if err != nil {
 			s.logger.Error("trigger redeploy: could not update status", zap.String("deployment_id", deploymentID), zap.Error(err))
@@ -162,75 +167,10 @@ func (s *Service) TriggerRedeploy(ctx context.Context, orgName, name string) err
 			return
 		}
 
-		// Deleting and inserting back, we should change this to update deployment
+		// Deleting the deployment
 		err = s.DB.DeleteDeployment(ctx, depl.ID)
 		if err != nil {
 			s.logger.Error("trigger redeploy: could not delete deployment", zap.String("deployment_id", deploymentID), zap.Error(err))
-			return
-		}
-
-		// Just tearing down the instance for now, todo: add steps fir redeploy as well
-
-		// Provision it
-		provOpts := &provisioner.ProvisionOptions{
-			OLAPDriver:           proj.ProductionOLAPDriver,
-			OLAPDSN:              proj.ProductionOLAPDSN,
-			Region:               proj.Region,
-			Slots:                proj.ProductionSlots,
-			GithubURL:            *proj.GithubURL,
-			GitBranch:            proj.ProductionBranch,
-			GithubInstallationID: *proj.GithubInstallationID,
-			Variables:            proj.ProductionVariables,
-		}
-		inst, err := s.provisioner.Provision(ctx, provOpts)
-		if err != nil {
-			err = fmt.Errorf("provisioner: %w", err)
-			err2 := s.DB.DeleteProject(ctx, proj.ID)
-			s.logger.Error("trigger redeploy: could not provision instance", zap.String("instance_id", inst.InstanceID), zap.Error(multierr.Combine(err, err2)))
-			return
-		}
-
-		// Store deployment
-		depl, err = s.DB.InsertDeployment(ctx, &database.InsertDeploymentOptions{
-			ProjectID:         proj.ID,
-			Branch:            proj.ProductionBranch,
-			Slots:             proj.ProductionSlots,
-			RuntimeHost:       inst.Host,
-			RuntimeInstanceID: inst.InstanceID,
-			RuntimeAudience:   inst.Audience,
-			Status:            database.DeploymentStatusPending,
-			Logs:              "",
-		})
-		if err != nil {
-			err2 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID, proj.ProductionOLAPDriver)
-			err3 := s.DB.DeleteProject(ctx, proj.ID)
-			s.logger.Error("trigger redeploy: could not insert deployment", zap.String("instance_id", inst.InstanceID), zap.Error(multierr.Combine(err2, err3)))
-			return
-		}
-
-		// Update prod deployment on project
-		_, err = s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
-			Description:            proj.Description,
-			Public:                 proj.Public,
-			ProductionBranch:       proj.ProductionBranch,
-			ProductionVariables:    proj.ProductionVariables,
-			GithubURL:              proj.GithubURL,
-			GithubInstallationID:   proj.GithubInstallationID,
-			ProductionDeploymentID: &depl.ID,
-		})
-		if err != nil {
-			err2 := s.DB.DeleteDeployment(ctx, depl.ID)
-			err3 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID, proj.ProductionOLAPDriver)
-			err4 := s.DB.DeleteProject(ctx, proj.ID)
-			s.logger.Error("trigger redeploy: could not update project", zap.String("instance_id", inst.InstanceID), zap.Error(multierr.Combine(err, err2, err3, err4)))
-			return
-		}
-
-		// Trigger reconcile
-		err = s.TriggerReconcile(ctx, depl.ID)
-		if err != nil {
-			// This error is weird. But it's safe not to teardown the rest.
-			s.logger.Error("trigger redeploy: could not reconcile project", zap.String("deployment_id", depl.ID), zap.Error(err))
 			return
 		}
 	}()
@@ -238,11 +178,19 @@ func (s *Service) TriggerRedeploy(ctx context.Context, orgName, name string) err
 }
 
 // New method for refresh source
-func (s *Service) TriggerRefreshSource(ctx context.Context, deploymentID string) error {
+func (s *Service) TriggerRefreshSource(ctx context.Context, orgName, name string) error {
 	// Run it all in the background
 	go func() {
 		// Use s.closeCtx to cancel if the service is stopped
 		ctx := s.closeCtx
+
+		proj, err := s.DB.FindProjectByName(ctx, orgName, name)
+		if err != nil {
+			s.logger.Error("trigger redeploy: could not find project", zap.String("project name", name), zap.Error(err))
+			return
+		}
+
+		deploymentID := *proj.ProductionDeploymentID
 
 		s.logger.Info("refresh source: starting", zap.String("deployment_id", deploymentID))
 
@@ -285,7 +233,7 @@ func (s *Service) TriggerRefreshSource(ctx context.Context, deploymentID string)
 		}
 
 		// Call refresh source
-		res, err := rt.TriggerRefresh(ctx, &runtimev1.TriggerRefreshRequest{InstanceId: depl.RuntimeInstanceID})
+		res, err := rt.TriggerRefresh(ctx, &runtimev1.TriggerRefreshRequest{InstanceId: depl.RuntimeInstanceID, Name: name})
 		if err != nil {
 			s.logger.Error("refresh source: rpc error", zap.String("deployment_id", deploymentID), zap.Error(err))
 			_, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusError, err.Error())
@@ -466,4 +414,67 @@ func (s *Service) editInstance(ctx context.Context, d *database.Deployment, vari
 		IngestionLimitBytes: inst.IngestionLimitBytes,
 	})
 	return err
+}
+
+func (s *Service) triggerDeployment(ctx context.Context, proj *database.Project) error {
+	// Provision new deployment
+	provOpts := &provisioner.ProvisionOptions{
+		OLAPDriver:           proj.ProductionOLAPDriver,
+		OLAPDSN:              proj.ProductionOLAPDSN,
+		Region:               proj.Region,
+		Slots:                proj.ProductionSlots,
+		GithubURL:            *proj.GithubURL,
+		GitBranch:            proj.ProductionBranch,
+		GithubInstallationID: *proj.GithubInstallationID,
+		Variables:            proj.ProductionVariables,
+	}
+	inst, err := s.provisioner.Provision(ctx, provOpts)
+	if err != nil {
+		err = fmt.Errorf("provisioner: %w", err)
+		err2 := s.DB.DeleteProject(ctx, proj.ID)
+		return fmt.Errorf("trigger redeploy: could not provision instance, instance_id %s, Error:%w", inst.InstanceID, multierr.Combine(err, err2))
+	}
+
+	// Store new deployment details
+	depl, err := s.DB.InsertDeployment(ctx, &database.InsertDeploymentOptions{
+		ProjectID:         proj.ID,
+		Branch:            proj.ProductionBranch,
+		Slots:             proj.ProductionSlots,
+		RuntimeHost:       inst.Host,
+		RuntimeInstanceID: inst.InstanceID,
+		RuntimeAudience:   inst.Audience,
+		Status:            database.DeploymentStatusPending,
+		Logs:              "",
+	})
+	if err != nil {
+		err2 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID, proj.ProductionOLAPDriver)
+		err3 := s.DB.DeleteProject(ctx, proj.ID)
+		return fmt.Errorf("trigger redeploy: could not insert deployment, instance_id %s, Error:%w", inst.InstanceID, multierr.Combine(err2, err3))
+	}
+
+	// Update prod deployment on project
+	_, err = s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Description:            proj.Description,
+		Public:                 proj.Public,
+		ProductionBranch:       proj.ProductionBranch,
+		ProductionVariables:    proj.ProductionVariables,
+		GithubURL:              proj.GithubURL,
+		GithubInstallationID:   proj.GithubInstallationID,
+		ProductionDeploymentID: &depl.ID,
+	})
+	if err != nil {
+		err2 := s.DB.DeleteDeployment(ctx, depl.ID)
+		err3 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID, proj.ProductionOLAPDriver)
+		err4 := s.DB.DeleteProject(ctx, proj.ID)
+		return fmt.Errorf("trigger redeploy: could not update project, instance_id %s, Error:%w", inst.InstanceID, multierr.Combine(err, err2, err3, err4))
+	}
+
+	// Trigger reconcile
+	err = s.TriggerReconcile(ctx, depl.ID)
+	if err != nil {
+		// This error is weird. But it's safe not to teardown the rest.
+		return fmt.Errorf("trigger redeploy: could not reconcile project, deployment_id %s, Error:%w", depl.ID, err)
+	}
+
+	return nil
 }

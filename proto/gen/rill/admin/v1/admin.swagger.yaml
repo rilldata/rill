@@ -307,6 +307,93 @@ paths:
                   type: string
       tags:
         - AdminService
+  /v1/organizations/{organizationName}/projects/{name}/reconcile:
+    post:
+      summary: CreateProject creates a new project
+      operationId: AdminService_TriggerReconcile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TriggerReconcileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/projects/{name}/refresh:
+    post:
+      summary: CreateProject creates a new project
+      operationId: AdminService_TriggerRefreshSource
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TriggerRefreshSourceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/projects/{name}/reset:
+    post:
+      summary: CreateProject creates a new project
+      operationId: AdminService_TriggerRedeploy
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TriggerRedeployResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
   /v1/ping:
     get:
       summary: Ping returns information about the server
@@ -541,6 +628,12 @@ definitions:
     properties:
       tokenId:
         type: string
+  v1TriggerReconcileResponse:
+    type: object
+  v1TriggerRedeployResponse:
+    type: object
+  v1TriggerRefreshSourceResponse:
+    type: object
   v1UpdateOrganizationResponse:
     type: object
     properties:
