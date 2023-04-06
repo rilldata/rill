@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 )
 
@@ -19,10 +20,10 @@ type connectionCache struct {
 	cache  *simplelru.LRU
 	lock   sync.Mutex
 	closed bool
-	logger *zap.Logger
+	logger *otelzap.Logger
 }
 
-func newConnectionCache(size int, logger *zap.Logger) *connectionCache {
+func newConnectionCache(size int, logger *otelzap.Logger) *connectionCache {
 	cache, err := simplelru.NewLRU(size, nil)
 	if err != nil {
 		panic(err)

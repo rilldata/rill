@@ -143,7 +143,7 @@ func (s *Service) processGithubInstallationEvent(ctx context.Context, event *git
 	case "deleted":
 		err := s.DB.DeleteUserGithubInstallations(ctx, installationID)
 		if err != nil {
-			s.logger.Error("failed to delete github installations", zap.Int64("installation_id", installationID), zap.Error(err))
+			s.logger.Ctx(ctx).Error("failed to delete github installations", zap.Int64("installation_id", installationID), zap.Error(err))
 		}
 	}
 

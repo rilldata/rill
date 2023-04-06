@@ -13,9 +13,9 @@ import (
 	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/metric/instrument"
-	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -25,7 +25,7 @@ func init() {
 
 type Driver struct{}
 
-func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
+func (d Driver) Open(dsn string, logger *otelzap.Logger) (drivers.Connection, error) {
 	cfg, err := newConfig(dsn)
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 
 type connection struct {
 	db     *sqlx.DB
-	logger *zap.Logger
+	logger *otelzap.Logger
 	// metaSem gates meta queries (like catalog and information schema)
 	metaSem *semaphore.Weighted
 	// olapSem gates OLAP queries

@@ -118,25 +118,25 @@ func (s *Service) TriggerReconcile(ctx context.Context, deploymentID string) err
 		// Use s.closeCtx to cancel if the service is stopped
 		ctx := s.closeCtx
 
-		s.logger.Info("reconcile: starting", zap.String("deployment_id", deploymentID))
+		s.logger.Ctx(ctx).Info("reconcile: starting", zap.String("deployment_id", deploymentID))
 
 		// Get deployment
 		depl, err := s.DB.FindDeployment(ctx, deploymentID)
 		if err != nil {
-			s.logger.Error("reconcile: could not find deployment", zap.String("deployment_id", deploymentID), zap.Error(err))
+			s.logger.Ctx(ctx).Error("reconcile: could not find deployment", zap.String("deployment_id", deploymentID), zap.Error(err))
 			return
 		}
 
 		// Check status
 		if depl.Status == database.DeploymentStatusReconciling && time.Since(depl.UpdatedOn) < 30*time.Minute {
-			s.logger.Error("reconcile: skipping because it is already running", zap.String("deployment_id", deploymentID))
+			s.logger.Ctx(ctx).Error("reconcile: skipping because it is already running", zap.String("deployment_id", deploymentID))
 			return
 		}
 
 		// Set deployment status to reconciling
 		depl, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusReconciling, "")
 		if err != nil {
-			s.logger.Error("reconcile: could not update status", zap.String("deployment_id", deploymentID), zap.Error(err))
+			s.logger.Ctx(ctx).Error("reconcile: could not update status", zap.String("deployment_id", deploymentID), zap.Error(err))
 			return
 		}
 
@@ -147,24 +147,24 @@ func (s *Service) TriggerReconcile(ctx context.Context, deploymentID string) err
 			InstancePermissions: map[string][]auth.Permission{depl.RuntimeInstanceID: {auth.EditInstance}},
 		})
 		if err != nil {
-			s.logger.Error("reconcile: could not get token", zap.String("deployment_id", deploymentID), zap.Error(err))
+			s.logger.Ctx(ctx).Error("reconcile: could not get token", zap.String("deployment_id", deploymentID), zap.Error(err))
 			return
 		}
 
 		// Make runtime client
 		rt, err := client.New(depl.RuntimeHost, jwt)
 		if err != nil {
-			s.logger.Error("reconcile: could not create client", zap.String("deployment_id", deploymentID), zap.Error(err))
+			s.logger.Ctx(ctx).Error("reconcile: could not create client", zap.String("deployment_id", deploymentID), zap.Error(err))
 			return
 		}
 
 		// Call reconcile
 		res, err := rt.Reconcile(ctx, &runtimev1.ReconcileRequest{InstanceId: depl.RuntimeInstanceID})
 		if err != nil {
-			s.logger.Error("reconcile: rpc error", zap.String("deployment_id", deploymentID), zap.Error(err))
+			s.logger.Ctx(ctx).Error("reconcile: rpc error", zap.String("deployment_id", deploymentID), zap.Error(err))
 			_, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusError, err.Error())
 			if err != nil {
-				s.logger.Error("reconcile: could not update logs", zap.String("deployment_id", deploymentID), zap.Error(err))
+				s.logger.Ctx(ctx).Error("reconcile: could not update logs", zap.String("deployment_id", deploymentID), zap.Error(err))
 			}
 			return
 		}
@@ -173,24 +173,24 @@ func (s *Service) TriggerReconcile(ctx context.Context, deploymentID string) err
 		if len(res.Errors) > 0 {
 			json, err := protojson.Marshal(res)
 			if err != nil {
-				s.logger.Error("reconcile: json error", zap.String("deployment_id", deploymentID), zap.Error(err))
+				s.logger.Ctx(ctx).Error("reconcile: json error", zap.String("deployment_id", deploymentID), zap.Error(err))
 				return
 			}
 
 			_, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusError, string(json))
 			if err != nil {
-				s.logger.Error("reconcile: could not update logs", zap.String("deployment_id", deploymentID), zap.Error(err))
+				s.logger.Ctx(ctx).Error("reconcile: could not update logs", zap.String("deployment_id", deploymentID), zap.Error(err))
 				return
 			}
 		} else {
 			_, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusOK, "")
 			if err != nil {
-				s.logger.Error("reconcile: could not clear logs", zap.String("deployment_id", deploymentID), zap.Error(err))
+				s.logger.Ctx(ctx).Error("reconcile: could not clear logs", zap.String("deployment_id", deploymentID), zap.Error(err))
 				return
 			}
 		}
 
-		s.logger.Info("reconcile: completed", zap.String("deployment_id", deploymentID))
+		s.logger.Ctx(ctx).Info("reconcile: completed", zap.String("deployment_id", deploymentID))
 	}()
 	return nil
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/runtime/drivers"
-	"go.uber.org/zap"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 )
 
 type Options struct {
@@ -20,13 +20,17 @@ type Options struct {
 type Runtime struct {
 	opts         *Options
 	metastore    drivers.Connection
-	logger       *zap.Logger
+	logger       *otelzap.Logger
 	connCache    *connectionCache
 	catalogCache *catalogCache
 	queryCache   *queryCache
 }
 
-func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
+func (r *Runtime) Logger() *otelzap.Logger {
+	return r.logger
+}
+
+func New(opts *Options, logger *otelzap.Logger) (*Runtime, error) {
 	// Open metadata db connection
 	metastore, err := drivers.Open(opts.MetastoreDriver, opts.MetastoreDSN, logger)
 	if err != nil {

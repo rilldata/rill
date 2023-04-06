@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 )
 
@@ -23,7 +24,7 @@ type Options struct {
 type Service struct {
 	DB             database.DB
 	opts           *Options
-	logger         *zap.Logger
+	logger         *otelzap.Logger
 	github         *github.Client
 	provisioner    provisioner.Provisioner
 	issuer         *auth.Issuer
@@ -31,7 +32,7 @@ type Service struct {
 	closeCtxCancel context.CancelFunc
 }
 
-func New(opts *Options, logger *zap.Logger, issuer *auth.Issuer) (*Service, error) {
+func New(opts *Options, logger *otelzap.Logger, issuer *auth.Issuer) (*Service, error) {
 	// Init db
 	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN)
 	if err != nil {

@@ -35,7 +35,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	// We create an initial org with a name derived from the user's info
 	err = s.createOrgForUser(ctx, email, name)
 	if err != nil {
-		s.logger.Error("failed to create organization for user", zap.String("user.id", user.ID), zap.Error(err))
+		s.logger.Ctx(ctx).Error("failed to create organization for user", zap.String("user.id", user.ID), zap.Error(err))
 		// continuing, since user was created successfully
 	}
 

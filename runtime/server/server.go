@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rilldata/rill/runtime/server/metrics"
 	"github.com/rs/cors"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
@@ -28,7 +29,6 @@ import (
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/sdk/metric"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -52,7 +52,7 @@ type Server struct {
 	runtimev1.UnsafeQueryServiceServer
 	runtime *runtime.Runtime
 	opts    *Options
-	logger  *zap.Logger
+	logger  *otelzap.Logger
 	aud     *auth.Audience
 }
 
@@ -61,7 +61,7 @@ var (
 	_ runtimev1.QueryServiceServer   = (*Server)(nil)
 )
 
-func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server, error) {
+func NewServer(opts *Options, rt *runtime.Runtime, logger *otelzap.Logger) (*Server, error) {
 	srv := &Server{
 		opts:    opts,
 		runtime: rt,
@@ -101,7 +101,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		grpc.ChainStreamInterceptor(
 			si,
 			otelgrpc.StreamServerInterceptor(),
-			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
+			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger.Logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
@@ -109,7 +109,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		grpc.ChainUnaryInterceptor(
 			ui,
 			otelgrpc.UnaryServerInterceptor(),
-			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
+			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger.Logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
@@ -117,7 +117,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	)
 	runtimev1.RegisterRuntimeServiceServer(server, s)
 	runtimev1.RegisterQueryServiceServer(server, s)
-	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
+	s.logger.Ctx(ctx).Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
@@ -129,7 +129,7 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 	}
 
 	server := &http.Server{Handler: handler}
-	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
+	s.logger.Ctx(ctx).Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 

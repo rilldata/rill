@@ -178,7 +178,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	if ok && oldAuthToken != "" {
 		err := a.admin.RevokeAuthToken(r.Context(), oldAuthToken)
 		if err != nil {
-			a.logger.Error("failed to revoke old user auth token during new auth", zap.Error(err))
+			a.logger.Ctx(r.Context()).Error("failed to revoke old user auth token during new auth", zap.Error(err))
 			// The old token was probably manually revoked. We can still continue.
 		}
 	}
@@ -225,7 +225,7 @@ func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request, pathP
 	if ok && authToken != "" {
 		err := a.admin.RevokeAuthToken(r.Context(), authToken)
 		if err != nil {
-			a.logger.Error("failed to revoke user auth token during logout", zap.Error(err))
+			a.logger.Ctx(r.Context()).Error("failed to revoke user auth token during logout", zap.Error(err))
 			// We should still continue to ensure the user is logged out on the auth provider as well.
 		}
 	}

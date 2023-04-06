@@ -14,7 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/client"
 	"github.com/rilldata/rill/runtime/drivers/github"
 	"github.com/rilldata/rill/runtime/server/auth"
-	"go.uber.org/zap"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 )
 
 type Instance struct {
@@ -50,12 +50,12 @@ type staticRuntime struct {
 
 type staticProvisioner struct {
 	spec   *staticSpec
-	logger *zap.Logger
+	logger *otelzap.Logger
 	db     database.DB
 	issuer *auth.Issuer
 }
 
-func NewStatic(spec string, logger *zap.Logger, db database.DB, issuer *auth.Issuer) (Provisioner, error) {
+func NewStatic(spec string, logger *otelzap.Logger, db database.DB, issuer *auth.Issuer) (Provisioner, error) {
 	sps := &staticSpec{}
 	err := json.Unmarshal([]byte(spec), sps)
 	if err != nil {

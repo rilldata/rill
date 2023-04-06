@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/spf13/cobra"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
@@ -67,7 +68,8 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			// Init logger
 			cfg := zap.NewProductionConfig()
 			cfg.Level.SetLevel(conf.LogLevel)
-			logger, err := cfg.Build()
+			zapLogger, err := cfg.Build()
+			logger := otelzap.New(zapLogger)
 			if err != nil {
 				fmt.Printf("error: failed to create logger: %s", err.Error())
 				os.Exit(1)
