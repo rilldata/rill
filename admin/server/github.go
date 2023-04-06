@@ -129,7 +129,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 	}
 
 	// Redirect to UI success page
-	redirectURL, err := url.JoinPath(s.opts.FrontendURL, "/github/connect/success")
+	redirectURL, err := url.JoinPath(s.opts.FrontendURL, "/-/github/connect/success")
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
 		return

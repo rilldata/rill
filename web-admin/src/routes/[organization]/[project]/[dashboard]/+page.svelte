@@ -4,7 +4,7 @@
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import { StateSyncManager } from "@rilldata/web-common/features/dashboards/proto-state/StateSyncManager";
 
-  const metricViewName: string = $page.params.name;
+  const metricViewName: string = $page.params.dashboard;
   const stateSyncManager = new StateSyncManager(metricViewName);
 
   $: metricsExplorer = useDashboardStore(metricViewName);
