@@ -233,7 +233,7 @@
       {@const showComparison = isComparisonRangeAvailable}
       {@const comparisonValue = totalsComparisons?.[measure.name]}
       {@const comparisonPercChange =
-        comparisonValue && bigNum
+        comparisonValue && bigNum !== undefined && bigNum !== null
           ? (bigNum - comparisonValue) / comparisonValue
           : undefined}
       {@const formatPreset =
@@ -269,8 +269,6 @@
             yAccessor={measure.name}
             xMin={startValue}
             xMax={endValue}
-            start={startValue}
-            end={endValue}
             {showComparison}
             mouseoverTimeFormat={(value) => {
               /** format the date according to the time grain */
