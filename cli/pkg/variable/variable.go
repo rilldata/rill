@@ -19,16 +19,6 @@ func Parse(variables []string) (map[string]string, error) {
 	return vars, nil
 }
 
-func ParseSingle(v string) (string, string, error) {
-	// split into key value pairs
-	key, value, found := strings.Cut(v, "=")
-	// key can't be empty value can be
-	if !found || key == "" {
-		return "", "", fmt.Errorf("invalid token %q", v)
-	}
-	return key, value, nil
-}
-
 func Serialize(variables map[string]string) []string {
 	result := make([]string, len(variables))
 	i := 0

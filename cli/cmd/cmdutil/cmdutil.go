@@ -95,9 +95,13 @@ func SelectPrompt(msg string, options []string, def string) string {
 	prompt := &survey.Select{
 		Message: msg,
 		Options: options,
-		Default: def,
 	}
-	result := def
+
+	if contains(options, def) {
+		prompt.Default = def
+	}
+
+	result := ""
 	if err := survey.AskOne(prompt, &result); err != nil {
 		fmt.Printf("Prompt failed %v\n", err)
 		os.Exit(1)
@@ -174,4 +178,13 @@ type member struct {
 	RoleName  string `header:"role_name" json:"role_name"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
 	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_on"`
+}
+
+func contains(vals []string, key string) bool {
+	for _, s := range vals {
+		if key == s {
+			return true
+		}
+	}
+	return false
 }

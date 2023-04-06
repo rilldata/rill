@@ -147,7 +147,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	projectURL, err := url.JoinPath(s.opts.FrontendURL, fmt.Sprintf("-/%s/%s", org.Name, proj.Name))
+	projectURL, err := url.JoinPath(s.opts.FrontendURL, org.Name, proj.Name)
 	if err != nil {
 		return nil, status.Error(codes.Internal, fmt.Sprintf("project url generation failed with error %s", err.Error()))
 	}

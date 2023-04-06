@@ -28,22 +28,21 @@ import (
 )
 
 type options struct {
-	Name        string
-	Description string
-	ProdBranch  string
-	Public      bool
-	Variables   []string
+	Name       string
+	ProdBranch string
+	Public     bool
+	Variables  []string
 
 	// projectPath string input taken interactively
 	// no input taken from user for below
-	region   string
-	dbDriver string
-	dbDSN    string
-	slots    int64
+	description string
+	region      string
+	dbDriver    string
+	dbDSN       string
+	slots       int64
 }
 
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
-// TODO :: add non interactive mode
 func DeployCmd(cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deploy",
@@ -57,24 +56,17 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			// log in if not logged in
 			if !cfg.IsAuthenticated() {
-				msg := fmt.Sprintf("In order to deploy to Rill Cloud, you must login. Opening your browsers to %s to login or sign up...", cfg.AdminURL)
-				warn.Println(msg)
+				warn.Println("In order to deploy to Rill Cloud, you must login.")
 				// NOTE : calling commands within commands has both pros and cons
 				// PRO : No duplicated code
 				// CON : Need to make sure that UX under sub command verifies with UX on this command
 				loginCmd := auth.LoginCmd(cfg)
 				loginCmd.SetContext(ctx)
 				if err := loginCmd.RunE(loginCmd, nil); err != nil {
-					exitWithFailure(err)
+					return err
 				}
 
-				// set token in config
-				token, err := dotrill.GetAccessToken()
-				if err != nil {
-					return fmt.Errorf("could not parse access token from ~/.rill: %w", err)
-				}
-				cfg.AdminTokenDefault = token
-
+				var err error
 				// init admin client
 				adminClient, err = cmdutil.Client(cfg)
 				if err != nil {
@@ -163,7 +155,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			projRes, err := adminClient.CreateProject(ctx, &adminv1.CreateProjectRequest{
 				OrganizationName:     org,
 				Name:                 opts.Name,
-				Description:          opts.Description,
+				Description:          opts.description,
 				Region:               opts.region,
 				ProductionOlapDriver: opts.dbDriver,
 				ProductionOlapDsn:    opts.dbDSN,
@@ -217,13 +209,6 @@ func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubUR
 					return fmt.Errorf("project with name %v already exists in the org", projectName)
 				}
 				return nil
-			},
-		},
-		{
-			Name: "description",
-			Prompt: &survey.Input{
-				Message: "What is the project description?",
-				Default: "",
 			},
 		},
 		{
@@ -349,35 +334,35 @@ func hasRillProject(dir string) bool {
 const (
 	githubSetupMsg = `No git remote was found.
 
-	Rill projects deploy continuously when you push changes to Github.
-	Therefore, your project must be on Github before you deploy it to Rill.
+Rill projects deploy continuously when you push changes to Github.
+Therefore, your project must be on Github before you deploy it to Rill.
+
+Follow these steps to push your project to Github.
 	
-	Follow these steps to push your project to Github.
+1. Initialize git
+
+	git init
+
+2. Add and commit files
 	
-	1. Initialize git
+	git add .
+	git commit -m 'initial commit'
+
+3. Create a new GitHub repository on https://github.com/new
+
+4. Link git to the remote repository
 	
-		git init
+	git remote add origin https://github.com/your-account/your-repo.git
 	
-	2. Add and commit files
+5. Push your repository
 	
-		git add .
-		git commit -m 'initial commit'
+	git push -u origin main
 	
-	3. Create a new GitHub repository on https://github.com/new
+6. Deploy Rill to your repository
 	
-	4. Link git to the remote repository
+	rill deploy
 	
-		git remote add origin https://github.com/your-account/your-repo.git
-	
-	5. Push your repository
-	
-		git push -u origin main
-	
-	6. Deploy Rill to your repository
-	
-		rill deploy
-	
-	`
+`
 
 	envFileDefault = `## Add any project specific variables in format KEY=VALUE
 
