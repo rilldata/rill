@@ -1,40 +1,49 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useAdminServiceGetProject } from "../../../client";
 
-  const proj = useAdminServiceGetProject(
+  $: proj = useAdminServiceGetProject(
     $page.params.organization,
     $page.params.project
   );
 
-  $: dashboardsQuery = useDashboardNames($runtime.instanceId);
+  // Go to first dashboard
+  $: dashboardsQuery = useDashboardNames(
+    $proj.data?.productionDeployment?.runtimeInstanceId
+  );
+  $: if ($dashboardsQuery.data && $dashboardsQuery.data.length > 0) {
+    goto(
+      `/${$page.params.organization}/${$page.params.project}/${$dashboardsQuery.data[0]}`
+    );
+  }
+
+  function openDocs() {
+    window.open(
+      "https://docs.rilldata.com/using-rill/metrics-dashboard",
+      "_blank"
+    );
+  }
 </script>
 
 <svelte:head>
-  <title>Projects</title>
+  <title>Project</title>
 </svelte:head>
 
 <section class="flex flex-col justify-center items-center h-3/5">
-  {#if $proj.isLoading}
+  {#if $proj.isLoading || $dashboardsQuery.isLoading}
     <span>Loading...</span>
-  {:else if $proj.isError}
-    <span>Error: {$proj.error}</span>
-  {:else if $proj.data && $proj.data.project}
-    <h1 class="text-3xl font-medium mb-4">
+  {:else if $proj.isError || $dashboardsQuery.isError}
+    <span>Error: {$proj.error || $dashboardsQuery.error}</span>
+  {:else if $proj.data && $proj.data.project && $dashboardsQuery.data && $dashboardsQuery.data.length === 0}
+    <h1 class="text-3xl font-medium text-gray-800 mb-4">
       Project: {$proj.data.project.name}
     </h1>
-    <p class="text-lg"><emph>{$proj.data.project.description}</emph></p>
+    <p class="text-lg text-gray-700 mb-6">
+      Your project does not have any dashboards... yet!
+    </p>
+    <Button type="primary" on:click={openDocs}>Read the docs</Button>
   {/if}
-  <div class="mt-4">
-    {#if $dashboardsQuery.data}
-      {#each $dashboardsQuery.data as dashboard}
-        <a
-          href="/{$page.params.organization}/{$page.params.project}/{dashboard}"
-          class="text-lg">{dashboard}</a
-        >
-      {/each}
-    {/if}
-  </div>
 </section>
