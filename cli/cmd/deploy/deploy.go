@@ -53,7 +53,6 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			warn := color.New(color.Bold).Add(color.FgYellow)
 			info := color.New(color.Bold).Add(color.FgWhite)
 			success := color.New(color.Bold).Add(color.FgGreen)
-			// admin adminClient
 			var adminClient *client.Client
 
 			// log in if not logged in
@@ -380,16 +379,19 @@ const (
 	
 	`
 
-	envFileDefault = `## add any project specific variables in format KEY=VALUE
+	envFileDefault = `## Add any project specific variables in format KEY=VALUE
+
 ## If using private s3 sources uncomment next three and set credentials
+
 # AWS_ACCESS_KEY_ID=
 # AWS_SECRET_ACCESS_KEY=
 # AWS_SESSION_TOKEN=
 
 ## If using private gcs sources set GCS_CREDENTIALS_FILE to a location where credentials.json for gcs is stored on your local system
 ## this creates an env GCS_CREDENTIALS with the file contents in env variable
+
 # GCS_CREDENTIALS_FILE=
 
-## add any other project specific credentials below:
+## add any other project specific variables below:
 `
 )
