@@ -20,7 +20,7 @@
   export let comparisonOption: TimeComparisonOption = undefined;
   export let comparisonValue: number = undefined;
   export let comparisonPercChange: number = undefined;
-  export let showComparison: boolean = false;
+  export let showComparison = false;
 
   export let status: EntityStatus;
   export let description: string = undefined;
