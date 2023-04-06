@@ -324,7 +324,9 @@
             {$topListQuery?.error}
           </div>
         {:else if values.length === 0}
-          <div class="p-1 ui-copy-disabled">no available values</div>
+          <div style:padding-left="28px" class="p-1 ui-copy-disabled">
+            no available values
+          </div>
         {/if}
 
         {#if values.length > slice}
