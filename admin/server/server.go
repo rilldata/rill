@@ -268,13 +268,13 @@ func CheckUserAgent(ctx context.Context) (context.Context, error) {
 	}
 
 	// Check if build from source
-	if ver == "unknown" {
+	if ver == "unknown" || ver == "" {
 		return ctx, nil
 	}
 
 	v1, err := version.NewVersion(ver)
 	if err != nil {
-		return nil, status.Error(codes.PermissionDenied, err.Error())
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("could not parse rill-cli version: %s", err.Error()))
 	}
 
 	constraints, err := version.NewConstraint(cliVersionConstraint)
@@ -283,7 +283,7 @@ func CheckUserAgent(ctx context.Context) (context.Context, error) {
 	}
 
 	if !constraints.Check(v1) {
-		panic(fmt.Errorf("Rill %s is no longer supported, please upgrade to the latest version", v1))
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported, please upgrade to the latest version", v1))
 	}
 
 	return ctx, nil
