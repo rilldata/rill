@@ -17,10 +17,10 @@
   } from "../humanize-numbers";
 
   export let value: number;
-  export let comparisonOption: TimeComparisonOption;
-  export let comparisonValue: number;
-  export let comparisonPercChange: number;
-  export let showComparison: boolean;
+  export let comparisonOption: TimeComparisonOption = undefined;
+  export let comparisonValue: number = undefined;
+  export let comparisonPercChange: number = undefined;
+  export let showComparison: boolean = false;
 
   export let status: EntityStatus;
   export let description: string = undefined;
@@ -29,7 +29,7 @@
 
   $: formatPresetEnum =
     (formatPreset as NicelyFormattedTypes) || NicelyFormattedTypes.HUMANIZE;
-  $: valusIsPresent = value !== undefined && value !== null;
+  $: valueIsPresent = value !== undefined && value !== null;
 
   $: isComparisonPositive = comparisonPercChange && comparisonPercChange >= 0;
 
@@ -65,7 +65,7 @@
     override this by filling the slot in the consuming component. -->
     <slot name="value">
       <div>
-        {#if valusIsPresent && status === EntityStatus.Idle}
+        {#if valueIsPresent && status === EntityStatus.Idle}
           <Tooltip distance={8} location="bottom" alignment="start">
             <div class="w-max">
               <WithTween {value} tweenProps={{ duration: 500 }} let:output>
@@ -160,6 +160,8 @@
           >
             <Spinner status={EntityStatus.Running} />
           </div>
+        {:else if !valueIsPresent}
+          <span class="ui-copy-disabled-faint italic text-sm">no data</span>
         {/if}
       </div>
     </slot>
