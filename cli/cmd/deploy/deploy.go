@@ -318,6 +318,8 @@ func verifyAccess(ctx context.Context, c *client.Client, githubURL string) (*adm
 	if !ghRes.HasAccess {
 		// Print instructions to grant access
 		fmt.Printf("Rill projects deploy continuously when you push changes to Github.\n\n")
+		fmt.Printf("You need to install rill github app to grant read only access to your project.\n\n")
+		time.Sleep(3 * time.Second)
 		fmt.Printf("Open this URL in your browser to grant Rill access to your Github repository:\n\n")
 		fmt.Printf("\t%s\n\n", ghRes.GrantAccessUrl)
 
