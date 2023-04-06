@@ -390,6 +390,8 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
+      projectUrl:
+        type: string
   v1DeleteOrganizationResponse:
     type: object
   v1DeleteProjectResponse:

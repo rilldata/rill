@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -132,8 +133,14 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	projectURL, err := url.JoinPath(s.opts.FrontendURL, fmt.Sprintf("-/%s/%s", org.Name, proj.Name))
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("project url generation failed with error %s", err.Error()))
+	}
+
 	return &adminv1.CreateProjectResponse{
-		Project: projToDTO(proj),
+		Project:    projToDTO(proj),
+		ProjectUrl: projectURL,
 	}, nil
 }
 

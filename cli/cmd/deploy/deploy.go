@@ -53,12 +53,8 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			warn := color.New(color.Bold).Add(color.FgYellow)
 			info := color.New(color.Bold).Add(color.FgWhite)
 			success := color.New(color.Bold).Add(color.FgGreen)
-			// Create admin client
-			client, err := cmdutil.Client(cfg)
-			if err != nil {
-				return err
-			}
-			defer client.Close()
+			// admin adminClient
+			var adminClient *client.Client
 
 			// log in if not logged in
 			if !cfg.IsAuthenticated() {
@@ -72,6 +68,19 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				if err := loginCmd.RunE(loginCmd, nil); err != nil {
 					exitWithFailure(err)
 				}
+
+				// set token in config
+				token, err := dotrill.GetAccessToken()
+				if err != nil {
+					return fmt.Errorf("could not parse access token from ~/.rill: %w", err)
+				}
+				cfg.AdminTokenDefault = token
+
+				// init admin client
+				adminClient, err = cmdutil.Client(cfg)
+				if err != nil {
+					return err
+				}
 			} else {
 				// switch is already part of login cmd so running this only when user is already logged in
 				defaultOrg, err := dotrill.GetDefaultOrg()
@@ -79,7 +88,13 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				multipleOrgs, err := multipleOrgs(client)
+				// init admin client
+				adminClient, err = cmdutil.Client(cfg)
+				if err != nil {
+					return err
+				}
+
+				multipleOrgs, err := multipleOrgs(adminClient)
 				if err != nil {
 					return fmt.Errorf("listing orgs failed with error %w", err)
 				}
@@ -126,13 +141,13 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Check for access to the Github URL
-			ghRes, err := project.VerifyAccess(ctx, client, githubURL)
+			ghRes, err := project.VerifyAccess(ctx, adminClient, githubURL)
 			if err != nil {
-				return fmt.Errorf("access to github repo failed with error %w", err)
+				return fmt.Errorf("failed to verify access to github repo, error = %w", err)
 			}
 
 			// We now have access to the Github repo
-			opts, err := projectParamPrompt(ctx, client, org, githubURL, ghRes.DefaultBranch)
+			opts, err := projectParamPrompt(ctx, adminClient, org, githubURL, ghRes.DefaultBranch)
 			if err != nil {
 				return err
 			}
@@ -146,7 +161,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			opts.dbDriver = "duckdb"
 			opts.slots = 2
 			// Create the project (automatically deploys prod branch)
-			projRes, err := client.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			projRes, err := adminClient.CreateProject(ctx, &adminv1.CreateProjectRequest{
 				OrganizationName:     org,
 				Name:                 opts.Name,
 				Description:          opts.Description,
@@ -165,8 +180,11 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			// Success!
 			success.Printf("Created project %s/%s\n", cfg.Org, projRes.Project.Name)
-			success.Printf("Rill projects deploy continuously when you push changes to Github.\n\n")
-			// TODO :: add project UI link and rill docs here
+			success.Printf("Rill projects deploy continuously when you push changes to Github.\n")
+			if projRes.ProjectUrl != "" {
+				success.Printf("Your project can be accessed at %s\n", projRes.ProjectUrl)
+			}
+			// TODO :: add rill docs here
 			return nil
 		},
 	}
@@ -189,7 +207,7 @@ func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubUR
 				resp, err := c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: orgName, Name: projectName})
 				if err != nil {
 					if st, ok := status.FromError(err); ok {
-						if st.Code() == codes.NotFound {
+						if st.Code() == codes.NotFound || st.Code() == codes.InvalidArgument { // todo :: remove InvalidArgument once admin server is deployed
 							return nil
 						}
 					}

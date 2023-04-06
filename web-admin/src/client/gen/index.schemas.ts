@@ -163,6 +163,7 @@ export interface V1DeleteOrganizationResponse {
 
 export interface V1CreateProjectResponse {
   project?: V1Project;
+  projectUrl?: string;
 }
 
 export interface V1CreateOrganizationResponse {
