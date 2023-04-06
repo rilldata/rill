@@ -148,7 +148,7 @@ func (c *connection) FindProjectByName(ctx context.Context, orgName, name string
 
 func (c *connection) FindProjectByGithubURL(ctx context.Context, githubURL string) (*database.Project, error) {
 	res := &database.Project{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT p.* FROM projects p WHERE p.github_url=lower($1)", githubURL).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1)", githubURL).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
