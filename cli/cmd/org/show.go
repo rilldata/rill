@@ -13,7 +13,7 @@ import (
 
 func ShowCmd(cfg *config.Config) *cobra.Command {
 	showCmd := &cobra.Command{
-		Use:   "show",
+		Use:   "show [<org-name>]",
 		Short: "Show",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

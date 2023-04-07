@@ -13,7 +13,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	var description string
 
 	editCmd := &cobra.Command{
-		Use:   "edit",
+		Use:   "edit <org-name>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Edit",
 		RunE: func(cmd *cobra.Command, args []string) error {
