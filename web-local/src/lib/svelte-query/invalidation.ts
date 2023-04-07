@@ -106,10 +106,9 @@ export const invalidateMetricsViewData = (
       invalidationForMetricsViewData(query, metricsViewName),
     active: false,
   });
-  return queryClient.refetchQueries({
+  return queryClient.invalidateQueries({
     predicate: (query) =>
       invalidationForMetricsViewData(query, metricsViewName),
-    active: true,
   });
 };
 
@@ -121,9 +120,8 @@ export function invalidateProfilingQueries(
     predicate: (query) => isProfilingQuery(query.queryHash, name),
     active: false,
   });
-  return queryClient.refetchQueries({
+  return queryClient.invalidateQueries({
     predicate: (query) => isProfilingQuery(query.queryHash, name),
-    active: true,
   });
 }
 
