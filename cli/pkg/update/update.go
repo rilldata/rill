@@ -9,8 +9,22 @@ import (
 	"os"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/hashicorp/go-version"
+	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"gopkg.in/yaml.v2"
 )
+
+const (
+	StateFilename       = "state.yaml"
+	VersionInfoStateKey = "version_info"
+)
+
+type UpdateInfo struct {
+	Update      bool
+	Message     string
+	ReleaseInfo *ReleaseInfo
+}
 
 // ReleaseInfo stores information about a release
 type ReleaseInfo struct {
@@ -19,28 +33,93 @@ type ReleaseInfo struct {
 	PublishedAt time.Time `json:"published_at"`
 }
 
-func CheckVersion(ctx context.Context, currentVersion string) (string, error) {
+func CheckVersion(ctx context.Context, currentVersion string) error {
+	// Check if build from source
+	if currentVersion == "" {
+		return nil
+	}
+
+	updateInfo, err := checkVersion(ctx, currentVersion)
+	if err != nil {
+		return err
+	}
+
+	if updateInfo.Update {
+		fmt.Printf("\n%s %s → %s\n\n",
+			color.YellowString("A new version of rill is available:"),
+			color.CyanString(currentVersion),
+			color.CyanString(updateInfo.ReleaseInfo.Version))
+	}
+
+	return nil
+}
+
+func checkVersion(ctx context.Context, currentVersion string) (*UpdateInfo, error) {
+	stateEntry, _ := getVersionInfo()
+
+	if stateEntry != nil && time.Since(stateEntry.UpdateAt).Hours() < 24 {
+		v1, err := version.NewVersion(currentVersion)
+		if err != nil {
+			return nil, err
+		}
+
+		v2, err := version.NewVersion(stateEntry.LatestRelease.Version)
+		if err != nil {
+			return nil, err
+		}
+
+		if v1.LessThan(v2) {
+			return &UpdateInfo{
+				Update: true,
+				Message: fmt.Sprintf("Latest version (%s) is greater than the current build version (%s)\n",
+					stateEntry.LatestRelease.Version, currentVersion),
+				ReleaseInfo: &stateEntry.LatestRelease,
+			}, nil
+		}
+
+		return &UpdateInfo{
+			Update:  false,
+			Message: "Skip checking the latest version",
+		}, nil
+	}
+
+	// Check with latest release on github
 	addr := "https://api.github.com/repos/rilldata/rill-developer/releases/latest"
 	info, err := latestVersion(ctx, addr)
 	if err != nil {
-		return "", err
+		return nil, err
+	}
+
+	err = setVersionInfo(time.Now(), *info)
+	if err != nil {
+		return nil, err
 	}
 
 	v1, err := version.NewVersion(currentVersion)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	v2, err := version.NewVersion(info.Version)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if v1.LessThan(v2) {
-		return fmt.Sprintf("Latest version (%s) is greater than the current build version (%s)\n",
-			info.Version, currentVersion), nil
+		return &UpdateInfo{
+			Update: true,
+			Message: fmt.Sprintf("Latest version (%s) is greater than the current build version (%s)\n",
+				info.Version, currentVersion),
+			ReleaseInfo: info,
+		}, nil
 	}
-	return "", nil
+
+	return &UpdateInfo{
+		Update: false,
+		Message: fmt.Sprintf("Latest version (%s) is less than or equal to current build version (%s)",
+			info.Version, currentVersion),
+		ReleaseInfo: info,
+	}, nil
 }
 
 func latestVersion(ctx context.Context, addr string) (*ReleaseInfo, error) {
@@ -87,4 +166,43 @@ func latestVersion(ctx context.Context, addr string) (*ReleaseInfo, error) {
 	}
 
 	return info, nil
+}
+
+type VerionInfo struct {
+	UpdateAt      time.Time   `yaml:"update_at"`
+	LatestRelease ReleaseInfo `yaml:"latest_release"`
+}
+
+func getVersionInfo() (*VerionInfo, error) {
+	content, err := dotrill.Get(StateFilename, VersionInfoStateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	var verionInfo VerionInfo
+	err = yaml.Unmarshal([]byte(content), &verionInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	return &verionInfo, nil
+}
+
+func setVersionInfo(t time.Time, r ReleaseInfo) error {
+	data := VerionInfo{
+		UpdateAt:      t,
+		LatestRelease: r,
+	}
+
+	content, err := yaml.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	err = dotrill.Set(StateFilename, VersionInfoStateKey, string(content))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
