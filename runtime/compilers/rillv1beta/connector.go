@@ -47,13 +47,11 @@ func ExtractConnectors(projectPath string) ([]*Connector, error) {
 		}
 
 		c := key{Name: src.Type, Type: src.Type}
-		fmt.Println("src " + src.Type)
 		connectorMap[c] = true
 	}
 
 	result := make([]*Connector, 0)
 	for k := range connectorMap {
-		fmt.Println("key " + k.Type)
 		connector, ok := connectors.Connectors[k.Type]
 		if !ok {
 			return nil, fmt.Errorf("no source connector defined for type %q", k.Type)

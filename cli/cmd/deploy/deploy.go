@@ -243,11 +243,12 @@ func variablesPrompt(projectPath string) (map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract connectors %w", err)
 	}
+
 	vars := make(map[string]string)
 	for _, c := range connectors {
 		fmt.Printf("\nconnector %s require credentials\n\n", c.Type)
 		if c.Help != "" {
-			fmt.Print(c.Help)
+			fmt.Println(c.Help)
 		}
 		for _, prop := range c.Variables {
 			question := &survey.Question{}
