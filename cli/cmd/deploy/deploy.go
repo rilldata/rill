@@ -246,7 +246,9 @@ func variablesPrompt(projectPath string) (map[string]string, error) {
 
 	vars := make(map[string]string)
 	for _, c := range connectors {
-		fmt.Printf("\nconnector %s require credentials\n\n", c.Type)
+		if len(c.Variables) != 0 {
+			fmt.Printf("\nconnector %s require credentials\n\n", c.Type)
+		}
 		if c.Help != "" {
 			fmt.Println(c.Help)
 		}
