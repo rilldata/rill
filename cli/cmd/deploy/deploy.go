@@ -246,13 +246,14 @@ func variablesPrompt(projectPath string) (map[string]string, error) {
 
 	vars := make(map[string]string)
 	for _, c := range connectors {
-		if len(c.Variables) != 0 {
-			fmt.Printf("\nconnector %s require credentials\n\n", c.Type)
+		connectorVariables := c.Spec.ConnectorVariables
+		if len(connectorVariables) != 0 {
+			fmt.Printf("\nConnector %s requires credentials\n\n", c.Type)
 		}
-		if c.Help != "" {
-			fmt.Println(c.Help)
+		if c.Spec.Help != "" {
+			fmt.Println(c.Spec.Help)
 		}
-		for _, prop := range c.Variables {
+		for _, prop := range connectorVariables {
 			question := &survey.Question{}
 			msg := fmt.Sprintf("connector.%s.%s", c.Name, prop.Key)
 			if prop.Help != "" {
@@ -275,7 +276,7 @@ func variablesPrompt(projectPath string) (map[string]string, error) {
 
 			answer := ""
 			if err := survey.Ask([]*survey.Question{question}, &answer); err != nil {
-				exitWithFailure(fmt.Errorf("gcs credentials failed with error %w", err))
+				exitWithFailure(fmt.Errorf("variables prompt failed with error %w", err))
 			}
 
 			if answer != "" {

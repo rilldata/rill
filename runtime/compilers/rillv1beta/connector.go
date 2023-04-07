@@ -17,10 +17,9 @@ type Variables struct {
 }
 
 type Connector struct {
-	Name      string
-	Type      string
-	Variables []connectors.VariableSchema
-	Help      string
+	Name string
+	Type string
+	Spec connectors.Spec
 }
 
 func ExtractConnectors(projectPath string) ([]*Connector, error) {
@@ -55,8 +54,7 @@ func ExtractConnectors(projectPath string) ([]*Connector, error) {
 			return nil, fmt.Errorf("no source connector defined for type %q", k.Type)
 		}
 
-		spec := connector.Spec()
-		result = append(result, &Connector{Name: k.Name, Type: k.Type, Variables: spec.ConnectorVariables, Help: spec.Help})
+		result = append(result, &Connector{Name: k.Name, Type: k.Type, Spec: connector.Spec()})
 	}
 	return result, nil
 }
