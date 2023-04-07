@@ -135,6 +135,18 @@ func InputPrompt(msg, def string) string {
 	return result
 }
 
+func PasswordPrompt(msg string) string {
+	prompt := &survey.Password{
+		Message: msg,
+	}
+	result := ""
+	if err := survey.AskOne(prompt, &result); err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
+	return result
+}
+
 func WarnPrinter(str string) {
 	boldYellow := color.New(color.FgYellow).Add(color.Bold)
 	boldYellow.Fprintln(color.Output, str)

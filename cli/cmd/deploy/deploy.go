@@ -7,12 +7,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
 	"github.com/go-git/go-git/v5"
-	"github.com/joho/godotenv"
+	"github.com/go-yaml/yaml"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
@@ -21,7 +22,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
-	"github.com/rilldata/rill/cli/pkg/variable"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
@@ -37,7 +37,6 @@ type promptOptions struct {
 	Name       string
 	ProdBranch string
 	Public     bool
-	Variables  []string
 }
 
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
@@ -144,10 +143,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			parsedVariables, err := variable.Parse(opts.Variables)
-			if err != nil {
-				return err
-			}
+			credentials := credentialsPrompt(projectPath)
 
 			// Create the project (automatically deploys prod branch)
 			projRes, err := adminClient.CreateProject(ctx, &adminv1.CreateProjectRequest{
@@ -161,7 +157,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				ProductionBranch:     opts.ProdBranch,
 				Public:               opts.Public,
 				GithubUrl:            githubURL,
-				Variables:            parsedVariables,
+				Variables:            credentials,
 			})
 			if err != nil {
 				return fmt.Errorf("create project failed with error %w", err)
@@ -230,42 +226,6 @@ func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubUR
 				Default: false,
 			},
 		},
-		{
-			Name: "variables",
-			Prompt: &survey.Editor{
-				Message:       "Add variables for your project in format KEY=VALUE. Enter each variable on a new line",
-				FileName:      "*.env",
-				Default:       envFileDefault,
-				HideDefault:   true,
-				AppendDefault: true,
-			},
-			Validate: func(any interface{}) error {
-				val := any.(string)
-				envs, err := godotenv.Unmarshal(val)
-				for key, value := range envs {
-					if key == "" {
-						return fmt.Errorf("invalid format found empty key")
-					} else if key == "GCS_CREDENTIALS_FILE" {
-						if _, err := os.Stat(value); err != nil {
-							return err
-						}
-					}
-				}
-				return err
-			},
-			Transform: func(any interface{}) interface{} {
-				val := any.(string)
-				// ignoring error since already validated
-				envs, _ := godotenv.Unmarshal(val)
-				for k, v := range envs {
-					if k == "GCS_CREDENTIALS_FILE" {
-						content, _ := os.ReadFile(v)
-						envs[k] = string(content)
-					}
-				}
-				return variable.Serialize(envs)
-			},
-		},
 	}
 
 	opts := &promptOptions{}
@@ -274,6 +234,26 @@ func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubUR
 	}
 
 	return opts, nil
+}
+
+func credentialsPrompt(projectPath string) map[string]string {
+	csMap, err := inferSourceConnectors(projectPath)
+	if err != nil {
+		exitWithFailure(err)
+	}
+
+	creds := make(map[string]string)
+	for connector, sources := range csMap {
+		if promptFunc, ok := connectorPrompts[connector.Type]; ok {
+			fmt.Printf("\nsources %s with connector %s require credentials. Leave blank if public access enabled.\n", sources, connector.Type)
+			// TODO :: add docs link
+			connectorCreds := promptFunc(connector)
+			for k, v := range connectorCreds {
+				creds[k] = v
+			}
+		}
+	}
+	return creds
 }
 
 func multipleOrgs(c *client.Client) (bool, error) {
@@ -356,6 +336,106 @@ func verifyAccess(ctx context.Context, c *client.Client, githubURL string) (*adm
 	return ghRes, nil
 }
 
+func inferSourceConnectors(projectPath string) (map[connector][]string, error) {
+	sourcesPath := filepath.Join(projectPath, "sources")
+	sources, err := os.ReadDir(sourcesPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// connector to sources maps
+	csMap := make(map[connector][]string)
+	for _, s := range sources {
+		fileName := s.Name()
+		content, err := os.ReadFile(filepath.Join(sourcesPath, fileName))
+		if err != nil {
+			return nil, fmt.Errorf("error in reading file %v : %w", fileName, err)
+		}
+
+		src := source{}
+		if err := yaml.Unmarshal(content, &src); err != nil {
+			return nil, fmt.Errorf("error in unmarshalling yaml file %v : %w", fileName, err)
+		}
+
+		c := connector{Name: src.Type, Type: src.Type}
+		srcs, ok := csMap[c]
+		if !ok {
+			srcs = csMap[c]
+		}
+		srcName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+		srcs = append(srcs, srcName)
+		csMap[c] = srcs
+	}
+	return csMap, nil
+}
+
+type connector struct {
+	Name string
+	Type string
+}
+
+type source struct {
+	Type string `yaml:"type"`
+}
+
+func s3Prompt(c connector) map[string]string {
+	prop := make(map[string]string)
+	accessKeyID := fmt.Sprintf("connector.%s.aws_access_key_id", c.Name)
+	prop["aws_access_key_id"] = cmdutil.PasswordPrompt(accessKeyID)
+
+	secretAccessKey := fmt.Sprintf("connector.%s.aws_secret_access_key", c.Name)
+	prop["aws_secret_access_key"] = cmdutil.PasswordPrompt(secretAccessKey)
+
+	region := fmt.Sprintf("connector.%s.region", c.Name)
+	prop["region"] = cmdutil.InputPrompt(region, "us-east-1")
+	return prop
+}
+
+func gcsPrompt(c connector) map[string]string {
+	prop := make(map[string]string)
+	question := []*survey.Question{
+		{
+			Name: "credentials_json",
+			Prompt: &survey.Input{
+				Message: fmt.Sprintf("connector.%s.sa_key_json (enter path of file to load from)", c.Name),
+			},
+			Validate: func(any interface{}) error {
+				val := any.(string)
+				if val == "" {
+					// user can chhose to leave empty for public sources
+					return nil
+				}
+				_, err := os.Stat(val)
+				return err
+			},
+			Transform: func(any interface{}) interface{} {
+				val := any.(string)
+				if val == "" {
+					return ""
+				}
+				// ignoring error since PathError is already validated
+				content, _ := os.ReadFile(val)
+				return string(content)
+			},
+		},
+	}
+
+	creds := ""
+	if err := survey.Ask(question, &creds); err != nil {
+		exitWithFailure(fmt.Errorf("gcs credentials failed with error %w", err))
+	}
+
+	if creds != "" {
+		prop["gcs_credentials"] = creds
+	}
+	return prop
+}
+
+var connectorPrompts = map[string]func(connector) map[string]string{
+	"s3":  s3Prompt,
+	"gcs": gcsPrompt,
+}
+
 const (
 	githubSetupMsg = `No git remote was found.
 
@@ -387,21 +467,5 @@ Follow these steps to push your project to Github.
 	
 	rill deploy
 	
-`
-
-	envFileDefault = `## Add any project specific variables in format KEY=VALUE
-
-## If using private s3 sources uncomment next three and set credentials
-
-# AWS_ACCESS_KEY_ID=
-# AWS_SECRET_ACCESS_KEY=
-# AWS_SESSION_TOKEN=
-
-## If using private gcs sources set GCS_CREDENTIALS_FILE to a location where credentials.json for gcs is stored on your local system
-## this creates an env GCS_CREDENTIALS with the file contents in env variable
-
-# GCS_CREDENTIALS_FILE=
-
-## add any other project specific variables below:
 `
 )
