@@ -34,11 +34,11 @@ type Connector interface {
 
 // Spec provides metadata about a connector and the properties it supports.
 type Spec struct {
-	DisplayName string
-	Description string
-	Properties  []PropertySchema
-	Credentials []VariableSchema
-	Help        string
+	DisplayName        string
+	Description        string
+	Properties         []PropertySchema
+	ConnectorVariables []VariableSchema
+	Help               string
 }
 
 // PropertySchema provides the schema for a property supported by a connector.

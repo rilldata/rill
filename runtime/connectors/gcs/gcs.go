@@ -44,7 +44,7 @@ var spec = connectors.Spec{
 			Href:        "https://docs.rilldata.com/using-rill/import-data#setting-google-gcs-credentials",
 		},
 	},
-	Credentials: []connectors.VariableSchema{
+	ConnectorVariables: []connectors.VariableSchema{
 		{
 			Key:  "gcs_credentials",
 			Help: "Enter path of file to load from. Leave blank if public access enabled.",

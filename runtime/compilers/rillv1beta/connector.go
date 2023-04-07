@@ -56,7 +56,7 @@ func ExtractConnectors(projectPath string) ([]*Connector, error) {
 		}
 
 		spec := connector.Spec()
-		result = append(result, &Connector{Name: k.Name, Type: k.Type, Variables: spec.Credentials, Help: spec.Help})
+		result = append(result, &Connector{Name: k.Name, Type: k.Type, Variables: spec.ConnectorVariables, Help: spec.Help})
 	}
 	return result, nil
 }
