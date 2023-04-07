@@ -9,8 +9,8 @@
 
   $: metricsExplorer = useDashboardStore(metricViewName);
 
-  $: if (metricsExplorer) {
-    stateSyncManager.handleStateChange(metricsExplorer);
+  $: if ($metricsExplorer) {
+    stateSyncManager.handleStateChange($metricsExplorer);
   }
   $: if ($page) {
     stateSyncManager.handleUrlChange();
@@ -23,4 +23,4 @@
   <title>Rill | {metricViewName}</title>
 </svelte:head>
 
-<Dashboard {metricViewName} hasTitle={false} />
+<Dashboard hasTitle={false} {metricViewName} />
