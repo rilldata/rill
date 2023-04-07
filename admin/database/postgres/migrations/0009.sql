@@ -92,4 +92,3 @@ CREATE TABLE usergroups_projects_roles (
 );
 
 CREATE INDEX usergroups_projects_roles_project_usergroup_idx ON usergroups_projects_roles (project_id, usergroup_id);
-

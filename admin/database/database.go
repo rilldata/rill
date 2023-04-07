@@ -372,10 +372,10 @@ type ProjectRole struct {
 const (
 	OrganizationAdminRoleName        = "admin"
 	OrganizationCollaboratorRoleName = "collaborator"
-	OrganizationReaderRoleName       = "reader"
+	OrganizationViewerRoleName       = "viewer"
 	ProjectAdminRoleName             = "admin"
 	ProjectCollaboratorRoleName      = "collaborator"
-	ProjectReaderRoleName            = "reader"
+	ProjectViewerRoleName            = "viewer"
 )
 
 type Usergroup struct {
