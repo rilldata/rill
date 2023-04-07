@@ -162,10 +162,15 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "user not found")
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
 		}
-		return nil, status.Error(codes.Internal, err.Error())
+		// Create phantom user
+		// TODO: Replace by an invite-based approach
+		user, err = s.admin.CreateOrUpdateUser(ctx, req.Email, "", "")
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 	}
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)

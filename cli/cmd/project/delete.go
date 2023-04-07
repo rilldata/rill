@@ -12,7 +12,7 @@ import (
 
 func DeleteCmd(cfg *config.Config) *cobra.Command {
 	deleteCmd := &cobra.Command{
-		Use:   "delete",
+		Use:   "delete <project-name>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Delete",
 		RunE: func(cmd *cobra.Command, args []string) error {

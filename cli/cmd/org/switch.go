@@ -13,7 +13,7 @@ import (
 
 func SwitchCmd(cfg *config.Config) *cobra.Command {
 	switchCmd := &cobra.Command{
-		Use:   "switch",
+		Use:   "switch [<org-name>]",
 		Short: "Switch",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

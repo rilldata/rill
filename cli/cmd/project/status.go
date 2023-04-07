@@ -12,7 +12,7 @@ import (
 
 func StatusCmd(cfg *config.Config) *cobra.Command {
 	statusCmd := &cobra.Command{
-		Use:   "status",
+		Use:   "status <project-name>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Status",
 		RunE: func(cmd *cobra.Command, args []string) error {
