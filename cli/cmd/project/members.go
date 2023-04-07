@@ -22,7 +22,7 @@ func MembersCmd(cfg *config.Config) *cobra.Command {
 
 func ListMembersCmd(cfg *config.Config) *cobra.Command {
 	membersCmd := &cobra.Command{
-		Use:   "list",
+		Use:   "list <project-name>",
 		Short: "List Members",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -55,7 +55,7 @@ func ListMembersCmd(cfg *config.Config) *cobra.Command {
 
 func AddCmd(cfg *config.Config) *cobra.Command {
 	addCmd := &cobra.Command{
-		Use:   "add",
+		Use:   "add <project-name> <email> <role>",
 		Short: "Add Member",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -84,7 +84,7 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 
 func RemoveCmd(cfg *config.Config) *cobra.Command {
 	removeCmd := &cobra.Command{
-		Use:   "remove",
+		Use:   "remove <project-name> <email>",
 		Short: "Remove Member",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -112,7 +112,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 
 func SetRoleCmd(cfg *config.Config) *cobra.Command {
 	setRoleCmd := &cobra.Command{
-		Use:   "set-role",
+		Use:   "set-role <project-name> <email> <role>",
 		Short: "Set role of Member",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {

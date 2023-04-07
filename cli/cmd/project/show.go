@@ -11,7 +11,7 @@ import (
 
 func ShowCmd(cfg *config.Config) *cobra.Command {
 	showCmd := &cobra.Command{
-		Use:   "show",
+		Use:   "show <project-name>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Show",
 		RunE: func(cmd *cobra.Command, args []string) error {
