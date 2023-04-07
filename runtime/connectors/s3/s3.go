@@ -54,6 +54,22 @@ var spec = connectors.Spec{
 			Href:        "https://docs.rilldata.com/using-rill/import-data#setting-amazon-s3-credentials",
 		},
 	},
+	Credentials: []connectors.VariableSchema{
+		{
+			Key:    "aws_access_key_id",
+			Help:   "Leave blank if public access enabled",
+			Secret: true,
+		},
+		{
+			Key:    "aws_secret_access_key",
+			Help:   "Leave blank if public access enabled",
+			Secret: true,
+		},
+		{
+			Key:     "region",
+			Default: "us-east-1",
+		},
+	},
 }
 
 type Config struct {

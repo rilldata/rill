@@ -7,13 +7,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-yaml/yaml"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
@@ -23,6 +21,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -143,7 +142,10 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			credentials := credentialsPrompt(projectPath)
+			variables, err := variablesPrompt(projectPath)
+			if err != nil {
+				return err
+			}
 
 			// Create the project (automatically deploys prod branch)
 			projRes, err := adminClient.CreateProject(ctx, &adminv1.CreateProjectRequest{
@@ -157,7 +159,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				ProductionBranch:     opts.ProdBranch,
 				Public:               opts.Public,
 				GithubUrl:            githubURL,
-				Variables:            credentials,
+				Variables:            variables,
 			})
 			if err != nil {
 				return fmt.Errorf("create project failed with error %w", err)
@@ -236,24 +238,49 @@ func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubUR
 	return opts, nil
 }
 
-func credentialsPrompt(projectPath string) map[string]string {
-	csMap, err := inferSourceConnectors(projectPath)
+func variablesPrompt(projectPath string) (map[string]string, error) {
+	connectors, err := rillv1beta.ExtractConnectors(projectPath)
 	if err != nil {
-		exitWithFailure(err)
+		return nil, fmt.Errorf("failed to extract connectors %w", err)
 	}
+	vars := make(map[string]string)
+	for _, c := range connectors {
+		fmt.Printf("\nconnector %s require credentials\n\n", c.Type)
+		if c.Help != "" {
+			fmt.Print(c.Help)
+		}
+		for _, prop := range c.Variables {
+			question := &survey.Question{}
+			msg := fmt.Sprintf("connector.%s.%s", c.Name, prop.Key)
+			if prop.Help != "" {
+				msg = fmt.Sprintf(msg+" (%s)", prop.Help)
+			}
 
-	creds := make(map[string]string)
-	for connector, sources := range csMap {
-		if promptFunc, ok := connectorPrompts[connector.Type]; ok {
-			fmt.Printf("\nsources %s with connector %s require credentials. Leave blank if public access enabled.\n", sources, connector.Type)
-			// TODO :: add docs link
-			connectorCreds := promptFunc(connector)
-			for k, v := range connectorCreds {
-				creds[k] = v
+			if prop.Secret {
+				question.Prompt = &survey.Password{Message: msg}
+			} else {
+				question.Prompt = &survey.Input{Message: msg, Default: prop.Default}
+			}
+
+			if prop.TransformFunc != nil {
+				question.Transform = prop.TransformFunc
+			}
+
+			if prop.ValidateFunc != nil {
+				question.Validate = prop.ValidateFunc
+			}
+
+			answer := ""
+			if err := survey.Ask([]*survey.Question{question}, &answer); err != nil {
+				exitWithFailure(fmt.Errorf("gcs credentials failed with error %w", err))
+			}
+
+			if answer != "" {
+				vars[prop.Key] = answer
 			}
 		}
 	}
-	return creds
+	return vars, nil
 }
 
 func multipleOrgs(c *client.Client) (bool, error) {
@@ -334,106 +361,6 @@ func verifyAccess(ctx context.Context, c *client.Client, githubURL string) (*adm
 		}
 	}
 	return ghRes, nil
-}
-
-func inferSourceConnectors(projectPath string) (map[connector][]string, error) {
-	sourcesPath := filepath.Join(projectPath, "sources")
-	sources, err := os.ReadDir(sourcesPath)
-	if err != nil {
-		return nil, err
-	}
-
-	// connector to sources maps
-	csMap := make(map[connector][]string)
-	for _, s := range sources {
-		fileName := s.Name()
-		content, err := os.ReadFile(filepath.Join(sourcesPath, fileName))
-		if err != nil {
-			return nil, fmt.Errorf("error in reading file %v : %w", fileName, err)
-		}
-
-		src := source{}
-		if err := yaml.Unmarshal(content, &src); err != nil {
-			return nil, fmt.Errorf("error in unmarshalling yaml file %v : %w", fileName, err)
-		}
-
-		c := connector{Name: src.Type, Type: src.Type}
-		srcs, ok := csMap[c]
-		if !ok {
-			srcs = csMap[c]
-		}
-		srcName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
-		srcs = append(srcs, srcName)
-		csMap[c] = srcs
-	}
-	return csMap, nil
-}
-
-type connector struct {
-	Name string
-	Type string
-}
-
-type source struct {
-	Type string `yaml:"type"`
-}
-
-func s3Prompt(c connector) map[string]string {
-	prop := make(map[string]string)
-	accessKeyID := fmt.Sprintf("connector.%s.aws_access_key_id", c.Name)
-	prop["aws_access_key_id"] = cmdutil.PasswordPrompt(accessKeyID)
-
-	secretAccessKey := fmt.Sprintf("connector.%s.aws_secret_access_key", c.Name)
-	prop["aws_secret_access_key"] = cmdutil.PasswordPrompt(secretAccessKey)
-
-	region := fmt.Sprintf("connector.%s.region", c.Name)
-	prop["region"] = cmdutil.InputPrompt(region, "us-east-1")
-	return prop
-}
-
-func gcsPrompt(c connector) map[string]string {
-	prop := make(map[string]string)
-	question := []*survey.Question{
-		{
-			Name: "credentials_json",
-			Prompt: &survey.Input{
-				Message: fmt.Sprintf("connector.%s.sa_key_json (enter path of file to load from)", c.Name),
-			},
-			Validate: func(any interface{}) error {
-				val := any.(string)
-				if val == "" {
-					// user can chhose to leave empty for public sources
-					return nil
-				}
-				_, err := os.Stat(val)
-				return err
-			},
-			Transform: func(any interface{}) interface{} {
-				val := any.(string)
-				if val == "" {
-					return ""
-				}
-				// ignoring error since PathError is already validated
-				content, _ := os.ReadFile(val)
-				return string(content)
-			},
-		},
-	}
-
-	creds := ""
-	if err := survey.Ask(question, &creds); err != nil {
-		exitWithFailure(fmt.Errorf("gcs credentials failed with error %w", err))
-	}
-
-	if creds != "" {
-		prop["gcs_credentials"] = creds
-	}
-	return prop
-}
-
-var connectorPrompts = map[string]func(connector) map[string]string{
-	"s3":  s3Prompt,
-	"gcs": gcsPrompt,
 }
 
 const (
