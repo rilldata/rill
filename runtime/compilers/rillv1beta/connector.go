@@ -30,8 +30,6 @@ func ExtractConnectors(projectPath string) ([]*Connector, error) {
 		return nil, err
 	}
 
-	fmt.Println(sources)
-
 	// keeping a map to dedup connectors
 	connectorMap := make(map[key]bool)
 	for _, fileName := range sources {
