@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
@@ -41,6 +42,30 @@ var spec = connectors.Spec{
 			Type:        connectors.InformationalPropertyType,
 			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
 			Href:        "https://docs.rilldata.com/using-rill/import-data#setting-google-gcs-credentials",
+		},
+	},
+	ConnectorVariables: []connectors.VariableSchema{
+		{
+			Key:  "gcs_credentials",
+			Help: "Enter path of file to load from. Leave blank if public access enabled.",
+			ValidateFunc: func(any interface{}) error {
+				val := any.(string)
+				if val == "" {
+					// user can chhose to leave empty for public sources
+					return nil
+				}
+				_, err := os.Stat(val)
+				return err
+			},
+			TransformFunc: func(any interface{}) interface{} {
+				val := any.(string)
+				if val == "" {
+					return ""
+				}
+				// ignoring error since PathError is already validated
+				content, _ := os.ReadFile(val)
+				return string(content)
+			},
 		},
 	},
 }

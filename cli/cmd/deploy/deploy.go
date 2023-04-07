@@ -12,7 +12,6 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
 	"github.com/go-git/go-git/v5"
-	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
@@ -21,8 +20,8 @@ import (
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
-	"github.com/rilldata/rill/cli/pkg/variable"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -37,7 +36,6 @@ type promptOptions struct {
 	Name       string
 	ProdBranch string
 	Public     bool
-	Variables  []string
 }
 
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
@@ -144,7 +142,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			parsedVariables, err := variable.Parse(opts.Variables)
+			variables, err := variablesPrompt(projectPath)
 			if err != nil {
 				return err
 			}
@@ -161,7 +159,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				ProductionBranch:     opts.ProdBranch,
 				Public:               opts.Public,
 				GithubUrl:            githubURL,
-				Variables:            parsedVariables,
+				Variables:            variables,
 			})
 			if err != nil {
 				return fmt.Errorf("create project failed with error %w", err)
@@ -230,42 +228,6 @@ func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubUR
 				Default: false,
 			},
 		},
-		{
-			Name: "variables",
-			Prompt: &survey.Editor{
-				Message:       "Add variables for your project in format KEY=VALUE. Enter each variable on a new line",
-				FileName:      "*.env",
-				Default:       envFileDefault,
-				HideDefault:   true,
-				AppendDefault: true,
-			},
-			Validate: func(any interface{}) error {
-				val := any.(string)
-				envs, err := godotenv.Unmarshal(val)
-				for key, value := range envs {
-					if key == "" {
-						return fmt.Errorf("invalid format found empty key")
-					} else if key == "GCS_CREDENTIALS_FILE" {
-						if _, err := os.Stat(value); err != nil {
-							return err
-						}
-					}
-				}
-				return err
-			},
-			Transform: func(any interface{}) interface{} {
-				val := any.(string)
-				// ignoring error since already validated
-				envs, _ := godotenv.Unmarshal(val)
-				for k, v := range envs {
-					if k == "GCS_CREDENTIALS_FILE" {
-						content, _ := os.ReadFile(v)
-						envs[k] = string(content)
-					}
-				}
-				return variable.Serialize(envs)
-			},
-		},
 	}
 
 	opts := &promptOptions{}
@@ -274,6 +236,55 @@ func projectParamPrompt(ctx context.Context, c *client.Client, orgName, githubUR
 	}
 
 	return opts, nil
+}
+
+func variablesPrompt(projectPath string) (map[string]string, error) {
+	connectors, err := rillv1beta.ExtractConnectors(projectPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract connectors %w", err)
+	}
+
+	vars := make(map[string]string)
+	for _, c := range connectors {
+		connectorVariables := c.Spec.ConnectorVariables
+		if len(connectorVariables) != 0 {
+			fmt.Printf("\nConnector %s requires credentials\n\n", c.Type)
+		}
+		if c.Spec.Help != "" {
+			fmt.Println(c.Spec.Help)
+		}
+		for _, prop := range connectorVariables {
+			question := &survey.Question{}
+			msg := fmt.Sprintf("connector.%s.%s", c.Name, prop.Key)
+			if prop.Help != "" {
+				msg = fmt.Sprintf(msg+" (%s)", prop.Help)
+			}
+
+			if prop.Secret {
+				question.Prompt = &survey.Password{Message: msg}
+			} else {
+				question.Prompt = &survey.Input{Message: msg, Default: prop.Default}
+			}
+
+			if prop.TransformFunc != nil {
+				question.Transform = prop.TransformFunc
+			}
+
+			if prop.ValidateFunc != nil {
+				question.Validate = prop.ValidateFunc
+			}
+
+			answer := ""
+			if err := survey.Ask([]*survey.Question{question}, &answer); err != nil {
+				exitWithFailure(fmt.Errorf("variables prompt failed with error %w", err))
+			}
+
+			if answer != "" {
+				vars[prop.Key] = answer
+			}
+		}
+	}
+	return vars, nil
 }
 
 func multipleOrgs(c *client.Client) (bool, error) {
@@ -387,21 +398,5 @@ Follow these steps to push your project to Github.
 	
 	rill deploy
 	
-`
-
-	envFileDefault = `## Add any project specific variables in format KEY=VALUE
-
-## If using private s3 sources uncomment next three and set credentials
-
-# AWS_ACCESS_KEY_ID=
-# AWS_SECRET_ACCESS_KEY=
-# AWS_SESSION_TOKEN=
-
-## If using private gcs sources set GCS_CREDENTIALS_FILE to a location where credentials.json for gcs is stored on your local system
-## this creates an env GCS_CREDENTIALS with the file contents in env variable
-
-# GCS_CREDENTIALS_FILE=
-
-## add any other project specific variables below:
 `
 )
