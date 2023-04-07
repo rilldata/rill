@@ -191,7 +191,7 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.admin.DB.InsertUserInUsergroup(ctx, *org.AllUsergroupID, user.ID)
+	err = s.admin.DB.InsertUserInUsergroup(ctx, user.ID, *org.AllUsergroupID)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, status.Error(codes.Internal, err.Error())
