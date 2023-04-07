@@ -119,6 +119,7 @@ type DB interface {
 	InsertOrganizationMemberUsergroup(ctx context.Context, orgID, groupName string) (*Usergroup, error)
 	UpdateOrganizationMemberAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
 	InsertUserInUsergroup(ctx context.Context, userID, groupID string) error
+	DeleteUserFromUsergroup(ctx context.Context, userID, groupID string) error
 	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	FindUsersUsergroups(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
 
