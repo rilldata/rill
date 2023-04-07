@@ -25,7 +25,7 @@
 </script>
 
 <a
-  href={`/-/${organizationName}/${projectName}/deployment`}
+  href={`/${organizationName}/${projectName}/-/deployment`}
   class={`inline-block px-1 py-0 rounded cursor-pointer ${getDeploymentStatusClasses(
     deploymentStatus
   )}`}

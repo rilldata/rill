@@ -24,6 +24,7 @@ func Serialize(variables map[string]string) []string {
 	i := 0
 	for k, v := range variables {
 		result[i] = fmt.Sprintf("%v=%v", k, v)
+		i++
 	}
 	return result
 }

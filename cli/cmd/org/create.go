@@ -14,7 +14,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 	var description string
 
 	createCmd := &cobra.Command{
-		Use:   "create",
+		Use:   "create <org-name>",
 		Short: "Create",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -38,7 +38,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.TextPrinter("Created organization \n")
+			cmdutil.SuccessPrinter("Created organization \n")
 			cmdutil.TablePrinter(toRow(org.Organization))
 			return nil
 		},

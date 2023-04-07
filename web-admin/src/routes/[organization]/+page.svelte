@@ -3,7 +3,7 @@
   import {
     useAdminServiceGetOrganization,
     useAdminServiceListProjects,
-  } from "../../../client";
+  } from "../../client";
 
   const org = useAdminServiceGetOrganization($page.params.organization);
   const projs = useAdminServiceListProjects($page.params.organization);
@@ -25,9 +25,7 @@
       <ul>
         {#each $projs.data.projects as proj}
           <li>
-            <a href="/-/{$org.data.organization.name}/{proj.name}"
-              >{proj.name}</a
-            >
+            <a href="/{$org.data.organization.name}/{proj.name}">{proj.name}</a>
           </li>
         {/each}
       </ul>
