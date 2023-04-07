@@ -614,6 +614,14 @@ func (c *connection) InsertUserInUsergroup(ctx context.Context, userID, groupID 
 	return nil
 }
 
+func (c *connection) DeleteUserFromUsergroup(ctx context.Context, userID, groupID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM users_usergroups WHERE user_id = $1 AND usergroup_id = $2", userID, groupID)
+	if err != nil {
+		return parseErr(err)
+	}
+	return nil
+}
+
 func (c *connection) InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO usergroups_projects_roles (usergroup_id, project_id, project_role_id) VALUES ($1, $2, $3)", groupID, projectID, roleID)
 	if err != nil {

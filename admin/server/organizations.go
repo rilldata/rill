@@ -246,9 +246,24 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 		return nil, status.Error(codes.InvalidArgument, "cannot remove the last owner")
 	}
 
+	ctx, tx, err := s.admin.DB.NewTx(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	defer func() { _ = tx.Rollback() }()
 	err = s.admin.DB.DeleteOrganizationMemberUser(ctx, org.ID, user.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// delete from all user group
+	err = s.admin.DB.DeleteUserFromUsergroup(ctx, user.ID, *org.AllUsergroupID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	err = tx.Commit()
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &adminv1.RemoveOrganizationMemberResponse{}, nil
@@ -329,9 +344,24 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 		return nil, status.Error(codes.InvalidArgument, "cannot remove the last owner")
 	}
 
+	ctx, tx, err := s.admin.DB.NewTx(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	defer func() { _ = tx.Rollback() }()
 	err = s.admin.DB.DeleteOrganizationMemberUser(ctx, org.ID, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// delete from all user group
+	err = s.admin.DB.DeleteUserFromUsergroup(ctx, claims.OwnerID(), *org.AllUsergroupID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	err = tx.Commit()
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &adminv1.LeaveOrganizationResponse{}, nil
