@@ -300,6 +300,23 @@ func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.Set
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	// Check if the user is the last owner
+	if role.Name != database.OrganizationAdminRoleName {
+		adminRole, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationAdminRoleName)
+		if err != nil {
+			panic(errors.Wrap(err, "failed to find organization admin role"))
+		}
+		// TODO optimize this, may be extract roles during auth token validation
+		//  and store as part of the claims and fetch admins only if the user is an admin
+		users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, adminRole.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if len(users) == 1 && users[0].ID == user.ID {
+			return nil, status.Error(codes.InvalidArgument, "cannot change role of the last owner")
+		}
+	}
+
 	err = s.admin.DB.UpdateOrganizationMemberUserRole(ctx, org.ID, user.ID, role.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
