@@ -1,6 +1,9 @@
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import { createModel } from "@rilldata/web-common/features/models/createModel";
-import type { QueryClient } from "@tanstack/svelte-query";
+import type {
+  CreateBaseMutationResult,
+  QueryClient,
+} from "@tanstack/svelte-query";
 import { notifications } from "../../components/notifications";
 import type { V1PutFileAndReconcileResponse } from "../../runtime-client";
 
