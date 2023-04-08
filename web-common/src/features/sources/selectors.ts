@@ -1,17 +1,17 @@
 import {
-  useRuntimeServiceGetFile,
-  useRuntimeServiceListCatalogEntries,
-  useRuntimeServiceListFiles,
+  createRuntimeServiceGetFile,
+  createRuntimeServiceListCatalogEntries,
+  createRuntimeServiceListFiles,
 } from "@rilldata/web-common/runtime-client";
-import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { parse } from "yaml";
 
 /**
- * Calls {@link useRuntimeServiceListFiles} using glob to select only sources.
+ * Calls {@link createRuntimeServiceListFiles} using glob to select only sources.
  * Returns just the source names from the files.
  */
 export function useSourceNames(instanceId: string) {
-  return useRuntimeServiceListFiles(
+  return createRuntimeServiceListFiles(
     instanceId,
     {
       glob: "{sources,models,dashboards}/*.{yaml,sql}",
@@ -39,15 +39,15 @@ export type SourceFromYaml = {
 };
 
 export function useSourceFromYaml(instanceId: string, filePath: string) {
-  return useRuntimeServiceGetFile(instanceId, filePath, {
+  return createRuntimeServiceGetFile(instanceId, filePath, {
     query: {
       select: (data) => (data.blob ? parse(data.blob) : {}),
     },
-  }) as UseQueryStoreResult<SourceFromYaml>;
+  }) as CreateQueryResult<SourceFromYaml>;
 }
 
 export function useEmbeddedSources(instanceId: string) {
-  return useRuntimeServiceListCatalogEntries(
+  return createRuntimeServiceListCatalogEntries(
     instanceId,
     {},
     {

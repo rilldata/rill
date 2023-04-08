@@ -19,13 +19,13 @@
   import { getOffset } from "@rilldata/web-common/lib/time/transforms";
   import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import {
-    useQueryServiceMetricsViewTimeSeries,
-    useQueryServiceMetricsViewTotals,
+    createQueryServiceMetricsViewTimeSeries,
+    createQueryServiceMetricsViewTotals,
     V1MetricsViewTimeSeriesResponse,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
   import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
-  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
+  import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -45,7 +45,7 @@
   $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
   $: interval = metricsExplorer?.selectedTimeRange?.interval;
 
-  let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
+  let totalsQuery: CreateQueryResult<V1MetricsViewTotalsResponse, Error>;
   $: if (
     metricsExplorer &&
     metaQuery &&
@@ -59,14 +59,14 @@
       timeEnd: metricsExplorer.selectedTimeRange?.end,
     };
 
-    totalsQuery = useQueryServiceMetricsViewTotals(
+    totalsQuery = createQueryServiceMetricsViewTotals(
       instanceId,
       metricViewName,
       totalsQueryParams
     );
   }
 
-  let timeSeriesQuery: UseQueryStoreResult<
+  let timeSeriesQuery: CreateQueryResult<
     V1MetricsViewTimeSeriesResponse,
     Error
   >;
@@ -77,7 +77,7 @@
     !$metaQuery.isRefetching &&
     metricsExplorer.selectedTimeRange
   ) {
-    timeSeriesQuery = useQueryServiceMetricsViewTimeSeries(
+    timeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
       instanceId,
       metricViewName,
       {

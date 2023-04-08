@@ -19,9 +19,9 @@
   import { SourceModelValidationStatus } from "@rilldata/web-common/features/metrics-views/errors.js";
   import { initBlankDashboardYAML } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import {
+    createRuntimeServiceDeleteFileAndReconcile,
+    createRuntimeServicePutFileAndReconcile,
     runtimeServiceGetFile,
-    useRuntimeServiceDeleteFileAndReconcile,
-    useRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
@@ -33,7 +33,7 @@
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages.js";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { slide } from "svelte/transition";
   import { behaviourEvent } from "../../../../web-local/src/lib/metrics/initMetrics";
   import { LIST_SLIDE_DURATION } from "../../layout/config";
@@ -48,8 +48,8 @@
 
   const queryClient = useQueryClient();
 
-  const createDashboard = useRuntimeServicePutFileAndReconcile();
-  const deleteDashboard = useRuntimeServiceDeleteFileAndReconcile();
+  const createDashboard = createRuntimeServicePutFileAndReconcile();
+  const deleteDashboard = createRuntimeServiceDeleteFileAndReconcile();
 
   let showMetricsDefs = true;
 

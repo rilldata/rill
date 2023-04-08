@@ -5,12 +5,12 @@
   } from "@rilldata/web-common/lib/time/grains";
   import { getOffset } from "@rilldata/web-common/lib/time/transforms";
   import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
-  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
+  import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { Button } from "../../../components/button";
   import {
-    useQueryServiceColumnTimeRange,
-    useRuntimeServiceGetCatalogEntry,
+    createQueryServiceColumnTimeRange,
+    createRuntimeServiceGetCatalogEntry,
     V1ColumnTimeRangeResponse,
     V1TimeGrain,
   } from "../../../runtime-client";
@@ -77,18 +77,18 @@
 
   let metricsViewQuery;
   $: if ($runtime?.instanceId) {
-    metricsViewQuery = useRuntimeServiceGetCatalogEntry(
+    metricsViewQuery = createRuntimeServiceGetCatalogEntry(
       $runtime.instanceId,
       metricViewName
     );
   }
-  let timeRangeQuery: UseQueryStoreResult<V1ColumnTimeRangeResponse, Error>;
+  let timeRangeQuery: CreateQueryResult<V1ColumnTimeRangeResponse, Error>;
   $: if (
     $runtime?.instanceId &&
     $metricsViewQuery?.data?.entry?.metricsView?.model &&
     $metricsViewQuery?.data?.entry?.metricsView?.timeDimension
   ) {
-    timeRangeQuery = useQueryServiceColumnTimeRange(
+    timeRangeQuery = createQueryServiceColumnTimeRange(
       $runtime.instanceId,
       $metricsViewQuery.data.entry.metricsView.model,
       {

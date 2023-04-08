@@ -15,12 +15,12 @@
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import {
+    createQueryServiceMetricsViewToplist,
+    createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
     MetricsViewFilterCond,
-    useQueryServiceMetricsViewToplist,
-    useQueryServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
     MetricsExplorerEntity,
@@ -154,7 +154,7 @@
       };
     }
 
-    topListQuery = useQueryServiceMetricsViewToplist(
+    topListQuery = createQueryServiceMetricsViewToplist(
       instanceId,
       metricViewName,
       topListParams
@@ -178,7 +178,7 @@
         },
       };
     }
-    totalsQuery = useQueryServiceMetricsViewTotals(
+    totalsQuery = createQueryServiceMetricsViewTotals(
       instanceId,
       metricViewName,
       totalsQueryParams
