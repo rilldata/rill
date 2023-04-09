@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -75,10 +76,19 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		return nil, fmt.Errorf("failed to fetch url %s: %s", conf.Path, resp.Status)
 	}
 
-	file, err := fileutil.CopyToTempFile(resp.Body, source.Name, extension)
+	dm, err := connectors.InitDownloadMeasures()
 	if err != nil {
 		return nil, err
 	}
+
+	start := time.Now()
+	file, size, err := fileutil.CopyToTempFile(resp.Body, source.Name, extension)
+	if err != nil {
+		return nil, err
+	}
+
+	duration := time.Since(start)
+	dm.Collect(ctx, size, duration, extension, "http", false)
 	return &iterator{ctx: ctx, files: []string{file}}, nil
 }
 

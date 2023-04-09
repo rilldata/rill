@@ -3,8 +3,13 @@ package connectors
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/metric/instrument"
 )
 
 // Connectors tracks all registered connector drivers.
@@ -158,4 +163,41 @@ func (s *Source) PropertiesEquals(o *Source) bool {
 	}
 
 	return true
+}
+
+type DownloadMeasures struct {
+	Size  instrument.Int64UpDownCounter
+	Time  instrument.Int64Histogram
+	Speed instrument.Float64UpDownCounter
+}
+
+func InitDownloadMeasures() (*DownloadMeasures, error) {
+	meter := global.Meter("downloads")
+	timeMeasure, err := meter.Int64Histogram("time")
+	if err != nil {
+		return nil, err
+	}
+
+	sizeMeasure, err := meter.Int64UpDownCounter("size")
+	if err != nil {
+		return nil, err
+	}
+
+	speedMeasure, err := meter.Float64UpDownCounter("speed")
+	if err != nil {
+		return nil, err
+	}
+
+	return &DownloadMeasures{
+		Time:  timeMeasure,
+		Size:  sizeMeasure,
+		Speed: speedMeasure,
+	}, nil
+}
+
+func (dm *DownloadMeasures) Collect(ctx context.Context, size int64, duration time.Duration, ext string, downloadType string, partialDownload bool) {
+	partial := strconv.FormatBool(partialDownload)
+	dm.Size.Add(ctx, size, attribute.String("extension", ext), attribute.String("type", "blob"), attribute.String("partial", partial))
+	dm.Time.Record(ctx, duration.Milliseconds(), attribute.String("extension", ext), attribute.String("type", "blob"), attribute.String("partial", partial))
+	dm.Speed.Add(ctx, float64(size)/duration.Seconds(), attribute.String("extension", ext), attribute.String("type", "blob"), attribute.String("partial", partial))
 }
