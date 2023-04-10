@@ -9,12 +9,12 @@ on:
       - "web-admin/**"
       - "web-local/**"
 env:
-  - NETLIFY_SITE_ID=${{ fromJSON('[${{ secrets.NETLIFY_STAGE_SITE_ID }}, ${{ secrets.NETLIFY_PROD_SITE_ID}}]')[ startsWith(github.ref, 'refs/tags/v') == 'true'] }}
+  NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+  NETLIFY_SITE_ID: ${{ fromJSON('[${{ secrets.NETLIFY_STAGE_SITE_ID }}, ${{ secrets.NETLIFY_PROD_SITE_ID}}]')[ startsWith(github.ref, 'refs/tags/v') == 'true'] }}
 
 jobs:
   build:
     runs-on: ubuntu-18.04
-    environment:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
