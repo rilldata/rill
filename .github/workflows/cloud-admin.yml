@@ -27,7 +27,6 @@ jobs:
 
       - name: Build Cloud Admin
         run: |-
-          npm install esbuild
           npm run build -w web-admin
 
       - name: Deploy ${{ matrix.name }} to Netlify Staging
