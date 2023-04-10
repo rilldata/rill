@@ -20,7 +20,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - run: |
+      - run: |-
           echo ${{ env.NETLIFY_SITE_ID }}
 
       - name: Set up NodeJS
