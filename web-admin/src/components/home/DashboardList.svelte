@@ -1,20 +1,59 @@
 <script lang="ts">
+  import Axios from "axios";
+  import {
+    useAdminServiceGetProject,
+    V1GetProjectResponse,
+  } from "../../client";
+
   export let organization: string;
   export let project: string;
 
-  // PROBLEM: `useDashboardNames` calls a runtime, but we're currently constrained to 1 runtime per page
-  // Problem detailed in bullet point #1 here: https://github.com/rilldata/rill-developer/pull/1826#issue-1600724370
-  // Solution proposed here: https://github.com/rilldata/rill-developer/pull/1826#issuecomment-1455700785
-  // $: dashboards = useDashboardNames($runtime?.instanceId);
+  let dashboards: string[];
+
+  $: proj = useAdminServiceGetProject(organization, project);
+  $: if ($proj.isSuccess) {
+    getDashboardsForProject($proj.data);
+  }
+
+  async function getDashboardsForProject(projectData: V1GetProjectResponse) {
+    // Hack: in development, the runtime host is actually on port 8081
+    const runtimeHost = projectData?.productionDeployment?.runtimeHost.replace(
+      "localhost:9091",
+      "localhost:8081"
+    );
+
+    const axios = Axios.create({
+      baseURL: runtimeHost,
+      headers: {
+        Authorization: `Bearer ${projectData.jwt}`,
+      },
+    });
+
+    const { data: filesData } = await axios.get(
+      `/v1/instances/${projectData.productionDeployment.runtimeInstanceId}/files`
+    );
+
+    // Filter for dashboard files & extract dashboard names
+    dashboards = filesData.paths
+      ?.filter((path) => path.includes("dashboards/"))
+      // Remove "gitkeep" files
+      .filter((path) => !path.includes(".gitkeep"))
+      // Remove "dashboards/" prefix and ".yaml" suffix
+      .map((path) => path.replace("/dashboards/", "").replace(".yaml", ""))
+      // Sort alphabetically case-insensitive
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+
+    // Done
+    return;
+  }
 </script>
 
-<!-- {#if $dashboards.data} -->
-<ol>
-  <!-- {#each $dashboards.data as dashboard} -->
-  {#each ["dashboard1", "dashboard2", "dashboard3"] as dashboard}
-    <li class="text-xs text-gray-900 font-medium leading-4 mb-1">
-      <a href="/{organization}/{project}/{dashboard}">{dashboard}</a>
-    </li>
-  {/each}
-</ol>
-<!-- {/if} -->
+{#if $proj.isSuccess && dashboards?.length > 0}
+  <ol>
+    {#each dashboards as dashboard}
+      <li class="text-xs text-gray-900 font-medium leading-4 mb-1">
+        <a href="/{organization}/{project}/{dashboard}">{dashboard}</a>
+      </li>
+    {/each}
+  </ol>
+{/if}
