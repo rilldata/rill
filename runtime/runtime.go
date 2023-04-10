@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"math"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
@@ -48,7 +49,7 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 		metastore:          metastore,
 		logger:             logger,
 		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger),
-		migrationMetaCache: newMigrationMetaCache(opts.ConnectionCacheSize), // todo :: different size for this ?
+		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
 		queryCache:         newQueryCache(opts.QueryCacheSize),
 	}, nil
 }
