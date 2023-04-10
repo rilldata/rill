@@ -1,0 +1,37 @@
+name: Build and Deploy Cloud Admin to Netlify
+on:
+  push:
+    tags:
+      - "*"
+    branches: ["netlify"]
+    paths:
+      - ".github/workflows/cloud-admin.yml"
+      - "web-admin/**"
+      - "web-local/**"
+env:
+  - NETLIFY_SITE_ID=${{ fromJSON('[${{ secrets.NETLIFY_STAGE_SITE_ID }}, ${{ secrets.NETLIFY_PROD_SITE_ID}}]')[ startsWith(github.ref, 'refs/tags/v') == 'true'] }}
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    environment:
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - run: |
+          echo ${{ env.NETLIFY_SITE_ID }}
+
+      - name: Deploy ${{ matrix.name }} to Netlify Staging
+        uses: nwtgck/actions-netlify@v1.2
+        with:
+          publish-dir: ./web-admin/build
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy cloud-admin from GitHub Actions"
+          enable-pull-request-comment: false
+          enable-commit-comment: true
+          overwrites-pull-request-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ env.NETLIFY_SITE_ID }}
+        timeout-minutes: 1
