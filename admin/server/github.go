@@ -35,27 +35,31 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 	}
 
 	// Check whether we have the access to the repo
-	userID := claims.OwnerID()
-	installationID, ok, err := s.admin.GetGithubInstallation(ctx, userID, req.GithubUrl)
+	installationID, err := s.admin.GetGithubInstallation(ctx, req.GithubUrl)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to check Github access: %s", err.Error())
 	}
 
 	// If no access, return instructions for granting access
-	if !ok {
-		grantAccessURL, err := url.JoinPath(s.opts.ExternalURL, "/github/connect")
+	if installationID == 0 {
+		grantAccessURL, err := url.Parse(s.urls.githubConnect)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create redirect URL: %s", err)
 		}
 
+		qry := grantAccessURL.Query()
+		qry.Set("remote", req.GithubUrl)
+		grantAccessURL.RawQuery = qry.Encode()
+
 		res := &adminv1.GetGithubRepoStatusResponse{
 			HasAccess:      false,
-			GrantAccessUrl: grantAccessURL,
+			GrantAccessUrl: grantAccessURL.String(),
 		}
 		return res, nil
 	}
 
 	// we have access need to check if user is a collaborator and has authorised app on their account
+	userID := claims.OwnerID()
 	user, err := s.admin.DB.FindUser(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -63,7 +67,11 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 
 	// user has not authorized github app
 	if user.GithubUserName == "" {
-		authoriseURL := s.urls.GithubAuthorise()
+		authoriseURL, err := url.Parse(s.urls.githubAuthorise)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create authorise url: %w", err)
+		}
+
 		qry := authoriseURL.Query()
 		qry.Set("auto_redirect", "true")
 		authoriseURL.RawQuery = qry.Encode()
@@ -78,8 +86,7 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 	repository, err := s.admin.LookupGithubRepoForUser(ctx, installationID, req.GithubUrl, user.GithubUserName)
 	if err != nil {
 		if errors.Is(err, admin.ErrUserIsNotCollaborator) {
-			authoriseURL := s.urls.GithubAuthorise()
-			msg := fmt.Sprintf("You are not a collaborator. Click %s to re-authorise/authorise another account.", authoriseURL.String())
+			msg := fmt.Sprintf("You are not a collaborator. Click %s to re-authorise/authorise another account.", s.urls.githubAuthorise)
 			return nil, status.Error(codes.PermissionDenied, msg)
 		}
 		return nil, status.Error(codes.Internal, err.Error())
@@ -144,7 +151,10 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request, pathParam
 		return
 	}
 
-	redirectURL := s.urls.GithubAppInstallationURL()
+	redirectURL, err := url.Parse(s.urls.githubAppInstallation)
+	if err != nil {
+	}
+
 	values := redirectURL.Query()
 	// `state` query parameter will be passed through to githubConnectCallback.
 	// we will use this state parameter to verify that the user installed the app on right repo
@@ -179,17 +189,21 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 	account, repo, ok := gitutil.SplitGithubURL(remoteURL)
 	if !ok {
 		// request without state can come in multiple ways like
-		// if user changes app installation directly on the settings page
-		// if admin user accepts the installation request
-		// nothing to be done in such cases
-		// may be redirect to some rill page ??
+		// 	- if user changes app installation directly on the settings page
+		//  - if admin user accepts the installation request
+		// Nothing to be done in such cases. May be redirect to some rill page ??
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
 	if setupAction == "request" {
 		// access requested
-		redirectURL := s.urls.GithubConnectRequest()
+		redirectURL, err := url.Parse(s.urls.githubConnectRequest)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to create connect request url: %s", err.Error()), http.StatusInternalServerError)
+			return
+		}
+
 		qry := redirectURL.Query()
 		qry.Set("remote", remoteURL)
 		redirectURL.RawQuery = qry.Encode()
@@ -198,19 +212,25 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 	}
 
 	// Verify that user installed the app on the right repo and we have access now
-	_, resp, err := s.admin.Github.Apps.FindRepositoryInstallation(r.Context(), account, repo)
+	installationID, err := s.admin.GetGithubInstallation(ctx, remoteURL)
 	if err != nil {
-		if resp.StatusCode == http.StatusNotFound {
-			// no access
-			// Redirect to UI retry page
-			redirectURL := s.urls.GithubConnectRetry()
-			qry := redirectURL.Query()
-			qry.Set("remote", remoteURL)
-			redirectURL.RawQuery = qry.Encode()
-			http.Redirect(w, r, redirectURL.String(), http.StatusTemporaryRedirect)
-		}
 		http.Error(w, fmt.Sprintf("failed to check github repo status: %s", err), http.StatusInternalServerError)
 		return
+	}
+
+	if installationID == 0 {
+		// no access
+		// Redirect to UI retry page
+		redirectURL, err := url.Parse(s.urls.githubConnectRetry)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to create retry request url: %s", err.Error()), http.StatusInternalServerError)
+			return
+		}
+
+		qry := redirectURL.Query()
+		qry.Set("remote", remoteURL)
+		redirectURL.RawQuery = qry.Encode()
+		http.Redirect(w, r, redirectURL.String(), http.StatusTemporaryRedirect)
 	}
 
 	code := qry.Get("code")
@@ -226,9 +246,10 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 	}
 
 	// verify there is no spoofing and the user is a collaborator to the repo
+	// There may not be a need for this because we are not storing any state wrt installation
+	// Keeping this for future proof if we start storing some states
 	gitUser, isCollaborator, err := s.isCollaborator(ctx, account, repo, githubClient)
 	if err != nil {
-		// todo :: separate unauthorised user error from other errors
 		http.Error(w, fmt.Sprintf("failed to verify ownership: %s", err), http.StatusUnauthorized)
 		return
 	}
@@ -285,12 +306,11 @@ func (s *Server) githubAuthLogin(w http.ResponseWriter, r *http.Request, pathPar
 		return
 	}
 
-	redirectURL := s.urls.GithubLoginCallbackURL()
 	oauthConf := &oauth2.Config{
 		ClientID:     s.opts.GithubClientID,
 		ClientSecret: s.opts.GithubClientSecret,
 		Endpoint:     githuboauth.Endpoint,
-		RedirectURL:  redirectURL.String(),
+		RedirectURL:  s.urls.githubLoginCallback,
 	}
 	// Redirect to github login page
 	http.Redirect(w, r, oauthConf.AuthCodeURL(state, oauth2.AccessTypeOnline), http.StatusTemporaryRedirect)
@@ -412,6 +432,7 @@ func (s *Server) userAuthGithubClient(ctx context.Context, code string) (*github
 func (s *Server) isCollaborator(ctx context.Context, owner, repo string, client *github.Client) (*github.User, bool, error) {
 	user, _, err := client.Users.Get(ctx, "")
 	if err != nil {
+		// todo :: can this throw Requires authentication error ??
 		return nil, false, err
 	}
 
@@ -422,6 +443,12 @@ func (s *Server) isCollaborator(ctx context.Context, owner, repo string, client 
 	}
 
 	// repo belongs to an org
-	isCollaborator, _, err := client.Repositories.IsCollaborator(ctx, owner, repo, user.GetLogin())
-	return user, isCollaborator, err
+	isCollaborator, resp, err := client.Repositories.IsCollaborator(ctx, owner, repo, user.GetLogin())
+	if err != nil {
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			return user, false, nil
+		}
+		return user, false, err
+	}
+	return user, isCollaborator, nil
 }

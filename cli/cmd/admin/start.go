@@ -42,7 +42,7 @@ type Config struct {
 	GithubAppName          string        `split_words:"true"`
 	GithubAppPrivateKey    string        `split_words:"true"`
 	GithubAppWebhookSecret string        `split_words:"true"`
-	GithubClientID         string        `split_words:"true"` // different from GithubAppID
+	GithubClientID         string        `split_words:"true"`
 	GithubClientSecret     string        `split_words:"true"`
 	ProvisionerSpec        string        `split_words:"true"`
 	SigningJWKS            string        `split_words:"true"`

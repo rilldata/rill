@@ -224,12 +224,10 @@ type UpdateProjectOptions struct {
 // User is a person registered in Rill.
 // Users may belong to multiple organizations and projects.
 type User struct {
-	ID          string
-	Email       string
-	DisplayName string `db:"display_name"`
-	PhotoURL    string `db:"photo_url"`
-	// TODO :: keeping GithubUserName in users would mean db entry is partially inserted on create and updated later which may not be ideal
-	// Should we create separate table even if we decide to maintain a 1:1 relationship ??
+	ID             string
+	Email          string
+	DisplayName    string    `db:"display_name"`
+	PhotoURL       string    `db:"photo_url"`
 	GithubUserName string    `db:"github_user_name"`
 	CreatedOn      time.Time `db:"created_on"`
 	UpdatedOn      time.Time `db:"updated_on"`

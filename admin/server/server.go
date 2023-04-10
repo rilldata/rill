@@ -47,103 +47,51 @@ type Options struct {
 	GithubClientSecret     string
 }
 
-type URLRegistry struct {
-	githubConnect            *url.URL
-	githubConnectRetry       *url.URL
-	githubConnectRequest     *url.URL
-	githubAppInstallationURL *url.URL
-	githubAuthoriseURL       *url.URL
-	githubLoginCallbackURL   *url.URL
+type urlRegistry struct {
+	githubConnect         string
+	githubConnectRetry    string
+	githubConnectRequest  string
+	githubAppInstallation string
+	githubAuthorise       string
+	githubLoginCallback   string
 }
 
-func NewURLRegistry(opts *Options) (*URLRegistry, error) {
-	grantAccessURLString, err := url.JoinPath(opts.FrontendURL, "/github/connect")
+func newURLRegistry(opts *Options) (*urlRegistry, error) {
+	githubConnectURL, err := url.JoinPath(opts.ExternalURL, "/github/connect")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github connect URL: %w", err)
 	}
 
-	grantAccessURL, err := url.Parse(grantAccessURLString)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create github connect URL: %w", err)
-	}
+	installationURL := fmt.Sprintf("https://github.com/apps/%s/installations/new", opts.GithubAppName)
 
-	installationURL, err := url.Parse(fmt.Sprintf("https://github.com/apps/%s/installations/new", opts.GithubAppName))
+	retryURL, err := url.JoinPath(opts.FrontendURL, "/github/connect/retry")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github app installation URL: %w", err)
 	}
 
-	retryURLString, err := url.JoinPath(opts.FrontendURL, "/github/connect/retry")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create retry URL: %w", err)
-	}
-
-	retryURL, err := url.Parse(retryURLString)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create github app installation URL: %w", err)
-	}
-
-	requestURLString, err := url.JoinPath(opts.FrontendURL, "/github/connect/request")
+	requestURL, err := url.JoinPath(opts.FrontendURL, "/github/connect/request")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request URL: %w", err)
 	}
 
-	requestURL, err := url.Parse(requestURLString)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request URL: %w", err)
-	}
-
-	authoriseURLString, err := url.JoinPath(opts.FrontendURL, "/github/auth")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create retry URL: %w", err)
-	}
-
-	authoriseURL, err := url.Parse(authoriseURLString)
+	authoriseURL, err := url.JoinPath(opts.FrontendURL, "/github/auth")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github app installation URL: %w", err)
 	}
 
-	githubCallbackURLString, err := url.JoinPath(opts.ExternalURL, "/github/auth/callback")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create retry URL: %w", err)
-	}
-
-	githubLoginCallbackURL, err := url.Parse(githubCallbackURLString)
+	githubLoginCallbackURL, err := url.JoinPath(opts.ExternalURL, "/github/auth/callback")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github app installation URL: %w", err)
 	}
 
-	return &URLRegistry{
-		githubConnect:            grantAccessURL,
-		githubConnectRetry:       retryURL,
-		githubConnectRequest:     requestURL,
-		githubAppInstallationURL: installationURL,
-		githubAuthoriseURL:       authoriseURL,
-		githubLoginCallbackURL:   githubLoginCallbackURL,
+	return &urlRegistry{
+		githubConnect:         githubConnectURL,
+		githubConnectRetry:    retryURL,
+		githubConnectRequest:  requestURL,
+		githubAppInstallation: installationURL,
+		githubAuthorise:       authoriseURL,
+		githubLoginCallback:   githubLoginCallbackURL,
 	}, nil
-}
-
-func (r *URLRegistry) GithubConnect() url.URL {
-	return *r.githubConnect
-}
-
-func (r *URLRegistry) GithubAppInstallationURL() url.URL {
-	return *r.githubAppInstallationURL
-}
-
-func (r *URLRegistry) GithubConnectRetry() url.URL {
-	return *r.githubConnectRetry
-}
-
-func (r *URLRegistry) GithubConnectRequest() url.URL {
-	return *r.githubConnectRequest
-}
-
-func (r *URLRegistry) GithubAuthorise() url.URL {
-	return *r.githubAuthoriseURL
-}
-
-func (r *URLRegistry) GithubLoginCallbackURL() url.URL {
-	return *r.githubLoginCallbackURL
 }
 
 type Server struct {
@@ -154,7 +102,7 @@ type Server struct {
 	cookies       *sessions.CookieStore
 	authenticator *auth.Authenticator
 	issuer        *runtimeauth.Issuer
-	urls          *URLRegistry
+	urls          *urlRegistry
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
@@ -185,7 +133,7 @@ func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimea
 		return nil, err
 	}
 
-	registry, err := NewURLRegistry(opts)
+	registry, err := newURLRegistry(opts)
 	if err != nil {
 		return nil, err
 	}
@@ -356,4 +304,14 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
+}
+
+func concat(host, path string) (*url.URL, error) {
+	urlStr, err := url.JoinPath(host, path)
+	if err != nil {
+		return nil, err
+	}
+
+	parsedURL, err := url.Parse(urlStr)
+	return parsedURL, err
 }

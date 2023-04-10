@@ -17,32 +17,32 @@ import (
 
 var ErrUserIsNotCollaborator = fmt.Errorf("user is not a collaborator for the repository")
 
-// GetGithubInstallation returns a Github installation ID iff the Github App is installed on the repository AND we have a confirmed relationship between the user and that installation.
+// GetGithubInstallation returns a non zero Github installation ID iff the Github App is installed on the repository.
 // The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
-func (s *Service) GetGithubInstallation(ctx context.Context, userID, githubURL string) (int64, bool, error) {
+func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (int64, error) {
 	account, repo, ok := gitutil.SplitGithubURL(githubURL)
 	if !ok {
-		return 0, false, fmt.Errorf("invalid Github URL %q", githubURL)
+		return 0, fmt.Errorf("invalid Github URL %q", githubURL)
 	}
 
 	// TODO :: handle suspended case
-	installation, resp, err := s.Github.Apps.FindRepositoryInstallation(ctx, account, repo)
+	installation, resp, err := s.github.Apps.FindRepositoryInstallation(ctx, account, repo)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
 			// We don't have an installation on the repo
-			return 0, false, nil
+			return 0, nil
 		}
-		return 0, false, fmt.Errorf("failed to lookup repo info: %w", err)
+		return 0, fmt.Errorf("failed to lookup repo info: %w", err)
 	}
 
 	installationID := installation.GetID()
 	if installationID == 0 {
 		// Do we have to check for this?
-		return 0, false, fmt.Errorf("received invalid installation from Github")
+		return 0, fmt.Errorf("received invalid installation from Github")
 	}
 
 	// The user has access to the installation
-	return installationID, true, nil
+	return installationID, nil
 }
 
 // LookupGithubRepoForUser calls the Github API using an installation token to get information about a Github repo.
@@ -76,23 +76,6 @@ func (s *Service) LookupGithubRepoForUser(ctx context.Context, installationID in
 	}
 
 	return repository, nil
-}
-
-// IsUserExist checks if user with userName exists on Github
-func (s *Service) IsUserExist(ctx context.Context, userName string) (bool, error) {
-	if userName == "" {
-		return false, nil
-	}
-
-	user, resp, err := s.Github.Users.Get(ctx, userName)
-	if err != nil {
-		if resp != nil && resp.StatusCode == http.StatusNotFound {
-			return false, nil
-		}
-		return false, err
-	}
-
-	return user.GetLogin() == userName, nil
 }
 
 // ProcessGithubEvent processes a Github event (usually received over webhooks).

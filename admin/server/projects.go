@@ -120,12 +120,12 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	// Get Github installation ID for the repo
-	installationID, ok, err := s.admin.GetGithubInstallation(ctx, claims.OwnerID(), req.GithubUrl)
+	installationID, err := s.admin.GetGithubInstallation(ctx, req.GithubUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Github installation: %w", err)
 	}
-	// Check that the user has access to the installation
-	if !ok {
+	// Check that the github app is installed on the repo
+	if installationID == 0 {
 		return nil, fmt.Errorf("you have not granted Rill access to %q", req.GithubUrl)
 	}
 
@@ -205,13 +205,13 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
 
-	// If changing the Github URL, check the caller has access
+	// If changing the Github URL, check github app is installed on the repo
 	if safeStr(proj.GithubURL) != req.GithubUrl {
-		_, ok, err := s.admin.GetGithubInstallation(ctx, claims.OwnerID(), req.GithubUrl)
+		installationID, err := s.admin.GetGithubInstallation(ctx, req.GithubUrl)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get Github installation: %w", err)
 		}
-		if !ok {
+		if installationID == 0 {
 			return nil, fmt.Errorf("you have not granted Rill access to %q", req.GithubUrl)
 		}
 	}
