@@ -11,13 +11,13 @@
   let dashboards: string[];
 
   $: proj = useAdminServiceGetProject(organization, project);
-  $: if ($proj.isSuccess) {
+  $: if ($proj.isSuccess && $proj.data?.productionDeployment) {
     getDashboardsForProject($proj.data);
   }
 
   async function getDashboardsForProject(projectData: V1GetProjectResponse) {
     // Hack: in development, the runtime host is actually on port 8081
-    const runtimeHost = projectData?.productionDeployment?.runtimeHost.replace(
+    const runtimeHost = projectData.productionDeployment.runtimeHost.replace(
       "localhost:9091",
       "localhost:8081"
     );
