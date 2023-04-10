@@ -141,7 +141,8 @@
   let visibleMeasures = [];
 
   $: availableMeasureLabels =
-    $totalsQuery?.isSuccess && $metaQuery.data?.measures.map((m) => m.label);
+    $totalsQuery?.isSuccess &&
+    $metaQuery.data?.measures.map((m) => m.label || m?.expression);
 
   $: visibleMeasures = metricsExplorer.visibleMeasures;
   const toggleMeasureVisibility = (e) =>
@@ -159,7 +160,7 @@
   let:point
 >
   <TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
-    <div class="bg-white sticky left-0 top-0" style="z-index:100">
+    <div class="bg-white sticky  top-0" style="z-index:100; margin-left: -4px;">
       <SeachableFilterButton
         selectableItems={availableMeasureLabels}
         selectedItems={visibleMeasures}

@@ -15,6 +15,8 @@
   } from "../dashboard-stores";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
 
+  import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
+
   export let metricViewName;
   export let exploreContainerWidth;
 
@@ -150,13 +152,28 @@
   $: if (metricsContainerHeight && measureNodes.length) {
     calculateGridColumns();
   }
+
+  let availableMeasureLabels = [];
+  let visibleMeasures = [];
+
+  $: availableMeasureLabels =
+    $totalsQuery?.isSuccess &&
+    $metaQuery.data?.measures.map((m) => m.label || m?.expression);
+
+  $: visibleMeasures = metricsExplorer?.visibleMeasures ?? [];
+
+  const toggleMeasureVisibility = (e) =>
+    metricsExplorerStore.toggleMeasureVisibility(metricViewName, e.detail);
+  const setAllMeasuresNotVisible = () =>
+    metricsExplorerStore.setAllMeasuresVisibility(metricViewName, false);
+  const setAllMeasuresVisible = () =>
+    metricsExplorerStore.setAllMeasuresVisibility(metricViewName, true);
 </script>
 
 <svelte:window on:resize={() => calculateGridColumns()} />
 <div
   use:listenToNodeResize
   style:height="calc(100% - {GRID_MARGIN_TOP}px)"
-  style:margin-top="{GRID_MARGIN_TOP}px"
   style:width={containerWidths[numColumns]}
 >
   <div
@@ -164,6 +181,17 @@
     class="grid grid-cols-{numColumns}"
     style:column-gap="{COLUMN_GAP}px"
   >
+    <div class="bg-white sticky top-0" style="z-index:100; margin-left: -4px;">
+      <SeachableFilterButton
+        selectableItems={availableMeasureLabels}
+        selectedItems={visibleMeasures}
+        on:itemClicked={toggleMeasureVisibility}
+        on:deselectAll={setAllMeasuresNotVisible}
+        on:selectAll={setAllMeasuresVisible}
+        label="Measures"
+        tooltipText="Choose measures to display"
+      />
+    </div>
     {#if $metaQuery.data?.measures}
       {#each $metaQuery.data?.measures as measure, index (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
