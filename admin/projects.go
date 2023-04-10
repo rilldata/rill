@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/provisioner"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -18,8 +19,45 @@ import (
 func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
 	// TODO: Make this actually fault tolerant.
 
+	org, err := s.DB.FindOrganizationByID(ctx, opts.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+
+	txCtx, tx, err := s.DB.NewTx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
 	// Create the project
-	proj, err := s.DB.InsertProject(ctx, opts)
+	proj, err := s.DB.InsertProject(txCtx, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	adminRole, err := s.DB.FindProjectRole(txCtx, database.ProjectAdminRoleName)
+	if err != nil {
+		panic(errors.Wrap(err, "failed to find project admin role"))
+	}
+
+	// add project admin role to the user
+	err = s.DB.InsertProjectMemberUser(txCtx, proj.ID, opts.UserID, adminRole.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	collabRole, err := s.DB.FindProjectRole(txCtx, database.ProjectCollaboratorRoleName)
+	if err != nil {
+		panic(errors.Wrap(err, "failed to find project collaborator role"))
+	}
+	// add project collaborator role to the all_user_group of the org
+	err = s.DB.InsertProjectMemberUsergroup(txCtx, *org.AllUsergroupID, proj.ID, collabRole.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
 	if err != nil {
 		return nil, err
 	}
@@ -39,6 +77,7 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 		GithubInstallationID: *proj.GithubInstallationID,
 		Variables:            proj.ProductionVariables,
 	}
+	// start using original context again since transaction in txCtx is done
 	inst, err := s.provisioner.Provision(ctx, provOpts)
 	if err != nil {
 		err = fmt.Errorf("provisioner: %w", err)

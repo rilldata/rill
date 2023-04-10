@@ -95,15 +95,6 @@ export type QueryServiceMetricsViewTotalsBody = {
   timeStart?: string;
 };
 
-export type QueryServiceMetricsViewTimeSeriesBody = {
-  filter?: V1MetricsViewFilter;
-  measureNames?: string[];
-  priority?: number;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  timeStart?: string;
-};
-
 export type QueryServiceMetricsViewToplistBody = {
   dimensionName?: string;
   filter?: V1MetricsViewFilter;
@@ -113,6 +104,15 @@ export type QueryServiceMetricsViewToplistBody = {
   priority?: number;
   sort?: V1MetricsViewSort[];
   timeEnd?: string;
+  timeStart?: string;
+};
+
+export type QueryServiceMetricsViewTimeSeriesBody = {
+  filter?: V1MetricsViewFilter;
+  measureNames?: string[];
+  priority?: number;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
   timeStart?: string;
 };
 
