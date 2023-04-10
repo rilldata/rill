@@ -144,7 +144,7 @@
     $totalsQuery?.isSuccess &&
     $metaQuery.data?.measures.map((m) => m.label || m?.expression);
 
-  $: visibleMeasures = metricsExplorer.visibleMeasures;
+  $: visibleMeasures = metricsExplorer?.visibleMeasures ?? [];
   const toggleMeasureVisibility = (e) =>
     metricsExplorerStore.toggleMeasureVisibility(metricViewName, e.detail);
   const setAllMeasuresNotVisible = () =>

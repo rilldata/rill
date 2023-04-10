@@ -67,7 +67,7 @@ props as needed.
     activeDelay={60}
     suppress={active}
   >
-    <SelectButton type="secondary" compact on:click={toggleFloatingElement}
+    <SelectButton disabled={false} on:click={toggleFloatingElement}
       ><strong>{numShownString} {label}</strong></SelectButton
     >
     <div slot="tooltip-content" transition:fly|local={{ duration: 300, y: 4 }}>
