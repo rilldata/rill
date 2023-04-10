@@ -36,4 +36,5 @@ jobs:
           publish-dir: ./web-admin/build
           github-token: ${{ secrets.GITHUB_TOKEN }}
           deploy-message: "Cloud-admin ${{ env.GITHUB_REF_NAME }} deployed to ${{ env.DEPLOY_SITE }}"
+          production-deploy: true
         timeout-minutes: 1
