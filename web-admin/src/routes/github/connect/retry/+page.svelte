@@ -5,11 +5,9 @@
 
   let remote;
   let user;
-  let userCode;
 
-  async function fetchUserData() {
+  async function init() {
     const urlParams = new URLSearchParams(window.location.search);
-    userCode = urlParams.get("user_code");
     remote = urlParams.get("remote");
 
     const response = await fetch(ADMIN_URL + "/v1/users/current", {
@@ -32,7 +30,7 @@
     );
   }
 
-  onMount(fetchUserData);
+  onMount(init);
 </script>
 
 <svelte:head>

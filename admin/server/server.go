@@ -51,18 +51,20 @@ type urlRegistry struct {
 	githubConnect         string
 	githubConnectRetry    string
 	githubConnectRequest  string
+	githubConnectSuccess  string
 	githubAppInstallation string
-	githubAuthorise       string
-	githubLoginCallback   string
+	githubAuth            string
+	githubAuthCallback    string
+	githubAuthSuccess     string
 }
 
 func newURLRegistry(opts *Options) (*urlRegistry, error) {
+	installationURL := fmt.Sprintf("https://github.com/apps/%s/installations/new", opts.GithubAppName)
+
 	githubConnectURL, err := url.JoinPath(opts.ExternalURL, "/github/connect")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github connect URL: %w", err)
 	}
-
-	installationURL := fmt.Sprintf("https://github.com/apps/%s/installations/new", opts.GithubAppName)
 
 	retryURL, err := url.JoinPath(opts.FrontendURL, "/github/connect/retry")
 	if err != nil {
@@ -74,7 +76,12 @@ func newURLRegistry(opts *Options) (*urlRegistry, error) {
 		return nil, fmt.Errorf("failed to create request URL: %w", err)
 	}
 
-	authoriseURL, err := url.JoinPath(opts.FrontendURL, "/github/auth")
+	successURL, err := url.JoinPath(opts.FrontendURL, "/github/connect/success")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create URL: %w", err)
+	}
+
+	authoriseURL, err := url.JoinPath(opts.ExternalURL, "/github/auth/login")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github app installation URL: %w", err)
 	}
@@ -84,13 +91,20 @@ func newURLRegistry(opts *Options) (*urlRegistry, error) {
 		return nil, fmt.Errorf("failed to create github app installation URL: %w", err)
 	}
 
+	githubAuthSuccess, err := url.JoinPath(opts.FrontendURL, "/github/auth/success")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create URL: %w", err)
+	}
+
 	return &urlRegistry{
 		githubConnect:         githubConnectURL,
 		githubConnectRetry:    retryURL,
 		githubConnectRequest:  requestURL,
+		githubConnectSuccess:  successURL,
 		githubAppInstallation: installationURL,
-		githubAuthorise:       authoriseURL,
-		githubLoginCallback:   githubLoginCallbackURL,
+		githubAuth:            authoriseURL,
+		githubAuthCallback:    githubLoginCallbackURL,
+		githubAuthSuccess:     githubAuthSuccess,
 	}, nil
 }
 
@@ -304,14 +318,4 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
-}
-
-func concat(host, path string) (*url.URL, error) {
-	urlStr, err := url.JoinPath(host, path)
-	if err != nil {
-		return nil, err
-	}
-
-	parsedURL, err := url.Parse(urlStr)
-	return parsedURL, err
 }

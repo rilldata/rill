@@ -384,7 +384,7 @@ func verifyAccess(ctx context.Context, c *client.Client, githubURL string) (*adm
 			if pollRes.UserAuthorisationUrl != "" && !userAuthRequested {
 				userAuthRequested = true
 				fmt.Printf("Open this URL in your browser to grant Rill access to your account:\n\n")
-				fmt.Printf("\t%s\n\n", ghRes.UserAuthorisationUrl)
+				fmt.Printf("\t%s\n\n", pollRes.UserAuthorisationUrl)
 				time.Sleep(1 * time.Second)
 				// Open browser if possible
 				_ = browser.Open(ghRes.GrantAccessUrl)

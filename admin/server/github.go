@@ -67,17 +67,9 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 
 	// user has not authorized github app
 	if user.GithubUserName == "" {
-		authoriseURL, err := url.Parse(s.urls.githubAuthorise)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create authorise url: %w", err)
-		}
-
-		qry := authoriseURL.Query()
-		qry.Set("auto_redirect", "true")
-		authoriseURL.RawQuery = qry.Encode()
 		res := &adminv1.GetGithubRepoStatusResponse{
 			HasAccess:            false,
-			UserAuthorisationUrl: authoriseURL.String(),
+			UserAuthorisationUrl: s.urls.githubAuth,
 		}
 		return res, nil
 	}
@@ -86,7 +78,7 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 	repository, err := s.admin.LookupGithubRepoForUser(ctx, installationID, req.GithubUrl, user.GithubUserName)
 	if err != nil {
 		if errors.Is(err, admin.ErrUserIsNotCollaborator) {
-			msg := fmt.Sprintf("You are not a collaborator. Click %s to re-authorise/authorise another account.", s.urls.githubAuthorise)
+			msg := fmt.Sprintf("You are not a collaborator. Click %s to re-authorise/authorise another account.", s.urls.githubAuth)
 			return nil, status.Error(codes.PermissionDenied, msg)
 		}
 		return nil, status.Error(codes.Internal, err.Error())
@@ -145,7 +137,6 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request, pathParam
 	query := r.URL.Query()
 	remote := query.Get("remote")
 	// Should we add any other validation for remote ?
-	// Should we return bad request if remote not set ?
 	if remote == "" {
 		http.Error(w, "no remote set", http.StatusBadRequest)
 		return
@@ -153,6 +144,8 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request, pathParam
 
 	redirectURL, err := url.Parse(s.urls.githubAppInstallation)
 	if err != nil {
+		http.Error(w, "failed to generate URL", http.StatusInternalServerError)
+		return
 	}
 
 	values := redirectURL.Query()
@@ -166,24 +159,32 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request, pathParam
 }
 
 // githubConnectCallback is called after a Github App authorization flow initiated by githubConnect has completed.
+// This call can originate from users who are not logged in in cases like admin user accepting installation request, removing existing installation etc.
 // It's implemented as a non-gRPC endpoint mounted directly on /github/connect/callback.
+// High level flow:
+// User installation is accompanied with user authorisation as well
+//   - verify the user is a collaborator else return unauthorised
+//   - verify the user installed the app on the right repo else navigate to retry
+//   - Save user's github username in the users table
+//
+// If user requests the app
+//   - navigate the user to requested page
 func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	ctx := r.Context()
 
 	// Extract info from query string
 	qry := r.URL.Query()
 	setupAction := qry.Get("setup_action")
-	if setupAction != "install" && setupAction != "update" && setupAction != "request" { // TODO: Also handle "request"
+	if setupAction != "install" && setupAction != "update" && setupAction != "request" {
 		http.Error(w, fmt.Sprintf("unexpected setup_action=%q", setupAction), http.StatusBadRequest)
 		return
 	}
 
-	// For request flows this can originate from some user who is not authenticated to rill cloud
-	// claims := auth.GetClaims(r.Context())
-	// if claims.OwnerType() != auth.OwnerTypeUser {
-	// 	http.Error(w, "only authenticated users can connect to github", http.StatusUnauthorized)
-	// 	return
-	// }
+	claims := auth.GetClaims(r.Context())
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		http.Error(w, "only authenticated users can connect to github", http.StatusUnauthorized)
+		return
+	}
 
 	remoteURL := qry.Get("state")
 	account, repo, ok := gitutil.SplitGithubURL(remoteURL)
@@ -211,6 +212,45 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
+	// install/update setupAction
+
+	code := qry.Get("code")
+	if code == "" {
+		http.Error(w, "unauthorised user", http.StatusUnauthorized)
+		return
+	}
+
+	// exchange code to get an auth token and create a github client with user auth
+	githubClient, err := s.userAuthGithubClient(ctx, code)
+	if err != nil {
+		http.Error(w, "unauthorised user", http.StatusUnauthorized)
+		return
+	}
+
+	// verify there is no spoofing and the user is a collaborator to the repo
+	// There may not be a need for this because we are not storing any state wrt installation
+	// Keeping this for future proofness if we start storing some states
+	gitUser, isCollaborator, err := s.isCollaborator(ctx, account, repo, githubClient)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to verify ownership: %s", err), http.StatusUnauthorized)
+		return
+	}
+
+	if !isCollaborator {
+		http.Error(w, "unauthorised user", http.StatusUnauthorized)
+		return
+	}
+
+	// save github user name
+	if claims.OwnerID() != "" {
+		if user, err := s.admin.DB.FindUser(ctx, claims.OwnerID()); err == nil { // ignoring error since can be called by user not logged into rill cloud
+			_, err := s.admin.DB.UpdateUser(ctx, user.ID, user.DisplayName, user.PhotoURL, gitUser.GetLogin())
+			if err != nil {
+				s.logger.Error("failed to update user's github username")
+			}
+		}
+	}
+
 	// Verify that user installed the app on the right repo and we have access now
 	installationID, err := s.admin.GetGithubInstallation(ctx, remoteURL)
 	if err != nil {
@@ -233,53 +273,15 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 		http.Redirect(w, r, redirectURL.String(), http.StatusTemporaryRedirect)
 	}
 
-	code := qry.Get("code")
-	if code == "" {
-		http.Error(w, "unauthorised user", http.StatusUnauthorized)
-		return
-	}
-
-	githubClient, err := s.userAuthGithubClient(ctx, code)
-	if err != nil {
-		http.Error(w, "unauthorised user", http.StatusUnauthorized)
-		return
-	}
-
-	// verify there is no spoofing and the user is a collaborator to the repo
-	// There may not be a need for this because we are not storing any state wrt installation
-	// Keeping this for future proof if we start storing some states
-	gitUser, isCollaborator, err := s.isCollaborator(ctx, account, repo, githubClient)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to verify ownership: %s", err), http.StatusUnauthorized)
-		return
-	}
-
-	if !isCollaborator {
-		http.Error(w, "unauthorised user", http.StatusUnauthorized)
-		return
-	}
-
-	claims := auth.GetClaims(r.Context())
-	if claims.OwnerID() != "" {
-		// find user, can be called by user not logged into rill cloud as well
-		if user, err := s.admin.DB.FindUser(ctx, claims.OwnerID()); err == nil { // ignoring error
-			_, err := s.admin.DB.UpdateUser(ctx, user.ID, user.DisplayName, user.PhotoURL, gitUser.GetLogin())
-			if err != nil {
-				s.logger.Error("failed to update user's github username")
-			}
-		}
-	}
-
 	// Redirect to UI success page
-	redirectURL, err := url.JoinPath(s.opts.FrontendURL, "/github/connect/success")
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
-		return
-	}
-	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, s.urls.githubConnectSuccess, http.StatusTemporaryRedirect)
 }
 
-// copied from package auth
+// githubAuthLogin starts user authorisation of github app.
+// In case github app is installed by another user, other users of the repo need to separately authorise github app
+// where this flow comes into picture.
+// Some implementation details are copied from auth package.
+// It's implemented as a non-gRPC endpoint mounted directly on /github/auth/login.
 func (s *Server) githubAuthLogin(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	// Generate random state for CSRF
 	b := make([]byte, 32)
@@ -310,13 +312,13 @@ func (s *Server) githubAuthLogin(w http.ResponseWriter, r *http.Request, pathPar
 		ClientID:     s.opts.GithubClientID,
 		ClientSecret: s.opts.GithubClientSecret,
 		Endpoint:     githuboauth.Endpoint,
-		RedirectURL:  s.urls.githubLoginCallback,
+		RedirectURL:  s.urls.githubAuthCallback,
 	}
 	// Redirect to github login page
 	http.Redirect(w, r, oauthConf.AuthCodeURL(state, oauth2.AccessTypeOnline), http.StatusTemporaryRedirect)
 }
 
-// githubAuthCallback is called after a user authorizes github app on his account
+// githubAuthCallback is called after a user authorizes github app on their account
 // It's implemented as a non-gRPC endpoint mounted directly on /github/auth/callback.
 func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	ctx := r.Context()
@@ -334,18 +336,30 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request, path
 	}
 	delete(sess.Values, cookieFieldState)
 
-	// Check there's an authenticated user
-	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		http.Error(w, "only authenticated users can connect to github", http.StatusUnauthorized)
-		return
-	}
-
-	// Extract info from query string
 	qry := r.URL.Query()
 	code := qry.Get("code")
 	if code == "" {
 		http.Error(w, "unauthorised user", http.StatusUnauthorized)
+		return
+	}
+
+	// exchange code to get an auth token and create a github c with user auth
+	c, err := s.userAuthGithubClient(ctx, code)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("internal error %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	gitUser, _, err := c.Users.Get(ctx, "")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("internal error %s", err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	// save the github user name
+	claims := auth.GetClaims(r.Context())
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		http.Error(w, "unidentified user", http.StatusUnauthorized)
 		return
 	}
 
@@ -360,19 +374,6 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request, path
 		return
 	}
 
-	client, err := s.userAuthGithubClient(ctx, code)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("internal error %s", err.Error()), http.StatusInternalServerError)
-		return
-	}
-
-	gitUser, _, err := client.Users.Get(ctx, "")
-	if err != nil {
-		http.Error(w, fmt.Sprintf("internal error %s", err.Error()), http.StatusInternalServerError)
-		return
-	}
-
-	// save the github user name
 	_, err = s.admin.DB.UpdateUser(ctx, user.ID, user.DisplayName, user.PhotoURL, gitUser.GetLogin())
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to save user information %s", err.Error()), http.StatusInternalServerError)
@@ -380,12 +381,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request, path
 	}
 
 	// Redirect to UI success page
-	redirectURL, err := url.JoinPath(s.opts.FrontendURL, "/github/auth/success")
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
-		return
-	}
-	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, s.urls.githubConnectSuccess, http.StatusTemporaryRedirect)
 }
 
 // githubWebhook is called by Github to deliver events about new pushes, pull requests, changes to a repository, etc.

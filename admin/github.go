@@ -45,7 +45,7 @@ func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (
 	return installationID, nil
 }
 
-// LookupGithubRepoForUser calls the Github API using an installation token to get information about a Github repo.
+// LookupGithubRepoForUser returns a Github repository iff the Github App is installed on the repository and user is a collaborator of the project.
 // The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
 func (s *Service) LookupGithubRepoForUser(ctx context.Context, installationID int64, githubURL, gitUserName string) (*github.Repository, error) {
 	account, repo, ok := gitutil.SplitGithubURL(githubURL)
