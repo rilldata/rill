@@ -70,7 +70,7 @@ func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	verificationURI, err := url.JoinPath(a.opts.FrontendURL, "/auth/device")
+	verificationURI, err := url.JoinPath(a.opts.FrontendURL, "/-/auth/device")
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to create verification uri: %w", err))
 		return

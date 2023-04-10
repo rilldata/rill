@@ -4,13 +4,14 @@ import {
   duplicateNameChecker,
   incrementedNameGetter,
 } from "@rilldata/web-common/features/sources/add-source/duplicateNameUtils";
+import {
+  fileHasValidExtension,
+  PossibleFileExtensions,
+  PossibleZipExtensions,
+} from "@rilldata/web-common/features/sources/add-source/possible-file-extensions";
 import { importOverlayVisible } from "@rilldata/web-common/layout/overlay-store";
 import { runtimeServiceFileUpload } from "@rilldata/web-common/runtime-client/manual-clients";
-import { FILE_EXTENSION_TO_TABLE_TYPE } from "@rilldata/web-local/lib/types";
-import {
-  extractFileExtension,
-  getTableNameFromFile,
-} from "../extract-table-name";
+import { getTableNameFromFile } from "../extract-table-name";
 import {
   DuplicateActions,
   duplicateSourceAction,
@@ -73,8 +74,7 @@ function filterValidFileExtensions(files: Array<File>): {
   const invalidFiles = [];
 
   files.forEach((file: File) => {
-    const fileExtension = extractFileExtension(file.name);
-    if (fileExtension in FILE_EXTENSION_TO_TABLE_TYPE) {
+    if (fileHasValidExtension(file.name)) {
       validFiles.push(file);
     } else {
       invalidFiles.push(file);
@@ -142,7 +142,8 @@ function reportFileErrors(invalidFiles: File[]) {
     message: `${invalidFiles.length} file${
       invalidFiles.length !== 1 ? "s are" : " is"
     } invalid: \n${invalidFiles.map((file) => file.name).join("\n")}`,
-    detail: "Only .parquet, .csv, .tsv, .json, and .ndjson files are supported",
+    detail:
+      "Only .parquet, .csv, .tsv, .json, and .ndjson files are supported, along with their gzipped (.gz) counterparts",
     options: {
       persisted: true,
     },
@@ -188,7 +189,10 @@ export function openFileUploadDialog(multiple = true) {
     };
     window.addEventListener("focus", focusHandler);
     input.multiple = multiple;
-    input.accept = ".csv,.tsv,.txt,.json,.ndjson,.parquet";
+    input.accept = [...PossibleFileExtensions, ...PossibleZipExtensions].join(
+      ","
+    );
+    console.log(input);
     input.click();
   });
 }

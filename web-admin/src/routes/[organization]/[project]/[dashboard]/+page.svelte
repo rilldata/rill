@@ -4,13 +4,13 @@
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import { StateSyncManager } from "@rilldata/web-common/features/dashboards/proto-state/StateSyncManager";
 
-  const metricViewName: string = $page.params.name;
+  $: metricViewName = $page.params.dashboard;
   const stateSyncManager = new StateSyncManager(metricViewName);
 
   $: metricsExplorer = useDashboardStore(metricViewName);
 
-  $: if (metricsExplorer) {
-    stateSyncManager.handleStateChange(metricsExplorer);
+  $: if ($metricsExplorer) {
+    stateSyncManager.handleStateChange($metricsExplorer);
   }
   $: if ($page) {
     stateSyncManager.handleUrlChange();
@@ -23,6 +23,4 @@
   <title>Rill | {metricViewName}</title>
 </svelte:head>
 
-<div class="p-2">
-  <Dashboard {metricViewName} />
-</div>
+<Dashboard hasTitle={false} {metricViewName} />

@@ -14,7 +14,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	var public bool
 
 	editCmd := &cobra.Command{
-		Use:   "edit",
+		Use:   "edit <project-name>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Edit",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -33,7 +33,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.TextPrinter("Updated project \n")
+			cmdutil.SuccessPrinter("Updated project \n")
 			cmdutil.TablePrinter(toRow(proj.Project))
 			return nil
 		},

@@ -43,14 +43,14 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 
 	// If no access, return instructions for granting access
 	if !ok {
-		grantAccessURL := s.urls.GithubConnect()
-		qry := grantAccessURL.Query()
-		qry.Set("remote", req.GithubUrl)
-		grantAccessURL.RawQuery = qry.Encode()
+		grantAccessURL, err := url.JoinPath(s.opts.ExternalURL, "/github/connect")
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to create redirect URL: %s", err)
+		}
 
 		res := &adminv1.GetGithubRepoStatusResponse{
 			HasAccess:      false,
-			GrantAccessUrl: grantAccessURL.String(),
+			GrantAccessUrl: grantAccessURL,
 		}
 		return res, nil
 	}

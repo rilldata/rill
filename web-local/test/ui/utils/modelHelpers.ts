@@ -13,8 +13,8 @@ export async function createModel(page: Page, name: string) {
 }
 
 export async function createModelFromSource(page: Page, source: string) {
-  await openEntityMenu(page, TestEntityType.Source, source);
-  await clickMenuButton(page, "create new model");
+  await openEntityMenu(page, source);
+  await clickMenuButton(page, "Create New Model");
 }
 
 export async function updateModelSql(page: Page, sql: string) {
@@ -29,16 +29,19 @@ export async function updateModelSql(page: Page, sql: string) {
 }
 
 export async function modelHasError(page: Page, hasError: boolean, error = "") {
-  // TODO: better check
+  const errorLocator = page.locator(".editor-pane .error");
   try {
-    const errorLocator = page.locator(".editor-pane .error");
     await errorLocator.waitFor({
       timeout: 100,
     });
-    expect(hasError).toBeTruthy();
+  } catch (err) {
+    // assertions not needed
+  }
+
+  if (hasError) {
     const actualError = await errorLocator.textContent();
     expect(actualError).toMatch(error);
-  } catch (err) {
-    expect(hasError).toBeFalsy();
+  } else {
+    expect(await errorLocator.count()).toBe(0);
   }
 }

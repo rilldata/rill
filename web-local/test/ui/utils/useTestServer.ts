@@ -11,17 +11,15 @@ import treeKill from "tree-kill";
 export function useTestServer(port: number, dir: string) {
   let childProcess: ChildProcess;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     rmSync(dir, {
       force: true,
       recursive: true,
     });
 
     childProcess = spawn(
-      "go",
+      path.join(__dirname, "../../../..", "rill"),
       [
-        "run",
-        path.join(__dirname, "../../../..", "cli/main.go"),
         "start",
         "--no-open",
         "--port",
@@ -40,8 +38,9 @@ export function useTestServer(port: number, dir: string) {
     await asyncWaitUntil(() => isPortOpen(port));
   });
 
-  afterAll(() => {
+  afterEach(async () => {
     if (childProcess.pid) treeKill(childProcess.pid);
+    await asyncWaitUntil(async () => !(await isPortOpen(port)));
   });
 }
 
@@ -55,8 +54,8 @@ export function useTestBrowser(port: number) {
 
   beforeAll(async () => {
     browser = await chromium.launch({
-      headless: false,
-      devtools: true,
+      // headless: false,
+      // devtools: true,
     });
   });
 
