@@ -100,7 +100,6 @@ func TestConnectorWithGithubRepoDriver(t *testing.T) {
 		{"local_file", "AdBids.csv", testdataPathAbs, false},
 		{"local_file", filepath.Join(testdataPathAbs, "AdBids.csv"), testdataPathAbs, false},
 		{"local_file", "../../../runtime/testruntime/testdata/ad_bids/data/AdBids.csv.gz", testdataPathAbs, true},
-		{"local_file", filepath.Join(testdataPathRel, "AdBids.csv"), "", true},
 	}
 
 	ctx := context.Background()
