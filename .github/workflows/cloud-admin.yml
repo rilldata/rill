@@ -22,6 +22,16 @@ jobs:
       - run: |
           echo ${{ env.NETLIFY_SITE_ID }}
 
+      - name: Set up NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Build Cloud Admin
+        run: |-
+          npm install esbuild
+          npm run build -w web-admin
+
       - name: Deploy ${{ matrix.name }} to Netlify Staging
         uses: nwtgck/actions-netlify@v1.2
         with:
@@ -31,7 +41,4 @@ jobs:
           enable-pull-request-comment: false
           enable-commit-comment: true
           overwrites-pull-request-comment: true
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ env.NETLIFY_SITE_ID }}
         timeout-minutes: 1
