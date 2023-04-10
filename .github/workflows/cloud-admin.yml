@@ -35,6 +35,9 @@ jobs:
         with:
           publish-dir: ./web-admin/build
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Cloud-admin ${{ env.GITHUB_REF_NAME }} deployed to ${{ env.DEPLOY_SITE }}"
+          deploy-message: "Cloud-admin ${{ env.GITHUB_REF }} deployed to ${{ env.DEPLOY_SITE }}"
           production-deploy: true
+          enable-pull-request-comment: false
+          enable-commit-comment: true
+          overwrites-pull-request-comment: true
         timeout-minutes: 1
