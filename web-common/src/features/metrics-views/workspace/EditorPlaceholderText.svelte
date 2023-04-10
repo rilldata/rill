@@ -5,4 +5,5 @@
   const dispatch = createEventDispatcher();
 </script>
 
-<div>Start by bootstrapping off a model.</div>
+<!-- completely empty case -->
+<div>Build a config off of a model or start with a skeleton.</div>
