@@ -95,15 +95,6 @@ export type QueryServiceMetricsViewTotalsBody = {
   timeStart?: string;
 };
 
-export type QueryServiceMetricsViewTimeSeriesBody = {
-  filter?: V1MetricsViewFilter;
-  measureNames?: string[];
-  priority?: number;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  timeStart?: string;
-};
-
 export type QueryServiceMetricsViewToplistBody = {
   dimensionName?: string;
   filter?: V1MetricsViewFilter;
@@ -113,6 +104,15 @@ export type QueryServiceMetricsViewToplistBody = {
   priority?: number;
   sort?: V1MetricsViewSort[];
   timeEnd?: string;
+  timeStart?: string;
+};
+
+export type QueryServiceMetricsViewTimeSeriesBody = {
+  filter?: V1MetricsViewFilter;
+  measureNames?: string[];
+  priority?: number;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
   timeStart?: string;
 };
 
@@ -167,6 +167,7 @@ See message Instance for field descriptions.
  */
 export type RuntimeServiceEditInstanceBody = {
   embedCatalog?: boolean;
+  ingestionLimitBytes?: string;
   olapDriver?: string;
   olapDsn?: string;
   repoDriver?: string;
@@ -579,6 +580,7 @@ export interface V1Instance {
   /** If true, the runtime will store the instance's catalog in its OLAP store instead
 of in the runtime's metadata store. Currently only supported for the duckdb driver. */
   embedCatalog?: boolean;
+  ingestionLimitBytes?: string;
   instanceId?: string;
   olapDriver?: string;
   olapDsn?: string;
@@ -655,6 +657,7 @@ See message Instance for field descriptions.
  */
 export interface V1CreateInstanceRequest {
   embedCatalog?: boolean;
+  ingestionLimitBytes?: string;
   instanceId?: string;
   olapDriver?: string;
   olapDsn?: string;

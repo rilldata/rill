@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -13,29 +13,55 @@ import (
 
 func SwitchCmd(cfg *config.Config) *cobra.Command {
 	switchCmd := &cobra.Command{
-		Use:   "switch",
+		Use:   "switch [<org-name>]",
 		Short: "Switch",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
 
-			_, err = client.GetOrganization(context.Background(), &adminv1.GetOrganizationRequest{
-				Name: args[0],
-			})
+			var defaultOrg string
+			if len(args) == 0 {
+				res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
+				if err != nil {
+					return err
+				}
+
+				if len(res.Organizations) < 1 {
+					fmt.Println("No organizations found, run `rill org create` first.")
+					return nil
+				}
+
+				var orgNames []string
+				for _, org := range res.Organizations {
+					orgNames = append(orgNames, org.Name)
+				}
+
+				org, err := dotrill.GetDefaultOrg()
+				if err != nil {
+					return err
+				}
+
+				defaultOrg = cmdutil.SelectPrompt("Select default org.", orgNames, org)
+			} else {
+				_, err = client.GetOrganization(context.Background(), &adminv1.GetOrganizationRequest{
+					Name: args[0],
+				})
+				if err != nil {
+					return err
+				}
+				defaultOrg = args[0]
+			}
+
+			err = dotrill.SetDefaultOrg(defaultOrg)
 			if err != nil {
 				return err
 			}
 
-			err = dotrill.SetDefaultOrg(args[0])
-			if err != nil {
-				return err
-			}
-
-			fmt.Printf("Set default organization to %q", args[0])
+			fmt.Printf("Set default organization to %q.\n", defaultOrg)
 			return nil
 		},
 	}

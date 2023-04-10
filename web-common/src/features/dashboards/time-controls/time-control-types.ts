@@ -1,37 +1,24 @@
-import type { V1TimeGrain } from "../../../runtime-client";
-export interface TimeRange {
-  name: TimeRangeName;
-  start: Date;
-  end: Date;
+/** NOTE: this file should be deprecated once we've
+ * resolved https://github.com/rilldata/rill-developer/issues/1961.
+ */
+
+export enum TimeRangeName_DEPRECATE {
+  LAST_SIX_HOURS = "Last 6 hours", // hour
+  LAST_24_HOURS = "Last 24 hours", // hour
+  LAST_7_DAYS = "Last 7 days", // day
+  LAST_4_WEEKS = "Last 4 weeks", // Make last 4 weeks and truncate with week
+  ALL_TIME = "All time",
+  CUSTOM = "Custom range",
 }
 
-export enum TimeRangeName {
-  Last6Hours = "Last 6 hours",
-  LastDay = "Last day",
-  LastWeek = "Last week",
-  Last30Days = "Last 30 days",
-  AllTime = "All time",
-  // Today = "Today",
-  // MonthToDate = "Month to date",
-  Custom = "Custom range",
-}
-
-export const lastXTimeRangeNames: TimeRangeName[] = [
-  TimeRangeName.Last6Hours,
-  TimeRangeName.LastDay,
-  TimeRangeName.LastWeek,
-  TimeRangeName.Last30Days,
+export const lastXTimeRangeNames: TimeRangeName_DEPRECATE[] = [
+  TimeRangeName_DEPRECATE.LAST_SIX_HOURS,
+  TimeRangeName_DEPRECATE.LAST_24_HOURS,
+  TimeRangeName_DEPRECATE.LAST_7_DAYS,
+  TimeRangeName_DEPRECATE.LAST_4_WEEKS,
 ];
 
-export const supportedTimeRangeEnums: TimeRangeName[] = [
+export const supportedTimeRangeEnums: TimeRangeName_DEPRECATE[] = [
   ...lastXTimeRangeNames,
-  TimeRangeName.AllTime,
+  TimeRangeName_DEPRECATE.ALL_TIME,
 ];
-
-// The start and end times are rounded to the time grain (interval) such that start is inclusive and end is exclusive.
-export interface TimeSeriesTimeRange {
-  name?: TimeRangeName;
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}

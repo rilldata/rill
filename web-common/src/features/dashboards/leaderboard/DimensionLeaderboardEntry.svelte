@@ -57,14 +57,19 @@
       BarAndNumber component to do things that are harder to maintain.
       The current approach does a decent enough job of maintaining the flow and scan-friendliness.
      -->
-    <div
-      class:ui-copy={!atLeastOneActive && !loading}
-      class:ui-copy-strong={!excluded && active}
-      class:ui-copy-disabled={excluded}
-      class="w-full text-ellipsis overflow-hidden whitespace-nowrap"
-      slot="title"
-    >
-      <slot name="label" />
+    <!-- 
+      This is a very, very unfortunate hack used to deal with a render bug. 
+      By consuming the let:isActive slot prop, we can reactive get this slot to update.
+    -->
+    <div slot="title" let:isActive>
+      <div
+        class:ui-copy={!atLeastOneActive && !loading}
+        class:ui-copy-strong={!excluded && isActive}
+        class:ui-copy-disabled={excluded}
+        class="w-full text-ellipsis overflow-hidden whitespace-nowrap"
+      >
+        <slot name="label" />
+      </div>
     </div>
     <!-- right-hand metric value -->
     <div slot="right">

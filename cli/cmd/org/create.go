@@ -3,7 +3,6 @@ package org
 import (
 	"context"
 
-	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
@@ -15,11 +14,11 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 	var description string
 
 	createCmd := &cobra.Command{
-		Use:   "create",
+		Use:   "create <org-name>",
 		Short: "Create",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
@@ -39,7 +38,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.TextPrinter("Created organization \n")
+			cmdutil.SuccessPrinter("Created organization \n")
 			cmdutil.TablePrinter(toRow(org.Organization))
 			return nil
 		},

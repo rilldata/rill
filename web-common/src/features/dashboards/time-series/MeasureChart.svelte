@@ -9,47 +9,49 @@
     TimeSeriesMouseover,
   } from "@rilldata/web-common/components/data-graphic/guides";
   import { ChunkedLine } from "@rilldata/web-common/components/data-graphic/marks";
+  import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { previousValueStore } from "@rilldata/web-local/lib/store-utils";
   import { extent } from "d3-array";
   import { cubicOut } from "svelte/easing";
   import { writable } from "svelte/store";
   import { fade, fly } from "svelte/transition";
+  import { niceMeasureExtents } from "./utils";
   export let width: number = undefined;
   export let height: number = undefined;
-  export let xMin;
-  export let xMax;
-  export let yMin;
-  export let yMax;
+  export let xMin: Date = undefined;
+  export let xMax: Date = undefined;
+  export let yMin: number = undefined;
+  export let yMax: number = undefined;
   export let data;
   export let xAccessor = "ts";
   export let yAccessor = "value";
   export let mouseoverValue;
   export let hovered = false;
-  export let mouseoverFormat: (d: number) => string = (v) => v.toString();
-  export let mouseoverTimeFormat: (d: number) => string = (v) => v.toString();
+  export let mouseoverFormat: (d: number | Date | string) => string = (v) =>
+    v.toString();
+  export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
+    v.toString();
+  export let numberKind: NumberKind = NumberKind.ANY;
 
   export let tweenProps = { duration: 400, easing: cubicOut };
 
   // control point for scrub functionality.
   export let scrubbing = false;
-  export let scrubStart = undefined;
   export let scrubEnd = undefined;
 
   $: [xExtentMin, xExtentMax] = extent(data, (d) => d[xAccessor]);
   $: [yExtentMin, yExtentMax] = extent(data, (d) => d[yAccessor]);
+
+  $: [internalYMin, internalYMax] = niceMeasureExtents(
+    [
+      yMin !== undefined ? yMin : yExtentMin,
+      yMax !== undefined ? yMax : yExtentMax,
+    ],
+    6 / 5
+  );
+
   $: internalXMin = xMin || xExtentMin;
   $: internalXMax = xMax || xExtentMax;
-  /** we'll set the inflation amount here. */
-  let inflate = 5 / 6;
-
-  $: internalYMin = yExtentMin >= 0 ? 0 : yExtentMin;
-
-  $: internalYMax = yMax
-    ? yMax
-    : yExtentMin == yExtentMax
-    ? yExtentMax / inflate
-    : yExtentMax / inflate;
-
   // we delay the tween if previousYMax < yMax
   let yMaxStore = writable(yExtentMax);
   let previousYMax = previousValueStore(yMaxStore);
@@ -59,6 +61,7 @@
 
   const previousTimeRangeKey = previousValueStore(timeRangeKey);
 
+  // FIXME: move this function to utils.ts
   /** reset the keys to trigger animations on time range changes */
   let syncTimeRangeKey;
   $: {
@@ -90,7 +93,7 @@
 
 <SimpleDataGraphic
   overflowHidden={false}
-  yMin={internalYMin * inflate}
+  yMin={internalYMin}
   yMax={internalYMax}
   shareYScale={false}
   yType="number"
@@ -103,12 +106,13 @@
   bind:mouseoverValue
   bind:hovered
   let:config
+  let:yScale
   yMinTweenProps={tweenProps}
   yMaxTweenProps={tweenProps}
   xMaxTweenProps={tweenProps}
   xMinTweenProps={tweenProps}
 >
-  <Axis side="right" format={mouseoverFormat} />
+  <Axis side="right" format={mouseoverFormat} {numberKind} />
   <Grid />
   <Body>
     <!-- key on the time range itself to prevent weird tweening animations.
@@ -125,6 +129,13 @@
         key={$timeRangeKey}
       />
     {/key}
+    <line
+      x1={config.plotLeft}
+      x2={config.plotLeft + config.plotRight}
+      y1={yScale(0)}
+      y2={yScale(0)}
+      class="stroke-blue-200"
+    />
   </Body>
   {#if !scrubbing && mouseoverValue?.x}
     <g transition:fade|local={{ duration: 100 }}>

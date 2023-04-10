@@ -329,6 +329,8 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for ProjectVariables
 
+	// no validation rules for IngestionLimitBytes
+
 	if len(errors) > 0 {
 		return InstanceMultiError(errors)
 	}
@@ -976,6 +978,8 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	// no validation rules for Variables
 
+	// no validation rules for IngestionLimitBytes
+
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)
 	}
@@ -1481,6 +1485,8 @@ func (m *EditInstanceRequest) validate(all bool) error {
 	// no validation rules for EmbedCatalog
 
 	// no validation rules for Variables
+
+	// no validation rules for IngestionLimitBytes
 
 	if len(errors) > 0 {
 		return EditInstanceRequestMultiError(errors)

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -14,7 +13,7 @@ import (
 
 func ShowCmd(cfg *config.Config) *cobra.Command {
 	showCmd := &cobra.Command{
-		Use:   "show",
+		Use:   "show [<org-name>]",
 		Short: "Show",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -29,7 +28,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 				name = args[0]
 			}
 
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
@@ -42,7 +41,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.TextPrinter("Found organization \n")
+			cmdutil.SuccessPrinter("Found organization \n")
 			cmdutil.TablePrinter(toRow(org.Organization))
 			return nil
 		},

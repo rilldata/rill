@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	cloud.google.com/go/storage v1.27.0
+	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/MicahParks/keyfunc v1.9.0
 	github.com/NYTimes/gziphandler v1.1.1
@@ -37,6 +38,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.0
 	github.com/testcontainers/testcontainers-go v0.13.0
+	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	gocloud.dev v0.27.0
 	golang.org/x/exp v0.0.0-20221230185412-738e83a70c30
@@ -134,11 +136,12 @@ require (
 	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
-	github.com/mattn/go-colorable v0.1.12 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
-	github.com/mattn/go-runewidth v0.0.2 // indirect
+	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
+	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/minio/asm2plan9s v0.0.0-20200509001527-cdd76441f9d8 // indirect
 	github.com/minio/c2goasm v0.0.0-20190812172519-36a3d3bbc4f3 // indirect
 	github.com/mitchellh/copystructure v1.0.0 // indirect
@@ -159,6 +162,7 @@ require (
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
+	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
@@ -169,10 +173,9 @@ require (
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/crypto v0.3.0 // indirect
 	golang.org/x/mod v0.7.0 // indirect
-	golang.org/x/term v0.2.0 // indirect
+	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/tools v0.3.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.97.0 // indirect
@@ -201,14 +204,14 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.3
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/kelseyhightower/envconfig v1.4.0
-	golang.org/x/net v0.2.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sync v0.1.0
-	golang.org/x/sys v0.3.0
-	golang.org/x/text v0.4.0 // indirect
+	golang.org/x/sys v0.5.0
+	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/genproto v0.0.0-20220920201722-2b89144ce006
 	google.golang.org/protobuf v1.28.1
 )
 
-replace github.com/apache/calcite-avatica-go/v5 v5.1.0 => github.com/begelundmuller/calcite-avatica-go/v5 v5.0.0-20221026194811-52480d9968a9
+replace github.com/apache/calcite-avatica-go/v5 v5.1.0 => github.com/begelundmuller/calcite-avatica-go/v5 v5.0.0-20230323102415-9c0eba2fbe15
 
 exclude modernc.org/sqlite v1.18.1

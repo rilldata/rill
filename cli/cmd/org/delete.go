@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -13,11 +12,11 @@ import (
 
 func DeleteCmd(cfg *config.Config) *cobra.Command {
 	deleteCmd := &cobra.Command{
-		Use:   "delete",
+		Use:   "delete <org-name>",
 		Short: "Delete",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
@@ -30,7 +29,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.TextPrinter(fmt.Sprintf("Deleted organization: %v\n", args[0]))
+			cmdutil.SuccessPrinter(fmt.Sprintf("Deleted organization: %v\n", args[0]))
 			return nil
 		},
 	}

@@ -12,8 +12,8 @@ export async function load() {
   }
 
   const orgs = await adminServiceListOrganizations();
-  if (orgs.organization.length > 0) {
-    throw redirect(307, `/-/${orgs.organization[0].name}`);
+  if (orgs.organizations.length > 0) {
+    throw redirect(307, `/${orgs.organizations[0].name}`);
   }
 
   // No organizations. Go to "You're lonely" page.

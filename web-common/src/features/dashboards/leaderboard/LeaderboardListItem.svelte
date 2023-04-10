@@ -39,13 +39,13 @@
 </script>
 
 <button
-  transition:slide|local={{ duration: 200 }}
-  on:mouseover={onHover}
-  on:mouseleave={onLeave}
-  on:focus={onHover}
+  class="block flex flex-row w-full text-left transition-color"
   on:blur={onLeave}
   on:click
-  class="block flex flex-row w-full text-left transition-color"
+  on:focus={onHover}
+  on:mouseleave={onLeave}
+  on:mouseover={onHover}
+  transition:slide|local={{ duration: 200 }}
 >
   {#if showIcon}
     <div style:width="22px" style:height class="grid place-items-center">
@@ -60,18 +60,18 @@
   {/if}
   <BarAndLabel
     {color}
-    {value}
-    showHover
-    showBackground={false}
-    tweenParameters={{ duration: 200 }}
     justify={false}
+    showBackground={false}
+    showHover
+    tweenParameters={{ duration: 200 }}
+    {value}
   >
     <div class="grid leaderboard-entry items-center gap-x-3" style:height>
       <div
         class="justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
       >
         <div>
-          <slot name="title" />
+          <slot {isActive} name="title" />
         </div>
       </div>
       <div class="justify-self-end overflow-hidden ui-copy-number">
@@ -82,7 +82,10 @@
 </button>
 <!-- if the value is greater than 100%, we should add this little serration -->
 {#if value > 1.001}
-  <div transition:fly={{ duration: 200, x: 20 }}>
+  <div
+    style="position: relative"
+    transition:fly|local={{ duration: 200, x: 20 }}
+  >
     <svg
       style="
       position:absolute;

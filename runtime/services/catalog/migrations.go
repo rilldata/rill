@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -366,9 +367,15 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 		return err
 	}
 
+	// NOTE :: IngestStorageLimitInBytes check will only work if sources are ingested in serial
+	opts := migrator.Options{
+		InstanceEnv:               inst.ResolveVariables(),
+		IngestStorageLimitInBytes: s.getSourceIngestionLimit(ctx, inst),
+	}
+
 	// create in olap
 	err = s.wrapMigrator(item.CatalogInFile, func() error {
-		return migrator.Create(ctx, s.Olap, s.Repo, inst.ResolveVariables(), item.CatalogInFile)
+		return migrator.Create(ctx, s.Olap, s.Repo, opts, item.CatalogInFile)
 	})
 	if err != nil {
 		return err
@@ -435,7 +442,11 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 	// update in olap
 	if item.Type == MigrationUpdate {
 		err = s.wrapMigrator(item.CatalogInFile, func() error {
-			return migrator.Update(ctx, s.Olap, s.Repo, inst.ResolveVariables(), item.CatalogInStore, item.CatalogInFile)
+			opts := migrator.Options{
+				InstanceEnv:               inst.ResolveVariables(),
+				IngestStorageLimitInBytes: s.getSourceIngestionLimit(ctx, inst),
+			}
+			return migrator.Update(ctx, s.Olap, s.Repo, opts, item.CatalogInStore, item.CatalogInFile)
 		})
 		if err != nil {
 			return err
@@ -522,4 +533,23 @@ func (s *Service) addToDag(item *MigrationItem) *runtimev1.ReconcileError {
 		}
 	}
 	return nil
+}
+
+func (s *Service) getSourceIngestionLimit(ctx context.Context, inst *drivers.Instance) int64 {
+	if inst.IngestionLimitBytes == 0 {
+		return math.MaxInt64
+	}
+
+	var sizeSoFar int64
+	entries := s.Catalog.FindEntries(ctx, s.InstID, drivers.ObjectTypeSource)
+	for _, entry := range entries {
+		sizeSoFar += entry.BytesIngested
+	}
+
+	limitInBytes := inst.IngestionLimitBytes
+	limitInBytes -= sizeSoFar
+	if limitInBytes < 0 {
+		return 0
+	}
+	return limitInBytes
 }

@@ -5,8 +5,8 @@ import {
   Value,
 } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-import { TimeRangeName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
-import type { TimeSeriesTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   TimeGrain,
   TimeGrain as TimeGrainProto,
@@ -25,18 +25,32 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
-export function toProto(metrics: MetricsExplorerEntity) {
-  const data: PartialMessage<DashboardState> = {};
+export function getProtoFromDashboardState(
+  metrics: MetricsExplorerEntity
+): string {
+  if (!metrics) return "";
+
+  const state: PartialMessage<DashboardState> = {};
   if (metrics.filters) {
-    data.filters = toFiltersProto(metrics.filters) as any;
+    state.filters = toFiltersProto(metrics.filters) as any;
   }
   if (metrics.selectedTimeRange) {
-    data.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
+    state.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
+    if (metrics.selectedTimeRange.interval) {
+      state.timeGrain = toTimeGrainProto(metrics.selectedTimeRange.interval);
+    }
   }
-  return new DashboardState(data);
+  if (metrics.leaderboardMeasureName) {
+    state.leaderboardMeasure = metrics.leaderboardMeasureName;
+  }
+  if (metrics.selectedDimensionName) {
+    state.selectedDimension = metrics.selectedDimensionName;
+  }
+  const message = new DashboardState(state);
+  return encodeURIComponent(protoToBase64(message.toBinary()));
 }
 
-export function protoToBase64(proto: Uint8Array) {
+function protoToBase64(proto: Uint8Array) {
   return btoa(String.fromCharCode.apply(null, proto));
 }
 
@@ -47,27 +61,27 @@ function toFiltersProto(filters: V1MetricsViewFilter) {
   });
 }
 
-function toTimeRangeProto(range: TimeSeriesTimeRange) {
+function toTimeRangeProto(range: DashboardTimeControls) {
   const timeRangeArgs: PartialMessage<DashboardTimeRange> = {
     name: range.name,
-    timeGranularity: toTimeGrainProto(range.interval),
   };
-  if (range.name === TimeRangeName.Custom) {
+  if (range.name === TimeRangePreset.CUSTOM) {
     timeRangeArgs.timeStart = toTimeProto(range.start);
     timeRangeArgs.timeEnd = toTimeProto(range.end);
   }
   return new DashboardTimeRange(timeRangeArgs);
 }
 
-function toTimeProto(time: string) {
+function toTimeProto(date: Date) {
   return new Timestamp({
-    seconds: BigInt(new Date(time).getTime()),
+    seconds: BigInt(date.getTime()),
   });
 }
 
 function toTimeGrainProto(timeGrain: V1TimeGrain) {
   switch (timeGrain) {
     case V1TimeGrain.TIME_GRAIN_UNSPECIFIED:
+    default:
       return TimeGrain.UNSPECIFIED;
     case V1TimeGrain.TIME_GRAIN_MILLISECOND:
       return TimeGrain.MILLISECOND;

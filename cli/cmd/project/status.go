@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -13,11 +12,11 @@ import (
 
 func StatusCmd(cfg *config.Config) *cobra.Command {
 	statusCmd := &cobra.Command{
-		Use:   "status",
+		Use:   "status <project-name>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Status",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
@@ -31,12 +30,12 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.TextPrinter("Found project\n")
+			cmdutil.SuccessPrinter("Found project\n")
 			cmdutil.TablePrinter(toRow(proj.Project))
 
 			depl := proj.ProductionDeployment
 			if depl != nil {
-				cmdutil.TextPrinter("Deplyment info\n")
+				cmdutil.SuccessPrinter("Deployment info\n")
 				fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
 				fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)
 				fmt.Printf("  Slots: %d\n", depl.Slots)

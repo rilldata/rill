@@ -27,11 +27,11 @@ const (
 
 type metricsViewMigrator struct{}
 
-func (m *metricsViewMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, env map[string]string, catalogObj *drivers.CatalogEntry) error {
+func (m *metricsViewMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options, catalogObj *drivers.CatalogEntry) error {
 	return nil
 }
 
-func (m *metricsViewMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, env map[string]string, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
+func (m *metricsViewMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
 	return nil
 }
 
@@ -119,7 +119,7 @@ func (m *metricsViewMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLA
 
 func validateMeasure(ctx context.Context, olap drivers.OLAPStore, model *drivers.Table, measure *runtimev1.MetricsView_Measure) error {
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT %s from %s", measure.Expression, model.Name),
+		Query:  fmt.Sprintf("SELECT %s from \"%s\"", measure.Expression, model.Name),
 		DryRun: true,
 	})
 	return err

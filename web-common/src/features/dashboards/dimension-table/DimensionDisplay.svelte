@@ -264,7 +264,9 @@
         formatPreset: m.format as NicelyFormattedTypes,
       };
     });
-    values = humanizeGroupByColumns(values, measureFormatSpec);
+    if (measureFormatSpec) {
+      values = humanizeGroupByColumns(values, measureFormatSpec);
+    }
   }
 </script>
 

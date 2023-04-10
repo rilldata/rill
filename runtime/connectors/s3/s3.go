@@ -54,6 +54,22 @@ var spec = connectors.Spec{
 			Href:        "https://docs.rilldata.com/using-rill/import-data#setting-amazon-s3-credentials",
 		},
 	},
+	ConnectorVariables: []connectors.VariableSchema{
+		{
+			Key:    "aws_access_key_id",
+			Help:   "Leave blank if public access enabled",
+			Secret: true,
+		},
+		{
+			Key:    "aws_secret_access_key",
+			Help:   "Leave blank if public access enabled",
+			Secret: true,
+		},
+		{
+			Key:     "region",
+			Default: "us-east-1",
+		},
+	},
 }
 
 type Config struct {
@@ -127,6 +143,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		GlobPageSize:          conf.GlobPageSize,
 		GlobPattern:           url.Path,
 		ExtractPolicy:         source.ExtractPolicy,
+		StorageLimitInBytes:   env.StorageLimitInBytes,
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts)

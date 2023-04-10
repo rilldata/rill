@@ -3,7 +3,6 @@ package project
 import (
 	"context"
 
-	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -12,11 +11,11 @@ import (
 
 func ShowCmd(cfg *config.Config) *cobra.Command {
 	showCmd := &cobra.Command{
-		Use:   "show",
+		Use:   "show <project-name>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Show",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
@@ -30,7 +29,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.TextPrinter("Found project \n")
+			cmdutil.SuccessPrinter("Found project \n")
 			cmdutil.TablePrinter(toRow(proj.Project))
 			return nil
 		},

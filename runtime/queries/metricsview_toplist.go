@@ -59,7 +59,7 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return err
 	}
 
-	if olap.Dialect() != drivers.DialectDuckDB {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -73,7 +73,7 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	}
 
 	// Build query
-	sql, args, err := q.buildMetricsTopListSQL(mv)
+	sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect())
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -92,7 +92,7 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	return nil
 }
 
-func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView) (string, []any, error) {
+func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
 	dimName := safeName(q.DimensionName)
 	selectCols := []string{dimName}
 	for _, n := range q.MeasureNames {
@@ -139,7 +139,9 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView) (
 		if !s.Ascending {
 			orderClause += " DESC"
 		}
-		orderClause += " NULLS LAST"
+		if dialect == drivers.DialectDuckDB {
+			orderClause += " NULLS LAST"
+		}
 	}
 
 	if q.Limit == 0 {
