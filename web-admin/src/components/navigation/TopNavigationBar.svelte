@@ -7,6 +7,7 @@
   import DeploymentStatusChip from "../deployments/DeploymentStatusChip.svelte";
   import Breadcrumbs from "./Breadcrumbs.svelte";
 
+  $: organization = $page.params.organization;
   $: project = $page.params.project;
 
   const userQuery = useAdminServiceGetCurrentUser();
@@ -17,7 +18,9 @@
   <a href="/" class="mr-3">
     <RillLogo iconOnly size={"2.25em"} />
   </a>
-  <Breadcrumbs />
+  {#if organization}
+    <Breadcrumbs />
+  {/if}
   {#if project}
     <div class="ml-3">
       <DeploymentStatusChip />
