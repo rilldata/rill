@@ -10,8 +10,8 @@ on:
       - "web-local/**"
 env:
   NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-#  NETLIFY_SITE_ID: ${{  startsWith(github.ref, 'refs/tags/v') == 'true' && 'e73ac785-882e-425a-8fc8-5432528bb374' || 'afb26917-7a60-47d9-81dc-c0babbb0d9a9' }}
   NETLIFY_SITE_ID: ${{ fromJSON('["e73ac785-882e-425a-8fc8-5432528bb374","afb26917-7a60-47d9-81dc-c0babbb0d9a9"]')[ startsWith(github.ref, 'refs/tags/v') == 'true' ] }}
+  DEPLOY_SITE: ${{ fromJSON('["ui.rilldata.io","ui.rilldata.com"]')[ startsWith(github.ref, 'refs/tags/v') == 'true' ] }}
 
 jobs:
   build:
@@ -19,9 +19,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
-      - run: |-
-          echo ${{ env.NETLIFY_SITE_ID }}
 
       - name: Set up NodeJS
         uses: actions/setup-node@v3
@@ -38,8 +35,5 @@ jobs:
         with:
           publish-dir: ./web-admin/build
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Deploy cloud-admin from GitHub Actions"
-          enable-pull-request-comment: false
-          enable-commit-comment: true
-          overwrites-pull-request-comment: true
+          deploy-message: "Cloud-admin ${{ env.GITHUB_REF_NAME }} deployed to ${{ env.DEPLOY_SITE }}"
         timeout-minutes: 1
