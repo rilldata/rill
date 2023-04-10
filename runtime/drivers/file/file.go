@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"go.uber.org/zap"
 )
 
@@ -16,7 +17,12 @@ func init() {
 type driver struct{}
 
 func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
-	c := &connection{root: dsn}
+	absPath, err := fileutil.ExpandHome(dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	c := &connection{root: absPath}
 	if err := c.checkRoot(); err != nil {
 		return nil, err
 	}
@@ -24,6 +30,7 @@ func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 }
 
 type connection struct {
+	// root should be absolute path
 	root string
 }
 
