@@ -16,6 +16,7 @@
   import DashboardHeader from "./DashboardHeader.svelte";
 
   export let metricViewName: string;
+  export let hasTitle: boolean;
 
   const switchToMetrics = async (metricViewName: string) => {
     if (!metricViewName) return;
@@ -62,11 +63,11 @@
           ? MEASURE_CONFIG.container.width.full
           : MEASURE_CONFIG.container.width.breakpoint
       }px minmax(355px, auto)`
-    : "max-content minmax(355px, auto)";
+    : "min-content minmax(355px, auto)";
 </script>
 
 <DashboardContainer bind:exploreContainerWidth bind:width {gridConfig}>
-  <DashboardHeader {metricViewName} slot="header" />
+  <DashboardHeader {metricViewName} {hasTitle} slot="header" />
 
   <svelte:fragment let:width slot="metrics">
     {#key metricViewName}

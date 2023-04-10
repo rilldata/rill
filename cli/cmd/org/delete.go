@@ -12,7 +12,7 @@ import (
 
 func DeleteCmd(cfg *config.Config) *cobra.Command {
 	deleteCmd := &cobra.Command{
-		Use:   "delete",
+		Use:   "delete <org-name>",
 		Short: "Delete",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -29,7 +29,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.TextPrinter(fmt.Sprintf("Deleted organization: %v\n", args[0]))
+			cmdutil.SuccessPrinter(fmt.Sprintf("Deleted organization: %v\n", args[0]))
 			return nil
 		},
 	}

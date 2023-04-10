@@ -69,3 +69,14 @@ func userToPB(u *database.User) *adminv1.User {
 		UpdatedOn:   timestamppb.New(u.UpdatedOn),
 	}
 }
+
+func memberToPB(m *database.Member) *adminv1.Member {
+	return &adminv1.Member{
+		UserId:    m.ID,
+		UserEmail: m.Email,
+		UserName:  m.DisplayName,
+		RoleName:  m.RoleName,
+		CreatedOn: timestamppb.New(m.CreatedOn),
+		UpdatedOn: timestamppb.New(m.UpdatedOn),
+	}
+}

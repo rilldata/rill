@@ -20,7 +20,7 @@ type Logs struct {
 
 func StatusCmd(cfg *config.Config) *cobra.Command {
 	statusCmd := &cobra.Command{
-		Use:   "status",
+		Use:   "status <project-name>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Status",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -38,7 +38,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.TextPrinter("Found project\n")
+			cmdutil.SuccessPrinter("Found project\n")
 			cmdutil.TablePrinter(toRow(proj.Project))
 
 			depl := proj.ProductionDeployment
@@ -48,7 +48,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				cmdutil.TextPrinter("Deplyment info\n")
+				cmdutil.SuccessPrinter("Deployment info\n")
 				fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
 				fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)
 				fmt.Printf("  Slots: %d\n", depl.Slots)
