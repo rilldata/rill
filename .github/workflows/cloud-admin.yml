@@ -10,7 +10,7 @@ on:
       - "web-local/**"
 env:
   NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-  NETLIFY_SITE_ID: ${{ fromJSON('["e73ac785-882e-425a-8fc8-5432528bb374","afb26917-7a60-47d9-81dc-c0babbb0d9a9"]') }}
+  NETLIFY_SITE_ID: ${{  startsWith(github.ref, 'refs/tags/v') == 'true' && 'e73ac785-882e-425a-8fc8-5432528bb374' || 'afb26917-7a60-47d9-81dc-c0babbb0d9a9') }}
 #  NETLIFY_SITE_ID: ${{ fromJSON('["e73ac785-882e-425a-8fc8-5432528bb374","afb26917-7a60-47d9-81dc-c0babbb0d9a9"]')[ startsWith(github.ref, 'refs/tags/v') == 'true' ] }}
 
 jobs:
