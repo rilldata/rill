@@ -111,11 +111,12 @@ func (c *connectionCache) evict(ctx context.Context, instanceID, driver, dsn str
 }
 
 type migrationMetaCache struct {
-	cache *lru.Cache
+	cache *simplelru.LRU
+	lock  sync.Mutex
 }
 
 func newMigrationMetaCache(size int) *migrationMetaCache {
-	cache, err := lru.New(size)
+	cache, err := simplelru.NewLRU(size, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -124,6 +125,8 @@ func newMigrationMetaCache(size int) *migrationMetaCache {
 }
 
 func (c *migrationMetaCache) get(instID string) *catalog.MigrationMeta {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	if val, ok := c.cache.Get(instID); ok {
 		return val.(*catalog.MigrationMeta)
 	}
@@ -134,6 +137,8 @@ func (c *migrationMetaCache) get(instID string) *catalog.MigrationMeta {
 }
 
 func (c *migrationMetaCache) evict(ctx context.Context, instID string) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	c.cache.Remove(instID)
 }
 
