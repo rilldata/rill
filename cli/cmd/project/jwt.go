@@ -31,7 +31,7 @@ func JwtCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.TextPrinter("Runtime info\n")
+			cmdutil.SuccessPrinter("Runtime info\n")
 			fmt.Printf("  Host: %s\n", proj.ProductionDeployment.RuntimeHost)
 			fmt.Printf("  Instance: %s\n", proj.ProductionDeployment.RuntimeInstanceId)
 			fmt.Printf("  JWT: %s\n", proj.Jwt)

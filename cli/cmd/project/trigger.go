@@ -12,7 +12,7 @@ func TriggerCmd(cfg *config.Config) *cobra.Command {
 		Use:               "trigger",
 		Hidden:            !cfg.IsDev(),
 		Short:             "Send trigger to deployment",
-		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrg(cfg)),
+		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 	}
 
 	triggerCmd.AddCommand(triggers.ReconcileCmd(cfg))
