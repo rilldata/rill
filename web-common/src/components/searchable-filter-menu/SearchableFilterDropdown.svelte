@@ -13,11 +13,11 @@
   export let selectableItems: string[];
   export let selectedItems: boolean[];
 
-  type MenuItemData = {
+  interface MenuItemData {
     label: string;
     selected: boolean;
     index: number;
-  };
+  }
 
   export const setItemsVisibleBySearchString = (
     items: string[],
