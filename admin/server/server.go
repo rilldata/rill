@@ -66,17 +66,17 @@ func newURLRegistry(opts *Options) (*urlRegistry, error) {
 		return nil, fmt.Errorf("failed to create github connect URL: %w", err)
 	}
 
-	retryURL, err := url.JoinPath(opts.FrontendURL, "/github/connect/retry")
+	retryURL, err := url.JoinPath(opts.FrontendURL, "/-/github/connect/retry")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github app installation URL: %w", err)
 	}
 
-	requestURL, err := url.JoinPath(opts.FrontendURL, "/github/connect/request")
+	requestURL, err := url.JoinPath(opts.FrontendURL, "/-/github/connect/request")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request URL: %w", err)
 	}
 
-	successURL, err := url.JoinPath(opts.FrontendURL, "/github/connect/success")
+	successURL, err := url.JoinPath(opts.FrontendURL, "/-/github/connect/success")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create URL: %w", err)
 	}
@@ -91,7 +91,7 @@ func newURLRegistry(opts *Options) (*urlRegistry, error) {
 		return nil, fmt.Errorf("failed to create github app installation URL: %w", err)
 	}
 
-	githubAuthSuccess, err := url.JoinPath(opts.FrontendURL, "/github/auth/success")
+	githubAuthSuccess, err := url.JoinPath(opts.FrontendURL, "/-/github/auth/success")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create URL: %w", err)
 	}
