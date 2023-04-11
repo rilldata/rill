@@ -8,10 +8,10 @@
     useSourceNames,
   } from "@rilldata/web-common/features/sources/selectors";
   import {
-    useRuntimeServicePutFileAndReconcile,
+    createRuntimeServicePutFileAndReconcile,
     V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
@@ -27,7 +27,7 @@
 
   $: sourceNames = useSourceNames($runtime.instanceId);
   $: modelNames = useModelNames($runtime.instanceId);
-  const createModelMutation = useRuntimeServicePutFileAndReconcile();
+  const createModelMutation = createRuntimeServicePutFileAndReconcile();
 
   $: sourceCatalogsQuery = useEmbeddedSources($runtime?.instanceId);
   let embeddedSourceCatalogs: Array<V1CatalogEntry>;

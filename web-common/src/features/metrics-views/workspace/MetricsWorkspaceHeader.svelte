@@ -6,9 +6,9 @@
   import { isDuplicateName } from "@rilldata/web-common/features/entity-management/name-utils";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MetricsExploreMetricsButton from "./MetricsExploreMetricsButton.svelte";
@@ -19,7 +19,7 @@
   $: runtimeInstanceId = $runtime.instanceId;
   $: allNamesQuery = useAllNames(runtimeInstanceId);
   const queryClient = useQueryClient();
-  const renameMetricsDef = useRuntimeServiceRenameFileAndReconcile();
+  const renameMetricsDef = createRuntimeServiceRenameFileAndReconcile();
 
   const onChangeCallback = async (e) => {
     if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {

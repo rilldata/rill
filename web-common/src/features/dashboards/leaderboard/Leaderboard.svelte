@@ -17,11 +17,11 @@
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import {
+    createQueryServiceMetricsViewToplist,
     MetricsViewDimension,
     MetricsViewMeasure,
-    useQueryServiceMetricsViewToplist,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { isRangeInsideOther } from "../../../lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -151,7 +151,7 @@
       };
     }
 
-    topListQuery = useQueryServiceMetricsViewToplist(
+    topListQuery = createQueryServiceMetricsViewToplist(
       $runtime.instanceId,
       metricViewName,
       topListParams
@@ -250,7 +250,7 @@
       };
     }
 
-    comparisonTopListQuery = useQueryServiceMetricsViewToplist(
+    comparisonTopListQuery = createQueryServiceMetricsViewToplist(
       $runtime.instanceId,
       metricViewName,
       comparisonParams

@@ -1,10 +1,10 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { useAdminServiceGetProject } from "../../../../../client";
+  import { createAdminServiceGetProject } from "../../../../../client";
   import Logs from "../../../../../components/deployments/Logs.svelte";
   import Status from "../../../../../components/deployments/Status.svelte";
 
-  const proj = useAdminServiceGetProject(
+  const proj = createAdminServiceGetProject(
     $page.params.organization,
     $page.params.project
   );

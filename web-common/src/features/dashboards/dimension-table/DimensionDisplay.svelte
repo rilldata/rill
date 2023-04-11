@@ -16,13 +16,13 @@
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import {
+    createQueryServiceMetricsViewToplist,
+    createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
     MetricsViewFilterCond,
-    useQueryServiceMetricsViewToplist,
-    useQueryServiceMetricsViewTotals,
     V1MetricsViewToplistResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { getTimeComparisonParametersForComponent } from "../../../lib/time/comparisons";
   import { DEFAULT_TIME_RANGES } from "../../../lib/time/config";
   import type { TimeComparisonOption } from "../../../lib/time/types";
@@ -145,7 +145,7 @@
       };
     }
 
-    topListQuery = useQueryServiceMetricsViewToplist(
+    topListQuery = createQueryServiceMetricsViewToplist(
       instanceId,
       metricViewName,
       topListParams
@@ -218,7 +218,7 @@
       };
     }
 
-    comparisonTopListQuery = useQueryServiceMetricsViewToplist(
+    comparisonTopListQuery = createQueryServiceMetricsViewToplist(
       $runtime.instanceId,
       metricViewName,
       comparisonParams
@@ -244,7 +244,7 @@
         },
       };
     }
-    totalsQuery = useQueryServiceMetricsViewTotals(
+    totalsQuery = createQueryServiceMetricsViewTotals(
       instanceId,
       metricViewName,
       totalsQueryParams

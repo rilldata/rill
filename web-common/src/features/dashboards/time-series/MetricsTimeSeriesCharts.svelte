@@ -18,12 +18,12 @@
   import { getOffset } from "@rilldata/web-common/lib/time/transforms";
   import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import {
-    useQueryServiceMetricsViewTimeSeries,
-    useQueryServiceMetricsViewTotals,
+    createQueryServiceMetricsViewTimeSeries,
+    createQueryServiceMetricsViewTotals,
     V1MetricsViewTimeSeriesResponse,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
-  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
+  import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { isRangeInsideOther } from "../../../lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
@@ -45,7 +45,7 @@
   $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
   $: interval = $dashboardStore?.selectedTimeRange?.interval;
 
-  let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
+  let totalsQuery: CreateQueryResult<V1MetricsViewTotalsResponse, Error>;
 
   $: allTimeRangeQuery = useModelAllTimeRange(
     $runtime.instanceId,
@@ -61,7 +61,7 @@
     name = $dashboardStore.selectedTimeRange.name;
   }
 
-  let totalsComparisonQuery: UseQueryStoreResult<
+  let totalsComparisonQuery: CreateQueryResult<
     V1MetricsViewTotalsResponse,
     Error
   >;
@@ -92,13 +92,13 @@
       timeEnd: $dashboardStore.selectedTimeRange?.end.toISOString(),
     };
 
-    totalsQuery = useQueryServiceMetricsViewTotals(
+    totalsQuery = createQueryServiceMetricsViewTotals(
       instanceId,
       metricViewName,
       totalsQueryParams
     );
 
-    totalsComparisonQuery = useQueryServiceMetricsViewTotals(
+    totalsComparisonQuery = createQueryServiceMetricsViewTotals(
       instanceId,
       metricViewName,
       {
@@ -116,12 +116,12 @@
   // get the totalsComparisons.
   $: totalsComparisons = $totalsComparisonQuery?.data?.data;
 
-  let timeSeriesQuery: UseQueryStoreResult<
+  let timeSeriesQuery: CreateQueryResult<
     V1MetricsViewTimeSeriesResponse,
     Error
   >;
 
-  let timeSeriesComparisonQuery: UseQueryStoreResult<
+  let timeSeriesComparisonQuery: CreateQueryResult<
     V1MetricsViewTimeSeriesResponse,
     Error
   >;
@@ -133,7 +133,7 @@
     !$metaQuery.isRefetching &&
     $dashboardStore?.selectedTimeRange?.start
   ) {
-    timeSeriesQuery = useQueryServiceMetricsViewTimeSeries(
+    timeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
       instanceId,
       metricViewName,
       {
@@ -145,7 +145,7 @@
       }
     );
     if (isComparisonRangeAvailable) {
-      timeSeriesComparisonQuery = useQueryServiceMetricsViewTimeSeries(
+      timeSeriesComparisonQuery = createQueryServiceMetricsViewTimeSeries(
         instanceId,
         metricViewName,
         {

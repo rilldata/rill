@@ -3,7 +3,7 @@
   import Tab from "@rilldata/web-common/components/tab/Tab.svelte";
   import TabGroup from "@rilldata/web-common/components/tab/TabGroup.svelte";
   import {
-    useRuntimeServiceListConnectors,
+    createRuntimeServiceListConnectors,
     V1Connector,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
@@ -16,7 +16,7 @@
 
   const TAB_ORDER = ["gcs", "s3", "https", "local_file"];
 
-  const connectors = useRuntimeServiceListConnectors({
+  const connectors = createRuntimeServiceListConnectors({
     query: {
       // arrange connectors in the way we would like to display them
       select: (data) => {

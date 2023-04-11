@@ -6,7 +6,7 @@
   import { getTimeGrainOptions } from "@rilldata/web-common/lib/time/grains";
   import type { TimeGrainOption } from "@rilldata/web-common/lib/time/types";
   import {
-    useQueryServiceColumnTimeRange,
+    createQueryServiceColumnTimeRange,
     V1Model,
   } from "@rilldata/web-common/runtime-client";
   import { getContext } from "svelte";
@@ -35,7 +35,7 @@
 
   let timeRangeQuery;
   $: if (selectedModel?.name && timeColumn) {
-    timeRangeQuery = useQueryServiceColumnTimeRange(
+    timeRangeQuery = createQueryServiceColumnTimeRange(
       $runtime.instanceId,
       selectedModel.name,
       { columnName: timeColumn }

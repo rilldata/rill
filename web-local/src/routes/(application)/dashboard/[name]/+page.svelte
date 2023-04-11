@@ -8,8 +8,8 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
   import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceGetFile,
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
@@ -28,7 +28,7 @@
     stateSyncManager.handleUrlChange();
   }
 
-  $: fileQuery = useRuntimeServiceGetFile(
+  $: fileQuery = createRuntimeServiceGetFile(
     $runtime.instanceId,
     getFilePathFromNameAndType(metricViewName, EntityType.MetricsDefinition),
     {
@@ -44,7 +44,7 @@
     }
   );
 
-  $: catalogQuery = useRuntimeServiceGetCatalogEntry(
+  $: catalogQuery = createRuntimeServiceGetCatalogEntry(
     $runtime.instanceId,
     metricViewName,
     {

@@ -15,7 +15,7 @@
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
   import { initMetrics } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
   import { getArtifactErrors } from "../features/entity-management/getArtifactErrors";

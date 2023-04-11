@@ -12,8 +12,8 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServicePutFileAndReconcile,
     V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
@@ -23,7 +23,7 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getName } from "../../entity-management/name-utils";
   import {
@@ -35,7 +35,7 @@
   export let hasError = false;
   export let collapse = false;
 
-  $: getModel = useRuntimeServiceGetCatalogEntry(
+  $: getModel = createRuntimeServiceGetCatalogEntry(
     $runtime.instanceId,
     modelName
   );
@@ -43,7 +43,7 @@
   $: dashboardNames = useDashboardNames($runtime.instanceId);
 
   const queryClient = useQueryClient();
-  const createFileMutation = useRuntimeServicePutFileAndReconcile();
+  const createFileMutation = createRuntimeServicePutFileAndReconcile();
 
   async function handleCreateDashboard() {
     overlay.set({

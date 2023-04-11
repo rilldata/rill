@@ -4,7 +4,7 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
+  import { createRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import { MEASURE_CONFIG } from "../config";
@@ -26,7 +26,7 @@
 
   $: switchToMetrics(metricViewName);
 
-  $: metricsViewQuery = useRuntimeServiceGetCatalogEntry(
+  $: metricsViewQuery = createRuntimeServiceGetCatalogEntry(
     $runtime.instanceId,
     metricViewName,
     {

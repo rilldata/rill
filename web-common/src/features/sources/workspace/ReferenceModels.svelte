@@ -7,7 +7,7 @@
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
-    useQueryServiceTableCardinality,
+    createQueryServiceTableCardinality,
     V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
   import { derived } from "svelte/store";
@@ -21,7 +21,7 @@
   $: modelsAndRowCounts = derived(
     embeds.map((modelName) => {
       return derived(
-        useQueryServiceTableCardinality($runtime?.instanceId, modelName),
+        createQueryServiceTableCardinality($runtime?.instanceId, modelName),
 
         (totalRows) => {
           return {
