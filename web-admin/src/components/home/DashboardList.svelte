@@ -38,18 +38,13 @@
 
     return;
   }
-
-  function getRouteFromPath(path: string) {
-    return path.replace("/dashboards/", "").replace(".yaml", "");
-  }
 </script>
 
 {#if $proj.isSuccess && dashboards?.length > 0}
   <ol>
     {#each dashboards as dashboard}
       <li class="text-xs text-gray-900 font-medium leading-4 mb-1">
-        <a href="/{organization}/{project}/{getRouteFromPath(dashboard.path)}"
-          >{dashboard.name}</a
+        <a href="/{organization}/{project}/{dashboard.name}">{dashboard.name}</a
         >
       </li>
     {/each}
