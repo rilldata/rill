@@ -5,8 +5,11 @@ import {
   Value,
 } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import {
+  DashboardTimeControls,
+  TimeComparisonOption,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
 import {
   TimeGrain,
   TimeGrain as TimeGrainProto,
@@ -40,6 +43,12 @@ export function getProtoFromDashboardState(
       state.timeGrain = toTimeGrainProto(metrics.selectedTimeRange.interval);
     }
   }
+  if (metrics.selectedComparisonTimeRange) {
+    state.compareTimeRange = toTimeRangeProto(
+      metrics.selectedComparisonTimeRange
+    );
+  }
+
   if (metrics.leaderboardMeasureName) {
     state.leaderboardMeasure = metrics.leaderboardMeasureName;
   }
@@ -65,7 +74,10 @@ function toTimeRangeProto(range: DashboardTimeControls) {
   const timeRangeArgs: PartialMessage<DashboardTimeRange> = {
     name: range.name,
   };
-  if (range.name === TimeRangePreset.CUSTOM) {
+  if (
+    range.name === TimeRangePreset.CUSTOM ||
+    range.name === TimeComparisonOption.CUSTOM
+  ) {
     timeRangeArgs.timeStart = toTimeProto(range.start);
     timeRangeArgs.timeEnd = toTimeProto(range.end);
   }

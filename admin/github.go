@@ -91,8 +91,6 @@ func (s *Service) ProcessGithubEvent(ctx context.Context, rawEvent any) error {
 	case *github.InstallationRepositoriesEvent:
 		return s.processGithubInstallationRepositoriesEvent(ctx, event)
 	default:
-		// TODO: remove this log once we finish debugging reconcile not firing
-		s.logger.Warn(fmt.Sprintf("Unknown github event. %T", rawEvent))
 		return nil
 	}
 }
@@ -109,14 +107,6 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 		}
 		return err
 	}
-
-	// TODO: remove this log once we finish debugging reconcile not firing
-	s.logger.Info(fmt.Sprintf(
-		"Have github event. url=%s branch=%s deploymentId=%v",
-		githubURL,
-		project.ProductionBranch,
-		project.ProductionDeploymentID,
-	))
 
 	// Parse the branch that was pushed to
 	// The format is refs/heads/main or refs/tags/v3.14.1

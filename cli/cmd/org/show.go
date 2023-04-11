@@ -13,7 +13,7 @@ import (
 
 func ShowCmd(cfg *config.Config) *cobra.Command {
 	showCmd := &cobra.Command{
-		Use:   "show",
+		Use:   "show [<org-name>]",
 		Short: "Show",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -41,7 +41,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.TextPrinter("Found organization \n")
+			cmdutil.SuccessPrinter("Found organization \n")
 			cmdutil.TablePrinter(toRow(org.Organization))
 			return nil
 		},
