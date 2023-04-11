@@ -101,7 +101,7 @@
         tooltipText="Choose dimensions to display"
       />
 
-      <div class="whitespace-nowrap">sorted by</div>
+      <div class="whitespace-nowrap">showing top values by</div>
 
       <SelectMenu
         paddingTop={2}
