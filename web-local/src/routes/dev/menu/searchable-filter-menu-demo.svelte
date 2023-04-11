@@ -52,10 +52,10 @@
       selectedItems = selectedItems.map((x, i) => (i === index ? !x : x));
       // selectedItems = ev.detail;
     }}
-    on:deselectAll={() => {
+    on:deselect-all={() => {
       selectedItems = selectedItems.map((_) => false);
     }}
-    on:selectAll={() => {
+    on:select-all={() => {
       selectedItems = selectedItems.map((_) => true);
     }}
   />

@@ -47,7 +47,7 @@
 
   $: allToggleText = numSelected === 0 ? "Select all" : "Deselect all";
 
-  $: allToggleEvt = numSelected === 0 ? "selectAll" : "deselectAll";
+  $: allToggleEvt = numSelected === 0 ? "select-all" : "deselect-all";
   $: dispatchAllToggleEvt = () => {
     dispatch(allToggleEvt);
   };

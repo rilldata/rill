@@ -232,8 +232,8 @@
       selectableItems={availableMeasureLabels}
       selectedItems={visibleMeasures}
       on:itemClicked={toggleMeasureVisibility}
-      on:deselectAll={setAllMeasuresNotVisible}
-      on:selectAll={setAllMeasuresVisible}
+      on:deselect-all={setAllMeasuresNotVisible}
+      on:select-all={setAllMeasuresVisible}
       label="Measures"
       tooltipText="Choose measures to display"
     />

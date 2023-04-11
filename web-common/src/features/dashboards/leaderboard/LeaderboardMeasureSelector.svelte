@@ -95,8 +95,8 @@
         selectableItems={availableDimensionLabels}
         selectedItems={visibleDimensions}
         on:itemClicked={toggleDimensionVisibility}
-        on:deselectAll={setAllDimensionsNotVisible}
-        on:selectAll={setAllDimensionsVisible}
+        on:deselect-all={setAllDimensionsNotVisible}
+        on:select-all={setAllDimensionsVisible}
         label="Dimensions"
         tooltipText="Choose dimensions to display"
       />

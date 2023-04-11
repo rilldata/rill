@@ -14,8 +14,8 @@ throw an error.
 
 This component emits events:
 - `itemClicked`, which has a number `detail` field with the index of the item that was clicked.
-- `selectAll`, with no `detail`
-- `deselectAll`, with no `detail`
+- `select-all`, with no `detail`
+- `deselect-all`, with no `detail`
 In both cases, it is up to the containing component to handle these
 events, toggling the selection state and passing in new component
 props as needed.
@@ -85,7 +85,7 @@ props as needed.
     on:apply
     on:search
     on:itemClicked
-    on:deselectAll
-    on:selectAll
+    on:deselect-all
+    on:select-all
   />
 </WithTogglableFloatingElement>
