@@ -12,6 +12,7 @@
     useMetaDimension,
     useMetaMeasure,
     useMetaQuery,
+    useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import {
@@ -19,8 +20,12 @@
     MetricsViewFilterCond,
     useQueryServiceMetricsViewToplist,
     useQueryServiceMetricsViewTotals,
+    V1MetricsViewToplistResponse,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@sveltestack/svelte-query";
+  import { getTimeComparisonParametersForComponent } from "../../../lib/time/comparisons";
+  import { DEFAULT_TIME_RANGES } from "../../../lib/time/config";
+  import type { TimeComparisonOption } from "../../../lib/time/types";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
     MetricsExplorerEntity,
@@ -30,6 +35,13 @@
     humanizeGroupByColumns,
     NicelyFormattedTypes,
   } from "../humanize-numbers";
+  import {
+    computeComparisonValues,
+    customSortMeasures,
+    getComparisonProperties,
+    getFilterForComparisonTable,
+    updateFilterOnSearch,
+  } from "./dimension-table-utils";
   import DimensionContainer from "./DimensionContainer.svelte";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
@@ -42,7 +54,6 @@
   const queryClient = useQueryClient();
 
   $: instanceId = $runtime.instanceId;
-  $: addNull = "null".includes(searchText);
 
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
 
@@ -85,8 +96,6 @@
       : metricsExplorer?.filters.include.find((d) => d.name === dimension?.name)
           ?.in) ?? [];
 
-  let topListQuery;
-
   $: allMeasures = $metaQuery.data?.measures;
 
   $: sortByColumn = $leaderboardMeasureQuery.data?.name;
@@ -94,6 +103,9 @@
 
   $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
+
+  let allTimeRangeQuery;
+  let topListQuery;
 
   $: if (
     sortByColumn &&
@@ -103,32 +115,11 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    let filterData = JSON.parse(JSON.stringify(filterForDimension));
-
-    if (searchText !== "") {
-      let foundDimension = false;
-
-      filterData["include"].forEach((filter) => {
-        if (filter.name == dimension?.name) {
-          filter.like = [`%${searchText}%`];
-          foundDimension = true;
-          if (addNull) filter.in.push(null);
-        }
-      });
-
-      if (!foundDimension) {
-        filterData["include"].push({
-          name: dimension?.name,
-          in: addNull ? [null] : [],
-          like: [`%${searchText}%`],
-        });
-      }
-    } else {
-      filterData["include"] = filterData["include"].filter((f) => f.in.length);
-      filterData["include"].forEach((f) => {
-        delete f.like;
-      });
-    }
+    let filterSet = updateFilterOnSearch(
+      filterForDimension,
+      searchText,
+      dimension?.name
+    );
 
     let topListParams = {
       dimensionName: dimensionName,
@@ -141,7 +132,7 @@
           ascending: sortDirection === "asc" ? true : false,
         },
       ],
-      filter: filterData,
+      filter: filterSet,
     };
 
     if (hasTimeSeries) {
@@ -159,6 +150,81 @@
       metricViewName,
       topListParams
     );
+
+    allTimeRangeQuery = useModelAllTimeRange(
+      $runtime.instanceId,
+      $metaQuery.data.model,
+      $metaQuery.data.timeDimension
+    );
+  }
+
+  // the timeRangeName is the key to a selected time range's associated presets.
+  $: timeRangeName = metricsExplorer?.selectedTimeRange?.name;
+
+  $: allTimeRange = $allTimeRangeQuery?.data;
+
+  let comparisonTopListQuery;
+  let isComparisonRangeAvailable = false;
+  // create the right compareTopListParams.
+  $: if (
+    !$topListQuery?.isFetching &&
+    hasTimeSeries &&
+    timeRangeName !== undefined
+  ) {
+    const values: V1MetricsViewToplistResponse = $topListQuery?.data?.data;
+
+    const comparisonTimeRange = getTimeComparisonParametersForComponent(
+      (metricsExplorer?.selectedComparisonTimeRange
+        ?.name as TimeComparisonOption) ||
+        (DEFAULT_TIME_RANGES[timeRangeName]
+          .defaultComparison as TimeComparisonOption),
+      allTimeRange?.start,
+      allTimeRange?.end,
+      metricsExplorer.selectedTimeRange.start,
+      metricsExplorer.selectedTimeRange.end
+    );
+
+    const { start, end } = comparisonTimeRange;
+    isComparisonRangeAvailable = comparisonTimeRange.isComparisonRangeAvailable;
+
+    let comparisonFilterSet = getFilterForComparisonTable(
+      filterForDimension,
+      dimensionName,
+      values
+    );
+
+    let comparisonParams = {
+      dimensionName: dimensionName,
+      measureNames: [sortByColumn],
+      limit: "250",
+      offset: "0",
+      sort: [
+        {
+          name: sortByColumn,
+          ascending: sortDirection === "asc" ? true : false,
+        },
+      ],
+      filter: comparisonFilterSet,
+    };
+
+    if (hasTimeSeries) {
+      comparisonParams = {
+        ...comparisonParams,
+
+        ...{
+          timeStart: isComparisonRangeAvailable ? start : undefined,
+          timeEnd: isComparisonRangeAvailable ? end : undefined,
+        },
+      };
+    }
+
+    comparisonTopListQuery = useQueryServiceMetricsViewToplist(
+      $runtime.instanceId,
+      metricViewName,
+      comparisonParams
+    );
+  } else if (!hasTimeSeries) {
+    isComparisonRangeAvailable = false;
   }
 
   let totalsQuery;
@@ -202,38 +268,62 @@
   let measureNames = [];
 
   $: if (!$topListQuery?.isFetching && dimension) {
+    let columnsMeta = $topListQuery?.data?.meta || [];
     values = $topListQuery?.data?.data ?? [];
 
-    /* FIX ME
-    /* for now getting the column names from the values
-    /* in future use the meta field to get column details
-    */
-    if (values.length) {
-      let columnNames = Object.keys(values[0]).sort();
+    let columnNames = columnsMeta
+      .map((c) => c.name)
+      .filter((name) => name !== dimension?.name);
 
-      columnNames = columnNames.filter((name) => name !== dimension?.name);
-      columnNames.unshift(dimension?.name);
-      measureNames = allMeasures.map((m) => m.name);
+    const selectedMeasure = allMeasures.find((m) => m.name === sortByColumn);
+    // Add comparison columns if available
+    if (isComparisonRangeAvailable) {
+      columnNames.push(`${sortByColumn}_delta`);
 
-      columns = columnNames.map((columnName) => {
-        if (measureNames.includes(columnName)) {
-          const measure = allMeasures.find((m) => m.name === columnName);
-          return {
-            name: columnName,
-            type: "INT",
-            label: measure?.label || measure?.expression,
-            total: referenceValues[measure.name] || 0,
-            enableResize: false,
-          };
-        } else
-          return {
-            name: columnName,
-            type: "VARCHAR",
-            label: dimension?.label,
-            enableResize: true,
-          };
-      });
+      // Only push percentage delta column if selected measure is not a percentage
+      if (selectedMeasure?.format != NicelyFormattedTypes.PERCENTAGE)
+        columnNames.push(`${sortByColumn}_delta_perc`);
     }
+    columnNames = columnNames.sort(customSortMeasures);
+
+    // Make dimension the first column
+    columnNames.unshift(dimension?.name);
+    measureNames = allMeasures.map((m) => m.name);
+
+    columns = columnNames.map((columnName) => {
+      if (measureNames.includes(columnName)) {
+        // Handle all regular measures
+        const measure = allMeasures.find((m) => m.name === columnName);
+        return {
+          name: columnName,
+          type: "INT",
+          label: measure?.label || measure?.expression,
+          description: measure?.description,
+          total: referenceValues[measure.name] || 0,
+          enableResize: false,
+          format: measure?.format,
+        };
+      } else if (columnName === dimension?.name) {
+        // Handle dimension column
+        return {
+          name: columnName,
+          type: "VARCHAR",
+          label: dimension?.label,
+          enableResize: true,
+        };
+      } else {
+        // Handle delta and delta_perc
+        const comparison = getComparisonProperties(columnName, selectedMeasure);
+        return {
+          name: columnName,
+          type: comparison.type,
+          label: comparison.label,
+          description: comparison.description,
+          enableResize: false,
+          format: comparison.format,
+        };
+      }
+    });
   }
 
   function onSelectItem(event) {
@@ -257,11 +347,19 @@
     }
   }
 
+  $: if (
+    $comparisonTopListQuery?.data &&
+    values.length &&
+    isComparisonRangeAvailable
+  ) {
+    values = computeComparisonValues($comparisonTopListQuery?.data, values);
+  }
+
   $: if (values) {
-    const measureFormatSpec = allMeasures?.map((m) => {
+    const measureFormatSpec = columns?.map((column) => {
       return {
-        columnName: m.name,
-        formatPreset: m.format as NicelyFormattedTypes,
+        columnName: column.name,
+        formatPreset: column.format as NicelyFormattedTypes,
       };
     });
     if (measureFormatSpec) {

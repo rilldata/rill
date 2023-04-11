@@ -34,9 +34,11 @@ type Connector interface {
 
 // Spec provides metadata about a connector and the properties it supports.
 type Spec struct {
-	DisplayName string
-	Description string
-	Properties  []PropertySchema
+	DisplayName        string
+	Description        string
+	Properties         []PropertySchema
+	ConnectorVariables []VariableSchema
+	Help               string
 }
 
 // PropertySchema provides the schema for a property supported by a connector.
@@ -49,6 +51,15 @@ type PropertySchema struct {
 	Placeholder string
 	Hint        string
 	Href        string
+}
+
+type VariableSchema struct {
+	Key           string
+	Default       string
+	Help          string
+	Secret        bool
+	ValidateFunc  func(any interface{}) error
+	TransformFunc func(any interface{}) interface{}
 }
 
 // PropertySchemaType is an enum of types supported for connector properties.

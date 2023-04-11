@@ -40,7 +40,7 @@
     {yAccessor}
     showPoint
     showReferenceLine
-    showDistanceFromZero
+    showDistanceLine
     showText={false}
     {format}
   />
@@ -52,7 +52,7 @@
         {yAccessor}
         showPoint={false}
         showReferenceLine={false}
-        showDistanceFromZero={false}
+        showDistanceLine={false}
         format={showRawValue ? (v) => v.toString() : format}
       />
     </g>
