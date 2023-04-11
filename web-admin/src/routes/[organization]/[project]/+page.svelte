@@ -3,9 +3,9 @@
   import { page } from "$app/stores";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
-  import { useAdminServiceGetProject } from "../../../client";
+  import { createAdminServiceGetProject } from "../../../client";
 
-  $: proj = useAdminServiceGetProject(
+  $: proj = createAdminServiceGetProject(
     $page.params.organization,
     $page.params.project
   );
