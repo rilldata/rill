@@ -1,26 +1,65 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import Slash from "@rilldata/web-common/components/icons/Slash.svelte";
+  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import {
+    createAdminServiceListOrganizations,
+    createAdminServiceListProjects,
+  } from "../../client";
+  import BreadcrumbItem from "./BreadcrumbItem.svelte";
 
   $: organization = $page.params.organization;
-  $: project = $page.params.project;
-  $: name = $page.params.name;
+  $: organizations = createAdminServiceListOrganizations();
+  $: organizationPageActive = $page.route.id === "/[organization]";
 
-  const textClasses = "px-1 text-black font-semibold";
+  $: project = $page.params.project;
+  $: projects = createAdminServiceListProjects(organization);
+  $: projectPageActive = $page.route.id === "/[organization]/[project]";
+
+  $: dashboard = $page.params.dashboard;
+  $: dashboards = useDashboardNames($runtime?.instanceId);
+  $: dashboardPageActive =
+    $page.route.id === "/[organization]/[project]/[dashboard]";
 </script>
 
-<div class="flex flex-row items-center">
-  {#if organization}
-    <a href="/-/{organization}" class={textClasses}>{organization}</a>
-  {/if}
-  {#if project}
-    <Slash size={"2em"} className={"text-gray-200"} />
-    <a href="/-/{organization}/{project}" class={textClasses}>{project}</a>
-  {/if}
-  {#if name}
-    <Slash size={"2em"} className={"text-gray-200"} />
-    <a href="/-/{organization}/{project}/dashboard/{name}" class={textClasses}>
-      {name}
-    </a>
-  {/if}
-</div>
+<nav>
+  <ol class="flex flex-row items-center">
+    {#if organization}
+      <BreadcrumbItem
+        label={organization}
+        isActive={organizationPageActive}
+        options={$organizations.data?.organizations?.length > 1 &&
+          $organizations.data.organizations.map((org) => ({
+            main: org.name,
+            callback: () => goto(`/${org.name}`),
+          }))}
+      />
+    {/if}
+    {#if project}
+      <Slash size={"2em"} className={"text-gray-200"} />
+      <BreadcrumbItem
+        label={project}
+        isActive={projectPageActive}
+        options={$projects.data?.projects?.length > 1 &&
+          $projects.data.projects.map((proj) => ({
+            main: proj.name,
+            callback: () => goto(`/${organization}/${proj.name}`),
+          }))}
+      />
+    {/if}
+    {#if dashboard}
+      <Slash size={"2em"} className={"text-gray-200"} />
+      <BreadcrumbItem
+        label={dashboard}
+        isActive={dashboardPageActive}
+        options={$dashboards.data?.length > 1 &&
+          $dashboards.data.map((dash) => ({
+            main: dash,
+            callback: () => goto(`/${organization}/${project}/${dash}`),
+          }))}
+      />
+    {/if}
+  </ol>
+</nav>

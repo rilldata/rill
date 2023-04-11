@@ -10,7 +10,7 @@ type Config struct {
 	Org                string
 }
 
-func (c Config) IsDev() bool {
+func (c *Config) IsDev() bool {
 	return c.Version.IsDev()
 }
 
@@ -35,7 +35,7 @@ func (c *Config) IsAuthenticated() bool {
 	return c.AdminToken() != ""
 }
 
-func (c Config) AdminToken() string {
+func (c *Config) AdminToken() string {
 	if c.AdminTokenOverride != "" {
 		return c.AdminTokenOverride
 	}

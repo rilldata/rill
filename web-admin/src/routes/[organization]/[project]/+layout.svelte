@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
-  import { useAdminServiceGetProject } from "../../../../client";
+  import { createAdminServiceGetProject } from "../../../client";
 
-  const proj = useAdminServiceGetProject(
+  $: proj = createAdminServiceGetProject(
     $page.params.organization,
     $page.params.project
   );

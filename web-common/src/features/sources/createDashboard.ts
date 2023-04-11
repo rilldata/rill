@@ -7,10 +7,10 @@ import {
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
 import {
+  createMutation,
+  CreateMutationOptions,
   MutationFunction,
-  useMutation,
-  UseMutationOptions,
-} from "@sveltestack/svelte-query";
+} from "@tanstack/svelte-query";
 import {
   addQuickMetricsToDashboardYAML,
   initBlankDashboardYAML,
@@ -32,7 +32,7 @@ export const useCreateDashboardFromSource = <
   TError = RpcStatus,
   TContext = unknown
 >(options?: {
-  mutation?: UseMutationOptions<
+  mutation?: CreateMutationOptions<
     Awaited<Promise<CreateDashboardFromSourceResponse>>,
     TError,
     { data: CreateDashboardFromSourceRequest },
@@ -85,7 +85,7 @@ export const useCreateDashboardFromSource = <
     };
   };
 
-  return useMutation<
+  return createMutation<
     Awaited<Promise<CreateDashboardFromSourceResponse>>,
     TError,
     { data: CreateDashboardFromSourceRequest },

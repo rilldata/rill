@@ -2,14 +2,14 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import { StateSyncManager } from "@rilldata/web-common/features/dashboards/proto-state/StateSyncManager";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
   import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceGetFile,
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
@@ -17,18 +17,18 @@
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
 
   $: metricViewName = $page.params.name;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: metricsExplorer = useDashboardStore(metricViewName);
 
   $: stateSyncManager = new StateSyncManager(metricViewName);
 
-  $: if (metricsExplorer) {
-    stateSyncManager.handleStateChange(metricsExplorer);
+  $: if ($metricsExplorer) {
+    stateSyncManager.handleStateChange($metricsExplorer);
   }
   $: if ($page) {
     stateSyncManager.handleUrlChange();
   }
 
-  $: fileQuery = useRuntimeServiceGetFile(
+  $: fileQuery = createRuntimeServiceGetFile(
     $runtime.instanceId,
     getFilePathFromNameAndType(metricViewName, EntityType.MetricsDefinition),
     {
@@ -44,7 +44,7 @@
     }
   );
 
-  $: catalogQuery = useRuntimeServiceGetCatalogEntry(
+  $: catalogQuery = createRuntimeServiceGetCatalogEntry(
     $runtime.instanceId,
     metricViewName,
     {

@@ -17,9 +17,9 @@
   import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
+    createRuntimeServiceGetFile,
+    createRuntimeServicePutFileAndReconcile,
     getRuntimeServiceGetFileQueryKey,
-    useRuntimeServiceGetFile,
-    useRuntimeServicePutFileAndReconcile,
     V1CatalogEntry,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
@@ -29,7 +29,7 @@
   } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
@@ -51,7 +51,7 @@
   );
 
   $: runtimeInstanceId = $runtime.instanceId;
-  const updateModel = useRuntimeServicePutFileAndReconcile();
+  const updateModel = createRuntimeServicePutFileAndReconcile();
 
   // track innerHeight to calculate the size of the editor element.
   let innerHeight: number;
@@ -60,7 +60,7 @@
   let modelPath: string;
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
-  $: modelSqlQuery = useRuntimeServiceGetFile(runtimeInstanceId, modelPath);
+  $: modelSqlQuery = createRuntimeServiceGetFile(runtimeInstanceId, modelPath);
 
   $: modelEmpty = useModelFileIsEmpty(runtimeInstanceId, modelName);
 

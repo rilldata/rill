@@ -7,9 +7,9 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
-    useQueryServiceTableCardinality,
-    useRuntimeServiceGetFile,
-    useRuntimeServiceListCatalogEntries,
+    createQueryServiceTableCardinality,
+    createRuntimeServiceGetFile,
+    createRuntimeServiceListCatalogEntries,
   } from "@rilldata/web-common/runtime-client";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
   import { getContext } from "svelte";
@@ -28,19 +28,25 @@
 
   const queryHighlight = getContext("rill:app:query-highlight");
 
-  $: getModelFile = useRuntimeServiceGetFile(
+  $: getModelFile = createRuntimeServiceGetFile(
     $runtime?.instanceId,
     getFilePathFromNameAndType(modelName, EntityType.Model)
   );
   $: references = getTableReferences($getModelFile?.data.blob ?? "");
 
-  $: getAllSources = useRuntimeServiceListCatalogEntries($runtime?.instanceId, {
-    type: "OBJECT_TYPE_SOURCE",
-  });
+  $: getAllSources = createRuntimeServiceListCatalogEntries(
+    $runtime?.instanceId,
+    {
+      type: "OBJECT_TYPE_SOURCE",
+    }
+  );
 
-  $: getAllModels = useRuntimeServiceListCatalogEntries($runtime?.instanceId, {
-    type: "OBJECT_TYPE_MODEL",
-  });
+  $: getAllModels = createRuntimeServiceListCatalogEntries(
+    $runtime?.instanceId,
+    {
+      type: "OBJECT_TYPE_MODEL",
+    }
+  );
 
   // for each reference, match to an existing model or source,
   $: referencedThings = getMatchingReferencesAndEntries(modelName, references, [
@@ -55,7 +61,7 @@
         [
           writable($thing),
           writable(ref),
-          useQueryServiceTableCardinality($runtime?.instanceId, $thing.name),
+          createQueryServiceTableCardinality($runtime?.instanceId, $thing.name),
         ],
         ([$thing, ref, $cardinality]) => ({
           entry: $thing,

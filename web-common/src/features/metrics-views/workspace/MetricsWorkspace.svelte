@@ -3,8 +3,8 @@
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
-    useRuntimeServicePutFileAndReconcile,
     V1PutFileAndReconcileResponse,
+    createRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
@@ -12,15 +12,14 @@
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
   import { WorkspaceContainer } from "../../../layout/workspace";
-  import { createResizeListenerActionFactory } from "../../../lib/actions/create-resize-listener-factory";
   import { runtime } from "../../../runtime-client/runtime-store";
   import ConfigInspector from "./ConfigInspector.svelte";
   import MetricsWorkspaceHeader from "./MetricsWorkspaceHeader.svelte";
+  import YAMLEditor from "./YAMLEditor.svelte";
   import {
     createPlaceholderElement,
     rillEditorPlaceholder,
   } from "./rill-editor-placeholder";
-  import YAMLEditor from "./YAMLEditor.svelte";
   // the runtime yaml string
   export let yaml: string;
   export let metricsDefName: string;
@@ -37,11 +36,6 @@
   });
   setContext("rill:metrics-config:errors", configurationErrorStore);
 
-  // $: dashboardConfig = useRuntimeServiceGetCatalogEntry(
-  //   instanceId,
-  //   metricsDefName
-  // );
-
   const queryClient = useQueryClient();
   const { listenToNodeResize } = createResizeListenerActionFactory();
 
@@ -55,13 +49,8 @@
 
   $: switchToMetrics(metricsDefName);
 
-  const metricMigrate = useRuntimeServicePutFileAndReconcile();
-
-  async function callReconcileAndUpdateYaml(
-    instanceId: string,
-    metricsDefName: string,
-    yaml: string
-  ) {
+  const metricMigrate = createRuntimeServicePutFileAndReconcile();
+  async function callReconcileAndUpdateYaml(internalYamlString) {
     const filePath = getFilePathFromNameAndType(
       metricsDefName,
       EntityType.MetricsDefinition
