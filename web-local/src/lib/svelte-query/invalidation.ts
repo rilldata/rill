@@ -7,7 +7,7 @@ import {
   getRuntimeServiceListCatalogEntriesQueryKey,
   getRuntimeServiceListFilesQueryKey,
 } from "@rilldata/web-common/runtime-client";
-import type { QueryClient } from "@sveltestack/svelte-query";
+import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
 // invalidation helpers

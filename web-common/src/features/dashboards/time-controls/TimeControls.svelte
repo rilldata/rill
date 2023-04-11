@@ -29,11 +29,11 @@
     TimeRangeType,
   } from "@rilldata/web-common/lib/time/types";
   import {
-    useRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceGetCatalogEntry,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
-  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import type { CreateQueryResult } from "@tanstack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
@@ -52,7 +52,7 @@
 
   let metricsViewQuery;
   $: if ($runtime.instanceId) {
-    metricsViewQuery = useRuntimeServiceGetCatalogEntry(
+    metricsViewQuery = createRuntimeServiceGetCatalogEntry(
       $runtime.instanceId,
       metricViewName
     );
@@ -64,7 +64,7 @@
   );
   $: hasTimeSeries = $hasTimeSeriesQuery?.data;
 
-  let allTimeRangeQuery: UseQueryStoreResult;
+  let allTimeRangeQuery: CreateQueryResult;
   $: if (
     hasTimeSeries &&
     !!$runtime?.instanceId &&

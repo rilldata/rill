@@ -3,12 +3,12 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
-    useQueryServiceMetricsViewTotals,
+    createQueryServiceMetricsViewTotals,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
-  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
-  import { MEASURE_CONFIG } from "../config";
+  import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { MEASURE_CONFIG } from "../config";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -124,7 +124,7 @@
     }
   }
 
-  let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
+  let totalsQuery: CreateQueryResult<V1MetricsViewTotalsResponse, Error>;
   $: numColumns = 3;
 
   $: if (
@@ -138,7 +138,7 @@
       filter: metricsExplorer?.filters,
     };
 
-    totalsQuery = useQueryServiceMetricsViewTotals(
+    totalsQuery = createQueryServiceMetricsViewTotals(
       instanceId,
       metricViewName,
       totalsQueryParams

@@ -6,10 +6,10 @@
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import {
-    useQueryServiceTableCardinality,
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceGetFile,
-    useRuntimeServiceListCatalogEntries,
+    createQueryServiceTableCardinality,
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceGetFile,
+    createRuntimeServiceListCatalogEntries,
   } from "@rilldata/web-common/runtime-client";
   //import { getContext } from "svelte";
   import { derived, writable } from "svelte/store";
@@ -25,7 +25,7 @@
   //    "rill:app:query-highlight"
   //  );
 
-  $: getModel = useRuntimeServiceGetCatalogEntry(
+  $: getModel = createRuntimeServiceGetCatalogEntry(
     $runtime?.instanceId,
     modelName
   );
@@ -33,19 +33,25 @@
   // refresh entry value only if the data has changed
   $: entry = $getModel?.data?.entry || entry;
 
-  $: getModelFile = useRuntimeServiceGetFile(
+  $: getModelFile = createRuntimeServiceGetFile(
     $runtime?.instanceId,
     getFilePathFromNameAndType(modelName, EntityType.Model)
   );
 
   $: references = getTableReferences($getModelFile?.data.blob ?? "");
-  $: getAllSources = useRuntimeServiceListCatalogEntries($runtime?.instanceId, {
-    type: "OBJECT_TYPE_SOURCE",
-  });
+  $: getAllSources = createRuntimeServiceListCatalogEntries(
+    $runtime?.instanceId,
+    {
+      type: "OBJECT_TYPE_SOURCE",
+    }
+  );
 
-  $: getAllModels = useRuntimeServiceListCatalogEntries($runtime?.instanceId, {
-    type: "OBJECT_TYPE_MODEL",
-  });
+  $: getAllModels = createRuntimeServiceListCatalogEntries(
+    $runtime?.instanceId,
+    {
+      type: "OBJECT_TYPE_MODEL",
+    }
+  );
 
   // for each reference, match to an existing model or source,
   $: referencedThings = derived(
@@ -78,7 +84,7 @@
         [
           writable($thing),
           writable(ref),
-          useQueryServiceTableCardinality($runtime?.instanceId, $thing.name),
+          createQueryServiceTableCardinality($runtime?.instanceId, $thing.name),
         ],
         ([$thing, ref, $cardinality]) => ({
           entry: $thing,
