@@ -152,8 +152,10 @@
   >
     <div class="pt-4 pb-2">
       Need help? Refer to our
-      <a href="https://docs.rilldata.com/using-rill/import-data" target="_blank"
-        >docs</a
+      <a
+        href="https://docs.rilldata.com/using-rill/import-data"
+        target="_blank"
+        rel="noreferrer">docs</a
       > for more information.
     </div>
     {#if $createSourceMutation.isError || error}
