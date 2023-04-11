@@ -29,7 +29,7 @@ export type AdminServiceCreateProjectBody = {
   variables?: AdminServiceCreateProjectBodyVariables;
 };
 
-export type AdminServiceListProjectsParams = {
+export type AdminServiceListProjectsForOrganizationParams = {
   pageSize?: number;
   pageToken?: string;
 };
@@ -153,7 +153,7 @@ export interface V1Member {
   userName?: string;
 }
 
-export interface V1ListProjectsResponse {
+export interface V1ListProjectsForOrganizationResponse {
   nextPageToken?: string;
   projects?: V1Project[];
 }

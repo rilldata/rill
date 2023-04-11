@@ -410,13 +410,13 @@ paths:
         - AdminService
   /v1/organizations/{organizationName}/projects:
     get:
-      summary: ListProjects lists all the projects currently available for given organizations
-      operationId: AdminService_ListProjects
+      summary: ListProjectsForOrganization lists all the projects currently available for given organizations
+      operationId: AdminService_ListProjectsForOrganization
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListProjectsResponse'
+            $ref: '#/definitions/v1ListProjectsForOrganizationResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -763,7 +763,7 @@ definitions:
       nextPageToken:
         type: string
     title: Response message for AdminService.ListProjectMembers
-  v1ListProjectsResponse:
+  v1ListProjectsForOrganizationResponse:
     type: object
     properties:
       nextPageToken:
