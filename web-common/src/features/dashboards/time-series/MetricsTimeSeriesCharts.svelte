@@ -238,7 +238,6 @@
       tooltipText="Choose measures to display"
     />
   </div>
-  <div class="bg-white sticky left-0 top-0" />
   <div class="bg-white sticky left-0 top-0">
     <div style:padding-left="24px" style:height="20px" />
     <!-- top axis element -->
