@@ -2,7 +2,7 @@
   import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
   import Axios from "axios";
   import {
-    useAdminServiceGetProject,
+    createAdminServiceGetProject,
     V1GetProjectResponse,
   } from "../../client";
 
@@ -11,7 +11,7 @@
 
   let dashboards: V1CatalogEntry[];
 
-  $: proj = useAdminServiceGetProject(organization, project);
+  $: proj = createAdminServiceGetProject(organization, project);
   $: if ($proj.isSuccess && $proj.data?.productionDeployment) {
     getDashboardsForProject($proj.data);
   }
