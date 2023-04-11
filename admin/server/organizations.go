@@ -191,7 +191,7 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.admin.DB.InsertUserInUsergroup(ctx, *org.AllUsergroupID, user.ID)
+	err = s.admin.DB.InsertUserInUsergroup(ctx, user.ID, *org.AllUsergroupID)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -246,9 +246,24 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 		return nil, status.Error(codes.InvalidArgument, "cannot remove the last owner")
 	}
 
+	ctx, tx, err := s.admin.DB.NewTx(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	defer func() { _ = tx.Rollback() }()
 	err = s.admin.DB.DeleteOrganizationMemberUser(ctx, org.ID, user.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// delete from all user group
+	err = s.admin.DB.DeleteUserFromUsergroup(ctx, user.ID, *org.AllUsergroupID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	err = tx.Commit()
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &adminv1.RemoveOrganizationMemberResponse{}, nil
@@ -283,6 +298,23 @@ func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.Set
 			return nil, status.Error(codes.InvalidArgument, "user not found")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Check if the user is the last owner
+	if role.Name != database.OrganizationAdminRoleName {
+		adminRole, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationAdminRoleName)
+		if err != nil {
+			panic(errors.Wrap(err, "failed to find organization admin role"))
+		}
+		// TODO optimize this, may be extract roles during auth token validation
+		//  and store as part of the claims and fetch admins only if the user is an admin
+		users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, adminRole.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if len(users) == 1 && users[0].ID == user.ID {
+			return nil, status.Error(codes.InvalidArgument, "cannot change role of the last owner")
+		}
 	}
 
 	err = s.admin.DB.UpdateOrganizationMemberUserRole(ctx, org.ID, user.ID, role.ID)
@@ -329,9 +361,24 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 		return nil, status.Error(codes.InvalidArgument, "cannot remove the last owner")
 	}
 
+	ctx, tx, err := s.admin.DB.NewTx(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	defer func() { _ = tx.Rollback() }()
 	err = s.admin.DB.DeleteOrganizationMemberUser(ctx, org.ID, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// delete from all user group
+	err = s.admin.DB.DeleteUserFromUsergroup(ctx, claims.OwnerID(), *org.AllUsergroupID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	err = tx.Commit()
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &adminv1.LeaveOrganizationResponse{}, nil

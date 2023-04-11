@@ -25,6 +25,7 @@ export const humanizedFormatterFactory: FormatterFactory = (
   options
 ): Formatter => {
   let formatter: Formatter;
+
   switch (options.strategy) {
     case "none":
       formatter = new NonFormatter(sample, options);

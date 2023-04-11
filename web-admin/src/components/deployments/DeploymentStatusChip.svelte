@@ -3,10 +3,10 @@
   import { useAdminServiceGetProject, V1DeploymentStatus } from "../../client";
   import { getDeploymentStatusText } from "./status-text";
 
-  const organizationName = $page.params.organization;
-  const projectName = $page.params.project;
+  $: organizationName = $page.params.organization;
+  $: projectName = $page.params.project;
 
-  const project = useAdminServiceGetProject(organizationName, projectName);
+  $: project = useAdminServiceGetProject(organizationName, projectName);
   $: deploymentStatus = $project.data?.productionDeployment?.status;
 
   function getDeploymentStatusClasses(status: V1DeploymentStatus) {

@@ -11,6 +11,7 @@
   export let isActive = false;
   export let excluded = false;
   export let showIcon = true;
+  export let showContext = false;
 
   /** compact mode is used in e.g. profiles */
   export let compact = false;
@@ -74,8 +75,18 @@
           <slot {isActive} name="title" />
         </div>
       </div>
-      <div class="justify-self-end overflow-hidden ui-copy-number">
-        <slot name="right" />
+      <div
+        class="justify-self-end overflow-hidden ui-copy-number flex gap-x-4 items-baseline"
+      >
+        <slot {isActive} name="right" />
+        {#if $$slots["context"] && showContext}
+          <div
+            class="text-xs text-gray-500 dark:text-gray-400"
+            style:width="44px"
+          >
+            <slot {isActive} name="context" />
+          </div>
+        {/if}
       </div>
     </div>
   </BarAndLabel>
