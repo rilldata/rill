@@ -44,7 +44,8 @@
   <ol>
     {#each dashboards as dashboard}
       <li class="text-xs text-gray-900 font-medium leading-4 mb-1">
-        <a href="/{organization}/{project}/{dashboard.name}">{dashboard.name}</a
+        <a href="/{organization}/{project}/{dashboard.name}"
+          >{dashboard.metricsView?.label ?? dashboard.name}</a
         >
       </li>
     {/each}
