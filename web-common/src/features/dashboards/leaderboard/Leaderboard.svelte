@@ -250,7 +250,7 @@
       };
     }
 
-    comparisonTopListQuery = useQueryServiceMetricsViewToplist(
+    comparisonTopListQuery = createQueryServiceMetricsViewToplist(
       $runtime.instanceId,
       metricViewName,
       comparisonParams
