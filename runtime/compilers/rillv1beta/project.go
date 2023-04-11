@@ -136,3 +136,12 @@ func (c *Codec) ProjectConfig(ctx context.Context) (*ProjectConfig, error) {
 
 	return r, nil
 }
+
+func ParseProjectConfig(content []byte) (*ProjectConfig, error) {
+	c := &ProjectConfig{Variables: make(map[string]string)}
+	if err := yaml.Unmarshal(content, c); err != nil {
+		return nil, err
+	}
+
+	return c, nil
+}

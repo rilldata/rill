@@ -38,7 +38,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "org not found")
+			return nil, status.Error(codes.NotFound, "org not found")
 		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

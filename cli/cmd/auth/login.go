@@ -22,50 +22,16 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 		Short: "Authenticate with the Rill API",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			warn := color.New(color.Bold).Add(color.FgYellow)
+			ctx := cmd.Context()
+
 			if cfg.AdminTokenDefault != "" {
 				warn.Println("You are already logged in. To log in again, run `rill auth logout` first.")
 				return nil
 			}
-
-			// In production, the REST and gRPC endpoints are the same, but in development, they're served on different ports.
-			// We plan to move to connect.build for gRPC, which will allow us to serve both on the same port in development as well.
-			// Until we make that change, this is a convenient hack for local development (assumes gRPC on port 9090 and REST on port 8080).
-			authURL := cfg.AdminURL
-			if strings.Contains(authURL, "http://localhost:9090") {
-				authURL = "http://localhost:8080"
-			}
-
-			authenticator, err := deviceauth.New(authURL)
-			if err != nil {
+			// login user
+			if err := Login(ctx, cfg); err != nil {
 				return err
 			}
-
-			ctx := cmd.Context()
-			deviceVerification, err := authenticator.VerifyDevice(ctx)
-			if err != nil {
-				return err
-			}
-
-			bold := color.New(color.Bold)
-			bold.Printf("\nConfirmation Code: ")
-			boldGreen := color.New(color.FgGreen).Add(color.Bold)
-			boldGreen.Fprintln(color.Output, deviceVerification.UserCode)
-
-			bold.Printf("\nOpen this URL in your browser to confirm the login: %s\n\n", deviceVerification.VerificationCompleteURL)
-
-			_ = browser.Open(deviceVerification.VerificationCompleteURL)
-
-			res1, err := authenticator.GetAccessTokenForDevice(ctx, deviceVerification)
-			if err != nil {
-				return err
-			}
-
-			err = dotrill.SetAccessToken(res1.AccessToken)
-			if err != nil {
-				return err
-			}
-			// set the default token to the one we just got
-			cfg.AdminTokenDefault = res1.AccessToken
 
 			// Set default org after login
 			client, err := cmdutil.Client(cfg)
@@ -95,13 +61,56 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				fmt.Printf("Set default organization to %q.\n", defaultOrg)
+				fmt.Printf("Set default organization to %q. Change using `rill org switch`.\n", defaultOrg)
+			} else {
+				warn.Println("You are not part of any org. Please run `rill org create` or `rill deploy` to create org.")
 			}
-
-			bold.Print("Successfully logged in.\n")
 			return nil
 		},
 	}
 
 	return cmd
+}
+
+func Login(ctx context.Context, cfg *config.Config) error {
+	// In production, the REST and gRPC endpoints are the same, but in development, they're served on different ports.
+	// We plan to move to connect.build for gRPC, which will allow us to serve both on the same port in development as well.
+	// Until we make that change, this is a convenient hack for local development (assumes gRPC on port 9090 and REST on port 8080).
+	authURL := cfg.AdminURL
+	if strings.Contains(authURL, "http://localhost:9090") {
+		authURL = "http://localhost:8080"
+	}
+
+	authenticator, err := deviceauth.New(authURL)
+	if err != nil {
+		return err
+	}
+
+	deviceVerification, err := authenticator.VerifyDevice(ctx)
+	if err != nil {
+		return err
+	}
+
+	bold := color.New(color.Bold)
+	bold.Printf("\nConfirmation Code: ")
+	boldGreen := color.New(color.FgGreen).Add(color.Bold)
+	boldGreen.Fprintln(color.Output, deviceVerification.UserCode)
+
+	bold.Printf("\nOpen this URL in your browser to confirm the login: %s\n\n", deviceVerification.VerificationCompleteURL)
+
+	_ = browser.Open(deviceVerification.VerificationCompleteURL)
+
+	res1, err := authenticator.GetAccessTokenForDevice(ctx, deviceVerification)
+	if err != nil {
+		return err
+	}
+
+	err = dotrill.SetAccessToken(res1.AccessToken)
+	if err != nil {
+		return err
+	}
+	// set the default token to the one we just got
+	cfg.AdminTokenDefault = res1.AccessToken
+	bold.Print("Successfully logged in.\n")
+	return nil
 }

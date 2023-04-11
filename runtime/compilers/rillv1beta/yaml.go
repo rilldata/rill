@@ -11,4 +11,5 @@ type Source struct {
 type ProjectConfig struct {
 	// Project variables
 	Variables map[string]string `yaml:"env,omitempty"`
+	Name      string            `yaml:"name,omitempty"`
 }

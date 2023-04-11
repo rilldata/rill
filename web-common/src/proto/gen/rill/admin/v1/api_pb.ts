@@ -283,11 +283,6 @@ export class GetOrganizationResponse extends Message<GetOrganizationResponse> {
  */
 export class CreateOrganizationRequest extends Message<CreateOrganizationRequest> {
   /**
-   * @generated from field: string id = 1;
-   */
-  id = "";
-
-  /**
    * @generated from field: string name = 2;
    */
   name = "";
@@ -305,7 +300,6 @@ export class CreateOrganizationRequest extends Message<CreateOrganizationRequest
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.CreateOrganizationRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
