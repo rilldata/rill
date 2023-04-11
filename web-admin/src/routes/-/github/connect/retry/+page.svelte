@@ -41,9 +41,10 @@
   <div class="flex flex-col justify-center items-center h-3/5">
     <h1 class="text-3xl font-medium text-gray-800 mb-4">Connect to Github</h1>
     <p class="text-lg text-gray-700 text-2xl mb-4">
-      It looks like you did not grant access the the desired repository at {@html remote}.<br>
-      Click the button below to retry (If this was intentional, press ctrl+c in
-      the CLI to cancel the connect request)
+      It looks like you did not grant access the the desired repository at {@html remote}.<br
+      />
+      Click the button below to retry (If this was intentional, press ctrl+c in the
+      CLI to cancel the connect request)
     </p>
     <div class="mt-4">
       <Button type="primary" on:click={handleGoToGithub}>Go to Github</Button>
