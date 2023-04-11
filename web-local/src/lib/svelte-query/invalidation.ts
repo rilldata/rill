@@ -101,6 +101,8 @@ export const invalidateMetricsViewData = (
   metricsViewName: string
 ) => {
   // remove inactive queries, this is needed since these would be re-fetched with incorrect filter
+  // invalidateQueries by itself doesnt work as of now.
+  // reference: https://github.com/rilldata/rill-developer/pull/2027#discussion_r1161672656
   queryClient.removeQueries({
     predicate: (query) =>
       invalidationForMetricsViewData(query, metricsViewName),
