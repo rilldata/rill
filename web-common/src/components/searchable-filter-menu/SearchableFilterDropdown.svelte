@@ -74,7 +74,7 @@
         animateSelect={false}
         focusOnMount={false}
         on:select={() => {
-          dispatch("item-clicked", index);
+          dispatch("item-clicked", { index, label });
         }}
       >
         <svelte:fragment slot="icon">

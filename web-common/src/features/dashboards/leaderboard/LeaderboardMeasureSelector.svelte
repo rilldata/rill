@@ -68,13 +68,14 @@
   /** set the selection only if measures is not undefined */
   $: selection = measures ? activeLeaderboardMeasure : [];
 
-  let availableDimensionLabels = [];
-  let visibleDimensions = [];
-  $: availableDimensionLabels = dimensions?.map((d) => d.label) || [];
+  $: availableDimensionLabels = dimensions?.map((d) => d.label) ?? [];
   $: visibleDimensions = metricsExplorer?.visibleDimensions ?? [];
 
   const toggleDimensionVisibility = (e) =>
-    metricsExplorerStore.toggleDimensionVisibility(metricViewName, e.detail);
+    metricsExplorerStore.toggleDimensionVisibility(
+      metricViewName,
+      e.detail.index
+    );
   const setAllDimensionsNotVisible = () =>
     metricsExplorerStore.setAllDimensionsVisiblility(metricViewName, false);
   const setAllDimensionsVisible = () =>

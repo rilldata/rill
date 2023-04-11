@@ -13,7 +13,7 @@ These arrays must be the same length or the the component will
 throw an error.
 
 This component emits events:
-- `item-clicked`, which has a `detail` field with the numeric index of the item that was clicked.
+- `item-clicked`. This event has has a `detail` field containing an object of type `{ index: number; label: string}` with the index and the label of the item that was clicked.
 - `select-all`, with no `detail`
 - `deselect-all`, with no `detail`
 In both cases, it is up to the containing component to handle these

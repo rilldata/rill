@@ -219,7 +219,10 @@
 
   $: visibleMeasures = $dashboardStore?.visibleMeasures ?? [];
   const toggleMeasureVisibility = (e) =>
-    metricsExplorerStore.toggleMeasureVisibility(metricViewName, e.detail);
+    metricsExplorerStore.toggleMeasureVisibility(
+      metricViewName,
+      e.detail.index
+    );
   const setAllMeasuresNotVisible = () =>
     metricsExplorerStore.setAllMeasuresVisibility(metricViewName, false);
   const setAllMeasuresVisible = () =>
@@ -227,7 +230,7 @@
 </script>
 
 <TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
-  <div class="bg-white sticky  top-0" style="z-index:100; margin-left: -4px;">
+  <div class="bg-white sticky  top-0" style="z-index:100">
     <SeachableFilterButton
       selectableItems={availableMeasureLabels}
       selectedItems={visibleMeasures}

@@ -163,7 +163,10 @@
   $: visibleMeasures = metricsExplorer?.visibleMeasures ?? [];
 
   const toggleMeasureVisibility = (e) =>
-    metricsExplorerStore.toggleMeasureVisibility(metricViewName, e.detail);
+    metricsExplorerStore.toggleMeasureVisibility(
+      metricViewName,
+      e.detail.index
+    );
   const setAllMeasuresNotVisible = () =>
     metricsExplorerStore.setAllMeasuresVisibility(metricViewName, false);
   const setAllMeasuresVisible = () =>
@@ -181,7 +184,7 @@
     class="grid grid-cols-{numColumns}"
     style:column-gap="{COLUMN_GAP}px"
   >
-    <div class="bg-white sticky top-0" style="z-index:100; margin-left: -4px;">
+    <div class="bg-white sticky top-0" style="z-index:100">
       <SeachableFilterButton
         selectableItems={availableMeasureLabels}
         selectedItems={visibleMeasures}
@@ -193,7 +196,7 @@
       />
     </div>
     {#if $metaQuery.data?.measures}
-      {#each $metaQuery.data?.measures as measure, index (measure.name)}
+      {#each $metaQuery.data?.measures.filter((_, i) => visibleMeasures[i]) as measure, index (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
         {@const bigNum = $totalsQuery?.data?.data?.[measure.name]}
         <div

@@ -48,9 +48,8 @@
     {selectableItems}
     {selectedItems}
     on:item-clicked={(ev) => {
-      const index = ev.detail;
+      const index = ev.detail.index;
       selectedItems = selectedItems.map((x, i) => (i === index ? !x : x));
-      // selectedItems = ev.detail;
     }}
     on:deselect-all={() => {
       selectedItems = selectedItems.map((_) => false);
