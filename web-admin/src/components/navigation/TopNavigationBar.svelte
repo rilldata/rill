@@ -1,7 +1,7 @@
 <script>
   import { page } from "$app/stores";
   import RillLogo from "@rilldata/web-common/components/icons/RillLogo.svelte";
-  import { useAdminServiceGetCurrentUser } from "../../client";
+  import { createAdminServiceGetCurrentUser } from "../../client";
   import SignIn from "../authentication/SignIn.svelte";
   import UserButton from "../authentication/UserButton.svelte";
   import DeploymentStatusChip from "../deployments/DeploymentStatusChip.svelte";
@@ -10,7 +10,7 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  const userQuery = useAdminServiceGetCurrentUser();
+  const userQuery = createAdminServiceGetCurrentUser();
   $: signedIn = !!$userQuery.data?.user;
 </script>
 

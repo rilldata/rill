@@ -13,9 +13,9 @@
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
   import {
-    useQueryServiceTableCardinality,
-    useQueryServiceTableColumns,
-    useRuntimeServiceGetCatalogEntry,
+    createQueryServiceTableCardinality,
+    createQueryServiceTableColumns,
+    createRuntimeServiceGetCatalogEntry,
     V1CatalogEntry,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
@@ -30,7 +30,7 @@
 
   $: runtimeInstanceId = $runtime.instanceId;
 
-  $: getSource = useRuntimeServiceGetCatalogEntry(
+  $: getSource = createRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     sourceName
   );
@@ -79,7 +79,7 @@
   $: connectorType = formatConnectorType(sourceCatalog?.source?.connector);
   $: fileExtension = getFileExtension(sourceCatalog);
 
-  $: cardinalityQuery = useQueryServiceTableCardinality(
+  $: cardinalityQuery = createQueryServiceTableCardinality(
     $runtime.instanceId,
     sourceName
   );
@@ -103,7 +103,7 @@
 
   /** total % null cells */
 
-  $: profileColumns = useQueryServiceTableColumns(
+  $: profileColumns = createQueryServiceTableColumns(
     $runtime?.instanceId,
     sourceName,
     {},

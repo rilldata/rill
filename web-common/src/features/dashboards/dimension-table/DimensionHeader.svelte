@@ -12,7 +12,7 @@
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";

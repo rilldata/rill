@@ -50,7 +50,7 @@
   // export let objectName: string;
   // export let columnName: string;
 
-  // $: sparkQuery = useQueryServiceColumnTimeSeries(
+  // $: sparkQuery = createQueryServiceColumnTimeSeries(
   //   $runtime?.instanceId,
   //   // FIXME: convert pixel back to number once the API
   //   {

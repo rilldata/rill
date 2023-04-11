@@ -1,5 +1,5 @@
 import { isMetricsViewQuery } from "@rilldata/web-local/lib/svelte-query/invalidation";
-import type { QueryClient } from "@sveltestack/svelte-query";
+import type { QueryClient } from "@tanstack/svelte-query";
 
 export function cancelDashboardQueries(
   queryClient: QueryClient,

@@ -12,7 +12,7 @@ import {
   runtimeServiceReconcile,
 } from "@rilldata/web-common/runtime-client";
 import type { Page } from "@sveltejs/kit";
-import type { QueryClient } from "@sveltestack/svelte-query";
+import type { QueryClient } from "@tanstack/svelte-query";
 import { get, Readable, Writable } from "svelte/store";
 import type { FeatureFlags } from "../../../../web-local/src/lib/application-state-stores/application-store";
 import { invalidateAfterReconcile } from "../../../../web-local/src/lib/svelte-query/invalidation";

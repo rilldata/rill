@@ -5,17 +5,17 @@
   import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
-    useAdminServiceListOrganizations,
-    useAdminServiceListProjects,
+    createAdminServiceListOrganizations,
+    createAdminServiceListProjects,
   } from "../../client";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
 
   $: organization = $page.params.organization;
-  $: organizations = useAdminServiceListOrganizations();
+  $: organizations = createAdminServiceListOrganizations();
   $: organizationPageActive = $page.route.id === "/[organization]";
 
   $: project = $page.params.project;
-  $: projects = useAdminServiceListProjects(organization);
+  $: projects = createAdminServiceListProjects(organization);
   $: projectPageActive = $page.route.id === "/[organization]/[project]";
 
   $: dashboard = $page.params.dashboard;
