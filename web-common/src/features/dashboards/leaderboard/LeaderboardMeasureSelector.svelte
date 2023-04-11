@@ -87,9 +87,10 @@
   {#if measures && options.length && selection}
     <div
       class="flex flex-row items-center ui-copy-muted"
+      style:padding-left="22px"
       style:grid-column-gap=".4rem"
       in:send={{ key: "leaderboard-metric" }}
-      style:max-width="400px"
+      style:max-width="450px"
     >
       <SeachableFilterButton
         selectableItems={availableDimensionLabels}
