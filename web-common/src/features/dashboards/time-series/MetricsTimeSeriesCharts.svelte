@@ -231,7 +231,7 @@
     <SeachableFilterButton
       selectableItems={availableMeasureLabels}
       selectedItems={visibleMeasures}
-      on:itemClicked={toggleMeasureVisibility}
+      on:item-clicked={toggleMeasureVisibility}
       on:deselect-all={setAllMeasuresNotVisible}
       on:select-all={setAllMeasuresVisible}
       label="Measures"

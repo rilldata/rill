@@ -13,7 +13,7 @@ These arrays must be the same length or the the component will
 throw an error.
 
 This component emits events:
-- `itemClicked`, which has a number `detail` field with the index of the item that was clicked.
+- `item-clicked`, which has a `detail` field with the numeric index of the item that was clicked.
 - `select-all`, with no `detail`
 - `deselect-all`, with no `detail`
 In both cases, it is up to the containing component to handle these
@@ -84,7 +84,7 @@ props as needed.
     on:click-outside={toggleFloatingElement}
     on:apply
     on:search
-    on:itemClicked
+    on:item-clicked
     on:deselect-all
     on:select-all
   />

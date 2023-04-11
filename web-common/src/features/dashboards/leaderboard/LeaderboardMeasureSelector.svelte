@@ -95,7 +95,7 @@
       <SeachableFilterButton
         selectableItems={availableDimensionLabels}
         selectedItems={visibleDimensions}
-        on:itemClicked={toggleDimensionVisibility}
+        on:item-clicked={toggleDimensionVisibility}
         on:deselect-all={setAllDimensionsNotVisible}
         on:select-all={setAllDimensionsVisible}
         label="Dimensions"

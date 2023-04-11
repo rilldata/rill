@@ -47,7 +47,7 @@
     tooltipText="Choose measures to display"
     {selectableItems}
     {selectedItems}
-    on:itemClicked={(ev) => {
+    on:item-clicked={(ev) => {
       const index = ev.detail;
       selectedItems = selectedItems.map((x, i) => (i === index ? !x : x));
       // selectedItems = ev.detail;
