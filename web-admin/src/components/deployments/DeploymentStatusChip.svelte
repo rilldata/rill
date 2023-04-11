@@ -1,12 +1,15 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { useAdminServiceGetProject, V1DeploymentStatus } from "../../client";
+  import {
+    createAdminServiceGetProject,
+    V1DeploymentStatus,
+  } from "../../client";
   import { getDeploymentStatusText } from "./status-text";
 
   $: organizationName = $page.params.organization;
   $: projectName = $page.params.project;
 
-  $: project = useAdminServiceGetProject(organizationName, projectName);
+  $: project = createAdminServiceGetProject(organizationName, projectName);
   $: deploymentStatus = $project.data?.productionDeployment?.status;
 
   function getDeploymentStatusClasses(status: V1DeploymentStatus) {
