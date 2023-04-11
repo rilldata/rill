@@ -5,10 +5,11 @@
     NUMERICS,
     TIMESTAMPS,
   } from "@rilldata/web-common/lib/duckdb-data-types";
-  import { formatDataType } from "@rilldata/web-common/lib/formatters";
   import Interval from "./Interval.svelte";
   import Number from "./Number.svelte";
   import Timestamp from "./Timestamp.svelte";
+  import PercentageChange from "./PercentageChange.svelte";
+  import MeasureChange from "./MeasureChange.svelte";
   import Varchar from "./Varchar.svelte";
 
   export let type = "VARCHAR";
@@ -18,9 +19,13 @@
   export let value = undefined;
   export let customStyle = "";
 
-  let dataType = Varchar;
+  let dataType;
   $: {
-    if (NUMERICS.has(type)) {
+    if (type === "RILL_PERCENTAGE_CHANGE") {
+      dataType = PercentageChange;
+    } else if (type === "RILL_CHANGE") {
+      dataType = MeasureChange;
+    } else if (NUMERICS.has(type)) {
       dataType = Number;
     } else if (TIMESTAMPS.has(type)) {
       dataType = Timestamp;
@@ -39,10 +44,6 @@
   {inTable}
   {customStyle}
   {dark}
->
-  {#if value === undefined}
-    <slot />
-  {:else}
-    {formatDataType(value, type)}
-  {/if}
-</svelte:component>
+  {type}
+  {value}
+/>
