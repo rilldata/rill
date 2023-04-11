@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { useAdminServiceListOrganizations } from "../../client";
+  import { createAdminServiceListOrganizations } from "../../client";
   import ProjectList from "./ProjectList.svelte";
 
-  const orgs = useAdminServiceListOrganizations();
+  const orgs = createAdminServiceListOrganizations();
 </script>
 
 {#if $orgs.data && $orgs.data.organizations}

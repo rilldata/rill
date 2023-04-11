@@ -1,10 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { useAdminServiceGetCurrentUser } from "../client";
+  import { createAdminServiceGetCurrentUser } from "../client";
   import { ADMIN_URL } from "../client/http-client";
   import OrganizationList from "../components/home/OrganizationList.svelte";
 
-  const user = useAdminServiceGetCurrentUser({
+  const user = createAdminServiceGetCurrentUser({
     query: {
       onSuccess: (data) => {
         if (!data.user) {
