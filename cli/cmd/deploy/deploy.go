@@ -307,17 +307,13 @@ func orgNameExists(ctx context.Context, adminClient *client.Client, name string)
 	resp, err := adminClient.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
-			if st.Code() == codes.NotFound {
+			if st.Code() == codes.NotFound || st.Code() == codes.InvalidArgument { // todo :: remove invalid argument after deployment
 				return false, nil
 			}
 		}
 		return false, err
 	}
-	if resp.Organization.Name == name {
-		// this should always be true but adding this check from completeness POV
-		return true, nil
-	}
-	return false, nil
+	return resp.Organization.Name == name, nil
 }
 
 func variablesPrompt(projectPath string) (map[string]string, error) {
