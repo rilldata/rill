@@ -12,6 +12,8 @@
   export let enableResize = true;
   export let borderRight = false;
 
+  export let bgClass = "surface";
+
   let positionClasses;
   let offsetTop = false;
   $: {
@@ -61,7 +63,7 @@
     ? config.rowHeight
     : config.columnHeaderHeight}px"
   class="{positionClasses}
-   surface text-left {borderClassesOuterDiv}"
+   {bgClass} text-left {borderClassesOuterDiv}"
 >
   <div
     class="

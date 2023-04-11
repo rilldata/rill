@@ -20,11 +20,7 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";
-  import {
-    getScaleForLeaderboard,
-    NicelyFormattedTypes,
-    ShortHandSymbols,
-  } from "../humanize-numbers";
+  import { NicelyFormattedTypes } from "../humanize-numbers";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardMeasureSelector from "./LeaderboardMeasureSelector.svelte";
 
@@ -99,9 +95,6 @@
       .forEach((dimensionName) => leaderboards.delete(dimensionName));
   }
 
-  /** create a scale for the valid leaderboards */
-  let leaderboardFormatScale: ShortHandSymbols = "none";
-
   let leaderboardExpanded;
 
   function onSelectItem(event, item: MetricsViewDimension) {
@@ -115,12 +108,6 @@
 
   function onLeaderboardValues(event) {
     leaderboards.set(event.detail.dimensionName, event.detail.values);
-    if (
-      formatPreset === NicelyFormattedTypes.HUMANIZE ||
-      formatPreset === NicelyFormattedTypes.CURRENCY
-    ) {
-      leaderboardFormatScale = getScaleForLeaderboard(leaderboards);
-    }
   }
 
   /** Functionality for resizing the virtual leaderboard */
@@ -165,7 +152,6 @@
       <!-- the single virtual element -->
       <Leaderboard
         {formatPreset}
-        {leaderboardFormatScale}
         isSummableMeasure={activeMeasure?.expression
           .toLowerCase()
           ?.includes("count(") ||

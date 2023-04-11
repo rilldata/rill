@@ -31,6 +31,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   export let data;
   export let xAccessor: string;
   export let yAccessor: string;
+  export let area = true;
   /** time in ms to trigger a delay when the underlying data changes */
   export let delay = 0;
   export let duration = 400;
@@ -39,7 +40,8 @@ Over time, we'll make this the default Line implementation, but it's not quite t
 
   export let stopOpacity = 0.3;
   // FIXME – this is a different prop than elsewhere
-  export let color = "hsla(217,70%, 80%, .4)";
+  export let lineColor = "hsla(217,60%, 55%, 1)";
+  export let areaColor = "hsla(217,70%, 80%, .4)";
 
   const id = guidGenerator();
 
@@ -62,15 +64,17 @@ Over time, we'll make this the default Line implementation, but it's not quite t
       // it reaches zero.
       pathDefined: () => true,
     });
-    areaFunction = areaFactory({
-      xScale: $xScale,
-      yScale: (d) => $yScale(d || 0),
-      xAccessor,
-      // path should always be defined for the chunked line, since
-      // we will clip the path to the segments before
-      // it reaches zero.
-      pathDefined: () => true,
-    });
+    if (area) {
+      areaFunction = areaFactory({
+        xScale: $xScale,
+        yScale: (d) => $yScale(d || 0),
+        xAccessor,
+        // path should always be defined for the chunked line, since
+        // we will clip the path to the segments before
+        // it reaches zero.
+        pathDefined: () => true,
+      });
+    }
   }
 
   $: segments = computeSegments(data, pathIsDefined(yAccessor));
@@ -117,37 +121,38 @@ Over time, we'll make this the default Line implementation, but it's not quite t
       }}
       let:output={dt}
     >
+      <!-- line -->
       <path
         stroke-width={$lineThickness}
-        stroke="hsla(217,60%, 55%, 1)"
+        stroke={lineColor}
         d={dt}
         id="segments-line"
         fill="none"
         style="clip-path: url(#path-segments-{id})"
       />
     </WithTween>
-
-    <WithTween
-      value={areaFunction(yAccessor)(delayedFilteredData)}
-      tweenProps={{
-        duration,
-        interpolate: interpolatePath,
-        easing: cubicOut,
-      }}
-      let:output={at}
-    >
-      <path
-        d={at}
-        fill="url(#gradient-{id})"
-        style="clip-path: url(#path-segments-{id})"
-      />
-    </WithTween>
-
+    {#if area}
+      <WithTween
+        value={areaFunction(yAccessor)(delayedFilteredData)}
+        tweenProps={{
+          duration,
+          interpolate: interpolatePath,
+          easing: cubicOut,
+        }}
+        let:output={at}
+      >
+        <path
+          d={at}
+          fill="url(#gradient-{id})"
+          style="clip-path: url(#path-segments-{id})"
+        />
+      </WithTween>
+    {/if}
     <!-- clip rects for segments -->
     <defs>
       <linearGradient id="gradient-{id}" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="5%" stop-color={color} />
-        <stop offset="95%" stop-color={color} stop-opacity={stopOpacity} />
+        <stop offset="5%" stop-color={areaColor} />
+        <stop offset="95%" stop-color={areaColor} stop-opacity={stopOpacity} />
       </linearGradient>
       <clipPath id="path-segments-{id}">
         {#each delayedSegments as segment (segment[0][xAccessor])}
