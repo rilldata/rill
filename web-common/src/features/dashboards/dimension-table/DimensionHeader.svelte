@@ -98,7 +98,7 @@
     </Tooltip>
 
     {#if !searchToggle}
-      <div
+      <button
         class="flex items-center ui-copy-icon"
         in:fly={{ x: 10, duration: 300 }}
         style:grid-column-gap=".2rem"
@@ -106,20 +106,20 @@
       >
         <SearchIcon size="16px" />
         <span> Search </span>
-      </div>
+      </button>
     {:else}
       <div
         transition:slideRight|local={{ leftOffset: 8 }}
         class="flex items-center"
       >
         <Search bind:value={searchText} on:input={onSearch} />
-        <span
+        <button
           class="ui-copy-icon"
           style:cursor="pointer"
           on:click={() => closeSearchBar()}
         >
           <Close />
-        </span>
+        </button>
       </div>
     {/if}
   </div>
