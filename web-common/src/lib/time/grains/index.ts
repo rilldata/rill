@@ -29,7 +29,7 @@ export function getTimeGrainOptions(start: Date, end: Date): TimeGrainOption[] {
 
   for (const timeGrain of Object.values(TIME_GRAIN)) {
     // only show a time grain if it results in a reasonable number of points on the line chart
-    const MINIMUM_POINTS_ON_LINE_CHART = 2;
+    const MINIMUM_POINTS_ON_LINE_CHART = 3;
     const MAXIMUM_POINTS_ON_LINE_CHART = 2500;
     const timeGrainDurationMs = durationToMillis(timeGrain.duration);
     const pointsOnLineChart = timeRangeDurationMs / timeGrainDurationMs;
