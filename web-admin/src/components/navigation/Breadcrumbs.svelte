@@ -8,6 +8,7 @@
     createAdminServiceListProjects,
   } from "../../client";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
+  import OrganizationAvatar from "./OrganizationAvatar.svelte";
 
   $: organization = $page.params.organization;
   $: organizations = createAdminServiceListOrganizations();
@@ -34,7 +35,9 @@
             main: org.name,
             callback: () => goto(`/${org.name}`),
           }))}
-      />
+      >
+        <OrganizationAvatar {organization} slot="icon" />
+      </BreadcrumbItem>
     {/if}
     {#if project}
       <span class="text-gray-600">/</span>

@@ -12,16 +12,19 @@
 </script>
 
 <li class={isActive ? activeClass : inactiveClass}>
-  <div class="p-2 flex items-center gap-x-2">
-    <span>
-      {label}
-    </span>
-    {#if options}
-      <SimpleActionMenu {options} let:toggleMenu minWidth="0px" distance={4}>
-        <IconButton on:click={toggleMenu}>
-          <CaretDownIcon size="14px" className="text-gray-500" />
-        </IconButton>
-      </SimpleActionMenu>
-    {/if}
+  <div class="flex flex items-center gap-x-3 p-2 ">
+    <slot name="icon" />
+    <div class="flex items-center gap-x-1">
+      <span>
+        {label}
+      </span>
+      {#if options}
+        <SimpleActionMenu {options} let:toggleMenu minWidth="0px" distance={4}>
+          <IconButton on:click={toggleMenu}>
+            <CaretDownIcon size="14px" className="text-gray-500" />
+          </IconButton>
+        </SimpleActionMenu>
+      {/if}
+    </div>
   </div>
 </li>
