@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
   import Axios from "axios";
   import {
     useAdminServiceGetProject,
@@ -8,7 +9,7 @@
   export let organization: string;
   export let project: string;
 
-  let dashboards: string[];
+  let dashboards: V1CatalogEntry[];
 
   $: proj = useAdminServiceGetProject(organization, project);
   $: if ($proj.isSuccess && $proj.data?.productionDeployment) {
@@ -29,22 +30,17 @@
       },
     });
 
-    const { data: filesData } = await axios.get(
-      `/v1/instances/${projectData.productionDeployment.runtimeInstanceId}/files`
+    const { data } = await axios.get(
+      `/v1/instances/${projectData.productionDeployment.runtimeInstanceId}/catalog?type=OBJECT_TYPE_METRICS_VIEW`
     );
 
-    // Filter for dashboard files & extract dashboard names
-    dashboards = filesData.paths
-      ?.filter((path) => path.includes("dashboards/"))
-      // Remove "gitkeep" files
-      .filter((path) => !path.includes(".gitkeep"))
-      // Remove "dashboards/" prefix and ".yaml" suffix
-      .map((path) => path.replace("/dashboards/", "").replace(".yaml", ""))
-      // Sort alphabetically case-insensitive
-      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+    dashboards = data.entries;
 
-    // Done
     return;
+  }
+
+  function getRouteFromPath(path: string) {
+    return path.replace("/dashboards/", "").replace(".yaml", "");
   }
 </script>
 
@@ -52,7 +48,9 @@
   <ol>
     {#each dashboards as dashboard}
       <li class="text-xs text-gray-900 font-medium leading-4 mb-1">
-        <a href="/{organization}/{project}/{dashboard}">{dashboard}</a>
+        <a href="/{organization}/{project}/{getRouteFromPath(dashboard.path)}"
+          >{dashboard.name}</a
+        >
       </li>
     {/each}
   </ol>
