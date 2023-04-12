@@ -13,11 +13,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-type Logs struct {
-	Errors        []string `json:"Errors"`
-	AffectedPaths []string `json:"AffectedPaths"`
-}
-
 func StatusCmd(cfg *config.Config) *cobra.Command {
 	statusCmd := &cobra.Command{
 		Use:   "status <project-name>",
@@ -45,7 +40,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			if depl != nil {
 				logs, err := logsFormatter(depl.Logs)
 				if err != nil {
-					return err
+					logs = fmt.Sprintf("  Logs: %s\n\n", depl.Logs)
 				}
 
 				cmdutil.SuccessPrinter("Deployment info\n")
@@ -54,7 +49,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 				fmt.Printf("  Slots: %d\n", depl.Slots)
 				fmt.Printf("  Branch: %s\n", depl.Branch)
 				fmt.Printf("  Status: %s\n", depl.Status.String())
-				fmt.Printf("  Logs: %s\n\n", logs)
+				fmt.Println(logs)
 			}
 
 			return nil
@@ -76,8 +71,13 @@ func logsFormatter(jsonStr string) (string, error) {
 		errors = append(errors, res.Errors[i].String())
 	}
 
-	logs := fmt.Sprintf("Errors:\n\t%s\n\n\tAffectedPaths:\n\t%s",
-		strings.Join(errors, "\n\t"),
-		strings.Join(res.AffectedPaths, "\n\t"))
-	return logs, nil
+	var logs []string
+	if len(errors) != 0 {
+		logs = append(logs, fmt.Sprintf("  Errors:\n\t%s", strings.Join(errors, "\n\t")))
+	}
+
+	if len(res.AffectedPaths) != 0 {
+		logs = append(logs, fmt.Sprintf("  Affected paths:\n\t%s", strings.Join(res.AffectedPaths, "\n\t")))
+	}
+	return strings.Join(logs, "\n"), nil
 }
