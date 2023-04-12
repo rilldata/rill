@@ -19,7 +19,7 @@ func TestCatalog(t *testing.T) {
 	ctx := context.Background()
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	cat, err := rt.Catalog(ctx, instanceID)
+	cat, err := rt.NewCatalogService(ctx, instanceID)
 	require.NoError(t, err)
 
 	sourcePath := "/sources/ad_bids_source.yaml"

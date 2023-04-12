@@ -9,6 +9,7 @@
   import DeploymentStatusChip from "../deployments/DeploymentStatusChip.svelte";
   import Breadcrumbs from "./Breadcrumbs.svelte";
 
+  $: organization = $page.params.organization;
   $: project = $page.params.project;
 
   const userQuery = createAdminServiceGetCurrentUser();
@@ -26,7 +27,9 @@
       <TooltipContent slot="tooltip-content">Home</TooltipContent>
     </Tooltip>
   </a>
-  <Breadcrumbs />
+  {#if organization}
+    <Breadcrumbs />
+  {/if}
   {#if project}
     <div class="ml-3">
       <DeploymentStatusChip />
