@@ -35,9 +35,9 @@
           <slot />
         </div>
       </main>
-      <footer class="text-center">
+      <!-- <footer class="text-center">
         <p>Rill Data</p>
-      </footer>
+      </footer> -->
     </div>
   </QueryClientProvider>
 </RillTheme>

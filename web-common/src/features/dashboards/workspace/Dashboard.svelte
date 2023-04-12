@@ -18,6 +18,8 @@
   export let metricViewName: string;
   export let hasTitle: boolean;
 
+  export let leftMargin = undefined;
+
   const switchToMetrics = async (metricViewName: string) => {
     if (!metricViewName) return;
 
@@ -66,7 +68,12 @@
     : "min-content minmax(355px, auto)";
 </script>
 
-<DashboardContainer bind:exploreContainerWidth bind:width {gridConfig}>
+<DashboardContainer
+  bind:exploreContainerWidth
+  bind:width
+  {leftMargin}
+  {gridConfig}
+>
   <DashboardHeader {metricViewName} {hasTitle} slot="header" />
 
   <svelte:fragment let:width slot="metrics">

@@ -7,6 +7,8 @@
   export let exploreContainerWidth;
   export let width;
 
+  export let leftMargin: string = undefined;
+
   const navigationVisibilityTween = getContext(
     "rill:app:navigation-visibility-tween"
   ) as Tweened<number>;
@@ -18,20 +20,20 @@
 
   $: width = $observedNode?.getBoundingClientRect()?.width;
 
-  $: leftSide = `calc(${$navigationVisibilityTween * 24}px + 1.25rem)`;
+  $: leftSide = leftMargin
+    ? leftMargin
+    : `calc(${$navigationVisibilityTween * 24}px + 1.25rem)`;
 </script>
 
 <section
   use:listenToNodeResize
   class="grid items-stretch surface"
   style:grid-template-columns={gridConfig}
-  style:padding-left={leftSide}
 >
-  <div class="explore-header">
+  <div class="explore-header border-b mb-3" style:padding-left={leftSide}>
     <slot name="header" />
   </div>
-  <hr class="pb-3 pt-1 ui-divider -ml-12" />
-  <div class="explore-metrics mb-8">
+  <div class="explore-metrics mb-8" style:padding-left={leftSide}>
     <slot
       name="metrics"
       width={$observedNode?.getBoundingClientRect()?.width}
