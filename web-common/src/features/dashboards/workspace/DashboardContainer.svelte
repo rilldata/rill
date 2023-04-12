@@ -3,7 +3,6 @@
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
 
-  export let gridConfig: string;
   export let exploreContainerWidth;
   export let width;
 
