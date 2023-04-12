@@ -6,11 +6,9 @@
   import { createAdminServiceGetCurrentUser } from "../../client";
   import SignIn from "../authentication/SignIn.svelte";
   import UserButton from "../authentication/UserButton.svelte";
-  import DeploymentStatusChip from "../deployments/DeploymentStatusChip.svelte";
   import Breadcrumbs from "./Breadcrumbs.svelte";
 
   $: organization = $page.params.organization;
-  $: project = $page.params.project;
 
   const userQuery = createAdminServiceGetCurrentUser();
   $: signedIn = !!$userQuery.data?.user;
@@ -29,11 +27,6 @@
   </a>
   {#if organization}
     <Breadcrumbs />
-  {/if}
-  {#if project}
-    <div class="ml-3">
-      <DeploymentStatusChip />
-    </div>
   {/if}
   <div class="flex-grow" />
   <div class="p-2">
