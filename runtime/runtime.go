@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"math"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
@@ -18,12 +19,12 @@ type Options struct {
 }
 
 type Runtime struct {
-	opts         *Options
-	metastore    drivers.Connection
-	logger       *zap.Logger
-	connCache    *connectionCache
-	catalogCache *catalogCache
-	queryCache   *queryCache
+	opts               *Options
+	metastore          drivers.Connection
+	logger             *zap.Logger
+	connCache          *connectionCache
+	migrationMetaCache *migrationMetaCache
+	queryCache         *queryCache
 }
 
 func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
@@ -44,12 +45,12 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 	}
 
 	return &Runtime{
-		opts:         opts,
-		metastore:    metastore,
-		logger:       logger,
-		connCache:    newConnectionCache(opts.ConnectionCacheSize, logger),
-		catalogCache: newCatalogCache(),
-		queryCache:   newQueryCache(opts.QueryCacheSize),
+		opts:               opts,
+		metastore:          metastore,
+		logger:             logger,
+		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger),
+		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
+		queryCache:         newQueryCache(opts.QueryCacheSize),
 	}, nil
 }
 
