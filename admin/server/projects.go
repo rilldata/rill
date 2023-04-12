@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sort"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -16,23 +17,61 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (s *Server) ListProjects(ctx context.Context, req *adminv1.ListProjectsRequest) (*adminv1.ListProjectsResponse, error) {
+func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.ListProjectsForOrganizationRequest) (*adminv1.ListProjectsForOrganizationResponse, error) {
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
 
-	projs, err := s.admin.DB.FindProjectsForUser(ctx, claims.OwnerID())
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "org not found")
+		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	dtos := make([]*adminv1.Project, len(projs))
-	for i, proj := range projs {
-		dtos[i] = projToDTO(proj)
+	orgProjects := map[string]*database.Project{}
+	// add public projects
+	publicProjects, err := s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	for _, proj := range publicProjects {
+		orgProjects[proj.Name] = proj
 	}
 
-	return &adminv1.ListProjectsResponse{Projects: dtos}, nil
+	if !claims.CanOrganization(ctx, org.ID, auth.ReadProjects) {
+		// check if the user is an outside member of a project in the org
+		if claims.OwnerType() == auth.OwnerTypeUser {
+			projs, err := s.admin.DB.FindProjectsForProjectMemberUser(ctx, org.ID, claims.OwnerID())
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			for _, proj := range projs {
+				orgProjects[proj.Name] = proj
+			}
+		}
+		if len(orgProjects) == 0 {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read projects")
+		}
+	} else {
+		projs, err := s.admin.DB.FindProjectsForOrganization(ctx, org.ID)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		for _, proj := range projs {
+			orgProjects[proj.Name] = proj
+		}
+	}
+
+	dtos := make([]*adminv1.Project, len(orgProjects))
+	i := 0
+	for _, proj := range orgProjects {
+		dtos[i] = projToDTO(proj)
+		i++
+	}
+	// sort dtos by name
+	sort.Slice(dtos, func(i, j int) bool { return dtos[i].Name < dtos[j].Name })
+
+	return &adminv1.ListProjectsForOrganizationResponse{Projects: dtos}, nil
 }
 
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {

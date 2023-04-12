@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { createAdminServiceListProjects } from "../../client";
+  import { createAdminServiceListProjectsForOrganization } from "../../client";
   import DashboardList from "./DashboardList.svelte";
 
   export let organization: string;
 
-  $: projs = createAdminServiceListProjects(organization);
+  $: projs = createAdminServiceListProjectsForOrganization(organization);
 </script>
 
 {#if $projs.data && $projs.data.projects}
