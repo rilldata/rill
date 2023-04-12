@@ -115,16 +115,9 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 		return err
 	}
 
-	path, err := fileutil.ExpandHome(conf.Path)
+	path, err := resolveLocalPath(env, conf.Path, source.Name)
 	if err != nil {
 		return err
-	}
-	if !filepath.IsAbs(path) {
-		// If the path is relative, it's relative to the repo root
-		if env.RepoDriver != "file" || env.RepoDSN == "" {
-			return fmt.Errorf("file connector cannot ingest source '%s': path is relative, but repo is not available", source.Name)
-		}
-		path = filepath.Join(env.RepoDSN, path)
 	}
 
 	// get all files in case glob passed
@@ -188,4 +181,23 @@ func fileSize(paths []string) int64 {
 		}
 	}
 	return size
+}
+
+func resolveLocalPath(env *connectors.Env, path, sourceName string) (string, error) {
+	path, err := fileutil.ExpandHome(path)
+	if err != nil {
+		return "", err
+	}
+
+	repoRoot := env.RepoRoot
+	finalPath := path
+	if !filepath.IsAbs(path) {
+		finalPath = filepath.Join(repoRoot, path)
+	}
+
+	if !env.AllowHostAccess && !strings.HasPrefix(finalPath, repoRoot) {
+		// path is outside the repo root
+		return "", fmt.Errorf("file connector cannot ingest source '%s': path is outside repo root", sourceName)
+	}
+	return finalPath, nil
 }

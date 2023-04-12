@@ -95,7 +95,7 @@ func (c *Codec) PutSource(ctx context.Context, repo drivers.RepoStore, instanceI
 	p := path.Join("sources", source.Name+".yaml")
 
 	// TODO: Use create and createOnly when they're added to repo.Put
-	if _, err := os.Stat(path.Join(repo.DSN(), p)); err == nil {
+	if _, err := os.Stat(path.Join(repo.Root(), p)); err == nil {
 		if !force {
 			return "", os.ErrExist
 		}
