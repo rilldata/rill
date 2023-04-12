@@ -6,6 +6,7 @@ import type { ChildProcess } from "node:child_process";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { Browser, chromium, Page } from "playwright";
+import process from "process";
 import treeKill from "tree-kill";
 
 export function useTestServer(port: number, dir: string) {
@@ -61,6 +62,12 @@ export function useTestBrowser(port: number) {
 
   beforeEach(async () => {
     testBrowser.page = await browser.newPage();
+    testBrowser.page.on("request", (req) =>
+      process.stdout.write(`Send ${req.url()}\n`)
+    );
+    testBrowser.page.on("response", (res) =>
+      process.stdout.write(`Received ${res.url()}\n`)
+    );
     await testBrowser.page.goto(`http://localhost:${port}`);
   });
 
