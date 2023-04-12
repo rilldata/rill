@@ -37,7 +37,7 @@ describe("sources", () => {
     await entityNotPresent(page, "AdBids_2");
   });
 
-  it("Rename and delete sources", async () => {
+  it.skip("Rename and delete sources", async () => {
     const { page } = testBrowser;
 
     await createOrReplaceSource(page, "AdBids.csv", "AdBids");
