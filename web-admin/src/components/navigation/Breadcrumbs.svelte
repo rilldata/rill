@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import Slash from "@rilldata/web-common/components/icons/Slash.svelte";
   import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
@@ -9,6 +8,7 @@
     createAdminServiceListProjects,
   } from "../../client";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
+  import OrganizationAvatar from "./OrganizationAvatar.svelte";
 
   $: organization = $page.params.organization;
   $: organizations = createAdminServiceListOrganizations();
@@ -35,10 +35,12 @@
             main: org.name,
             callback: () => goto(`/${org.name}`),
           }))}
-      />
+      >
+        <OrganizationAvatar {organization} slot="icon" />
+      </BreadcrumbItem>
     {/if}
     {#if project}
-      <Slash size={"2em"} className={"text-gray-200"} />
+      <span class="text-gray-600">/</span>
       <BreadcrumbItem
         label={project}
         isActive={projectPageActive}
@@ -50,7 +52,7 @@
       />
     {/if}
     {#if dashboard}
-      <Slash size={"2em"} className={"text-gray-200"} />
+      <span class="text-gray-600">/</span>
       <BreadcrumbItem
         label={dashboard}
         isActive={dashboardPageActive}
