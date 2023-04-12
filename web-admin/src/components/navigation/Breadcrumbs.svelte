@@ -5,7 +5,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceListOrganizations,
-    createAdminServiceListProjects,
+    createAdminServiceListProjectsForOrganization,
   } from "../../client";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
   import OrganizationAvatar from "./OrganizationAvatar.svelte";
@@ -15,7 +15,7 @@
   $: organizationPageActive = $page.route.id === "/[organization]";
 
   $: project = $page.params.project;
-  $: projects = createAdminServiceListProjects(organization);
+  $: projects = createAdminServiceListProjectsForOrganization(organization);
   $: projectPageActive = $page.route.id === "/[organization]/[project]";
 
   $: dashboard = $page.params.dashboard;

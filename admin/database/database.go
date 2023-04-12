@@ -125,6 +125,13 @@ type DB interface {
 
 	FindOrganizationsForUser(ctx context.Context, userID string) ([]*Organization, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
+	FindProjectsForOrganization(ctx context.Context, orgID string) ([]*Project, error)
+
+	FindProjectsForProjectMemberUser(ctx context.Context, orgID, userID string) ([]*Project, error)
+	FindPublicProjectsInOrganization(ctx context.Context, orgID string) ([]*Project, error)
+
+	CheckOrganizationProjectsHasMemberUser(ctx context.Context, orgID, userID string) (bool, error)
+	CheckOrganizationHasPublicProjects(ctx context.Context, orgID string) (bool, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -169,7 +176,7 @@ type Organization struct {
 // Projects belong to an organization.
 type Project struct {
 	ID                     string
-	OrganizationID         string `db:"organization_id"`
+	OrganizationID         string `db:"org_id"`
 	Name                   string
 	Description            string
 	Public                 bool
