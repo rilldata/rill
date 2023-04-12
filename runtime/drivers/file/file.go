@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -17,7 +18,12 @@ func init() {
 type driver struct{}
 
 func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
-	absPath, err := fileutil.ExpandHome(dsn)
+	path, err := fileutil.ExpandHome(dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return nil, err
 	}
