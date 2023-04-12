@@ -175,7 +175,6 @@ message GetOrganizationResponse {
 }
 
 message CreateOrganizationRequest {
-  string id = 1;
   string name = 2;
   string description = 3;
 }

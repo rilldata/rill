@@ -648,8 +648,6 @@ definitions:
     properties:
       description:
         type: string
-      id:
-        type: string
       name:
         type: string
   v1CreateOrganizationResponse:
