@@ -63,7 +63,7 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 
 				fmt.Printf("Set default organization to %q. Change using `rill org switch`.\n", defaultOrg)
 			} else {
-				warn.Println("You are not part of any org. Please run `rill org create` or `rill deploy` to create org.")
+				warn.Println("You are not part of any org. Run `rill org create` or `rill deploy` to create one.")
 			}
 			return nil
 		},

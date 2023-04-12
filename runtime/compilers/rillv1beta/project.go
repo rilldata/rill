@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/go-yaml/yaml"
@@ -137,11 +138,16 @@ func (c *Codec) ProjectConfig(ctx context.Context) (*ProjectConfig, error) {
 	return r, nil
 }
 
-func ParseProjectConfig(content []byte) (*ProjectConfig, error) {
-	c := &ProjectConfig{Variables: make(map[string]string)}
-	if err := yaml.Unmarshal(content, c); err != nil {
-		return nil, err
+func ProjectName(dir string) (string, error) {
+	content, err := os.ReadFile(filepath.Join(dir, "rill.yaml"))
+	if err != nil {
+		return "", err
 	}
 
-	return c, nil
+	c := &ProjectConfig{Variables: make(map[string]string)}
+	if err := yaml.Unmarshal(content, c); err != nil {
+		return "", err
+	}
+
+	return c.SanitizedName(), nil
 }

@@ -72,10 +72,12 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			if cfg.Org == "" {
 				// no default org set by user
-				orgs, err := fetchOrgs(adminClient)
+				res, err := adminClient.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
 				if err != nil {
-					return fmt.Errorf("listing orgs failed with error %w", err)
+					return fmt.Errorf("listing orgs failed with error: %w", err)
 				}
+
+				orgs := res.Organizations
 
 				if len(orgs) == 1 {
 					if err := dotrill.SetDefaultOrg(orgs[0].Name); err != nil {
@@ -133,7 +135,9 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				defaultOrg = resp.Name
-				success.Printf("Created organization %q\n", defaultOrg)
+				success.Printf("Created organization %q. Use `rill org edit` to change name if required.\n", defaultOrg)
+			} else {
+				info.Printf("Creating project in %q org\n", defaultOrg)
 			}
 
 			// Check for access to the Github URL
@@ -178,7 +182,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Success!
-			success.Printf("Created project %s/%s\n", cfg.Org, projRes.Project.Name)
+			success.Printf("Created project %s/%s. Use `rill project edit` to edit name if required.\n", defaultOrg, projRes.Project.Name)
 			success.Printf("Rill projects deploy continuously when you push changes to Github.\n")
 			if projRes.ProjectUrl != "" {
 				success.Printf("Opening project dashboard. Your project can be accessed at %s\n", projRes.ProjectUrl)
@@ -204,19 +208,20 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 }
 
 func projectNamePrompt(ctx context.Context, c *client.Client, orgName, projectPath string) (string, error) {
-	projectName, err := projectName(projectPath)
+	projectName, err := rillv1beta.ProjectName(projectPath)
 	if err != nil {
 		return "", err
 	}
 
-	exist, err := projectExists(ctx, c, orgName, projectName)
-	if err != nil {
-		return "", err
-	}
+	if projectName != "" {
+		exist, err := projectExists(ctx, c, orgName, projectName)
+		if err != nil {
+			return "", err
+		}
 
-	if !exist {
-		fmt.Printf("Creating project by name %q. Use `rill project edit` to edit name if required.\n", projectName)
-		return projectName, nil
+		if !exist {
+			return projectName, nil
+		}
 	}
 
 	questions := []*survey.Question{
@@ -224,7 +229,6 @@ func projectNamePrompt(ctx context.Context, c *client.Client, orgName, projectPa
 			Name: "name",
 			Prompt: &survey.Input{
 				Message: "What is the project name?",
-				Default: projectName,
 			},
 			Validate: func(any interface{}) error {
 				projectName := any.(string)
@@ -268,7 +272,6 @@ func orgNamePrompt(ctx context.Context, adminClient *client.Client, orgName stri
 	}
 
 	if !orgExist {
-		fmt.Printf("Creating org %q. Use `rill org edit` to change name if required.\n", orgName)
 		return orgName, nil
 	}
 
@@ -365,15 +368,6 @@ func variablesPrompt(projectPath string) (map[string]string, error) {
 	return vars, nil
 }
 
-func fetchOrgs(c *client.Client) ([]*adminv1.Organization, error) {
-	res, err := c.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{PageSize: 2})
-	if err != nil {
-		return nil, err
-	}
-
-	return res.Organizations, nil
-}
-
 func extractRemote(remotePath string) (string, error) {
 	remotes, err := gitutil.ExtractRemotes(remotePath)
 	if err != nil {
@@ -386,20 +380,6 @@ func extractRemote(remotePath string) (string, error) {
 func hasRillProject(dir string) bool {
 	_, err := os.Open(filepath.Join(dir, "rill.yaml"))
 	return err == nil
-}
-
-func projectName(dir string) (string, error) {
-	content, err := os.ReadFile(filepath.Join(dir, "rill.yaml"))
-	if err != nil {
-		return "", err
-	}
-
-	c, err := rillv1beta.ParseProjectConfig(content)
-	if err != nil {
-		return "", err
-	}
-
-	return strings.ReplaceAll(strings.TrimSpace(c.Name), " ", "-"), nil
 }
 
 func verifyAccess(ctx context.Context, c *client.Client, githubURL string) (*adminv1.GetGithubRepoStatusResponse, error) {
