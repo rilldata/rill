@@ -123,15 +123,10 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if defaultOrg == "" {
-				// create a org for the user
-				orgName, err := orgNamePrompt(ctx, adminClient, repoAccount(githubURL))
+				// create an org for the user
+				resp, err := createOrg(ctx, adminClient, githubURL)
 				if err != nil {
-					return err
-				}
-
-				resp, err := org.Create(adminClient, orgName, "")
-				if err != nil {
-					return fmt.Errorf("org creation failed %w", err)
+					return fmt.Errorf("org creation failed with error: %w", err)
 				}
 
 				defaultOrg = resp.Name
@@ -152,7 +147,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			// We now have access to the Github repo
 			if name == "" {
-				name, err = projectNamePrompt(ctx, adminClient, defaultOrg, projectPath)
+				name, err = rillv1beta.ProjectName(projectPath)
 				if err != nil {
 					return err
 				}
@@ -163,8 +158,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			// Create the project (automatically deploys prod branch)
-			projRes, err := adminClient.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			req := &adminv1.CreateProjectRequest{
 				OrganizationName:     defaultOrg,
 				Name:                 name,
 				Description:          description,
@@ -176,7 +170,9 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				Public:               public,
 				GithubUrl:            githubURL,
 				Variables:            variables,
-			})
+			}
+			// Create the project (automatically deploys prod branch)
+			projRes, err := createProject(ctx, adminClient, req)
 			if err != nil {
 				return fmt.Errorf("create project failed with error %w", err)
 			}
@@ -207,23 +203,37 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	return deployCmd
 }
 
-func projectNamePrompt(ctx context.Context, c *client.Client, orgName, projectPath string) (string, error) {
-	projectName, err := rillv1beta.ProjectName(projectPath)
-	if err != nil {
-		return "", err
-	}
-
-	if projectName != "" {
-		exist, err := projectExists(ctx, c, orgName, projectName)
+func createOrg(ctx context.Context, adminClient *client.Client, githubURL string) (*adminv1.Organization, error) {
+	resp, err := org.Create(adminClient, repoAccount(githubURL), "")
+	if err != nil && violatesUniqueConstraint(err) {
+		// org name already exists, prompt for the org name and create org with new name again
+		name, err := orgNamePrompt(ctx, adminClient)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
-		if !exist {
-			return projectName, nil
-		}
+		return org.Create(adminClient, name, "")
 	}
+	return resp, err
+}
 
+func createProject(ctx context.Context, adminClient *client.Client, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
+	// Create the project (automatically deploys prod branch)
+	res, err := adminClient.CreateProject(ctx, req)
+	if err != nil && violatesUniqueConstraint(err) {
+		// project name already exists, prompt for project name and create project with new name again
+		name, err := projectNamePrompt(ctx, adminClient, req.OrganizationName)
+		if err != nil {
+			return nil, err
+		}
+
+		req.Name = name
+		return adminClient.CreateProject(ctx, req)
+	}
+	return res, err
+}
+
+func projectNamePrompt(ctx context.Context, c *client.Client, orgName string) (string, error) {
 	questions := []*survey.Question{
 		{
 			Name: "name",
@@ -231,25 +241,29 @@ func projectNamePrompt(ctx context.Context, c *client.Client, orgName, projectPa
 				Message: "What is the project name?",
 			},
 			Validate: func(any interface{}) error {
-				projectName := any.(string)
-				projectExists, err := projectExists(ctx, c, orgName, projectName)
+				name := any.(string)
+				if name == "" {
+					return fmt.Errorf("empty name")
+				}
+				exists, err := projectExists(ctx, c, orgName, name)
 				if err != nil {
 					return err
 				}
-				if projectExists {
+				if exists {
 					// this should always be true but adding this check from completeness POV
-					return fmt.Errorf("project with name %v already exists in the org", projectName)
+					return fmt.Errorf("project with name %v already exists in the org", name)
 				}
 				return nil
 			},
 		},
 	}
 
-	if err := survey.Ask(questions, &projectName); err != nil {
+	name := ""
+	if err := survey.Ask(questions, &name); err != nil {
 		return "", err
 	}
 
-	return projectName, nil
+	return name, nil
 }
 
 func projectExists(ctx context.Context, c *client.Client, orgName, projectName string) (bool, error) {
@@ -265,16 +279,7 @@ func projectExists(ctx context.Context, c *client.Client, orgName, projectName s
 	return resp.Project.Name == projectName, nil
 }
 
-func orgNamePrompt(ctx context.Context, adminClient *client.Client, orgName string) (string, error) {
-	orgExist, err := orgNameExists(ctx, adminClient, orgName)
-	if err != nil {
-		return "", err
-	}
-
-	if !orgExist {
-		return orgName, nil
-	}
-
+func orgNamePrompt(ctx context.Context, adminClient *client.Client) (string, error) {
 	qs := []*survey.Question{
 		{
 			Name: "name",
@@ -284,6 +289,10 @@ func orgNamePrompt(ctx context.Context, adminClient *client.Client, orgName stri
 			Validate: func(any interface{}) error {
 				// Validate org name doesn't exist already
 				name := any.(string)
+				if name == "" {
+					return fmt.Errorf("empty name")
+				}
+
 				exist, err := orgNameExists(ctx, adminClient, name)
 				if err != nil {
 					return err
@@ -450,6 +459,13 @@ func repoAccount(githubURL string) string {
 	}
 
 	return account
+}
+
+func violatesUniqueConstraint(err error) bool {
+	if st, ok := status.FromError(err); ok && st != nil {
+		return strings.Contains(st.Message(), "violates unique constraint")
+	}
+	return false
 }
 
 const (
