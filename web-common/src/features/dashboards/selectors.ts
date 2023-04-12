@@ -1,16 +1,16 @@
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
-  useQueryServiceColumnTimeRange,
-  useRuntimeServiceGetCatalogEntry,
-  useRuntimeServiceListCatalogEntries,
-  useRuntimeServiceListFiles,
+  createQueryServiceColumnTimeRange,
+  createRuntimeServiceGetCatalogEntry,
+  createRuntimeServiceListCatalogEntries,
+  createRuntimeServiceListFiles,
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 
-export function useDashboardNames(repoId: string) {
-  return useRuntimeServiceListFiles(
-    repoId,
+export function useDashboardNames(instanceId: string) {
+  return createRuntimeServiceListFiles(
+    instanceId,
     {
       glob: "{sources,models,dashboards}/*.{yaml,sql}",
     },
@@ -37,7 +37,7 @@ export const useMetaQuery = <T = V1MetricsView>(
   metricViewName: string,
   selector?: (meta: V1MetricsView) => T
 ) => {
-  return useRuntimeServiceGetCatalogEntry(instanceId, metricViewName, {
+  return createRuntimeServiceGetCatalogEntry(instanceId, metricViewName, {
     query: {
       select: (data) =>
         selector
@@ -57,7 +57,7 @@ export function useModelAllTimeRange(
   modelName: string,
   timeDimension: string
 ) {
-  return useQueryServiceColumnTimeRange(
+  return createQueryServiceColumnTimeRange(
     instanceId,
     modelName,
     {
@@ -125,7 +125,7 @@ export const useGetDashboardsForModel = (
   instanceId: string,
   modelName: string
 ) => {
-  return useRuntimeServiceListCatalogEntries(
+  return createRuntimeServiceListCatalogEntries(
     instanceId,
     { type: "OBJECT_TYPE_METRICS_VIEW" },
     {

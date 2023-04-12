@@ -7,7 +7,7 @@ import {
   getRuntimeServiceListCatalogEntriesQueryKey,
   getRuntimeServiceListFilesQueryKey,
 } from "@rilldata/web-common/runtime-client";
-import type { QueryClient } from "@sveltestack/svelte-query";
+import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
 // invalidation helpers
@@ -100,7 +100,15 @@ export const invalidateMetricsViewData = (
   queryClient: QueryClient,
   metricsViewName: string
 ) => {
-  return queryClient.refetchQueries({
+  // remove inactive queries, this is needed since these would be re-fetched with incorrect filter
+  // invalidateQueries by itself doesnt work as of now.
+  // reference: https://github.com/rilldata/rill-developer/pull/2027#discussion_r1161672656
+  queryClient.removeQueries({
+    predicate: (query) =>
+      invalidationForMetricsViewData(query, metricsViewName),
+    active: false,
+  });
+  return queryClient.invalidateQueries({
     predicate: (query) =>
       invalidationForMetricsViewData(query, metricsViewName),
   });
@@ -110,10 +118,12 @@ export function invalidateProfilingQueries(
   queryClient: QueryClient,
   name: string
 ) {
-  return queryClient.refetchQueries({
-    predicate: (query) => {
-      return isProfilingQuery(query.queryHash, name);
-    },
+  queryClient.removeQueries({
+    predicate: (query) => isProfilingQuery(query.queryHash, name),
+    active: false,
+  });
+  return queryClient.invalidateQueries({
+    predicate: (query) => isProfilingQuery(query.queryHash, name),
   });
 }
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { invalidateRuntimeQueries } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "./runtime-store";
 
   export let host: string;

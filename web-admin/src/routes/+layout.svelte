@@ -1,7 +1,7 @@
 <script lang="ts">
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { QueryClient, QueryClientProvider } from "@sveltestack/svelte-query";
+  import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
   import TopNavigationBar from "../components/navigation/TopNavigationBar.svelte";
 
   const queryClient = new QueryClient({

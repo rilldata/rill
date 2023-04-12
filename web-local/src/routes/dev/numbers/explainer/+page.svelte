@@ -1,14 +1,14 @@
 <script lang="ts">
-  import FormattersInColums from "./formatters-in-colums.svelte";
   import { numberLists as numberListsUnprocessed } from "../number-samples";
+  import FormattersInColums from "./formatters-in-colums.svelte";
 
+  import { onMount } from "svelte";
+  import type { FormatterOptionsV1 } from "../formatter-options";
   import {
     formatterFactories,
     NumberFormatter,
     NumPartPxWidthLookupFn,
   } from "../number-to-string-formatters";
-  import type { FormatterOptionsV1 } from "../formatter-options";
-  import { onMount } from "svelte";
   // ======== pxWidthLookupFn machinery =========
   let pxWidthLookupFn: NumPartPxWidthLookupFn;
   let numFormattingWidthLookupKeys = [
@@ -522,7 +522,7 @@
       sampleName: "pathological for humanizer",
       formatterColRecipes: [
         ["JS `toString()`", "raw-ish numbers (JS `toString()`)", {}],
-        ["humanizeGroupValues (current humanizer)", "legacy humanizer", {}],
+        // ["humanizeGroupValues (current humanizer)", "legacy humanizer", {}],
         ["new humanizer", "new humanizer, multiple magnitudes", {}],
         [
           "new humanizer",
@@ -537,7 +537,7 @@
       sampleName: "power law-ish (uniform over magnitudes (e-15, e12))",
       formatterColRecipes: [
         ["JS `toString()`", "raw-ish numbers (JS `toString()`)", {}],
-        ["humanizeGroupValues (current humanizer)", "legacy humanizer", {}],
+        // ["humanizeGroupValues (current humanizer)", "legacy humanizer", {}],
         ["new humanizer", "new humanizer, multiple magnitudes", {}],
         [
           "new humanizer",
@@ -553,7 +553,7 @@
       sampleName: "pos & neg, power law-ish",
       formatterColRecipes: [
         ["JS `toString()`", "raw-ish numbers (JS `toString()`)", {}],
-        ["humanizeGroupValues (current humanizer)", "legacy humanizer", {}],
+        // ["humanizeGroupValues (current humanizer)", "legacy humanizer", {}],
         [
           "new humanizer",
           "new humanizer, largest magnitude",
