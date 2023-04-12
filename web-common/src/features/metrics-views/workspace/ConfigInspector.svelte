@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceListCatalogEntries,
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceListCatalogEntries,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ModelInspectorModelProfile from "../../models/workspace/inspector/ModelInspectorModelProfile.svelte";
@@ -14,12 +14,12 @@
 
   // check to see if this model name exists.
   //$: modelExists = $fileArtifactsStore.has(modelName);
-  $: modelQuery = useRuntimeServiceGetCatalogEntry(
+  $: modelQuery = createRuntimeServiceGetCatalogEntry(
     $runtime.instanceId,
     modelName
   );
 
-  $: models = useRuntimeServiceListCatalogEntries($runtime.instanceId, {
+  $: models = createRuntimeServiceListCatalogEntries($runtime.instanceId, {
     type: "OBJECT_TYPE_MODEL",
   });
 

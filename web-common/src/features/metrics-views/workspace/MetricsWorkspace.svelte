@@ -2,13 +2,14 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
     V1PutFileAndReconcileResponse,
     createRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
   import { WorkspaceContainer } from "../../../layout/workspace";
