@@ -29,6 +29,8 @@ jobs:
         run: |-
           npm install
           npm run build -w web-admin
+        env:
+          VITE_RILL_ADMIN_URL: https://admin.${{ env.DOMAIN }}
 
       - name: Deploy cloud-admin to Netlify
         uses: nwtgck/actions-netlify@v1.2
@@ -41,5 +43,3 @@ jobs:
           enable-commit-comment: true
           overwrites-pull-request-comment: true
         timeout-minutes: 1
-        env:
-          VITE_RILL_ADMIN_URL: https://admin.${{ env.DOMAIN }}
