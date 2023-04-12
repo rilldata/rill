@@ -25,7 +25,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			// Find all the projects for the given org
-			res, err := client.ListProjects(context.Background(), &adminv1.ListProjectsRequest{OrganizationName: args[0]})
+			res, err := client.ListProjectsForOrganization(context.Background(), &adminv1.ListProjectsForOrganizationRequest{OrganizationName: args[0]})
 			if err != nil {
 				return err
 			}
