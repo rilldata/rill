@@ -65,7 +65,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	dtos := make([]*adminv1.Project, len(orgProjects))
 	i := 0
 	for _, proj := range orgProjects {
-		dtos[i] = projToDTO(proj)
+		dtos[i] = projToDTO(proj, org.Name)
 		i++
 	}
 	// sort dtos by name
@@ -75,7 +75,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 }
 
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
-	_, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "org not found")
@@ -99,7 +99,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 	if proj.ProductionDeploymentID == nil {
 		return &adminv1.GetProjectResponse{
-			Project: projToDTO(proj),
+			Project: projToDTO(proj, org.Name),
 		}, nil
 	}
 
@@ -132,7 +132,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	}
 
 	return &adminv1.GetProjectResponse{
-		Project:              projToDTO(proj),
+		Project:              projToDTO(proj, org.Name),
 		ProductionDeployment: deploymentToDTO(depl),
 		Jwt:                  jwt,
 	}, nil
@@ -200,7 +200,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	return &adminv1.CreateProjectResponse{
-		Project:    projToDTO(proj),
+		Project:    projToDTO(proj, org.Name),
 		ProjectUrl: projectURL,
 	}, nil
 }
@@ -274,7 +274,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 
 	return &adminv1.UpdateProjectResponse{
-		Project: projToDTO(proj),
+		Project: projToDTO(proj, req.OrganizationName),
 	}, nil
 }
 
@@ -420,12 +420,14 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 	return &adminv1.SetProjectMemberRoleResponse{}, nil
 }
 
-func projToDTO(p *database.Project) *adminv1.Project {
+func projToDTO(p *database.Project, orgName string) *adminv1.Project {
 	return &adminv1.Project{
 		Id:                     p.ID,
 		Name:                   p.Name,
 		Description:            p.Description,
 		Public:                 p.Public,
+		OrgId:                  p.OrganizationID,
+		OrgName:                orgName,
 		Region:                 p.Region,
 		ProductionOlapDriver:   p.ProductionOLAPDriver,
 		ProductionOlapDsn:      p.ProductionOLAPDSN,
