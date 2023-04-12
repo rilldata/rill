@@ -49,15 +49,23 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
+			variables, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
+				OrganizationName: cfg.Org,
+				Name:             projectName,
+			})
+			if err != nil {
+				return err
+			}
+
 			proj := resp.Project
-			if val, ok := proj.Variables[key]; ok && val == value {
+			if val, ok := variables.Variables[key]; ok && val == value {
 				return nil
 			}
 
-			if proj.Variables == nil {
-				proj.Variables = make(map[string]string)
+			if variables.Variables == nil {
+				variables.Variables = make(map[string]string)
 			}
-			proj.Variables[key] = value
+			variables.Variables[key] = value
 			updatedProject, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
 				OrganizationName: cfg.Org,
 				Name:             projectName,
@@ -65,7 +73,7 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 				Public:           proj.Public,
 				ProductionBranch: proj.ProductionBranch,
 				GithubUrl:        proj.GithubUrl,
-				Variables:        proj.Variables,
+				Variables:        variables.Variables,
 			})
 			if err != nil {
 				return err
@@ -103,12 +111,20 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			proj := resp.Project
-			if _, ok := proj.Variables[key]; !ok {
+			variables, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
+				OrganizationName: cfg.Org,
+				Name:             projectName,
+			})
+			if err != nil {
+				return err
+			}
+
+			if _, ok := variables.Variables[key]; !ok {
 				return nil
 			}
 
-			delete(proj.Variables, key)
+			delete(variables.Variables, key)
+			proj := resp.Project
 			updatedProject, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
 				OrganizationName: cfg.Org,
 				Name:             projectName,
@@ -116,7 +132,7 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 				Public:           proj.Public,
 				ProductionBranch: proj.ProductionBranch,
 				GithubUrl:        proj.GithubUrl,
-				Variables:        proj.Variables,
+				Variables:        variables.Variables,
 			})
 			if err != nil {
 				return err
@@ -144,7 +160,7 @@ func ShowEnvCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			ctx := context.Background()
-			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
+			resp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
 				OrganizationName: cfg.Org,
 				Name:             projectName,
 			})
@@ -152,7 +168,7 @@ func ShowEnvCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			tableprinter.PrintHeadList(os.Stdout, variable.Serialize(resp.Project.Variables), "Project Variables")
+			tableprinter.PrintHeadList(os.Stdout, variable.Serialize(resp.Variables), "Project Variables")
 			return nil
 		},
 	}

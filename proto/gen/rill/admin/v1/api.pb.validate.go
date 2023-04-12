@@ -765,9 +765,16 @@ func (m *CreateOrganizationRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Id
-
-	// no validation rules for Name
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := CreateOrganizationRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Description
 
@@ -1963,7 +1970,16 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for OrganizationName
 
-	// no validation rules for Name
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := CreateProjectRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Description
 
@@ -2650,6 +2666,217 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = UpdateProjectResponseValidationError{}
+
+// Validate checks the field values on GetProjectVariablesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetProjectVariablesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetProjectVariablesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetProjectVariablesRequestMultiError, or nil if none found.
+func (m *GetProjectVariablesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetProjectVariablesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for OrganizationName
+
+	// no validation rules for Name
+
+	if len(errors) > 0 {
+		return GetProjectVariablesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetProjectVariablesRequestMultiError is an error wrapping multiple
+// validation errors returned by GetProjectVariablesRequest.ValidateAll() if
+// the designated constraints aren't met.
+type GetProjectVariablesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetProjectVariablesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetProjectVariablesRequestMultiError) AllErrors() []error { return m }
+
+// GetProjectVariablesRequestValidationError is the validation error returned
+// by GetProjectVariablesRequest.Validate if the designated constraints aren't met.
+type GetProjectVariablesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetProjectVariablesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetProjectVariablesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetProjectVariablesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetProjectVariablesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetProjectVariablesRequestValidationError) ErrorName() string {
+	return "GetProjectVariablesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetProjectVariablesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetProjectVariablesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetProjectVariablesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetProjectVariablesRequestValidationError{}
+
+// Validate checks the field values on GetProjectVariablesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetProjectVariablesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetProjectVariablesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetProjectVariablesResponseMultiError, or nil if none found.
+func (m *GetProjectVariablesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetProjectVariablesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Variables
+
+	if len(errors) > 0 {
+		return GetProjectVariablesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetProjectVariablesResponseMultiError is an error wrapping multiple
+// validation errors returned by GetProjectVariablesResponse.ValidateAll() if
+// the designated constraints aren't met.
+type GetProjectVariablesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetProjectVariablesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetProjectVariablesResponseMultiError) AllErrors() []error { return m }
+
+// GetProjectVariablesResponseValidationError is the validation error returned
+// by GetProjectVariablesResponse.Validate if the designated constraints
+// aren't met.
+type GetProjectVariablesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetProjectVariablesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetProjectVariablesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetProjectVariablesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetProjectVariablesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetProjectVariablesResponseValidationError) ErrorName() string {
+	return "GetProjectVariablesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetProjectVariablesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetProjectVariablesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetProjectVariablesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetProjectVariablesResponseValidationError{}
 
 // Validate checks the field values on GetCurrentUserRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -3568,8 +3795,6 @@ func (m *Project) validate(all bool) error {
 			}
 		}
 	}
-
-	// no validation rules for Variables
 
 	if len(errors) > 0 {
 		return ProjectMultiError(errors)

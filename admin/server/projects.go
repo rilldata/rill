@@ -216,7 +216,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		}
 	}
 
-	var githubURL *string
+	githubURL := proj.GithubURL
 	if req.GithubUrl != "" {
 		githubURL = &req.GithubUrl
 	}
@@ -225,7 +225,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Description:            req.Description,
 		Public:                 req.Public,
 		ProductionBranch:       req.ProductionBranch,
-		ProductionVariables:    req.Variables,
+		ProductionVariables:    proj.ProductionVariables,
 		GithubURL:              githubURL,
 		GithubInstallationID:   proj.GithubInstallationID,
 		ProductionDeploymentID: proj.ProductionDeploymentID,
@@ -381,6 +381,31 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 	return &adminv1.SetProjectMemberRoleResponse{}, nil
 }
 
+func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjectVariablesRequest) (*adminv1.GetProjectVariablesResponse, error) {
+	_, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "org not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "proj not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Can(ctx, proj.OrganizationID, auth.ManageProjects, proj.ID, auth.ManageProject) {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project variables")
+	}
+
+	return &adminv1.GetProjectVariablesResponse{Variables: proj.ProductionVariables}, nil
+}
+
 func projToDTO(p *database.Project) *adminv1.Project {
 	return &adminv1.Project{
 		Id:                     p.ID,
@@ -396,7 +421,6 @@ func projToDTO(p *database.Project) *adminv1.Project {
 		ProductionDeploymentId: safeStr(p.ProductionDeploymentID),
 		CreatedOn:              timestamppb.New(p.CreatedOn),
 		UpdatedOn:              timestamppb.New(p.UpdatedOn),
-		Variables:              p.ProductionVariables,
 	}
 }
 

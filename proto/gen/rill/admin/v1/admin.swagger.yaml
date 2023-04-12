@@ -573,6 +573,35 @@ paths:
                   type: string
       tags:
         - AdminService
+  /v1/organizations/{organizationName}/projects/{name}/variables:
+    put:
+      summary: UpdateProject updates a project
+      operationId: AdminService_GetProjectVariables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectVariablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
   /v1/ping:
     get:
       summary: Ping returns information about the server
@@ -647,8 +676,6 @@ definitions:
     type: object
     properties:
       description:
-        type: string
-      id:
         type: string
       name:
         type: string
@@ -731,6 +758,13 @@ definitions:
         $ref: '#/definitions/v1Deployment'
       project:
         $ref: '#/definitions/v1Project'
+  v1GetProjectVariablesResponse:
+    type: object
+    properties:
+      variables:
+        type: object
+        additionalProperties:
+          type: string
   v1LeaveOrganizationResponse:
     type: object
     title: Response message for AdminService.LeaveOrganization
@@ -846,10 +880,6 @@ definitions:
       updatedOn:
         type: string
         format: date-time
-      variables:
-        type: object
-        additionalProperties:
-          type: string
   v1RemoveOrganizationMemberResponse:
     type: object
     title: Response message for AdminService.RemoveOrganizationMember
