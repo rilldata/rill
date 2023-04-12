@@ -28,7 +28,7 @@
 <section
   use:listenToNodeResize
   class="grid items-stretch surface"
-  style:grid-template-columns={gridConfig}
+  style:grid-template-columns="max-content minmax(355px, auto)"
 >
   <div class="explore-header border-b mb-3" style:padding-left={leftSide}>
     <slot name="header" />
@@ -52,13 +52,9 @@
     overflow-y: hidden;
     grid-template-areas:
       "header header"
-      "hr hr"
       "metrics leaderboards";
   }
 
-  hr {
-    grid-area: hr;
-  }
   .explore-header {
     grid-area: header;
   }

@@ -7,7 +7,6 @@
   import { createRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
-  import { MEASURE_CONFIG } from "../config";
   import { metricsExplorerStore } from "../dashboard-stores";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
@@ -59,21 +58,9 @@
     metricViewName
   );
   $: hasTimeSeries = $metricTimeSeries.data;
-  $: gridConfig = hasTimeSeries
-    ? `${
-        width >= MEASURE_CONFIG.breakpoint
-          ? MEASURE_CONFIG.container.width.full
-          : MEASURE_CONFIG.container.width.breakpoint
-      }px minmax(355px, auto)`
-    : "min-content minmax(355px, auto)";
 </script>
 
-<DashboardContainer
-  bind:exploreContainerWidth
-  bind:width
-  {leftMargin}
-  {gridConfig}
->
+<DashboardContainer bind:exploreContainerWidth bind:width {leftMargin}>
   <DashboardHeader {metricViewName} {hasTitle} slot="header" />
 
   <svelte:fragment let:width slot="metrics">
