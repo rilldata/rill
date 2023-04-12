@@ -29,6 +29,9 @@
       selected: selected[i],
       index: i,
     }));
+    // if there is no search text, return menuEntries right away,
+    // otherwise matchSorter sorts the mentu entries
+    if (!searchText) return menuEntries;
     return matchSorter(menuEntries, searchText, { keys: ["label"] });
   };
 
