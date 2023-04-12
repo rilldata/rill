@@ -3,11 +3,10 @@ package postgres
 import (
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
-	"go.uber.org/zap"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 
 	// Load postgres driver
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 )
 
 func init() {

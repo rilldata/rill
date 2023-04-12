@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/stretchr/testify/require"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 )
 
@@ -14,7 +15,7 @@ func TestConnectionCache(t *testing.T) {
 	ctx := context.Background()
 	id := uuid.NewString()
 
-	c := newConnectionCache(10, zap.NewNop())
+	c := newConnectionCache(10, otelzap.New(zap.NewNop()))
 	conn1, err := c.get(ctx, id, "sqlite", ":memory:")
 	require.NoError(t, err)
 	require.NotNil(t, conn1)

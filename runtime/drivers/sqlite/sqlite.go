@@ -3,6 +3,7 @@ package sqlite
 import (
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
+
 	// Load sqlite driver
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 
