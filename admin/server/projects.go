@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sort"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -29,7 +30,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 
 	orgProjects := map[string]*database.Project{}
 	// add public projects
-	publicProjects, err := s.admin.DB.FindOrganizationPublicProjects(ctx, org.ID)
+	publicProjects, err := s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -40,7 +41,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	if !claims.CanOrganization(ctx, org.ID, auth.ReadProjects) {
 		// check if the user is an outside member of a project in the org
 		if claims.OwnerType() == auth.OwnerTypeUser {
-			projs, err := s.admin.DB.FindOrganizationProjectsMemberUser(ctx, org.ID, claims.OwnerID())
+			projs, err := s.admin.DB.FindProjectsForProjectMemberUser(ctx, org.ID, claims.OwnerID())
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
@@ -67,6 +68,8 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 		dtos[i] = projToDTO(proj)
 		i++
 	}
+	// sort dtos by name
+	sort.Slice(dtos, func(i, j int) bool { return dtos[i].Name < dtos[j].Name })
 
 	return &adminv1.ListProjectsForOrganizationResponse{Projects: dtos}, nil
 }

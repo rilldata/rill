@@ -127,11 +127,11 @@ type DB interface {
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID string) ([]*Project, error)
 
+	FindProjectsForProjectMemberUser(ctx context.Context, orgID, userID string) ([]*Project, error)
+	FindPublicProjectsInOrganization(ctx context.Context, orgID string) ([]*Project, error)
+
 	CheckOrganizationProjectsHasMemberUser(ctx context.Context, orgID, userID string) (bool, error)
 	CheckOrganizationHasPublicProjects(ctx context.Context, orgID string) (bool, error)
-
-	FindOrganizationProjectsMemberUser(ctx context.Context, orgID, userID string) ([]*Project, error)
-	FindOrganizationPublicProjects(ctx context.Context, orgID string) ([]*Project, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.

@@ -707,7 +707,7 @@ func (c *connection) CheckOrganizationHasPublicProjects(ctx context.Context, org
 	return res, nil
 }
 
-func (c *connection) FindOrganizationProjectsMemberUser(ctx context.Context, orgID, userID string) ([]*database.Project, error) {
+func (c *connection) FindProjectsForProjectMemberUser(ctx context.Context, orgID, userID string) ([]*database.Project, error) {
 	var res []*database.Project
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p JOIN users_projects_roles upr ON p.id = upr.project_id WHERE p.org_id = $1 AND upr.user_id = $2", orgID, userID)
 	if err != nil {
@@ -716,7 +716,7 @@ func (c *connection) FindOrganizationProjectsMemberUser(ctx context.Context, org
 	return res, nil
 }
 
-func (c *connection) FindOrganizationPublicProjects(ctx context.Context, orgID string) ([]*database.Project, error) {
+func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID string) ([]*database.Project, error) {
 	var res []*database.Project
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.org_id = $1 AND p.public = true", orgID)
 	if err != nil {
