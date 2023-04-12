@@ -32,12 +32,12 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 
 			// Trigger reconcile (runs in the background - err means the deployment wasn't found, which is unlikely)
 			if project.GetProductionDeployment() != nil {
-				res, err := client.TriggerReconcile(cmd.Context(), &adminv1.TriggerReconcileRequest{OrganizationName: cfg.Org, Name: args[0]})
+				_, err := client.TriggerReconcile(cmd.Context(), &adminv1.TriggerReconcileRequest{OrganizationName: cfg.Org, Name: args[0]})
 				if err != nil {
 					return err
 				}
 
-				fmt.Println("Reconcile completes", res)
+				fmt.Printf("Reconcile is triggered for project %s, please run 'rill project status` to know the status \n", args[0])
 			}
 
 			return nil

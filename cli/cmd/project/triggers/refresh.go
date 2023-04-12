@@ -31,12 +31,12 @@ func RefreshCmd(cfg *config.Config) *cobra.Command {
 
 			// Trigger refresh source (runs in the background - err means the deployment wasn't found, which is unlikely)
 			if project.GetProductionDeployment() != nil {
-				res, err := client.TriggerRefreshSource(cmd.Context(), &adminv1.TriggerRefreshSourceRequest{OrganizationName: cfg.Org, Name: args[0]})
+				_, err := client.TriggerRefreshSource(cmd.Context(), &adminv1.TriggerRefreshSourceRequest{OrganizationName: cfg.Org, Name: args[0]})
 				if err != nil {
 					return err
 				}
 
-				fmt.Println("refresh done", res)
+				fmt.Printf("Refresh source is triggered for project %s, please run 'rill project status` to know the status \n", args[0])
 			}
 
 			return nil

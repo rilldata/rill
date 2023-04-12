@@ -20,12 +20,12 @@ func ResetCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			res, err := client.TriggerRedeploy(cmd.Context(), &adminv1.TriggerRedeployRequest{OrganizationName: cfg.Org, Name: args[0]})
+			_, err = client.TriggerRedeploy(cmd.Context(), &adminv1.TriggerRedeployRequest{OrganizationName: cfg.Org, Name: args[0]})
 			if err != nil {
 				return err
 			}
 
-			fmt.Println("reset done", res)
+			fmt.Printf("Reset project is triggered for project %s, please run 'rill project status` to know the status \n", args[0])
 
 			return nil
 		},
