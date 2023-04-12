@@ -27,15 +27,12 @@
           if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
             throw error(404, "Dashboard not found");
           }
-
-          //throw error(err.response?.status || 500, err.message);
         },
       },
     }
   );
 
   $: yaml = $fileQuery.data?.blob || "";
-
   let nonStandardError: string | undefined;
 </script>
 

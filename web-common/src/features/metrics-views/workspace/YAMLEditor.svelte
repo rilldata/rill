@@ -13,19 +13,19 @@
     insertNewline,
   } from "@codemirror/commands";
   import {
+    StreamLanguage,
     bracketMatching,
     defaultHighlightStyle,
     indentOnInput,
-    StreamLanguage,
     syntaxHighlighting,
   } from "@codemirror/language";
   import { lintKeymap } from "@codemirror/lint";
   import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
   import { EditorState, Prec } from "@codemirror/state";
   import {
+    EditorView,
     drawSelection,
     dropCursor,
-    EditorView,
     highlightActiveLine,
     highlightActiveLineGutter,
     highlightSpecialChars,
@@ -40,12 +40,10 @@
 
   export let content;
   export let plugins = [];
+  export let updaters = [];
 
   let latestContent = content;
 
-  // const yaml = new LanguageSupport(
-  //   streamParser.StreamLanguage.define(yamlMode.yaml)
-  // );
   const yaml = StreamLanguage.define(yamlMode.yaml);
 
   let container: HTMLDivElement;
@@ -115,6 +113,29 @@
       parent: container,
     });
   });
+
+  $: if (editor) {
+    updaters.forEach((updater) => {
+      updater(editor);
+    });
+  }
+
+  /** Listen for changes to the content. If it doesn't match the editor state,
+   * update the editor state.
+   */
+  $: if (
+    editor &&
+    content !== editor?.state?.doc?.toString() &&
+    content?.length
+  ) {
+    editor.dispatch({
+      changes: {
+        from: 0,
+        to: editor.state.doc.length,
+        insert: content,
+      },
+    });
+  }
 </script>
 
 <div bind:this={container} />

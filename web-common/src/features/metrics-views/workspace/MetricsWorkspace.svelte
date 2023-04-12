@@ -12,11 +12,13 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
+  import { parseDocument } from "yaml";
   import { WorkspaceContainer } from "../../../layout/workspace";
   import { runtime } from "../../../runtime-client/runtime-store";
   import ConfigInspector from "./ConfigInspector.svelte";
   import MetricsWorkspaceHeader from "./MetricsWorkspaceHeader.svelte";
   import YAMLEditor from "./YAMLEditor.svelte";
+  import { createErrorLineGutter } from "./plugins/error-gutter";
   import {
     createPlaceholderElement,
     rillEditorPlaceholder,
@@ -60,7 +62,7 @@
       data: {
         instanceId,
         path: filePath,
-        blob: yaml,
+        blob: internalYamlString,
         create: false,
       },
     })) as V1PutFileAndReconcileResponse;
@@ -71,7 +73,7 @@
 
   function updateYAML(event) {
     const { content } = event.detail;
-    callReconcileAndUpdateYaml(instanceId, metricsDefName, content);
+    callReconcileAndUpdateYaml(content);
   }
 
   const placeholderSet = createPlaceholderElement(yaml);
@@ -81,11 +83,123 @@
   placeholderSet.on("test", (event) => {
     console.log(event.detail);
   });
+
+  /** a temporary set of enums that shoul be emitted by orval's codegen */
+  enum ConfigErrors {
+    SourceNotSelected = "metrics view source not selected",
+    SourceNotFound = "metrics view source not found",
+    TimestampNotSelected = "metrics view timestamp not selected",
+    TimestampNotFound = "metrics view selected timestamp not found",
+    MissingDimension = "at least one dimension should be present",
+    MissingMeasure = "at least one measure should be present",
+    Malformed = "did not find expected key",
+  }
+
+  /** fixme: move to a file */
+  enum YAMLSyntaxErrors {
+    ALIAS_PROPS = "Alias node should not have any properties",
+    BAD_ALIAS = "Alias node should be followed by a single non-empty plain scalar",
+    BAD_DIRECTIVE = 'Expected "#", "YAML", "TAG" or whitespace but "%c" found',
+    BAD_DQ_ESCAPE = 'Unexpected escape sequence "\\"%c"',
+    BAD_INDENT = "Incorrect indentation in flow collection",
+    BAD_LITERAL = "Unexpected end of the document within a single quoted scalar",
+    BAD_PROP_ORDER = "Anchors and tags must be placed after the ?, : and - indicators",
+    BAD_SCALAR_START = "Plain scalars cannot start with a block scalar indicator, or one of the two reserved characters: @ and `. To fix, use a block or quoted scalar for the value.",
+    BLOCK_AS_IMPLICIT_KEY = "There's probably something wrong with the indentation, or you're trying to parse something like a: b: c, where it's not clear what's the key and what's the value.",
+    BLOCK_IN_FLOW = "YAML scalars and collections both have block and flow styles. Flow is allowed within block, but not the other way around.",
+    DUPLICATE_KEY = "Map keys must be unique",
+    IMPOSSIBLE = "This really should not happen. If you encounter this error code, please file a bug.",
+    KEY_OVER_1024_CHARS = "Keys longer than 1024 characters are not supported",
+    MISSING_ANCHOR = "Alias node should be preceded by a non-empty anchor",
+    MISSING_CHAR = "Some character or characters are missing here",
+    MULTILINE_IMPLICIT_KEY = "Implicit keys need to be on a single line. Does the input include a plain scalar with a : followed by whitespace, which is getting parsed as a map key?",
+    MULTIPLE_ANCHORS = "A node is only allowed to have one anchor.",
+    MULTIPLE_DOCS = "A YAML stream may include multiple documents.",
+    MULTIPLE_TAGS = "A node is only allowed to have one tag.",
+    TAB_AS_INDENT = "Tabs are not allowed as indentation characters. Please use spaces instead.",
+    TAG_RESOLVE_FAILED = "Failed to resolve tag",
+    UNEXPECTED_TOKEN = "A token was encountered in a place where it wasn't expected.",
+  }
+
+  function runtimeErrorToLine(errorMessage: string, yaml: string) {
+    const lines = yaml.split("\n");
+    if (errorMessage === ConfigErrors.SourceNotFound) {
+      /** if this is undefined, then the field isn't here either. */
+      const line = lines.findIndex((line) => line.startsWith("model:"));
+      return { start: line, end: line, errorMessage };
+    }
+    if (errorMessage === ConfigErrors.TimestampNotFound) {
+      const line =
+        lines.findIndex((line) => line.startsWith("timeseries:")) + 1;
+      return { start: line, end: line, errorMessage };
+    }
+    if (errorMessage === ConfigErrors.MissingMeasure) {
+      const line = lines.findIndex((line) => line.startsWith("measures:"));
+      return { start: line, end: line, errorMessage };
+    }
+    if (errorMessage === ConfigErrors.MissingDimension) {
+      const line = lines.findIndex((line) => line.startsWith("dimensions:"));
+      return { start: line, end: line, errorMessage };
+    }
+    return { start: null, end: null, errorMessage };
+  }
+
+  function mapRuntimeErrorsToLines(errors, yaml) {
+    if (!errors) return [];
+    return errors
+      .map((error) => {
+        return runtimeErrorToLine(error.message, yaml);
+      })
+      .filter((error) => error.message !== ConfigErrors.Malformed);
+  }
+
+  $: path = Object.keys($fileArtifactsStore?.entities)?.find((key) => {
+    return key.endsWith(`${metricsDefName}.yaml`);
+  });
+  $: errors = $fileArtifactsStore?.entities?.[path]?.errors;
+
+  $: mappedErrors = mapRuntimeErrorsToLines(errors, yaml);
+
+  /** if we have a syntax error, let's use the yaml library to pull out the value. */
+  $: hasSyntaxError = errors?.some((error) => {
+    return error.message.endsWith(ConfigErrors.Malformed);
+  });
+
+  let mappedSyntaxErrors = [];
+  $: if (hasSyntaxError) {
+    // parse the document and get errors.
+    const parsedYAML = parseDocument(yaml);
+    const syntaxErrors = parsedYAML.errors;
+    mappedSyntaxErrors = syntaxErrors.map((error) => {
+      return {
+        start: error.linePos[0].line,
+        end: error.linePos[1].line,
+        errorMessage: error.message,
+        code: error.code,
+      };
+    });
+  } else {
+    mappedSyntaxErrors = [];
+  }
+
+  const { update, gutter } = createErrorLineGutter();
+
+  $: updater = update([...mappedErrors, ...mappedSyntaxErrors]);
 </script>
 
 <WorkspaceContainer inspector={true} assetID={`${metricsDefName}-config`}>
   <MetricsWorkspaceHeader slot="header" {metricsDefName} {yaml} />
   <div slot="body" use:listenToNodeResize>
+    {#if errors}
+      {#each [...mappedErrors, ...mappedSyntaxErrors] as error}
+        }
+        <div>
+          {JSON.stringify(error)}
+        </div>
+      {:else}
+        nothing
+      {/each}
+    {/if}
     <div
       class="editor-pane bg-gray-100 p-6 flex flex-col"
       style:height="calc(100vh - var(--header-height))"
@@ -94,7 +208,8 @@
         <YAMLEditor
           content={yaml}
           on:update={updateYAML}
-          plugins={[placeholder]}
+          plugins={[placeholder, gutter]}
+          updaters={[updater]}
         />
       </div>
     </div>

@@ -37,7 +37,7 @@ class Placeholder extends WidgetType {
 /// to show when the editor is empty.
 export function rillEditorPlaceholder(
   content: string | HTMLElement,
-  showOnEmpty = false
+  showOnEmpty = true
 ): Extension {
   return ViewPlugin.fromClass(
     class {

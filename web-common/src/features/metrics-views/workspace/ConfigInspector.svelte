@@ -31,7 +31,7 @@
   }
 </script>
 
-{#if modelName && !$modelQuery?.isError && isValidModel}
+{#if modelName && !$modelQuery?.isError && isValidModel && false}
   <ModelInspectorModelProfile {modelName} />
 {:else if modelName !== undefined}
   Model {modelName} not found.
