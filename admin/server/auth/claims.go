@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/authtoken"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 )
 
 // OwnerType is an enum of types of claim owners
@@ -26,6 +28,8 @@ type Claims interface {
 	CanOrganization(ctx context.Context, orgID string, p OrganizationPermission) bool
 	CanProject(ctx context.Context, projectID string, p ProjectPermission) bool
 	Can(ctx context.Context, orgID string, op OrganizationPermission, projID string, pp ProjectPermission) bool
+	OrganizationPermissions(ctx context.Context, orgID string) (*adminv1.OrganizationPermissions, error)
+	ProjectPermissions(ctx context.Context, projectID string) (*adminv1.ProjectPermissions, error)
 }
 
 // claimsContextKey is used to set and get Claims on a request context.
@@ -69,10 +73,33 @@ func (c anonClaims) Can(ctx context.Context, orgID string, op OrganizationPermis
 	return false
 }
 
+func (c anonClaims) OrganizationPermissions(ctx context.Context, orgID string) (*adminv1.OrganizationPermissions, error) {
+	return &adminv1.OrganizationPermissions{}, nil
+}
+
+func (c anonClaims) ProjectPermissions(ctx context.Context, projectID string) (*adminv1.ProjectPermissions, error) {
+	return &adminv1.ProjectPermissions{}, nil
+}
+
 // authTokenClaims represents claims for an admin.AuthToken.
 type authTokenClaims struct {
-	token admin.AuthToken
-	admin *admin.Service
+	token                   admin.AuthToken
+	admin                   *admin.Service
+	orgPermissionsCache     map[string]*adminv1.OrganizationPermissions
+	projectPermissionsCache map[string]*adminv1.ProjectPermissions
+	orgCacheLock            sync.Mutex
+	projectCacheLock        sync.Mutex
+}
+
+func newAuthTokenClaims(token admin.AuthToken, adminService *admin.Service) Claims {
+	return &authTokenClaims{
+		token:                   token,
+		admin:                   adminService,
+		orgPermissionsCache:     make(map[string]*adminv1.OrganizationPermissions),
+		projectPermissionsCache: make(map[string]*adminv1.ProjectPermissions),
+		orgCacheLock:            sync.Mutex{},
+		projectCacheLock:        sync.Mutex{},
+	}
 }
 
 func (c *authTokenClaims) OwnerType() OwnerType {
@@ -97,26 +124,25 @@ func (c *authTokenClaims) CanOrganization(ctx context.Context, orgID string, p O
 	t := c.token.Token().Type
 	switch t {
 	case authtoken.TypeUser:
-		role, err := c.composeOrgPermissions(ctx, orgID)
+		permissions, err := c.OrganizationPermissions(ctx, orgID)
 		if err != nil {
-			// TODO: log error
-			return false
+			panic(fmt.Errorf("failed to get organization permissions: %w", err))
 		}
 		switch p {
 		case ReadOrg:
-			return role.ReadOrg
+			return permissions.ReadOrg
 		case ManageOrg:
-			return role.ManageOrg
+			return permissions.ManageOrg
 		case ReadProjects:
-			return role.ReadProjects
+			return permissions.ReadProjects
 		case CreateProjects:
-			return role.CreateProjects
+			return permissions.CreateProjects
 		case ManageProjects:
-			return role.ManageProjects
+			return permissions.ManageProjects
 		case ReadOrgMembers:
-			return role.ReadOrgMembers
+			return permissions.ReadOrgMembers
 		case ManageOrgMembers:
-			return role.ManageOrgMembers
+			return permissions.ManageOrgMembers
 		default:
 			panic(fmt.Errorf("unexpected organization permission %q", p))
 		}
@@ -131,28 +157,27 @@ func (c *authTokenClaims) CanProject(ctx context.Context, projectID string, p Pr
 	t := c.token.Token().Type
 	switch t {
 	case authtoken.TypeUser:
-		role, err := c.composeProjectPermissions(ctx, projectID)
+		permissions, err := c.ProjectPermissions(ctx, projectID)
 		if err != nil {
-			// TODO: log error
-			return false
+			panic(fmt.Errorf("failed to get project permissions: %w", err))
 		}
 		switch p {
 		case ReadProject:
-			return role.ReadProject
+			return permissions.ReadProject
 		case ManageProject:
-			return role.ManageProject
+			return permissions.ManageProject
 		case ReadProdBranch:
-			return role.ReadProdBranch
+			return permissions.ReadProdBranch
 		case ManageProdBranch:
-			return role.ManageProdBranch
+			return permissions.ManageProdBranch
 		case ReadDevBranches:
-			return role.ReadDevBranches
+			return permissions.ReadDevBranches
 		case ManageDevBranches:
-			return role.ManageDevBranches
+			return permissions.ManageDevBranches
 		case ReadProjectMembers:
-			return role.ReadProjectMembers
+			return permissions.ReadProjectMembers
 		case ManageProjectMembers:
-			return role.ManageProjectMembers
+			return permissions.ManageProjectMembers
 		default:
 			panic(fmt.Errorf("unexpected organization permission %q", p))
 		}
@@ -167,8 +192,14 @@ func (c *authTokenClaims) Can(ctx context.Context, orgID string, op Organization
 	return c.CanOrganization(ctx, orgID, op) || c.CanProject(ctx, projectID, pp)
 }
 
-func (c *authTokenClaims) composeOrgPermissions(ctx context.Context, orgID string) (*database.OrganizationRole, error) {
-	composite := &database.OrganizationRole{}
+func (c *authTokenClaims) OrganizationPermissions(ctx context.Context, orgID string) (*adminv1.OrganizationPermissions, error) {
+	c.orgCacheLock.Lock()
+	if perm, ok := c.orgPermissionsCache[orgID]; ok {
+		return perm, nil
+	}
+	c.orgCacheLock.Unlock()
+
+	composite := &adminv1.OrganizationPermissions{}
 	roles, err := c.admin.DB.ResolveOrganizationMemberUserRoles(ctx, c.token.OwnerID(), orgID)
 	if err != nil {
 		return nil, err
@@ -176,11 +207,37 @@ func (c *authTokenClaims) composeOrgPermissions(ctx context.Context, orgID strin
 	for _, role := range roles {
 		composite = unionOrgRoles(composite, role)
 	}
+
+	c.orgCacheLock.Lock()
+	c.orgPermissionsCache[orgID] = composite
+	c.orgCacheLock.Unlock()
 	return composite, nil
 }
 
-func unionOrgRoles(a, b *database.OrganizationRole) *database.OrganizationRole {
-	return &database.OrganizationRole{
+func (c *authTokenClaims) ProjectPermissions(ctx context.Context, projectID string) (*adminv1.ProjectPermissions, error) {
+	c.projectCacheLock.Lock()
+	if perm, ok := c.projectPermissionsCache[projectID]; ok {
+		return perm, nil
+	}
+	c.projectCacheLock.Unlock()
+
+	composite := &adminv1.ProjectPermissions{}
+	roles, err := c.admin.DB.ResolveProjectMemberUserRoles(ctx, c.token.OwnerID(), projectID)
+	if err != nil {
+		return nil, err
+	}
+	for _, role := range roles {
+		composite = unionProjectRoles(composite, role)
+	}
+
+	c.projectCacheLock.Lock()
+	c.projectPermissionsCache[projectID] = composite
+	c.projectCacheLock.Unlock()
+	return composite, nil
+}
+
+func unionOrgRoles(a *adminv1.OrganizationPermissions, b *database.OrganizationRole) *adminv1.OrganizationPermissions {
+	return &adminv1.OrganizationPermissions{
 		ReadOrg:          a.ReadOrg || b.ReadOrg,
 		ManageOrg:        a.ManageOrg || b.ManageOrg,
 		ReadProjects:     a.ReadProjects || b.ReadProjects,
@@ -191,20 +248,8 @@ func unionOrgRoles(a, b *database.OrganizationRole) *database.OrganizationRole {
 	}
 }
 
-func (c *authTokenClaims) composeProjectPermissions(ctx context.Context, projectID string) (*database.ProjectRole, error) {
-	composite := &database.ProjectRole{}
-	roles, err := c.admin.DB.ResolveProjectMemberUserRoles(ctx, c.token.OwnerID(), projectID)
-	if err != nil {
-		return nil, err
-	}
-	for _, role := range roles {
-		composite = unionProjectRoles(composite, role)
-	}
-	return composite, nil
-}
-
-func unionProjectRoles(a, b *database.ProjectRole) *database.ProjectRole {
-	return &database.ProjectRole{
+func unionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *adminv1.ProjectPermissions {
+	return &adminv1.ProjectPermissions{
 		ReadProject:          a.ReadProject || b.ReadProject,
 		ManageProject:        a.ManageProject || b.ManageProject,
 		ReadProdBranch:       a.ReadProdBranch || b.ReadProdBranch,

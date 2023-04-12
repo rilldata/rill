@@ -98,9 +98,15 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
+	projectPermissions, err := claims.ProjectPermissions(ctx, proj.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	if proj.ProductionDeploymentID == nil {
 		return &adminv1.GetProjectResponse{
-			Project: projToDTO(proj, org.Name),
+			Project:            projToDTO(proj, org.Name),
+			ProjectPermissions: projectPermissions,
 		}, nil
 	}
 
@@ -136,6 +142,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		Project:              projToDTO(proj, org.Name),
 		ProductionDeployment: deploymentToDTO(depl),
 		Jwt:                  jwt,
+		ProjectPermissions:   projectPermissions,
 	}, nil
 }
 
