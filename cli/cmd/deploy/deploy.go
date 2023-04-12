@@ -132,7 +132,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				defaultOrg = resp.Name
 				success.Printf("Created organization %q. Use `rill org edit` to change name if required.\n", defaultOrg)
 			} else {
-				info.Printf("Creating project in %q org\n", defaultOrg)
+				info.Printf("Using org: %q\n", defaultOrg)
 			}
 
 			// Check for access to the Github URL
