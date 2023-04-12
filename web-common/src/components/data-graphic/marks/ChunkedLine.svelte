@@ -36,8 +36,6 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   export let delay = 0;
   export let duration = 400;
 
-  export let key;
-
   export let stopOpacity = 0.3;
   // FIXME – this is a different prop than elsewhere
   export let lineColor = "hsla(217,60%, 55%, 1)";
