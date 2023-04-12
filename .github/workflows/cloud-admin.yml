@@ -3,7 +3,7 @@ on:
   push:
     tags:
       - "*"
-    branches: ["netlify"]
+    branches: ["main"]
     paths:
       - ".github/workflows/cloud-admin.yml"
       - "web-admin/**"
