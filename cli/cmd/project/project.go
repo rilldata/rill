@@ -26,22 +26,22 @@ func ProjectCmd(cfg *config.Config) *cobra.Command {
 	return projectCmd
 }
 
-func toTable(projects []*adminv1.Project, org string) []*project {
+func toTable(projects []*adminv1.Project) []*project {
 	projs := make([]*project, 0, len(projects))
 
 	for _, proj := range projects {
-		projs = append(projs, toRow(proj, org))
+		projs = append(projs, toRow(proj))
 	}
 
 	return projs
 }
 
-func toRow(o *adminv1.Project, org string) *project {
+func toRow(o *adminv1.Project) *project {
 	return &project{
 		Name:         o.Name,
 		Public:       o.Public,
 		GithubURL:    o.GithubUrl,
-		Organization: org,
+		Organization: o.OrgName,
 	}
 }
 
