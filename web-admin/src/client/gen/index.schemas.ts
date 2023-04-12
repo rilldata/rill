@@ -241,7 +241,6 @@ export interface V1CreateOrganizationResponse {
 
 export interface V1CreateOrganizationRequest {
   description?: string;
-  id?: string;
   name?: string;
 }
 

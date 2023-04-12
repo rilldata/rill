@@ -204,7 +204,7 @@ func registryStore(t *testing.T) drivers.RegistryStore {
 	require.NoError(t, err)
 	registry, _ := store.RegistryStore()
 
-	err = registry.CreateInstance(context.Background(), &drivers.Instance{ID: "test"})
+	err = registry.CreateInstance(context.Background(), &drivers.Instance{ID: "test", Variables: map[string]string{"allow_host_access": "true"}})
 	require.NoError(t, err)
 
 	return registry

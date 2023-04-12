@@ -58,12 +58,12 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 		return err
 	}
 	inst.ProjectVariables = proj.Variables
-	// this is a hack to set allow_host_credentials
+	// this is a hack to set variables and pass to connectors
 	// ideally the runtime should propagate this flag to connectors.Env
 	if inst.Variables == nil {
 		inst.Variables = make(map[string]string)
 	}
-	inst.Variables["allow_host_credentials"] = strconv.FormatBool(r.opts.AllowHostCredentials)
+	inst.Variables["allow_host_access"] = strconv.FormatBool(r.opts.AllowHostAccess)
 
 	// Create instance
 	err = r.Registry().CreateInstance(ctx, inst)
@@ -174,7 +174,8 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 	if inst.Variables == nil {
 		inst.Variables = make(map[string]string)
 	}
-	inst.Variables["allow_host_credentials"] = strconv.FormatBool(r.opts.AllowHostCredentials)
+	inst.Variables["allow_host_access"] = strconv.FormatBool(r.opts.AllowHostAccess)
+
 	// update the entire instance for now to avoid building queries in some complicated way
 	return r.Registry().EditInstance(ctx, inst)
 }
