@@ -83,13 +83,13 @@ export async function createOrReplaceSource(
   await waitForEntity(page, TestEntityType.Source, name, true);
 }
 
-export async function waitForSource(
+export function waitForSource(
   page: Page,
   name: string,
   columns: Array<string>
-) {
-  return Promise.all([
+): Array<Promise<any>> {
+  return [
     waitForEntity(page, TestEntityType.Source, name, true),
     waitForProfiling(page, name, columns),
-  ]);
+  ];
 }

@@ -16,19 +16,19 @@ describe("sources", () => {
     const { page } = testBrowser;
 
     await Promise.all([
-      waitForAdBids(page, "AdBids"),
+      ...waitForAdBids(page, "AdBids"),
       uploadFile(page, "AdBids.csv"),
     ]);
 
     await Promise.all([
-      waitForAdImpressions(page, "AdImpressions"),
+      ...waitForAdImpressions(page, "AdImpressions"),
       uploadFile(page, "AdImpressions.tsv"),
     ]);
 
     // upload existing table and keep both
     await Promise.all([
       waitForEntity(page, TestEntityType.Source, "AdBids", false),
-      waitForAdBids(page, "AdBids_1"),
+      ...waitForAdBids(page, "AdBids_1"),
       uploadFile(page, "AdBids.csv", true, true),
     ]);
 

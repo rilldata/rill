@@ -5,11 +5,11 @@ import { waitForProfiling, wrapRetryAssertion } from "./helpers";
 import { createModel, updateModelSql } from "./modelHelpers";
 import { waitForSource } from "./sourceHelpers";
 
-export async function waitForAdBids(page: Page, name: string) {
+export function waitForAdBids(page: Page, name: string) {
   return waitForSource(page, name, ["publisher", "domain", "timestamp"]);
 }
 
-export async function waitForAdImpressions(page: Page, name: string) {
+export function waitForAdImpressions(page: Page, name: string) {
   return waitForSource(page, name, ["city", "country"]);
 }
 
