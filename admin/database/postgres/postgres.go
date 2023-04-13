@@ -40,7 +40,7 @@ func (c *connection) Close() error {
 
 func (c *connection) FindOrganizations(ctx context.Context) ([]*database.Organization, error) {
 	var res []*database.Organization
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM organizations ORDER BY name")
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM organizations ORDER BY lower(name)")
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -49,7 +49,7 @@ func (c *connection) FindOrganizations(ctx context.Context) ([]*database.Organiz
 
 func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*database.Organization, error) {
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM organizations WHERE name = $1", name).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM organizations WHERE lower(name)=lower($1)", name).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -116,7 +116,7 @@ func (c *connection) InsertOrganizationFromSeeds(ctx context.Context, nameSeeds 
 
 func (c *connection) UpdateOrganization(ctx context.Context, name, description string) (*database.Organization, error) {
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE organizations SET description=$1, updated_on=now() WHERE name=$2 RETURNING *", description, name).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE organizations SET description=$1, updated_on=now() WHERE lower(name)=lower($2) RETURNING *", description, name).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -124,13 +124,13 @@ func (c *connection) UpdateOrganization(ctx context.Context, name, description s
 }
 
 func (c *connection) DeleteOrganization(ctx context.Context, name string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM organizations WHERE name=$1", name)
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM organizations WHERE lower(name)=lower($1)", name)
 	return parseErr(err)
 }
 
 func (c *connection) FindProjects(ctx context.Context, orgName string) ([]*database.Project, error) {
 	var res []*database.Project
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p JOIN organizations o ON p.org_id = o.id WHERE o.name=$1 ORDER BY p.name", orgName)
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p JOIN organizations o ON p.org_id = o.id WHERE lower(o.name)=lower($1) ORDER BY lower(p.name)", orgName)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -139,7 +139,7 @@ func (c *connection) FindProjects(ctx context.Context, orgName string) ([]*datab
 
 func (c *connection) FindProjectByName(ctx context.Context, orgName, name string) (*database.Project, error) {
 	res := &database.Project{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT p.* FROM projects p JOIN organizations o ON p.org_id = o.id WHERE p.name=$1 AND o.name=$2", name, orgName).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT p.* FROM projects p JOIN organizations o ON p.org_id = o.id WHERE lower(p.name)=lower($1) AND lower(o.name)=lower($2)", name, orgName).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -515,7 +515,7 @@ func (c *connection) UpdateProjectMemberUserRole(ctx context.Context, projectID,
 
 func (c *connection) FindOrganizationRole(ctx context.Context, name string) (*database.OrganizationRole, error) {
 	role := &database.OrganizationRole{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM org_roles WHERE name = $1", name).StructScan(role)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM org_roles WHERE lower(name)=lower($1)", name).StructScan(role)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -558,7 +558,7 @@ func (c *connection) ResolveProjectMemberUserRoles(ctx context.Context, userID, 
 
 func (c *connection) FindProjectRole(ctx context.Context, name string) (*database.ProjectRole, error) {
 	role := &database.ProjectRole{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_roles WHERE name = $1", name).StructScan(role)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_roles WHERE lower(name)=lower($1)", name).StructScan(role)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -661,7 +661,7 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 
 func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID string) ([]*database.Project, error) {
 	var res []*database.Project
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.org_id=$1 ORDER BY p.name", orgID)
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.org_id=$1 ORDER BY lower(p.name)", orgID)
 	if err != nil {
 		return nil, parseErr(err)
 	}
