@@ -43,8 +43,10 @@
 {#if $proj.isSuccess && dashboards?.length > 0}
   <ol>
     {#each dashboards as dashboard}
-      <li class="text-xs text-gray-900 font-medium leading-4 mb-1">
-        <a href="/{organization}/{project}/{dashboard.name}"
+      <li class="mb-1">
+        <a
+          href="/{organization}/{project}/{dashboard.name}"
+          class="text-gray-700 hover:underline text-xs font-medium leading-4"
           >{dashboard.metricsView?.label ?? dashboard.name}</a
         >
       </li>
