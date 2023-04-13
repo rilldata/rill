@@ -130,7 +130,7 @@ func (c *connection) DeleteOrganization(ctx context.Context, name string) error 
 
 func (c *connection) FindProjects(ctx context.Context, orgName string) ([]*database.Project, error) {
 	var res []*database.Project
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p JOIN organizations o ON p.organization_id = o.id WHERE o.name=$1 ORDER BY p.name", orgName)
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p JOIN organizations o ON p.org_id = o.id WHERE o.name=$1 ORDER BY p.name", orgName)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -139,7 +139,7 @@ func (c *connection) FindProjects(ctx context.Context, orgName string) ([]*datab
 
 func (c *connection) FindProjectByName(ctx context.Context, orgName, name string) (*database.Project, error) {
 	res := &database.Project{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT p.* FROM projects p JOIN organizations o ON p.organization_id = o.id WHERE p.name=$1 AND o.name=$2", name, orgName).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT p.* FROM projects p JOIN organizations o ON p.org_id = o.id WHERE p.name=$1 AND o.name=$2", name, orgName).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -158,7 +158,7 @@ func (c *connection) FindProjectByGithubURL(ctx context.Context, githubURL strin
 func (c *connection) InsertProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (organization_id, name, description, public, region, production_olap_driver, production_olap_dsn, production_slots, production_branch, production_variables, github_url, github_installation_id)
+		INSERT INTO projects (org_id, name, description, public, region, production_olap_driver, production_olap_dsn, production_slots, production_branch, production_variables, github_url, github_installation_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
 		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.Region, opts.ProductionOLAPDriver, opts.ProductionOLAPDSN, opts.ProductionSlots, opts.ProductionBranch, database.Variables(opts.ProductionVariables), opts.GithubURL, opts.GithubInstallationID,
 	).StructScan(res)
@@ -222,9 +222,13 @@ func (c *connection) InsertUser(ctx context.Context, email, displayName, photoUR
 	return res, nil
 }
 
-func (c *connection) UpdateUser(ctx context.Context, id, displayName, photoURL string) (*database.User, error) {
+func (c *connection) UpdateUser(ctx context.Context, id, displayName, photoURL, githubUsername string) (*database.User, error) {
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$1, photo_url=$2, updated_on=now() WHERE id=$3 RETURNING *", displayName, photoURL, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, updated_on=now() WHERE id=$1 RETURNING *",
+		id,
+		displayName,
+		photoURL,
+		githubUsername).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -336,29 +340,6 @@ func (c *connection) DeleteAuthCode(ctx context.Context, deviceCode string) erro
 		return fmt.Errorf("problem in deleting auth code, expected 1 row to be affected, got %d", rows)
 	}
 	return nil
-}
-
-func (c *connection) FindUserGithubInstallation(ctx context.Context, userID string, installationID int64) (*database.UserGithubInstallation, error) {
-	res := &database.UserGithubInstallation{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM users_github_installations WHERE user_id=$1 AND installation_id=$2", userID, installationID).StructScan(res)
-	if err != nil {
-		return nil, parseErr(err)
-	}
-	return res, nil
-}
-
-func (c *connection) UpsertUserGithubInstallation(ctx context.Context, userID string, installationID int64) error {
-	// TODO: Handle updated_on
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_github_installations (user_id, installation_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", userID, installationID)
-	if err != nil {
-		return parseErr(err)
-	}
-	return nil
-}
-
-func (c *connection) DeleteUserGithubInstallations(ctx context.Context, installationID int64) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM users_github_installations WHERE installation_id=$1", installationID)
-	return parseErr(err)
 }
 
 func (c *connection) FindDeployments(ctx context.Context, projectID string) ([]*database.Deployment, error) {
@@ -651,6 +632,10 @@ func (c *connection) FindOrganizationsForUser(ctx context.Context, userID string
 		SELECT o.* FROM organizations o JOIN usergroups_orgs_roles ugor ON o.id = ugor.org_id
 		JOIN users_usergroups uug ON ugor.usergroup_id = uug.usergroup_id
 		WHERE uug.user_id = $1
+		UNION
+		SELECT o.* FROM organizations o JOIN projects p ON o.id = p.org_id
+		JOIN users_projects_roles upr ON p.id = upr.project_id
+		WHERE upr.user_id = $1
 	`, userID)
 	if err != nil {
 		return nil, parseErr(err)
@@ -668,6 +653,53 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 		JOIN users_usergroups uug ON upgr.usergroup_id = uug.usergroup_id
 		WHERE uug.user_id = $1
 	`, userID)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID string) ([]*database.Project, error) {
+	var res []*database.Project
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.org_id=$1 ORDER BY p.name", orgID)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) CheckOrganizationProjectsHasMemberUser(ctx context.Context, orgID, userID string) (bool, error) {
+	var res bool
+	err := c.getDB(ctx).QueryRowxContext(ctx,
+		"SELECT EXISTS (SELECT 1 FROM projects p JOIN users_projects_roles upr ON p.id = upr.project_id WHERE p.org_id = $1 AND upr.user_id = $2 limit 1)", orgID, userID).StructScan(&res)
+	if err != nil {
+		return false, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) CheckOrganizationHasPublicProjects(ctx context.Context, orgID string) (bool, error) {
+	var res bool
+	err := c.getDB(ctx).QueryRowxContext(ctx,
+		"SELECT EXISTS (SELECT 1 FROM projects p WHERE p.org_id = $1 AND p.public = true limit 1)", orgID).StructScan(&res)
+	if err != nil {
+		return false, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectsForProjectMemberUser(ctx context.Context, orgID, userID string) ([]*database.Project, error) {
+	var res []*database.Project
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p JOIN users_projects_roles upr ON p.id = upr.project_id WHERE p.org_id = $1 AND upr.user_id = $2", orgID, userID)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID string) ([]*database.Project, error) {
+	var res []*database.Project
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.org_id = $1 AND p.public = true", orgID)
 	if err != nil {
 		return nil, parseErr(err)
 	}

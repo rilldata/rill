@@ -5,7 +5,6 @@
   export let dark = false;
   export let customStyle = "";
   export let value;
-  export let type = "RILL_CHANGE";
 
   $: isNegative = typeof value === "string" && value?.startsWith("-");
 </script>

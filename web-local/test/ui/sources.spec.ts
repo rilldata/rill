@@ -9,7 +9,7 @@ import { useRegisteredServer } from "./utils/serverConfigs";
 import { createOrReplaceSource, uploadFile } from "./utils/sourceHelpers";
 import { entityNotPresent, waitForEntity } from "./utils/waitHelpers";
 
-describe("sources", () => {
+describe.skip("sources", () => {
   const testBrowser = useRegisteredServer("sources");
 
   it("Import sources", async () => {

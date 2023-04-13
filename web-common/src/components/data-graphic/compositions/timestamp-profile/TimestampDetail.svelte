@@ -69,9 +69,6 @@
   // the gap b/t text nodes
   export let textGap = 4;
 
-  /** the datatype of this column */
-  export let type: string;
-
   /** zoom elements */
   export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
 
@@ -441,6 +438,9 @@
           in:fly={{ duration: 200, x: 16, delay: 200 }}
           out:fly={{ duration: 200, x: 16 }}
           use:outline
+          on:keydown={() => {
+            /** no-op */
+          }}
           on:click={() => {
             zoomedXStart = undefined;
             zoomedXEnd = undefined;

@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sort"
 	"time"
 
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -16,27 +18,65 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (s *Server) ListProjects(ctx context.Context, req *adminv1.ListProjectsRequest) (*adminv1.ListProjectsResponse, error) {
+func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.ListProjectsForOrganizationRequest) (*adminv1.ListProjectsForOrganizationResponse, error) {
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
 
-	projs, err := s.admin.DB.FindProjectsForUser(ctx, claims.OwnerID())
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "org not found")
+		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	dtos := make([]*adminv1.Project, len(projs))
-	for i, proj := range projs {
-		dtos[i] = projToDTO(proj)
+	orgProjects := map[string]*database.Project{}
+	// add public projects
+	publicProjects, err := s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	for _, proj := range publicProjects {
+		orgProjects[proj.Name] = proj
 	}
 
-	return &adminv1.ListProjectsResponse{Projects: dtos}, nil
+	if !claims.CanOrganization(ctx, org.ID, auth.ReadProjects) {
+		// check if the user is an outside member of a project in the org
+		if claims.OwnerType() == auth.OwnerTypeUser {
+			projs, err := s.admin.DB.FindProjectsForProjectMemberUser(ctx, org.ID, claims.OwnerID())
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			for _, proj := range projs {
+				orgProjects[proj.Name] = proj
+			}
+		}
+		if len(orgProjects) == 0 {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to read projects")
+		}
+	} else {
+		projs, err := s.admin.DB.FindProjectsForOrganization(ctx, org.ID)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		for _, proj := range projs {
+			orgProjects[proj.Name] = proj
+		}
+	}
+
+	dtos := make([]*adminv1.Project, len(orgProjects))
+	i := 0
+	for _, proj := range orgProjects {
+		dtos[i] = projToDTO(proj, org.Name)
+		i++
+	}
+	// sort dtos by name
+	sort.Slice(dtos, func(i, j int) bool { return dtos[i].Name < dtos[j].Name })
+
+	return &adminv1.ListProjectsForOrganizationResponse{Projects: dtos}, nil
 }
 
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
-	_, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "org not found")
@@ -60,7 +100,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 	if proj.ProductionDeploymentID == nil {
 		return &adminv1.GetProjectResponse{
-			Project: projToDTO(proj),
+			Project: projToDTO(proj, org.Name),
 		}, nil
 	}
 
@@ -93,7 +133,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	}
 
 	return &adminv1.GetProjectResponse{
-		Project:              projToDTO(proj),
+		Project:              projToDTO(proj, org.Name),
 		ProductionDeployment: deploymentToDTO(depl),
 		Jwt:                  jwt,
 	}, nil
@@ -119,14 +159,10 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
 	}
 
-	// Get Github installation ID for the repo
-	installationID, ok, err := s.admin.GetUserGithubInstallation(ctx, claims.OwnerID(), req.GithubUrl)
+	// check github app is installed and caller has access on the repo
+	installationID, err := s.fetchInstallationID(ctx, req.GithubUrl, claims.OwnerID())
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Github installation: %w", err)
-	}
-	// Check that the user has access to the installation
-	if !ok {
-		return nil, fmt.Errorf("you have not granted Rill access to %q", req.GithubUrl)
+		return nil, err
 	}
 
 	// TODO: Validate that req.ProductionBranch is an actual branch.
@@ -161,7 +197,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	return &adminv1.CreateProjectResponse{
-		Project:    projToDTO(proj),
+		Project:    projToDTO(proj, org.Name),
 		ProjectUrl: projectURL,
 	}, nil
 }
@@ -205,14 +241,11 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
 
-	// If changing the Github URL, check the caller has access
+	// If changing the Github URL, check github app is installed and caller has access on the repo
 	if safeStr(proj.GithubURL) != req.GithubUrl {
-		_, ok, err := s.admin.GetUserGithubInstallation(ctx, claims.OwnerID(), req.GithubUrl)
+		_, err = s.fetchInstallationID(ctx, req.GithubUrl, claims.OwnerID())
 		if err != nil {
-			return nil, fmt.Errorf("failed to get Github installation: %w", err)
-		}
-		if !ok {
-			return nil, fmt.Errorf("you have not granted Rill access to %q", req.GithubUrl)
+			return nil, err
 		}
 	}
 
@@ -235,7 +268,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 
 	return &adminv1.UpdateProjectResponse{
-		Project: projToDTO(proj),
+		Project: projToDTO(proj, req.OrganizationName),
 	}, nil
 }
 
@@ -406,12 +439,48 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 	return &adminv1.GetProjectVariablesResponse{Variables: proj.ProductionVariables}, nil
 }
 
-func projToDTO(p *database.Project) *adminv1.Project {
+// fetchInstallationID returns a valid installation ID iff app is installed and user is a collaborator of the repo
+func (s *Server) fetchInstallationID(ctx context.Context, githubURL, userID string) (int64, error) {
+	// Get Github installation ID for the repo
+	installationID, err := s.admin.GetGithubInstallation(ctx, githubURL)
+	if err != nil {
+		if errors.Is(err, admin.ErrGithubInstallationNotFound) {
+			return 0, status.Errorf(codes.PermissionDenied, "you have not granted Rill access to %q", githubURL)
+		}
+
+		return 0, status.Errorf(codes.Internal, "failed to get Github installation: %q", err.Error())
+	}
+
+	if installationID == 0 {
+		return 0, status.Errorf(codes.Internal, "you have not granted Rill access to %q", githubURL)
+	}
+
+	user, err := s.admin.DB.FindUser(ctx, userID)
+	if err != nil {
+		return 0, status.Error(codes.Internal, err.Error())
+	}
+
+	// check that user is a collaborator on the repo
+	_, err = s.admin.LookupGithubRepoForUser(ctx, installationID, githubURL, user.GithubUsername)
+	if err != nil {
+		if errors.Is(err, admin.ErrUserIsNotCollaborator) {
+			return 0, status.Errorf(codes.PermissionDenied, "you are not collaborator to the repo %q", githubURL)
+		}
+
+		return 0, status.Error(codes.Internal, err.Error())
+	}
+
+	return installationID, nil
+}
+
+func projToDTO(p *database.Project, orgName string) *adminv1.Project {
 	return &adminv1.Project{
 		Id:                     p.ID,
 		Name:                   p.Name,
 		Description:            p.Description,
 		Public:                 p.Public,
+		OrgId:                  p.OrganizationID,
+		OrgName:                orgName,
 		Region:                 p.Region,
 		ProductionOlapDriver:   p.ProductionOLAPDriver,
 		ProductionOlapDsn:      p.ProductionOLAPDSN,

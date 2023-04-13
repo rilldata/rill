@@ -42,8 +42,8 @@ service AdminService {
     };
   }
 
-  // ListProjects lists all the projects currently available for given organizations
-  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
+  // ListProjectsForOrganization lists all the projects currently available for given organizations
+  rpc ListProjectsForOrganization(ListProjectsForOrganizationRequest) returns (ListProjectsForOrganizationResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects"};
   }
 
@@ -206,13 +206,13 @@ message UpdateOrganizationResponse {
   Organization organization = 1;
 }
 
-message ListProjectsRequest {
+message ListProjectsForOrganizationRequest {
   string organization_name = 1;
   uint32 page_size = 2;
   string page_token = 3;
 }
 
-message ListProjectsResponse {
+message ListProjectsForOrganizationResponse {
   repeated Project projects = 1;
   string next_page_token = 2;
 }
@@ -312,6 +312,8 @@ message Project {
   string name = 2; // Unique in organization
   string description = 3;
   bool public = 4;
+  string org_id = 15;
+  string org_name = 16;
   string region = 12;
   string production_olap_driver = 13;
   string production_olap_dsn = 14;
