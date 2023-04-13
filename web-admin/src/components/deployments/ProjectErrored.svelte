@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ErroredIcon from "@rilldata/web-common/components/icons/ErroredIcon.svelte";
+  import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
 
   export let organization: string;
   export let project: string;
@@ -9,7 +9,7 @@
   class="flex flex-col justify-center items-center h-3/5 space-y-6 m-auto"
   style="max-width: 400px"
 >
-  <ErroredIcon size="7em" className="text-gray-200" />
+  <CancelCircleInverse size="7em" className="text-gray-200" />
   <h1 class="text-xl font-normal text-gray-800">
     Your dashboard isn't working right now.
   </h1>

@@ -7,8 +7,8 @@
     createAdminServiceGetProject,
     V1DeploymentStatus,
   } from "../../../../client";
-  import Building from "../../../../components/deployments/Building.svelte";
-  import Errored from "../../../../components/deployments/Errored.svelte";
+  import ProjectBuilding from "../../../../components/deployments/ProjectBuilding.svelte";
+  import ProjectErrored from "../../../../components/deployments/ProjectErrored.svelte";
 
   // TODO: add 404 logic as in `web-local`'s `dashboard/[name]/+page.svelte`
 
@@ -49,9 +49,9 @@
 </svelte:head>
 
 {#if isProjectBuilding}
-  <Building organization={org} project={proj} />
+  <ProjectBuilding organization={org} project={proj} />
 {:else if isProjectErrored}
-  <Errored organization={org} project={proj} />
+  <ProjectErrored organization={org} project={proj} />
 {:else if isProjectOK}
   <Dashboard leftMargin={"44px"} hasTitle={false} metricViewName={dash} />
 {/if}
