@@ -130,7 +130,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			cmdutil.SuccessPrinter("Renamed project \n")
-			cmdutil.TablePrinter(toRow(updatedProj.Project, cfg.Org))
+			cmdutil.TablePrinter(toRow(updatedProj.Project))
 
 			return nil
 		},
