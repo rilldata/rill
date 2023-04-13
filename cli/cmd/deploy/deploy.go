@@ -24,7 +24,6 @@ import (
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
@@ -357,7 +356,7 @@ func orgNamePrompt(ctx context.Context, client *adminclient.Client) (string, err
 					return fmt.Errorf("empty name")
 				}
 
-				exist, err := orgNameExists(ctx, client, name)
+				exist, err := cmdutil.OrgNameExists(ctx, client, name)
 				if err != nil {
 					return fmt.Errorf("org name %q is already taken", name)
 				}
@@ -377,19 +376,6 @@ func orgNamePrompt(ctx context.Context, client *adminclient.Client) (string, err
 	}
 
 	return name, nil
-}
-
-func orgNameExists(ctx context.Context, client *adminclient.Client, name string) (bool, error) {
-	resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
-	if err != nil {
-		if st, ok := status.FromError(err); ok {
-			if st.Code() == codes.NotFound {
-				return false, nil
-			}
-		}
-		return false, err
-	}
-	return resp.Organization.Name == name, nil
 }
 
 func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {

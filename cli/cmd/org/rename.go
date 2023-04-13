@@ -19,7 +19,14 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Rename",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
 			var orgName string
+
+			client, err := cmdutil.Client(cfg)
+			if err != nil {
+				return err
+			}
+			defer client.Close()
 
 			if len(args) > 0 {
 				orgName = args[0]
@@ -36,8 +43,18 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 							if name == "" {
 								return fmt.Errorf("empty name")
 							}
-							exists := name == cfg.Org
-							if exists {
+
+							exist, err := cmdutil.OrgNameExists(ctx, client, name)
+							if err != nil {
+								return fmt.Errorf("org name %q is already taken", name)
+							}
+
+							if exist {
+								// this should always be true but adding this check from completeness POV
+								return fmt.Errorf("org with name %q already exists", name)
+							}
+
+							if name == cfg.Org {
 								return fmt.Errorf("org with name %v is same as current/default org name", name)
 							}
 							return nil
@@ -55,7 +72,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				Message: fmt.Sprintf("Do you want to rename %s to %s?", color.YellowString(cfg.Org), color.YellowString(orgName)),
 			}
 
-			err := survey.AskOne(prompt, &confirm)
+			err = survey.AskOne(prompt, &confirm)
 			if err != nil {
 				return err
 			}
@@ -63,12 +80,6 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			if !confirm {
 				return nil
 			}
-
-			client, err := cmdutil.Client(cfg)
-			if err != nil {
-				return err
-			}
-			defer client.Close()
 
 			resp, err := client.GetOrganization(context.Background(), &adminv1.GetOrganizationRequest{Name: cfg.Org})
 			if err != nil {

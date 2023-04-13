@@ -1,8 +1,6 @@
 package project
 
 import (
-	"context"
-
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -18,20 +16,22 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: "Edit",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
 
-			resp, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: args[0]})
+			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: args[0]})
 			if err != nil {
 				return err
 			}
 
 			proj := resp.Project
 
-			updatedProj, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
+			updatedProj, err := client.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
 				Id:               proj.Id,
 				OrganizationName: cfg.Org,
 				Name:             proj.Name,
