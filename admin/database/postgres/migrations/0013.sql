@@ -2,7 +2,7 @@ DROP INDEX organizations_name_idx;
 CREATE UNIQUE INDEX organizations_name_idx ON organizations (lower(name));
 
 DROP INDEX projects_name_idx;
-CREATE UNIQUE INDEX projects_name_idx ON projects (organization_id, lower(name));
+CREATE UNIQUE INDEX projects_name_idx ON projects (org_id, lower(name));
 
 DROP INDEX org_roles_name_idx;
 CREATE UNIQUE INDEX org_roles_name_idx ON org_roles (lower(name));
