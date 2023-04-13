@@ -5,7 +5,7 @@
 
   let remote;
   let githubUsername;
-  let user
+  let user;
 
   async function init() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -21,7 +21,7 @@
       window.location.href =
         ADMIN_URL + "/auth/login?redirect=" + window.location.href;
     } else {
-      user = data.user
+      user = data.user;
     }
   }
 
@@ -42,7 +42,8 @@
   <div class="flex flex-col justify-center items-center h-3/5">
     <h1 class="text-3xl font-medium text-gray-800 mb-4">Connect to Github</h1>
     <p class="text-lg text-gray-700 text-2xl mb-4">
-      Your authorised github user {@html githubUsername} is not a collaborator to repo {@html remote}.<br>
+      Your authorised github user {@html githubUsername} is not a collaborator to
+      repo {@html remote}.<br />
       Click the button below to re-authorise/authorise another account.
     </p>
     <div class="mt-4">
