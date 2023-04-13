@@ -159,6 +159,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
 	}
 
+	// check github app is installed and caller has access on the repo
 	installationID, err := s.fetchInstallationID(ctx, req.GithubUrl, claims.OwnerID())
 	if err != nil {
 		return nil, err
@@ -240,7 +241,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
 
-	// If changing the Github URL, check github app is installed on the repo
+	// If changing the Github URL, check github app is installed and caller has access on the repo
 	if safeStr(proj.GithubURL) != req.GithubUrl {
 		_, err = s.fetchInstallationID(ctx, req.GithubUrl, claims.OwnerID())
 		if err != nil {
@@ -419,14 +420,14 @@ func (s *Server) fetchInstallationID(ctx context.Context, githubURL, userID stri
 	installationID, err := s.admin.GetGithubInstallation(ctx, githubURL)
 	if err != nil {
 		if errors.Is(err, admin.ErrGithubInstallationNotFound) {
-			return 0, status.Error(codes.PermissionDenied, fmt.Sprintf("you have not granted Rill access to %q", githubURL))
+			return 0, status.Errorf(codes.PermissionDenied, "you have not granted Rill access to %q", githubURL)
 		}
 
-		return 0, fmt.Errorf("failed to get Github installation: %w", err)
+		return 0, status.Errorf(codes.Internal, "failed to get Github installation: %q", err.Error())
 	}
 
 	if installationID == 0 {
-		return 0, fmt.Errorf("you have not granted Rill access to %q", githubURL)
+		return 0, status.Errorf(codes.Internal, "you have not granted Rill access to %q", githubURL)
 	}
 
 	user, err := s.admin.DB.FindUser(ctx, userID)
@@ -442,7 +443,7 @@ func (s *Server) fetchInstallationID(ctx context.Context, githubURL, userID stri
 	_, err = s.admin.LookupGithubRepoForUser(ctx, installationID, githubURL, user.GithubUsername)
 	if err != nil {
 		if errors.Is(err, admin.ErrUserIsNotCollaborator) {
-			return 0, status.Error(codes.PermissionDenied, fmt.Sprintf("you are not collaborator to the repo %q", githubURL))
+			return 0, status.Errorf(codes.PermissionDenied, "you are not collaborator to the repo %q", githubURL)
 		}
 
 		return 0, status.Error(codes.Internal, err.Error())

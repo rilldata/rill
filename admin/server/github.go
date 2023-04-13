@@ -134,7 +134,7 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request, pathParam
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(r.Context())
 	if claims.OwnerType() != auth.OwnerTypeUser {
-		// TODO: It should redirect to the auth site, with a redirect back to here after successful auth.
+		// redirect to the auth site, with a redirect back to here after successful auth.
 		redirectURL, err := s.urls.authLoginURL(r.URL.RequestURI())
 		if err != nil {
 			http.Error(w, "failed to generate URL", http.StatusInternalServerError)
@@ -173,9 +173,9 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request, pathParam
 //   - navigate to success page
 //
 // If user requests the app
-//   - verify the user is a collaborator else return unauthorised
 //   - Save user's github username in the users table
-//   - navigate to success page
+//   - verify the user is a collaborator else return unauthorised
+//   - navigate to request page
 func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	ctx := r.Context()
 
@@ -236,18 +236,6 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	// verify there is no spoofing and the user is a collaborator to the repo
-	isCollaborator, err := s.isCollaborator(ctx, account, repo, githubClient, githubUser)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to verify ownership: %s", err), http.StatusUnauthorized)
-		return
-	}
-
-	if !isCollaborator {
-		http.Error(w, "unauthorised user", http.StatusUnauthorized)
-		return
-	}
-
 	if setupAction == "request" {
 		// access requested
 		redirectURL, err := s.urls.githubConnectRequestURL(remoteURL)
@@ -257,6 +245,18 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 		}
 
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+		return
+	}
+
+	// verify there is no spoofing and the user is a collaborator to the repo
+	isCollaborator, err := s.isCollaborator(ctx, account, repo, githubClient, githubUser)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to verify ownership: %s", err), http.StatusUnauthorized)
+		return
+	}
+
+	if !isCollaborator {
+		http.Error(w, "unauthorised user", http.StatusUnauthorized)
 		return
 	}
 
