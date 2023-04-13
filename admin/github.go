@@ -5,68 +5,76 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"path"
 	"strings"
 
 	"github.com/bradleyfalzon/ghinstallation"
-	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/database"
-	"go.uber.org/zap"
+	"github.com/rilldata/rill/admin/pkg/gitutil"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-// ProcessGithubInstallation tracks a confirmed relationship between a user and an installation of the Github App.
-func (s *Service) ProcessUserGithubInstallation(ctx context.Context, userID string, installationID int64) error {
-	return s.DB.UpsertUserGithubInstallation(ctx, userID, installationID)
-}
+var (
+	ErrUserIsNotCollaborator      = fmt.Errorf("user is not a collaborator for the repository")
+	ErrGithubInstallationNotFound = fmt.Errorf("github installation not found")
+)
 
-// GetUserGithubInstallation returns a Github installation ID iff the Github App is installed on the repository AND we have a confirmed relationship between the user and that installation.
+// GetGithubInstallation returns a non zero Github installation ID iff the Github App is installed on the repository.
 // The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
-func (s *Service) GetUserGithubInstallation(ctx context.Context, userID, githubURL string) (int64, bool, error) {
-	account, repo, ok := splitGithubURL(githubURL)
+func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (int64, error) {
+	account, repo, ok := gitutil.SplitGithubURL(githubURL)
 	if !ok {
-		return 0, false, fmt.Errorf("invalid Github URL %q", githubURL)
+		return 0, fmt.Errorf("invalid Github URL %q", githubURL)
 	}
 
+	// TODO :: handle suspended case
 	installation, resp, err := s.github.Apps.FindRepositoryInstallation(ctx, account, repo)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
 			// We don't have an installation on the repo
-			return 0, false, nil
+			return 0, ErrGithubInstallationNotFound
 		}
-		return 0, false, fmt.Errorf("failed to lookup repo info: %w", err)
+		return 0, fmt.Errorf("failed to lookup repo info: %w", err)
 	}
 
 	installationID := installation.GetID()
 	if installationID == 0 {
 		// Do we have to check for this?
-		return 0, false, fmt.Errorf("received invalid installation from Github")
-	}
-
-	_, err = s.DB.FindUserGithubInstallation(ctx, userID, installationID)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			// The user doesn't have access to the installation
-			return 0, false, nil
-		}
-		return 0, false, err // Unexpected error
+		return 0, fmt.Errorf("received invalid installation from Github")
 	}
 
 	// The user has access to the installation
-	return installationID, true, nil
+	return installationID, nil
 }
 
-// LookupGithubRepo calls the Github API using an installation token to get information about a Github repo.
+// LookupGithubRepoForUser returns a Github repository iff the Github App is installed on the repository and user is a collaborator of the project.
 // The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
-func (s *Service) LookupGithubRepo(ctx context.Context, installationID int64, githubURL string) (*github.Repository, error) {
-	account, repo, ok := splitGithubURL(githubURL)
+func (s *Service) LookupGithubRepoForUser(ctx context.Context, installationID int64, githubURL, gitUsername string) (*github.Repository, error) {
+	account, repo, ok := gitutil.SplitGithubURL(githubURL)
 	if !ok {
 		return nil, fmt.Errorf("invalid Github URL %q", githubURL)
+	}
+
+	if gitUsername == "" {
+		return nil, fmt.Errorf("invalid gitUsername %q", gitUsername)
 	}
 
 	gh, err := s.githubInstallationClient(installationID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github installation client: %w", err)
+	}
+
+	isColab, resp, err := gh.Repositories.IsCollaborator(ctx, account, repo, gitUsername)
+	if err != nil {
+		if resp.StatusCode == http.StatusUnauthorized {
+			return nil, ErrUserIsNotCollaborator
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if !isColab {
+		return nil, ErrUserIsNotCollaborator
 	}
 
 	repository, _, err := gh.Repositories.Get(ctx, account, repo)
@@ -134,17 +142,10 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 }
 
 func (s *Service) processGithubInstallationEvent(ctx context.Context, event *github.InstallationEvent) error {
-	// We also get event.Repositories if needed
-	installationID := *event.GetInstallation().ID
-
 	switch event.GetAction() {
 	case "created", "unsuspend", "suspend", "new_permissions_accepted":
 		// TODO: Should we do anything for unsuspend?
 	case "deleted":
-		err := s.DB.DeleteUserGithubInstallations(ctx, installationID)
-		if err != nil {
-			s.logger.Error("failed to delete github installations", zap.Int64("installation_id", installationID), zap.Error(err))
-		}
 	}
 
 	return nil
@@ -163,23 +164,4 @@ func (s *Service) githubInstallationClient(installationID int64) (*github.Client
 		return nil, err
 	}
 	return github.NewClient(&http.Client{Transport: itr}), nil
-}
-
-func splitGithubURL(githubURL string) (account, repo string, ok bool) {
-	ep, err := transport.NewEndpoint(githubURL)
-	if err != nil {
-		return "", "", false
-	}
-
-	if ep.Host != "github.com" {
-		return "", "", false
-	}
-
-	account, repo = path.Split(ep.Path)
-	account = strings.Trim(account, "/")
-	if account == "" || repo == "" || strings.Contains(account, "/") {
-		return "", "", false
-	}
-
-	return account, repo, true
 }

@@ -3,7 +3,6 @@ package org
 import (
 	"context"
 
-	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
@@ -25,13 +24,22 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			org, err := Create(client, args[0], description)
+			res, err := client.CreateOrganization(context.Background(), &adminv1.CreateOrganizationRequest{
+				Name:        args[0],
+				Description: description,
+			})
+			if err != nil {
+				return err
+			}
+
+			// Switching to the created org
+			err = dotrill.SetDefaultOrg(res.Organization.Name)
 			if err != nil {
 				return err
 			}
 
 			cmdutil.SuccessPrinter("Created organization \n")
-			cmdutil.TablePrinter(toRow(org))
+			cmdutil.TablePrinter(toRow(res.Organization))
 			return nil
 		},
 	}
@@ -39,23 +47,4 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 	createCmd.Flags().StringVar(&description, "description", "", "Description")
 
 	return createCmd
-}
-
-// Create org and run any post creation steps
-func Create(adminClient *client.Client, name, description string) (*adminv1.Organization, error) {
-	resp, err := adminClient.CreateOrganization(context.Background(), &adminv1.CreateOrganizationRequest{
-		Name:        name,
-		Description: description,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Switching to the created org
-	err = dotrill.SetDefaultOrg(resp.Organization.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp.Organization, nil
 }
