@@ -12,7 +12,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
 	"github.com/go-git/go-git/v5"
-	"github.com/rilldata/rill/admin/client"
+	adminclient "github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/cmd/org"
@@ -41,12 +41,14 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 	deployCmd := &cobra.Command{
 		Use:   "deploy",
-		Short: "Guided tour for deploying rill projects to rill cloud",
+		Short: "Deploy project to Rill Cloud",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
 			warn := color.New(color.Bold).Add(color.FgYellow)
 			info := color.New(color.Bold).Add(color.FgWhite)
 			success := color.New(color.Bold).Add(color.FgGreen)
+
 			if projectPath != "" {
 				var err error
 				projectPath, err = fileutil.ExpandHome(projectPath)
@@ -55,91 +57,77 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			// log in if not logged in
-			if !cfg.IsAuthenticated() {
-				warn.Println("In order to deploy to Rill Cloud, you must login.")
-				time.Sleep(2 * time.Second)
-				if err := auth.Login(ctx, cfg); err != nil {
-					return fmt.Errorf("failed to login %w", err)
-				}
-			}
-			adminClient, err := cmdutil.Client(cfg)
-			if err != nil {
-				return err
-			}
-
-			if cfg.Org == "" {
-				// no default org set by user
-				res, err := adminClient.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
-				if err != nil {
-					return fmt.Errorf("listing orgs failed with error: %w", err)
-				}
-
-				orgs := res.Organizations
-
-				if len(orgs) == 1 {
-					if err := dotrill.SetDefaultOrg(orgs[0].Name); err != nil {
-						return err
-					}
-				}
-
-				if len(orgs) > 1 {
-					switchCmd := org.SwitchCmd(cfg)
-					switchCmd.SetContext(ctx)
-					if err := switchCmd.RunE(switchCmd, nil); err != nil {
-						return fmt.Errorf("org selection failed %w", err)
-					}
-				}
-			}
-
-			// verify current directory has rill project
+			// Verify that the projectPath contains a Rill project
 			if !hasRillProject(projectPath) {
 				fullpath, err := filepath.Abs(projectPath)
 				if err != nil {
 					return err
 				}
 
-				warn.Printf("\nCurrent path `%s` doesn't have a valid rill project.\n\nPlease run `rill deploy` from correct path or pass correct path via `--project` flag.\n\n", fullpath)
-				warn.Printf("In case there is no valid rill project present, Please use `rill init` to create an empty rill project.\n\n")
+				warn.Printf("Directory at %q doesn't contain a valid Rill project.\n\n", fullpath)
+				warn.Printf("Run \"rill deploy\" from a Rill project directory or use \"--project\" to pass a project path.\n")
+				warn.Printf("Run \"rill start\" to initialize a new Rill project.\n")
 				return nil
 			}
 
-			// verify project dir is a git repo with remote on github
-			githubURL, err := extractRemote(projectPath)
+			// Verify projectPath is a Git repo with remote on Github
+			githubURL, err := extractGitRemote(projectPath)
 			if err != nil {
 				if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
 					info.Print(githubSetupMsg)
 					return nil
 				}
-
 				return err
 			}
 
-			account, repo, ok := gitutil.SplitGithubURL(githubURL)
+			// Extract Github account and repo name from remote URL
+			ghAccount, ghRepo, ok := gitutil.SplitGithubURL(githubURL)
 			if !ok {
 				return fmt.Errorf("invalid remote %q", githubURL)
 			}
 
-			defaultOrg, err := dotrill.GetDefaultOrg()
+			// If user is not authenticated, run login flow
+			if !cfg.IsAuthenticated() {
+				warn.Println("You are not yet authenticated. Opening browser to log in or sign up for Rill Cloud.")
+				time.Sleep(2 * time.Second)
+				if err := auth.Login(ctx, cfg); err != nil {
+					return fmt.Errorf("login failed: %w", err)
+				}
+				fmt.Println("")
+			}
+			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
 
-			if defaultOrg == "" {
-				// create an org for the user
-				resp, err := createOrg(ctx, adminClient, account)
+			// Set a default org for the user if necessary
+			// (If user is not in an org, we'll create one based on their Github account later in the flow.)
+			if cfg.Org == "" {
+				res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
 				if err != nil {
-					return fmt.Errorf("org creation failed with error: %w", err)
+					return fmt.Errorf("listing orgs failed: %w", err)
 				}
 
-				defaultOrg = resp.Name
-				success.Printf("Created organization %q. Use `rill org edit` to change name if required.\n", defaultOrg)
-			} else {
-				info.Printf("Using org: %q\n", defaultOrg)
+				if len(res.Organizations) == 1 {
+					cfg.Org = res.Organizations[0].Name
+					if err := dotrill.SetDefaultOrg(cfg.Org); err != nil {
+						return err
+					}
+				} else if len(res.Organizations) > 1 {
+					orgName, err := org.SwitchSelectFlow(res.Organizations)
+					if err != nil {
+						return fmt.Errorf("org selection failed %w", err)
+					}
+
+					cfg.Org = orgName
+					if err := dotrill.SetDefaultOrg(cfg.Org); err != nil {
+						return err
+					}
+				}
 			}
 
-			// Check for access to the Github URL
-			ghRes, err := verifyAccess(ctx, adminClient, githubURL)
+			// Run flow for access to the Github remote (if necessary)
+			ghRes, err := githubFlow(ctx, client, githubURL)
 			if err != nil {
 				return fmt.Errorf("failed to verify access to github repo, error = %w", err)
 			}
@@ -148,18 +136,32 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				prodBranch = ghRes.DefaultBranch
 			}
 
-			// We now have access to the Github repo
+			// If no project name was provided, default to Git repo name
 			if name == "" {
-				name = repo
+				name = ghRepo
 			}
 
-			variables, err := variablesPrompt(projectPath)
+			// If no default org is set by now, it means the user is not in an org yet.
+			// We create a default org based on their Github account name.
+			if cfg.Org == "" {
+				err := createOrgFlow(ctx, cfg, client, ghAccount)
+				if err != nil {
+					return fmt.Errorf("org creation failed with error: %w", err)
+				}
+				success.Printf("Created org %q. Run \"rill org edit\" to change name if required.\n", cfg.Org)
+			} else {
+				info.Printf("Using org %q.\n", cfg.Org)
+			}
+
+			// Run flow to get connector credentials and other variables
+			variables, err := variablesFlow(projectPath)
 			if err != nil {
 				return err
 			}
 
-			req := &adminv1.CreateProjectRequest{
-				OrganizationName:     defaultOrg,
+			// Create the project (automatically deploys prod branch)
+			res, err := createProjectFlow(ctx, client, &adminv1.CreateProjectRequest{
+				OrganizationName:     cfg.Org,
 				Name:                 name,
 				Description:          description,
 				Region:               region,
@@ -170,22 +172,21 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				Public:               public,
 				GithubUrl:            githubURL,
 				Variables:            variables,
-			}
-			// Create the project (automatically deploys prod branch)
-			projRes, err := createProject(ctx, adminClient, req)
+			})
 			if err != nil {
 				return fmt.Errorf("create project failed with error %w", err)
 			}
 
 			// Success!
-			success.Printf("Created project %s/%s. Use `rill project edit` to edit name if required.\n", defaultOrg, projRes.Project.Name)
+			success.Printf("Created project \"%s/%s\". Use \"rill project rename\" to change name if required.\n", cfg.Org, res.Project.Name)
 			success.Printf("Rill projects deploy continuously when you push changes to Github.\n")
-			if projRes.ProjectUrl != "" {
-				success.Printf("Opening project dashboard. Your project can be accessed at %s\n", projRes.ProjectUrl)
+			if res.ProjectUrl != "" {
+				success.Printf("Your project can be accessed at: %s\n", res.ProjectUrl)
+				success.Printf("Opening project in browser...\n")
 				time.Sleep(3 * time.Second)
-				_ = browser.Open(projRes.ProjectUrl)
+				_ = browser.Open(res.ProjectUrl)
 			}
-			// TODO :: add rill docs here
+
 			return nil
 		},
 	}
@@ -200,135 +201,63 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	deployCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().StringVar(&name, "name", "", "Project name (default: taken from rill.yaml)")
+
 	return deployCmd
 }
 
-func createOrg(ctx context.Context, adminClient *client.Client, account string) (*adminv1.Organization, error) {
-	resp, err := org.Create(adminClient, account, "")
-	if err != nil && violatesUniqueConstraint(err) {
-		// org name already exists, prompt for the org name and create org with new name again
-		name, err := orgNamePrompt(ctx, adminClient)
-		if err != nil {
-			return nil, err
-		}
-
-		return org.Create(adminClient, name, "")
-	}
-	return resp, err
-}
-
-func createProject(ctx context.Context, adminClient *client.Client, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
-	// Create the project (automatically deploys prod branch)
-	res, err := adminClient.CreateProject(ctx, req)
-	if err != nil && violatesUniqueConstraint(err) {
-		// project name already exists, prompt for project name and create project with new name again
-		name, err := projectNamePrompt(ctx, adminClient, req.OrganizationName)
-		if err != nil {
-			return nil, err
-		}
-
-		req.Name = name
-		return adminClient.CreateProject(ctx, req)
-	}
-	return res, err
-}
-
-func projectNamePrompt(ctx context.Context, c *client.Client, orgName string) (string, error) {
-	questions := []*survey.Question{
-		{
-			Name: "name",
-			Prompt: &survey.Input{
-				Message: "What is the project name?",
-			},
-			Validate: func(any interface{}) error {
-				name := any.(string)
-				if name == "" {
-					return fmt.Errorf("empty name")
-				}
-				exists, err := projectExists(ctx, c, orgName, name)
-				if err != nil {
-					return err
-				}
-				if exists {
-					// this should always be true but adding this check from completeness POV
-					return fmt.Errorf("project with name %v already exists in the org", name)
-				}
-				return nil
-			},
-		},
-	}
-
-	name := ""
-	if err := survey.Ask(questions, &name); err != nil {
-		return "", err
-	}
-
-	return name, nil
-}
-
-func projectExists(ctx context.Context, c *client.Client, orgName, projectName string) (bool, error) {
-	resp, err := c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: orgName, Name: projectName})
+func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string) (*adminv1.GetGithubRepoStatusResponse, error) {
+	// Check for access to the Github repo
+	res, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
+		GithubUrl: githubURL,
+	})
 	if err != nil {
-		if st, ok := status.FromError(err); ok {
-			if st.Code() == codes.NotFound {
-				return false, nil
+		return nil, err
+	}
+
+	// If the user has not already granted access, open browser and poll for access
+	if !res.HasAccess {
+		// Print instructions to grant access
+		fmt.Printf("Rill projects deploy continuously when you push changes to Github.\n")
+		fmt.Printf("You need to grant Rill read only access to your repository on Github.\n\n")
+		time.Sleep(3 * time.Second)
+		fmt.Printf("Open this URL in your browser to grant Rill access to Github:\n\n")
+		fmt.Printf("\t%s\n\n", res.GrantAccessUrl)
+
+		// Open browser if possible
+		_ = browser.Open(res.GrantAccessUrl)
+
+		// Poll for permission granted
+		pollCtx, cancel := context.WithTimeout(ctx, pollTimeout)
+		defer cancel()
+		for {
+			select {
+			case <-pollCtx.Done():
+				return nil, pollCtx.Err()
+			case <-time.After(pollInterval):
+				// Ready to check again.
 			}
-		}
-		return false, err
-	}
-	return resp.Project.Name == projectName, nil
-}
 
-func orgNamePrompt(ctx context.Context, adminClient *client.Client) (string, error) {
-	qs := []*survey.Question{
-		{
-			Name: "name",
-			Prompt: &survey.Input{
-				Message: "Please enter org name",
-			},
-			Validate: func(any interface{}) error {
-				// Validate org name doesn't exist already
-				name := any.(string)
-				if name == "" {
-					return fmt.Errorf("empty name")
-				}
-
-				exist, err := orgNameExists(ctx, adminClient, name)
-				if err != nil {
-					return err
-				}
-
-				if exist {
-					// this should always be true but adding this check from completeness POV
-					return fmt.Errorf("orgnaization with name %v already exists", name)
-				}
-				return nil
-			},
-		},
-	}
-
-	name := ""
-	if err := survey.Ask(qs, &name); err != nil {
-		return "", err
-	}
-
-	return name, nil
-}
-
-func orgNameExists(ctx context.Context, adminClient *client.Client, name string) (bool, error) {
-	resp, err := adminClient.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
-	if err != nil {
-		if st, ok := status.FromError(err); ok {
-			if st.Code() == codes.NotFound {
-				return false, nil
+			// Poll for access to the Github URL
+			pollRes, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
+				GithubUrl: githubURL,
+			})
+			if err != nil {
+				return nil, err
 			}
+
+			if pollRes.HasAccess {
+				// Success
+				return pollRes, nil
+			}
+
+			// Sleep and poll again
 		}
-		return false, err
 	}
-	return resp.Organization.Name == name, nil
+
+	return res, nil
 }
 
-func variablesPrompt(projectPath string) (map[string]string, error) {
+func variablesFlow(projectPath string) (map[string]string, error) {
 	connectors, err := rillv1beta.ExtractConnectors(projectPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract connectors %w", err)
@@ -374,16 +303,160 @@ func variablesPrompt(projectPath string) (map[string]string, error) {
 			}
 		}
 	}
+
+	if len(connectors) > 0 {
+		fmt.Println("")
+	}
+
 	return vars, nil
 }
 
-func extractRemote(remotePath string) (string, error) {
-	remotes, err := gitutil.ExtractRemotes(remotePath)
+func createOrgFlow(ctx context.Context, cfg *config.Config, client *adminclient.Client, defaultName string) error {
+	res, err := client.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{
+		Name: defaultName,
+	})
 	if err != nil {
+		if !isNameExistsErr(err) {
+			return err
+		}
+
+		name, err := orgNamePrompt(ctx, client)
+		if err != nil {
+			return err
+		}
+
+		res, err = client.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{
+			Name: name,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	// Switching to the created org
+	cfg.Org = res.Organization.Name
+	err = dotrill.SetDefaultOrg(cfg.Org)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func orgNamePrompt(ctx context.Context, client *adminclient.Client) (string, error) {
+	qs := []*survey.Question{
+		{
+			Name: "name",
+			Prompt: &survey.Input{
+				Message: "Enter an org name",
+			},
+			Validate: func(any interface{}) error {
+				// Validate org name doesn't exist already
+				name := any.(string)
+				if name == "" {
+					return fmt.Errorf("empty name")
+				}
+
+				exist, err := orgNameExists(ctx, client, name)
+				if err != nil {
+					return fmt.Errorf("org name %q is already taken", name)
+				}
+
+				if exist {
+					// this should always be true but adding this check from completeness POV
+					return fmt.Errorf("org with name %q already exists", name)
+				}
+				return nil
+			},
+		},
+	}
+
+	name := ""
+	if err := survey.Ask(qs, &name); err != nil {
 		return "", err
 	}
-	// Parse into a https://github.com/account/repo (no .git) format
-	return gitutil.RemotesToGithubURL(remotes)
+
+	return name, nil
+}
+
+func orgNameExists(ctx context.Context, client *adminclient.Client, name string) (bool, error) {
+	resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			if st.Code() == codes.NotFound {
+				return false, nil
+			}
+		}
+		return false, err
+	}
+	return resp.Organization.Name == name, nil
+}
+
+func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
+	// Create the project (automatically deploys prod branch)
+	res, err := client.CreateProject(ctx, req)
+	if err != nil {
+		if !isNameExistsErr(err) {
+			return nil, err
+		}
+
+		// project name already exists, prompt for project name and create project with new name again
+
+		name, err := projectNamePrompt(ctx, client, req.OrganizationName)
+		if err != nil {
+			return nil, err
+		}
+
+		req.Name = name
+		return client.CreateProject(ctx, req)
+	}
+	return res, err
+}
+
+func projectNamePrompt(ctx context.Context, client *adminclient.Client, orgName string) (string, error) {
+	questions := []*survey.Question{
+		{
+			Name: "name",
+			Prompt: &survey.Input{
+				Message: "Enter a project name",
+			},
+			Validate: func(any interface{}) error {
+				name := any.(string)
+				if name == "" {
+					return fmt.Errorf("empty name")
+				}
+				exists, err := projectExists(ctx, client, orgName, name)
+				if err != nil {
+					return fmt.Errorf("project already exists at %s/%s", orgName, name)
+				}
+				if exists {
+					// this should always be true but adding this check from completeness POV
+					return fmt.Errorf("project with name %q already exists in the org", name)
+				}
+				return nil
+			},
+		},
+	}
+
+	name := ""
+	if err := survey.Ask(questions, &name); err != nil {
+		return "", err
+	}
+
+	return name, nil
+}
+
+func projectExists(ctx context.Context, client *adminclient.Client, orgName, projectName string) (bool, error) {
+	resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: orgName, Name: projectName})
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			if st.Code() == codes.NotFound {
+				return false, nil
+			}
+		}
+		return false, err
+	}
+	return resp.Project.Name == projectName, nil
 }
 
 func hasRillProject(dir string) bool {
@@ -391,58 +464,16 @@ func hasRillProject(dir string) bool {
 	return err == nil
 }
 
-func verifyAccess(ctx context.Context, c *client.Client, githubURL string) (*adminv1.GetGithubRepoStatusResponse, error) {
-	// Check for access to the Github URL
-	ghRes, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
-		GithubUrl: githubURL,
-	})
+func extractGitRemote(projectPath string) (string, error) {
+	remotes, err := gitutil.ExtractRemotes(projectPath)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-
-	// If the user has not already granted access, open browser and poll for access
-	if !ghRes.HasAccess {
-		// Print instructions to grant access
-		fmt.Printf("Rill projects deploy continuously when you push changes to Github.\n")
-		fmt.Printf("You need to install rill github app to grant read only access to your project.\n\n")
-		time.Sleep(3 * time.Second)
-		fmt.Printf("Open this URL in your browser to grant Rill access to your Github repository:\n\n")
-		fmt.Printf("\t%s\n\n", ghRes.GrantAccessUrl)
-
-		// Open browser if possible
-		_ = browser.Open(ghRes.GrantAccessUrl)
-
-		// Poll for permission granted
-		pollCtx, cancel := context.WithTimeout(ctx, pollTimeout)
-		defer cancel()
-		for {
-			select {
-			case <-pollCtx.Done():
-				return nil, pollCtx.Err()
-			case <-time.After(pollInterval):
-				// Ready to check again.
-			}
-
-			// Poll for access to the Github URL
-			pollRes, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
-				GithubUrl: githubURL,
-			})
-			if err != nil {
-				return nil, err
-			}
-
-			if pollRes.HasAccess {
-				// Success
-				return pollRes, nil
-			}
-
-			// Sleep and poll again
-		}
-	}
-	return ghRes, nil
+	// Parse into a https://github.com/account/repo (no .git) format
+	return gitutil.RemotesToGithubURL(remotes)
 }
 
-func violatesUniqueConstraint(err error) bool {
+func isNameExistsErr(err error) bool {
 	if st, ok := status.FromError(err); ok && st != nil {
 		return strings.Contains(st.Message(), "violates unique constraint")
 	}
