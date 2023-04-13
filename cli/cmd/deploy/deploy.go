@@ -147,10 +147,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			// We now have access to the Github repo
 			if name == "" {
-				name, err = rillv1beta.ProjectName(projectPath)
-				if err != nil {
-					return err
-				}
+				name = path.Base(githubURL)
 			}
 
 			variables, err := variablesPrompt(projectPath)
