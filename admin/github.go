@@ -50,10 +50,14 @@ func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (
 
 // LookupGithubRepoForUser returns a Github repository iff the Github App is installed on the repository and user is a collaborator of the project.
 // The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
-func (s *Service) LookupGithubRepoForUser(ctx context.Context, installationID int64, githubURL, gitUserName string) (*github.Repository, error) {
+func (s *Service) LookupGithubRepoForUser(ctx context.Context, installationID int64, githubURL, gitUsername string) (*github.Repository, error) {
 	account, repo, ok := gitutil.SplitGithubURL(githubURL)
 	if !ok {
 		return nil, fmt.Errorf("invalid Github URL %q", githubURL)
+	}
+
+	if gitUsername == "" {
+		return nil, fmt.Errorf("invalid gitUsername %q", gitUsername)
 	}
 
 	gh, err := s.githubInstallationClient(installationID)
@@ -61,7 +65,7 @@ func (s *Service) LookupGithubRepoForUser(ctx context.Context, installationID in
 		return nil, fmt.Errorf("failed to create github installation client: %w", err)
 	}
 
-	isColab, resp, err := gh.Repositories.IsCollaborator(ctx, account, repo, gitUserName)
+	isColab, resp, err := gh.Repositories.IsCollaborator(ctx, account, repo, gitUsername)
 	if err != nil {
 		if resp.StatusCode == http.StatusUnauthorized {
 			return nil, ErrUserIsNotCollaborator

@@ -302,6 +302,7 @@ type externalURLs struct {
 	githubAuth            string
 	githubAuthCallback    string
 	githubAuthSuccess     string
+	githubAuthRetry       string
 	authLogin             string
 }
 
@@ -315,6 +316,7 @@ func newURLRegistry(opts *Options) *externalURLs {
 		githubAuth:            mustJoinURL(opts.ExternalURL, "/github/auth/login"),
 		githubAuthCallback:    mustJoinURL(opts.ExternalURL, "/github/auth/callback"),
 		githubAuthSuccess:     mustJoinURL(opts.FrontendURL, "/-/github/auth/success"),
+		githubAuthRetry:       mustJoinURL(opts.FrontendURL, "/-/github/auth/retry"),
 		authLogin:             mustJoinURL(opts.ExternalURL, "/auth/login"),
 	}
 }
@@ -381,6 +383,19 @@ func (u *externalURLs) authLoginURL(redirectURL string) (string, error) {
 
 	qry := parsedURL.Query()
 	qry.Set("redirect", redirectURL)
+	parsedURL.RawQuery = qry.Encode()
+	return parsedURL.String(), nil
+}
+
+func (u *externalURLs) githubAuthRetryURL(remote, username string) (string, error) {
+	parsedURL, err := url.Parse(u.githubAuthRetry)
+	if err != nil {
+		return "", err
+	}
+
+	qry := parsedURL.Query()
+	qry.Set("remote", remote)
+	qry.Set("githubUsername", username)
 	parsedURL.RawQuery = qry.Encode()
 	return parsedURL.String(), nil
 }

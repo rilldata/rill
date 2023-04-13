@@ -8,6 +8,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -158,14 +159,9 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
 	}
 
-	// Get Github installation ID for the repo
-	installationID, err := s.admin.GetGithubInstallation(ctx, req.GithubUrl)
+	installationID, err := s.fetchInstallationID(ctx, req.GithubUrl, claims.OwnerID())
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Github installation: %w", err)
-	}
-	// Check that the github app is installed on the repo
-	if installationID == 0 {
-		return nil, fmt.Errorf("you have not granted Rill access to %q", req.GithubUrl)
+		return nil, err
 	}
 
 	// TODO: Validate that req.ProductionBranch is an actual branch.
@@ -246,12 +242,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 
 	// If changing the Github URL, check github app is installed on the repo
 	if safeStr(proj.GithubURL) != req.GithubUrl {
-		installationID, err := s.admin.GetGithubInstallation(ctx, req.GithubUrl)
+		_, err = s.fetchInstallationID(ctx, req.GithubUrl, claims.OwnerID())
 		if err != nil {
-			return nil, fmt.Errorf("failed to get Github installation: %w", err)
-		}
-		if installationID == 0 {
-			return nil, fmt.Errorf("you have not granted Rill access to %q", req.GithubUrl)
+			return nil, err
 		}
 	}
 
@@ -418,6 +411,44 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 	}
 
 	return &adminv1.SetProjectMemberRoleResponse{}, nil
+}
+
+// fetchInstallationID returns a valid installation ID iff app is installed and user is a collaborator of the repo
+func (s *Server) fetchInstallationID(ctx context.Context, githubURL, userID string) (int64, error) {
+	// Get Github installation ID for the repo
+	installationID, err := s.admin.GetGithubInstallation(ctx, githubURL)
+	if err != nil {
+		if errors.Is(err, admin.ErrGithubInstallationNotFound) {
+			return 0, status.Error(codes.PermissionDenied, fmt.Sprintf("you have not granted Rill access to %q", githubURL))
+		}
+
+		return 0, fmt.Errorf("failed to get Github installation: %w", err)
+	}
+
+	if installationID == 0 {
+		return 0, fmt.Errorf("you have not granted Rill access to %q", githubURL)
+	}
+
+	user, err := s.admin.DB.FindUser(ctx, userID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return 0, status.Error(codes.PermissionDenied, "does not have permission to create projects")
+		}
+
+		return 0, status.Error(codes.Internal, err.Error())
+	}
+
+	// check that user is a collaborator on the repo
+	_, err = s.admin.LookupGithubRepoForUser(ctx, installationID, githubURL, user.GithubUsername)
+	if err != nil {
+		if errors.Is(err, admin.ErrUserIsNotCollaborator) {
+			return 0, status.Error(codes.PermissionDenied, fmt.Sprintf("you are not collaborator to the repo %q", githubURL))
+		}
+
+		return 0, status.Error(codes.Internal, err.Error())
+	}
+
+	return installationID, nil
 }
 
 func projToDTO(p *database.Project) *adminv1.Project {
