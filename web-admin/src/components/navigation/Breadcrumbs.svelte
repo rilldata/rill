@@ -12,15 +12,15 @@
 
   $: organization = $page.params.organization;
   $: organizations = createAdminServiceListOrganizations();
-  $: organizationPageActive = $page.route.id === "/[organization]";
+  $: isOrganizationPage = $page.route.id === "/[organization]";
 
   $: project = $page.params.project;
   $: projects = createAdminServiceListProjectsForOrganization(organization);
-  $: projectPageActive = $page.route.id === "/[organization]/[project]";
+  $: isProjectPage = $page.route.id === "/[organization]/[project]";
 
   $: dashboard = $page.params.dashboard;
   $: dashboards = useDashboardNames($runtime?.instanceId);
-  $: dashboardPageActive =
+  $: isDashboardPage =
     $page.route.id === "/[organization]/[project]/[dashboard]";
 </script>
 
@@ -29,12 +29,14 @@
     {#if organization}
       <BreadcrumbItem
         label={organization}
-        isActive={organizationPageActive}
-        options={$organizations.data?.organizations?.length > 1 &&
+        isCurrentPage={isOrganizationPage}
+        menuOptions={$organizations.data?.organizations?.length > 1 &&
           $organizations.data.organizations.map((org) => ({
+            key: org.name,
             main: org.name,
             callback: () => goto(`/${org.name}`),
           }))}
+        onSelectMenuOption={(organization) => goto(`/${organization}`)}
       >
         <OrganizationAvatar {organization} slot="icon" />
       </BreadcrumbItem>
@@ -43,24 +45,29 @@
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
         label={project}
-        isActive={projectPageActive}
-        options={$projects.data?.projects?.length > 1 &&
+        isCurrentPage={isProjectPage}
+        menuOptions={$projects.data?.projects?.length > 1 &&
           $projects.data.projects.map((proj) => ({
+            key: proj.name,
             main: proj.name,
             callback: () => goto(`/${organization}/${proj.name}`),
           }))}
+        onSelectMenuOption={(project) => goto(`/${organization}/${project}`)}
       />
     {/if}
     {#if dashboard}
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
         label={dashboard}
-        isActive={dashboardPageActive}
-        options={$dashboards.data?.length > 1 &&
+        isCurrentPage={isDashboardPage}
+        menuOptions={$dashboards.data?.length > 1 &&
           $dashboards.data.map((dash) => ({
+            key: dash,
             main: dash,
             callback: () => goto(`/${organization}/${project}/${dash}`),
           }))}
+        onSelectMenuOption={(dashboard) =>
+          goto(`/${organization}/${project}/${dashboard}`)}
       />
     {/if}
   </ol>
