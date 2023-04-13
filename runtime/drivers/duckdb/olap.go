@@ -3,8 +3,6 @@ package duckdb
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"os"
 	"time"
 
@@ -12,6 +10,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func (c *connection) Dialect() drivers.Dialect {
