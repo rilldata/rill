@@ -245,7 +245,7 @@ func projectNamePrompt(ctx context.Context, c *client.Client, orgName string) (s
 				if name == "" {
 					return fmt.Errorf("empty name")
 				}
-				exists, err := projectExists(ctx, c, orgName, name)
+				exists, err := cmdutil.ProjectExists(ctx, c, orgName, name)
 				if err != nil {
 					return err
 				}
@@ -264,19 +264,6 @@ func projectNamePrompt(ctx context.Context, c *client.Client, orgName string) (s
 	}
 
 	return name, nil
-}
-
-func projectExists(ctx context.Context, c *client.Client, orgName, projectName string) (bool, error) {
-	resp, err := c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: orgName, Name: projectName})
-	if err != nil {
-		if st, ok := status.FromError(err); ok {
-			if st.Code() == codes.NotFound {
-				return false, nil
-			}
-		}
-		return false, err
-	}
-	return resp.Project.Name == projectName, nil
 }
 
 func orgNamePrompt(ctx context.Context, adminClient *client.Client) (string, error) {

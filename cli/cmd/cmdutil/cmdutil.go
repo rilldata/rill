@@ -1,6 +1,7 @@
 package cmdutil
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -14,6 +15,8 @@ import (
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type PreRunCheck func(cmd *cobra.Command, args []string) error
@@ -133,6 +136,19 @@ func InputPrompt(msg, def string) string {
 		os.Exit(1)
 	}
 	return result
+}
+
+func ProjectExists(ctx context.Context, c *client.Client, orgName, projectName string) (bool, error) {
+	resp, err := c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: orgName, Name: projectName})
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			if st.Code() == codes.NotFound {
+				return false, nil
+			}
+		}
+		return false, err
+	}
+	return resp.Project.Name == projectName, nil
 }
 
 func WarnPrinter(str string) {

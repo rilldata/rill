@@ -23,8 +23,16 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			org, err := client.UpdateOrganization(context.Background(), &adminv1.UpdateOrganizationRequest{
-				Name:        args[0],
+			resp, err := client.GetOrganization(context.Background(), &adminv1.GetOrganizationRequest{Name: args[0]})
+			if err != nil {
+				return err
+			}
+
+			org := resp.Organization
+
+			updatedOrg, err := client.UpdateOrganization(context.Background(), &adminv1.UpdateOrganizationRequest{
+				Id:          org.Id,
+				Name:        org.Name,
 				Description: description,
 			})
 			if err != nil {
@@ -32,7 +40,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			cmdutil.SuccessPrinter("Updated organization \n")
-			cmdutil.TablePrinter(toRow(org.Organization))
+			cmdutil.TablePrinter(toRow(updatedOrg.Organization))
 			return nil
 		},
 	}

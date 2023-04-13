@@ -232,7 +232,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	claims := auth.GetClaims(ctx)
 
 	// Find project
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
+	proj, err := s.admin.DB.FindProjectByID(ctx, req.Id)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "proj not found")
@@ -261,6 +261,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 
 	proj, err = s.admin.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Name:                   req.Name,
 		Description:            req.Description,
 		Public:                 req.Public,
 		ProductionBranch:       req.ProductionBranch,

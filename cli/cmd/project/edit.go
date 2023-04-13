@@ -24,17 +24,29 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			proj, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
+			resp, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: args[0]})
+			if err != nil {
+				return err
+			}
+
+			proj := resp.Project
+
+			updatedProj, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
+				Id:               proj.Id,
 				OrganizationName: cfg.Org,
-				Name:             args[0],
+				Name:             proj.Name,
 				Description:      description,
+				Public:           proj.Public,
+				ProductionBranch: proj.ProductionBranch,
+				GithubUrl:        proj.GithubUrl,
+				Variables:        proj.Variables,
 			})
 			if err != nil {
 				return err
 			}
 
 			cmdutil.SuccessPrinter("Updated project \n")
-			cmdutil.TablePrinter(toRow(proj.Project, cfg.Org))
+			cmdutil.TablePrinter(toRow(updatedProj.Project, cfg.Org))
 			return nil
 		},
 	}

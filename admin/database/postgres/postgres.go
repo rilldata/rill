@@ -114,9 +114,9 @@ func (c *connection) InsertOrganizationFromSeeds(ctx context.Context, nameSeeds 
 	return nil, database.ErrNotUnique
 }
 
-func (c *connection) UpdateOrganization(ctx context.Context, name, description string) (*database.Organization, error) {
+func (c *connection) UpdateOrganization(ctx context.Context, id, name, description string) (*database.Organization, error) {
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE organizations SET description=$1, updated_on=now() WHERE name=$2 RETURNING *", description, name).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE organizations SET description=$1, name=$2, updated_on=now() WHERE id=$3 RETURNING *", description, name, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -131,6 +131,15 @@ func (c *connection) DeleteOrganization(ctx context.Context, name string) error 
 func (c *connection) FindProjects(ctx context.Context, orgName string) ([]*database.Project, error) {
 	var res []*database.Project
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p JOIN organizations o ON p.org_id = o.id WHERE o.name=$1 ORDER BY p.name", orgName)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectByID(ctx context.Context, id string) (*database.Project, error) {
+	res := &database.Project{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM projects WHERE id=$1", id).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -171,9 +180,9 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 func (c *connection) UpdateProject(ctx context.Context, id string, opts *database.UpdateProjectOptions) (*database.Project, error) {
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET description=$1, public=$2, production_branch=$3, production_variables=$4, github_url=$5, github_installation_id=$6, production_deployment_id=$7, updated_on=now()
-		WHERE id=$8 RETURNING *`,
-		opts.Description, opts.Public, opts.ProductionBranch, database.Variables(opts.ProductionVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProductionDeploymentID, id,
+		UPDATE projects SET name=$1, description=$2, public=$3, production_branch=$4, production_variables=$5, github_url=$6, github_installation_id=$7, production_deployment_id=$8, updated_on=now()
+		WHERE id=$9 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProductionBranch, database.Variables(opts.ProductionVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProductionDeploymentID, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)

@@ -59,6 +59,7 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 			}
 			proj.Variables[key] = value
 			updatedProject, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
+				Id:               proj.Id,
 				OrganizationName: cfg.Org,
 				Name:             projectName,
 				Description:      proj.Description,
@@ -110,6 +111,7 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 
 			delete(proj.Variables, key)
 			updatedProject, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
+				Id:               proj.Id,
 				OrganizationName: cfg.Org,
 				Name:             projectName,
 				Description:      proj.Description,
