@@ -124,7 +124,7 @@ func testProjects(t *testing.T, db database.DB) {
 
 	proj.Description = ""
 	proj, err = db.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
-		Name: proj.Name,
+		Name:        proj.Name,
 		Description: proj.Description,
 	})
 	require.NoError(t, err)
