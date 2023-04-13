@@ -66,7 +66,7 @@ type DB interface {
 	FindUser(ctx context.Context, id string) (*User, error)
 	FindUserByEmail(ctx context.Context, email string) (*User, error)
 	InsertUser(ctx context.Context, email, displayName, photoURL string) (*User, error)
-	UpdateUser(ctx context.Context, id, displayName, photoURL, githubUserName string) (*User, error)
+	UpdateUser(ctx context.Context, id, displayName, photoURL, githubUsername string) (*User, error)
 	DeleteUser(ctx context.Context, id string) error
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
@@ -228,7 +228,7 @@ type User struct {
 	Email          string
 	DisplayName    string    `db:"display_name"`
 	PhotoURL       string    `db:"photo_url"`
-	GithubUserName string    `db:"github_user_name"`
+	GithubUsername string    `db:"github_username"`
 	CreatedOn      time.Time `db:"created_on"`
 	UpdatedOn      time.Time `db:"updated_on"`
 }

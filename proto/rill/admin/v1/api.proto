@@ -281,7 +281,6 @@ message GetGithubRepoStatusResponse {
   bool has_access = 1;
   string grant_access_url = 2;
   string default_branch = 3;
-  string user_authorisation_url = 4;
 }
 
 message Organization {

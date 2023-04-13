@@ -3224,8 +3224,6 @@ func (m *GetGithubRepoStatusResponse) validate(all bool) error {
 
 	// no validation rules for DefaultBranch
 
-	// no validation rules for UserAuthorisationUrl
-
 	if len(errors) > 0 {
 		return GetGithubRepoStatusResponseMultiError(errors)
 	}

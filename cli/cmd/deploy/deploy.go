@@ -328,27 +328,17 @@ func verifyAccess(ctx context.Context, c *client.Client, githubURL string) (*adm
 		return nil, err
 	}
 
-	userAuthRequested := false
 	// If the user has not already granted access, open browser and poll for access
 	if !ghRes.HasAccess {
-		if ghRes.GrantAccessUrl != "" {
-			// Print instructions to grant access
-			fmt.Printf("Rill projects deploy continuously when you push changes to Github.\n")
-			fmt.Printf("You need to install rill github app to grant read only access to your project.\n\n")
-			time.Sleep(3 * time.Second)
-			fmt.Printf("Open this URL in your browser to grant Rill access to your Github repository:\n\n")
-			fmt.Printf("\t%s\n\n", ghRes.GrantAccessUrl)
+		// Print instructions to grant access
+		fmt.Printf("Rill projects deploy continuously when you push changes to Github.\n")
+		fmt.Printf("You need to grant Rill read only access to your repository on Github.\n\n")
+		time.Sleep(3 * time.Second)
+		fmt.Printf("Open this URL in your browser to grant Rill access to Github:\n\n")
+		fmt.Printf("\t%s\n\n", ghRes.GrantAccessUrl)
 
-			// Open browser if possible
-			_ = browser.Open(ghRes.GrantAccessUrl)
-		} else if ghRes.UserAuthorisationUrl != "" {
-			userAuthRequested = true
-			fmt.Printf("Open this URL in your browser to grant Rill access to your account:\n\n")
-			fmt.Printf("\t%s\n\n", ghRes.UserAuthorisationUrl)
-			time.Sleep(1 * time.Second)
-			// Open browser if possible
-			_ = browser.Open(ghRes.UserAuthorisationUrl)
-		}
+		// Open browser if possible
+		_ = browser.Open(ghRes.GrantAccessUrl)
 
 		// Open browser if possible
 		_ = browser.Open(ghRes.GrantAccessUrl)
@@ -379,17 +369,6 @@ func verifyAccess(ctx context.Context, c *client.Client, githubURL string) (*adm
 				// Success
 				return pollRes, nil
 			}
-
-			// open user authorisation url once per invocation
-			if pollRes.UserAuthorisationUrl != "" && !userAuthRequested {
-				userAuthRequested = true
-				fmt.Printf("Open this URL in your browser to grant Rill access to your account:\n\n")
-				fmt.Printf("\t%s\n\n", pollRes.UserAuthorisationUrl)
-				time.Sleep(1 * time.Second)
-				// Open browser if possible
-				_ = browser.Open(ghRes.GrantAccessUrl)
-			}
-
 			// Sleep and poll again
 		}
 	}

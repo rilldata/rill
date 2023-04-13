@@ -1212,11 +1212,6 @@ export class GetGithubRepoStatusResponse extends Message<GetGithubRepoStatusResp
    */
   defaultBranch = "";
 
-  /**
-   * @generated from field: string user_authorisation_url = 4;
-   */
-  userAuthorisationUrl = "";
-
   constructor(data?: PartialMessage<GetGithubRepoStatusResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1228,7 +1223,6 @@ export class GetGithubRepoStatusResponse extends Message<GetGithubRepoStatusResp
     { no: 1, name: "has_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "grant_access_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "default_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "user_authorisation_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetGithubRepoStatusResponse {

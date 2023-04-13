@@ -47,67 +47,6 @@ type Options struct {
 	GithubClientSecret     string
 }
 
-type urlRegistry struct {
-	githubConnect         string
-	githubConnectRetry    string
-	githubConnectRequest  string
-	githubConnectSuccess  string
-	githubAppInstallation string
-	githubAuth            string
-	githubAuthCallback    string
-	githubAuthSuccess     string
-}
-
-func newURLRegistry(opts *Options) (*urlRegistry, error) {
-	installationURL := fmt.Sprintf("https://github.com/apps/%s/installations/new", opts.GithubAppName)
-
-	githubConnectURL, err := url.JoinPath(opts.ExternalURL, "/github/connect")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create github connect URL: %w", err)
-	}
-
-	retryURL, err := url.JoinPath(opts.FrontendURL, "/-/github/connect/retry")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create github app installation URL: %w", err)
-	}
-
-	requestURL, err := url.JoinPath(opts.FrontendURL, "/-/github/connect/request")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request URL: %w", err)
-	}
-
-	successURL, err := url.JoinPath(opts.FrontendURL, "/-/github/connect/success")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create URL: %w", err)
-	}
-
-	authoriseURL, err := url.JoinPath(opts.ExternalURL, "/github/auth/login")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create github app installation URL: %w", err)
-	}
-
-	githubLoginCallbackURL, err := url.JoinPath(opts.ExternalURL, "/github/auth/callback")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create github app installation URL: %w", err)
-	}
-
-	githubAuthSuccess, err := url.JoinPath(opts.FrontendURL, "/-/github/auth/success")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create URL: %w", err)
-	}
-
-	return &urlRegistry{
-		githubConnect:         githubConnectURL,
-		githubConnectRetry:    retryURL,
-		githubConnectRequest:  requestURL,
-		githubConnectSuccess:  successURL,
-		githubAppInstallation: installationURL,
-		githubAuth:            authoriseURL,
-		githubAuthCallback:    githubLoginCallbackURL,
-		githubAuthSuccess:     githubAuthSuccess,
-	}, nil
-}
-
 type Server struct {
 	adminv1.UnsafeAdminServiceServer
 	logger        *zap.Logger
@@ -116,7 +55,7 @@ type Server struct {
 	cookies       *sessions.CookieStore
 	authenticator *auth.Authenticator
 	issuer        *runtimeauth.Issuer
-	urls          *urlRegistry
+	urls          *externalURLs
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
@@ -147,11 +86,6 @@ func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimea
 		return nil, err
 	}
 
-	registry, err := newURLRegistry(opts)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Server{
 		logger:        logger,
 		admin:         adm,
@@ -159,7 +93,7 @@ func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimea
 		cookies:       cookies,
 		authenticator: authenticator,
 		issuer:        issuer,
-		urls:          registry,
+		urls:          newURLRegistry(opts),
 	}, nil
 }
 
@@ -318,4 +252,87 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
+}
+
+type externalURLs struct {
+	githubConnect         string
+	githubConnectRetry    string
+	githubConnectRequest  string
+	githubConnectSuccess  string
+	githubAppInstallation string
+	githubAuth            string
+	githubAuthCallback    string
+	githubAuthSuccess     string
+}
+
+func newURLRegistry(opts *Options) *externalURLs {
+	return &externalURLs{
+		githubConnect:         mustJoinURL(opts.ExternalURL, "/github/connect"),
+		githubConnectRetry:    mustJoinURL(opts.FrontendURL, "/-/github/connect/retry"),
+		githubConnectRequest:  mustJoinURL(opts.FrontendURL, "/-/github/connect/request"),
+		githubConnectSuccess:  mustJoinURL(opts.FrontendURL, "/-/github/connect/success"),
+		githubAppInstallation: fmt.Sprintf("https://github.com/apps/%s/installations/new", opts.GithubAppName),
+		githubAuth:            mustJoinURL(opts.ExternalURL, "/github/auth/login"),
+		githubAuthCallback:    mustJoinURL(opts.ExternalURL, "/github/auth/callback"),
+		githubAuthSuccess:     mustJoinURL(opts.FrontendURL, "/-/github/auth/success"),
+	}
+}
+
+func (u *externalURLs) githubConnectURL(remote string) (string, error) {
+	parsedURL, err := url.Parse(u.githubConnect)
+	if err != nil {
+		return "", err
+	}
+
+	qry := parsedURL.Query()
+	qry.Set("remote", remote)
+	parsedURL.RawQuery = qry.Encode()
+	return parsedURL.String(), nil
+}
+
+func (u *externalURLs) githubAppInstallationURL(remote string) (string, error) {
+	parsedURL, err := url.Parse(u.githubAppInstallation)
+	if err != nil {
+		return "", err
+	}
+
+	qry := parsedURL.Query()
+	// `state` query parameter will be passed through to githubConnectCallback.
+	// we will use this state parameter to verify that the user installed the app on right repo
+	qry.Set("state", remote)
+	parsedURL.RawQuery = qry.Encode()
+	return parsedURL.String(), nil
+}
+
+func (u *externalURLs) githubConnectRequestURL(remote string) (string, error) {
+	parsedURL, err := url.Parse(u.githubConnectRequest)
+	if err != nil {
+		return "", err
+	}
+
+	qry := parsedURL.Query()
+	qry.Set("remote", remote)
+	parsedURL.RawQuery = qry.Encode()
+	return parsedURL.String(), nil
+}
+
+func (u *externalURLs) githubConnectRetryURL(remote string) (string, error) {
+	parsedURL, err := url.Parse(u.githubConnectRetry)
+	if err != nil {
+		return "", err
+	}
+
+	qry := parsedURL.Query()
+	qry.Set("remote", remote)
+	parsedURL.RawQuery = qry.Encode()
+	return parsedURL.String(), nil
+}
+
+func mustJoinURL(base string, elem ...string) string {
+	joinedURL, err := url.JoinPath(base, elem...)
+	if err != nil {
+		panic(err)
+	}
+
+	return joinedURL
 }

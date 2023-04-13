@@ -15,7 +15,10 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var ErrUserIsNotCollaborator = fmt.Errorf("user is not a collaborator for the repository")
+var (
+	ErrUserIsNotCollaborator      = fmt.Errorf("user is not a collaborator for the repository")
+	ErrGithubInstallationNotFound = fmt.Errorf("github installation not found")
+)
 
 // GetGithubInstallation returns a non zero Github installation ID iff the Github App is installed on the repository.
 // The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
@@ -30,7 +33,7 @@ func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
 			// We don't have an installation on the repo
-			return 0, nil
+			return 0, ErrGithubInstallationNotFound
 		}
 		return 0, fmt.Errorf("failed to lookup repo info: %w", err)
 	}

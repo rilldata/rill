@@ -222,13 +222,13 @@ func (c *connection) InsertUser(ctx context.Context, email, displayName, photoUR
 	return res, nil
 }
 
-func (c *connection) UpdateUser(ctx context.Context, id, displayName, photoURL, githubUserName string) (*database.User, error) {
+func (c *connection) UpdateUser(ctx context.Context, id, displayName, photoURL, githubUsername string) (*database.User, error) {
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_user_name=$4, updated_on=now() WHERE id=$1 RETURNING *",
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, updated_on=now() WHERE id=$1 RETURNING *",
 		id,
 		displayName,
 		photoURL,
-		githubUserName).StructScan(res)
+		githubUsername).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
