@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -13,7 +12,6 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
@@ -117,6 +115,11 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
+			account, repo, ok := gitutil.SplitGithubURL(githubURL)
+			if !ok {
+				return fmt.Errorf("invalid remote %q", githubURL)
+			}
+
 			defaultOrg, err := dotrill.GetDefaultOrg()
 			if err != nil {
 				return err
@@ -124,7 +127,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			if defaultOrg == "" {
 				// create an org for the user
-				resp, err := createOrg(ctx, adminClient, githubURL)
+				resp, err := createOrg(ctx, adminClient, account)
 				if err != nil {
 					return fmt.Errorf("org creation failed with error: %w", err)
 				}
@@ -147,10 +150,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			// We now have access to the Github repo
 			if name == "" {
-				name, err = rillv1beta.ProjectName(projectPath)
-				if err != nil {
-					return err
-				}
+				name = repo
 			}
 
 			variables, err := variablesPrompt(projectPath)
@@ -203,8 +203,8 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	return deployCmd
 }
 
-func createOrg(ctx context.Context, adminClient *client.Client, githubURL string) (*adminv1.Organization, error) {
-	resp, err := org.Create(adminClient, repoAccount(githubURL), "")
+func createOrg(ctx context.Context, adminClient *client.Client, account string) (*adminv1.Organization, error) {
+	resp, err := org.Create(adminClient, account, "")
 	if err != nil && violatesUniqueConstraint(err) {
 		// org name already exists, prompt for the org name and create org with new name again
 		name, err := orgNamePrompt(ctx, adminClient)
@@ -319,7 +319,7 @@ func orgNameExists(ctx context.Context, adminClient *client.Client, name string)
 	resp, err := adminClient.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
-			if st.Code() == codes.NotFound || st.Code() == codes.InvalidArgument { // todo :: remove invalid argument after deployment
+			if st.Code() == codes.NotFound {
 				return false, nil
 			}
 		}
@@ -440,25 +440,6 @@ func verifyAccess(ctx context.Context, c *client.Client, githubURL string) (*adm
 		}
 	}
 	return ghRes, nil
-}
-
-func repoAccount(githubURL string) string {
-	ep, err := transport.NewEndpoint(githubURL)
-	if err != nil {
-		return ""
-	}
-
-	if ep.Host != "github.com" {
-		return ""
-	}
-
-	account, repo := path.Split(ep.Path)
-	account = strings.Trim(account, "/")
-	if account == "" || repo == "" || strings.Contains(account, "/") {
-		return ""
-	}
-
-	return account
 }
 
 func violatesUniqueConstraint(err error) bool {
