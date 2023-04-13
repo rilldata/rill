@@ -24,7 +24,6 @@ import (
 const (
 	githubcookieName       = "github_auth"
 	githubcookieFieldState = "github_state"
-	githubRemote           = "github_remote"
 )
 
 func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithubRepoStatusRequest) (*adminv1.GetGithubRepoStatusResponse, error) {
@@ -303,11 +302,6 @@ func (s *Server) githubAuthLogin(w http.ResponseWriter, r *http.Request, pathPar
 
 	// Set state in cookie
 	sess.Values[githubcookieFieldState] = state
-	remote := r.URL.Query().Get("remote")
-	if remote != "" {
-		// set remote in cookie which can be used to verify if user authorised app on right account
-		sess.Values[githubRemote] = remote
-	}
 
 	// Save cookie
 	if err := sess.Save(r, w); err != nil {
@@ -329,6 +323,12 @@ func (s *Server) githubAuthLogin(w http.ResponseWriter, r *http.Request, pathPar
 // It's implemented as a non-gRPC endpoint mounted directly on /github/auth/callback.
 func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	ctx := r.Context()
+	claims := auth.GetClaims(r.Context())
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		http.Error(w, "unidentified user", http.StatusUnauthorized)
+		return
+	}
+
 	// Get auth cookie
 	sess, err := s.cookies.Get(r, githubcookieName)
 	if err != nil {
@@ -366,37 +366,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request, path
 		return
 	}
 
-	remoteURL := sess.Values[githubRemote].(string)
-	delete(sess.Values, githubRemote)
-	account, repo, ok := gitutil.SplitGithubURL(remoteURL)
-	if !ok {
-		// request without state can come in multiple ways like
-		// 	- if user changes app installation directly on the settings page
-		//  - if admin user accepts the installation request
-		http.Redirect(w, r, s.urls.githubConnectSuccess, http.StatusTemporaryRedirect)
-		return
-	}
-
-	// verify there is no spoofing and the user is a collaborator to the repo
-	gitUser, isCollaborator, err := s.isCollaborator(ctx, account, repo, c)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to verify ownership: %s", err), http.StatusUnauthorized)
-		return
-	}
-
-	if !isCollaborator {
-		// navigate to retry page
-		http.Error(w, "unauthorised user", http.StatusUnauthorized)
-		return
-	}
-
 	// save the github user name
-	claims := auth.GetClaims(r.Context())
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		http.Error(w, "unidentified user", http.StatusUnauthorized)
-		return
-	}
-
 	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
 	if err != nil {
 		// can this happen ??
@@ -421,7 +391,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request, path
 	}
 
 	// Redirect to UI success page
-	http.Redirect(w, r, s.urls.githubConnectSuccess, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, s.urls.githubAuthSuccess, http.StatusTemporaryRedirect)
 }
 
 // githubWebhook is called by Github to deliver events about new pushes, pull requests, changes to a repository, etc.
