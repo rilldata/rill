@@ -1651,7 +1651,7 @@ func (x *TriggerReconcileRequest) GetName() string {
 	return ""
 }
 
-//Should need to add any response here (i.e similar to ReconcileResponse in runtime.proto)
+// Should need to add any response here (i.e similar to ReconcileResponse in runtime.proto)
 type TriggerReconcileResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
