@@ -63,7 +63,7 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 
 	// user has not authorized github app
 	if user.GithubUsername == "" {
-		redirectURL, err := urlWithQuery(s.urls.authLogin, map[string]string{"remote": req.GithubUrl})
+		redirectURL, err := urlWithQuery(s.urls.githubAuth, map[string]string{"remote": req.GithubUrl})
 		if err != nil {
 			return nil, err
 		}
