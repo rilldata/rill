@@ -1,14 +1,17 @@
+<!-- This page is for cases when user authorised the github app on another github account which doesn't have access to the repo  -->
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import { onMount } from "svelte";
   import { ADMIN_URL } from "../../../../../client/http-client";
 
   let remote;
+  let githubUsername;
   let user;
 
   async function init() {
     const urlParams = new URLSearchParams(window.location.search);
     remote = urlParams.get("remote");
+    githubUsername = urlParams.get("githubUsername");
 
     const response = await fetch(ADMIN_URL + "/v1/users/current", {
       method: "GET",
@@ -26,7 +29,7 @@
 
   function handleGoToGithub() {
     window.location.href = encodeURI(
-      ADMIN_URL + "/github/connect?remote=" + remote
+      ADMIN_URL + "/github/auth/login?remote=" + remote
     );
   }
 
@@ -41,10 +44,9 @@
   <div class="flex flex-col justify-center items-center h-3/5">
     <h1 class="text-3xl font-medium text-gray-800 mb-4">Connect to Github</h1>
     <p class="text-lg text-gray-700 text-2xl mb-4">
-      It looks like you did not grant access the the desired repository at {@html remote}.<br
-      />
-      Click the button below to retry (If this was intentional, press ctrl+c in the
-      CLI to cancel the connect request)
+      Your authorised github user {@html githubUsername} is not a collaborator to
+      repo {@html remote}.<br />
+      Click the button below to re-authorise/authorise another account.
     </p>
     <div class="mt-4">
       <Button type="primary" on:click={handleGoToGithub}>Go to Github</Button>

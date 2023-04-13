@@ -422,7 +422,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request, path
 
 	account, repo, ok := gitutil.SplitGithubURL(remote)
 	if !ok {
-		http.Redirect(w, r, s.urls.githubAuthSuccess, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, s.urls.githubConnectSuccess, http.StatusTemporaryRedirect)
 		return
 	}
 
@@ -450,7 +450,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request, path
 	}
 
 	// Redirect to UI success page
-	http.Redirect(w, r, s.urls.githubAuthSuccess, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, s.urls.githubConnectSuccess, http.StatusTemporaryRedirect)
 }
 
 // githubWebhook is called by Github to deliver events about new pushes, pull requests, changes to a repository, etc.

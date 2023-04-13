@@ -301,7 +301,6 @@ type externalURLs struct {
 	githubAppInstallation string
 	githubAuth            string
 	githubAuthCallback    string
-	githubAuthSuccess     string
 	githubAuthRetry       string
 	authLogin             string
 }
@@ -309,14 +308,13 @@ type externalURLs struct {
 func newURLRegistry(opts *Options) *externalURLs {
 	return &externalURLs{
 		githubConnect:         mustJoinURL(opts.ExternalURL, "/github/connect"),
-		githubConnectRetry:    mustJoinURL(opts.FrontendURL, "/-/github/connect/retry"),
+		githubConnectRetry:    mustJoinURL(opts.FrontendURL, "/-/github/connect/retry-install"),
 		githubConnectRequest:  mustJoinURL(opts.FrontendURL, "/-/github/connect/request"),
 		githubConnectSuccess:  mustJoinURL(opts.FrontendURL, "/-/github/connect/success"),
 		githubAppInstallation: fmt.Sprintf("https://github.com/apps/%s/installations/new", opts.GithubAppName),
 		githubAuth:            mustJoinURL(opts.ExternalURL, "/github/auth/login"),
 		githubAuthCallback:    mustJoinURL(opts.ExternalURL, "/github/auth/callback"),
-		githubAuthSuccess:     mustJoinURL(opts.FrontendURL, "/-/github/auth/success"),
-		githubAuthRetry:       mustJoinURL(opts.FrontendURL, "/-/github/auth/retry"),
+		githubAuthRetry:       mustJoinURL(opts.FrontendURL, "/-/github/connect/retry-auth"),
 		authLogin:             mustJoinURL(opts.ExternalURL, "/auth/login"),
 	}
 }

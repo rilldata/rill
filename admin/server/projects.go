@@ -432,10 +432,6 @@ func (s *Server) fetchInstallationID(ctx context.Context, githubURL, userID stri
 
 	user, err := s.admin.DB.FindUser(ctx, userID)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return 0, status.Error(codes.PermissionDenied, "does not have permission to create projects")
-		}
-
 		return 0, status.Error(codes.Internal, err.Error())
 	}
 
