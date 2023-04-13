@@ -177,7 +177,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	}
 
 	// Add auth endpoints (not gRPC handlers, just regular endpoints on /auth/*)
-	err = s.authenticator.RegisterEndpoints(mux)
+	err = s.authenticator.RegisterEndpoints(mux, s.logger)
 	if err != nil {
 		return nil, err
 	}

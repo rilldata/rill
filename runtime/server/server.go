@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/sdk/metric"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -306,4 +307,68 @@ func InitOpenTelemetry(endpoint string) (*metric.MeterProvider, *sdktrace.Tracer
 
 func OtelHandler(next http.Handler) http.Handler {
 	return otelhttp.NewHandler(next, "otel-instrumented")
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	status      int
+	wroteHeader bool
+}
+
+func wrapResponseWriter(w http.ResponseWriter) *responseWriter {
+	return &responseWriter{ResponseWriter: w}
+}
+
+func (rw *responseWriter) Status() int {
+	return rw.status
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	if rw.wroteHeader {
+		return
+	}
+
+	rw.status = code
+	rw.ResponseWriter.WriteHeader(code)
+	rw.wroteHeader = true
+}
+
+func LoggingMiddleware(h gateway.HandlerFunc, logger *otelzap.Logger) gateway.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+		defer func() {
+			if err := recover(); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				switch v := err.(type) {
+				case error:
+					logger.Ctx(
+						r.Context()).Error("Processing failure",
+						zap.Error(v),
+						zap.String("method", r.Method),
+						zap.String("path", r.URL.EscapedPath()),
+						zap.String("proto", r.Proto),
+						zap.String("user-agent", r.UserAgent()),
+					)
+				default:
+					logger.Ctx(
+						r.Context()).Error("Unknown processing failure",
+						zap.String("method", r.Method),
+						zap.String("path", r.URL.EscapedPath()),
+						zap.String("proto", r.Proto),
+						zap.String("user-agent", r.UserAgent()),
+					)
+				}
+			}
+		}()
+
+		start := time.Now()
+		wrapped := wrapResponseWriter(w)
+		h(wrapped, r, pathParams)
+		logger.Ctx(r.Context()).Info(
+			"Success",
+			zap.Int("status", wrapped.status),
+			zap.String("method", r.Method),
+			zap.String("path", r.URL.EscapedPath()),
+			zap.Duration("duration", time.Since(start)),
+		)
+	}
 }
