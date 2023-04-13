@@ -415,9 +415,6 @@ func verifyAccess(ctx context.Context, c *client.Client, githubURL string) (*adm
 		// Open browser if possible
 		_ = browser.Open(ghRes.GrantAccessUrl)
 
-		// Open browser if possible
-		_ = browser.Open(ghRes.GrantAccessUrl)
-
 		// Poll for permission granted
 		pollCtx, cancel := context.WithTimeout(ctx, pollTimeout)
 		defer cancel()

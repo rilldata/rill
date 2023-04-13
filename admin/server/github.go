@@ -506,7 +506,8 @@ func (s *Server) isCollaborator(ctx context.Context, owner, repo string, client 
 	// repo belongs to an org
 	isCollaborator, resp, err := client.Repositories.IsCollaborator(ctx, owner, repo, user.GetLogin())
 	if err != nil {
-		if resp != nil && resp.StatusCode == http.StatusNotFound {
+		// user client will not have access to the repository
+		if resp != nil && resp.StatusCode == http.StatusUnauthorized {
 			return false, nil
 		}
 		return false, err
