@@ -445,7 +445,6 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
 	}
 
-	proj.ProductionVariables = req.Variables
 	proj, err = s.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
 		Description:            proj.Description,
 		Public:                 proj.Public,
