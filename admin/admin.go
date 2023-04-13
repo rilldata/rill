@@ -7,6 +7,7 @@ import (
 	"github.com/bradleyfalzon/ghinstallation"
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
@@ -29,9 +30,10 @@ type Service struct {
 	issuer         *auth.Issuer
 	closeCtx       context.Context
 	closeCtxCancel context.CancelFunc
+	email          email.Email
 }
 
-func New(opts *Options, logger *zap.Logger, issuer *auth.Issuer) (*Service, error) {
+func New(opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient email.Email) (*Service, error) {
 	// Init db
 	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN)
 	if err != nil {
@@ -69,6 +71,7 @@ func New(opts *Options, logger *zap.Logger, issuer *auth.Issuer) (*Service, erro
 		issuer:         issuer,
 		closeCtx:       ctx,
 		closeCtxCancel: cancel,
+		email:          emailClient,
 	}, nil
 }
 

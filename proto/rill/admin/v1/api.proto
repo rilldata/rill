@@ -381,6 +381,7 @@ message ListOrganizationMembersRequest {
 // Response message for AdminService.ListOrganizationMembers
 message ListOrganizationMembersResponse {
   repeated Member members = 1;
+  repeated UserInvite invites = 3;
   string next_page_token = 2;
 }
 
@@ -392,7 +393,9 @@ message AddOrganizationMemberRequest {
 }
 
 // Response message for AdminService.AddOrganizationMember
-message AddOrganizationMemberResponse {}
+message AddOrganizationMemberResponse {
+  bool pending_signup = 1;
+}
 
 // Request message for AdminService.RemoveOrganizationMember
 message RemoveOrganizationMemberRequest {
@@ -432,6 +435,7 @@ message ListProjectMembersRequest {
 // Response message for AdminService.ListProjectMembers
 message ListProjectMembersResponse {
   repeated Member members = 1;
+  repeated UserInvite invites = 3;
   string next_page_token = 2;
 }
 
@@ -444,7 +448,9 @@ message AddProjectMemberRequest {
 }
 
 // Response message for AdminService.AddProjectMember
-message AddProjectMemberResponse {}
+message AddProjectMemberResponse {
+  bool pending_signup = 1;
+}
 
 // Request message for AdminService.RemoveProjectMember
 message RemoveProjectMemberRequest {
@@ -495,4 +501,10 @@ message ProjectPermissions {
   bool manage_dev_branches = 6;
   bool read_project_members = 7;
   bool manage_project_members = 8;
+}
+
+message UserInvite {
+  string email = 1;
+  string role = 2;
+  string invited_by = 3;
 }
