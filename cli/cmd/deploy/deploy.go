@@ -64,9 +64,9 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				warn.Printf("\nDirectory at %q doesn't contain a valid Rill project.\n\n", fullpath)
-				warn.Printf(`Please run "rill deploy" from a Rill project directory or use "--project" to pass a project path.\n\n`)
-				warn.Printf(`Run "rill start" to initialize a new Rill project.\n\n`)
+				warn.Printf("Directory at %q doesn't contain a valid Rill project.\n\n", fullpath)
+				warn.Printf("Run \"rill deploy\" from a Rill project directory or use \"--project\" to pass a project path.\n")
+				warn.Printf("Run \"rill start\" to initialize a new Rill project.\n")
 				return nil
 			}
 
@@ -93,6 +93,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				if err := auth.Login(ctx, cfg); err != nil {
 					return fmt.Errorf("login failed: %w", err)
 				}
+				fmt.Println("")
 			}
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -302,6 +303,11 @@ func variablesFlow(projectPath string) (map[string]string, error) {
 			}
 		}
 	}
+
+	if len(connectors) > 0 {
+		fmt.Println("")
+	}
+
 	return vars, nil
 }
 
@@ -407,7 +413,7 @@ func projectNamePrompt(ctx context.Context, client *adminclient.Client, orgName 
 		{
 			Name: "name",
 			Prompt: &survey.Input{
-				Message: "What is the project name?",
+				Message: "Enter a project name",
 			},
 			Validate: func(any interface{}) error {
 				name := any.(string)
