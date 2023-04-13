@@ -20,6 +20,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/hashicorp/go-version"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -34,7 +35,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const cliVersionConstraint = ">= 0.20.0"
+const minCliVersion = "0.20.0"
 
 type Options struct {
 	HTTPPort               int
@@ -275,19 +276,19 @@ func CheckUserAgent(ctx context.Context) (context.Context, error) {
 		return ctx, nil
 	}
 
-	// v1, err := version.NewVersion(ver)
-	// if err != nil {
-	// 	return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("could not parse rill-cli version: %s", err.Error()))
-	// }
+	v1, err := version.NewVersion(ver)
+	if err != nil {
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("could not parse rill-cli version: %s", err.Error()))
+	}
 
-	// constraints, err := version.NewConstraint(cliVersionConstraint)
-	// if err != nil {
-	// 	panic(err)
-	// }
+	v2, err := version.NewVersion(minCliVersion)
+	if err != nil {
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("could not parse minCliVersion version: %s", err.Error()))
+	}
 
-	// if !constraints.Check(v1) {
-	// 	return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported, please upgrade to the latest version", v1))
-	// }
+	if !v1.GreaterThan(v2) {
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported, please upgrade to the latest version", v1))
+	}
 
 	return ctx, nil
 }
