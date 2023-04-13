@@ -96,7 +96,7 @@
     </div>
   {/if}
   <!-- bottom row -->
-  <div class="-ml-3 p-1">
+  <div class="-ml-3 p-1 py-2 space-y-2">
     <TimeControls {metricViewName} />
     {#key metricViewName}
       <Filters {metricViewName} />

@@ -4,11 +4,13 @@
   import { Button } from "@rilldata/web-common/components/button";
   import {
     createAdminServiceGetOrganization,
-    createAdminServiceListProjects,
+    createAdminServiceListProjectsForOrganization,
   } from "../../client";
 
   $: org = createAdminServiceGetOrganization($page.params.organization);
-  $: projs = createAdminServiceListProjects($page.params.organization);
+  $: projs = createAdminServiceListProjectsForOrganization(
+    $page.params.organization
+  );
 
   $: if ($projs.data && $projs.data.projects?.length > 0) {
     goto(`/${$page.params.organization}/${$projs.data.projects[0].name}`);

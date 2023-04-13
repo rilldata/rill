@@ -23,4 +23,4 @@
   <title>Rill | {metricViewName}</title>
 </svelte:head>
 
-<Dashboard hasTitle={false} {metricViewName} />
+<Dashboard leftMargin={"44px"} hasTitle={false} {metricViewName} />

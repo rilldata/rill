@@ -132,23 +132,27 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 		args = append(args, clauseArgs...)
 	}
 
-	orderClause := "true"
+	sortingCriteria := make([]string, 0, len(q.Sort))
 	for _, s := range q.Sort {
-		orderClause += ", "
-		orderClause += safeName(s.Name)
+		sortCriterion := safeName(s.Name)
 		if !s.Ascending {
-			orderClause += " DESC"
+			sortCriterion += " DESC"
 		}
 		if dialect == drivers.DialectDuckDB {
-			orderClause += " NULLS LAST"
+			sortCriterion += " NULLS LAST"
 		}
+		sortingCriteria = append(sortingCriteria, sortCriterion)
+	}
+	orderClause := ""
+	if len(sortingCriteria) > 0 {
+		orderClause = "ORDER BY " + strings.Join(sortingCriteria, ", ")
 	}
 
 	if q.Limit == 0 {
 		q.Limit = 100
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s GROUP BY %s ORDER BY %s LIMIT %d",
+	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s GROUP BY %s %s LIMIT %d",
 		strings.Join(selectCols, ", "),
 		mv.Model,
 		whereClause,

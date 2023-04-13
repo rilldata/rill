@@ -29,7 +29,7 @@ export type AdminServiceCreateProjectBody = {
   variables?: AdminServiceCreateProjectBodyVariables;
 };
 
-export type AdminServiceListProjectsParams = {
+export type AdminServiceListProjectsForOrganizationParams = {
   pageSize?: number;
   pageToken?: string;
 };
@@ -116,6 +116,8 @@ export interface V1Project {
   githubUrl?: string;
   id?: string;
   name?: string;
+  orgId?: string;
+  orgName?: string;
   productionBranch?: string;
   productionDeploymentId?: string;
   productionOlapDriver?: string;
@@ -153,7 +155,7 @@ export interface V1Member {
   userName?: string;
 }
 
-export interface V1ListProjectsResponse {
+export interface V1ListProjectsForOrganizationResponse {
   nextPageToken?: string;
   projects?: V1Project[];
 }
@@ -241,7 +243,6 @@ export interface V1CreateOrganizationResponse {
 
 export interface V1CreateOrganizationRequest {
   description?: string;
-  id?: string;
   name?: string;
 }
 

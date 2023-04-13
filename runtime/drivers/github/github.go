@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -53,6 +54,11 @@ func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, err
 			return err
 		}
 
+		tempdir, err = filepath.Abs(tempdir)
+		if err != nil {
+			return err
+		}
+
 		c = &connection{
 			dsnStr:  dsnStr,
 			dsn:     dsn,
@@ -75,8 +81,9 @@ func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, err
 }
 
 type connection struct {
-	dsnStr              string
-	dsn                 DSN
+	dsnStr string
+	dsn    DSN
+	// tempdir path should be absolute
 	tempdir             string
 	cloneURLWithToken   string
 	cloneURLRefreshedOn time.Time

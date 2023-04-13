@@ -4,7 +4,7 @@
   export let showBgOnHover = true;
 </script>
 
-<div
+<button
   class="py-1 px-2 rounded flex gap-x-2 cursor-pointer select-none
   {showBgOnHover ? 'hover:bg-gray-200' : ''}
 "
@@ -23,7 +23,7 @@
     {id}
   />
   <slot />
-</div>
+</button>
 
 <style lang="postcss">
   input {

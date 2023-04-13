@@ -124,7 +124,7 @@ func handleDuckDBInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, e
 
 func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPStore, priority int) error {
 	rangeSQL := fmt.Sprintf(
-		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", timestampdiff(SECOND, max(%[1]s), min(%[1]s)) as \"interval\" FROM %[2]s",
+		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", timestampdiff(SECOND, min(%[1]s), max(%[1]s)) as \"interval\" FROM %[2]s",
 		safeName(q.ColumnName),
 		safeName(q.TableName),
 	)

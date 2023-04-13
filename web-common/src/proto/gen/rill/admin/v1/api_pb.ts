@@ -283,11 +283,6 @@ export class GetOrganizationResponse extends Message<GetOrganizationResponse> {
  */
 export class CreateOrganizationRequest extends Message<CreateOrganizationRequest> {
   /**
-   * @generated from field: string id = 1;
-   */
-  id = "";
-
-  /**
    * @generated from field: string name = 2;
    */
   name = "";
@@ -305,7 +300,6 @@ export class CreateOrganizationRequest extends Message<CreateOrganizationRequest
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.CreateOrganizationRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -513,9 +507,9 @@ export class UpdateOrganizationResponse extends Message<UpdateOrganizationRespon
 }
 
 /**
- * @generated from message rill.admin.v1.ListProjectsRequest
+ * @generated from message rill.admin.v1.ListProjectsForOrganizationRequest
  */
-export class ListProjectsRequest extends Message<ListProjectsRequest> {
+export class ListProjectsForOrganizationRequest extends Message<ListProjectsForOrganizationRequest> {
   /**
    * @generated from field: string organization_name = 1;
    */
@@ -531,40 +525,40 @@ export class ListProjectsRequest extends Message<ListProjectsRequest> {
    */
   pageToken = "";
 
-  constructor(data?: PartialMessage<ListProjectsRequest>) {
+  constructor(data?: PartialMessage<ListProjectsForOrganizationRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.ListProjectsRequest";
+  static readonly typeName = "rill.admin.v1.ListProjectsForOrganizationRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsRequest {
-    return new ListProjectsRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForOrganizationRequest {
+    return new ListProjectsForOrganizationRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectsRequest {
-    return new ListProjectsRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectsForOrganizationRequest {
+    return new ListProjectsForOrganizationRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectsRequest {
-    return new ListProjectsRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectsForOrganizationRequest {
+    return new ListProjectsForOrganizationRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ListProjectsRequest | PlainMessage<ListProjectsRequest> | undefined, b: ListProjectsRequest | PlainMessage<ListProjectsRequest> | undefined): boolean {
-    return proto3.util.equals(ListProjectsRequest, a, b);
+  static equals(a: ListProjectsForOrganizationRequest | PlainMessage<ListProjectsForOrganizationRequest> | undefined, b: ListProjectsForOrganizationRequest | PlainMessage<ListProjectsForOrganizationRequest> | undefined): boolean {
+    return proto3.util.equals(ListProjectsForOrganizationRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.ListProjectsResponse
+ * @generated from message rill.admin.v1.ListProjectsForOrganizationResponse
  */
-export class ListProjectsResponse extends Message<ListProjectsResponse> {
+export class ListProjectsForOrganizationResponse extends Message<ListProjectsForOrganizationResponse> {
   /**
    * @generated from field: repeated rill.admin.v1.Project projects = 1;
    */
@@ -575,32 +569,32 @@ export class ListProjectsResponse extends Message<ListProjectsResponse> {
    */
   nextPageToken = "";
 
-  constructor(data?: PartialMessage<ListProjectsResponse>) {
+  constructor(data?: PartialMessage<ListProjectsForOrganizationResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.ListProjectsResponse";
+  static readonly typeName = "rill.admin.v1.ListProjectsForOrganizationResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "projects", kind: "message", T: Project, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsResponse {
-    return new ListProjectsResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForOrganizationResponse {
+    return new ListProjectsForOrganizationResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectsResponse {
-    return new ListProjectsResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectsForOrganizationResponse {
+    return new ListProjectsForOrganizationResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectsResponse {
-    return new ListProjectsResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectsForOrganizationResponse {
+    return new ListProjectsForOrganizationResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ListProjectsResponse | PlainMessage<ListProjectsResponse> | undefined, b: ListProjectsResponse | PlainMessage<ListProjectsResponse> | undefined): boolean {
-    return proto3.util.equals(ListProjectsResponse, a, b);
+  static equals(a: ListProjectsForOrganizationResponse | PlainMessage<ListProjectsForOrganizationResponse> | undefined, b: ListProjectsForOrganizationResponse | PlainMessage<ListProjectsForOrganizationResponse> | undefined): boolean {
+    return proto3.util.equals(ListProjectsForOrganizationResponse, a, b);
   }
 }
 
@@ -1332,6 +1326,16 @@ export class Project extends Message<Project> {
   public = false;
 
   /**
+   * @generated from field: string org_id = 15;
+   */
+  orgId = "";
+
+  /**
+   * @generated from field: string org_name = 16;
+   */
+  orgName = "";
+
+  /**
    * @generated from field: string region = 12;
    */
   region = "";
@@ -1393,6 +1397,8 @@ export class Project extends Message<Project> {
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 15, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "production_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "production_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },

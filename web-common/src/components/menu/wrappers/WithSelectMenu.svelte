@@ -15,7 +15,6 @@ and the menu closes.
   export let selection = undefined;
 
   export let dark: boolean = undefined;
-  export let disabled: boolean = undefined;
   export let multiSelect: boolean = undefined;
   export let location: Location = "bottom";
   export let alignment: Alignment = "start";
