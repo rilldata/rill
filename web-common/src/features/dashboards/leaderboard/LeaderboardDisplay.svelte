@@ -2,6 +2,7 @@
   import VirtualizedGrid from "@rilldata/web-common/components/VirtualizedGrid.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
+    selectDimensionKeys,
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
@@ -134,9 +135,16 @@
     observer?.disconnect();
   });
 
-  let visibleDimensions = [];
-  $: visibleDimensions = metricsExplorer?.visibleDimensions ?? [];
-  $: dimensionsShown = dimensions?.filter((_, i) => visibleDimensions[i]) ?? [];
+  // let visibleDimensions = [];
+  // $: visibleDimensions = metricsExplorer?.visibleDimensions ?? [];
+  $: availableDimensionKeys = selectDimensionKeys($metaQuery);
+  $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
+  $: visibleDimensionsBitmask = availableDimensionKeys.map((k) =>
+    visibleDimensionKeys.has(k)
+  );
+
+  $: dimensionsShown =
+    dimensions?.filter((_, i) => visibleDimensionsBitmask[i]) ?? [];
 </script>
 
 <svelte:window on:resize={onResize} />

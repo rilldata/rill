@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
+  import {
+    useMetaQuery,
+    selectBestMeasureStrings,
+    selectMeasureKeys,
+  } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
@@ -153,24 +157,28 @@
     calculateGridColumns();
   }
 
-  let availableMeasureLabels = [];
-  let visibleMeasures = [];
+  $: availableMeasureLabels = selectBestMeasureStrings($metaQuery);
+  $: availableMeasureKeys = selectMeasureKeys($metaQuery);
+  $: visibleMeasureKeys = metricsExplorer?.visibleMeasureKeys;
+  $: visibleMeasuresBitmask = availableMeasureKeys.map((k) =>
+    visibleMeasureKeys.has(k)
+  );
 
-  $: availableMeasureLabels =
-    $totalsQuery?.isSuccess &&
-    $metaQuery.data?.measures.map((m) => m.label || m?.expression);
-
-  $: visibleMeasures = metricsExplorer?.visibleMeasures ?? [];
-
-  const toggleMeasureVisibility = (e) =>
-    metricsExplorerStore.toggleMeasureVisibility(
+  const toggleMeasureVisibility = (e) => {
+    metricsExplorerStore.toggleMeasureVisibilityByKey(
       metricViewName,
-      e.detail.index
+      availableMeasureKeys[e.detail.index]
     );
-  const setAllMeasuresNotVisible = () =>
-    metricsExplorerStore.setAllMeasuresVisibility(metricViewName, false);
-  const setAllMeasuresVisible = () =>
-    metricsExplorerStore.setAllMeasuresVisibility(metricViewName, true);
+  };
+  const setAllMeasuresNotVisible = () => {
+    metricsExplorerStore.hideAllMeasures(metricViewName);
+  };
+  const setAllMeasuresVisible = () => {
+    metricsExplorerStore.setMultipleMeasuresVisible(
+      metricViewName,
+      availableMeasureKeys
+    );
+  };
 </script>
 
 <svelte:window on:resize={() => calculateGridColumns()} />
@@ -187,7 +195,7 @@
     <div class="bg-white sticky top-0" style="z-index:100">
       <SeachableFilterButton
         selectableItems={availableMeasureLabels}
-        selectedItems={visibleMeasures}
+        selectedItems={visibleMeasuresBitmask}
         on:item-clicked={toggleMeasureVisibility}
         on:deselect-all={setAllMeasuresNotVisible}
         on:select-all={setAllMeasuresVisible}
@@ -196,7 +204,7 @@
       />
     </div>
     {#if $metaQuery.data?.measures}
-      {#each $metaQuery.data?.measures.filter((_, i) => visibleMeasures[i]) as measure, index (measure.name)}
+      {#each $metaQuery.data?.measures.filter((_, i) => visibleMeasuresBitmask[i]) as measure, index (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
         {@const bigNum = $totalsQuery?.data?.data?.[measure.name]}
         <div

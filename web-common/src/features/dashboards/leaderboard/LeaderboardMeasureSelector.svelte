@@ -9,7 +9,11 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";
-  import { useMetaQuery } from "../selectors";
+  import {
+    useMetaQuery,
+    selectBestDimensionStrings,
+    selectDimensionKeys,
+  } from "../selectors";
 
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
 
@@ -68,20 +72,45 @@
   /** set the selection only if measures is not undefined */
   $: selection = measures ? activeLeaderboardMeasure : [];
 
-  $: availableDimensionLabels = dimensions?.map((d) => d.label) ?? [];
-  $: visibleDimensions = metricsExplorer?.visibleDimensions ?? [];
+  // $: availableDimensionLabels =
+  //   dimensions?.map((d) => (d.label !== "" ? d.label : d.name)) ?? [];
+  // $: visibleDimensions = metricsExplorer?.visibleDimensions ?? [];
 
-  const toggleDimensionVisibility = (e) =>
-    metricsExplorerStore.toggleDimensionVisibility(
+  // const toggleDimensionVisibility = (e) =>
+  //   metricsExplorerStore.toggleDimensionVisibility(
+  //     metricViewName,
+  //     e.detail.index
+  //   );
+  // const setAllDimensionsNotVisible = () =>
+  //   metricsExplorerStore.setAllDimensionsVisiblility(metricViewName, false);
+  // const setAllDimensionsVisible = () =>
+  //   metricsExplorerStore.setAllDimensionsVisiblility(metricViewName, true);
+
+  $: availableDimensionLabels = selectBestDimensionStrings($metaQuery);
+  $: availableDimensionKeys = selectDimensionKeys($metaQuery);
+  $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
+  $: visibleDimensionsBitmask = availableDimensionKeys.map((k) =>
+    visibleDimensionKeys.has(k)
+  );
+
+  $: console.log("visibleDimensionKeys", visibleDimensionKeys);
+  $: console.log("visibleDimensionsBitmask", visibleDimensionsBitmask);
+
+  const toggleDimensionVisibility = (e) => {
+    metricsExplorerStore.toggleDimensionVisibilityByKey(
       metricViewName,
-      e.detail.index
+      availableDimensionKeys[e.detail.index]
     );
-  const setAllDimensionsNotVisible = () =>
-    metricsExplorerStore.setAllDimensionsVisiblility(metricViewName, false);
-  const setAllDimensionsVisible = () =>
-    metricsExplorerStore.setAllDimensionsVisiblility(metricViewName, true);
-
-  $: dimensionsShown = dimensions?.filter((_, i) => visibleDimensions[i]) ?? [];
+  };
+  const setAllDimensionsNotVisible = () => {
+    metricsExplorerStore.hideAllDimensions(metricViewName);
+  };
+  const setAllDimensionsVisible = () => {
+    metricsExplorerStore.setMultipleDimensionsVisible(
+      metricViewName,
+      availableDimensionKeys
+    );
+  };
 </script>
 
 <div>
@@ -95,7 +124,7 @@
     >
       <SeachableFilterButton
         selectableItems={availableDimensionLabels}
-        selectedItems={visibleDimensions}
+        selectedItems={visibleDimensionsBitmask}
         on:item-clicked={toggleDimensionVisibility}
         on:deselect-all={setAllDimensionsNotVisible}
         on:select-all={setAllDimensionsVisible}

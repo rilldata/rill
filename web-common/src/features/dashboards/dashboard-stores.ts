@@ -24,12 +24,36 @@ export interface MetricsExplorerEntity {
   name: string;
   // selected measure names to be shown
   selectedMeasureNames: Array<string>;
+
+  /** 
+  FIXME For now we are using the user supplied `expression` for measures
+  and `name` (column name) for dimensions to determine which measures and
+  dimensions are visible. These are used because they are the only fields
+  that are required to exist in measures/dimensions for them to be shown
+  in the dashboard
+
+  This may lead to problems if there are ever duplicates among
+  these. Hamilton has started discussions with Benjamin about
+  adding unique keys that could be used to replace these temporary keys. 
+  Once those become available the logic around the fields below
+  should be updated.
+*/
   // This array controls which measures are visible in
-  // explorer on the client.
-  // FIXME / REVIEW QUESTION: should this be consolidated with selectedMeasureNames?
-  visibleMeasures: boolean[];
+  // explorer on the client. Note that this will need to be
+  // updated to include all measure keys upon initialization
+  // or else all measure will be hidden
+  visibleMeasureKeys: Set<string>;
+  // This array controls which dimensions are visible in
+  // explorer on the client.Note that if this is null, all
+  // dimensions will be visible (this is needed to default to all visible
+  // when there are not existing keys in the URL or saved on the
+  // server)
+  visibleDimensionKeys: Set<string>;
 
   // This array controls which measures are visible in
+  // explorer on the client.
+  visibleMeasures: boolean[];
+  // This array controls which dimensions are visible in
   // explorer on the client.
   visibleDimensions: boolean[];
   // this is used to show leaderboard values
@@ -51,9 +75,11 @@ export interface MetricsExplorerEntity {
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
 }
-const { update, subscribe } = writable({
+const metricsExplorerStoreBase = writable({
   entities: {},
 } as MetricsExplorerStoreType);
+
+const { update, subscribe } = metricsExplorerStoreBase;
 
 const updateMetricsExplorerByName = (
   name: string,
@@ -109,6 +135,8 @@ const metricViewReducers = {
         selectedMeasureNames: [],
         visibleMeasures: [],
         visibleDimensions: [],
+        visibleMeasureKeys: new Set(),
+        visibleDimensionKeys: new Set(),
         leaderboardMeasureName: "",
         filters: {},
         dimensionFilterExcludeMode: includeExcludeModeFromFilters(
@@ -143,6 +171,14 @@ const metricViewReducers = {
         metricsExplorer.visibleMeasures = metricsView.measures.map(
           (_visibility) => true
         );
+
+        metricsExplorer.visibleMeasureKeys = new Set(
+          metricsView.measures.map((measure) => measure.expression)
+        );
+
+        metricsExplorer.visibleDimensionKeys = new Set(
+          metricsView.dimensions.map((dim) => dim.name)
+        );
         metricsExplorer.visibleDimensions = metricsView.dimensions.map(
           (_visibility) => true
         );
@@ -155,6 +191,12 @@ const metricViewReducers = {
           ),
           visibleMeasures: metricsView.measures.map((_visibility) => true),
           visibleDimensions: metricsView.dimensions.map((_visibility) => true),
+          visibleMeasureKeys: new Set(
+            metricsView.measures.map((measure) => measure.expression)
+          ),
+          visibleDimensionKeys: new Set(
+            metricsView.dimensions.map((dim) => dim.name)
+          ),
           leaderboardMeasureName: metricsView.measures[0]?.name,
           filters: {
             include: [],
@@ -181,7 +223,6 @@ const metricViewReducers = {
       );
     });
   },
-
   // Updates the bitmask that sets the client-side visibility
   // of measures in the dashboard.
   setAllMeasuresVisibility(name: string, visible: boolean) {
@@ -189,6 +230,31 @@ const metricViewReducers = {
       metricsExplorer.visibleMeasures = metricsExplorer.visibleMeasures.map(
         (_) => visible
       );
+    });
+  },
+
+  toggleMeasureVisibilityByKey(name: string, key: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      if (metricsExplorer.visibleMeasureKeys.has(key)) {
+        metricsExplorer.visibleMeasureKeys.delete(key);
+      } else {
+        metricsExplorer.visibleMeasureKeys.add(key);
+      }
+    });
+  },
+
+  hideAllMeasures(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.visibleMeasureKeys.clear();
+    });
+  },
+
+  setMultipleMeasuresVisible(name: string, keys: string[]) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.visibleMeasureKeys = new Set([
+        ...metricsExplorer.visibleMeasureKeys,
+        ...keys,
+      ]);
     });
   },
 
@@ -209,6 +275,31 @@ const metricViewReducers = {
       metricsExplorer.visibleDimensions = metricsExplorer.visibleDimensions.map(
         (_) => visible
       );
+    });
+  },
+
+  toggleDimensionVisibilityByKey(name: string, key: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      if (metricsExplorer.visibleDimensionKeys.has(key)) {
+        metricsExplorer.visibleDimensionKeys.delete(key);
+      } else {
+        metricsExplorer.visibleDimensionKeys.add(key);
+      }
+    });
+  },
+
+  hideAllDimensions(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.visibleDimensionKeys.clear();
+    });
+  },
+
+  setMultipleDimensionsVisible(name: string, keys: string[]) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.visibleDimensionKeys = new Set([
+        ...metricsExplorer.visibleDimensionKeys,
+        ...keys,
+      ]);
     });
   },
 
@@ -340,10 +431,12 @@ const metricViewReducers = {
     });
   },
 };
+
+metricsExplorerStoreBase;
+
 export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
   typeof metricViewReducers = {
   subscribe,
-
   ...metricViewReducers,
 };
 
