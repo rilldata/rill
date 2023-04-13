@@ -72,7 +72,7 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 	repository, err := s.admin.LookupGithubRepoForUser(ctx, installationID, req.GithubUrl, user.GithubUsername)
 	if err != nil {
 		if errors.Is(err, admin.ErrUserIsNotCollaborator) {
-			msg := fmt.Sprintf("You are not a collaborator. Click %s to re-authorise/authorise another account.", s.urls.githubAuth)
+			msg := fmt.Sprintf("Github user %s is not a collaborator to repo %s. Click %s to re-authorise/authorise another account.", user.GithubUsername, req.GithubUrl, s.urls.githubAuth)
 			return nil, status.Error(codes.PermissionDenied, msg)
 		}
 		return nil, status.Error(codes.Internal, err.Error())
