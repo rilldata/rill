@@ -400,6 +400,18 @@ func (u *externalURLs) githubAuthRetryURL(remote, username string) (string, erro
 	return parsedURL.String(), nil
 }
 
+func (u *externalURLs) githubAuthURL(remote string) (string, error) {
+	parsedURL, err := url.Parse(u.githubAuth)
+	if err != nil {
+		return "", err
+	}
+
+	qry := parsedURL.Query()
+	qry.Set("remote", remote)
+	parsedURL.RawQuery = qry.Encode()
+	return parsedURL.String(), nil
+}
+
 func mustJoinURL(base string, elem ...string) string {
 	joinedURL, err := url.JoinPath(base, elem...)
 	if err != nil {

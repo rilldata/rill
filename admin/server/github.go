@@ -63,9 +63,14 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 
 	// user has not authorized github app
 	if user.GithubUsername == "" {
+		redirectURL, err := s.urls.githubAuthURL(req.GithubUrl)
+		if err != nil {
+			return nil, err
+		}
+
 		res := &adminv1.GetGithubRepoStatusResponse{
 			HasAccess:      false,
-			GrantAccessUrl: s.urls.githubAuth,
+			GrantAccessUrl: redirectURL,
 		}
 		return res, nil
 	}
@@ -322,6 +327,10 @@ func (s *Server) githubAuthLogin(w http.ResponseWriter, r *http.Request, pathPar
 
 	// Set state in cookie
 	sess.Values[githubcookieFieldState] = state
+	remote := r.URL.Query().Get("remote")
+	if remote != "" {
+		sess.Values[githubcookieFieldRemote] = remote
+	}
 
 	// Save cookie
 	if err := sess.Save(r, w); err != nil {
