@@ -348,7 +348,7 @@ func orgNamePrompt(ctx context.Context, client *adminclient.Client) (string, err
 		{
 			Name: "name",
 			Prompt: &survey.Input{
-				Message: "Please enter org name",
+				Message: "Enter an org name",
 			},
 			Validate: func(any interface{}) error {
 				// Validate org name doesn't exist already
@@ -359,7 +359,7 @@ func orgNamePrompt(ctx context.Context, client *adminclient.Client) (string, err
 
 				exist, err := orgNameExists(ctx, client, name)
 				if err != nil {
-					return err
+					return fmt.Errorf("org name %q is already taken", name)
 				}
 
 				if exist {
@@ -395,8 +395,13 @@ func orgNameExists(ctx context.Context, client *adminclient.Client, name string)
 func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
 	// Create the project (automatically deploys prod branch)
 	res, err := client.CreateProject(ctx, req)
-	if err != nil && isNameExistsErr(err) {
+	if err != nil {
+		if !isNameExistsErr(err) {
+			return nil, err
+		}
+
 		// project name already exists, prompt for project name and create project with new name again
+
 		name, err := projectNamePrompt(ctx, client, req.OrganizationName)
 		if err != nil {
 			return nil, err
@@ -422,7 +427,7 @@ func projectNamePrompt(ctx context.Context, client *adminclient.Client, orgName 
 				}
 				exists, err := projectExists(ctx, client, orgName, name)
 				if err != nil {
-					return err
+					return fmt.Errorf("project already exists at %s/%s", orgName, name)
 				}
 				if exists {
 					// this should always be true but adding this check from completeness POV
