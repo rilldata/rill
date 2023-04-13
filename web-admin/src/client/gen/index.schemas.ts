@@ -116,6 +116,8 @@ export interface V1Project {
   githubUrl?: string;
   id?: string;
   name?: string;
+  orgId?: string;
+  orgName?: string;
   productionBranch?: string;
   productionDeploymentId?: string;
   productionOlapDriver?: string;

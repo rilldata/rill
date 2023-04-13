@@ -826,6 +826,10 @@ definitions:
       name:
         type: string
         title: Unique in organization
+      orgId:
+        type: string
+      orgName:
+        type: string
       productionBranch:
         type: string
       productionDeploymentId:

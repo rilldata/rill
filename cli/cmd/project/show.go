@@ -30,7 +30,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			cmdutil.SuccessPrinter("Found project \n")
-			cmdutil.TablePrinter(toRow(proj.Project, cfg.Org))
+			cmdutil.TablePrinter(toRow(proj.Project))
 			return nil
 		},
 	}

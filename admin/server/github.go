@@ -166,7 +166,7 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request, pathParam
 // This call can originate from users who are not logged in in cases like admin user accepting installation request, removing existing installation etc.
 // It's implemented as a non-gRPC endpoint mounted directly on /github/connect/callback.
 // High level flow:
-// User installation is accompanied with user authorization as well
+// User installation
 //   - Save user's github username in the users table
 //   - verify the user is a collaborator else return unauthorised
 //   - verify the user installed the app on the right repo else navigate to retry
@@ -174,7 +174,6 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request, pathParam
 //
 // If user requests the app
 //   - Save user's github username in the users table
-//   - verify the user is a collaborator else return unauthorised
 //   - navigate to request page
 func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 	ctx := r.Context()

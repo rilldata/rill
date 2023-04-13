@@ -1326,6 +1326,16 @@ export class Project extends Message<Project> {
   public = false;
 
   /**
+   * @generated from field: string org_id = 15;
+   */
+  orgId = "";
+
+  /**
+   * @generated from field: string org_name = 16;
+   */
+  orgName = "";
+
+  /**
    * @generated from field: string region = 12;
    */
   region = "";
@@ -1387,6 +1397,8 @@ export class Project extends Message<Project> {
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 15, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "production_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "production_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
