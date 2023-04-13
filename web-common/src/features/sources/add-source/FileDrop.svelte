@@ -1,8 +1,8 @@
 <script lang="ts">
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { createRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useModelNames } from "../../models/selectors";
   import { compileCreateSourceYAML } from "../sourceUtils";
@@ -14,7 +14,7 @@
   const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtime.instanceId;
-  const createSourceMutation = useRuntimeServicePutFileAndReconcile();
+  const createSourceMutation = createRuntimeServicePutFileAndReconcile();
 
   $: sourceNames = useSourceNames(runtimeInstanceId);
   $: modelNames = useModelNames(runtimeInstanceId);

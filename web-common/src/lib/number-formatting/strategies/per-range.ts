@@ -101,7 +101,6 @@ export class PerRangeFormatter implements Formatter {
         );
       }
     }
-
     this.initialSample = sample;
   }
 
@@ -169,7 +168,6 @@ export class PerRangeFormatter implements Formatter {
     if (this.options.upperCaseEForExponent !== true) {
       numParts.suffix = numParts.suffix.replace("E", "e");
     }
-
     if (this.options.numberKind === NumberKind.DOLLAR) {
       numParts.dollar = "$";
     }

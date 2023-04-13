@@ -4,16 +4,15 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServicePutFileAndReconcile,
     V1PutFileAndReconcileResponse,
     V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import type { SelectorOption } from "@rilldata/web-local/lib/components/table-editable/ColumnConfig";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { onMount, setContext } from "svelte";
   import { writable } from "svelte/store";
   import { WorkspaceContainer } from "../../../layout/workspace";
@@ -44,7 +43,7 @@
   });
   setContext("rill:metrics-config:errors", configurationErrorStore);
 
-  $: dashboardConfig = useRuntimeServiceGetCatalogEntry(
+  $: dashboardConfig = createRuntimeServiceGetCatalogEntry(
     instanceId,
     metricsDefName
   );
@@ -62,7 +61,7 @@
 
   $: switchToMetrics(metricsDefName);
 
-  const metricMigrate = useRuntimeServicePutFileAndReconcile();
+  const metricMigrate = createRuntimeServicePutFileAndReconcile();
   async function callReconcileAndUpdateYaml(internalYamlString) {
     const filePath = getFilePathFromNameAndType(
       metricsDefName,
@@ -109,7 +108,7 @@
   $: dimensions = $metricsInternalRep.getDimensions();
 
   $: modelName = $metricsInternalRep.getMetricKey("model");
-  $: getModel = useRuntimeServiceGetCatalogEntry(instanceId, modelName);
+  $: getModel = createRuntimeServiceGetCatalogEntry(instanceId, modelName);
   $: model = $getModel.data?.entry?.model;
 
   function handleCreateMeasure() {
@@ -142,7 +141,7 @@
     $metricsInternalRep.deleteDimension(evt.detail);
   }
 
-  let validDimensionSelectorOption: SelectorOption[] = [];
+  let validDimensionSelectorOption = [];
   $: if (model) {
     const selectedMetricsDefModelProfile = model?.schema?.fields ?? [];
     validDimensionSelectorOption = selectedMetricsDefModelProfile

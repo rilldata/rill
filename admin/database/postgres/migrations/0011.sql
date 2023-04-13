@@ -1,3 +1,1 @@
-drop table users_github_installations;
-
-alter table users add github_username TEXT NOT NULL DEFAULT '';
+ALTER TABLE projects RENAME COLUMN organization_id TO org_id;

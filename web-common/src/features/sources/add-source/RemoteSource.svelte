@@ -10,13 +10,13 @@
   import {
     ConnectorProperty,
     ConnectorPropertyType,
-    useRuntimeServiceDeleteFileAndReconcile,
-    useRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceDeleteFileAndReconcile,
+    createRuntimeServicePutFileAndReconcile,
     V1Connector,
     V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
@@ -37,14 +37,14 @@
   $: runtimeInstanceId = $runtime.instanceId;
   $: sourceNames = useSourceNames(runtimeInstanceId);
 
-  const createSourceMutation = useRuntimeServicePutFileAndReconcile();
+  const createSourceMutation = createRuntimeServicePutFileAndReconcile();
   let createSourceMutationError: {
     code: number;
     message: string;
   };
   $: createSourceMutationError = ($createSourceMutation?.error as any)?.response
     ?.data;
-  const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
+  const deleteSource = createRuntimeServiceDeleteFileAndReconcile();
 
   const dispatch = createEventDispatcher();
 
@@ -152,8 +152,10 @@
   >
     <div class="pt-4 pb-2">
       Need help? Refer to our
-      <a href="https://docs.rilldata.com/using-rill/import-data" target="_blank"
-        >docs</a
+      <a
+        href="https://docs.rilldata.com/using-rill/import-data"
+        target="_blank"
+        rel="noreferrer">docs</a
       > for more information.
     </div>
     {#if $createSourceMutation.isError || error}

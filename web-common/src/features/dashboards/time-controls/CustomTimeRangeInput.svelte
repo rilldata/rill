@@ -3,39 +3,24 @@
     getAllowedTimeGrains,
     isGrainBigger,
   } from "@rilldata/web-common/lib/time/grains";
-  import { getOffset } from "@rilldata/web-common/lib/time/transforms";
-  import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
-  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { Button } from "../../../components/button";
-  import {
-    useQueryServiceColumnTimeRange,
-    useRuntimeServiceGetCatalogEntry,
-    V1ColumnTimeRangeResponse,
-    V1TimeGrain,
-  } from "../../../runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
-  import { useDashboardStore } from "../dashboard-stores";
+  import type { DashboardTimeControls } from "../../../lib/time/types";
+  import type { V1TimeGrain } from "../../../runtime-client";
 
-  export let metricViewName: string;
   export let minTimeGrain: V1TimeGrain;
+  export let boundaryStart: Date;
+  export let boundaryEnd: Date;
+  export let defaultDate: DashboardTimeControls;
 
   const dispatch = createEventDispatcher();
 
   let start: string;
   let end: string;
 
-  $: dashboardStore = useDashboardStore(metricViewName);
-
-  $: if (!start && !end && $dashboardStore?.selectedTimeRange.start) {
-    start = getDateFromObject($dashboardStore.selectedTimeRange.start);
-    end = getDateFromObject(
-      getOffset(
-        new Date($dashboardStore.selectedTimeRange.end),
-        "P1D",
-        TimeOffsetType.SUBTRACT
-      )
-    );
+  $: if (!start && !end && defaultDate) {
+    start = getDateFromObject(defaultDate.start);
+    end = getDateFromObject(defaultDate.end);
   }
 
   // functions for extracting the right kind of date string out of
@@ -75,34 +60,8 @@
   $: error = validateTimeRange(new Date(start), new Date(end), minTimeGrain);
   $: disabled = !start || !end || !!error;
 
-  let metricsViewQuery;
-  $: if ($runtime?.instanceId) {
-    metricsViewQuery = useRuntimeServiceGetCatalogEntry(
-      $runtime.instanceId,
-      metricViewName
-    );
-  }
-  let timeRangeQuery: UseQueryStoreResult<V1ColumnTimeRangeResponse, Error>;
-  $: if (
-    $runtime?.instanceId &&
-    $metricsViewQuery?.data?.entry?.metricsView?.model &&
-    $metricsViewQuery?.data?.entry?.metricsView?.timeDimension
-  ) {
-    timeRangeQuery = useQueryServiceColumnTimeRange(
-      $runtime.instanceId,
-      $metricsViewQuery.data.entry.metricsView.model,
-      {
-        columnName: $metricsViewQuery.data.entry.metricsView.timeDimension,
-      }
-    );
-  }
-
-  $: min = $timeRangeQuery.data.timeRangeSummary?.min
-    ? getDateFromISOString($timeRangeQuery.data.timeRangeSummary.min)
-    : undefined;
-  $: max = $timeRangeQuery.data.timeRangeSummary?.max
-    ? getDateFromISOString($timeRangeQuery.data.timeRangeSummary.max)
-    : undefined;
+  $: max = getDateFromISOString(boundaryEnd.toISOString());
+  $: min = getDateFromISOString(boundaryStart.toISOString());
 
   function applyCustomTimeRange() {
     const startDate = getISOStringFromDate(start);
@@ -140,8 +99,8 @@
     <input
       bind:value={end}
       id="end-date"
-      {max}
       {min}
+      {max}
       name="end-date"
       on:blur={() => dispatch("close-calendar")}
       type="date"

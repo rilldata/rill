@@ -1,12 +1,12 @@
 <script lang="ts">
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
-  import { useRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
+  import { createRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import SourceWorkspaceErrorStates from "./SourceWorkspaceErrorStates.svelte";
 
   export let sourceName: string;
 
-  $: getSource = useRuntimeServiceGetCatalogEntry(
+  $: getSource = createRuntimeServiceGetCatalogEntry(
     $runtime?.instanceId,
     sourceName
   );

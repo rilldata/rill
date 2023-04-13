@@ -10,6 +10,7 @@ import {
   Period,
   RangePresetType,
   ReferencePoint,
+  TimeComparisonOption,
   TimeGrain,
   TimeOffsetType,
   TimeRangeMeta,
@@ -31,6 +32,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   LAST_SIX_HOURS: {
     label: "Last 6 Hours",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -57,6 +59,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   LAST_24_HOURS: {
     label: "Last 24 Hours",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
+    defaultComparison: TimeComparisonOption.DAY,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -81,12 +84,37 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   LAST_7_DAYS: {
     label: "Last 7 Days",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
+    defaultComparison: TimeComparisonOption.WEEK,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
         { duration: "P1W", operationType: TimeOffsetType.SUBTRACT }, // operation
         {
-          period: Period.DAY, //TODO: How to handle user selected timegrains?
+          period: Period.HOUR, //TODO: How to handle user selected timegrains?
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        }, // truncation
+      ],
+    },
+    end: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: [
+        {
+          period: Period.HOUR,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
+        },
+      ],
+    },
+  },
+  LAST_14_DAYS: {
+    label: "Last 14 Days",
+    rangePreset: RangePresetType.OFFSET_ANCHORED,
+    defaultComparison: TimeComparisonOption.WEEK,
+    start: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: [
+        { duration: "P2W", operationType: TimeOffsetType.SUBTRACT }, // operation
+        {
+          period: Period.HOUR, //TODO: How to handle user selected timegrains?
           truncationType: TimeTruncationType.START_OF_PERIOD,
         }, // truncation
       ],
@@ -104,12 +132,13 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   LAST_4_WEEKS: {
     label: "Last 4 Weeks",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
         { duration: "P4W", operationType: TimeOffsetType.SUBTRACT }, // operation
         {
-          period: Period.DAY, //TODO: How to handle user selected timegrains?
+          period: Period.HOUR, //TODO: How to handle user selected timegrains?
           truncationType: TimeTruncationType.START_OF_PERIOD,
         }, // truncation
       ],
@@ -118,7 +147,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
         {
-          period: Period.DAY,
+          period: Period.HOUR,
           truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
@@ -127,12 +156,13 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   LAST_YEAR: {
     label: "Last Year",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
+    defaultComparison: TimeComparisonOption.YEAR,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
         { duration: "P1Y", operationType: TimeOffsetType.SUBTRACT }, // operation
         {
-          period: Period.DAY, //TODO: How to handle user selected timegrains?
+          period: Period.HOUR, //TODO: How to handle user selected timegrains?
           truncationType: TimeTruncationType.START_OF_PERIOD,
         }, // truncation
       ],
@@ -141,7 +171,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
         {
-          period: Period.DAY,
+          period: Period.HOUR,
           truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
@@ -163,6 +193,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   TODAY: {
     label: "Today",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
+    defaultComparison: TimeComparisonOption.DAY,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -185,6 +216,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   WEEK_TO_DATE: {
     label: "Week to Date",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
+    defaultComparison: TimeComparisonOption.WEEK,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -207,6 +239,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   MONTH_TO_DATE: {
     label: "Month to Date",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
+    defaultComparison: TimeComparisonOption.MONTH,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -229,6 +262,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   YEAR_TO_DATE: {
     label: "Year to Date",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
+    defaultComparison: TimeComparisonOption.YEAR,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
@@ -253,11 +287,14 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
 export const ALL_TIME = {
   label: "All Time",
   rangePreset: RangePresetType.ALL_TIME,
+  // this comparison period is a no-op
+  defaultComparison: TimeComparisonOption.CONTIGUOUS,
 };
 
 export const CUSTOM = {
   label: "Custom",
   rangePreset: RangePresetType.FIXED_RANGE,
+  defaultComparison: TimeComparisonOption.CONTIGUOUS,
 };
 
 export const DEFAULT_TIME_RANGES: Record<string, TimeRangeMeta> = {
@@ -345,5 +382,57 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     formatDate: {
       year: "numeric",
     },
+  },
+};
+
+/** The default configurations for time comparisons. */
+export const TIME_COMPARISON = {
+  [TimeComparisonOption.CONTIGUOUS]: {
+    label: "last period",
+    shorthand: "prev. period",
+    description: "Compare the current time range to the previous time range",
+    comparisonType: TimeComparisonOption.CONTIGUOUS,
+  },
+  [TimeComparisonOption.CUSTOM]: {
+    label: "custom range",
+    shorthand: "comparing",
+    description: "Compare the current time range to a custom time range",
+    comparisonType: TimeComparisonOption.CUSTOM,
+  },
+  [TimeComparisonOption.DAY]: {
+    label: "previous day",
+    shorthand: "prev. day",
+    description:
+      "Compare the current time range to the same time range the day before",
+    comparisonType: TimeComparisonOption.DAY,
+  },
+  [TimeComparisonOption.WEEK]: {
+    label: "previous week",
+    shorthand: "prev. wk",
+    description:
+      "Compare the current time range to the same time range the week before",
+    comparisonType: TimeComparisonOption.WEEK,
+  },
+  [TimeComparisonOption.MONTH]: {
+    label: "previous month",
+    shorthand: "prev. month",
+    description:
+      "Compare the current time range to the same time range the month before",
+    comparisonType: TimeComparisonOption.MONTH,
+  },
+  [TimeComparisonOption.QUARTER]: {
+    label: "previous quarter",
+    shorthand: "prev. qtr",
+    description:
+      "Compare the current time range to the same time range the quarter before",
+    comparisonType: TimeComparisonOption.QUARTER,
+  },
+
+  [TimeComparisonOption.YEAR]: {
+    label: "previous year",
+    shorthand: "prev. yr",
+    description:
+      "Compare the current time range to the same time range the year before",
+    comparisonType: TimeComparisonOption.YEAR,
   },
 };

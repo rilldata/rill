@@ -3,8 +3,8 @@
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { createRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
@@ -20,7 +20,7 @@
 
   const queryClient = useQueryClient();
 
-  const createModelMutation = useRuntimeServicePutFileAndReconcile();
+  const createModelMutation = createRuntimeServicePutFileAndReconcile();
 
   let showModels = true;
 

@@ -6,13 +6,13 @@
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import {
+    createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
-    useQueryServiceMetricsViewTotals,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
-  import { useQueryClient } from "@sveltestack/svelte-query";
-  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
+
+  import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
@@ -20,11 +20,7 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";
-  import {
-    getScaleForLeaderboard,
-    NicelyFormattedTypes,
-    ShortHandSymbols,
-  } from "../humanize-numbers";
+  import { NicelyFormattedTypes } from "../humanize-numbers";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardMeasureSelector from "./LeaderboardMeasureSelector.svelte";
 
@@ -59,7 +55,7 @@
     (activeMeasure?.format as NicelyFormattedTypes) ??
     NicelyFormattedTypes.HUMANIZE;
 
-  let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
+  let totalsQuery: CreateQueryResult<V1MetricsViewTotalsResponse, Error>;
   $: if (
     metricsExplorer &&
     metaQuery &&
@@ -76,7 +72,7 @@
         },
       };
     }
-    totalsQuery = useQueryServiceMetricsViewTotals(
+    totalsQuery = createQueryServiceMetricsViewTotals(
       $runtime.instanceId,
       metricViewName,
       totalsQueryParams
@@ -99,9 +95,6 @@
       .forEach((dimensionName) => leaderboards.delete(dimensionName));
   }
 
-  /** create a scale for the valid leaderboards */
-  let leaderboardFormatScale: ShortHandSymbols = "none";
-
   let leaderboardExpanded;
 
   function onSelectItem(event, item: MetricsViewDimension) {
@@ -115,12 +108,6 @@
 
   function onLeaderboardValues(event) {
     leaderboards.set(event.detail.dimensionName, event.detail.values);
-    if (
-      formatPreset === NicelyFormattedTypes.HUMANIZE ||
-      formatPreset === NicelyFormattedTypes.CURRENCY
-    ) {
-      leaderboardFormatScale = getScaleForLeaderboard(leaderboards);
-    }
   }
 
   /** Functionality for resizing the virtual leaderboard */
@@ -165,7 +152,6 @@
       <!-- the single virtual element -->
       <Leaderboard
         {formatPreset}
-        {leaderboardFormatScale}
         isSummableMeasure={activeMeasure?.expression
           .toLowerCase()
           ?.includes("count(") ||

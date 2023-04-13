@@ -154,6 +154,7 @@ export function formatCompactInteger(n: number) {
 }
 
 export function formatDataType(value: unknown, type: string) {
+  if (value === undefined) return "";
   if (INTEGERS.has(type) || type.startsWith("DECIMAL")) {
     return value;
   } else if (FLOATS.has(type)) {

@@ -16,7 +16,7 @@ func TestServer_PutFileAndReconcile(t *testing.T) {
 	srv, err := NewServer(&Options{}, rt, nil)
 	require.NoError(t, err)
 
-	cat, err := rt.Catalog(ctx, instanceID)
+	cat, err := rt.NewCatalogService(ctx, instanceID)
 	require.NoError(t, err)
 
 	sourcePath := "/sources/ad_bids_source.yaml"

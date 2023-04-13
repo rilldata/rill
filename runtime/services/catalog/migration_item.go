@@ -186,7 +186,7 @@ func (s *Service) checkFileChange(ctx context.Context, item *MigrationItem) {
 		// if catalog has changed in any way then always re-create/update
 		item.HasChanged = true
 	}
-	if item.CatalogInFile.UpdatedOn.After(s.LastMigration) {
+	if item.CatalogInFile.UpdatedOn.After(s.Meta.LastMigration) {
 		// assume creation until we see a catalog object
 		item.Type = MigrationCreate
 	}
@@ -200,7 +200,7 @@ func (s *Service) resolveDependencies(
 	items := make([]*MigrationItem, 0)
 
 	prevEmbeddedEntries := make(map[string]bool)
-	prevDependencies := s.dag.GetParents(item.NormalizedName)
+	prevDependencies := s.Meta.dag.GetParents(item.NormalizedName)
 	for _, prevDependency := range prevDependencies {
 		prevEmbeddedEntries[prevDependency] = true
 	}

@@ -7,6 +7,7 @@ import {
   FormatterFactoryOptions,
   NumberKind,
 } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+import { PerRangeFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/per-range";
 import type { LeaderboardValue } from "./dashboard-stores";
 
 const shortHandSymbols = ["Q", "T", "B", "M", "k", "none"] as const;
@@ -193,26 +194,33 @@ export const nicelyFormattedTypesToNumberKind = (
 
 export function humanizeDataType(
   value: unknown,
-  type: NicelyFormattedTypes
+  type: NicelyFormattedTypes,
+  options?: FormatterFactoryOptions
 ): string {
+  if (value === undefined) return "";
   if (typeof value != "number") return value.toString();
 
   const numberKind = nicelyFormattedTypesToNumberKind(type);
 
-  let innerOptions: FormatterFactoryOptions;
+  let innerOptions: FormatterFactoryOptions = options;
   if (type === NicelyFormattedTypes.NONE) {
     innerOptions = {
       strategy: "none",
       numberKind,
       padWithInsignificantZeros: false,
     };
-  } else {
+  } else if (options === undefined) {
     innerOptions = {
       strategy: "default",
       numberKind,
     };
+  } else {
+    innerOptions = {
+      strategy: "default",
+      ...options,
+      numberKind,
+    };
   }
-
   return humanizedFormatterFactory([value], innerOptions).stringFormat(value);
 }
 
@@ -238,4 +246,34 @@ function humanizeGroupValuesUtil2(
     if (v === null) return "∅";
     else return formatter.stringFormat(v);
   });
+}
+
+/** formatter for the comparison percentage differences */
+export function formatMeasurePercentageDifference(
+  value,
+  method = "partsFormat"
+) {
+  if (Math.abs(value * 100) < 1 && value !== 0) {
+    return method === "partsFormat"
+      ? { percent: "%", neg: "", int: "<1" }
+      : "<1%";
+  } else if (value === 0) {
+    return method === "partsFormat" ? { percent: "%", neg: "", int: 0 } : "0%";
+  }
+  const factory = new PerRangeFormatter([], {
+    strategy: "perRange",
+    rangeSpecs: [
+      {
+        minMag: -2,
+        supMag: 3,
+        maxDigitsRight: 1,
+        baseMagnitude: 0,
+        padWithInsignificantZeros: false,
+      },
+    ],
+    defaultMaxDigitsRight: 0,
+    numberKind: NumberKind.PERCENT,
+  });
+
+  return factory[method](value);
 }
