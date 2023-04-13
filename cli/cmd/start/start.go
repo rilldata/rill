@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
@@ -22,6 +23,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	var noUI bool
 	var noOpen bool
 	var strict bool
+	var mode bool
 	var logFormat string
 	var variables []string
 
@@ -39,6 +41,31 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 					}
 
 					projectPath = repoName
+				}
+			} else {
+				if mode {
+					return fmt.Errorf("please provide the project path, please run 'rill start <project-path>' ")
+				}
+
+				questions := []*survey.Question{
+					{
+						Name: "name",
+						Prompt: &survey.Input{
+							Message: "Enter a project path",
+							Default: "rill-untitled",
+						},
+						Validate: func(any interface{}) error {
+							name := any.(string)
+							if name == "" {
+								return fmt.Errorf("empty name")
+							}
+							return nil
+						},
+					},
+				}
+
+				if err := survey.Ask(questions, &projectPath); err != nil {
+					return err
 				}
 			}
 
@@ -76,7 +103,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	startCmd.Flags().SortFlags = false
-	startCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
+	startCmd.Flags().BoolVar(&mode, "non-interactive", false, "Non Interactive mode")
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
 	startCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	startCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
