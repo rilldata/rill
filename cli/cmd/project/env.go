@@ -41,7 +41,8 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			ctx := context.Background()
-			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
+
+			resp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
 				OrganizationName: cfg.Org,
 				Name:             projectName,
 			})
@@ -49,38 +50,25 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			variables, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
-				OrganizationName: cfg.Org,
-				Name:             projectName,
-			})
-			if err != nil {
-				return err
-			}
-
-			proj := resp.Project
-			if val, ok := variables.Variables[key]; ok && val == value {
+			if val, ok := resp.Variables[key]; ok && val == value {
 				return nil
 			}
 
-			if variables.Variables == nil {
-				variables.Variables = make(map[string]string)
+			if resp.Variables == nil {
+				resp.Variables = make(map[string]string)
 			}
-			variables.Variables[key] = value
-			updatedProject, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
+			resp.Variables[key] = value
+			updateResp, err := client.UpdateProjectVariables(context.Background(), &adminv1.UpdateProjectVariablesRequest{
 				OrganizationName: cfg.Org,
 				Name:             projectName,
-				Description:      proj.Description,
-				Public:           proj.Public,
-				ProductionBranch: proj.ProductionBranch,
-				GithubUrl:        proj.GithubUrl,
-				Variables:        variables.Variables,
+				Variables:        resp.Variables,
 			})
 			if err != nil {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Updated project \n")
-			cmdutil.TablePrinter(toRow(updatedProject.Project))
+			cmdutil.SuccessPrinter("Updated project variables\n")
+			tableprinter.PrintHeadList(os.Stdout, variable.Serialize(updateResp.Variables), "Project Variables")
 			return nil
 		},
 	}
@@ -103,7 +91,7 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			ctx := context.Background()
-			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
+			resp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
 				OrganizationName: cfg.Org,
 				Name:             projectName,
 			})
@@ -111,35 +99,22 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			variables, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
-				OrganizationName: cfg.Org,
-				Name:             projectName,
-			})
-			if err != nil {
-				return err
-			}
-
-			if _, ok := variables.Variables[key]; !ok {
+			if _, ok := resp.Variables[key]; !ok {
 				return nil
 			}
 
-			delete(variables.Variables, key)
-			proj := resp.Project
-			updatedProject, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
+			delete(resp.Variables, key)
+			update, err := client.UpdateProjectVariables(context.Background(), &adminv1.UpdateProjectVariablesRequest{
 				OrganizationName: cfg.Org,
 				Name:             projectName,
-				Description:      proj.Description,
-				Public:           proj.Public,
-				ProductionBranch: proj.ProductionBranch,
-				GithubUrl:        proj.GithubUrl,
-				Variables:        variables.Variables,
+				Variables:        resp.Variables,
 			})
 			if err != nil {
 				return err
 			}
 
 			cmdutil.SuccessPrinter("Updated project \n")
-			cmdutil.TablePrinter(toRow(updatedProject.Project))
+			tableprinter.PrintHeadList(os.Stdout, variable.Serialize(update.Variables), "Project Variables")
 			return nil
 		},
 	}

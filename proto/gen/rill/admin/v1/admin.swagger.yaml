@@ -567,14 +567,10 @@ paths:
                 type: string
               public:
                 type: boolean
-              variables:
-                type: object
-                additionalProperties:
-                  type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}/variables:
-    put:
+    get:
       summary: UpdateProject updates a project
       operationId: AdminService_GetProjectVariables
       responses:
@@ -595,11 +591,39 @@ paths:
           in: path
           required: true
           type: string
+      tags:
+        - AdminService
+    put:
+      summary: UpdateProjectVariables updates a project
+      operationId: AdminService_UpdateProjectVariables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateProjectVariablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
         - name: body
           in: body
           required: true
           schema:
             type: object
+            properties:
+              variables:
+                type: object
+                additionalProperties:
+                  type: string
       tags:
         - AdminService
   /v1/ping:
@@ -911,6 +935,13 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
+  v1UpdateProjectVariablesResponse:
+    type: object
+    properties:
+      variables:
+        type: object
+        additionalProperties:
+          type: string
   v1User:
     type: object
     properties:

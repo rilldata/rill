@@ -938,11 +938,6 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
    */
   githubUrl = "";
 
-  /**
-   * @generated from field: map<string, string> variables = 7;
-   */
-  variables: { [key: string]: string } = {};
-
   constructor(data?: PartialMessage<UpdateProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -957,7 +952,6 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "production_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectRequest {
@@ -1091,6 +1085,92 @@ export class GetProjectVariablesResponse extends Message<GetProjectVariablesResp
 
   static equals(a: GetProjectVariablesResponse | PlainMessage<GetProjectVariablesResponse> | undefined, b: GetProjectVariablesResponse | PlainMessage<GetProjectVariablesResponse> | undefined): boolean {
     return proto3.util.equals(GetProjectVariablesResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UpdateProjectVariablesRequest
+ */
+export class UpdateProjectVariablesRequest extends Message<UpdateProjectVariablesRequest> {
+  /**
+   * @generated from field: string organization_name = 1;
+   */
+  organizationName = "";
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
+  /**
+   * @generated from field: map<string, string> variables = 3;
+   */
+  variables: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<UpdateProjectVariablesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UpdateProjectVariablesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectVariablesRequest {
+    return new UpdateProjectVariablesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateProjectVariablesRequest {
+    return new UpdateProjectVariablesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateProjectVariablesRequest {
+    return new UpdateProjectVariablesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateProjectVariablesRequest | PlainMessage<UpdateProjectVariablesRequest> | undefined, b: UpdateProjectVariablesRequest | PlainMessage<UpdateProjectVariablesRequest> | undefined): boolean {
+    return proto3.util.equals(UpdateProjectVariablesRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UpdateProjectVariablesResponse
+ */
+export class UpdateProjectVariablesResponse extends Message<UpdateProjectVariablesResponse> {
+  /**
+   * @generated from field: map<string, string> variables = 1;
+   */
+  variables: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<UpdateProjectVariablesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UpdateProjectVariablesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectVariablesResponse {
+    return new UpdateProjectVariablesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateProjectVariablesResponse {
+    return new UpdateProjectVariablesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateProjectVariablesResponse {
+    return new UpdateProjectVariablesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateProjectVariablesResponse | PlainMessage<UpdateProjectVariablesResponse> | undefined, b: UpdateProjectVariablesResponse | PlainMessage<UpdateProjectVariablesResponse> | undefined): boolean {
+    return proto3.util.equals(UpdateProjectVariablesResponse, a, b);
   }
 }
 

@@ -4,16 +4,19 @@
  * rill/admin/v1/api.proto
  * OpenAPI spec version: version not set
  */
-export type AdminServiceGetProjectVariablesBody = { [key: string]: any };
+export type AdminServiceUpdateProjectVariablesBodyVariables = {
+  [key: string]: string;
+};
 
-export type AdminServiceUpdateProjectBodyVariables = { [key: string]: string };
+export type AdminServiceUpdateProjectVariablesBody = {
+  variables?: AdminServiceUpdateProjectVariablesBodyVariables;
+};
 
 export type AdminServiceUpdateProjectBody = {
   description?: string;
   githubUrl?: string;
   productionBranch?: string;
   public?: boolean;
-  variables?: AdminServiceUpdateProjectBodyVariables;
 };
 
 export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
@@ -84,6 +87,14 @@ export interface V1User {
   id?: string;
   photoUrl?: string;
   updatedOn?: string;
+}
+
+export type V1UpdateProjectVariablesResponseVariables = {
+  [key: string]: string;
+};
+
+export interface V1UpdateProjectVariablesResponse {
+  variables?: V1UpdateProjectVariablesResponseVariables;
 }
 
 export interface V1UpdateProjectResponse {

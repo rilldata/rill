@@ -73,12 +73,17 @@ service AdminService {
     };
   }
 
-  // UpdateProject updates a project
-  rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
+  // UpdateProjectVariables updates a project
+  rpc UpdateProjectVariables(UpdateProjectVariablesRequest) returns (UpdateProjectVariablesResponse) {
     option (google.api.http) = {
       put: "/v1/organizations/{organization_name}/projects/{name}/variables",
       body: "*"
     };
+  }
+
+  // UpdateProject updates a project
+  rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}/variables"};
   }
 
   // GetCurrentUser returns the currently authenticated user (if any)
@@ -261,7 +266,6 @@ message UpdateProjectRequest {
   bool public = 4;
   string production_branch = 5;
   string github_url = 6;
-  map<string, string> variables = 7;
 }
 
 message UpdateProjectResponse {
@@ -274,6 +278,16 @@ message GetProjectVariablesRequest {
 }
 
 message GetProjectVariablesResponse {
+  map<string, string> variables = 1;
+}
+
+message UpdateProjectVariablesRequest {
+  string organization_name = 1;
+  string name = 2;
+  map<string, string> variables = 3;
+}
+
+message UpdateProjectVariablesResponse {
   map<string, string> variables = 1;
 }
 
