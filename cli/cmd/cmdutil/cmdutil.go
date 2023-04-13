@@ -12,7 +12,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/lensesio/tableprinter"
 	"github.com/rilldata/rill/admin/client"
-	adminclient "github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -152,8 +151,8 @@ func ProjectExists(ctx context.Context, c *client.Client, orgName, projectName s
 	return resp.Project.Name == projectName, nil
 }
 
-func OrgNameExists(ctx context.Context, client *adminclient.Client, name string) (bool, error) {
-	resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
+func OrgNameExists(ctx context.Context, c *client.Client, name string) (bool, error) {
+	resp, err := c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
 			if st.Code() == codes.NotFound {
