@@ -27,7 +27,7 @@ func EnvCmd(cfg *config.Config) *cobra.Command {
 // SetCmd is sub command for env. Sets the variable for a project
 func SetCmd(cfg *config.Config) *cobra.Command {
 	setCmd := &cobra.Command{
-		Use:   "set",
+		Use:   "set <project name> <key> <value>",
 		Args:  cobra.ExactArgs(3),
 		Short: "set variable",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -78,7 +78,7 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 // RmCmd is sub command for env. Removes the variable for a project
 func RmCmd(cfg *config.Config) *cobra.Command {
 	rmCmd := &cobra.Command{
-		Use:   "rm",
+		Use:   "rm <project name> <key>",
 		Args:  cobra.ExactArgs(2),
 		Short: "remove variable",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -123,7 +123,7 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 
 func ShowEnvCmd(cfg *config.Config) *cobra.Command {
 	showCmd := &cobra.Command{
-		Use:   "show",
+		Use:   "show <project name>",
 		Args:  cobra.ExactArgs(1),
 		Short: "show variable for project",
 		RunE: func(cmd *cobra.Command, args []string) error {
