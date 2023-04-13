@@ -117,7 +117,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			account, repo, ok := gitutil.SplitGithubURL(githubURL)
 			if !ok {
-				return fmt.Errorf("invalid remote")
+				return fmt.Errorf("invalid remote %q", githubURL)
 			}
 
 			defaultOrg, err := dotrill.GetDefaultOrg()
