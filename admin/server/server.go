@@ -49,6 +49,8 @@ type Options struct {
 	AuthClientSecret       string
 	GithubAppName          string
 	GithubAppWebhookSecret string
+	GithubClientID         string
+	GithubClientSecret     string
 }
 
 type Server struct {
@@ -59,6 +61,7 @@ type Server struct {
 	cookies       *sessions.CookieStore
 	authenticator *auth.Authenticator
 	issuer        *runtimeauth.Issuer
+	urls          *externalURLs
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
@@ -96,6 +99,7 @@ func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimea
 		cookies:       cookies,
 		authenticator: authenticator,
 		issuer:        issuer,
+		urls:          newURLRegistry(opts),
 	}, nil
 }
 
@@ -287,4 +291,52 @@ func CheckUserAgent(ctx context.Context) (context.Context, error) {
 	}
 
 	return ctx, nil
+}
+
+type externalURLs struct {
+	githubConnect         string
+	githubConnectRetry    string
+	githubConnectRequest  string
+	githubConnectSuccess  string
+	githubAppInstallation string
+	githubAuth            string
+	githubAuthCallback    string
+	githubAuthRetry       string
+	authLogin             string
+}
+
+func newURLRegistry(opts *Options) *externalURLs {
+	return &externalURLs{
+		githubConnect:         mustJoinURL(opts.ExternalURL, "/github/connect"),
+		githubConnectRetry:    mustJoinURL(opts.FrontendURL, "/-/github/connect/retry-install"),
+		githubConnectRequest:  mustJoinURL(opts.FrontendURL, "/-/github/connect/request"),
+		githubConnectSuccess:  mustJoinURL(opts.FrontendURL, "/-/github/connect/success"),
+		githubAppInstallation: fmt.Sprintf("https://github.com/apps/%s/installations/new", opts.GithubAppName),
+		githubAuth:            mustJoinURL(opts.ExternalURL, "/github/auth/login"),
+		githubAuthCallback:    mustJoinURL(opts.ExternalURL, "/github/auth/callback"),
+		githubAuthRetry:       mustJoinURL(opts.FrontendURL, "/-/github/connect/retry-auth"),
+		authLogin:             mustJoinURL(opts.ExternalURL, "/auth/login"),
+	}
+}
+
+func urlWithQuery(urlString string, query map[string]string) (string, error) {
+	parsedURL, err := url.Parse(urlString)
+	if err != nil {
+		return "", err
+	}
+
+	qry := parsedURL.Query()
+	for key, value := range query {
+		qry.Set(key, value)
+	}
+	parsedURL.RawQuery = qry.Encode()
+	return parsedURL.String(), nil
+}
+
+func mustJoinURL(base string, elem ...string) string {
+	joinedURL, err := url.JoinPath(base, elem...)
+	if err != nil {
+		panic(err)
+	}
+	return joinedURL
 }

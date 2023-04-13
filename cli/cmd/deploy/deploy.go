@@ -129,7 +129,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			// Run flow for access to the Github remote (if necessary)
 			ghRes, err := githubFlow(ctx, client, githubURL)
 			if err != nil {
-				return fmt.Errorf("failed to verify access to github repo, error = %w", err)
+				return fmt.Errorf("failed Github flow: %w", err)
 			}
 
 			if prodBranch == "" {
