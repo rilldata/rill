@@ -321,93 +321,16 @@ func newURLRegistry(opts *Options) *externalURLs {
 	}
 }
 
-func (u *externalURLs) githubConnectURL(remote string) (string, error) {
-	parsedURL, err := url.Parse(u.githubConnect)
+func urlWithQuery(urlString string, query map[string]string) (string, error) {
+	parsedURL, err := url.Parse(urlString)
 	if err != nil {
 		return "", err
 	}
 
 	qry := parsedURL.Query()
-	qry.Set("remote", remote)
-	parsedURL.RawQuery = qry.Encode()
-	return parsedURL.String(), nil
-}
-
-func (u *externalURLs) githubAppInstallationURL(remote string) (string, error) {
-	parsedURL, err := url.Parse(u.githubAppInstallation)
-	if err != nil {
-		return "", err
+	for key, value := range query {
+		qry.Set(key, value)
 	}
-
-	qry := parsedURL.Query()
-	// `state` query parameter will be passed through to githubConnectCallback.
-	// we will use this state parameter to verify that the user installed the app on right repo
-	qry.Set("state", remote)
-	parsedURL.RawQuery = qry.Encode()
-	return parsedURL.String(), nil
-}
-
-func (u *externalURLs) githubConnectRequestURL(remote string) (string, error) {
-	parsedURL, err := url.Parse(u.githubConnectRequest)
-	if err != nil {
-		return "", err
-	}
-
-	qry := parsedURL.Query()
-	qry.Set("remote", remote)
-	parsedURL.RawQuery = qry.Encode()
-	return parsedURL.String(), nil
-}
-
-func (u *externalURLs) githubConnectRetryURL(remote string) (string, error) {
-	parsedURL, err := url.Parse(u.githubConnectRetry)
-	if err != nil {
-		return "", err
-	}
-
-	qry := parsedURL.Query()
-	qry.Set("remote", remote)
-	parsedURL.RawQuery = qry.Encode()
-	return parsedURL.String(), nil
-}
-
-func (u *externalURLs) authLoginURL(redirectURL string) (string, error) {
-	if redirectURL == "" {
-		return u.authLogin, nil
-	}
-
-	parsedURL, err := url.Parse(u.authLogin)
-	if err != nil {
-		return "", err
-	}
-
-	qry := parsedURL.Query()
-	qry.Set("redirect", redirectURL)
-	parsedURL.RawQuery = qry.Encode()
-	return parsedURL.String(), nil
-}
-
-func (u *externalURLs) githubAuthRetryURL(remote, username string) (string, error) {
-	parsedURL, err := url.Parse(u.githubAuthRetry)
-	if err != nil {
-		return "", err
-	}
-
-	qry := parsedURL.Query()
-	qry.Set("remote", remote)
-	qry.Set("githubUsername", username)
-	parsedURL.RawQuery = qry.Encode()
-	return parsedURL.String(), nil
-}
-
-func (u *externalURLs) githubAuthURL(remote string) (string, error) {
-	parsedURL, err := url.Parse(u.githubAuth)
-	if err != nil {
-		return "", err
-	}
-
-	qry := parsedURL.Query()
-	qry.Set("remote", remote)
 	parsedURL.RawQuery = qry.Encode()
 	return parsedURL.String(), nil
 }
