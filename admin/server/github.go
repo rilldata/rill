@@ -409,6 +409,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request, path
 	if value, ok := sess.Values[githubcookieFieldRemote]; ok {
 		remote = value.(string)
 	}
+	delete(sess.Values, githubcookieFieldRemote)
 
 	account, repo, ok := gitutil.SplitGithubURL(remote)
 	if !ok {
@@ -418,7 +419,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request, path
 
 	ok, err = s.isCollaborator(ctx, account, repo, c, gitUser)
 	if err != nil {
-		http.Redirect(w, r, s.urls.githubAuthSuccess, http.StatusTemporaryRedirect)
+		http.Error(w, "unidentified user", http.StatusUnauthorized)
 		return
 	}
 
