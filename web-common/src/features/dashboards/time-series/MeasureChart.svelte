@@ -120,7 +120,7 @@
   {width}
   {height}
   top={4}
-  left={12}
+  left={0}
   right={50}
   bind:mouseoverValue
   bind:hovered
