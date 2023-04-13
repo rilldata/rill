@@ -6,10 +6,6 @@ import (
 	"os"
 	"time"
 
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
