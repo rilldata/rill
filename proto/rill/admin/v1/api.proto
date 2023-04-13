@@ -297,6 +297,8 @@ message Project {
   string name = 2; // Unique in organization
   string description = 3;
   bool public = 4;
+  string org_id = 15;
+  string org_name = 16;
   string region = 12;
   string production_olap_driver = 13;
   string production_olap_dsn = 14;

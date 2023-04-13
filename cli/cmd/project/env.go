@@ -73,7 +73,7 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			cmdutil.SuccessPrinter("Updated project \n")
-			cmdutil.TablePrinter(toRow(updatedProject.Project, cfg.Org))
+			cmdutil.TablePrinter(toRow(updatedProject.Project))
 			return nil
 		},
 	}
@@ -125,7 +125,7 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			cmdutil.SuccessPrinter("Updated project \n")
-			cmdutil.TablePrinter(toRow(updatedProject.Project, cfg.Org))
+			cmdutil.TablePrinter(toRow(updatedProject.Project))
 			return nil
 		},
 	}

@@ -3505,6 +3505,10 @@ func (m *Project) validate(all bool) error {
 
 	// no validation rules for Public
 
+	// no validation rules for OrgId
+
+	// no validation rules for OrgName
+
 	// no validation rules for Region
 
 	// no validation rules for ProductionOlapDriver
