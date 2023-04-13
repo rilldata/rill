@@ -1,27 +1,33 @@
 <script lang="ts">
-  import { outline } from "@rilldata/web-common/components/data-graphic/actions/outline";
   import Body from "@rilldata/web-common/components/data-graphic/elements/Body.svelte";
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import WithBisector from "@rilldata/web-common/components/data-graphic/functional-components/WithBisector.svelte";
+  import WithRoundToTimegrain from "@rilldata/web-common/components/data-graphic/functional-components/WithRoundToTimegrain.svelte";
   import {
     Axis,
     Grid,
-    TimeSeriesMouseover,
   } from "@rilldata/web-common/components/data-graphic/guides";
   import { ChunkedLine } from "@rilldata/web-common/components/data-graphic/marks";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { previousValueStore } from "@rilldata/web-local/lib/store-utils";
   import { extent } from "d3-array";
   import { cubicOut } from "svelte/easing";
   import { writable } from "svelte/store";
-  import { fade, fly } from "svelte/transition";
+  import { fly } from "svelte/transition";
+  import MeasureValueMouseover from "./MeasureValueMouseover.svelte";
   import { niceMeasureExtents } from "./utils";
+
   export let width: number = undefined;
   export let height: number = undefined;
   export let xMin: Date = undefined;
   export let xMax: Date = undefined;
   export let yMin: number = undefined;
   export let yMax: number = undefined;
+
+  export let timeGrain: V1TimeGrain;
+
+  export let showComparison = false;
   export let data;
   export let xAccessor = "ts";
   export let yAccessor = "value";
@@ -41,6 +47,14 @@
 
   $: [xExtentMin, xExtentMax] = extent(data, (d) => d[xAccessor]);
   $: [yExtentMin, yExtentMax] = extent(data, (d) => d[yAccessor]);
+  let comparisonExtents;
+
+  /** if we are making a comparison, factor this into the extents calculation.*/
+  $: if (showComparison) {
+    comparisonExtents = extent(data, (d) => d[`comparison.${yAccessor}`]);
+    yExtentMin = Math.min(yExtentMin, comparisonExtents[0]);
+    yExtentMax = Math.max(yExtentMax, comparisonExtents[1]);
+  }
 
   $: [internalYMin, internalYMax] = niceMeasureExtents(
     [
@@ -89,6 +103,11 @@
   $: if (scrubbing) {
     scrubEnd = alwaysBetween(internalXMin, internalXMax, mouseoverValue);
   }
+
+  let something = true;
+  $: setTimeout(() => {
+    something = !something;
+  }, 1000);
 </script>
 
 <SimpleDataGraphic
@@ -120,6 +139,24 @@
     the right way to "tile" together a time series with multiple pages of data.
     -->
     {#key $timeRangeKey}
+      {#if showComparison}
+        <g
+          class="transition-opacity"
+          class:opacity-80={mouseoverValue?.x}
+          class:opacity-40={!mouseoverValue?.x}
+        >
+          <ChunkedLine
+            area={false}
+            lineColor={`hsl(217, 10%, 60%)`}
+            delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
+            duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 200}
+            {data}
+            {xAccessor}
+            yAccessor="comparison.{yAccessor}"
+            key={$timeRangeKey}
+          />
+        </g>
+      {/if}
       <ChunkedLine
         delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
         duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 200}
@@ -138,31 +175,48 @@
     />
   </Body>
   {#if !scrubbing && mouseoverValue?.x}
-    <g transition:fade|local={{ duration: 100 }}>
-      <TimeSeriesMouseover
+    <WithRoundToTimegrain value={mouseoverValue.x} {timeGrain} let:roundedValue>
+      <WithBisector
         {data}
-        {mouseoverValue}
-        {xAccessor}
-        {yAccessor}
-        format={mouseoverFormat}
-      />
-    </g>
-    <WithBisector
-      {data}
-      callback={(d) => d[xAccessor]}
-      value={mouseoverValue.x}
-      let:point
-    >
-      <g transition:fly|local={{ duration: 100, x: -4 }}>
-        <text
-          use:outline
-          class="fill-gray-600"
-          x={config.plotLeft + config.bodyBuffer + 6}
-          y={config.plotTop + 10 + config.bodyBuffer}
-        >
-          {mouseoverTimeFormat(point[xAccessor])}
-        </text>
-      </g></WithBisector
-    >
+        callback={(d) => d[xAccessor]}
+        value={roundedValue}
+        let:point
+      >
+        <g transition:fly|local={{ duration: 100, x: -4 }}>
+          <text
+            class="fill-gray-600"
+            style:paint-order="stroke"
+            stroke="white"
+            stroke-width="3px"
+            x={config.plotLeft + config.bodyBuffer + 6}
+            y={config.plotTop + 10 + config.bodyBuffer}
+          >
+            {mouseoverTimeFormat(point[xAccessor])}
+          </text>
+          {#if showComparison}
+            <text
+              style:paint-order="stroke"
+              stroke="white"
+              stroke-width="3px"
+              class="fill-gray-400"
+              x={config.plotLeft + config.bodyBuffer + 6}
+              y={config.plotTop + 24 + config.bodyBuffer}
+            >
+              {mouseoverTimeFormat(point[`comparison.${xAccessor}`])} prev.
+            </text>
+          {/if}
+        </g>
+        <g transition:fly|local={{ duration: 100, x: -4 }}>
+          <MeasureValueMouseover
+            {point}
+            {xAccessor}
+            {yAccessor}
+            {showComparison}
+            {mouseoverFormat}
+            {numberKind}
+          />
+        </g>
+      </WithBisector>
+    </WithRoundToTimegrain>
   {/if}
 </SimpleDataGraphic>

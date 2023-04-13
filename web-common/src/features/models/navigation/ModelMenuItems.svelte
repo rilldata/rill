@@ -10,9 +10,9 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
-    useRuntimeServiceDeleteFileAndReconcile,
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceDeleteFileAndReconcile,
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServicePutFileAndReconcile,
     V1Model,
     V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
@@ -25,7 +25,7 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
@@ -44,12 +44,12 @@
 
   const queryClient = useQueryClient();
 
-  const deleteModel = useRuntimeServiceDeleteFileAndReconcile();
-  const createFileMutation = useRuntimeServicePutFileAndReconcile();
+  const deleteModel = createRuntimeServiceDeleteFileAndReconcile();
+  const createFileMutation = createRuntimeServicePutFileAndReconcile();
 
   $: modelNames = useModelNames($runtime.instanceId);
   $: dashboardNames = useDashboardNames($runtime.instanceId);
-  $: modelQuery = useRuntimeServiceGetCatalogEntry(
+  $: modelQuery = createRuntimeServiceGetCatalogEntry(
     $runtime.instanceId,
     modelName
   );

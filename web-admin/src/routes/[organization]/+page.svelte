@@ -3,12 +3,14 @@
   import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
   import {
-    useAdminServiceGetOrganization,
-    useAdminServiceListProjects,
+    createAdminServiceGetOrganization,
+    createAdminServiceListProjectsForOrganization,
   } from "../../client";
 
-  $: org = useAdminServiceGetOrganization($page.params.organization);
-  $: projs = useAdminServiceListProjects($page.params.organization);
+  $: org = createAdminServiceGetOrganization($page.params.organization);
+  $: projs = createAdminServiceListProjectsForOrganization(
+    $page.params.organization
+  );
 
   $: if ($projs.data && $projs.data.projects?.length > 0) {
     goto(`/${$page.params.organization}/${$projs.data.projects[0].name}`);

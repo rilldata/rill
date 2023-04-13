@@ -4,9 +4,9 @@
   import { MenuItem } from "@rilldata/web-common/components/menu";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
+    createRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceRefreshAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
-    useRuntimeServicePutFileAndReconcile,
-    useRuntimeServiceRefreshAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
@@ -16,7 +16,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useModelNames } from "../../models/selectors";
   import { createModelFromSource } from "../createModel";
@@ -31,8 +31,8 @@
   $: runtimeInstanceId = $runtime.instanceId;
   $: modelNames = useModelNames($runtime.instanceId);
 
-  const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
-  const createFileMutation = useRuntimeServicePutFileAndReconcile();
+  const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
+  const createFileMutation = createRuntimeServicePutFileAndReconcile();
 
   const handleCreateModel = async () => {
     try {

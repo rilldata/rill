@@ -7,7 +7,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { ModelAssets } from "@rilldata/web-common/features/models";
   import TableAssets from "@rilldata/web-common/features/sources/navigation/TableAssets.svelte";
-  import { useRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { getContext, onMount } from "svelte";
   import { tweened } from "svelte/motion";
@@ -41,7 +41,7 @@
     (getContext("rill:app:navigation-visibility-tween") as Readable<number>) ||
     tweened(0, { duration: 50 });
 
-  $: thing = useRuntimeServiceGetFile(
+  $: thing = createRuntimeServiceGetFile(
     $runtime?.instanceId,
     `rill.yaml`
     //getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)

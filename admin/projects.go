@@ -47,12 +47,12 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 		return nil, err
 	}
 
-	collabRole, err := s.DB.FindProjectRole(txCtx, database.ProjectCollaboratorRoleName)
+	// add project viewer role to the all_user_group of the org
+	viewerRole, err := s.DB.FindProjectRole(txCtx, database.ProjectViewerRoleName)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to find project collaborator role"))
+		panic(errors.Wrap(err, "failed to find project viewer role"))
 	}
-	// add project collaborator role to the all_user_group of the org
-	err = s.DB.InsertProjectMemberUsergroup(txCtx, *org.AllUsergroupID, proj.ID, collabRole.ID)
+	err = s.DB.InsertProjectMemberUsergroup(txCtx, *org.AllUsergroupID, proj.ID, viewerRole.ID)
 	if err != nil {
 		return nil, err
 	}

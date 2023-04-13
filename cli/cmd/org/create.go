@@ -24,7 +24,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			org, err := client.CreateOrganization(context.Background(), &adminv1.CreateOrganizationRequest{
+			res, err := client.CreateOrganization(context.Background(), &adminv1.CreateOrganizationRequest{
 				Name:        args[0],
 				Description: description,
 			})
@@ -33,13 +33,13 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Switching to the created org
-			err = dotrill.SetDefaultOrg(args[0])
+			err = dotrill.SetDefaultOrg(res.Organization.Name)
 			if err != nil {
 				return err
 			}
 
 			cmdutil.SuccessPrinter("Created organization \n")
-			cmdutil.TablePrinter(toRow(org.Organization))
+			cmdutil.TablePrinter(toRow(res.Organization))
 			return nil
 		},
 	}

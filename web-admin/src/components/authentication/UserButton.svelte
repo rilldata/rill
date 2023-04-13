@@ -1,9 +1,9 @@
 <script lang="ts">
   import SimpleActionMenu from "@rilldata/web-common/components/menu/wrappers/SimpleActionMenu.svelte";
-  import { useAdminServiceGetCurrentUser } from "../../client";
+  import { createAdminServiceGetCurrentUser } from "../../client";
   import { ADMIN_URL } from "../../client/http-client";
 
-  const user = useAdminServiceGetCurrentUser();
+  const user = createAdminServiceGetCurrentUser();
 
   function handleLogOut() {
     window.location.href = `${ADMIN_URL}/auth/logout?redirect=${window.origin}`;

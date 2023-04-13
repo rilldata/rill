@@ -6,9 +6,9 @@
     isFloat,
   } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
+    createQueryServiceColumnDescriptiveStatistics,
+    createQueryServiceColumnRugHistogram,
     QueryServiceColumnNumericHistogramHistogramMethod,
-    useQueryServiceColumnDescriptiveStatistics,
-    useQueryServiceColumnRugHistogram,
   } from "@rilldata/web-common/runtime-client";
   import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
   import { derived } from "svelte/store";
@@ -72,7 +72,7 @@
       )
     : $diagnosticHistogram?.data;
 
-  $: rug = useQueryServiceColumnRugHistogram(
+  $: rug = createQueryServiceColumnRugHistogram(
     $runtime?.instanceId,
     objectName,
     { columnName, priority: getPriorityForColumn("rug-histogram", active) },
@@ -87,7 +87,7 @@
   $: topK = getTopK($runtime?.instanceId, objectName, columnName);
 
   $: summary = derived(
-    useQueryServiceColumnDescriptiveStatistics(
+    createQueryServiceColumnDescriptiveStatistics(
       $runtime?.instanceId,
       objectName,
       {

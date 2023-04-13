@@ -12,7 +12,7 @@ import (
 )
 
 func (r *Runtime) ListCatalogEntries(ctx context.Context, instanceID string, t drivers.ObjectType) ([]*drivers.CatalogEntry, error) {
-	cat, err := r.Catalog(ctx, instanceID)
+	cat, err := r.NewCatalogService(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -21,7 +21,7 @@ func (r *Runtime) ListCatalogEntries(ctx context.Context, instanceID string, t d
 }
 
 func (r *Runtime) GetCatalogEntry(ctx context.Context, instanceID, name string) (*drivers.CatalogEntry, error) {
-	cat, err := r.Catalog(ctx, instanceID)
+	cat, err := r.NewCatalogService(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (r *Runtime) Reconcile(ctx context.Context, instanceID string, changedPaths
 		return nil, err
 	}
 
-	cat, err := r.Catalog(ctx, instanceID)
+	cat, err := r.NewCatalogService(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -75,12 +75,12 @@ func (r *Runtime) RefreshSource(ctx context.Context, instanceID, name string) (*
 		return nil, err
 	}
 
-	cat, err := r.Catalog(ctx, instanceID)
+	cat, err := r.NewCatalogService(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
 
-	path, ok := cat.NameToPath[name]
+	path, ok := cat.Meta.NameToPath[name]
 	if !ok {
 		return nil, fmt.Errorf("artifact not found for source")
 	}
@@ -111,7 +111,7 @@ func (r *Runtime) SyncExistingTables(ctx context.Context, instanceID string) err
 	}
 
 	// Get catalog
-	cat, err := r.Catalog(ctx, instanceID)
+	cat, err := r.NewCatalogService(ctx, instanceID)
 	if err != nil {
 		return err
 	}

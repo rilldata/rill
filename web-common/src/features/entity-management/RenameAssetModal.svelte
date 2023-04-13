@@ -4,13 +4,13 @@
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
   import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceRenameFileAndReconcile,
-  } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
+  import {
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceRenameFileAndReconcile,
+  } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { renameFileArtifact } from "./actions";
   import { getLabel, getRouteFromName } from "./entity-mappers";
@@ -26,13 +26,13 @@
   let error: string;
 
   $: runtimeInstanceId = $runtime.instanceId;
-  $: getCatalog = useRuntimeServiceGetCatalogEntry(
+  $: getCatalog = createRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     currentAssetName
   );
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
-  const renameAsset = useRuntimeServiceRenameFileAndReconcile();
+  const renameAsset = createRuntimeServiceRenameFileAndReconcile();
 
   const { form, errors, handleSubmit } = createForm({
     initialValues: {

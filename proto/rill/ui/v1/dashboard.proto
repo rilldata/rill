@@ -13,6 +13,9 @@ message DashboardState {
   rill.runtime.v1.MetricsViewFilter filters = 2;
   // Selected time granularity
   rill.runtime.v1.TimeGrain time_grain = 3;
+
+  DashboardTimeRange compare_time_range = 4;
+
   // Selected measure for the leaderboard
   optional string leaderboard_measure = 5;
   // Focused dimension

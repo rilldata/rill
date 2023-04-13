@@ -159,7 +159,7 @@ func resolvedCredentials(ctx context.Context, env *connectors.Env) (*google.Cred
 		return google.CredentialsFromJSON(ctx, []byte(secretJSON), "https://www.googleapis.com/auth/cloud-platform")
 	}
 	// gcs_credentials is not set
-	if env.AllowHostCredentials {
+	if env.AllowHostAccess {
 		// use host credentials
 		return gcp.DefaultCredentials(ctx)
 	}

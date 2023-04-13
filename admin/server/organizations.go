@@ -38,12 +38,34 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "org not found")
+			return nil, status.Error(codes.NotFound, "org not found")
 		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	if !claims.CanOrganization(ctx, org.ID, auth.ReadOrg) {
+		// check if the org has any public projects, this works for anonymous users as well
+		hasPublicProject, err := s.admin.DB.CheckOrganizationHasPublicProjects(ctx, org.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if hasPublicProject {
+			return &adminv1.GetOrganizationResponse{
+				Organization: organizationToDTO(org),
+			}, nil
+		}
+		// check if the user is outside members of a project in the org
+		if claims.OwnerType() == auth.OwnerTypeUser {
+			exists, err := s.admin.DB.CheckOrganizationProjectsHasMemberUser(ctx, org.ID, claims.OwnerID())
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			if exists {
+				return &adminv1.GetOrganizationResponse{
+					Organization: organizationToDTO(org),
+				}, nil
+			}
+		}
 		return nil, status.Error(codes.PermissionDenied, "not allowed to read org")
 	}
 

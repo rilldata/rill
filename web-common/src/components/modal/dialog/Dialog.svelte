@@ -56,6 +56,9 @@
     on:click|self={() => {
       dispatch("cancel");
     }}
+    on:keydown={() => {
+      /** no op for now */
+    }}
   >
     <div
       class="{containerClasses} {xDimClasses} {yDimClasses} rounded pointer-events-auto flex flex-col"
