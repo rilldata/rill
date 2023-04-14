@@ -33,7 +33,7 @@ const (
 	pollInterval = 5 * time.Second
 )
 
-var errUserAbortedFlow = fmt.Errorf("User abort received!!!")
+var errUserAbortedFlow = fmt.Errorf("User aborted!!!")
 
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
 func DeployCmd(cfg *config.Config) *cobra.Command {
@@ -399,6 +399,8 @@ func orgNameExists(ctx context.Context, client *adminclient.Client, name string)
 }
 
 func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
+	nameExist := false
+
 	// check if a project with github url already exists in this org
 	if resp, err := client.ListProjectsForOrganizationAndGithubURL(ctx, &adminv1.ListProjectsForOrganizationAndGithubURLRequest{
 		OrganizationName: req.OrganizationName,
@@ -407,12 +409,26 @@ func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adm
 		if len(resp.Projects) != 0 {
 			names := ""
 			for _, p := range resp.Projects {
+				if !nameExist && strings.EqualFold(req.Name, p.Name) {
+					nameExist = true
+				}
 				names = names + p.Name + " "
 			}
+
 			if !cmdutil.ConfirmPrompt("A project already exists for this repo in this org (enter ? to check project name(s))", names, true) {
 				return nil, errUserAbortedFlow
 			}
 		}
+	}
+
+	if nameExist {
+		// we for sure know that project name exists, prompt for new name before creating projecting and checking if name already exists
+		name, err := projectNamePrompt(ctx, client, req.OrganizationName)
+		if err != nil {
+			return nil, err
+		}
+
+		req.Name = name
 	}
 
 	// Create the project (automatically deploys prod branch)
@@ -423,7 +439,6 @@ func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adm
 		}
 
 		// project name already exists, prompt for project name and create project with new name again
-
 		name, err := projectNamePrompt(ctx, client, req.OrganizationName)
 		if err != nil {
 			return nil, err

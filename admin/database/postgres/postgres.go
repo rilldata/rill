@@ -147,38 +147,20 @@ func (c *connection) FindProjectByName(ctx context.Context, orgName, name string
 }
 
 func (c *connection) FindProjectsByOrgIDAndGithubURL(ctx context.Context, orgID, githubURL string) ([]*database.Project, error) {
-	rows, err := c.getDB(ctx).QueryxContext(ctx, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) AND org_id=$2", githubURL, orgID)
+	result := make([]*database.Project, 0)
+	err := c.getDB(ctx).SelectContext(ctx, &result, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) AND org_id=$2", githubURL, orgID)
 	if err != nil {
 		return nil, parseErr(err)
-	}
-
-	result := make([]*database.Project, 0)
-	for rows.Next() {
-		project := &database.Project{}
-		if err := rows.Scan(project); err != nil {
-			return nil, err
-		}
-
-		result = append(result, project)
 	}
 
 	return result, nil
 }
 
 func (c *connection) FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*database.Project, error) {
-	rows, err := c.getDB(ctx).QueryxContext(ctx, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) ", githubURL)
+	result := make([]*database.Project, 0)
+	err := c.getDB(ctx).SelectContext(ctx, &result, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) ", githubURL)
 	if err != nil {
 		return nil, parseErr(err)
-	}
-
-	result := make([]*database.Project, 0)
-	for rows.Next() {
-		project := &database.Project{}
-		if err := rows.Scan(project); err != nil {
-			return nil, err
-		}
-
-		result = append(result, project)
 	}
 
 	return result, nil
