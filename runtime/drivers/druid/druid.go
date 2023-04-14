@@ -5,7 +5,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
-	"go.uber.org/zap"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 
 	// Load calcite avatica driver for druid
 	_ "github.com/apache/calcite-avatica-go/v5"
@@ -19,7 +19,7 @@ type driver struct{}
 
 // Open connects to Druid using Avatica.
 // Note that the Druid connection string must have the form "http://host/druid/v2/sql/avatica-protobuf/".
-func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
+func (d driver) Open(dsn string, logger *otelzap.Logger) (drivers.Connection, error) {
 	db, err := sqlx.Open("avatica", dsn)
 	if err != nil {
 		return nil, err

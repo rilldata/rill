@@ -28,6 +28,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/github"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 )
 
 // Config describes runtime server config derived from environment variables.
@@ -84,7 +85,8 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			// Init logger
 			cfg := zap.NewProductionConfig()
 			cfg.Level.SetLevel(conf.LogLevel)
-			logger, err := cfg.Build()
+			logger0, err := cfg.Build()
+			logger := otelzap.New(logger0)
 			if err != nil {
 				fmt.Printf("error: failed to create logger: %s", err.Error())
 				os.Exit(1)

@@ -21,8 +21,8 @@ import (
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rilldata/rill/runtime/server/metrics"
 	"github.com/rs/cors"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -46,7 +46,7 @@ type Options struct {
 
 type Server struct {
 	adminv1.UnsafeAdminServiceServer
-	logger        *zap.Logger
+	logger        *otelzap.Logger
 	admin         *admin.Service
 	opts          *Options
 	cookies       *sessions.CookieStore
@@ -56,7 +56,7 @@ type Server struct {
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
-func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer) (*Server, error) {
+func New(opts *Options, logger *otelzap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)
@@ -103,7 +103,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		grpc.ChainStreamInterceptor(
 			si,
 			otelgrpc.StreamServerInterceptor(),
-			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
+			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger.Logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			s.authenticator.StreamServerInterceptor(),
@@ -111,7 +111,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		grpc.ChainUnaryInterceptor(
 			ui,
 			otelgrpc.UnaryServerInterceptor(),
-			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
+			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger.Logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			s.authenticator.UnaryServerInterceptor(),
@@ -119,7 +119,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	)
 
 	adminv1.RegisterAdminServiceServer(server, s)
-	s.logger.Sugar().Infof("serving admin gRPC on port:%v", s.opts.GRPCPort)
+	s.logger.Ctx(ctx).Sugar().Infof("serving admin gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
@@ -131,7 +131,7 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 	}
 
 	server := &http.Server{Handler: handler}
-	s.logger.Sugar().Infof("serving admin HTTP on port:%v", s.opts.HTTPPort)
+	s.logger.Ctx(ctx).Sugar().Infof("serving admin HTTP on port:%v", s.opts.HTTPPort)
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 
@@ -177,7 +177,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	}
 
 	// Add auth endpoints (not gRPC handlers, just regular endpoints on /auth/*)
-	err = s.authenticator.RegisterEndpoints(mux)
+	err = s.authenticator.RegisterEndpoints(mux, s.logger)
 	if err != nil {
 		return nil, err
 	}

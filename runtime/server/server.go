@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rilldata/rill/runtime/server/metrics"
 	"github.com/rs/cors"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
@@ -53,7 +54,7 @@ type Server struct {
 	runtimev1.UnsafeQueryServiceServer
 	runtime *runtime.Runtime
 	opts    *Options
-	logger  *zap.Logger
+	logger  *otelzap.Logger
 	aud     *auth.Audience
 }
 
@@ -62,7 +63,7 @@ var (
 	_ runtimev1.QueryServiceServer   = (*Server)(nil)
 )
 
-func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server, error) {
+func NewServer(opts *Options, rt *runtime.Runtime, logger *otelzap.Logger) (*Server, error) {
 	srv := &Server{
 		opts:    opts,
 		runtime: rt,
@@ -102,7 +103,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		grpc.ChainStreamInterceptor(
 			si,
 			otelgrpc.StreamServerInterceptor(),
-			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
+			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger.Logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.StreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
@@ -110,7 +111,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		grpc.ChainUnaryInterceptor(
 			ui,
 			otelgrpc.UnaryServerInterceptor(),
-			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
+			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger.Logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
 			recovery.UnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
@@ -118,7 +119,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	)
 	runtimev1.RegisterRuntimeServiceServer(server, s)
 	runtimev1.RegisterQueryServiceServer(server, s)
-	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
+	s.logger.Ctx(ctx).Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
@@ -130,7 +131,7 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 	}
 
 	server := &http.Server{Handler: handler}
-	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
+	s.logger.Ctx(ctx).Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 
@@ -326,4 +327,68 @@ func InitOpenTelemetry(endpoint string, pull bool) (*metric.MeterProvider, *sdkt
 
 func OtelHandler(next http.Handler) http.Handler {
 	return otelhttp.NewHandler(next, "otel-instrumented")
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	status      int
+	wroteHeader bool
+}
+
+func wrapResponseWriter(w http.ResponseWriter) *responseWriter {
+	return &responseWriter{ResponseWriter: w}
+}
+
+func (rw *responseWriter) Status() int {
+	return rw.status
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	if rw.wroteHeader {
+		return
+	}
+
+	rw.status = code
+	rw.ResponseWriter.WriteHeader(code)
+	rw.wroteHeader = true
+}
+
+func LoggingMiddleware(h gateway.HandlerFunc, logger *otelzap.Logger) gateway.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+		defer func() {
+			if err := recover(); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				switch v := err.(type) {
+				case error:
+					logger.Ctx(
+						r.Context()).Error("Processing failure",
+						zap.Error(v),
+						zap.String("method", r.Method),
+						zap.String("path", r.URL.EscapedPath()),
+						zap.String("proto", r.Proto),
+						zap.String("user-agent", r.UserAgent()),
+					)
+				default:
+					logger.Ctx(
+						r.Context()).Error("Unknown processing failure",
+						zap.String("method", r.Method),
+						zap.String("path", r.URL.EscapedPath()),
+						zap.String("proto", r.Proto),
+						zap.String("user-agent", r.UserAgent()),
+					)
+				}
+			}
+		}()
+
+		start := time.Now()
+		wrapped := wrapResponseWriter(w)
+		h(wrapped, r, pathParams)
+		logger.Ctx(r.Context()).Info(
+			"Success",
+			zap.Int("status", wrapped.status),
+			zap.String("method", r.Method),
+			zap.String("path", r.URL.EscapedPath()),
+			zap.Duration("duration", time.Since(start)),
+		)
+	}
 }

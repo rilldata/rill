@@ -23,6 +23,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
@@ -50,8 +51,8 @@ type App struct {
 	Context     context.Context
 	Runtime     *runtime.Runtime
 	Instance    *drivers.Instance
-	Logger      *zap.SugaredLogger
-	BaseLogger  *zap.Logger
+	Logger      *otelzap.SugaredLogger
+	BaseLogger  *otelzap.Logger
 	Version     config.Version
 	Verbose     bool
 	ProjectPath string
@@ -88,6 +89,7 @@ func NewApp(ctx context.Context, appConfig *config.Config, ver config.Version, v
 		lvl = zap.DebugLevel
 	}
 	logger = logger.WithOptions(zap.IncreaseLevel(lvl))
+	otelLogger := otelzap.New(logger)
 
 	// Create a local runtime with an in-memory metastore
 	rtOpts := &runtime.Options{
@@ -97,7 +99,7 @@ func NewApp(ctx context.Context, appConfig *config.Config, ver config.Version, v
 		QueryCacheSize:       10000,
 		AllowHostCredentials: true,
 	}
-	rt, err := runtime.New(rtOpts, logger)
+	rt, err := runtime.New(rtOpts, otelLogger)
 	if err != nil {
 		return nil, err
 	}
@@ -142,8 +144,8 @@ func NewApp(ctx context.Context, appConfig *config.Config, ver config.Version, v
 		Context:     ctx,
 		Runtime:     rt,
 		Instance:    inst,
-		Logger:      logger.Sugar(),
-		BaseLogger:  logger,
+		Logger:      otelLogger.Sugar(),
+		BaseLogger:  otelLogger,
 		Version:     ver,
 		Verbose:     verbose,
 		ProjectPath: projectPath,
