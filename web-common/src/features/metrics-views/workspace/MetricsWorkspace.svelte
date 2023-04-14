@@ -18,7 +18,7 @@
   import ConfigInspector from "./ConfigInspector.svelte";
   import MetricsWorkspaceHeader from "./MetricsWorkspaceHeader.svelte";
   import YAMLEditor from "./YAMLEditor.svelte";
-  import { createErrorLineGutter } from "./plugins/error-gutter";
+  import { createLineStatusFactory } from "./plugins/line-status-decoration";
   import {
     createPlaceholderElement,
     rillEditorPlaceholder,
@@ -67,7 +67,6 @@
       },
     })) as V1PutFileAndReconcileResponse;
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-
     invalidateAfterReconcile(queryClient, $runtime.instanceId, resp);
   }
 
@@ -121,30 +120,30 @@
     UNEXPECTED_TOKEN = "A token was encountered in a place where it wasn't expected.",
   }
 
-  function runtimeErrorToLine(errorMessage: string, yaml: string) {
+  function runtimeErrorToLine(message: string, yaml: string) {
     const lines = yaml.split("\n");
-    if (errorMessage === ConfigErrors.SourceNotFound) {
+    if (message === ConfigErrors.SourceNotFound) {
       /** if this is undefined, then the field isn't here either. */
       const line = lines.findIndex((line) => line.startsWith("model:"));
-      return { start: line, end: line, errorMessage };
+      return { line: line + 1, end: line, message, level: "error" };
     }
-    if (errorMessage === ConfigErrors.TimestampNotFound) {
+    if (message === ConfigErrors.TimestampNotFound) {
       const line =
         lines.findIndex((line) => line.startsWith("timeseries:")) + 1;
-      return { start: line, end: line, errorMessage };
+      return { line: line + 1, end: line, message, level: "error" };
     }
-    if (errorMessage === ConfigErrors.MissingMeasure) {
+    if (message === ConfigErrors.MissingMeasure) {
       const line = lines.findIndex((line) => line.startsWith("measures:"));
-      return { start: line, end: line, errorMessage };
+      return { line: line + 1, end: line, message, level: "error" };
     }
-    if (errorMessage === ConfigErrors.MissingDimension) {
+    if (message === ConfigErrors.MissingDimension) {
       const line = lines.findIndex((line) => line.startsWith("dimensions:"));
-      return { start: line, end: line, errorMessage };
+      return { line: line + 1, end: line, message, level: "error" };
     }
-    return { start: null, end: null, errorMessage };
+    return { line: null, end: null, message, level: "error" };
   }
 
-  function mapRuntimeErrorsToLines(errors, yaml) {
+  function mapRuntimeErrorsToLines(errors) {
     if (!errors) return [];
     return errors
       .map((error) => {
@@ -156,50 +155,34 @@
   $: path = Object.keys($fileArtifactsStore?.entities)?.find((key) => {
     return key.endsWith(`${metricsDefName}.yaml`);
   });
+  let parsedYAML;
+  $: if (yaml) parsedYAML = parseDocument(yaml);
+
   $: errors = $fileArtifactsStore?.entities?.[path]?.errors;
-
-  $: mappedErrors = mapRuntimeErrorsToLines(errors, yaml);
-
-  /** if we have a syntax error, let's use the yaml library to pull out the value. */
-  $: hasSyntaxError = errors?.some((error) => {
-    return error.message.endsWith(ConfigErrors.Malformed);
-  });
+  $: mappedErrors = mapRuntimeErrorsToLines(errors);
 
   let mappedSyntaxErrors = [];
-  $: if (hasSyntaxError) {
+  $: if (parsedYAML?.errors?.length) {
     // parse the document and get errors.
     const parsedYAML = parseDocument(yaml);
     const syntaxErrors = parsedYAML.errors;
     mappedSyntaxErrors = syntaxErrors.map((error) => {
       return {
-        start: error.linePos[0].line,
-        end: error.linePos[1].line,
-        errorMessage: error.message,
-        code: error.code,
+        line: error.linePos[0].line,
+        message: error.message,
+        level: "error",
       };
     });
   } else {
     mappedSyntaxErrors = [];
   }
 
-  const { update, gutter } = createErrorLineGutter();
-
-  $: updater = update([...mappedErrors, ...mappedSyntaxErrors]);
+  const { update, field, extension } = createLineStatusFactory();
 </script>
 
 <WorkspaceContainer inspector={true} assetID={`${metricsDefName}-config`}>
   <MetricsWorkspaceHeader slot="header" {metricsDefName} {yaml} />
   <div slot="body" use:listenToNodeResize>
-    {#if errors}
-      {#each [...mappedErrors, ...mappedSyntaxErrors] as error}
-        }
-        <div>
-          {JSON.stringify(error)}
-        </div>
-      {:else}
-        nothing
-      {/each}
-    {/if}
     <div
       class="editor-pane bg-gray-100 p-6 flex flex-col"
       style:height="calc(100vh - var(--header-height))"
@@ -208,8 +191,8 @@
         <YAMLEditor
           content={yaml}
           on:update={updateYAML}
-          plugins={[placeholder, gutter]}
-          updaters={[updater]}
+          plugins={[placeholder, field, extension]}
+          updaters={[update([...mappedErrors, ...mappedSyntaxErrors])]}
         />
       </div>
     </div>

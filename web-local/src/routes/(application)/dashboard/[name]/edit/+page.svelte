@@ -31,8 +31,8 @@
       },
     }
   );
-
-  $: yaml = $fileQuery.data?.blob || "";
+  let yaml;
+  $: if ($fileQuery?.isSuccess) yaml = $fileQuery.data?.blob || "";
   let nonStandardError: string | undefined;
 </script>
 
