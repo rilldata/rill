@@ -101,6 +101,10 @@ export interface V1UpdateProjectResponse {
   project?: V1Project;
 }
 
+export interface V1UpdateOrganizationResponse {
+  organization?: V1Organization;
+}
+
 export interface V1SetProjectMemberRoleResponse {
   [key: string]: any;
 }
@@ -119,6 +123,17 @@ export interface V1RemoveProjectMemberResponse {
 
 export interface V1RemoveOrganizationMemberResponse {
   [key: string]: any;
+}
+
+export interface V1ProjectPermissions {
+  manageDevBranches?: boolean;
+  manageProdBranch?: boolean;
+  manageProject?: boolean;
+  manageProjectMembers?: boolean;
+  readDevBranches?: boolean;
+  readProdBranch?: boolean;
+  readProject?: boolean;
+  readProjectMembers?: boolean;
 }
 
 export interface V1Project {
@@ -144,16 +159,22 @@ export interface V1PingResponse {
   version?: string;
 }
 
+export interface V1OrganizationPermissions {
+  createProjects?: boolean;
+  manageOrg?: boolean;
+  manageOrgMembers?: boolean;
+  manageProjects?: boolean;
+  readOrg?: boolean;
+  readOrgMembers?: boolean;
+  readProjects?: boolean;
+}
+
 export interface V1Organization {
   createdOn?: string;
   description?: string;
   id?: string;
   name?: string;
   updatedOn?: string;
-}
-
-export interface V1UpdateOrganizationResponse {
-  organization?: V1Organization;
 }
 
 export interface V1Member {
@@ -199,10 +220,12 @@ export interface V1GetProjectResponse {
   jwt?: string;
   productionDeployment?: V1Deployment;
   project?: V1Project;
+  projectPermissions?: V1ProjectPermissions;
 }
 
 export interface V1GetOrganizationResponse {
   organization?: V1Organization;
+  permissions?: V1OrganizationPermissions;
 }
 
 export interface V1GetGithubRepoStatusResponse {

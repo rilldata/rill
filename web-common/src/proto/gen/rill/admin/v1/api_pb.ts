@@ -250,6 +250,11 @@ export class GetOrganizationResponse extends Message<GetOrganizationResponse> {
    */
   organization?: Organization;
 
+  /**
+   * @generated from field: rill.admin.v1.OrganizationPermissions permissions = 2;
+   */
+  permissions?: OrganizationPermissions;
+
   constructor(data?: PartialMessage<GetOrganizationResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -259,6 +264,7 @@ export class GetOrganizationResponse extends Message<GetOrganizationResponse> {
   static readonly typeName = "rill.admin.v1.GetOrganizationResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "message", T: Organization },
+    { no: 2, name: "permissions", kind: "message", T: OrganizationPermissions },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrganizationResponse {
@@ -660,6 +666,11 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
    */
   jwt = "";
 
+  /**
+   * @generated from field: rill.admin.v1.ProjectPermissions project_permissions = 4;
+   */
+  projectPermissions?: ProjectPermissions;
+
   constructor(data?: PartialMessage<GetProjectResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -671,6 +682,7 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
     { no: 1, name: "project", kind: "message", T: Project },
     { no: 2, name: "production_deployment", kind: "message", T: Deployment },
     { no: 3, name: "jwt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "project_permissions", kind: "message", T: ProjectPermissions },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectResponse {
@@ -2584,6 +2596,158 @@ export class Member extends Message<Member> {
 
   static equals(a: Member | PlainMessage<Member> | undefined, b: Member | PlainMessage<Member> | undefined): boolean {
     return proto3.util.equals(Member, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.OrganizationPermissions
+ */
+export class OrganizationPermissions extends Message<OrganizationPermissions> {
+  /**
+   * @generated from field: bool read_org = 1;
+   */
+  readOrg = false;
+
+  /**
+   * @generated from field: bool manage_org = 2;
+   */
+  manageOrg = false;
+
+  /**
+   * @generated from field: bool read_projects = 3;
+   */
+  readProjects = false;
+
+  /**
+   * @generated from field: bool create_projects = 4;
+   */
+  createProjects = false;
+
+  /**
+   * @generated from field: bool manage_projects = 5;
+   */
+  manageProjects = false;
+
+  /**
+   * @generated from field: bool read_org_members = 6;
+   */
+  readOrgMembers = false;
+
+  /**
+   * @generated from field: bool manage_org_members = 7;
+   */
+  manageOrgMembers = false;
+
+  constructor(data?: PartialMessage<OrganizationPermissions>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.OrganizationPermissions";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "read_org", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "manage_org", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "read_projects", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "create_projects", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "manage_projects", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "read_org_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "manage_org_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OrganizationPermissions {
+    return new OrganizationPermissions().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): OrganizationPermissions {
+    return new OrganizationPermissions().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): OrganizationPermissions {
+    return new OrganizationPermissions().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: OrganizationPermissions | PlainMessage<OrganizationPermissions> | undefined, b: OrganizationPermissions | PlainMessage<OrganizationPermissions> | undefined): boolean {
+    return proto3.util.equals(OrganizationPermissions, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ProjectPermissions
+ */
+export class ProjectPermissions extends Message<ProjectPermissions> {
+  /**
+   * @generated from field: bool read_project = 1;
+   */
+  readProject = false;
+
+  /**
+   * @generated from field: bool manage_project = 2;
+   */
+  manageProject = false;
+
+  /**
+   * @generated from field: bool read_prod_branch = 3;
+   */
+  readProdBranch = false;
+
+  /**
+   * @generated from field: bool manage_prod_branch = 4;
+   */
+  manageProdBranch = false;
+
+  /**
+   * @generated from field: bool read_dev_branches = 5;
+   */
+  readDevBranches = false;
+
+  /**
+   * @generated from field: bool manage_dev_branches = 6;
+   */
+  manageDevBranches = false;
+
+  /**
+   * @generated from field: bool read_project_members = 7;
+   */
+  readProjectMembers = false;
+
+  /**
+   * @generated from field: bool manage_project_members = 8;
+   */
+  manageProjectMembers = false;
+
+  constructor(data?: PartialMessage<ProjectPermissions>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ProjectPermissions";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "read_project", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "manage_project", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "read_prod_branch", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "manage_prod_branch", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "read_dev_branches", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "manage_dev_branches", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "read_project_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "manage_project_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectPermissions {
+    return new ProjectPermissions().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ProjectPermissions {
+    return new ProjectPermissions().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ProjectPermissions {
+    return new ProjectPermissions().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ProjectPermissions | PlainMessage<ProjectPermissions> | undefined, b: ProjectPermissions | PlainMessage<ProjectPermissions> | undefined): boolean {
+    return proto3.util.equals(ProjectPermissions, a, b);
   }
 }
 

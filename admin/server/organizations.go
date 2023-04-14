@@ -49,9 +49,13 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+
+		// these are the permissions for public and for outside members
+		publicPermissions := &adminv1.OrganizationPermissions{ReadOrg: true, ReadProjects: true}
 		if hasPublicProject {
 			return &adminv1.GetOrganizationResponse{
 				Organization: organizationToDTO(org),
+				Permissions:  publicPermissions,
 			}, nil
 		}
 		// check if the user is outside members of a project in the org
@@ -63,14 +67,18 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 			if exists {
 				return &adminv1.GetOrganizationResponse{
 					Organization: organizationToDTO(org),
+					Permissions:  publicPermissions,
 				}, nil
 			}
 		}
 		return nil, status.Error(codes.PermissionDenied, "not allowed to read org")
 	}
 
+	permissions := claims.OrganizationPermissions(ctx, org.ID)
+
 	return &adminv1.GetOrganizationResponse{
 		Organization: organizationToDTO(org),
+		Permissions:  permissions,
 	}, nil
 }
 
