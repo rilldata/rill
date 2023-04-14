@@ -705,3 +705,93 @@ func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID
 	}
 	return res, nil
 }
+
+func (c *connection) InsertOrganizationMemberUserInvitation(ctx context.Context, email, invitedByID, orgID, roleID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO user_org_invites (email, invited_by_user_id, org_id, org_role_id) VALUES ($1, $2, $3, $4)", email, invitedByID, orgID, roleID)
+	if err != nil {
+		return parseErr(err)
+	}
+	return nil
+}
+
+func (c *connection) InsertProjectMemberUserInvitation(ctx context.Context, email, invitedByID, projectID, roleID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO user_project_invites (email, invited_by_user_id, project_id, project_role_id) VALUES ($1, $2, $3, $4)", email, invitedByID, projectID, roleID)
+	if err != nil {
+		return parseErr(err)
+	}
+	return nil
+}
+
+func (c *connection) FindOrganizationMemberInvitations(ctx context.Context, orgID string) ([]*database.UserInvite, error) {
+	var res []*database.UserInvite
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+			SELECT uoi.email, ur.name as role, u.email as invited_by 
+			FROM user_org_invites uoi JOIN org_roles ur ON uoi.org_role_id = ur.id JOIN users u ON uoi.invited_by_user_id = u.id WHERE uoi.org_id = $1`, orgID)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindOrganizationMemberUserInvitations(ctx context.Context, userEmail string) ([]*database.OrganizationMemberUserInvitation, error) {
+	var res []*database.OrganizationMemberUserInvitation
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM user_org_invites WHERE lower(email) = lower($1)", userEmail)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindOrganizationMemberUserInvitation(ctx context.Context, orgID, userEmail string) (*database.OrganizationMemberUserInvitation, error) {
+	res := &database.OrganizationMemberUserInvitation{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM user_org_invites WHERE lower(email) = lower($1) AND org_id = $2", userEmail, orgID).StructScan(res)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectMemberInvitations(ctx context.Context, projectID string) ([]*database.UserInvite, error) {
+	var res []*database.UserInvite
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+			SELECT upi.email, ur.name as role, u.email as invited_by 
+			FROM user_project_invites upi JOIN project_roles ur ON upi.project_role_id = ur.id JOIN users u ON upi.invited_by_user_id = u.id WHERE upi.project_id = $1`, projectID)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectMemberUserInvitations(ctx context.Context, userEmail string) ([]*database.ProjectMemberUserInvitation, error) {
+	var res []*database.ProjectMemberUserInvitation
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM user_project_invites WHERE lower(email) = lower($1)", userEmail)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectMemberUserInvitation(ctx context.Context, projectID, userEmail string) (*database.ProjectMemberUserInvitation, error) {
+	res := &database.ProjectMemberUserInvitation{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM user_project_invites WHERE lower(email) = lower($1) AND project_id = $2", userEmail, projectID).StructScan(res)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteOrganizationMemberUserInvitation(ctx context.Context, id string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_org_invites WHERE id = $1", id)
+	if err != nil {
+		return parseErr(err)
+	}
+	return nil
+}
+
+func (c *connection) DeleteProjectMemberUserInvitation(ctx context.Context, id string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_project_invites WHERE id = $1", id)
+	if err != nil {
+		return parseErr(err)
+	}
+	return nil
+}

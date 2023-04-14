@@ -1,18 +1,8 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "../client";
-  import { ADMIN_URL } from "../client/http-client";
   import OrganizationList from "../components/home/OrganizationList.svelte";
 
-  const user = createAdminServiceGetCurrentUser({
-    query: {
-      onSuccess: (data) => {
-        if (!data.user) {
-          goto(`${ADMIN_URL}/auth/login?redirect=${window.origin}`);
-        }
-      },
-    },
-  });
+  const user = createAdminServiceGetCurrentUser();
 </script>
 
 {#if $user.data && $user.data.user}

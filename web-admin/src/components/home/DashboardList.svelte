@@ -40,7 +40,9 @@
   }
 </script>
 
-{#if $proj.isSuccess && dashboards?.length > 0}
+{#if dashboards?.length === 0}
+  <p class="text-gray-500 text-xs">This project has no dashboards yet.</p>
+{:else if dashboards?.length > 0}
   <ol>
     {#each dashboards as dashboard}
       <li class="mb-1">

@@ -35,7 +35,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const cliVersionConstraint = ">= 0.20.0"
+var minCliVersion = version.Must(version.NewVersion("0.20.0"))
 
 type Options struct {
 	HTTPPort               int
@@ -276,21 +276,13 @@ func CheckUserAgent(ctx context.Context) (context.Context, error) {
 		return ctx, nil
 	}
 
-	// TODO: Remove when nightlies follow semver
-	ver = strings.TrimSuffix(ver, "-snapshot")
-
-	v1, err := version.NewVersion(ver)
+	v, err := version.NewVersion(ver)
 	if err != nil {
 		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("could not parse rill-cli version: %s", err.Error()))
 	}
 
-	constraints, err := version.NewConstraint(cliVersionConstraint)
-	if err != nil {
-		panic(err)
-	}
-
-	if !constraints.Check(v1) {
-		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported, please upgrade to the latest version", v1))
+	if v.LessThan(minCliVersion) {
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported, please upgrade to the latest version", v))
 	}
 
 	return ctx, nil

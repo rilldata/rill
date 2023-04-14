@@ -4,14 +4,19 @@
  * rill/admin/v1/api.proto
  * OpenAPI spec version: version not set
  */
-export type AdminServiceUpdateProjectBodyVariables = { [key: string]: string };
+export type AdminServiceUpdateProjectVariablesBodyVariables = {
+  [key: string]: string;
+};
+
+export type AdminServiceUpdateProjectVariablesBody = {
+  variables?: AdminServiceUpdateProjectVariablesBodyVariables;
+};
 
 export type AdminServiceUpdateProjectBody = {
   description?: string;
   githubUrl?: string;
   productionBranch?: string;
   public?: boolean;
-  variables?: AdminServiceUpdateProjectBodyVariables;
 };
 
 export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
@@ -75,6 +80,12 @@ export type AdminServiceGetGithubRepoStatusParams = {
   githubUrl?: string;
 };
 
+export interface V1UserInvite {
+  email?: string;
+  invitedBy?: string;
+  role?: string;
+}
+
 export interface V1User {
   createdOn?: string;
   displayName?: string;
@@ -82,6 +93,18 @@ export interface V1User {
   id?: string;
   photoUrl?: string;
   updatedOn?: string;
+}
+
+export type V1UpdateProjectVariablesResponseVariables = {
+  [key: string]: string;
+};
+
+export interface V1UpdateProjectVariablesResponse {
+  variables?: V1UpdateProjectVariablesResponseVariables;
+}
+
+export interface V1UpdateProjectResponse {
+  project?: V1Project;
 }
 
 export interface V1UpdateOrganizationResponse {
@@ -108,7 +131,16 @@ export interface V1RemoveOrganizationMemberResponse {
   [key: string]: any;
 }
 
-export type V1ProjectVariables = { [key: string]: string };
+export interface V1ProjectPermissions {
+  manageDevBranches?: boolean;
+  manageProdBranch?: boolean;
+  manageProject?: boolean;
+  manageProjectMembers?: boolean;
+  readDevBranches?: boolean;
+  readProdBranch?: boolean;
+  readProject?: boolean;
+  readProjectMembers?: boolean;
+}
 
 export interface V1Project {
   createdOn?: string;
@@ -126,16 +158,21 @@ export interface V1Project {
   public?: boolean;
   region?: string;
   updatedOn?: string;
-  variables?: V1ProjectVariables;
-}
-
-export interface V1UpdateProjectResponse {
-  project?: V1Project;
 }
 
 export interface V1PingResponse {
   time?: string;
   version?: string;
+}
+
+export interface V1OrganizationPermissions {
+  createProjects?: boolean;
+  manageOrg?: boolean;
+  manageOrgMembers?: boolean;
+  manageProjects?: boolean;
+  readOrg?: boolean;
+  readOrgMembers?: boolean;
+  readProjects?: boolean;
 }
 
 export interface V1Organization {
@@ -161,6 +198,7 @@ export interface V1ListProjectsForOrganizationResponse {
 }
 
 export interface V1ListProjectMembersResponse {
+  invites?: V1UserInvite[];
   members?: V1Member[];
   nextPageToken?: string;
 }
@@ -171,6 +209,7 @@ export interface V1ListOrganizationsResponse {
 }
 
 export interface V1ListOrganizationMembersResponse {
+  invites?: V1UserInvite[];
   members?: V1Member[];
   nextPageToken?: string;
 }
@@ -179,14 +218,22 @@ export interface V1LeaveOrganizationResponse {
   [key: string]: any;
 }
 
+export type V1GetProjectVariablesResponseVariables = { [key: string]: string };
+
+export interface V1GetProjectVariablesResponse {
+  variables?: V1GetProjectVariablesResponseVariables;
+}
+
 export interface V1GetProjectResponse {
   jwt?: string;
   productionDeployment?: V1Deployment;
   project?: V1Project;
+  projectPermissions?: V1ProjectPermissions;
 }
 
 export interface V1GetOrganizationResponse {
   organization?: V1Organization;
+  permissions?: V1OrganizationPermissions;
 }
 
 export interface V1GetGithubRepoStatusResponse {
@@ -247,11 +294,11 @@ export interface V1CreateOrganizationRequest {
 }
 
 export interface V1AddProjectMemberResponse {
-  [key: string]: any;
+  pendingSignup?: boolean;
 }
 
 export interface V1AddOrganizationMemberResponse {
-  [key: string]: any;
+  pendingSignup?: boolean;
 }
 
 export interface ProtobufAny {
