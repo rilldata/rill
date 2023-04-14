@@ -282,7 +282,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		}
 	}
 
-	var githubURL *string
+	githubURL := proj.GithubURL
 	if req.GithubUrl != "" {
 		githubURL = &req.GithubUrl
 	}
@@ -291,7 +291,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Description:            req.Description,
 		Public:                 req.Public,
 		ProductionBranch:       req.ProductionBranch,
-		ProductionVariables:    req.Variables,
+		ProductionVariables:    proj.ProductionVariables,
 		GithubURL:              githubURL,
 		GithubInstallationID:   proj.GithubInstallationID,
 		ProductionDeploymentID: proj.ProductionDeploymentID,
@@ -447,6 +447,53 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 	return &adminv1.SetProjectMemberRoleResponse{}, nil
 }
 
+func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjectVariablesRequest) (*adminv1.GetProjectVariablesResponse, error) {
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "proj not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.CanProject(ctx, proj.ID, auth.ManageProject) {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project variables")
+	}
+
+	return &adminv1.GetProjectVariablesResponse{Variables: proj.ProductionVariables}, nil
+}
+
+func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.UpdateProjectVariablesRequest) (*adminv1.UpdateProjectVariablesResponse, error) {
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "proj not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.CanProject(ctx, proj.ID, auth.ManageProject) {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
+	}
+
+	proj, err = s.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Description:            proj.Description,
+		Public:                 proj.Public,
+		ProductionBranch:       proj.ProductionBranch,
+		GithubURL:              proj.GithubURL,
+		GithubInstallationID:   proj.GithubInstallationID,
+		ProductionDeploymentID: proj.ProductionDeploymentID,
+		ProductionVariables:    req.Variables,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "variables updated failed with error %s", err.Error())
+	}
+
+	return &adminv1.UpdateProjectVariablesResponse{Variables: proj.ProductionVariables}, nil
+}
+
 // fetchInstallationID returns a valid installation ID iff app is installed and user is a collaborator of the repo
 func (s *Server) fetchInstallationID(ctx context.Context, githubURL, userID string) (int64, error) {
 	// Get Github installation ID for the repo
@@ -498,7 +545,6 @@ func projToDTO(p *database.Project, orgName string) *adminv1.Project {
 		ProductionDeploymentId: safeStr(p.ProductionDeploymentID),
 		CreatedOn:              timestamppb.New(p.CreatedOn),
 		UpdatedOn:              timestamppb.New(p.UpdatedOn),
-		Variables:              p.ProductionVariables,
 	}
 }
 
