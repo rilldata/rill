@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/bmatcuk/doublestar/v4"
@@ -41,8 +42,9 @@ type blobIterator struct {
 	index      int
 	localFiles []string
 	// all localfiles are created in this dir
-	tempDir string
-	opts    *Options
+	tempDir          string
+	opts             *Options
+	downloadMeasures *connectors.DownloadMeasures
 }
 
 type Options struct {
@@ -91,10 +93,16 @@ func (opts *Options) validateLimits(size int64, matchCount int, fetched int64) e
 func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options) (connectors.FileIterator, error) {
 	opts.validate()
 
+	measures, err := connectors.InitDownloadMeasures()
+	if err != nil {
+		return nil, err
+	}
+
 	it := &blobIterator{
-		ctx:    ctx,
-		bucket: bucket,
-		opts:   &opts,
+		ctx:              ctx,
+		bucket:           bucket,
+		opts:             &opts,
+		downloadMeasures: measures,
 	}
 
 	tempDir, err := os.MkdirTemp(os.TempDir(), "blob_ingestion")
@@ -169,6 +177,13 @@ func (it *blobIterator) NextBatch(n int) ([]string, error) {
 			it.localFiles[index-start] = file.Name()
 			ext := filepath.Ext(obj.obj.Key)
 			partialReader, isPartialDownloadSupported := _partialDownloadReaders[ext]
+
+			startTime := time.Now()
+			defer func(t *time.Time) {
+				duration := time.Since(startTime)
+				it.downloadMeasures.Collect(grpCtx, obj.obj.Size, duration, ext, "blob", isPartialDownloadSupported)
+			}(&startTime)
+
 			if obj.full || !isPartialDownloadSupported {
 				// download full file
 				return downloadObject(grpCtx, it.bucket, obj.obj.Key, file)
