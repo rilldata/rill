@@ -3,7 +3,8 @@
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import ClockCircle from "@rilldata/web-common/components/icons/ClockCircle.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
-  import Sync from "@rilldata/web-common/components/icons/Sync.svelte";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import {
     createAdminServiceGetProject,
     V1DeploymentStatus,
@@ -21,7 +22,7 @@
 {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
   <ClockCircle className="text-orange-500" />
 {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING}
-  <Sync className="text-amber-500" />
+  <Spinner status={EntityStatus.Running} />
 {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_OK}
   <CheckCircle className="text-green-500" />
 {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR}
