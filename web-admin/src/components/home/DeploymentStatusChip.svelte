@@ -20,11 +20,11 @@
 {#if !deploymentStatus}
   <Spacer />
 {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
-  <Timer className="text-amber-600" />
+  <Timer className="text-amber-600 hover:text-amber-500" />
 {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING}
   <Spinner status={EntityStatus.Running} />
 {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_OK}
-  <CheckCircle className="text-blue-500" />
+  <CheckCircle className="text-blue-500 hover:text-blue-400" />
 {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR}
-  <CancelCircle className="text-red-500" />
+  <CancelCircle className="text-red-500 hover:text-red-400" />
 {/if}
