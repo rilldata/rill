@@ -10,6 +10,8 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/runtime/server"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 )
 
@@ -23,38 +25,38 @@ const (
 // RegisterEndpoints adds HTTP endpoints for auth.
 // The mux must be served on the ExternalURL of the Authenticator since the logic in these handlers relies on knowing the full external URIs.
 // Note that these are not gRPC handlers, just regular HTTP endpoints that we mount on the gRPC-gateway mux.
-func (a *Authenticator) RegisterEndpoints(mux *gateway.ServeMux) error {
-	err := mux.HandlePath("GET", "/auth/login", a.authLogin)
+func (a *Authenticator) RegisterEndpoints(mux *gateway.ServeMux, logger *otelzap.Logger) error {
+	err := mux.HandlePath("GET", "/auth/login", server.LoggingMiddleware(a.authLogin, logger))
 	if err != nil {
 		return err
 	}
 
-	err = mux.HandlePath("GET", "/auth/callback", a.authLoginCallback)
+	err = mux.HandlePath("GET", "/auth/callback", server.LoggingMiddleware(a.authLoginCallback, logger))
 	if err != nil {
 		return err
 	}
 
-	err = mux.HandlePath("GET", "/auth/logout", a.authLogout)
+	err = mux.HandlePath("GET", "/auth/logout", server.LoggingMiddleware(a.authLogout, logger))
 	if err != nil {
 		return err
 	}
 
-	err = mux.HandlePath("GET", "/auth/logout/callback", a.authLogoutCallback)
+	err = mux.HandlePath("GET", "/auth/logout/callback", server.LoggingMiddleware(a.authLogoutCallback, logger))
 	if err != nil {
 		return err
 	}
 
-	err = mux.HandlePath("POST", "/auth/oauth/device_authorization", a.handleDeviceCodeRequest)
+	err = mux.HandlePath("POST", "/auth/oauth/device_authorization", server.LoggingMiddleware(a.handleDeviceCodeRequest, logger))
 	if err != nil {
 		return err
 	}
 
-	err = mux.HandlePath("POST", "/auth/oauth/device", a.HTTPMiddleware(a.handleUserCodeConfirmation))
+	err = mux.HandlePath("POST", "/auth/oauth/device", server.LoggingMiddleware(a.HTTPMiddleware(a.handleUserCodeConfirmation), logger))
 	if err != nil {
 		return err
 	}
 
-	err = mux.HandlePath("POST", "/auth/oauth/token", a.getAccessToken)
+	err = mux.HandlePath("POST", "/auth/oauth/token", server.LoggingMiddleware(a.getAccessToken, logger))
 	if err != nil {
 		return err
 	}
