@@ -203,7 +203,7 @@ message DeleteOrganizationRequest {
 message DeleteOrganizationResponse {}
 
 message UpdateOrganizationRequest {
-  string name = 1;
+  string name = 1 [(validate.rules).string.min_len = 1];
   string description = 2;
 }
 
@@ -234,7 +234,7 @@ message GetProjectResponse {
 }
 
 message CreateProjectRequest {
-  string organization_name = 1;
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
   string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
   bool public = 4;
@@ -260,8 +260,8 @@ message DeleteProjectRequest {
 message DeleteProjectResponse {}
 
 message UpdateProjectRequest {
-  string organization_name = 1;
-  string name = 2;
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
   bool public = 4;
   string production_branch = 5;
@@ -282,8 +282,8 @@ message GetProjectVariablesResponse {
 }
 
 message UpdateProjectVariablesRequest {
-  string organization_name = 1;
-  string name = 2;
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string name = 2 [(validate.rules).string.min_len = 1];
   map<string, string> variables = 3;
 }
 
@@ -384,8 +384,8 @@ message ListOrganizationMembersResponse {
 
 // Request message for AdminService.AddOrganizationMember
 message AddOrganizationMemberRequest {
-  string organization = 1;
-  string email = 2;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.email = true];
   string role = 3;
 }
 
@@ -394,8 +394,8 @@ message AddOrganizationMemberResponse {}
 
 // Request message for AdminService.RemoveOrganizationMember
 message RemoveOrganizationMemberRequest {
-  string organization = 1;
-  string email = 2;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.email = true];
 }
 
 // Response message for AdminService.RemoveOrganizationMember
@@ -403,9 +403,9 @@ message RemoveOrganizationMemberResponse {}
 
 // Request message for AdminService.SetOrganizationMemberRole
 message SetOrganizationMemberRoleRequest {
-  string organization = 1;
-  string email = 2;
-  string role = 3;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.email = true];
+  string role = 3 [(validate.rules).string.min_len = 1];
 }
 
 // Response message for AdminService.SetOrganizationMemberRole
@@ -413,7 +413,7 @@ message SetOrganizationMemberRoleResponse {}
 
 // Request message for AdminService.LeaveOrganization
 message LeaveOrganizationRequest {
-  string organization = 1;
+  string organization = 1 [(validate.rules).string.min_len = 1];
 }
 
 // Response message for AdminService.LeaveOrganization
@@ -421,8 +421,8 @@ message LeaveOrganizationResponse {}
 
 // Request message for AdminService.ListProjectMembers
 message ListProjectMembersRequest {
-  string organization = 1;
-  string project = 2;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
   uint32 page_size = 3;
   string page_token = 4;
 }
@@ -435,10 +435,10 @@ message ListProjectMembersResponse {
 
 // Request message for AdminService.AddProjectMember
 message AddProjectMemberRequest {
-  string organization = 1;
-  string project = 2;
-  string email = 3;
-  string role = 4;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string email = 3 [(validate.rules).string.email = true];
+  string role = 4 [(validate.rules).string.min_len = 1];
 }
 
 // Response message for AdminService.AddProjectMember
@@ -446,9 +446,9 @@ message AddProjectMemberResponse {}
 
 // Request message for AdminService.RemoveProjectMember
 message RemoveProjectMemberRequest {
-  string organization = 1;
-  string project = 2;
-  string email = 3;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string email = 3 [(validate.rules).string.email = true];
 }
 
 // Response message for AdminService.RemoveProjectMember
@@ -456,10 +456,10 @@ message RemoveProjectMemberResponse {}
 
 // Request message for AdminService.SetProjectMemberRole
 message SetProjectMemberRoleRequest {
-  string organization = 1;
-  string project = 2;
-  string email = 3;
-  string role = 4;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string email = 3 [(validate.rules).string.email = true];
+  string role = 4 [(validate.rules).string.min_len = 1];
 }
 
 // Response message for AdminService.SetProjectMemberRole
