@@ -80,6 +80,12 @@ export type AdminServiceGetGithubRepoStatusParams = {
   githubUrl?: string;
 };
 
+export interface V1UserInvite {
+  email?: string;
+  invitedBy?: string;
+  role?: string;
+}
+
 export interface V1User {
   createdOn?: string;
   displayName?: string;
@@ -192,6 +198,7 @@ export interface V1ListProjectsForOrganizationResponse {
 }
 
 export interface V1ListProjectMembersResponse {
+  invites?: V1UserInvite[];
   members?: V1Member[];
   nextPageToken?: string;
 }
@@ -202,6 +209,7 @@ export interface V1ListOrganizationsResponse {
 }
 
 export interface V1ListOrganizationMembersResponse {
+  invites?: V1UserInvite[];
   members?: V1Member[];
   nextPageToken?: string;
 }
@@ -286,11 +294,11 @@ export interface V1CreateOrganizationRequest {
 }
 
 export interface V1AddProjectMemberResponse {
-  [key: string]: any;
+  pendingSignup?: boolean;
 }
 
 export interface V1AddOrganizationMemberResponse {
-  [key: string]: any;
+  pendingSignup?: boolean;
 }
 
 export interface ProtobufAny {

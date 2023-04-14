@@ -150,6 +150,15 @@ func PrintMembers(members []*adminv1.Member) {
 	TablePrinter(toMemberTable(members))
 }
 
+func PrintInvites(invites []*adminv1.UserInvite) {
+	if len(invites) == 0 {
+		return
+	}
+
+	SuccessPrinter("Pending user invites \n")
+	TablePrinter(toInvitesTable(invites))
+}
+
 func toMemberTable(members []*adminv1.Member) []*member {
 	allMembers := make([]*member, 0, len(members))
 
@@ -178,6 +187,29 @@ type member struct {
 	RoleName  string `header:"role_name" json:"role_name"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
 	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_on"`
+}
+
+func toInvitesTable(invites []*adminv1.UserInvite) []*userInvite {
+	allInvites := make([]*userInvite, 0, len(invites))
+
+	for _, i := range invites {
+		allInvites = append(allInvites, toInviteRow(i))
+	}
+	return allInvites
+}
+
+func toInviteRow(i *adminv1.UserInvite) *userInvite {
+	return &userInvite{
+		Email:     i.Email,
+		RoleName:  i.Role,
+		InvitedBy: i.InvitedBy,
+	}
+}
+
+type userInvite struct {
+	Email     string `header:"email" json:"email"`
+	RoleName  string `header:"role_name" json:"role_name"`
+	InvitedBy string `header:"invited_by" json:"invited_by"`
 }
 
 func contains(vals []string, key string) bool {

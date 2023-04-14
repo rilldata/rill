@@ -1815,6 +1815,11 @@ export class ListOrganizationMembersResponse extends Message<ListOrganizationMem
   members: Member[] = [];
 
   /**
+   * @generated from field: repeated rill.admin.v1.UserInvite invites = 3;
+   */
+  invites: UserInvite[] = [];
+
+  /**
    * @generated from field: string next_page_token = 2;
    */
   nextPageToken = "";
@@ -1828,6 +1833,7 @@ export class ListOrganizationMembersResponse extends Message<ListOrganizationMem
   static readonly typeName = "rill.admin.v1.ListOrganizationMembersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "members", kind: "message", T: Member, repeated: true },
+    { no: 3, name: "invites", kind: "message", T: UserInvite, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -1905,6 +1911,11 @@ export class AddOrganizationMemberRequest extends Message<AddOrganizationMemberR
  * @generated from message rill.admin.v1.AddOrganizationMemberResponse
  */
 export class AddOrganizationMemberResponse extends Message<AddOrganizationMemberResponse> {
+  /**
+   * @generated from field: bool pending_signup = 1;
+   */
+  pendingSignup = false;
+
   constructor(data?: PartialMessage<AddOrganizationMemberResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1913,6 +1924,7 @@ export class AddOrganizationMemberResponse extends Message<AddOrganizationMember
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.AddOrganizationMemberResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "pending_signup", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddOrganizationMemberResponse {
@@ -2235,6 +2247,11 @@ export class ListProjectMembersResponse extends Message<ListProjectMembersRespon
   members: Member[] = [];
 
   /**
+   * @generated from field: repeated rill.admin.v1.UserInvite invites = 3;
+   */
+  invites: UserInvite[] = [];
+
+  /**
    * @generated from field: string next_page_token = 2;
    */
   nextPageToken = "";
@@ -2248,6 +2265,7 @@ export class ListProjectMembersResponse extends Message<ListProjectMembersRespon
   static readonly typeName = "rill.admin.v1.ListProjectMembersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "members", kind: "message", T: Member, repeated: true },
+    { no: 3, name: "invites", kind: "message", T: UserInvite, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -2331,6 +2349,11 @@ export class AddProjectMemberRequest extends Message<AddProjectMemberRequest> {
  * @generated from message rill.admin.v1.AddProjectMemberResponse
  */
 export class AddProjectMemberResponse extends Message<AddProjectMemberResponse> {
+  /**
+   * @generated from field: bool pending_signup = 1;
+   */
+  pendingSignup = false;
+
   constructor(data?: PartialMessage<AddProjectMemberResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2339,6 +2362,7 @@ export class AddProjectMemberResponse extends Message<AddProjectMemberResponse> 
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.AddProjectMemberResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "pending_signup", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddProjectMemberResponse {
@@ -2748,6 +2772,55 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
 
   static equals(a: ProjectPermissions | PlainMessage<ProjectPermissions> | undefined, b: ProjectPermissions | PlainMessage<ProjectPermissions> | undefined): boolean {
     return proto3.util.equals(ProjectPermissions, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UserInvite
+ */
+export class UserInvite extends Message<UserInvite> {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email = "";
+
+  /**
+   * @generated from field: string role = 2;
+   */
+  role = "";
+
+  /**
+   * @generated from field: string invited_by = 3;
+   */
+  invitedBy = "";
+
+  constructor(data?: PartialMessage<UserInvite>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UserInvite";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "invited_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UserInvite {
+    return new UserInvite().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UserInvite {
+    return new UserInvite().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UserInvite {
+    return new UserInvite().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UserInvite | PlainMessage<UserInvite> | undefined, b: UserInvite | PlainMessage<UserInvite> | undefined): boolean {
+    return proto3.util.equals(UserInvite, a, b);
   }
 }
 

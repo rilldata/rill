@@ -172,7 +172,20 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 		dtos[i] = memberToPB(user)
 	}
 
-	return &adminv1.ListOrganizationMembersResponse{Members: dtos}, nil
+	// get pending user invites for this org
+	userInvites, err := s.admin.DB.FindOrganizationMemberInvitations(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))
+	for _, invite := range userInvites {
+		invitesDtos = append(invitesDtos, inviteToPB(invite))
+	}
+
+	return &adminv1.ListOrganizationMembersResponse{
+		Members: dtos,
+		Invites: invitesDtos,
+	}, nil
 }
 
 func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrganizationMemberRequest) (*adminv1.AddOrganizationMemberResponse, error) {
@@ -190,25 +203,32 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add org members")
 	}
 
-	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
-	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-		// Create phantom user
-		// TODO: Replace by an invite-based approach
-		user, err = s.admin.CreateOrUpdateUser(ctx, req.Email, "", "")
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	}
-
 	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "role not found")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		// Invite user to join the organization
+		invitedBy := ""
+		if claims.OwnerType() == auth.OwnerTypeUser {
+			invitedBy = claims.OwnerID()
+		}
+		err = s.admin.InviteUserToOrganization(ctx, req.Email, invitedBy, org.ID, role.ID, org.Name, role.Name)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		return &adminv1.AddOrganizationMemberResponse{
+			PendingSignup: true,
+		}, nil
 	}
 
 	ctx, tx, err := s.admin.DB.NewTx(ctx)
@@ -218,6 +238,9 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 	defer func() { _ = tx.Rollback() }()
 	err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
 	if err != nil {
+		if errors.Is(err, database.ErrNotUnique) {
+			return nil, status.Error(codes.InvalidArgument, "user already member of org")
+		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -234,7 +257,9 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.AddOrganizationMemberResponse{}, nil
+	return &adminv1.AddOrganizationMemberResponse{
+		PendingSignup: false,
+	}, nil
 }
 
 func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.RemoveOrganizationMemberRequest) (*adminv1.RemoveOrganizationMemberResponse, error) {
@@ -255,7 +280,19 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "user not found")
+			// check if there is a pending invite
+			invite, err := s.admin.DB.FindOrganizationMemberUserInvitation(ctx, org.ID, req.Email)
+			if err != nil {
+				if errors.Is(err, database.ErrNotFound) {
+					return nil, status.Error(codes.InvalidArgument, "user not found")
+				}
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			err = s.admin.DB.DeleteOrganizationMemberUserInvitation(ctx, invite.ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			return &adminv1.RemoveOrganizationMemberResponse{}, nil
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
