@@ -1,7 +1,6 @@
 package project
 
 import (
-	"context"
 	"os"
 
 	"github.com/lensesio/tableprinter"
@@ -27,7 +26,7 @@ func EnvCmd(cfg *config.Config) *cobra.Command {
 // SetCmd is sub command for env. Sets the variable for a project
 func SetCmd(cfg *config.Config) *cobra.Command {
 	setCmd := &cobra.Command{
-		Use:   "set",
+		Use:   "set <project name> <key> <value>",
 		Args:  cobra.ExactArgs(3),
 		Short: "set variable",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -40,8 +39,8 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			ctx := context.Background()
-			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
+			ctx := cmd.Context()
+			resp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
 				OrganizationName: cfg.Org,
 				Name:             projectName,
 			})
@@ -49,31 +48,25 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			proj := resp.Project
-			if val, ok := proj.Variables[key]; ok && val == value {
+			if val, ok := resp.Variables[key]; ok && val == value {
 				return nil
 			}
 
-			if proj.Variables == nil {
-				proj.Variables = make(map[string]string)
+			if resp.Variables == nil {
+				resp.Variables = make(map[string]string)
 			}
-			proj.Variables[key] = value
-			updatedProject, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
-				Id:               proj.Id,
+			resp.Variables[key] = value
+			updateResp, err := client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
 				OrganizationName: cfg.Org,
 				Name:             projectName,
-				Description:      proj.Description,
-				Public:           proj.Public,
-				ProductionBranch: proj.ProductionBranch,
-				GithubUrl:        proj.GithubUrl,
-				Variables:        proj.Variables,
+				Variables:        resp.Variables,
 			})
 			if err != nil {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Updated project \n")
-			cmdutil.TablePrinter(toRow(updatedProject.Project))
+			cmdutil.SuccessPrinter("Updated project variables\n")
+			tableprinter.PrintHeadList(os.Stdout, variable.Serialize(updateResp.Variables), "Project Variables")
 			return nil
 		},
 	}
@@ -83,7 +76,7 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 // RmCmd is sub command for env. Removes the variable for a project
 func RmCmd(cfg *config.Config) *cobra.Command {
 	rmCmd := &cobra.Command{
-		Use:   "rm",
+		Use:   "rm <project name> <key>",
 		Args:  cobra.ExactArgs(2),
 		Short: "remove variable",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -95,8 +88,8 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			ctx := context.Background()
-			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
+			ctx := cmd.Context()
+			resp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
 				OrganizationName: cfg.Org,
 				Name:             projectName,
 			})
@@ -104,28 +97,22 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			proj := resp.Project
-			if _, ok := proj.Variables[key]; !ok {
+			if _, ok := resp.Variables[key]; !ok {
 				return nil
 			}
 
-			delete(proj.Variables, key)
-			updatedProject, err := client.UpdateProject(context.Background(), &adminv1.UpdateProjectRequest{
-				Id:               proj.Id,
+			delete(resp.Variables, key)
+			update, err := client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
 				OrganizationName: cfg.Org,
 				Name:             projectName,
-				Description:      proj.Description,
-				Public:           proj.Public,
-				ProductionBranch: proj.ProductionBranch,
-				GithubUrl:        proj.GithubUrl,
-				Variables:        proj.Variables,
+				Variables:        resp.Variables,
 			})
 			if err != nil {
 				return err
 			}
 
 			cmdutil.SuccessPrinter("Updated project \n")
-			cmdutil.TablePrinter(toRow(updatedProject.Project))
+			tableprinter.PrintHeadList(os.Stdout, variable.Serialize(update.Variables), "Project Variables")
 			return nil
 		},
 	}
@@ -134,7 +121,7 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 
 func ShowEnvCmd(cfg *config.Config) *cobra.Command {
 	showCmd := &cobra.Command{
-		Use:   "show",
+		Use:   "show <project name>",
 		Args:  cobra.ExactArgs(1),
 		Short: "show variable for project",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -145,8 +132,7 @@ func ShowEnvCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			ctx := context.Background()
-			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
+			resp, err := client.GetProjectVariables(cmd.Context(), &adminv1.GetProjectVariablesRequest{
 				OrganizationName: cfg.Org,
 				Name:             projectName,
 			})
@@ -154,7 +140,7 @@ func ShowEnvCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			tableprinter.PrintHeadList(os.Stdout, variable.Serialize(resp.Project.Variables), "Project Variables")
+			tableprinter.PrintHeadList(os.Stdout, variable.Serialize(resp.Variables), "Project Variables")
 			return nil
 		},
 	}

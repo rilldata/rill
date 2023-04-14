@@ -4,15 +4,19 @@
  * rill/admin/v1/api.proto
  * OpenAPI spec version: version not set
  */
-export type AdminServiceUpdateProjectBodyVariables = { [key: string]: string };
+export type AdminServiceUpdateProjectVariablesBodyVariables = {
+  [key: string]: string;
+};
+
+export type AdminServiceUpdateProjectVariablesBody = {
+  variables?: AdminServiceUpdateProjectVariablesBodyVariables;
+};
 
 export type AdminServiceUpdateProjectBody = {
   description?: string;
   githubUrl?: string;
-  id?: string;
   productionBranch?: string;
   public?: boolean;
-  variables?: AdminServiceUpdateProjectBodyVariables;
 };
 
 export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
@@ -86,8 +90,16 @@ export interface V1User {
   updatedOn?: string;
 }
 
-export interface V1UpdateOrganizationResponse {
-  organization?: V1Organization;
+export type V1UpdateProjectVariablesResponseVariables = {
+  [key: string]: string;
+};
+
+export interface V1UpdateProjectVariablesResponse {
+  variables?: V1UpdateProjectVariablesResponseVariables;
+}
+
+export interface V1UpdateProjectResponse {
+  project?: V1Project;
 }
 
 export interface V1SetProjectMemberRoleResponse {
@@ -110,8 +122,6 @@ export interface V1RemoveOrganizationMemberResponse {
   [key: string]: any;
 }
 
-export type V1ProjectVariables = { [key: string]: string };
-
 export interface V1Project {
   createdOn?: string;
   description?: string;
@@ -128,11 +138,6 @@ export interface V1Project {
   public?: boolean;
   region?: string;
   updatedOn?: string;
-  variables?: V1ProjectVariables;
-}
-
-export interface V1UpdateProjectResponse {
-  project?: V1Project;
 }
 
 export interface V1PingResponse {
@@ -146,6 +151,10 @@ export interface V1Organization {
   id?: string;
   name?: string;
   updatedOn?: string;
+}
+
+export interface V1UpdateOrganizationResponse {
+  organization?: V1Organization;
 }
 
 export interface V1Member {
@@ -179,6 +188,12 @@ export interface V1ListOrganizationMembersResponse {
 
 export interface V1LeaveOrganizationResponse {
   [key: string]: any;
+}
+
+export type V1GetProjectVariablesResponseVariables = { [key: string]: string };
+
+export interface V1GetProjectVariablesResponse {
+  variables?: V1GetProjectVariablesResponseVariables;
 }
 
 export interface V1GetProjectResponse {
