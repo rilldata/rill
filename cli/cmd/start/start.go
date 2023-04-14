@@ -26,6 +26,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	var mode bool
 	var logFormat string
 	var variables []string
+	var exampleName string
 
 	startCmd := &cobra.Command{
 		Use:   "start",
@@ -64,8 +65,10 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 					},
 				}
 
-				if err := survey.Ask(questions, &projectPath); err != nil {
-					return err
+				if !cmd.Flags().Changed("example") {
+					if err := survey.Ask(questions, &projectPath); err != nil {
+						return err
+					}
 				}
 			}
 
@@ -79,6 +82,18 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			defer app.Close()
+
+			if cmd.Flags().Changed("example") {
+				if exampleName != "" {
+					fmt.Println("Visit our documentation for more examples: https://docs.rilldata.com.")
+					fmt.Println("")
+				}
+
+				err = app.InitProject(exampleName)
+				if err != nil {
+					return fmt.Errorf("init project: %w", err)
+				}
+			}
 
 			// If not initialized, init repo with an empty project
 			if !app.IsProjectInit() {
@@ -115,6 +130,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	startCmd.Flags().BoolVar(&strict, "strict", false, "Exit if project has build errors")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 	startCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
+	startCmd.Flags().StringVar(&exampleName, "example", "default", "Name of example project")
 
 	return startCmd
 }

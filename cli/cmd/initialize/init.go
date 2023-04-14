@@ -24,7 +24,7 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 	var variables []string
 
 	initCmd := &cobra.Command{
-		Use:   "init",
+		Use:   "init <path>",
 		Short: "Initialize a new project",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -60,8 +60,10 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 					},
 				}
 
-				if err := survey.Ask(questions, &projectPath); err != nil {
-					return err
+				if !listExamples && !cmd.Flags().Changed("example") {
+					if err := survey.Ask(questions, &projectPath); err != nil {
+						return err
+					}
 				}
 			}
 
