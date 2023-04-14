@@ -22,6 +22,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
+	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -56,6 +57,10 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 			}
+
+			// telemetry errors shouldn't fail deploy command
+			tel, _ := telemetry.NewTelemetry(cfg.Version)
+			_ = tel.EmitDeployStart(ctx)
 
 			// log in if not logged in
 			if !cfg.IsAuthenticated() {
@@ -136,7 +141,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Check for access to the Github URL
-			ghRes, err := verifyAccess(ctx, adminClient, githubURL)
+			ghRes, err := verifyAccess(ctx, adminClient, githubURL, tel)
 			if err != nil {
 				return fmt.Errorf("failed to verify access to github repo, error = %w", err)
 			}
@@ -185,6 +190,9 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				time.Sleep(3 * time.Second)
 				_ = browser.Open(projRes.ProjectUrl)
 			}
+
+			// telemetry errors shouldn't fail deploy command
+			_ = tel.EmitDeploySuccess(ctx)
 			// TODO :: add rill docs here
 			return nil
 		},
@@ -391,7 +399,7 @@ func hasRillProject(dir string) bool {
 	return err == nil
 }
 
-func verifyAccess(ctx context.Context, c *client.Client, githubURL string) (*adminv1.GetGithubRepoStatusResponse, error) {
+func verifyAccess(ctx context.Context, c *client.Client, githubURL string, tel *telemetry.Telemetry) (*adminv1.GetGithubRepoStatusResponse, error) {
 	// Check for access to the Github URL
 	ghRes, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
 		GithubUrl: githubURL,
@@ -408,6 +416,8 @@ func verifyAccess(ctx context.Context, c *client.Client, githubURL string) (*adm
 		time.Sleep(3 * time.Second)
 		fmt.Printf("Open this URL in your browser to grant Rill access to your Github repository:\n\n")
 		fmt.Printf("\t%s\n\n", ghRes.GrantAccessUrl)
+
+		_ = tel.EmitGithubConnectedStart(ctx)
 
 		// Open browser if possible
 		_ = browser.Open(ghRes.GrantAccessUrl)
@@ -433,6 +443,7 @@ func verifyAccess(ctx context.Context, c *client.Client, githubURL string) (*adm
 
 			if pollRes.HasAccess {
 				// Success
+				_ = tel.EmitGithubConnectedSuccess(ctx)
 				return pollRes, nil
 			}
 
