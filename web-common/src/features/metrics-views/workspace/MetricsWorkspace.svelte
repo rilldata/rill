@@ -1,6 +1,6 @@
 <script lang="ts">
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
-  import { createLineStatusFactory } from "@rilldata/web-common/components/editor/plugins/line-status-decoration";
+  import { createLineStatusSystem } from "@rilldata/web-common/components/editor/plugins/line-status-decoration";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -177,7 +177,9 @@
     mappedSyntaxErrors = [];
   }
 
-  const { update, field, extension } = createLineStatusFactory();
+  const { createUpdater, extension: lineStatusExtensions } =
+    createLineStatusSystem();
+  $: updateLineStatus = createUpdater([...mappedErrors, ...mappedSyntaxErrors]);
 </script>
 
 <WorkspaceContainer inspector={true} assetID={`${metricsDefName}-config`}>
@@ -191,8 +193,8 @@
         <YAMLEditor
           content={yaml}
           on:update={updateYAML}
-          plugins={[placeholder, field, extension]}
-          updaters={[update([...mappedErrors, ...mappedSyntaxErrors])]}
+          plugins={[placeholder, lineStatusExtensions]}
+          updaters={[updateLineStatus]}
         />
       </div>
       {#each [...mappedErrors, ...mappedSyntaxErrors] as error}
