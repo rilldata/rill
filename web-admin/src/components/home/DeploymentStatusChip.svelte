@@ -24,7 +24,7 @@
 {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING}
   <Spinner status={EntityStatus.Running} />
 {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_OK}
-  <CheckCircle className="text-green-500" />
+  <CheckCircle className="text-blue-500" />
 {:else if deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR}
   <CancelCircle className="text-red-500" />
 {/if}
