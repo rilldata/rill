@@ -41,7 +41,7 @@
         on:mouseleave={() => setHovered(false)}
       >
         <span>{label}</span>
-        <div class="transition-transform" class:translate-y-2={hovered}>
+        <div class="transition-transform" class:translate-y-1={hovered}>
           <CaretDownIcon size="14px" />
         </div>
       </button>
