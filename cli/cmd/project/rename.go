@@ -11,11 +11,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ProjectRenameInfo struct {
-	current string
-	new     string
-}
-
 func RenameCmd(cfg *config.Config) *cobra.Command {
 	renameCmd := &cobra.Command{
 		Use:   "rename <current-project-name> <new-project-name>",
@@ -23,7 +18,12 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 		Short: "Rename",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			projectRenameInfo := ProjectRenameInfo{}
+			var currentName string
+			var newName string
+
+			if len(args) == 1 {
+				return fmt.Errorf("Invalid args provided, required 0 or 2 args")
+			}
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -32,38 +32,23 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			if len(args) > 1 {
-				projectRenameInfo.current = args[0]
-				projectRenameInfo.new = args[1]
+				currentName = args[0]
+				newName = args[1]
 			} else {
-				// Get the new project current name and new name from user if not provided in the args
-				currentUserQuestion := []*survey.Question{
-					{
-						Name: "current",
-						Prompt: &survey.Input{
-							Message: "Current project name",
-						},
-						Validate: func(any interface{}) error {
-							name := any.(string)
-							if name == "" {
-								return fmt.Errorf("empty name")
-							}
-							exists, err := cmdutil.ProjectExists(ctx, client, cfg.Org, name)
-							if err != nil {
-								return err
-							}
-							if !exists {
-								return fmt.Errorf("project with name %v not exists in the org", name)
-							}
-							return nil
-						},
-					},
-				}
-
-				if err := survey.Ask(currentUserQuestion, &projectRenameInfo.current); err != nil {
+				resp, err := client.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{OrganizationName: cfg.Org})
+				if err != nil {
 					return err
 				}
 
-				newUserQuestion := []*survey.Question{
+				var projectNames []string
+				for _, proj := range resp.Projects {
+					projectNames = append(projectNames, proj.Name)
+				}
+
+				currentName = cmdutil.SelectPrompt("Select the project for rename", projectNames, "")
+
+				// Get the new project name from user if not provided in the args
+				question := []*survey.Question{
 					{
 						Name: "new",
 						Prompt: &survey.Input{
@@ -74,29 +59,20 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 							if name == "" {
 								return fmt.Errorf("empty name")
 							}
-							exists, err := cmdutil.ProjectExists(ctx, client, cfg.Org, name)
-							if err != nil {
-								return err
-							}
-							if exists {
-								return fmt.Errorf("project with name %v already exists in the org, please try with different name", name)
-							}
-							if projectRenameInfo.current == name {
-								return fmt.Errorf("current project name %v same as new project name %v", projectRenameInfo.current, name)
-							}
+
 							return nil
 						},
 					},
 				}
 
-				if err := survey.Ask(newUserQuestion, &projectRenameInfo.new); err != nil {
+				if err := survey.Ask(question, newName); err != nil {
 					return err
 				}
 			}
 
 			confirm := false
 			prompt := &survey.Confirm{
-				Message: fmt.Sprintf("Do you want to rename project %s to %s?", color.YellowString(projectRenameInfo.current), color.YellowString(projectRenameInfo.new)),
+				Message: fmt.Sprintf("Do you want to rename project %s to %s?", color.YellowString(currentName), color.YellowString(newName)),
 			}
 
 			err = survey.AskOne(prompt, &confirm)
@@ -108,7 +84,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: projectRenameInfo.current})
+			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: currentName})
 			if err != nil {
 				return err
 			}
@@ -118,7 +94,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			updatedProj, err := client.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
 				Id:               proj.Id,
 				OrganizationName: cfg.Org,
-				Name:             projectRenameInfo.new,
+				Name:             newName,
 				Description:      proj.Description,
 				Public:           proj.Public,
 				ProductionBranch: proj.ProductionBranch,

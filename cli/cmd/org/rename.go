@@ -1,14 +1,12 @@
 package org
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +18,12 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 		Short: "Rename",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			var orgName string
+			var currentName string
+			var newName string
+
+			if len(args) == 1 {
+				return fmt.Errorf("Invalid args provided, required 0 or 2 args")
+			}
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -28,15 +31,28 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if len(args) > 0 {
-				orgName = args[0]
+			if len(args) > 1 {
+				currentName = args[0]
+				newName = args[1]
 			} else {
+				resp, err := client.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
+				if err != nil {
+					return err
+				}
+
+				var orgNames []string
+				for _, org := range resp.Organizations {
+					orgNames = append(orgNames, org.Name)
+				}
+
+				currentName = cmdutil.SelectPrompt("Select the org for rename", orgNames, "")
+
 				// Get the new org name from user if not provided in the args
 				questions := []*survey.Question{
 					{
 						Name: "name",
 						Prompt: &survey.Input{
-							Message: "Enter the new org name",
+							Message: "New org name",
 						},
 						Validate: func(any interface{}) error {
 							name := any.(string)
@@ -44,32 +60,19 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 								return fmt.Errorf("empty name")
 							}
 
-							exist, err := cmdutil.OrgExists(ctx, client, name)
-							if err != nil {
-								return fmt.Errorf("org name %q is already taken", name)
-							}
-
-							if exist {
-								// this should always be true but adding this check from completeness POV
-								return fmt.Errorf("org with name %q already exists", name)
-							}
-
-							if name == cfg.Org {
-								return fmt.Errorf("org with name %v is same as current/default org name", name)
-							}
 							return nil
 						},
 					},
 				}
 
-				if err := survey.Ask(questions, &orgName); err != nil {
+				if err := survey.Ask(questions, &newName); err != nil {
 					return err
 				}
 			}
 
 			confirm := false
 			prompt := &survey.Confirm{
-				Message: fmt.Sprintf("Do you want to rename %q to %q?", color.YellowString(cfg.Org), color.YellowString(orgName)),
+				Message: fmt.Sprintf("Do you want to rename org %q to %q?", color.YellowString(currentName), color.YellowString(newName)),
 			}
 
 			err = survey.AskOne(prompt, &confirm)
@@ -81,22 +84,17 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-			resp, err := client.GetOrganization(context.Background(), &adminv1.GetOrganizationRequest{Name: cfg.Org})
+			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: currentName})
 			if err != nil {
 				return err
 			}
 
 			org := resp.Organization
-			updatedOrg, err := client.UpdateOrganization(context.Background(), &adminv1.UpdateOrganizationRequest{
+			updatedOrg, err := client.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
 				Id:          org.Id,
-				Name:        orgName,
+				Name:        newName,
 				Description: org.Description,
 			})
-			if err != nil {
-				return err
-			}
-
-			err = dotrill.SetDefaultOrg(orgName)
 			if err != nil {
 				return err
 			}
