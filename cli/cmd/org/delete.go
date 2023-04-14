@@ -3,7 +3,6 @@ package org
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -35,10 +34,17 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 				projects = append(projects, proj.Name)
 			}
 
-			fmt.Printf("Deleting org : %s, will also delete these projects : [%s] \n", args[0], strings.Join(projects, " "))
-			org := cmdutil.InputPrompt("Confirm the org name to delete", "")
+			if len(projects) > 0 {
+				fmt.Printf("Deleting %q will also delete these projects:\n", args[0])
+				for _, proj := range projects {
+					fmt.Printf("\t%s/%s\n", args[0], proj)
+				}
+			}
+
+			msg := fmt.Sprintf("Enter %q to confirm deletion", args[0])
+			org := cmdutil.InputPrompt(msg, "")
 			if org != args[0] {
-				return fmt.Errorf("Provided incorrect org name to delete : %s", org)
+				return fmt.Errorf("Entered incorrect name : %s", org)
 			}
 
 			for _, proj := range projects {
@@ -47,7 +53,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				fmt.Printf("Deleted project %s \n", proj)
+				fmt.Printf("Deleted project %s/%s\n", args[0], proj)
 			}
 
 			_, err = client.DeleteOrganization(context.Background(), &adminv1.DeleteOrganizationRequest{Name: args[0]})
