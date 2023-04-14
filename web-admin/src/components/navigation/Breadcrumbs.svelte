@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import { createRuntimeServiceListCatalogEntries } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceListOrganizations,
@@ -19,7 +19,13 @@
   $: isProjectPage = $page.route.id === "/[organization]/[project]";
 
   $: dashboard = $page.params.dashboard;
-  $: dashboards = useDashboardNames($runtime?.instanceId);
+  $: dashboards = createRuntimeServiceListCatalogEntries(
+    $runtime?.instanceId,
+    {
+      type: "OBJECT_TYPE_METRICS_VIEW",
+    },
+    { query: { enabled: !!project && !!$runtime?.instanceId } }
+  );
   $: isDashboardPage =
     $page.route.id === "/[organization]/[project]/[dashboard]";
 </script>
@@ -60,11 +66,11 @@
       <BreadcrumbItem
         label={dashboard}
         isCurrentPage={isDashboardPage}
-        menuOptions={$dashboards.data?.length > 1 &&
-          $dashboards.data.map((dash) => ({
-            key: dash,
-            main: dash,
-            callback: () => goto(`/${organization}/${project}/${dash}`),
+        menuOptions={$dashboards.data?.entries?.length > 1 &&
+          $dashboards.data.entries.map((dash) => ({
+            key: dash.name,
+            main: dash.name,
+            callback: () => goto(`/${organization}/${project}/${dash.name}`),
           }))}
         onSelectMenuOption={(dashboard) =>
           goto(`/${organization}/${project}/${dashboard}`)}
