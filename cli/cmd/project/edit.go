@@ -39,7 +39,6 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				Public:           proj.Public,
 				ProductionBranch: proj.ProductionBranch,
 				GithubUrl:        proj.GithubUrl,
-				Variables:        proj.Variables,
 			})
 			if err != nil {
 				return err

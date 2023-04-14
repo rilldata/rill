@@ -15,6 +15,7 @@ export type AdminServiceUpdateProjectVariablesBody = {
 export type AdminServiceUpdateProjectBody = {
   description?: string;
   githubUrl?: string;
+  id?: string;
   productionBranch?: string;
   public?: boolean;
 };

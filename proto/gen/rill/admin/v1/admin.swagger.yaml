@@ -565,6 +565,8 @@ paths:
                 type: string
               githubUrl:
                 type: string
+              id:
+                type: string
               productionBranch:
                 type: string
               public:
