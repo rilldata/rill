@@ -48,7 +48,6 @@ func ListMembersCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			cmdutil.PrintMembers(resp.Members)
-			println("\n")
 			cmdutil.PrintInvites(resp.Invites)
 			return nil
 		},
@@ -81,7 +80,7 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if res.PendingSignup {
-				cmdutil.SuccessPrinter(fmt.Sprintf("Invitation sent to the user %q as %q for project %q", args[1], args[2], args[0]))
+				cmdutil.SuccessPrinter(fmt.Sprintf("Invitation sent to %q to join project %q as %q", args[1], args[0], args[2]))
 				return nil
 			}
 			cmdutil.SuccessPrinter(fmt.Sprintf("User %q added to the project %q as %q", args[1], args[0], args[2]))
