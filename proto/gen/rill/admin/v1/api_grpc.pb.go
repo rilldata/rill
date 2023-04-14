@@ -46,6 +46,10 @@ type AdminServiceClient interface {
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error)
 	// TriggerReconcile triggers the reconcile for production deployment
 	TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error)
+	// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
+	GetProjectVariables(ctx context.Context, in *GetProjectVariablesRequest, opts ...grpc.CallOption) (*GetProjectVariablesResponse, error)
+	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
+	UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error)
 	// TriggerRefreshSource refresh the source for production deployment
 	TriggerRefreshSource(ctx context.Context, in *TriggerRefreshSourceRequest, opts ...grpc.CallOption) (*TriggerRefreshSourceResponse, error)
 	// TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
@@ -187,6 +191,24 @@ func (c *adminServiceClient) UpdateProject(ctx context.Context, in *UpdateProjec
 func (c *adminServiceClient) TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error) {
 	out := new(TriggerReconcileResponse)
 	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/TriggerReconcile", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetProjectVariables(ctx context.Context, in *GetProjectVariablesRequest, opts ...grpc.CallOption) (*GetProjectVariablesResponse, error) {
+	out := new(GetProjectVariablesResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/GetProjectVariables", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error) {
+	out := new(UpdateProjectVariablesResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/UpdateProjectVariables", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -347,6 +369,10 @@ type AdminServiceServer interface {
 	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
 	// TriggerReconcile triggers the reconcile for production deployment
 	TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error)
+	// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
+	GetProjectVariables(context.Context, *GetProjectVariablesRequest) (*GetProjectVariablesResponse, error)
+	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
+	UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error)
 	// TriggerRefreshSource refresh the source for production deployment
 	TriggerRefreshSource(context.Context, *TriggerRefreshSourceRequest) (*TriggerRefreshSourceResponse, error)
 	// TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
@@ -418,6 +444,12 @@ func (UnimplementedAdminServiceServer) UpdateProject(context.Context, *UpdatePro
 }
 func (UnimplementedAdminServiceServer) TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerReconcile not implemented")
+}
+func (UnimplementedAdminServiceServer) GetProjectVariables(context.Context, *GetProjectVariablesRequest) (*GetProjectVariablesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProjectVariables not implemented")
+}
+func (UnimplementedAdminServiceServer) UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateProjectVariables not implemented")
 }
 func (UnimplementedAdminServiceServer) TriggerRefreshSource(context.Context, *TriggerRefreshSourceRequest) (*TriggerRefreshSourceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerRefreshSource not implemented")
@@ -686,6 +718,42 @@ func _AdminService_TriggerReconcile_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).TriggerReconcile(ctx, req.(*TriggerReconcileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetProjectVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProjectVariablesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetProjectVariables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.admin.v1.AdminService/GetProjectVariables",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetProjectVariables(ctx, req.(*GetProjectVariablesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_UpdateProjectVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateProjectVariablesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UpdateProjectVariables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.admin.v1.AdminService/UpdateProjectVariables",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UpdateProjectVariables(ctx, req.(*UpdateProjectVariablesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -996,6 +1064,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TriggerReconcile",
 			Handler:    _AdminService_TriggerReconcile_Handler,
+		},
+		{
+			MethodName: "GetProjectVariables",
+			Handler:    _AdminService_GetProjectVariables_Handler,
+		},
+		{
+			MethodName: "UpdateProjectVariables",
+			Handler:    _AdminService_UpdateProjectVariables_Handler,
 		},
 		{
 			MethodName: "TriggerRefreshSource",
