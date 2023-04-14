@@ -6,12 +6,13 @@ import {
   GutterMarker,
   ViewPlugin,
   ViewUpdate,
+  WidgetType,
   gutter,
 } from "@codemirror/view";
 import type { SvelteComponent } from "svelte";
-import StatusGutterMarkerComponent from "./StatusGutterMarker.svelte";
-
-const updateLineState = StateEffect.define<{
+import StatusGutterMarkerComponent from "../gutter/StatusGutterMarker.svelte";
+import LineStatusHint from "../hints/LineStatusHint.svelte";
+const updateLineStatus = StateEffect.define<{
   lineState: Array<{ line: number; message: string; level: string }>;
 }>({
   map: (value, mapping) => {
@@ -27,12 +28,12 @@ const updateLineState = StateEffect.define<{
   },
 });
 
-export const lineState = StateField.define({
+export const lineStatusStateField = StateField.define({
   create: () => [],
   update: (lines, tr) => {
     // Handle transactions with the updateLineState effect
     for (const effect of tr.effects) {
-      if (effect.is(updateLineState)) {
+      if (effect.is(updateLineStatus)) {
         // Clear the existing errors and set the new errors
         return effect.value.lineState.slice();
       }
@@ -50,11 +51,11 @@ const levels = {
 };
 
 function bgDeco(view) {
-  const lineStates = view.state.field(lineState);
+  const lineStatuses = view.state.field(lineStatusStateField);
 
   const builder = new RangeSetBuilder<Decoration>();
 
-  for (const { line, message, level } of lineStates) {
+  for (const { line, message, level } of lineStatuses) {
     if (line !== null) {
       const startPos = view.state.doc.line(line).from;
       const { to, from } = view.state.doc.lineAt(startPos);
@@ -77,20 +78,80 @@ function bgDeco(view) {
   return builder.finish();
 }
 
+class HintTextWidget extends WidgetType {
+  text: string;
+  element: HTMLElement;
+  component: SvelteComponent;
+  constructor(text) {
+    super();
+    this.element = document.createElement("span");
+    this.component = new LineStatusHint({
+      target: this.element,
+      props: { text: text.split("at line")[0].trim() },
+    });
+  }
+  eq(other: HintTextWidget) {
+    return other.text == this.text;
+  }
+
+  toDOM() {
+    return this.element;
+  }
+
+  ignoreEvent() {
+    return false;
+  }
+}
+
+function textWidget(view) {
+  const lineStatuses = view.state.field(lineStatusStateField);
+  // loop through these.
+  const widgets = [];
+  for (const lineStatus of lineStatuses) {
+    if (lineStatus.line !== null) {
+      const startPos = view.state.doc.line(lineStatus.line).from;
+      const { to } = view.state.doc.lineAt(startPos);
+      const widget = Decoration.widget({
+        widget: new HintTextWidget(lineStatus.message),
+        side: 1,
+      });
+      widgets.push(widget.range(to));
+    }
+  }
+  return Decoration.set(widgets);
+}
+
+export function createLineStatusHints() {
+  return ViewPlugin.fromClass(
+    class {
+      hints: DecorationSet;
+
+      constructor(view) {
+        this.hints = textWidget(view);
+      }
+
+      update(update: ViewUpdate) {
+        this.hints = textWidget(update.view);
+      }
+    },
+    {
+      decorations: (v) => v.hints,
+    }
+  );
+}
+
 export function createLineStatusDecoration() {
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
-      // gutterDecorations: DecorationSet;
+      hints: DecorationSet;
 
       constructor(view) {
         this.decorations = bgDeco(view);
-        // this.gutterDecorations = gutterDeco(view);
       }
 
       update(update: ViewUpdate) {
         this.decorations = bgDeco(update.view);
-        // this.gutterDecorations = gutterDeco(update.view);
       }
     },
     {
@@ -99,38 +160,20 @@ export function createLineStatusDecoration() {
   );
 }
 
-// export function createLineStatusGutterDecoration() {
-//   return ViewPlugin.fromClass(
-//     class {
-//       decorations: DecorationSet;
-
-//       constructor(view) {
-//         this.decorations = gutterDeco(view);
-//       }
-
-//       update(update: ViewUpdate) {
-//         this.decorations = gutterDeco(update.view);
-//       }
-//     },
-//     {
-//       decorations: (v) => v.decorations,
-//     }
-//   );
-// }
-
 /** create a DOM node that contains the gutter container, and map a Svelte component
  * to it.
  */
 class StatusGutterMarker extends GutterMarker {
   element: HTMLElement;
   component: SvelteComponent;
-  constructor(level) {
+
+  constructor(line, level, message, active = false) {
     super();
 
     this.element = document.createElement("div");
     this.component = new StatusGutterMarkerComponent({
       target: this.element,
-      props: { level },
+      props: { line, level, message, active },
     });
   }
   eq() {
@@ -144,43 +187,22 @@ class StatusGutterMarker extends GutterMarker {
   }
 }
 
-class NumberMarker extends GutterMarker {
-  number: number;
-  level: string;
-  constructor(number, level) {
-    super();
-    this.number = number;
-    this.level = level;
-  }
-  toDOM() {
-    const el = document.createElement("div");
-    el.textContent = String(this.number);
-    el.style.textAlign = "right";
-    el.style.paddingRight = "8px";
-    el.style.paddingLeft = "8px";
-    if (this.level === "error") {
-      el.style.backgroundColor = "hsla(1, 100%, 80%, .5)";
-    }
-    return el;
-  }
-}
-
 export function createLineStatusFactory() {
   return {
     update(state) {
       return (view) => {
-        const transaction = updateLineState.of({ lineState: state });
+        const transaction = updateLineStatus.of({ lineState: state });
         view.dispatch({
           effects: [transaction],
         });
       };
     },
-    field: lineState,
+    field: lineStatusStateField,
     extension: [
       gutter({
         lineMarker(view, line) {
           const lineStates = view.state
-            .field(lineState)
+            .field(lineStatusStateField)
             .filter((line) => {
               return line.line !== null;
             })
@@ -191,47 +213,34 @@ export function createLineStatusFactory() {
                 to: view.state.doc.line(line.line).to,
               };
             });
-          const matchFromAndTo = lineStates.some((lineState) => {
+          const matchFromAndTo = lineStates.find((lineState) => {
             return lineState.from === line.from && lineState.to === line.to;
           });
 
-          return matchFromAndTo ? new StatusGutterMarker("error") : null;
+          const currentLine = view.state.doc.lineAt(
+            view.state.selection.main.head
+          ).number;
+
+          const thisLine = view.state.doc.lineAt(line.from).number;
+
+          return new StatusGutterMarker(
+            thisLine, // line number
+            matchFromAndTo?.level,
+            matchFromAndTo?.message,
+            currentLine === thisLine
+          );
         },
-        initialSpacer: () => new StatusGutterMarker(null),
+        initialSpacer: () =>
+          new StatusGutterMarker(90, "error", "no message needed."),
+
         lineMarkerChange(update) {
           return update.transactions.some((tr) => {
-            return tr.effects.some((effect) => effect.is(updateLineState));
+            return tr.effects.some((effect) => effect.is(updateLineStatus));
           });
         },
       }),
-      gutter({
-        lineMarker(view, line) {
-          //
-          const number = view.state.doc.lineAt(line.from).number;
-
-          // get line status
-          const lineStates = view.state.field(lineState);
-          const hasStatus = lineStates
-            .filter((line) => line.line !== null)
-            .map((line) => {
-              return {
-                ...line,
-                from: view.state.doc.line(line.line).from,
-                to: view.state.doc.line(line.line).to,
-              };
-            })
-            .some((lineState) => {
-              return lineState.from === line.from && lineState.to === line.to;
-            });
-          return new NumberMarker(number, hasStatus ? "error" : undefined);
-        },
-        initialSpacer: (view) => {
-          // get largest line number
-          const number = view.state.doc.lineAt(view.state.doc.length).number;
-          return new NumberMarker(number, null);
-        },
-      }),
-
+      // not ready yet
+      //createLineStatusHints(),
       createLineStatusDecoration(),
     ],
   };

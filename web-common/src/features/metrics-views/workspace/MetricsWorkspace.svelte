@@ -1,4 +1,6 @@
 <script lang="ts">
+  import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
+  import { createLineStatusFactory } from "@rilldata/web-common/components/editor/plugins/line-status-decoration";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -17,8 +19,6 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import ConfigInspector from "./ConfigInspector.svelte";
   import MetricsWorkspaceHeader from "./MetricsWorkspaceHeader.svelte";
-  import YAMLEditor from "./YAMLEditor.svelte";
-  import { createLineStatusFactory } from "./plugins/line-status-decoration";
   import {
     createPlaceholderElement,
     rillEditorPlaceholder,
@@ -195,6 +195,11 @@
           updaters={[update([...mappedErrors, ...mappedSyntaxErrors])]}
         />
       </div>
+      {#each [...mappedErrors, ...mappedSyntaxErrors] as error}
+        <div>
+          {JSON.stringify(error)}
+        </div>
+      {/each}
     </div>
   </div>
   <ConfigInspector slot="inspector" {metricsDefName} {yaml} />
