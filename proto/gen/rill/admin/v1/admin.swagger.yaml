@@ -567,6 +567,59 @@ paths:
                 type: string
               public:
                 type: boolean
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/projects/{name}/variables:
+    get:
+      summary: 'GetProjectVariables returns project variables. NOTE: Get project API doesn''t return variables.'
+      operationId: AdminService_GetProjectVariables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectVariablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    put:
+      summary: 'UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn''t update variables.'
+      operationId: AdminService_UpdateProjectVariables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateProjectVariablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
               variables:
                 type: object
                 additionalProperties:
@@ -729,6 +782,13 @@ definitions:
         $ref: '#/definitions/v1Deployment'
       project:
         $ref: '#/definitions/v1Project'
+  v1GetProjectVariablesResponse:
+    type: object
+    properties:
+      variables:
+        type: object
+        additionalProperties:
+          type: string
   v1LeaveOrganizationResponse:
     type: object
     title: Response message for AdminService.LeaveOrganization
@@ -848,10 +908,6 @@ definitions:
       updatedOn:
         type: string
         format: date-time
-      variables:
-        type: object
-        additionalProperties:
-          type: string
   v1RemoveOrganizationMemberResponse:
     type: object
     title: Response message for AdminService.RemoveOrganizationMember
@@ -879,6 +935,13 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
+  v1UpdateProjectVariablesResponse:
+    type: object
+    properties:
+      variables:
+        type: object
+        additionalProperties:
+          type: string
   v1User:
     type: object
     properties:

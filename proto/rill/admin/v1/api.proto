@@ -3,7 +3,7 @@ package rill.admin.v1;
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
-// import "validate/validate.proto";
+import "validate/validate.proto";
 
 service AdminService {
   // Ping returns information about the server
@@ -69,6 +69,19 @@ service AdminService {
   rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse) {
     option (google.api.http) = {
       put: "/v1/organizations/{organization_name}/projects/{name}",
+      body: "*"
+    };
+  }
+
+  // GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
+  rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}/variables"};
+  }
+
+  // UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
+  rpc UpdateProjectVariables(UpdateProjectVariablesRequest) returns (UpdateProjectVariablesResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{organization_name}/projects/{name}/variables",
       body: "*"
     };
   }
@@ -175,7 +188,7 @@ message GetOrganizationResponse {
 }
 
 message CreateOrganizationRequest {
-  string name = 2;
+  string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
 }
 
@@ -222,7 +235,7 @@ message GetProjectResponse {
 
 message CreateProjectRequest {
   string organization_name = 1;
-  string name = 2;
+  string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
   bool public = 4;
   string region = 9;
@@ -253,11 +266,29 @@ message UpdateProjectRequest {
   bool public = 4;
   string production_branch = 5;
   string github_url = 6;
-  map<string, string> variables = 7;
 }
 
 message UpdateProjectResponse {
   Project project = 1;
+}
+
+message GetProjectVariablesRequest {
+  string organization_name = 1;
+  string name = 2;
+}
+
+message GetProjectVariablesResponse {
+  map<string, string> variables = 1;
+}
+
+message UpdateProjectVariablesRequest {
+  string organization_name = 1;
+  string name = 2;
+  map<string, string> variables = 3;
+}
+
+message UpdateProjectVariablesResponse {
+  map<string, string> variables = 1;
 }
 
 message GetCurrentUserRequest {}
@@ -306,7 +337,6 @@ message Project {
   string production_deployment_id = 8;
   google.protobuf.Timestamp created_on = 9;
   google.protobuf.Timestamp updated_on = 10;
-  map<string, string> variables = 11;
 }
 
 message User {
