@@ -32,7 +32,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 		Short: "Build project and start web app",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			mp, tp, err := runtimeserver.InitOpenTelemetry(cfg.OtelExporterEndpoint)
+			mp, tp, err := runtimeserver.InitOpenTelemetry(cfg.OtelExporterEndpoint, cfg.OtelPullBased)
 			if err != nil {
 				return err
 			}
@@ -57,7 +57,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 				return fmt.Errorf("invalid log format %q", logFormat)
 			}
 
-			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, variables)
+			app, err := local.NewApp(cmd.Context(), cfg, cfg.Version, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, variables)
 			if err != nil {
 				return err
 			}

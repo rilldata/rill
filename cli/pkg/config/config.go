@@ -9,6 +9,7 @@ type Config struct {
 	AdminTokenDefault    string
 	Org                  string
 	OtelExporterEndpoint string
+	OtelPullBased        bool
 }
 
 func (c Config) IsDev() bool {

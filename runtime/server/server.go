@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/sdk/metric"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -258,7 +259,7 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 // Initializes providers and exporters.
 // Global providers accumulate metrics/traces.
 // The providers export data from Runtime using the exporters.
-func InitOpenTelemetry(endpoint string) (*metric.MeterProvider, *sdktrace.TracerProvider, error) {
+func InitOpenTelemetry(endpoint string, pull bool) (*metric.MeterProvider, *sdktrace.TracerProvider, error) {
 	if endpoint == "" {
 		return nil, nil, nil
 	}
@@ -268,38 +269,57 @@ func InitOpenTelemetry(endpoint string) (*metric.MeterProvider, *sdktrace.Tracer
 		return nil, nil, err
 	}
 
-	exporter, err := otlpmetricgrpc.New(
-		context.Background(),
-		otlpmetricgrpc.WithInsecure(),
-		otlpmetricgrpc.WithEndpoint(endpoint),
-	)
-	if err != nil {
-		return nil, nil, err
+	var meterProvider *metric.MeterProvider
+	if pull || endpoint != "" {
+		if pull {
+			reader, err := prometheus.New()
+			if err != nil {
+				return nil, nil, err
+			}
+
+			meterProvider = metric.NewMeterProvider(
+				metric.WithReader(
+					reader,
+				),
+			)
+		} else {
+			exporter, err := otlpmetricgrpc.New(
+				context.Background(),
+				otlpmetricgrpc.WithInsecure(),
+				otlpmetricgrpc.WithEndpoint(endpoint),
+			)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			meterProvider = metric.NewMeterProvider(
+				metric.WithReader(
+					metric.NewPeriodicReader(exporter, metric.WithInterval(8*time.Second)),
+				),
+			)
+		}
+
+		global.SetMeterProvider(meterProvider)
 	}
 
-	meterProvider := metric.NewMeterProvider(
-		metric.WithReader(
-			metric.NewPeriodicReader(exporter, metric.WithInterval(8*time.Second)),
-		),
-	)
+	var tracerProvider *sdktrace.TracerProvider
+	if !pull && endpoint != "" {
+		traceClient := otlptracegrpc.NewClient(
+			otlptracegrpc.WithInsecure(),
+			otlptracegrpc.WithEndpoint(endpoint),
+			otlptracegrpc.WithDialOption(grpc.WithBlock()))
+		traceExp, err := otlptrace.New(context.Background(), traceClient)
+		if err != nil {
+			return nil, nil, err
+		}
 
-	global.SetMeterProvider(meterProvider)
-
-	traceClient := otlptracegrpc.NewClient(
-		otlptracegrpc.WithInsecure(),
-		otlptracegrpc.WithEndpoint(endpoint),
-		otlptracegrpc.WithDialOption(grpc.WithBlock()))
-	traceExp, err := otlptrace.New(context.Background(), traceClient)
-	if err != nil {
-		return nil, nil, err
+		bsp := sdktrace.NewBatchSpanProcessor(traceExp)
+		tracerProvider = sdktrace.NewTracerProvider(
+			sdktrace.WithSampler(sdktrace.AlwaysSample()),
+			sdktrace.WithSpanProcessor(bsp),
+		)
+		otel.SetTracerProvider(tracerProvider)
 	}
-
-	bsp := sdktrace.NewBatchSpanProcessor(traceExp)
-	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),
-		sdktrace.WithSpanProcessor(bsp),
-	)
-	otel.SetTracerProvider(tracerProvider)
 
 	return meterProvider, tracerProvider, nil
 }

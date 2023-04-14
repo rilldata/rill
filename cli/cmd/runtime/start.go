@@ -3,10 +3,13 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
+	// Load infra drivers and connectors for runtime
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -16,7 +19,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 
-	// Load infra drivers and connectors for runtime
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	_ "github.com/rilldata/rill/runtime/connectors/https"
 	_ "github.com/rilldata/rill/runtime/connectors/s3"
@@ -45,7 +47,6 @@ type Config struct {
 	ConnectionCacheSize  int           `default:"100" split_words:"true"`
 	QueryCacheSize       int           `default:"10000" split_words:"true"`
 	AllowHostCredentials bool          `default:"false" split_words:"true"`
-	OtelExporterEndpoint string        `split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -66,14 +67,19 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}
 
 			// Open-Telemetry
-			mp, tp, err := server.InitOpenTelemetry(conf.OtelExporterEndpoint)
+			mp, tp, err := server.InitOpenTelemetry(cliCfg.OtelExporterEndpoint, cliCfg.OtelPullBased)
 			if err != nil {
 				fmt.Printf("failed to load Open Telemetry: %s", err.Error())
 				os.Exit(1)
 			}
 
-			defer mp.Shutdown(context.Background())
-			defer tp.Shutdown(context.Background())
+			if mp != nil {
+				defer mp.Shutdown(context.Background())
+			}
+
+			if tp != nil {
+				defer tp.Shutdown(context.Background())
+			}
 
 			// Init logger
 			cfg := zap.NewProductionConfig()
@@ -117,7 +123,13 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 			group, cctx := errgroup.WithContext(ctx)
 			group.Go(func() error { return s.ServeGRPC(cctx) })
-			group.Go(func() error { return s.ServeHTTP(cctx, nil) })
+			group.Go(func() error {
+				return s.ServeHTTP(cctx, func(mux *http.ServeMux) {
+					if cliCfg.OtelPullBased {
+						mux.Handle("/metrics", promhttp.Handler())
+					}
+				})
+			})
 			err = group.Wait()
 			if err != nil {
 				logger.Fatal("server crashed", zap.Error(err))

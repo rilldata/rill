@@ -56,7 +56,7 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 			fmt.Println("You can reach us in our Rill Discord server at https://bit.ly/3NSMKdT.")
 			fmt.Println("")
 
-			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, variables)
+			app, err := local.NewApp(cmd.Context(), cfg, cfg.Version, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, variables)
 			if err != nil {
 				return err
 			}

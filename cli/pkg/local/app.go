@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
@@ -54,9 +55,10 @@ type App struct {
 	Version     config.Version
 	Verbose     bool
 	ProjectPath string
+	Config      *config.Config
 }
 
-func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string) (*App, error) {
+func NewApp(ctx context.Context, appConfig *config.Config, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string) (*App, error) {
 	// Setup a friendly-looking colored/json logger
 	var logger *zap.Logger
 	var err error
@@ -145,6 +147,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		Version:     ver,
 		Verbose:     verbose,
 		ProjectPath: projectPath,
+		Config:      appConfig,
 	}
 	return app, nil
 }
@@ -330,6 +333,9 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 			// Inject local-only endpoints on the server for the local UI and local backend endpoints
 			if enableUI {
 				mux.Handle("/", runtimeserver.OtelHandler(web.StaticHandler()))
+			}
+			if a.Config.OtelPullBased {
+				mux.Handle("/metrics", promhttp.Handler())
 			}
 			mux.Handle("/local/config", a.infoHandler(inf))
 			mux.Handle("/local/track", a.trackingHandler(inf))
