@@ -356,7 +356,7 @@ func orgNamePrompt(ctx context.Context, client *adminclient.Client) (string, err
 					return fmt.Errorf("empty name")
 				}
 
-				exist, err := cmdutil.OrgNameExists(ctx, client, name)
+				exist, err := cmdutil.OrgExists(ctx, client, name)
 				if err != nil {
 					return fmt.Errorf("org name %q is already taken", name)
 				}

@@ -139,7 +139,7 @@ func InputPrompt(msg, def string) string {
 }
 
 func ProjectExists(ctx context.Context, c *client.Client, orgName, projectName string) (bool, error) {
-	resp, err := c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: orgName, Name: projectName})
+	_, err := c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: orgName, Name: projectName})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
 			if st.Code() == codes.NotFound {
@@ -148,11 +148,11 @@ func ProjectExists(ctx context.Context, c *client.Client, orgName, projectName s
 		}
 		return false, err
 	}
-	return resp.Project.Name == projectName, nil
+	return true, nil
 }
 
-func OrgNameExists(ctx context.Context, c *client.Client, name string) (bool, error) {
-	resp, err := c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
+func OrgExists(ctx context.Context, c *client.Client, name string) (bool, error) {
+	_, err := c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
 			if st.Code() == codes.NotFound {
@@ -161,7 +161,7 @@ func OrgNameExists(ctx context.Context, c *client.Client, name string) (bool, er
 		}
 		return false, err
 	}
-	return resp.Organization.Name == name, nil
+	return true, nil
 }
 
 func WarnPrinter(str string) {

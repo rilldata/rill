@@ -40,7 +40,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 					{
 						Name: "current",
 						Prompt: &survey.Input{
-							Message: "Enter the current project name",
+							Message: "Current project name",
 						},
 						Validate: func(any interface{}) error {
 							name := any.(string)
@@ -67,7 +67,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 					{
 						Name: "new",
 						Prompt: &survey.Input{
-							Message: "Enter the current project name",
+							Message: "New project name",
 						},
 						Validate: func(any interface{}) error {
 							name := any.(string)

@@ -44,7 +44,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 								return fmt.Errorf("empty name")
 							}
 
-							exist, err := cmdutil.OrgNameExists(ctx, client, name)
+							exist, err := cmdutil.OrgExists(ctx, client, name)
 							if err != nil {
 								return fmt.Errorf("org name %q is already taken", name)
 							}
@@ -69,7 +69,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 
 			confirm := false
 			prompt := &survey.Confirm{
-				Message: fmt.Sprintf("Do you want to rename %s to %s?", color.YellowString(cfg.Org), color.YellowString(orgName)),
+				Message: fmt.Sprintf("Do you want to rename %q to %q?", color.YellowString(cfg.Org), color.YellowString(orgName)),
 			}
 
 			err = survey.AskOne(prompt, &confirm)
