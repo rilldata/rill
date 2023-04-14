@@ -654,6 +654,49 @@ export class ListProjectsForOrganizationAndGithubURLRequest extends Message<List
 }
 
 /**
+ * @generated from message rill.admin.v1.ListProjectsForOrganizationAndGithubURLResponse
+ */
+export class ListProjectsForOrganizationAndGithubURLResponse extends Message<ListProjectsForOrganizationAndGithubURLResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.Project projects = 1;
+   */
+  projects: Project[] = [];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
+  constructor(data?: PartialMessage<ListProjectsForOrganizationAndGithubURLResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListProjectsForOrganizationAndGithubURLResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "projects", kind: "message", T: Project, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForOrganizationAndGithubURLResponse {
+    return new ListProjectsForOrganizationAndGithubURLResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectsForOrganizationAndGithubURLResponse {
+    return new ListProjectsForOrganizationAndGithubURLResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectsForOrganizationAndGithubURLResponse {
+    return new ListProjectsForOrganizationAndGithubURLResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListProjectsForOrganizationAndGithubURLResponse | PlainMessage<ListProjectsForOrganizationAndGithubURLResponse> | undefined, b: ListProjectsForOrganizationAndGithubURLResponse | PlainMessage<ListProjectsForOrganizationAndGithubURLResponse> | undefined): boolean {
+    return proto3.util.equals(ListProjectsForOrganizationAndGithubURLResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetProjectRequest
  */
 export class GetProjectRequest extends Message<GetProjectRequest> {

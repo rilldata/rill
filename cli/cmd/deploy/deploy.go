@@ -33,7 +33,7 @@ const (
 	pollInterval = 5 * time.Second
 )
 
-var errUserAbortedFlow = fmt.Errorf("User aborted!!!")
+var errUserAbortedFlow = fmt.Errorf("user aborted")
 
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
 func DeployCmd(cfg *config.Config) *cobra.Command {

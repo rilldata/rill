@@ -107,6 +107,10 @@ export interface V1UpdateProjectResponse {
   project?: V1Project;
 }
 
+export interface V1UpdateOrganizationResponse {
+  organization?: V1Organization;
+}
+
 export interface V1SetProjectMemberRoleResponse {
   [key: string]: any;
 }
@@ -158,10 +162,6 @@ export interface V1Organization {
   updatedOn?: string;
 }
 
-export interface V1UpdateOrganizationResponse {
-  organization?: V1Organization;
-}
-
 export interface V1Member {
   createdOn?: string;
   roleName?: string;
@@ -172,6 +172,11 @@ export interface V1Member {
 }
 
 export interface V1ListProjectsForOrganizationResponse {
+  nextPageToken?: string;
+  projects?: V1Project[];
+}
+
+export interface V1ListProjectsForOrganizationAndGithubURLResponse {
   nextPageToken?: string;
   projects?: V1Project[];
 }

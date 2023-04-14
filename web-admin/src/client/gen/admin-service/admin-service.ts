@@ -51,6 +51,7 @@ import type {
   V1GetProjectVariablesResponse,
   V1UpdateProjectVariablesResponse,
   AdminServiceUpdateProjectVariablesBody,
+  V1ListProjectsForOrganizationAndGithubURLResponse,
   AdminServiceListProjectsForOrganizationAndGithubURLParams,
   V1PingResponse,
   V1RevokeCurrentAuthTokenResponse,
@@ -1361,7 +1362,7 @@ export const adminServiceListProjectsForOrganizationAndGithubURL = (
   params?: AdminServiceListProjectsForOrganizationAndGithubURLParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1ListProjectsForOrganizationResponse>({
+  return httpClient<V1ListProjectsForOrganizationAndGithubURLResponse>({
     url: `/v1/organizations/${organizationName}/projects_by_github_url`,
     method: "get",
     params,

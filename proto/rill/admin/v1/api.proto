@@ -48,7 +48,7 @@ service AdminService {
   }
 
     // SearchProjects searched projects based on query passed
-  rpc ListProjectsForOrganizationAndGithubURL(ListProjectsForOrganizationAndGithubURLRequest) returns (ListProjectsForOrganizationResponse) {
+  rpc ListProjectsForOrganizationAndGithubURL(ListProjectsForOrganizationAndGithubURLRequest) returns (ListProjectsForOrganizationAndGithubURLResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects_by_github_url"};
   }
 
@@ -232,6 +232,11 @@ message ListProjectsForOrganizationAndGithubURLRequest {
   string github_url = 2;
   uint32 page_size = 3;
   string page_token = 4;
+}
+
+message ListProjectsForOrganizationAndGithubURLResponse {
+  repeated Project projects = 1;
+  string next_page_token = 2;
 }
 
 message GetProjectRequest {

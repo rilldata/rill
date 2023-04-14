@@ -75,7 +75,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	return &adminv1.ListProjectsForOrganizationResponse{Projects: dtos}, nil
 }
 
-func (s *Server) ListProjectsForOrganizationAndGithubURL(ctx context.Context, req *adminv1.ListProjectsForOrganizationAndGithubURLRequest) (*adminv1.ListProjectsForOrganizationResponse, error) {
+func (s *Server) ListProjectsForOrganizationAndGithubURL(ctx context.Context, req *adminv1.ListProjectsForOrganizationAndGithubURLRequest) (*adminv1.ListProjectsForOrganizationAndGithubURLResponse, error) {
 	claims := auth.GetClaims(ctx)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
@@ -105,7 +105,7 @@ func (s *Server) ListProjectsForOrganizationAndGithubURL(ctx context.Context, re
 		}
 	}
 
-	return &adminv1.ListProjectsForOrganizationResponse{Projects: accessibleProjects}, nil
+	return &adminv1.ListProjectsForOrganizationAndGithubURLResponse{Projects: accessibleProjects}, nil
 }
 
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {

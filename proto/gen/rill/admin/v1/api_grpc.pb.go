@@ -37,7 +37,7 @@ type AdminServiceClient interface {
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(ctx context.Context, in *ListProjectsForOrganizationRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationResponse, error)
 	// SearchProjects searched projects based on query passed
-	ListProjectsForOrganizationAndGithubURL(ctx context.Context, in *ListProjectsForOrganizationAndGithubURLRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationResponse, error)
+	ListProjectsForOrganizationAndGithubURL(ctx context.Context, in *ListProjectsForOrganizationAndGithubURLRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationAndGithubURLResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
 	// CreateProject creates a new project
@@ -148,8 +148,8 @@ func (c *adminServiceClient) ListProjectsForOrganization(ctx context.Context, in
 	return out, nil
 }
 
-func (c *adminServiceClient) ListProjectsForOrganizationAndGithubURL(ctx context.Context, in *ListProjectsForOrganizationAndGithubURLRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationResponse, error) {
-	out := new(ListProjectsForOrganizationResponse)
+func (c *adminServiceClient) ListProjectsForOrganizationAndGithubURL(ctx context.Context, in *ListProjectsForOrganizationAndGithubURLRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationAndGithubURLResponse, error) {
+	out := new(ListProjectsForOrganizationAndGithubURLResponse)
 	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/ListProjectsForOrganizationAndGithubURL", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -338,7 +338,7 @@ type AdminServiceServer interface {
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error)
 	// SearchProjects searched projects based on query passed
-	ListProjectsForOrganizationAndGithubURL(context.Context, *ListProjectsForOrganizationAndGithubURLRequest) (*ListProjectsForOrganizationResponse, error)
+	ListProjectsForOrganizationAndGithubURL(context.Context, *ListProjectsForOrganizationAndGithubURLRequest) (*ListProjectsForOrganizationAndGithubURLResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
 	// CreateProject creates a new project
@@ -404,7 +404,7 @@ func (UnimplementedAdminServiceServer) UpdateOrganization(context.Context, *Upda
 func (UnimplementedAdminServiceServer) ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForOrganization not implemented")
 }
-func (UnimplementedAdminServiceServer) ListProjectsForOrganizationAndGithubURL(context.Context, *ListProjectsForOrganizationAndGithubURLRequest) (*ListProjectsForOrganizationResponse, error) {
+func (UnimplementedAdminServiceServer) ListProjectsForOrganizationAndGithubURL(context.Context, *ListProjectsForOrganizationAndGithubURLRequest) (*ListProjectsForOrganizationAndGithubURLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForOrganizationAndGithubURL not implemented")
 }
 func (UnimplementedAdminServiceServer) GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error) {
