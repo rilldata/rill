@@ -74,10 +74,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 		return nil, status.Error(codes.PermissionDenied, "not allowed to read org")
 	}
 
-	permissions, err := claims.OrganizationPermissions(ctx, org.ID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
+	permissions := claims.OrganizationPermissions(ctx, org.ID)
 
 	return &adminv1.GetOrganizationResponse{
 		Organization: organizationToDTO(org),

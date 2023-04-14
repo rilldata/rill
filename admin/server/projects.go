@@ -98,10 +98,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
-	projectPermissions, err := claims.ProjectPermissions(ctx, proj.ID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
+	projectPermissions := claims.ProjectPermissions(ctx, proj.ID)
 
 	if proj.ProductionDeploymentID == nil {
 		return &adminv1.GetProjectResponse{
