@@ -20,10 +20,10 @@
 </script>
 
 <div
-  class="inline-flex items-center justify-center w-3 h-3 rounded text-white font-bold {getColorClass(
+  class="inline-flex items-center justify-center rounded text-white text-xs font-bold {getColorClass(
     organization
   )}"
-  style="font-size: 9px; line-height: .5rem;"
+  style="height: 15px; width: 15px;"
 >
   {organization.charAt(0).toUpperCase()}
 </div>
