@@ -7,14 +7,15 @@ import (
 	"github.com/fatih/color"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
 func RenameCmd(cfg *config.Config) *cobra.Command {
 	renameCmd := &cobra.Command{
-		Use:   "rename <org-name>",
-		Args:  cobra.MaximumNArgs(1),
+		Use:   "rename <from-org-name> <to-org-name>",
+		Args:  cobra.MaximumNArgs(2),
 		Short: "Rename",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -38,6 +39,10 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				resp, err := client.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
 				if err != nil {
 					return err
+				}
+
+				if len(resp.Organizations) == 0 {
+					return fmt.Errorf("No org available, Please create using `rill org create`")
 				}
 
 				var orgNames []string
@@ -72,7 +77,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 
 			confirm := false
 			prompt := &survey.Confirm{
-				Message: fmt.Sprintf("Do you want to rename org %q to %q?", color.YellowString(currentName), color.YellowString(newName)),
+				Message: fmt.Sprintf("Do you want to rename org \"%s\" to \"%s\"?", color.YellowString(currentName), color.YellowString(newName)),
 			}
 
 			err = survey.AskOne(prompt, &confirm)
@@ -95,6 +100,11 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				Name:        newName,
 				Description: org.Description,
 			})
+			if err != nil {
+				return err
+			}
+
+			err = dotrill.SetDefaultOrg(newName)
 			if err != nil {
 				return err
 			}

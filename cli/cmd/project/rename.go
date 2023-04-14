@@ -13,7 +13,7 @@ import (
 
 func RenameCmd(cfg *config.Config) *cobra.Command {
 	renameCmd := &cobra.Command{
-		Use:   "rename <current-project-name> <new-project-name>",
+		Use:   "rename <from-project-name> <to-project-name>",
 		Args:  cobra.MaximumNArgs(2),
 		Short: "Rename",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -40,6 +40,10 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
+				if len(resp.Projects) == 0 {
+					return fmt.Errorf("No projects found for the org %q", cfg.Org)
+				}
+
 				var projectNames []string
 				for _, proj := range resp.Projects {
 					projectNames = append(projectNames, proj.Name)
@@ -50,7 +54,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				// Get the new project name from user if not provided in the args
 				question := []*survey.Question{
 					{
-						Name: "new",
+						Name: "name",
 						Prompt: &survey.Input{
 							Message: "New project name",
 						},
@@ -65,14 +69,14 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 					},
 				}
 
-				if err := survey.Ask(question, newName); err != nil {
+				if err := survey.Ask(question, &newName); err != nil {
 					return err
 				}
 			}
 
 			confirm := false
 			prompt := &survey.Confirm{
-				Message: fmt.Sprintf("Do you want to rename project %s to %s?", color.YellowString(currentName), color.YellowString(newName)),
+				Message: fmt.Sprintf("Do you want to rename project \"%s\" to \"%s\"?", color.YellowString(currentName), color.YellowString(newName)),
 			}
 
 			err = survey.AskOne(prompt, &confirm)
