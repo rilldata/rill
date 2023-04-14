@@ -16,7 +16,7 @@
   }
 </script>
 
-<li class="flex flex items-center gap-x-3 p-2">
+<li class="flex flex items-center gap-x-1 p-2">
   <slot name="icon" />
   {#if !menuOptions}
     <span class={isCurrentPage ? activeClass : inactiveClass}>{label}</span>
