@@ -75,6 +75,39 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	return &adminv1.ListProjectsForOrganizationResponse{Projects: dtos}, nil
 }
 
+func (s *Server) ListProjectsForOrganizationAndGithubURL(ctx context.Context, req *adminv1.ListProjectsForOrganizationAndGithubURLRequest) (*adminv1.ListProjectsForOrganizationResponse, error) {
+	claims := auth.GetClaims(ctx)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "org not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if !claims.CanOrganization(ctx, org.ID, auth.ReadProjects) {
+		return nil, status.Errorf(codes.PermissionDenied, "does not have permission to read projects in org %s", req.OrganizationName)
+	}
+
+	projects, err := s.admin.DB.FindProjectsByOrgIDAndGithubURL(ctx, org.ID, req.GithubUrl)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Errorf(codes.NotFound, "project with github url %s not found in org %s", req.GithubUrl, req.OrganizationName)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	accessibleProjects := make([]*adminv1.Project, 0)
+	for _, p := range projects {
+		if claims.CanProject(ctx, p.ID, auth.ReadProject) {
+			accessibleProjects = append(accessibleProjects, projToDTO(p, org.Name))
+		}
+	}
+
+	return &adminv1.ListProjectsForOrganizationResponse{Projects: accessibleProjects}, nil
+}
+
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
@@ -269,70 +302,6 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 
 	return &adminv1.UpdateProjectResponse{
 		Project: projToDTO(proj, req.OrganizationName),
-	}, nil
-}
-
-func (s *Server) SearchProjects(ctx context.Context, req *adminv1.SearchProjectsRequest) (*adminv1.SearchProjectsResponse, error) {
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "org not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	claims := auth.GetClaims(ctx)
-
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "proj not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	if !claims.Can(ctx, proj.OrganizationID, auth.ReadProjects, proj.ID, auth.ReadProject) {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
-	}
-
-	if proj.ProductionDeploymentID == nil {
-		return &adminv1.GetProjectResponse{
-			Project: projToDTO(proj, org.Name),
-		}, nil
-	}
-
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProductionDeploymentID)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "project does not have a production deployment")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
-		AudienceURL: depl.RuntimeAudience,
-		Subject:     claims.OwnerID(),
-		TTL:         time.Hour,
-		InstancePermissions: map[string][]runtimeauth.Permission{
-			depl.RuntimeInstanceID: {
-				// TODO: These are too wide. It needs just ReadObjects and ReadMetrics.
-				runtimeauth.ReadInstance,
-				runtimeauth.ReadObjects,
-				runtimeauth.ReadOLAP,
-				runtimeauth.ReadMetrics,
-				runtimeauth.ReadProfiling,
-				runtimeauth.ReadRepo,
-			},
-		},
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
-	}
-
-	return &adminv1.GetProjectResponse{
-		Project:              projToDTO(proj, org.Name),
-		ProductionDeployment: deploymentToDTO(depl),
-		Jwt:                  jwt,
 	}, nil
 }
 

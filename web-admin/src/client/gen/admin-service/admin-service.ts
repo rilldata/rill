@@ -48,8 +48,7 @@ import type {
   V1DeleteProjectResponse,
   V1UpdateProjectResponse,
   AdminServiceUpdateProjectBody,
-  V1SearchProjectsResponse,
-  AdminServiceSearchProjectsParams,
+  AdminServiceListProjectsForOrganizationAndGithubURLParams,
   V1PingResponse,
   V1RevokeCurrentAuthTokenResponse,
   V1GetCurrentUserResponse,
@@ -1223,42 +1222,50 @@ export const createAdminServiceUpdateProject = <
 /**
  * @summary SearchProjects searched projects based on query passed
  */
-export const adminServiceSearchProjects = (
+export const adminServiceListProjectsForOrganizationAndGithubURL = (
   organizationName: string,
-  params?: AdminServiceSearchProjectsParams,
+  params?: AdminServiceListProjectsForOrganizationAndGithubURLParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1SearchProjectsResponse>({
-    url: `/v1/organizations/${organizationName}:search`,
+  return httpClient<V1ListProjectsForOrganizationResponse>({
+    url: `/v1/organizations/${organizationName}/projects_by_github_url`,
     method: "get",
     params,
     signal,
   });
 };
 
-export const getAdminServiceSearchProjectsQueryKey = (
+export const getAdminServiceListProjectsForOrganizationAndGithubURLQueryKey = (
   organizationName: string,
-  params?: AdminServiceSearchProjectsParams
+  params?: AdminServiceListProjectsForOrganizationAndGithubURLParams
 ) =>
   [
-    `/v1/organizations/${organizationName}:search`,
+    `/v1/organizations/${organizationName}/projects_by_github_url`,
     ...(params ? [params] : []),
   ] as const;
 
-export type AdminServiceSearchProjectsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceSearchProjects>>
->;
-export type AdminServiceSearchProjectsQueryError = RpcStatus;
+export type AdminServiceListProjectsForOrganizationAndGithubURLQueryResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
+    >
+  >;
+export type AdminServiceListProjectsForOrganizationAndGithubURLQueryError =
+  RpcStatus;
 
-export const createAdminServiceSearchProjects = <
-  TData = Awaited<ReturnType<typeof adminServiceSearchProjects>>,
+export const createAdminServiceListProjectsForOrganizationAndGithubURL = <
+  TData = Awaited<
+    ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
+  >,
   TError = RpcStatus
 >(
   organizationName: string,
-  params?: AdminServiceSearchProjectsParams,
+  params?: AdminServiceListProjectsForOrganizationAndGithubURLParams,
   options?: {
     query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceSearchProjects>>,
+      Awaited<
+        ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
+      >,
       TError,
       TData
     >;
@@ -1268,15 +1275,26 @@ export const createAdminServiceSearchProjects = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceSearchProjectsQueryKey(organizationName, params);
+    getAdminServiceListProjectsForOrganizationAndGithubURLQueryKey(
+      organizationName,
+      params
+    );
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceSearchProjects>>
+    Awaited<
+      ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
+    >
   > = ({ signal }) =>
-    adminServiceSearchProjects(organizationName, params, signal);
+    adminServiceListProjectsForOrganizationAndGithubURL(
+      organizationName,
+      params,
+      signal
+    );
 
   const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceSearchProjects>>,
+    Awaited<
+      ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
+    >,
     TError,
     TData
   >({

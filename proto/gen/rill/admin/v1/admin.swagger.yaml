@@ -573,15 +573,15 @@ paths:
                   type: string
       tags:
         - AdminService
-  /v1/organizations/{organizationName}:search:
+  /v1/organizations/{organizationName}/projects_by_github_url:
     get:
       summary: SearchProjects searched projects based on query passed
-      operationId: AdminService_SearchProjects
+      operationId: AdminService_ListProjectsForOrganizationAndGithubURL
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1SearchProjectsResponse'
+            $ref: '#/definitions/v1ListProjectsForOrganizationResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -591,7 +591,16 @@ paths:
           in: path
           required: true
           type: string
-        - name: query
+        - name: githubUrl
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
           in: query
           required: false
           type: string
@@ -887,13 +896,6 @@ definitions:
     properties:
       tokenId:
         type: string
-  v1SearchProjectsResponse:
-    type: object
-    properties:
-      projects:
-        type: array
-        items:
-          $ref: '#/definitions/v1GetProjectResponse'
   v1SetOrganizationMemberRoleResponse:
     type: object
     title: Response message for AdminService.SetOrganizationMemberRole

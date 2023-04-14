@@ -57,7 +57,8 @@ type DB interface {
 
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
-	SearchProjects(ctx context.Context, query string) ([]*Project, error)
+	FindProjectsByOrgIDAndGithubURL(ctx context.Context, orgName string, githubURL string) ([]*Project, error)
+	FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*Project, error)
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error

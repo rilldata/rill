@@ -33,6 +33,8 @@ const (
 	pollInterval = 5 * time.Second
 )
 
+var errUserAbortedFlow = fmt.Errorf("User abort received!!!")
+
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
 func DeployCmd(cfg *config.Config) *cobra.Command {
 	var description, projectPath, region, dbDriver, dbDSN, prodBranch, name string
@@ -174,6 +176,10 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				Variables:            variables,
 			})
 			if err != nil {
+				if errors.Is(err, errUserAbortedFlow) {
+					warn.Print(err.Error())
+					return nil
+				}
 				return fmt.Errorf("create project failed with error %w", err)
 			}
 
@@ -393,6 +399,22 @@ func orgNameExists(ctx context.Context, client *adminclient.Client, name string)
 }
 
 func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
+	// check if a project with github url already exists in this org
+	if resp, err := client.ListProjectsForOrganizationAndGithubURL(ctx, &adminv1.ListProjectsForOrganizationAndGithubURLRequest{
+		OrganizationName: req.OrganizationName,
+		GithubUrl:        req.GithubUrl,
+	}); err == nil { // ignoring error since this is just for a confirmation prompt
+		if len(resp.Projects) != 0 {
+			names := ""
+			for _, p := range resp.Projects {
+				names = names + p.Name + " "
+			}
+			if !cmdutil.ConfirmPrompt("A project already exists for this repo in this org (enter ? to check project name(s))", names, true) {
+				return nil, errUserAbortedFlow
+			}
+		}
+	}
+
 	// Create the project (automatically deploys prod branch)
 	res, err := client.CreateProject(ctx, req)
 	if err != nil {

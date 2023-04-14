@@ -599,6 +599,61 @@ export class ListProjectsForOrganizationResponse extends Message<ListProjectsFor
 }
 
 /**
+ * @generated from message rill.admin.v1.ListProjectsForOrganizationAndGithubURLRequest
+ */
+export class ListProjectsForOrganizationAndGithubURLRequest extends Message<ListProjectsForOrganizationAndGithubURLRequest> {
+  /**
+   * @generated from field: string organization_name = 1;
+   */
+  organizationName = "";
+
+  /**
+   * @generated from field: string github_url = 2;
+   */
+  githubUrl = "";
+
+  /**
+   * @generated from field: uint32 page_size = 3;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 4;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<ListProjectsForOrganizationAndGithubURLRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListProjectsForOrganizationAndGithubURLRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectsForOrganizationAndGithubURLRequest {
+    return new ListProjectsForOrganizationAndGithubURLRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectsForOrganizationAndGithubURLRequest {
+    return new ListProjectsForOrganizationAndGithubURLRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectsForOrganizationAndGithubURLRequest {
+    return new ListProjectsForOrganizationAndGithubURLRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListProjectsForOrganizationAndGithubURLRequest | PlainMessage<ListProjectsForOrganizationAndGithubURLRequest> | undefined, b: ListProjectsForOrganizationAndGithubURLRequest | PlainMessage<ListProjectsForOrganizationAndGithubURLRequest> | undefined): boolean {
+    return proto3.util.equals(ListProjectsForOrganizationAndGithubURLRequest, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetProjectRequest
  */
 export class GetProjectRequest extends Message<GetProjectRequest> {

@@ -1675,6 +1675,123 @@ var _ interface {
 	ErrorName() string
 } = ListProjectsForOrganizationResponseValidationError{}
 
+// Validate checks the field values on
+// ListProjectsForOrganizationAndGithubURLRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ListProjectsForOrganizationAndGithubURLRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// ListProjectsForOrganizationAndGithubURLRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in
+// ListProjectsForOrganizationAndGithubURLRequestMultiError, or nil if none found.
+func (m *ListProjectsForOrganizationAndGithubURLRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListProjectsForOrganizationAndGithubURLRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for OrganizationName
+
+	// no validation rules for GithubUrl
+
+	// no validation rules for PageSize
+
+	// no validation rules for PageToken
+
+	if len(errors) > 0 {
+		return ListProjectsForOrganizationAndGithubURLRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListProjectsForOrganizationAndGithubURLRequestMultiError is an error
+// wrapping multiple validation errors returned by
+// ListProjectsForOrganizationAndGithubURLRequest.ValidateAll() if the
+// designated constraints aren't met.
+type ListProjectsForOrganizationAndGithubURLRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListProjectsForOrganizationAndGithubURLRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListProjectsForOrganizationAndGithubURLRequestMultiError) AllErrors() []error { return m }
+
+// ListProjectsForOrganizationAndGithubURLRequestValidationError is the
+// validation error returned by
+// ListProjectsForOrganizationAndGithubURLRequest.Validate if the designated
+// constraints aren't met.
+type ListProjectsForOrganizationAndGithubURLRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) Reason() string {
+	return e.reason
+}
+
+// Cause function returns cause value.
+func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) ErrorName() string {
+	return "ListProjectsForOrganizationAndGithubURLRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListProjectsForOrganizationAndGithubURLRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListProjectsForOrganizationAndGithubURLRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListProjectsForOrganizationAndGithubURLRequestValidationError{}
+
 // Validate checks the field values on GetProjectRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.

@@ -107,7 +107,7 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 	// Find Rill project matching the repo that was pushed to
 	repo := event.GetRepo()
 	githubURL := *repo.HTMLURL
-	projects, err := s.DB.SearchProjects(ctx, "github_url=lower(%s")
+	projects, err := s.DB.FindProjectsByGithubURL(ctx, githubURL)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// App is installed on repo not currently deployed. Do nothing.

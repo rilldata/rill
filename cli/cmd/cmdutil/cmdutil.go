@@ -109,11 +109,16 @@ func SelectPrompt(msg string, options []string, def string) string {
 	return result
 }
 
-func ConfirmPrompt(msg string, def bool) bool {
+func ConfirmPrompt(msg, help string, def bool) bool {
 	prompt := &survey.Confirm{
 		Message: msg,
 		Default: def,
 	}
+
+	if help != "" {
+		prompt.Help = help
+	}
+
 	result := def
 	if err := survey.AskOne(prompt, &result); err != nil {
 		fmt.Printf("Prompt failed %v\n", err)
