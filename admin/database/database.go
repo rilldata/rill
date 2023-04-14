@@ -219,7 +219,7 @@ type InsertProjectOptions struct {
 	Description          string
 	Public               bool
 	Region               string
-	ProductionOLAPDriver string `validate:"required"`
+	ProductionOLAPDriver string
 	ProductionOLAPDSN    string
 	ProductionSlots      int
 	ProductionBranch     string
