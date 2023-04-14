@@ -16,4 +16,5 @@ func TestValidateSlug(t *testing.T) {
 	require.Error(t, Validate(&slugTester{Name: "hello world"}))
 	require.Error(t, Validate(&slugTester{Name: "-hello"}))
 	require.Error(t, Validate(&slugTester{Name: "ab"}))
+	require.Error(t, Validate(&slugTester{Name: ""}))
 }

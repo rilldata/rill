@@ -215,7 +215,7 @@ func (e *Variables) Scan(value interface{}) error {
 type InsertProjectOptions struct {
 	OrganizationID       string `validate:"required"`
 	Name                 string `validate:"slug"`
-	UserID               string `validate:"required"`
+	UserID               string
 	Description          string
 	Public               bool
 	Region               string
