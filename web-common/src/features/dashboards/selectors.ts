@@ -111,11 +111,11 @@ export const selectBestDimensionStrings = (
  * lookup dimensions across sessions, for example in stateful URLs
  * 
  * FIXME:
- * For now we are using the user supplied `expression` for dimension
+ * For now we are using the user supplied `name` for dimension
  * keys because that is the only field that must exist for the
- *  dimension to appear in the dashboard
+ * dimension to appear in the dashboard
 
- * This may lead to problems if there are ever duplicates expressions
+ * This may lead to problems if there are ever duplicates `names`
  Hamilton has started discussions with Benjamin about
  * adding unique IDS that could be used to replace these temporary keys. 
  * Once those become available the fields below should be updated.

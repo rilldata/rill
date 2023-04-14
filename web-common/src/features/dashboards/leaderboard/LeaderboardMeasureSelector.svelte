@@ -72,29 +72,12 @@
   /** set the selection only if measures is not undefined */
   $: selection = measures ? activeLeaderboardMeasure : [];
 
-  // $: availableDimensionLabels =
-  //   dimensions?.map((d) => (d.label !== "" ? d.label : d.name)) ?? [];
-  // $: visibleDimensions = metricsExplorer?.visibleDimensions ?? [];
-
-  // const toggleDimensionVisibility = (e) =>
-  //   metricsExplorerStore.toggleDimensionVisibility(
-  //     metricViewName,
-  //     e.detail.index
-  //   );
-  // const setAllDimensionsNotVisible = () =>
-  //   metricsExplorerStore.setAllDimensionsVisiblility(metricViewName, false);
-  // const setAllDimensionsVisible = () =>
-  //   metricsExplorerStore.setAllDimensionsVisiblility(metricViewName, true);
-
   $: availableDimensionLabels = selectBestDimensionStrings($metaQuery);
   $: availableDimensionKeys = selectDimensionKeys($metaQuery);
   $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
   $: visibleDimensionsBitmask = availableDimensionKeys.map((k) =>
     visibleDimensionKeys.has(k)
   );
-
-  $: console.log("visibleDimensionKeys", visibleDimensionKeys);
-  $: console.log("visibleDimensionsBitmask", visibleDimensionsBitmask);
 
   const toggleDimensionVisibility = (e) => {
     metricsExplorerStore.toggleDimensionVisibilityByKey(

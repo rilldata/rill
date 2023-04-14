@@ -50,12 +50,6 @@ export interface MetricsExplorerEntity {
   // server)
   visibleDimensionKeys: Set<string>;
 
-  // This array controls which measures are visible in
-  // explorer on the client.
-  visibleMeasures: boolean[];
-  // This array controls which dimensions are visible in
-  // explorer on the client.
-  visibleDimensions: boolean[];
   // this is used to show leaderboard values
   leaderboardMeasureName: string;
   filters: V1MetricsViewFilter;
@@ -168,9 +162,6 @@ const metricViewReducers = {
         metricsExplorer.selectedMeasureNames = metricsView.measures.map(
           (measure) => measure.name
         );
-        metricsExplorer.visibleMeasures = metricsView.measures.map(
-          (_visibility) => true
-        );
 
         metricsExplorer.visibleMeasureKeys = new Set(
           metricsView.measures.map((measure) => measure.expression)
@@ -179,9 +170,6 @@ const metricViewReducers = {
         metricsExplorer.visibleDimensionKeys = new Set(
           metricsView.dimensions.map((dim) => dim.name)
         );
-        metricsExplorer.visibleDimensions = metricsView.dimensions.map(
-          (_visibility) => true
-        );
       },
       () => {
         return {
@@ -189,8 +177,7 @@ const metricViewReducers = {
           selectedMeasureNames: metricsView.measures.map(
             (measure) => measure.name
           ),
-          visibleMeasures: metricsView.measures.map((_visibility) => true),
-          visibleDimensions: metricsView.dimensions.map((_visibility) => true),
+
           visibleMeasureKeys: new Set(
             metricsView.measures.map((measure) => measure.expression)
           ),
@@ -211,25 +198,6 @@ const metricViewReducers = {
   setLeaderboardMeasureName(name: string, measureName: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.leaderboardMeasureName = measureName;
-    });
-  },
-
-  // Updates the bitmask that sets the client-side visibility
-  // of measures in the dashboard.
-  toggleMeasureVisibility(name: string, measureIndex: number) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.visibleMeasures = metricsExplorer.visibleMeasures.map(
-        (x, i) => (i === measureIndex ? !x : x)
-      );
-    });
-  },
-  // Updates the bitmask that sets the client-side visibility
-  // of measures in the dashboard.
-  setAllMeasuresVisibility(name: string, visible: boolean) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.visibleMeasures = metricsExplorer.visibleMeasures.map(
-        (_) => visible
-      );
     });
   },
 
@@ -255,26 +223,6 @@ const metricViewReducers = {
         ...metricsExplorer.visibleMeasureKeys,
         ...keys,
       ]);
-    });
-  },
-
-  // Updates the bitmask that sets the client-side visibility
-  // of dimensions in the dashboard.
-  toggleDimensionVisibility(name: string, measureIndex: number) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.visibleDimensions = metricsExplorer.visibleDimensions.map(
-        (x, i) => (i === measureIndex ? !x : x)
-      );
-    });
-  },
-
-  // Updates the bitmask that sets the client-side visibility
-  // of dimensions in the dashboard.
-  setAllDimensionsVisiblility(name: string, visible: boolean) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.visibleDimensions = metricsExplorer.visibleDimensions.map(
-        (_) => visible
-      );
     });
   },
 
