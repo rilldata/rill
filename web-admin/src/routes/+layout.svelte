@@ -2,7 +2,6 @@
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
-  import AuthRedirect from "../components/authentication/AuthRedirect.svelte";
   import TopNavigationBar from "../components/navigation/TopNavigationBar.svelte";
 
   const queryClient = new QueryClient({
@@ -29,15 +28,13 @@
 
 <RillTheme>
   <QueryClientProvider client={queryClient}>
-    <AuthRedirect>
-      <div class="flex flex-col h-screen">
-        <main class="flex-grow flex flex-col">
-          <TopNavigationBar />
-          <div class="flex-grow overflow-auto">
-            <slot />
-          </div>
-        </main>
-      </div>
-    </AuthRedirect>
+    <div class="flex flex-col h-screen">
+      <main class="flex-grow flex flex-col">
+        <TopNavigationBar />
+        <div class="flex-grow overflow-auto">
+          <slot />
+        </div>
+      </main>
+    </div>
   </QueryClientProvider>
 </RillTheme>
