@@ -73,10 +73,9 @@ export const selectBestMeasureStrings = (
  * FIXME:
  * For now we are using the user supplied `expression` for measure
  * keys because that is the only field that must exist for the
- *  measure to appear in the dashboard
-
- * This may lead to problems if there are ever duplicates expressions
- Hamilton has started discussions with Benjamin about
+ *  measure to appear in the dashboard.
+ * This may lead to problems if there are ever duplicate
+ * expressions so Hamilton has started discussions with Benjamin about
  * adding unique IDS that could be used to replace these temporary keys. 
  * Once those become available the fields below should be updated.
 
@@ -115,8 +114,8 @@ export const selectBestDimensionStrings = (
  * keys because that is the only field that must exist for the
  * dimension to appear in the dashboard
 
- * This may lead to problems if there are ever duplicates `names`
- Hamilton has started discussions with Benjamin about
+ * This may lead to problems if there are ever duplicates `names`,
+ * so Hamilton has started discussions with Benjamin about
  * adding unique IDS that could be used to replace these temporary keys. 
  * Once those become available the fields below should be updated.
 

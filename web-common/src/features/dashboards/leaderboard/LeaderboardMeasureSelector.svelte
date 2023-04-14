@@ -21,7 +21,6 @@
 
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
-  $: dimensions = $metaQuery.data?.dimensions;
   $: measures = $metaQuery.data?.measures;
 
   let metricsExplorer: MetricsExplorerEntity;

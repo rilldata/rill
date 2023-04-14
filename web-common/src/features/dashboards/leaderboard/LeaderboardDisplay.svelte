@@ -135,8 +135,6 @@
     observer?.disconnect();
   });
 
-  // let visibleDimensions = [];
-  // $: visibleDimensions = metricsExplorer?.visibleDimensions ?? [];
   $: availableDimensionKeys = selectDimensionKeys($metaQuery);
   $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
   $: visibleDimensionsBitmask = availableDimensionKeys.map((k) =>

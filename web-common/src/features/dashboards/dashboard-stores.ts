@@ -69,11 +69,9 @@ export interface MetricsExplorerEntity {
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
 }
-const metricsExplorerStoreBase = writable({
+const { update, subscribe } = writable({
   entities: {},
 } as MetricsExplorerStoreType);
-
-const { update, subscribe } = metricsExplorerStoreBase;
 
 const updateMetricsExplorerByName = (
   name: string,
@@ -127,8 +125,6 @@ const metricViewReducers = {
       () => ({
         name,
         selectedMeasureNames: [],
-        visibleMeasures: [],
-        visibleDimensions: [],
         visibleMeasureKeys: new Set(),
         visibleDimensionKeys: new Set(),
         leaderboardMeasureName: "",
@@ -171,27 +167,25 @@ const metricViewReducers = {
           metricsView.dimensions.map((dim) => dim.name)
         );
       },
-      () => {
-        return {
-          name,
-          selectedMeasureNames: metricsView.measures.map(
-            (measure) => measure.name
-          ),
+      () => ({
+        name,
+        selectedMeasureNames: metricsView.measures.map(
+          (measure) => measure.name
+        ),
 
-          visibleMeasureKeys: new Set(
-            metricsView.measures.map((measure) => measure.expression)
-          ),
-          visibleDimensionKeys: new Set(
-            metricsView.dimensions.map((dim) => dim.name)
-          ),
-          leaderboardMeasureName: metricsView.measures[0]?.name,
-          filters: {
-            include: [],
-            exclude: [],
-          },
-          dimensionFilterExcludeMode: new Map(),
-        };
-      }
+        visibleMeasureKeys: new Set(
+          metricsView.measures.map((measure) => measure.expression)
+        ),
+        visibleDimensionKeys: new Set(
+          metricsView.dimensions.map((dim) => dim.name)
+        ),
+        leaderboardMeasureName: metricsView.measures[0]?.name,
+        filters: {
+          include: [],
+          exclude: [],
+        },
+        dimensionFilterExcludeMode: new Map(),
+      })
     );
   },
 
@@ -379,8 +373,6 @@ const metricViewReducers = {
     });
   },
 };
-
-metricsExplorerStoreBase;
 
 export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
   typeof metricViewReducers = {
