@@ -1222,7 +1222,7 @@ export const createAdminServiceUpdateProject = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary UpdateProject updates a project
+ * @summary GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
  */
 export const adminServiceGetProjectVariables = (
   organizationName: string,
@@ -1289,7 +1289,7 @@ export const createAdminServiceGetProjectVariables = <
 };
 
 /**
- * @summary UpdateProjectVariables updates a project
+ * @summary UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
  */
 export const adminServiceUpdateProjectVariables = (
   organizationName: string,

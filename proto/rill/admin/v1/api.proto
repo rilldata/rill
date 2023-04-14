@@ -73,7 +73,7 @@ service AdminService {
     };
   }
 
-  // UpdateProjectVariables updates a project
+  // UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
   rpc UpdateProjectVariables(UpdateProjectVariablesRequest) returns (UpdateProjectVariablesResponse) {
     option (google.api.http) = {
       put: "/v1/organizations/{organization_name}/projects/{name}/variables",
@@ -81,7 +81,7 @@ service AdminService {
     };
   }
 
-  // UpdateProject updates a project
+  // GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
   rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}/variables"};
   }

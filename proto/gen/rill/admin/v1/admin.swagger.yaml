@@ -571,7 +571,7 @@ paths:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}/variables:
     get:
-      summary: UpdateProject updates a project
+      summary: 'GetProjectVariables returns project variables. NOTE: Get project API doesn''t return variables.'
       operationId: AdminService_GetProjectVariables
       responses:
         "200":
@@ -594,7 +594,7 @@ paths:
       tags:
         - AdminService
     put:
-      summary: UpdateProjectVariables updates a project
+      summary: 'UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn''t update variables.'
       operationId: AdminService_UpdateProjectVariables
       responses:
         "200":
