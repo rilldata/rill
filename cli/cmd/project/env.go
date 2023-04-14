@@ -1,7 +1,6 @@
 package project
 
 import (
-	"context"
 	"os"
 
 	"github.com/lensesio/tableprinter"
@@ -40,8 +39,7 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			ctx := context.Background()
-
+			ctx := cmd.Context()
 			resp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
 				OrganizationName: cfg.Org,
 				Name:             projectName,
@@ -58,7 +56,7 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 				resp.Variables = make(map[string]string)
 			}
 			resp.Variables[key] = value
-			updateResp, err := client.UpdateProjectVariables(context.Background(), &adminv1.UpdateProjectVariablesRequest{
+			updateResp, err := client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
 				OrganizationName: cfg.Org,
 				Name:             projectName,
 				Variables:        resp.Variables,
@@ -90,7 +88,7 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			ctx := context.Background()
+			ctx := cmd.Context()
 			resp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
 				OrganizationName: cfg.Org,
 				Name:             projectName,
@@ -104,7 +102,7 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			delete(resp.Variables, key)
-			update, err := client.UpdateProjectVariables(context.Background(), &adminv1.UpdateProjectVariablesRequest{
+			update, err := client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
 				OrganizationName: cfg.Org,
 				Name:             projectName,
 				Variables:        resp.Variables,
@@ -134,8 +132,7 @@ func ShowEnvCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			ctx := context.Background()
-			resp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
+			resp, err := client.GetProjectVariables(cmd.Context(), &adminv1.GetProjectVariablesRequest{
 				OrganizationName: cfg.Org,
 				Name:             projectName,
 			})

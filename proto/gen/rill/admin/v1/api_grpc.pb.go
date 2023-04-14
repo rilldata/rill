@@ -44,10 +44,10 @@ type AdminServiceClient interface {
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error)
-	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
-	UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error)
 	// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
 	GetProjectVariables(ctx context.Context, in *GetProjectVariablesRequest, opts ...grpc.CallOption) (*GetProjectVariablesResponse, error)
+	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
+	UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
 	// RevokeCurrentAuthToken revoke the current auth token
@@ -182,18 +182,18 @@ func (c *adminServiceClient) UpdateProject(ctx context.Context, in *UpdateProjec
 	return out, nil
 }
 
-func (c *adminServiceClient) UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error) {
-	out := new(UpdateProjectVariablesResponse)
-	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/UpdateProjectVariables", in, out, opts...)
+func (c *adminServiceClient) GetProjectVariables(ctx context.Context, in *GetProjectVariablesRequest, opts ...grpc.CallOption) (*GetProjectVariablesResponse, error) {
+	out := new(GetProjectVariablesResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/GetProjectVariables", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *adminServiceClient) GetProjectVariables(ctx context.Context, in *GetProjectVariablesRequest, opts ...grpc.CallOption) (*GetProjectVariablesResponse, error) {
-	out := new(GetProjectVariablesResponse)
-	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/GetProjectVariables", in, out, opts...)
+func (c *adminServiceClient) UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error) {
+	out := new(UpdateProjectVariablesResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/UpdateProjectVariables", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -334,10 +334,10 @@ type AdminServiceServer interface {
 	DeleteProject(context.Context, *DeleteProjectRequest) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
-	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
-	UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error)
 	// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
 	GetProjectVariables(context.Context, *GetProjectVariablesRequest) (*GetProjectVariablesResponse, error)
+	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
+	UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
 	// RevokeCurrentAuthToken revoke the current auth token
@@ -403,11 +403,11 @@ func (UnimplementedAdminServiceServer) DeleteProject(context.Context, *DeletePro
 func (UnimplementedAdminServiceServer) UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateProject not implemented")
 }
-func (UnimplementedAdminServiceServer) UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateProjectVariables not implemented")
-}
 func (UnimplementedAdminServiceServer) GetProjectVariables(context.Context, *GetProjectVariablesRequest) (*GetProjectVariablesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProjectVariables not implemented")
+}
+func (UnimplementedAdminServiceServer) UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateProjectVariables not implemented")
 }
 func (UnimplementedAdminServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
@@ -656,24 +656,6 @@ func _AdminService_UpdateProject_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_UpdateProjectVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateProjectVariablesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).UpdateProjectVariables(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/rill.admin.v1.AdminService/UpdateProjectVariables",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).UpdateProjectVariables(ctx, req.(*UpdateProjectVariablesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _AdminService_GetProjectVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetProjectVariablesRequest)
 	if err := dec(in); err != nil {
@@ -688,6 +670,24 @@ func _AdminService_GetProjectVariables_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetProjectVariables(ctx, req.(*GetProjectVariablesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_UpdateProjectVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateProjectVariablesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UpdateProjectVariables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.admin.v1.AdminService/UpdateProjectVariables",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UpdateProjectVariables(ctx, req.(*UpdateProjectVariablesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -960,12 +960,12 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_UpdateProject_Handler,
 		},
 		{
-			MethodName: "UpdateProjectVariables",
-			Handler:    _AdminService_UpdateProjectVariables_Handler,
-		},
-		{
 			MethodName: "GetProjectVariables",
 			Handler:    _AdminService_GetProjectVariables_Handler,
+		},
+		{
+			MethodName: "UpdateProjectVariables",
+			Handler:    _AdminService_UpdateProjectVariables_Handler,
 		},
 		{
 			MethodName: "GetCurrentUser",
