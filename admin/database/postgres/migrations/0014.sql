@@ -1,0 +1,1 @@
+DROP INDEX projects_github_url_idx;

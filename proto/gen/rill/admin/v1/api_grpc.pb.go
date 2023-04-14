@@ -44,6 +44,8 @@ type AdminServiceClient interface {
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error)
+	// SearchProjects searched projects based on query passed
+	SearchProjects(ctx context.Context, in *SearchProjectsRequest, opts ...grpc.CallOption) (*SearchProjectsResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
 	// RevokeCurrentAuthToken revoke the current auth token
@@ -172,6 +174,15 @@ func (c *adminServiceClient) DeleteProject(ctx context.Context, in *DeleteProjec
 func (c *adminServiceClient) UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error) {
 	out := new(UpdateProjectResponse)
 	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/UpdateProject", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SearchProjects(ctx context.Context, in *SearchProjectsRequest, opts ...grpc.CallOption) (*SearchProjectsResponse, error) {
+	out := new(SearchProjectsResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/SearchProjects", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -312,6 +323,8 @@ type AdminServiceServer interface {
 	DeleteProject(context.Context, *DeleteProjectRequest) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
+	// SearchProjects searched projects based on query passed
+	SearchProjects(context.Context, *SearchProjectsRequest) (*SearchProjectsResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
 	// RevokeCurrentAuthToken revoke the current auth token
@@ -376,6 +389,9 @@ func (UnimplementedAdminServiceServer) DeleteProject(context.Context, *DeletePro
 }
 func (UnimplementedAdminServiceServer) UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateProject not implemented")
+}
+func (UnimplementedAdminServiceServer) SearchProjects(context.Context, *SearchProjectsRequest) (*SearchProjectsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchProjects not implemented")
 }
 func (UnimplementedAdminServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
@@ -620,6 +636,24 @@ func _AdminService_UpdateProject_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).UpdateProject(ctx, req.(*UpdateProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SearchProjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchProjectsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SearchProjects(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.admin.v1.AdminService/SearchProjects",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SearchProjects(ctx, req.(*SearchProjectsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -890,6 +924,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateProject",
 			Handler:    _AdminService_UpdateProject_Handler,
+		},
+		{
+			MethodName: "SearchProjects",
+			Handler:    _AdminService_SearchProjects_Handler,
 		},
 		{
 			MethodName: "GetCurrentUser",

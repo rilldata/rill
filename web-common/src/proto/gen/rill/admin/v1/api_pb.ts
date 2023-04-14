@@ -691,6 +691,86 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.SearchProjectsRequest
+ */
+export class SearchProjectsRequest extends Message<SearchProjectsRequest> {
+  /**
+   * @generated from field: string organization_name = 1;
+   */
+  organizationName = "";
+
+  /**
+   * @generated from field: string query = 2;
+   */
+  query = "";
+
+  constructor(data?: PartialMessage<SearchProjectsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SearchProjectsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "query", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SearchProjectsRequest {
+    return new SearchProjectsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SearchProjectsRequest {
+    return new SearchProjectsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SearchProjectsRequest {
+    return new SearchProjectsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SearchProjectsRequest | PlainMessage<SearchProjectsRequest> | undefined, b: SearchProjectsRequest | PlainMessage<SearchProjectsRequest> | undefined): boolean {
+    return proto3.util.equals(SearchProjectsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SearchProjectsResponse
+ */
+export class SearchProjectsResponse extends Message<SearchProjectsResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.GetProjectResponse projects = 1;
+   */
+  projects: GetProjectResponse[] = [];
+
+  constructor(data?: PartialMessage<SearchProjectsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SearchProjectsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "projects", kind: "message", T: GetProjectResponse, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SearchProjectsResponse {
+    return new SearchProjectsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SearchProjectsResponse {
+    return new SearchProjectsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SearchProjectsResponse {
+    return new SearchProjectsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SearchProjectsResponse | PlainMessage<SearchProjectsResponse> | undefined, b: SearchProjectsResponse | PlainMessage<SearchProjectsResponse> | undefined): boolean {
+    return proto3.util.equals(SearchProjectsResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.CreateProjectRequest
  */
 export class CreateProjectRequest extends Message<CreateProjectRequest> {

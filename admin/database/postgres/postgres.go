@@ -146,13 +146,27 @@ func (c *connection) FindProjectByName(ctx context.Context, orgName, name string
 	return res, nil
 }
 
-func (c *connection) FindProjectByGithubURL(ctx context.Context, githubURL string) (*database.Project, error) {
-	res := &database.Project{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1)", githubURL).StructScan(res)
+func (c *connection) SearchProjects(ctx context.Context, queryClause string) ([]*database.Project, error) {
+	qry := "SELECT p.* FROM projects "
+	if queryClause != "" {
+		qry = " WHERE " + queryClause
+	}
+	rows, err := c.getDB(ctx).QueryxContext(ctx, qry)
 	if err != nil {
 		return nil, parseErr(err)
 	}
-	return res, nil
+
+	result := make([]*database.Project, 0)
+	for rows.Next() {
+		project := &database.Project{}
+		if err := rows.Scan(project); err != nil {
+			return nil, err
+		}
+
+		result = append(result, project)
+	}
+
+	return result, nil
 }
 
 func (c *connection) InsertProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {

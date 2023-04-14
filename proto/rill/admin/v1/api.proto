@@ -73,6 +73,11 @@ service AdminService {
     };
   }
 
+  // SearchProjects searched projects based on query passed
+  rpc SearchProjects(SearchProjectsRequest) returns (SearchProjectsResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization_name}:search"};
+  }
+
   // GetCurrentUser returns the currently authenticated user (if any)
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {
     option (google.api.http) = {
@@ -218,6 +223,15 @@ message GetProjectResponse {
   Project project = 1;
   Deployment production_deployment = 2;
   string jwt = 3;
+}
+
+message SearchProjectsRequest {
+  string organization_name = 1;
+  string query = 2;
+}
+
+message SearchProjectsResponse {
+  repeated GetProjectResponse projects = 1;
 }
 
 message CreateProjectRequest {

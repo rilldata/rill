@@ -4,6 +4,10 @@
  * rill/admin/v1/api.proto
  * OpenAPI spec version: version not set
  */
+export type AdminServiceSearchProjectsParams = {
+  query?: string;
+};
+
 export type AdminServiceUpdateProjectBodyVariables = { [key: string]: string };
 
 export type AdminServiceUpdateProjectBody = {
@@ -94,6 +98,10 @@ export interface V1SetProjectMemberRoleResponse {
 
 export interface V1SetOrganizationMemberRoleResponse {
   [key: string]: any;
+}
+
+export interface V1SearchProjectsResponse {
+  projects?: V1GetProjectResponse[];
 }
 
 export interface V1RevokeCurrentAuthTokenResponse {

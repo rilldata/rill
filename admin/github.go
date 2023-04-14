@@ -107,7 +107,7 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 	// Find Rill project matching the repo that was pushed to
 	repo := event.GetRepo()
 	githubURL := *repo.HTMLURL
-	project, err := s.DB.FindProjectByGithubURL(ctx, githubURL)
+	projects, err := s.DB.SearchProjects(ctx, "github_url=lower(%s")
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// App is installed on repo not currently deployed. Do nothing.
@@ -125,16 +125,19 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 		return nil
 	}
 
-	// Exit if push was not to production branch
-	if branch != project.ProductionBranch {
-		return nil
-	}
+	// Iterate over all projects and trigger reconcile
+	for _, project := range projects {
+		if branch != project.ProductionBranch {
+			// Ignore if push was not to production branch
+			continue
+		}
 
-	// Trigger reconcile (runs in the background - err means the deployment wasn't found, which is unlikely)
-	if project.ProductionDeploymentID != nil {
-		err = s.TriggerReconcile(ctx, *project.ProductionDeploymentID)
-		if err != nil {
-			return err
+		// Trigger reconcile (runs in the background - err means the deployment wasn't found, which is unlikely)
+		if project.ProductionDeploymentID != nil {
+			err = s.TriggerReconcile(ctx, *project.ProductionDeploymentID)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

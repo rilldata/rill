@@ -48,6 +48,8 @@ import type {
   V1DeleteProjectResponse,
   V1UpdateProjectResponse,
   AdminServiceUpdateProjectBody,
+  V1SearchProjectsResponse,
+  AdminServiceSearchProjectsParams,
   V1PingResponse,
   V1RevokeCurrentAuthTokenResponse,
   V1GetCurrentUserResponse,
@@ -1218,6 +1220,77 @@ export const createAdminServiceUpdateProject = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary SearchProjects searched projects based on query passed
+ */
+export const adminServiceSearchProjects = (
+  organizationName: string,
+  params?: AdminServiceSearchProjectsParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1SearchProjectsResponse>({
+    url: `/v1/organizations/${organizationName}:search`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceSearchProjectsQueryKey = (
+  organizationName: string,
+  params?: AdminServiceSearchProjectsParams
+) =>
+  [
+    `/v1/organizations/${organizationName}:search`,
+    ...(params ? [params] : []),
+  ] as const;
+
+export type AdminServiceSearchProjectsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSearchProjects>>
+>;
+export type AdminServiceSearchProjectsQueryError = RpcStatus;
+
+export const createAdminServiceSearchProjects = <
+  TData = Awaited<ReturnType<typeof adminServiceSearchProjects>>,
+  TError = RpcStatus
+>(
+  organizationName: string,
+  params?: AdminServiceSearchProjectsParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceSearchProjects>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceSearchProjectsQueryKey(organizationName, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceSearchProjects>>
+  > = ({ signal }) =>
+    adminServiceSearchProjects(organizationName, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceSearchProjects>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!organizationName,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary Ping returns information about the server
  */

@@ -272,6 +272,70 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}, nil
 }
 
+func (s *Server) SearchProjects(ctx context.Context, req *adminv1.SearchProjectsRequest) (*adminv1.SearchProjectsResponse, error) {
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "org not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "proj not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if !claims.Can(ctx, proj.OrganizationID, auth.ReadProjects, proj.ID, auth.ReadProject) {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
+	}
+
+	if proj.ProductionDeploymentID == nil {
+		return &adminv1.GetProjectResponse{
+			Project: projToDTO(proj, org.Name),
+		}, nil
+	}
+
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProductionDeploymentID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, "project does not have a production deployment")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
+		AudienceURL: depl.RuntimeAudience,
+		Subject:     claims.OwnerID(),
+		TTL:         time.Hour,
+		InstancePermissions: map[string][]runtimeauth.Permission{
+			depl.RuntimeInstanceID: {
+				// TODO: These are too wide. It needs just ReadObjects and ReadMetrics.
+				runtimeauth.ReadInstance,
+				runtimeauth.ReadObjects,
+				runtimeauth.ReadOLAP,
+				runtimeauth.ReadMetrics,
+				runtimeauth.ReadProfiling,
+				runtimeauth.ReadRepo,
+			},
+		},
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
+	}
+
+	return &adminv1.GetProjectResponse{
+		Project:              projToDTO(proj, org.Name),
+		ProductionDeployment: deploymentToDTO(depl),
+		Jwt:                  jwt,
+	}, nil
+}
+
 func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjectMembersRequest) (*adminv1.ListProjectMembersResponse, error) {
 	claims := auth.GetClaims(ctx)
 

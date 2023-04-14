@@ -573,6 +573,30 @@ paths:
                   type: string
       tags:
         - AdminService
+  /v1/organizations/{organizationName}:search:
+    get:
+      summary: SearchProjects searched projects based on query passed
+      operationId: AdminService_SearchProjects
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SearchProjectsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: query
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/ping:
     get:
       summary: Ping returns information about the server
@@ -863,6 +887,13 @@ definitions:
     properties:
       tokenId:
         type: string
+  v1SearchProjectsResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          $ref: '#/definitions/v1GetProjectResponse'
   v1SetOrganizationMemberRoleResponse:
     type: object
     title: Response message for AdminService.SetOrganizationMemberRole
