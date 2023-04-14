@@ -1,7 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import {
+    createRuntimeServiceListCatalogEntries,
+    V1CatalogEntry,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceListOrganizations,
@@ -18,8 +21,24 @@
   $: projects = createAdminServiceListProjectsForOrganization(organization);
   $: isProjectPage = $page.route.id === "/[organization]/[project]";
 
-  $: dashboard = $page.params.dashboard;
-  $: dashboards = useDashboardNames($runtime?.instanceId);
+  let currentDashboard: V1CatalogEntry;
+  $: dashboards = createRuntimeServiceListCatalogEntries(
+    $runtime?.instanceId,
+    {
+      type: "OBJECT_TYPE_METRICS_VIEW",
+    },
+    {
+      query: {
+        enabled: !!project && !!$runtime?.instanceId,
+        select: (data) => {
+          currentDashboard = data?.entries?.find(
+            (entry) => entry.name === $page.params.dashboard
+          );
+          return data;
+        },
+      },
+    }
+  );
   $: isDashboardPage =
     $page.route.id === "/[organization]/[project]/[dashboard]";
 </script>
@@ -55,16 +74,16 @@
         onSelectMenuOption={(project) => goto(`/${organization}/${project}`)}
       />
     {/if}
-    {#if dashboard}
+    {#if currentDashboard}
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
-        label={dashboard}
+        label={currentDashboard.metricsView?.label ?? currentDashboard.name}
         isCurrentPage={isDashboardPage}
-        menuOptions={$dashboards.data?.length > 1 &&
-          $dashboards.data.map((dash) => ({
-            key: dash,
-            main: dash,
-            callback: () => goto(`/${organization}/${project}/${dash}`),
+        menuOptions={$dashboards.data?.entries?.length > 1 &&
+          $dashboards.data.entries.map((dash) => ({
+            key: dash.name,
+            main: dash.metricsView?.label ?? dash.name,
+            callback: () => goto(`/${organization}/${project}/${dash.name}`),
           }))}
         onSelectMenuOption={(dashboard) =>
           goto(`/${organization}/${project}/${dashboard}`)}
