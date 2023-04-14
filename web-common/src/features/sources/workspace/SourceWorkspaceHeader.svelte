@@ -20,11 +20,11 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceRefreshAndReconcile,
+    createRuntimeServiceRenameFileAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndReconcile,
-    useRuntimeServiceRefreshAndReconcile,
-    useRuntimeServiceRenameFileAndReconcile,
     V1CatalogEntry,
     V1ReconcileResponse,
     V1Source,
@@ -37,7 +37,7 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -56,13 +56,13 @@
 
   const queryClient = useQueryClient();
 
-  const renameSource = useRuntimeServiceRenameFileAndReconcile();
+  const renameSource = createRuntimeServiceRenameFileAndReconcile();
 
   $: runtimeInstanceId = $runtime.instanceId;
-  const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
-  const createSource = useRuntimeServicePutFileAndReconcile();
+  const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
+  const createSource = createRuntimeServicePutFileAndReconcile();
 
-  $: getSource = useRuntimeServiceGetCatalogEntry(
+  $: getSource = createRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     sourceName
   );
@@ -77,7 +77,7 @@
 
   $: modelNames = useModelNames(runtimeInstanceId);
   $: dashboardNames = useDashboardNames(runtimeInstanceId);
-  const createModelMutation = useRuntimeServicePutFileAndReconcile();
+  const createModelMutation = createRuntimeServicePutFileAndReconcile();
   const createDashboardFromSourceMutation = useCreateDashboardFromSource();
 
   let connector: string;

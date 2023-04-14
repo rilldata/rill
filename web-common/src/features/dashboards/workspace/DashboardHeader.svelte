@@ -60,8 +60,11 @@
   <!-- top row: title and call to action -->
   <!-- Rill Local includes the title, Rill Cloud does not -->
   {#if hasTitle}
+    <!-- FIXME: adding an -mb-3 fixes the spacing issue incurred by changes to the header
+    to accommodate the cloud dashboard. We should go back and reconcile these headers so we don't need
+  to do this. -->
     <div
-      class="flex items-center justify-between w-full pl-1 pr-4"
+      class="flex items-center justify-between -mb-3 w-full pl-1 pr-4"
       style:height="var(--header-height)"
     >
       <!-- title element -->
@@ -96,7 +99,7 @@
     </div>
   {/if}
   <!-- bottom row -->
-  <div class="-ml-3 p-1">
+  <div class="-ml-3 p-1 py-2 space-y-2">
     <TimeControls {metricViewName} />
     {#key metricViewName}
       <Filters {metricViewName} />

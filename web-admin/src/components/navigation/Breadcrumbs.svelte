@@ -1,26 +1,74 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import Slash from "@rilldata/web-common/components/icons/Slash.svelte";
+  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import {
+    createAdminServiceListOrganizations,
+    createAdminServiceListProjectsForOrganization,
+  } from "../../client";
+  import BreadcrumbItem from "./BreadcrumbItem.svelte";
+  import OrganizationAvatar from "./OrganizationAvatar.svelte";
 
   $: organization = $page.params.organization;
-  $: project = $page.params.project;
-  $: name = $page.params.name;
+  $: organizations = createAdminServiceListOrganizations();
+  $: isOrganizationPage = $page.route.id === "/[organization]";
 
-  const textClasses = "px-1 text-black font-semibold";
+  $: project = $page.params.project;
+  $: projects = createAdminServiceListProjectsForOrganization(organization);
+  $: isProjectPage = $page.route.id === "/[organization]/[project]";
+
+  $: dashboard = $page.params.dashboard;
+  $: dashboards = useDashboardNames($runtime?.instanceId);
+  $: isDashboardPage =
+    $page.route.id === "/[organization]/[project]/[dashboard]";
 </script>
 
-<div class="flex flex-row items-center">
-  {#if organization}
-    <a href="/-/{organization}" class={textClasses}>{organization}</a>
-  {/if}
-  {#if project}
-    <Slash size={"2em"} className={"text-gray-200"} />
-    <a href="/-/{organization}/{project}" class={textClasses}>{project}</a>
-  {/if}
-  {#if name}
-    <Slash size={"2em"} className={"text-gray-200"} />
-    <a href="/-/{organization}/{project}/dashboard/{name}" class={textClasses}>
-      {name}
-    </a>
-  {/if}
-</div>
+<nav>
+  <ol class="flex flex-row items-center">
+    {#if organization}
+      <BreadcrumbItem
+        label={organization}
+        isCurrentPage={isOrganizationPage}
+        menuOptions={$organizations.data?.organizations?.length > 1 &&
+          $organizations.data.organizations.map((org) => ({
+            key: org.name,
+            main: org.name,
+            callback: () => goto(`/${org.name}`),
+          }))}
+        onSelectMenuOption={(organization) => goto(`/${organization}`)}
+      >
+        <OrganizationAvatar {organization} slot="icon" />
+      </BreadcrumbItem>
+    {/if}
+    {#if project}
+      <span class="text-gray-600">/</span>
+      <BreadcrumbItem
+        label={project}
+        isCurrentPage={isProjectPage}
+        menuOptions={$projects.data?.projects?.length > 1 &&
+          $projects.data.projects.map((proj) => ({
+            key: proj.name,
+            main: proj.name,
+            callback: () => goto(`/${organization}/${proj.name}`),
+          }))}
+        onSelectMenuOption={(project) => goto(`/${organization}/${project}`)}
+      />
+    {/if}
+    {#if dashboard}
+      <span class="text-gray-600">/</span>
+      <BreadcrumbItem
+        label={dashboard}
+        isCurrentPage={isDashboardPage}
+        menuOptions={$dashboards.data?.length > 1 &&
+          $dashboards.data.map((dash) => ({
+            key: dash,
+            main: dash,
+            callback: () => goto(`/${organization}/${project}/${dash}`),
+          }))}
+        onSelectMenuOption={(dashboard) =>
+          goto(`/${organization}/${project}/${dashboard}`)}
+      />
+    {/if}
+  </ol>
+</nav>

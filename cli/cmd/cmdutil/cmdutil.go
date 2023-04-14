@@ -6,12 +6,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/lensesio/tableprinter"
-	"github.com/manifoldco/promptui"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/config"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +41,7 @@ func CheckAuth(cfg *config.Config) PreRunCheck {
 	}
 }
 
-func CheckOrg(cfg *config.Config) PreRunCheck {
+func CheckOrganization(cfg *config.Config) PreRunCheck {
 	return func(cmd *cobra.Command, args []string) error {
 		if cfg.Org != "" {
 			return nil
@@ -69,8 +70,8 @@ func TablePrinter(v interface{}) {
 	fmt.Fprintln(os.Stdout, b.String())
 }
 
-func TextPrinter(str string) {
-	boldGreen := color.New(color.FgGreen).Add(color.Underline).Add(color.Bold)
+func SuccessPrinter(str string) {
+	boldGreen := color.New(color.FgGreen).Add(color.Bold)
 	boldGreen.Fprintln(color.Output, str)
 }
 
@@ -90,17 +91,100 @@ func Client(cfg *config.Config) (*client.Client, error) {
 	return c, nil
 }
 
-func PromptGetSelect(items []string, label string) string {
-	prompt := promptui.Select{
-		Label: label,
-		Items: items,
+func SelectPrompt(msg string, options []string, def string) string {
+	prompt := &survey.Select{
+		Message: msg,
+		Options: options,
 	}
 
-	_, result, err := prompt.Run()
-	if err != nil {
+	if contains(options, def) {
+		prompt.Default = def
+	}
+
+	result := ""
+	if err := survey.AskOne(prompt, &result); err != nil {
 		fmt.Printf("Prompt failed %v\n", err)
 		os.Exit(1)
 	}
-
 	return result
+}
+
+func ConfirmPrompt(msg string, def bool) bool {
+	prompt := &survey.Confirm{
+		Message: msg,
+		Default: def,
+	}
+	result := def
+	if err := survey.AskOne(prompt, &result); err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
+	return result
+}
+
+func InputPrompt(msg, def string) string {
+	prompt := &survey.Input{
+		Message: msg,
+		Default: def,
+	}
+	result := def
+	if err := survey.AskOne(prompt, &result); err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
+	return result
+}
+
+func WarnPrinter(str string) {
+	boldYellow := color.New(color.FgYellow).Add(color.Bold)
+	boldYellow.Fprintln(color.Output, str)
+}
+
+func PrintMembers(members []*adminv1.Member) {
+	if len(members) == 0 {
+		WarnPrinter("No members found")
+		return
+	}
+
+	SuccessPrinter("Members list \n")
+	TablePrinter(toMemberTable(members))
+}
+
+func toMemberTable(members []*adminv1.Member) []*member {
+	allMembers := make([]*member, 0, len(members))
+
+	for _, m := range members {
+		allMembers = append(allMembers, toMemberRow(m))
+	}
+
+	return allMembers
+}
+
+func toMemberRow(m *adminv1.Member) *member {
+	return &member{
+		ID:        m.UserId,
+		Name:      m.UserName,
+		Email:     m.UserEmail,
+		RoleName:  m.RoleName,
+		CreatedOn: m.CreatedOn.AsTime().String(),
+		UpdatedOn: m.UpdatedOn.AsTime().String(),
+	}
+}
+
+type member struct {
+	ID        string `header:"id" json:"id"`
+	Name      string `header:"name" json:"display_name"`
+	Email     string `header:"email" json:"email"`
+	RoleName  string `header:"role_name" json:"role_name"`
+	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
+	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_on"`
+}
+
+func contains(vals []string, key string) bool {
+	for _, s := range vals {
+		if key == s {
+			return true
+		}
+	}
+	return false
 }

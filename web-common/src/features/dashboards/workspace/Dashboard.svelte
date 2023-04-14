@@ -4,10 +4,9 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
+  import { createRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
-  import { MEASURE_CONFIG } from "../config";
   import { metricsExplorerStore } from "../dashboard-stores";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
@@ -18,6 +17,8 @@
   export let metricViewName: string;
   export let hasTitle: boolean;
 
+  export let leftMargin = undefined;
+
   const switchToMetrics = async (metricViewName: string) => {
     if (!metricViewName) return;
 
@@ -26,7 +27,7 @@
 
   $: switchToMetrics(metricViewName);
 
-  $: metricsViewQuery = useRuntimeServiceGetCatalogEntry(
+  $: metricsViewQuery = createRuntimeServiceGetCatalogEntry(
     $runtime.instanceId,
     metricViewName,
     {
@@ -57,16 +58,9 @@
     metricViewName
   );
   $: hasTimeSeries = $metricTimeSeries.data;
-  $: gridConfig = hasTimeSeries
-    ? `${
-        width >= MEASURE_CONFIG.breakpoint
-          ? MEASURE_CONFIG.container.width.full
-          : MEASURE_CONFIG.container.width.breakpoint
-      }px minmax(355px, auto)`
-    : "min-content minmax(355px, auto)";
 </script>
 
-<DashboardContainer bind:exploreContainerWidth bind:width {gridConfig}>
+<DashboardContainer bind:exploreContainerWidth bind:width {leftMargin}>
   <DashboardHeader {metricViewName} {hasTitle} slot="header" />
 
   <svelte:fragment let:width slot="metrics">

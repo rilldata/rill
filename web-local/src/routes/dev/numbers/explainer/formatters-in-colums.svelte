@@ -15,8 +15,6 @@
   ][];
   export let sample: number[];
   export let tableGutterWidth: number;
-
-  $: console.log({ formattersDescriptionsAndOptions });
 </script>
 
 <div class="table-container">
@@ -121,10 +119,6 @@
     white-space: nowrap;
   }
 
-  .options-container-row {
-    display: flex;
-  }
-
   .align-content-right {
     display: flex;
     justify-content: flex-end;
@@ -135,43 +129,5 @@
   table {
     margin-top: 20px;
     margin-bottom: 20px;
-  }
-
-  /* table.fixed-width-cols td {
-    width: 120px;
-    min-width: 120px;
-  } */
-
-  .option-box {
-    padding-left: 15px;
-  }
-
-  .inactive {
-    color: rgb(144, 144, 144);
-    pointer-events: none;
-  }
-
-  .number-input {
-    width: 40px;
-    padding-left: 6px;
-    outline: solid black 1px;
-  }
-
-  button {
-    outline: 1px solid #ddd;
-    background-color: #f2f2f2;
-    padding: 3px;
-    border-radius: 5px;
-  }
-
-  .outer {
-    overflow: hidden;
-    position: relative;
-  }
-  .inner {
-    position: absolute;
-    right: -50px;
-    top: 50px;
-    width: fit-content;
   }
 </style>

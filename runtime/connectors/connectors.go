@@ -34,9 +34,11 @@ type Connector interface {
 
 // Spec provides metadata about a connector and the properties it supports.
 type Spec struct {
-	DisplayName string
-	Description string
-	Properties  []PropertySchema
+	DisplayName        string
+	Description        string
+	Properties         []PropertySchema
+	ConnectorVariables []VariableSchema
+	Help               string
 }
 
 // PropertySchema provides the schema for a property supported by a connector.
@@ -49,6 +51,15 @@ type PropertySchema struct {
 	Placeholder string
 	Hint        string
 	Href        string
+}
+
+type VariableSchema struct {
+	Key           string
+	Default       string
+	Help          string
+	Secret        bool
+	ValidateFunc  func(any interface{}) error
+	TransformFunc func(any interface{}) interface{}
 }
 
 // PropertySchemaType is an enum of types supported for connector properties.
@@ -80,11 +91,11 @@ func (ps PropertySchema) ValidateType(val any) bool {
 // and (in the future) secrets configured by the user.
 type Env struct {
 	RepoDriver string
-	RepoDSN    string
+	RepoRoot   string
 	// user provided env variables kept with keys converted to uppercase
-	Variables            map[string]string
-	AllowHostCredentials bool
-	StorageLimitInBytes  int64
+	Variables           map[string]string
+	AllowHostAccess     bool
+	StorageLimitInBytes int64
 }
 
 // Source represents a dataset to ingest using a specific connector (like a connector instance).

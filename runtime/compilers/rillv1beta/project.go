@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/go-yaml/yaml"
@@ -39,7 +40,7 @@ func (c *Codec) InitEmpty(ctx context.Context, name, rillVersion string) error {
 	if gitignore != "" {
 		gitignore += "\n"
 	}
-	gitignore += "# Rill\n*.db\n*.db.tmp\n*.db.wal\ndata/\n"
+	gitignore += "# Rill\n*.db\n*.db.tmp\n*.db.wal\n"
 
 	err = c.Repo.Put(ctx, c.InstanceID, ".gitignore", strings.NewReader(gitignore))
 	if err != nil {
@@ -95,7 +96,7 @@ func (c *Codec) PutSource(ctx context.Context, repo drivers.RepoStore, instanceI
 	p := path.Join("sources", source.Name+".yaml")
 
 	// TODO: Use create and createOnly when they're added to repo.Put
-	if _, err := os.Stat(path.Join(repo.DSN(), p)); err == nil {
+	if _, err := os.Stat(path.Join(repo.Root(), p)); err == nil {
 		if !force {
 			return "", os.ErrExist
 		}
@@ -135,4 +136,18 @@ func (c *Codec) ProjectConfig(ctx context.Context) (*ProjectConfig, error) {
 	}
 
 	return r, nil
+}
+
+func ProjectName(dir string) (string, error) {
+	content, err := os.ReadFile(filepath.Join(dir, "rill.yaml"))
+	if err != nil {
+		return "", err
+	}
+
+	c := &ProjectConfig{Variables: make(map[string]string)}
+	if err := yaml.Unmarshal(content, c); err != nil {
+		return "", err
+	}
+
+	return c.SanitizedName(), nil
 }

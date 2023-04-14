@@ -22,7 +22,17 @@ export const defaultGenericNumOptions: FormatterOptionsCommon &
 
 export const defaultPercentOptions: FormatterOptionsCommon &
   FormatterRangeSpecsStrategy = {
-  ...defaultGenericNumOptions,
+  strategy: "perRange",
+  rangeSpecs: [
+    {
+      minMag: -2,
+      supMag: 3,
+      maxDigitsRight: 1,
+      baseMagnitude: 0,
+      padWithInsignificantZeros: false,
+    },
+  ],
+  defaultMaxDigitsRight: 1,
   numberKind: NumberKind.PERCENT,
 };
 

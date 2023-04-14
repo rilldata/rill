@@ -36,6 +36,11 @@ export class DashboardState extends Message<DashboardState> {
   timeGrain = TimeGrain.UNSPECIFIED;
 
   /**
+   * @generated from field: rill.ui.v1.DashboardTimeRange compare_time_range = 4;
+   */
+  compareTimeRange?: DashboardTimeRange;
+
+  /**
    * Selected measure for the leaderboard
    *
    * @generated from field: optional string leaderboard_measure = 5;
@@ -60,6 +65,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 1, name: "time_range", kind: "message", T: DashboardTimeRange },
     { no: 2, name: "filters", kind: "message", T: MetricsViewFilter },
     { no: 3, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 4, name: "compare_time_range", kind: "message", T: DashboardTimeRange },
     { no: 5, name: "leaderboard_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "selected_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);

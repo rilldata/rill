@@ -10,11 +10,11 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
-    useRuntimeServiceDeleteFileAndReconcile,
-    useRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceDeleteFileAndReconcile,
+    createRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -33,8 +33,8 @@
   $: sourceNames = useSourceNames(runtimeInstanceId);
   $: modelNames = useModelNames(runtimeInstanceId);
 
-  const createSourceMutation = useRuntimeServicePutFileAndReconcile();
-  const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
+  const createSourceMutation = createRuntimeServicePutFileAndReconcile();
+  const deleteSource = createRuntimeServiceDeleteFileAndReconcile();
 
   async function handleOpenFileDialog() {
     return handleUpload(await openFileUploadDialog());

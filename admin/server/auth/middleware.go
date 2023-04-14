@@ -136,7 +136,7 @@ func (a *Authenticator) parseClaimsFromToken(ctx context.Context, token string) 
 	}
 
 	// Set claims
-	claims := &authTokenClaims{token: validated}
+	claims := newAuthTokenClaims(validated, a.admin)
 	ctx = context.WithValue(ctx, claimsContextKey{}, claims)
 	return ctx, nil
 }
