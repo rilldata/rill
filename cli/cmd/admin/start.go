@@ -12,9 +12,9 @@ import (
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/spf13/cobra"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
@@ -27,25 +27,27 @@ import (
 // Env var keys must be prefixed with RILL_ADMIN_ and are converted from snake_case to CamelCase.
 // For example RILL_ADMIN_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	DatabaseDriver         string        `default:"postgres" split_words:"true"`
-	DatabaseURL            string        `split_words:"true"`
-	HTTPPort               int           `default:"8080" split_words:"true"`
-	GRPCPort               int           `default:"9090" split_words:"true"`
-	LogLevel               zapcore.Level `default:"info" split_words:"true"`
-	ExternalURL            string        `default:"http://localhost:8080" split_words:"true"`
-	FrontendURL            string        `default:"http://localhost:3000" split_words:"true"`
-	SessionKeyPairs        []string      `split_words:"true"`
-	AllowedOrigins         []string      `default:"*" split_words:"true"`
-	AuthDomain             string        `split_words:"true"`
-	AuthClientID           string        `split_words:"true"`
-	AuthClientSecret       string        `split_words:"true"`
-	GithubAppID            int64         `split_words:"true"`
-	GithubAppName          string        `split_words:"true"`
-	GithubAppPrivateKey    string        `split_words:"true"`
-	GithubAppWebhookSecret string        `split_words:"true"`
-	ProvisionerSpec        string        `split_words:"true"`
-	SigningJWKS            string        `split_words:"true"`
-	SigningKeyID           string        `split_words:"true"`
+	DatabaseDriver         string                 `default:"postgres" split_words:"true"`
+	DatabaseURL            string                 `split_words:"true"`
+	HTTPPort               int                    `default:"8080" split_words:"true"`
+	GRPCPort               int                    `default:"9090" split_words:"true"`
+	LogLevel               zapcore.Level          `default:"info" split_words:"true"`
+	MetricsExporter        observability.Exporter `default:"prometheus" split_words:"true"`
+	TracesExporter         observability.Exporter `default:"" split_words:"true"`
+	ExternalURL            string                 `default:"http://localhost:8080" split_words:"true"`
+	FrontendURL            string                 `default:"http://localhost:3000" split_words:"true"`
+	SessionKeyPairs        []string               `split_words:"true"`
+	AllowedOrigins         []string               `default:"*" split_words:"true"`
+	AuthDomain             string                 `split_words:"true"`
+	AuthClientID           string                 `split_words:"true"`
+	AuthClientSecret       string                 `split_words:"true"`
+	GithubAppID            int64                  `split_words:"true"`
+	GithubAppName          string                 `split_words:"true"`
+	GithubAppPrivateKey    string                 `split_words:"true"`
+	GithubAppWebhookSecret string                 `split_words:"true"`
+	ProvisionerSpec        string                 `split_words:"true"`
+	SigningJWKS            string                 `split_words:"true"`
+	SigningKeyID           string                 `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -68,12 +70,28 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			// Init logger
 			cfg := zap.NewProductionConfig()
 			cfg.Level.SetLevel(conf.LogLevel)
-			zapLogger, err := cfg.Build()
-			logger := otelzap.New(zapLogger)
+			logger, err := cfg.Build()
 			if err != nil {
 				fmt.Printf("error: failed to create logger: %s", err.Error())
 				os.Exit(1)
 			}
+
+			// Init telemetry
+			shutdown, err := observability.Start(&observability.Options{
+				MetricsExporter: conf.MetricsExporter,
+				TracesExporter:  conf.TracesExporter,
+				ServiceName:     "admin-server",
+				ServiceVersion:  cliCfg.Version.String(),
+			})
+			if err != nil {
+				logger.Fatal("error starting telemetry", zap.Error(err))
+			}
+			defer func() {
+				err := shutdown(context.Background())
+				if err != nil {
+					logger.Error("telemetry shutdown failed", zap.Error(err))
+				}
+			}()
 
 			// Init runtime JWT issuer
 			issuer, err := auth.NewIssuer(conf.ExternalURL, conf.SigningKeyID, []byte(conf.SigningJWKS))

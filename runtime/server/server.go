@@ -2,34 +2,18 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
-	grpczaplog "github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
-	"github.com/rilldata/rill/runtime/server/metrics"
 	"github.com/rs/cors"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	otelruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/exporters/prometheus"
-	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/sdk/metric"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -54,7 +38,7 @@ type Server struct {
 	runtimev1.UnsafeQueryServiceServer
 	runtime *runtime.Runtime
 	opts    *Options
-	logger  *otelzap.Logger
+	logger  *zap.Logger
 	aud     *auth.Audience
 }
 
@@ -63,7 +47,7 @@ var (
 	_ runtimev1.QueryServiceServer   = (*Server)(nil)
 )
 
-func NewServer(opts *Options, rt *runtime.Runtime, logger *otelzap.Logger) (*Server, error) {
+func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server, error) {
 	srv := &Server{
 		opts:    opts,
 		runtime: rt,
@@ -94,32 +78,26 @@ func (s *Server) Close() error {
 
 // ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
-	si, ui, err := metrics.InitCustomMetricsInterceptors(ctx)
-	if err != nil {
-		return err
-	}
-
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
-			si,
-			otelgrpc.StreamServerInterceptor(),
-			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger.Logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
-			recovery.StreamServerInterceptor(),
+			observability.TracingStreamServerInterceptor(),
+			observability.LoggingStreamServerInterceptor(s.logger),
+			observability.RecoveryStreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
 		),
 		grpc.ChainUnaryInterceptor(
-			ui,
-			otelgrpc.UnaryServerInterceptor(),
-			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger.Logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
-			recovery.UnaryServerInterceptor(),
+			observability.TracingUnaryServerInterceptor(),
+			observability.LoggingUnaryServerInterceptor(s.logger),
+			observability.RecoveryUnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
 		),
 	)
+
 	runtimev1.RegisterRuntimeServiceServer(server, s)
 	runtimev1.RegisterQueryServiceServer(server, s)
-	s.logger.Ctx(ctx).Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
+	s.logger.With(observability.ZapCtx(ctx)).Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
@@ -131,35 +109,8 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 	}
 
 	server := &http.Server{Handler: handler}
-	s.logger.Ctx(ctx).Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
+	s.logger.With(observability.ZapCtx(ctx)).Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
-}
-
-// ErrorToCode maps an error to a gRPC code for logging. It wraps the default behavior and adds handling of context errors.
-func ErrorToCode(err error) codes.Code {
-	if errors.Is(err, context.DeadlineExceeded) {
-		return codes.DeadlineExceeded
-	}
-	if errors.Is(err, context.Canceled) {
-		return codes.Canceled
-	}
-	return logging.DefaultErrorToCode(err)
-}
-
-// GRPCCodeToLevel overrides the log level of various gRPC codes.
-// We're currently not doing very granular error handling, so we get quite a lot of codes.Unknown errors, which we do not want to emit as error logs.
-func GRPCCodeToLevel(code codes.Code) logging.Level {
-	switch code {
-	case codes.OK, codes.NotFound, codes.Canceled, codes.AlreadyExists, codes.InvalidArgument, codes.Unauthenticated,
-		codes.Unknown, codes.PermissionDenied, codes.ResourceExhausted, codes.FailedPrecondition, codes.OutOfRange:
-		return logging.INFO
-	case codes.Unimplemented, codes.DeadlineExceeded, codes.Aborted, codes.Unavailable:
-		return logging.WARNING
-	case codes.Internal, codes.DataLoss:
-		return logging.ERROR
-	default:
-		return logging.ERROR
-	}
 }
 
 // HTTPHandler HTTP handler serving REST gateway.
@@ -172,7 +123,6 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	if err != nil {
 		return nil, err
 	}
-
 	err = runtimev1.RegisterQueryServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
 	if err != nil {
 		return nil, err
@@ -255,140 +205,4 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
-}
-
-// Initializes providers and exporters.
-// Global providers accumulate metrics/traces.
-// The providers export data from Runtime using the exporters.
-func InitOpenTelemetry(endpoint string, pull bool) (*metric.MeterProvider, *sdktrace.TracerProvider, error) {
-	if endpoint == "" {
-		return nil, nil, nil
-	}
-
-	err := otelruntime.Start(otelruntime.WithMinimumReadMemStatsInterval(time.Minute))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var meterProvider *metric.MeterProvider
-	if pull || endpoint != "" {
-		if pull {
-			reader, err := prometheus.New()
-			if err != nil {
-				return nil, nil, err
-			}
-
-			meterProvider = metric.NewMeterProvider(
-				metric.WithReader(
-					reader,
-				),
-			)
-		} else {
-			exporter, err := otlpmetricgrpc.New(
-				context.Background(),
-				otlpmetricgrpc.WithInsecure(),
-				otlpmetricgrpc.WithEndpoint(endpoint),
-			)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			meterProvider = metric.NewMeterProvider(
-				metric.WithReader(
-					metric.NewPeriodicReader(exporter, metric.WithInterval(8*time.Second)),
-				),
-			)
-		}
-
-		global.SetMeterProvider(meterProvider)
-	}
-
-	var tracerProvider *sdktrace.TracerProvider
-	if !pull && endpoint != "" {
-		traceClient := otlptracegrpc.NewClient(
-			otlptracegrpc.WithInsecure(),
-			otlptracegrpc.WithEndpoint(endpoint),
-			otlptracegrpc.WithDialOption(grpc.WithBlock()))
-		traceExp, err := otlptrace.New(context.Background(), traceClient)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		bsp := sdktrace.NewBatchSpanProcessor(traceExp)
-		tracerProvider = sdktrace.NewTracerProvider(
-			sdktrace.WithSampler(sdktrace.AlwaysSample()),
-			sdktrace.WithSpanProcessor(bsp),
-		)
-		otel.SetTracerProvider(tracerProvider)
-	}
-
-	return meterProvider, tracerProvider, nil
-}
-
-func OtelHandler(next http.Handler) http.Handler {
-	return otelhttp.NewHandler(next, "otel-instrumented")
-}
-
-type responseWriter struct {
-	http.ResponseWriter
-	status      int
-	wroteHeader bool
-}
-
-func wrapResponseWriter(w http.ResponseWriter) *responseWriter {
-	return &responseWriter{ResponseWriter: w}
-}
-
-func (rw *responseWriter) Status() int {
-	return rw.status
-}
-
-func (rw *responseWriter) WriteHeader(code int) {
-	if rw.wroteHeader {
-		return
-	}
-
-	rw.status = code
-	rw.ResponseWriter.WriteHeader(code)
-	rw.wroteHeader = true
-}
-
-func LoggingMiddleware(h gateway.HandlerFunc, logger *otelzap.Logger) gateway.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-		defer func() {
-			if err := recover(); err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				switch v := err.(type) {
-				case error:
-					logger.Ctx(
-						r.Context()).Error("Processing failure",
-						zap.Error(v),
-						zap.String("method", r.Method),
-						zap.String("path", r.URL.EscapedPath()),
-						zap.String("proto", r.Proto),
-						zap.String("user-agent", r.UserAgent()),
-					)
-				default:
-					logger.Ctx(
-						r.Context()).Error("Unknown processing failure",
-						zap.String("method", r.Method),
-						zap.String("path", r.URL.EscapedPath()),
-						zap.String("proto", r.Proto),
-						zap.String("user-agent", r.UserAgent()),
-					)
-				}
-			}
-		}()
-
-		start := time.Now()
-		wrapped := wrapResponseWriter(w)
-		h(wrapped, r, pathParams)
-		logger.Ctx(r.Context()).Info(
-			"Success",
-			zap.Int("status", wrapped.status),
-			zap.String("method", r.Method),
-			zap.String("path", r.URL.EscapedPath()),
-			zap.Duration("duration", time.Since(start)),
-		)
-	}
 }

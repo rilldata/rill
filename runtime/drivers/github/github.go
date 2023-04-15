@@ -17,7 +17,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	"go.uber.org/zap"
 )
 
 const (
@@ -37,7 +37,7 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(dsnStr string, logger *otelzap.Logger) (drivers.Connection, error) {
+func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, error) {
 	var dsn DSN
 	err := json.Unmarshal([]byte(dsnStr), &dsn)
 	if err != nil {

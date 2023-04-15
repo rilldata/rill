@@ -2,13 +2,28 @@ package duckdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/metric/instrument"
+)
+
+// Create instruments
+var (
+	meter                 = global.Meter("runtime/drivers/duckdb")
+	queriesCounter        = observability.Must(meter.Int64Counter("queries"))
+	queueLatencyHistogram = observability.Must(meter.Int64Histogram("queue_latency", instrument.WithUnit("ms")))
+	queryLatencyHistogram = observability.Must(meter.Int64Histogram("query_latency", instrument.WithUnit("ms")))
+	totalLatencyHistogram = observability.Must(meter.Int64Histogram("total_latency", instrument.WithUnit("ms")))
 )
 
 func (c *connection) Dialect() drivers.Dialect {
@@ -45,7 +60,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	return res.Close()
 }
 
-func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
+func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
 	// We use the meta conn for dry run queries
 	if stmt.DryRun {
 		conn, release, err := c.acquireMetaConn(ctx)
@@ -66,11 +81,36 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		return nil, err
 	}
 
+	// Gather metrics only for actual queries
+	var acquiredTime time.Time
+	acquired := false
+	start := time.Now()
+	defer func() {
+		totalLatency := time.Since(start).Milliseconds()
+		queueLatency := acquiredTime.Sub(start).Milliseconds()
+
+		attrs := []attribute.KeyValue{
+			attribute.String("db", c.config.DBFilePath),
+			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
+			attribute.Bool("failed", outErr != nil),
+		}
+
+		queriesCounter.Add(ctx, 1, attrs...)
+		queueLatencyHistogram.Record(ctx, queueLatency, attrs...)
+		totalLatencyHistogram.Record(ctx, totalLatency, attrs...)
+		if acquired {
+			// Only track query latency when not cancelled in queue
+			queryLatencyHistogram.Record(ctx, totalLatency-queueLatency, attrs...)
+		}
+	}()
+
 	// Acquire connection
 	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority)
+	acquiredTime = time.Now()
 	if err != nil {
 		return nil, err
 	}
+	acquired = true
 	// NOTE: We can't just "defer release()" because release() will block until rows.Close() is called.
 	// We must be careful to make sure release() is called on all code paths.
 
@@ -87,7 +127,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		return nil, err
 	}
 
-	res := &drivers.Result{Rows: rows, Schema: schema}
+	res = &drivers.Result{Rows: rows, Schema: schema}
 	res.SetCleanupFunc(release) // Will call release when res.Close() is called.
 
 	return res, nil

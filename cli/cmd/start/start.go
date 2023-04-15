@@ -8,7 +8,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
-	runtimeserver "github.com/rilldata/rill/runtime/server"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/spf13/cobra"
 )
 
@@ -32,14 +32,6 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 		Short: "Build project and start web app",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			mp, tp, err := runtimeserver.InitOpenTelemetry(cfg.OtelExporterEndpoint, cfg.OtelPullBased)
-			if err != nil {
-				return err
-			}
-
-			defer mp.Shutdown(context.Background())
-			defer tp.Shutdown(context.Background())
-
 			if len(args) > 0 {
 				projectPath = args[0]
 				if strings.HasSuffix(projectPath, ".git") {
@@ -52,12 +44,29 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
+			// Init telemetry
+			shutdown, err := observability.Start(&observability.Options{
+				MetricsExporter: observability.PrometheusExporter,
+				TracesExporter:  observability.NoopExporter,
+				ServiceName:     "rill-local",
+				ServiceVersion:  cfg.Version.String(),
+			})
+			if err != nil {
+				return err
+			}
+			defer func() {
+				err := shutdown(context.Background())
+				if err != nil {
+					fmt.Printf("telemetry shutdown failed: %s\n", err.Error())
+				}
+			}()
+
 			parsedLogFormat, ok := local.ParseLogFormat(logFormat)
 			if !ok {
 				return fmt.Errorf("invalid log format %q", logFormat)
 			}
 
-			app, err := local.NewApp(cmd.Context(), cfg, cfg.Version, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, variables)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, variables)
 			if err != nil {
 				return err
 			}

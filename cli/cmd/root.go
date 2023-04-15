@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/rilldata/rill/cli/cmd/admin"
 	"github.com/rilldata/rill/cli/cmd/auth"
@@ -52,10 +51,6 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	cfg := &config.Config{
 		Version: ver,
 	}
-
-	cfg.OtelExporterEndpoint = os.Getenv("RILL_OTEL_EXPORTER_ENDPOINT")
-	pullBased, _ := strconv.ParseBool(os.Getenv("RILL_OTEL_PULL_BASED"))
-	cfg.OtelPullBased = pullBased
 
 	// Load admin token from .rill (may later be overridden by flag --api-token)
 	token, err := dotrill.GetAccessToken()

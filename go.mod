@@ -49,6 +49,7 @@ require (
 	go.opentelemetry.io/otel/metric v0.37.0
 	go.opentelemetry.io/otel/sdk v1.14.0
 	go.opentelemetry.io/otel/sdk/metric v0.37.0
+	go.opentelemetry.io/otel/trace v1.14.0
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 	gocloud.dev v0.27.0
@@ -181,14 +182,11 @@ require (
 	github.com/skeema/knownhosts v1.1.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/uptrace/opentelemetry-go-extra/otelutil v0.1.21 // indirect
-	github.com/uptrace/opentelemetry-go-extra/otelzap v0.1.21 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.14.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.37.0 // indirect
-	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.3.0 // indirect

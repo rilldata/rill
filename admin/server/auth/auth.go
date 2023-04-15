@@ -7,7 +7,7 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gorilla/sessions"
 	"github.com/rilldata/rill/admin"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 )
 
@@ -24,7 +24,7 @@ type AuthenticatorOptions struct {
 // It provides endpoints for login/logout, creates users, issues cookie-based auth tokens, and provides middleware for authenticating requests.
 // The implementation was derived from: https://auth0.com/docs/quickstart/webapp/golang/01-login.
 type Authenticator struct {
-	logger  *otelzap.Logger
+	logger  *zap.Logger
 	admin   *admin.Service
 	cookies *sessions.CookieStore
 	opts    *AuthenticatorOptions
@@ -33,7 +33,7 @@ type Authenticator struct {
 }
 
 // NewAuthenticator creates an Authenticator.
-func NewAuthenticator(logger *otelzap.Logger, adm *admin.Service, cookies *sessions.CookieStore, opts *AuthenticatorOptions) (*Authenticator, error) {
+func NewAuthenticator(logger *zap.Logger, adm *admin.Service, cookies *sessions.CookieStore, opts *AuthenticatorOptions) (*Authenticator, error) {
 	oidcProvider, err := oidc.NewProvider(context.Background(), "https://"+opts.AuthDomain+"/")
 	if err != nil {
 		return nil, err

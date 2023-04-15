@@ -7,7 +7,6 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/dag"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 )
 
@@ -26,7 +25,7 @@ type Service struct {
 	// TODO: should we add path to the DAG instead
 	NameToPath map[string]string
 
-	logger      *otelzap.Logger
+	logger      *zap.Logger
 	hasMigrated bool
 	lock        sync.Mutex
 }
@@ -37,10 +36,10 @@ func NewService(
 	olap drivers.OLAPStore,
 	registry drivers.RegistryStore,
 	instID string,
-	logger *otelzap.Logger,
+	logger *zap.Logger,
 ) *Service {
 	if logger == nil {
-		logger = otelzap.New(zap.NewNop())
+		logger = zap.NewNop()
 	}
 	return &Service{
 		Catalog:       catalog,

@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/admin/provisioner"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/client"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -118,25 +119,25 @@ func (s *Service) TriggerReconcile(ctx context.Context, deploymentID string) err
 		// Use s.closeCtx to cancel if the service is stopped
 		ctx := s.closeCtx
 
-		s.logger.Ctx(ctx).Info("reconcile: starting", zap.String("deployment_id", deploymentID))
+		s.logger.Info("reconcile: starting", zap.String("deployment_id", deploymentID), observability.ZapCtx(ctx))
 
 		// Get deployment
 		depl, err := s.DB.FindDeployment(ctx, deploymentID)
 		if err != nil {
-			s.logger.Ctx(ctx).Error("reconcile: could not find deployment", zap.String("deployment_id", deploymentID), zap.Error(err))
+			s.logger.Error("reconcile: could not find deployment", zap.String("deployment_id", deploymentID), zap.Error(err), observability.ZapCtx(ctx))
 			return
 		}
 
 		// Check status
 		if depl.Status == database.DeploymentStatusReconciling && time.Since(depl.UpdatedOn) < 30*time.Minute {
-			s.logger.Ctx(ctx).Error("reconcile: skipping because it is already running", zap.String("deployment_id", deploymentID))
+			s.logger.Error("reconcile: skipping because it is already running", zap.String("deployment_id", deploymentID), observability.ZapCtx(ctx))
 			return
 		}
 
 		// Set deployment status to reconciling
 		depl, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusReconciling, "")
 		if err != nil {
-			s.logger.Ctx(ctx).Error("reconcile: could not update status", zap.String("deployment_id", deploymentID), zap.Error(err))
+			s.logger.Error("reconcile: could not update status", zap.String("deployment_id", deploymentID), zap.Error(err), observability.ZapCtx(ctx))
 			return
 		}
 
@@ -147,24 +148,24 @@ func (s *Service) TriggerReconcile(ctx context.Context, deploymentID string) err
 			InstancePermissions: map[string][]auth.Permission{depl.RuntimeInstanceID: {auth.EditInstance}},
 		})
 		if err != nil {
-			s.logger.Ctx(ctx).Error("reconcile: could not get token", zap.String("deployment_id", deploymentID), zap.Error(err))
+			s.logger.Error("reconcile: could not get token", zap.String("deployment_id", deploymentID), zap.Error(err), observability.ZapCtx(ctx))
 			return
 		}
 
 		// Make runtime client
 		rt, err := client.New(depl.RuntimeHost, jwt)
 		if err != nil {
-			s.logger.Ctx(ctx).Error("reconcile: could not create client", zap.String("deployment_id", deploymentID), zap.Error(err))
+			s.logger.Error("reconcile: could not create client", zap.String("deployment_id", deploymentID), zap.Error(err), observability.ZapCtx(ctx))
 			return
 		}
 
 		// Call reconcile
 		res, err := rt.Reconcile(ctx, &runtimev1.ReconcileRequest{InstanceId: depl.RuntimeInstanceID})
 		if err != nil {
-			s.logger.Ctx(ctx).Error("reconcile: rpc error", zap.String("deployment_id", deploymentID), zap.Error(err))
+			s.logger.Error("reconcile: rpc error", zap.String("deployment_id", deploymentID), zap.Error(err), observability.ZapCtx(ctx))
 			_, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusError, err.Error())
 			if err != nil {
-				s.logger.Ctx(ctx).Error("reconcile: could not update logs", zap.String("deployment_id", deploymentID), zap.Error(err))
+				s.logger.Error("reconcile: could not update logs", zap.String("deployment_id", deploymentID), zap.Error(err), observability.ZapCtx(ctx))
 			}
 			return
 		}
@@ -173,24 +174,24 @@ func (s *Service) TriggerReconcile(ctx context.Context, deploymentID string) err
 		if len(res.Errors) > 0 {
 			json, err := protojson.Marshal(res)
 			if err != nil {
-				s.logger.Ctx(ctx).Error("reconcile: json error", zap.String("deployment_id", deploymentID), zap.Error(err))
+				s.logger.Error("reconcile: json error", zap.String("deployment_id", deploymentID), zap.Error(err), observability.ZapCtx(ctx))
 				return
 			}
 
 			_, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusError, string(json))
 			if err != nil {
-				s.logger.Ctx(ctx).Error("reconcile: could not update logs", zap.String("deployment_id", deploymentID), zap.Error(err))
+				s.logger.Error("reconcile: could not update logs", zap.String("deployment_id", deploymentID), zap.Error(err), observability.ZapCtx(ctx))
 				return
 			}
 		} else {
 			_, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusOK, "")
 			if err != nil {
-				s.logger.Ctx(ctx).Error("reconcile: could not clear logs", zap.String("deployment_id", deploymentID), zap.Error(err))
+				s.logger.Error("reconcile: could not clear logs", zap.String("deployment_id", deploymentID), zap.Error(err), observability.ZapCtx(ctx))
 				return
 			}
 		}
 
-		s.logger.Ctx(ctx).Info("reconcile: completed", zap.String("deployment_id", deploymentID))
+		s.logger.Info("reconcile: completed", zap.String("deployment_id", deploymentID), observability.ZapCtx(ctx))
 	}()
 	return nil
 }

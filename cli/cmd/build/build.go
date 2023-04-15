@@ -19,7 +19,7 @@ func BuildCmd(cfg *config.Config) *cobra.Command {
 		Use:   "build",
 		Short: "Build project without starting web app",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			app, err := local.NewApp(cmd.Context(), cfg, cfg.Version, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, variables)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, variables)
 			if err != nil {
 				return err
 			}

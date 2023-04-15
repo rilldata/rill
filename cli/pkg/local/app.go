@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
@@ -23,7 +22,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
@@ -51,15 +49,14 @@ type App struct {
 	Context     context.Context
 	Runtime     *runtime.Runtime
 	Instance    *drivers.Instance
-	Logger      *otelzap.SugaredLogger
-	BaseLogger  *otelzap.Logger
+	Logger      *zap.SugaredLogger
+	BaseLogger  *zap.Logger
 	Version     config.Version
 	Verbose     bool
 	ProjectPath string
-	Config      *config.Config
 }
 
-func NewApp(ctx context.Context, appConfig *config.Config, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string) (*App, error) {
+func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string) (*App, error) {
 	// Setup a friendly-looking colored/json logger
 	var logger *zap.Logger
 	var err error
@@ -89,7 +86,6 @@ func NewApp(ctx context.Context, appConfig *config.Config, ver config.Version, v
 		lvl = zap.DebugLevel
 	}
 	logger = logger.WithOptions(zap.IncreaseLevel(lvl))
-	otelLogger := otelzap.New(logger)
 
 	// Create a local runtime with an in-memory metastore
 	rtOpts := &runtime.Options{
@@ -99,7 +95,7 @@ func NewApp(ctx context.Context, appConfig *config.Config, ver config.Version, v
 		QueryCacheSize:       10000,
 		AllowHostCredentials: true,
 	}
-	rt, err := runtime.New(rtOpts, otelLogger)
+	rt, err := runtime.New(rtOpts, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -144,12 +140,11 @@ func NewApp(ctx context.Context, appConfig *config.Config, ver config.Version, v
 		Context:     ctx,
 		Runtime:     rt,
 		Instance:    inst,
-		Logger:      otelLogger.Sugar(),
-		BaseLogger:  otelLogger,
+		Logger:      logger.Sugar(),
+		BaseLogger:  logger,
 		Version:     ver,
 		Verbose:     verbose,
 		ProjectPath: projectPath,
-		Config:      appConfig,
 	}
 	return app, nil
 }
@@ -334,10 +329,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		return runtimeServer.ServeHTTP(ctx, func(mux *http.ServeMux) {
 			// Inject local-only endpoints on the server for the local UI and local backend endpoints
 			if enableUI {
-				mux.Handle("/", runtimeserver.OtelHandler(web.StaticHandler()))
-			}
-			if a.Config.OtelPullBased {
-				mux.Handle("/metrics", promhttp.Handler())
+				mux.Handle("/", web.StaticHandler())
 			}
 			mux.Handle("/local/config", a.infoHandler(inf))
 			mux.Handle("/local/track", a.trackingHandler(inf))

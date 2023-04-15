@@ -3,9 +3,7 @@ package sqlite
 import (
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
-
-	// Load sqlite driver
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	"go.uber.org/zap"
 
 	_ "modernc.org/sqlite"
 )
@@ -16,7 +14,7 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(dsn string, logger *otelzap.Logger) (drivers.Connection, error) {
+func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
 	db, err := sqlx.Connect("sqlite", dsn)
 	if err != nil {
 		return nil, err

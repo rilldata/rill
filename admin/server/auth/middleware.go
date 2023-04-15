@@ -10,6 +10,8 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -138,5 +140,12 @@ func (a *Authenticator) parseClaimsFromToken(ctx context.Context, token string) 
 	// Set claims
 	claims := &authTokenClaims{token: validated}
 	ctx = context.WithValue(ctx, claimsContextKey{}, claims)
+
+	// Set user ID in span
+	if claims.OwnerType() == OwnerTypeUser {
+		span := trace.SpanFromContext(ctx)
+		span.SetAttributes(semconv.EnduserID(claims.OwnerID()))
+	}
+
 	return ctx, nil
 }

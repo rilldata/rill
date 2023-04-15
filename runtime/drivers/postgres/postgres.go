@@ -3,7 +3,7 @@ package postgres
 import (
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	"go.uber.org/zap"
 
 	// Load postgres driver
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -15,7 +15,7 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(dsn string, logger *otelzap.Logger) (drivers.Connection, error) {
+func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
 	db, err := sqlx.Connect("pgx", dsn)
 	if err != nil {
 		return nil, err

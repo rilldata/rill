@@ -2,27 +2,22 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/gorilla/sessions"
-	grpczaplog "github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
-	"github.com/rilldata/rill/runtime/server/metrics"
 	"github.com/rs/cors"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -46,7 +41,7 @@ type Options struct {
 
 type Server struct {
 	adminv1.UnsafeAdminServiceServer
-	logger        *otelzap.Logger
+	logger        *zap.Logger
 	admin         *admin.Service
 	opts          *Options
 	cookies       *sessions.CookieStore
@@ -56,7 +51,7 @@ type Server struct {
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
-func New(opts *Options, logger *otelzap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer) (*Server, error) {
+func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)
@@ -94,32 +89,25 @@ func New(opts *Options, logger *otelzap.Logger, adm *admin.Service, issuer *runt
 
 // ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
-	si, ui, err := metrics.InitCustomMetricsInterceptors(ctx)
-	if err != nil {
-		return err
-	}
-
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
-			si,
-			otelgrpc.StreamServerInterceptor(),
-			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger.Logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
-			recovery.StreamServerInterceptor(),
+			observability.TracingStreamServerInterceptor(),
+			observability.LoggingStreamServerInterceptor(s.logger),
+			observability.RecoveryStreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			s.authenticator.StreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
-			ui,
-			otelgrpc.UnaryServerInterceptor(),
-			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger.Logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
-			recovery.UnaryServerInterceptor(),
+			observability.TracingUnaryServerInterceptor(),
+			observability.LoggingUnaryServerInterceptor(s.logger),
+			observability.RecoveryUnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			s.authenticator.UnaryServerInterceptor(),
 		),
 	)
 
 	adminv1.RegisterAdminServiceServer(server, s)
-	s.logger.Ctx(ctx).Sugar().Infof("serving admin gRPC on port:%v", s.opts.GRPCPort)
+	s.logger.With(observability.ZapCtx(ctx)).Sugar().Infof("serving admin gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
@@ -131,35 +119,8 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 	}
 
 	server := &http.Server{Handler: handler}
-	s.logger.Ctx(ctx).Sugar().Infof("serving admin HTTP on port:%v", s.opts.HTTPPort)
+	s.logger.With(observability.ZapCtx(ctx)).Sugar().Infof("serving admin HTTP on port:%v", s.opts.HTTPPort)
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
-}
-
-// ErrorToCode maps an error to a gRPC code for logging. It wraps the default behavior and adds handling of context errors.
-func ErrorToCode(err error) codes.Code {
-	if errors.Is(err, context.DeadlineExceeded) {
-		return codes.DeadlineExceeded
-	}
-	if errors.Is(err, context.Canceled) {
-		return codes.Canceled
-	}
-	return logging.DefaultErrorToCode(err)
-}
-
-// GRPCCodeToLevel overrides the log level of various gRPC codes.
-// We're currently not doing very granular error handling, so we get quite a lot of codes.Unknown errors, which we do not want to emit as error logs.
-func GRPCCodeToLevel(code codes.Code) logging.Level {
-	switch code {
-	case codes.OK, codes.NotFound, codes.Canceled, codes.AlreadyExists, codes.InvalidArgument, codes.Unauthenticated,
-		codes.Unknown, codes.PermissionDenied, codes.ResourceExhausted, codes.FailedPrecondition, codes.OutOfRange:
-		return logging.INFO
-	case codes.Unimplemented, codes.DeadlineExceeded, codes.Aborted, codes.Unavailable:
-		return logging.WARNING
-	case codes.Internal, codes.DataLoss:
-		return logging.ERROR
-	default:
-		return logging.ERROR
-	}
 }
 
 // HTTPHandler HTTP handler serving REST gateway.

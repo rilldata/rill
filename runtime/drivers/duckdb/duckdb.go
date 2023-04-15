@@ -6,16 +6,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
-	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument"
+	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -25,7 +22,7 @@ func init() {
 
 type Driver struct{}
 
-func (d Driver) Open(dsn string, logger *otelzap.Logger) (drivers.Connection, error) {
+func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
 	cfg, err := newConfig(dsn)
 	if err != nil {
 		return nil, err
@@ -84,21 +81,15 @@ func (d Driver) Open(dsn string, logger *otelzap.Logger) (drivers.Connection, er
 		olapSemSize = 1
 	}
 
-	m := global.Meter("queue")
-	qlc, err := m.Int64Counter("latency")
-	if err != nil {
-		return nil, err
-	}
-
 	c := &connection{
-		db:                  db,
-		metaSem:             semaphore.NewWeighted(1),
-		olapSem:             priorityqueue.NewSemaphore(olapSemSize),
-		logger:              logger,
-		config:              cfg,
-		queueLatencyCounter: qlc,
+		db:      db,
+		metaSem: semaphore.NewWeighted(1),
+		olapSem: priorityqueue.NewSemaphore(olapSemSize),
+		logger:  logger,
+		config:  cfg,
 	}
 
+	// Return nice error for old macOS versions
 	conn, err := c.db.Connx(context.Background())
 	if err != nil && strings.Contains(err.Error(), "Symbol not found") {
 		fmt.Printf("This MacOS version is not supported. Please upgrade.")
@@ -114,13 +105,12 @@ func (d Driver) Open(dsn string, logger *otelzap.Logger) (drivers.Connection, er
 
 type connection struct {
 	db     *sqlx.DB
-	logger *otelzap.Logger
+	logger *zap.Logger
 	// metaSem gates meta queries (like catalog and information schema)
 	metaSem *semaphore.Weighted
 	// olapSem gates OLAP queries
-	olapSem             *priorityqueue.Semaphore
-	config              *config
-	queueLatencyCounter instrument.Int64Counter
+	olapSem *priorityqueue.Semaphore
+	config  *config
 }
 
 // Close implements drivers.Connection.
@@ -157,14 +147,11 @@ func (c *connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() er
 		return conn, func() error { return nil }, nil
 	}
 
-	start := time.Now()
 	// Acquire semaphore
 	err := c.metaSem.Acquire(ctx, 1)
 	if err != nil {
 		return nil, nil, err
 	}
-	td := time.Since(start)
-	c.queueLatencyCounter.Add(ctx, td.Milliseconds())
 
 	// Get new conn
 	conn, err = c.db.Connx(ctx)
@@ -213,4 +200,10 @@ func (c *connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.C
 	}
 
 	return conn, release, nil
+}
+
+func panicIf(err error) {
+	if err != nil {
+		panic(err)
+	}
 }

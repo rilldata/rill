@@ -12,6 +12,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
 
@@ -143,7 +144,7 @@ func (s *Service) processGithubInstallationEvent(ctx context.Context, event *git
 	case "deleted":
 		err := s.DB.DeleteUserGithubInstallations(ctx, installationID)
 		if err != nil {
-			s.logger.Ctx(ctx).Error("failed to delete github installations", zap.Int64("installation_id", installationID), zap.Error(err))
+			s.logger.Error("failed to delete github installations", zap.Int64("installation_id", installationID), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	}
 

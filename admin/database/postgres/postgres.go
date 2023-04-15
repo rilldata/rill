@@ -8,8 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/admin/database"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 
 	// Load postgres driver
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -22,12 +24,18 @@ func init() {
 type driver struct{}
 
 func (d driver) Open(dsn string) (database.DB, error) {
-	db, err := sqlx.Connect("pgx", dsn)
+	db, err := otelsql.Open("pgx", dsn)
 	if err != nil {
 		return nil, err
 	}
 
-	return &connection{db: db}, nil
+	err = otelsql.RegisterDBStatsMetrics(db, otelsql.WithAttributes(semconv.DBSystemPostgreSQL))
+	if err != nil {
+		return nil, err
+	}
+
+	dbx := sqlx.NewDb(db, "pgx")
+	return &connection{db: dbx}, nil
 }
 
 type connection struct {

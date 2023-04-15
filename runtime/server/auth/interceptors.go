@@ -9,6 +9,8 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -102,6 +104,13 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 	claims, err := aud.ParseAndValidate(bearerToken)
 	if err != nil {
 		return nil, err
+	}
+
+	// Set subject in span
+	subject := claims.Subject()
+	if subject != "" {
+		span := trace.SpanFromContext(ctx)
+		span.SetAttributes(semconv.EnduserID(subject))
 	}
 
 	ctx = context.WithValue(ctx, claimsContextKey{}, claims)

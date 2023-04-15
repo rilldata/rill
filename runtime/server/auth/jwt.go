@@ -14,7 +14,6 @@ import (
 
 	"github.com/MicahParks/keyfunc"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 	"gopkg.in/square/go-jose.v2"
 )
@@ -161,7 +160,7 @@ type Audience struct {
 // The issuerURL should be the external URL of the issuing admin server.
 // The issuerURL is expected to serve a JWKS on /.well-known/jwks.json.
 // The audienceURL should be the external URL of the receiving runtime server.
-func OpenAudience(logger *otelzap.Logger, issuerURL, audienceURL string) (*Audience, error) {
+func OpenAudience(logger *zap.Logger, issuerURL, audienceURL string) (*Audience, error) {
 	// To be safe, require issuer and audience is provided
 	if issuerURL == "" {
 		return nil, fmt.Errorf("issuerURL is not set")

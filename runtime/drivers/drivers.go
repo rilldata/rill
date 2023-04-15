@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
+	"go.uber.org/zap"
 )
 
 // ErrNotFound indicates the resource wasn't found.
@@ -23,7 +23,7 @@ func Register(name string, driver Driver) {
 }
 
 // Open opens a new connection
-func Open(driver, dsn string, logger *otelzap.Logger) (Connection, error) {
+func Open(driver, dsn string, logger *zap.Logger) (Connection, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown driver: %s", driver)
@@ -39,7 +39,7 @@ func Open(driver, dsn string, logger *otelzap.Logger) (Connection, error) {
 
 // Driver represents an underlying DB.
 type Driver interface {
-	Open(dsn string, logger *otelzap.Logger) (Connection, error)
+	Open(dsn string, logger *zap.Logger) (Connection, error)
 }
 
 // Connection represents a connection to an underlying DB.

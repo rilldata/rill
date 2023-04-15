@@ -3,22 +3,22 @@ package runtime
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
-	// Load infra drivers and connectors for runtime
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 
+	// Load infra drivers and connectors for runtime
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	_ "github.com/rilldata/rill/runtime/connectors/https"
 	_ "github.com/rilldata/rill/runtime/connectors/s3"
@@ -28,26 +28,27 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/github"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 )
 
 // Config describes runtime server config derived from environment variables.
 // Env var keys must be prefixed with RILL_RUNTIME_ and are converted from snake_case to CamelCase.
 // For example RILL_RUNTIME_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	HTTPPort             int           `default:"8080" split_words:"true"`
-	GRPCPort             int           `default:"9090" split_words:"true"`
-	LogLevel             zapcore.Level `default:"info" split_words:"true"`
-	MetastoreDriver      string        `default:"sqlite"`
-	MetastoreURL         string        `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
-	AllowedOrigins       []string      `default:"*" split_words:"true"`
-	AuthEnable           bool          `default:"false" split_words:"true"`
-	AuthIssuerURL        string        `default:"" split_words:"true"`
-	AuthAudienceURL      string        `default:"" split_words:"true"`
-	SafeSourceRefresh    bool          `default:"false" split_words:"true"`
-	ConnectionCacheSize  int           `default:"100" split_words:"true"`
-	QueryCacheSize       int           `default:"10000" split_words:"true"`
-	AllowHostCredentials bool          `default:"false" split_words:"true"`
+	HTTPPort             int                    `default:"8080" split_words:"true"`
+	GRPCPort             int                    `default:"9090" split_words:"true"`
+	LogLevel             zapcore.Level          `default:"info" split_words:"true"`
+	MetricsExporter      observability.Exporter `default:"prometheus" split_words:"true"`
+	TracesExporter       observability.Exporter `default:"" split_words:"true"`
+	MetastoreDriver      string                 `default:"sqlite"`
+	MetastoreURL         string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
+	AllowedOrigins       []string               `default:"*" split_words:"true"`
+	AuthEnable           bool                   `default:"false" split_words:"true"`
+	AuthIssuerURL        string                 `default:"" split_words:"true"`
+	AuthAudienceURL      string                 `default:"" split_words:"true"`
+	SafeSourceRefresh    bool                   `default:"false" split_words:"true"`
+	ConnectionCacheSize  int                    `default:"100" split_words:"true"`
+	QueryCacheSize       int                    `default:"10000" split_words:"true"`
+	AllowHostCredentials bool                   `default:"false" split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -67,30 +68,31 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				os.Exit(1)
 			}
 
-			// Open-Telemetry
-			mp, tp, err := server.InitOpenTelemetry(cliCfg.OtelExporterEndpoint, cliCfg.OtelPullBased)
-			if err != nil {
-				fmt.Printf("failed to load Open Telemetry: %s", err.Error())
-				os.Exit(1)
-			}
-
-			if mp != nil {
-				defer mp.Shutdown(context.Background())
-			}
-
-			if tp != nil {
-				defer tp.Shutdown(context.Background())
-			}
-
 			// Init logger
 			cfg := zap.NewProductionConfig()
 			cfg.Level.SetLevel(conf.LogLevel)
-			logger0, err := cfg.Build()
-			logger := otelzap.New(logger0)
+			logger, err := cfg.Build()
 			if err != nil {
 				fmt.Printf("error: failed to create logger: %s", err.Error())
 				os.Exit(1)
 			}
+
+			// Init telemetry
+			shutdown, err := observability.Start(&observability.Options{
+				MetricsExporter: conf.MetricsExporter,
+				TracesExporter:  conf.TracesExporter,
+				ServiceName:     "runtime-server",
+				ServiceVersion:  cliCfg.Version.String(),
+			})
+			if err != nil {
+				logger.Fatal("error starting telemetry", zap.Error(err))
+			}
+			defer func() {
+				err := shutdown(context.Background())
+				if err != nil {
+					logger.Error("telemetry shutdown failed", zap.Error(err))
+				}
+			}()
 
 			// Init runtime
 			opts := &runtime.Options{
@@ -125,13 +127,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 			group, cctx := errgroup.WithContext(ctx)
 			group.Go(func() error { return s.ServeGRPC(cctx) })
-			group.Go(func() error {
-				return s.ServeHTTP(cctx, func(mux *http.ServeMux) {
-					if cliCfg.OtelPullBased {
-						mux.Handle("/metrics", promhttp.Handler())
-					}
-				})
-			})
+			group.Go(func() error { return s.ServeHTTP(cctx, nil) })
 			err = group.Wait()
 			if err != nil {
 				logger.Fatal("server crashed", zap.Error(err))

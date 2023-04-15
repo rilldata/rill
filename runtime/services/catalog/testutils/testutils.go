@@ -15,7 +15,6 @@ import (
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	"github.com/stretchr/testify/require"
-	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -181,7 +180,7 @@ func CopyFileToData(t *testing.T, dir, source, name string) {
 func GetService(t *testing.T) (*catalog.Service, string) {
 	dir := t.TempDir()
 
-	duckdbStore, err := drivers.Open("duckdb", filepath.Join(dir, "stage.db"), otelzap.New(zap.NewNop()))
+	duckdbStore, err := drivers.Open("duckdb", filepath.Join(dir, "stage.db"), zap.NewNop())
 	require.NoError(t, err)
 	err = duckdbStore.Migrate(context.Background())
 	require.NoError(t, err)
@@ -190,7 +189,7 @@ func GetService(t *testing.T) (*catalog.Service, string) {
 	catalogObject, ok := duckdbStore.CatalogStore()
 	require.True(t, ok)
 
-	fileStore, err := drivers.Open("file", dir, otelzap.New(zap.NewNop()))
+	fileStore, err := drivers.Open("file", dir, zap.NewNop())
 	require.NoError(t, err)
 	repo, ok := fileStore.RepoStore()
 	require.True(t, ok)
@@ -199,7 +198,7 @@ func GetService(t *testing.T) (*catalog.Service, string) {
 }
 
 func registryStore(t *testing.T) drivers.RegistryStore {
-	store, err := drivers.Open("sqlite", ":memory:", otelzap.New(zap.NewNop()))
+	store, err := drivers.Open("sqlite", ":memory:", zap.NewNop())
 	require.NoError(t, err)
 	err = store.Migrate(context.Background())
 	require.NoError(t, err)

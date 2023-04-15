@@ -67,6 +67,8 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		return nil, fmt.Errorf("failed to fetch url %s:  %w", conf.Path, err)
 	}
 
+	start := time.Now()
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch url %s:  %w", conf.Path, err)
@@ -76,19 +78,19 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		return nil, fmt.Errorf("failed to fetch url %s: %s", conf.Path, resp.Status)
 	}
 
-	dm, err := connectors.InitDownloadMeasures()
-	if err != nil {
-		return nil, err
-	}
-
-	start := time.Now()
 	file, size, err := fileutil.CopyToTempFile(resp.Body, source.Name, extension)
 	if err != nil {
 		return nil, err
 	}
 
-	duration := time.Since(start)
-	dm.Collect(ctx, size, duration, extension, "http", false)
+	// Collect metrics of download size and time
+	connectors.RecordDownloadMetrics(ctx, &connectors.DownloadMetrics{
+		Connector: "https",
+		Ext:       extension,
+		Duration:  time.Since(start),
+		Size:      size,
+	})
+
 	return &iterator{ctx: ctx, files: []string{file}}, nil
 }
 
