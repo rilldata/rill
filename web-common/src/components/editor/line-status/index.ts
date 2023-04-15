@@ -11,7 +11,7 @@ export const updateLineStatus = StateEffect.define<{
   map: (value, mapping) => {
     return {
       lineState: value.lineState
-        .filter((line) => line.line !== null)
+        .filter((line) => line.line !== null && line.line !== 0)
         .map((line) => ({
           line: mapping.mapPos(line.line),
           message: line.message,

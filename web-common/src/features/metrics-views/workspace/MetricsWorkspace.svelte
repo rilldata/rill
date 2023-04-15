@@ -186,15 +186,15 @@
   <MetricsWorkspaceHeader slot="header" {metricsDefName} {yaml} />
   <div slot="body" use:listenToNodeResize>
     <div
-      class="editor-pane bg-gray-100 p-6 flex flex-col"
+      class="editor-pane bg-gray-100 p-6 grid  content-stretch"
       style:height="calc(100vh - var(--header-height))"
     >
-      <div class="overflow-y-auto bg-white p-2 rounded">
+      <div class="overflow-y-auto bg-white rounded">
         <YAMLEditor
           content={yaml}
           on:update={updateYAML}
           plugins={[placeholder, lineStatusExtensions]}
-          updaters={[updateLineStatus]}
+          stateFieldUpdaters={[updateLineStatus]}
         />
       </div>
       {#each [...mappedErrors, ...mappedSyntaxErrors] as error}

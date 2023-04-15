@@ -12,7 +12,7 @@ function bgDeco(view) {
   const builder = new RangeSetBuilder<Decoration>();
 
   for (const { line, level } of lineStatuses) {
-    if (line !== null && view.state.doc.length) {
+    if (line !== null && line !== 0 && view.state.doc.length) {
       const startPos = view.state.doc.line(line).from;
       const { to, from } = view.state.doc.lineAt(startPos);
 

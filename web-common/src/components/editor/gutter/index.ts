@@ -31,10 +31,11 @@ export const createStatusLineGutter = () =>
   gutter({
     lineMarker(view, line) {
       const hasContents = view.state.doc.toString() !== "";
+
       const lineStates = view.state
         .field(lineStatusStateField)
         .filter((line) => {
-          return line.line !== null;
+          return line.line !== null && line.line !== 0;
         })
         .map((line) => {
           return {
@@ -54,7 +55,7 @@ export const createStatusLineGutter = () =>
       const thisLine = view.state.doc.lineAt(line.from).number;
 
       return new StatusGutterMarker(
-        thisLine, // line number
+        thisLine,
         matchFromAndTo?.level,
         matchFromAndTo?.message,
         currentLine === thisLine

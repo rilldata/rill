@@ -10,7 +10,7 @@
   export let active = false;
 </script>
 
-<Tooltip distance={8}>
+<Tooltip distance={8} suppress={message === undefined}>
   <div
     class="grid justify-between pr-2"
     style:grid-template-columns="[icon] 24px [line-number] auto"

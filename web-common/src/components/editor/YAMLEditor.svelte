@@ -32,6 +32,7 @@
     keymap,
     rectangularSelection,
   } from "@codemirror/view";
+  import { editorTheme } from "./theme";
 
   import { createEventDispatcher, onMount } from "svelte";
 
@@ -39,7 +40,12 @@
 
   export let content;
   export let plugins = [];
-  export let updaters = [];
+  /**
+   * @param {string} content
+   * @param {string} key
+   * @param {string} value
+   */
+  export let stateFieldUpdaters = [];
 
   let latestContent = content;
 
@@ -129,6 +135,7 @@
           rectangularSelection(),
           highlightActiveLine(),
           highlightSelectionMatches(),
+          editorTheme(),
           keymap.of([
             ...closeBracketsKeymap,
             ...defaultKeymap,
@@ -161,7 +168,7 @@
             }
             if (v.docChanged) {
               dispatch("update", { content: v.state.doc.toString() });
-              updaters.forEach((updater) => {
+              stateFieldUpdaters.forEach((updater) => {
                 updater(view);
               });
             }
@@ -172,8 +179,9 @@
     });
   });
 
+  /** Run all the state field updaters once view is ready */
   $: if (view) {
-    updaters.forEach((updater) => {
+    stateFieldUpdaters.forEach((updater) => {
       updater(view);
     });
   }
@@ -192,4 +200,4 @@
   }
 </script>
 
-<div bind:this={container} />
+<div class="contents" bind:this={container} />

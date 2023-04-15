@@ -61,7 +61,6 @@
 <WorkspaceHeader
   {...{ titleInput, onChangeCallback }}
   appRunning={$appQueryStatusStore}
-  showInspectorToggle={false}
 >
   <MetricsIcon slot="icon" />
   <MetricsExploreMetricsButton {metricsDefName} {yaml} slot="cta" />
