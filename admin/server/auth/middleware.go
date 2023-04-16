@@ -9,7 +9,6 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
-	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
@@ -70,8 +69,8 @@ func (a *Authenticator) StreamServerInterceptor() grpc.StreamServerInterceptor {
 // HTTPMiddleware is a HTTP middleware variant of UnaryServerInterceptor.
 // It additionally supports reading access tokens from cookies.
 // It should be used for non-gRPC HTTP endpoints (CookieAuthAnnotator takes care of handling cookies in gRPC-gateway requests).
-func (a *Authenticator) HTTPMiddleware(next gateway.HandlerFunc) gateway.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (a *Authenticator) HTTPMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Handle authorization header
 		authHeader := r.Header.Get("Authorization")
 		if authHeader != "" {
@@ -81,7 +80,7 @@ func (a *Authenticator) HTTPMiddleware(next gateway.HandlerFunc) gateway.Handler
 				return
 			}
 
-			next(w, r.WithContext(newCtx), pathParams)
+			next.ServeHTTP(w, r.WithContext(newCtx))
 			return
 		}
 
@@ -101,14 +100,14 @@ func (a *Authenticator) HTTPMiddleware(next gateway.HandlerFunc) gateway.Handler
 				return
 			}
 
-			next(w, r.WithContext(newCtx), pathParams)
+			next.ServeHTTP(w, r.WithContext(newCtx))
 			return
 		}
 
 		// No token was found. Set anonClaims.
 		newCtx := context.WithValue(r.Context(), claimsContextKey{}, anonClaims{})
-		next(w, r.WithContext(newCtx), pathParams)
-	}
+		next.ServeHTTP(w, r.WithContext(newCtx))
+	})
 }
 
 func (a *Authenticator) parseClaimsFromBearer(ctx context.Context, authorizationHeader string) (context.Context, error) {

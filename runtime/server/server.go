@@ -8,6 +8,7 @@ import (
 
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -28,6 +29,7 @@ type Options struct {
 	HTTPPort        int
 	GRPCPort        int
 	AllowedOrigins  []string
+	ServePrometheus bool
 	AuthEnable      bool
 	AuthIssuerURL   string
 	AuthAudienceURL string
@@ -76,20 +78,29 @@ func (s *Server) Close() error {
 	return nil
 }
 
+// Ping implements RuntimeService
+func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtimev1.PingResponse, error) {
+	resp := &runtimev1.PingResponse{
+		Version: "", // TODO: Return version
+		Time:    timestamppb.New(time.Now()),
+	}
+	return resp, nil
+}
+
 // ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			observability.TracingStreamServerInterceptor(),
 			observability.LoggingStreamServerInterceptor(s.logger),
-			observability.RecoveryStreamServerInterceptor(),
+			observability.RecovererStreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
 		),
 		grpc.ChainUnaryInterceptor(
 			observability.TracingUnaryServerInterceptor(),
 			observability.LoggingUnaryServerInterceptor(s.logger),
-			observability.RecoveryUnaryServerInterceptor(),
+			observability.RecovererUnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
 		),
@@ -97,7 +108,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 
 	runtimev1.RegisterRuntimeServiceServer(server, s)
 	runtimev1.RegisterQueryServiceServer(server, s)
-	s.logger.With(observability.ZapCtx(ctx)).Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
+	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
@@ -109,33 +120,35 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 	}
 
 	server := &http.Server{Handler: handler}
-	s.logger.With(observability.ZapCtx(ctx)).Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
+	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 
 // HTTPHandler HTTP handler serving REST gateway.
 func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux)) (http.Handler, error) {
 	// Create REST gateway
-	mux := gateway.NewServeMux(gateway.WithErrorHandler(HTTPErrorHandler))
+	gwMux := gateway.NewServeMux(gateway.WithErrorHandler(HTTPErrorHandler))
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
-	err := runtimev1.RegisterRuntimeServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
+	err := runtimev1.RegisterRuntimeServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
 	if err != nil {
 		return nil, err
 	}
-	err = runtimev1.RegisterQueryServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
+	err = runtimev1.RegisterQueryServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// One-off REST-only path for multipart file upload
-	err = mux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", auth.HTTPMiddleware(s.aud, s.UploadMultipartFile))
+	// NOTE: It's local only and we should deprecate it in favor of a cloud-friendly alternative.
+	err = gwMux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", auth.GatewayMiddleware(s.aud, s.UploadMultipartFile))
 	if err != nil {
 		panic(err)
 	}
 
 	// One-off REST-only path for file export
-	err = mux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", auth.HTTPMiddleware(s.aud, s.ExportTable))
+	// NOTE: It's local only and we should deprecate it in favor of a cloud-friendly alternative.
+	err = gwMux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", auth.GatewayMiddleware(s.aud, s.ExportTable))
 	if err != nil {
 		panic(err)
 	}
@@ -147,8 +160,13 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 		registerAdditionalHandlers(httpMux)
 	}
 
-	// Add gRPC-gateway mux on /v1
-	httpMux.Handle("/v1/", mux)
+	// Add httpMux on gRPC-gateway
+	httpMux.Handle("/v1/", gwMux)
+
+	// Add Prometheus
+	if s.opts.ServePrometheus {
+		httpMux.Handle("/metrics", promhttp.Handler())
+	}
 
 	// Build CORS options for runtime server
 
@@ -196,13 +214,4 @@ func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gate
 		err = &gateway.HTTPStatusError{HTTPStatus: http.StatusBadRequest, Err: err}
 	}
 	gateway.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
-}
-
-// Ping implements RuntimeService
-func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtimev1.PingResponse, error) {
-	resp := &runtimev1.PingResponse{
-		Version: "", // TODO: Return version
-		Time:    timestamppb.New(time.Now()),
-	}
-	return resp, nil
 }

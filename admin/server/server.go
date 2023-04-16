@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/sessions"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -32,6 +33,7 @@ type Options struct {
 	FrontendURL            string
 	SessionKeyPairs        [][]byte
 	AllowedOrigins         []string
+	ServePrometheus        bool
 	AuthDomain             string
 	AuthClientID           string
 	AuthClientSecret       string
@@ -93,14 +95,14 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		grpc.ChainStreamInterceptor(
 			observability.TracingStreamServerInterceptor(),
 			observability.LoggingStreamServerInterceptor(s.logger),
-			observability.RecoveryStreamServerInterceptor(),
+			observability.RecovererStreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			s.authenticator.StreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
 			observability.TracingUnaryServerInterceptor(),
 			observability.LoggingUnaryServerInterceptor(s.logger),
-			observability.RecoveryUnaryServerInterceptor(),
+			observability.RecovererUnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			s.authenticator.UnaryServerInterceptor(),
 		),
@@ -126,36 +128,34 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 // HTTPHandler HTTP handler serving REST gateway.
 func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Create REST gateway
-	mux := gateway.NewServeMux(
+	gwMux := gateway.NewServeMux(
 		gateway.WithErrorHandler(HTTPErrorHandler),
 		gateway.WithMetadata(s.authenticator.Annotator),
 	)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
-	err := adminv1.RegisterAdminServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
+	err := adminv1.RegisterAdminServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	// Add auth endpoints (not gRPC handlers, just regular endpoints on /auth/*)
-	err = s.authenticator.RegisterEndpoints(mux, s.logger)
-	if err != nil {
-		return nil, err
-	}
+	// Create regular http mux and mount gwMux on it
+	mux := http.NewServeMux()
+	mux.Handle("/v1/", gwMux)
 
-	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
-	err = s.registerGithubEndpoints(mux)
-	if err != nil {
-		return nil, err
+	// Add Prometheus
+	if s.opts.ServePrometheus {
+		mux.Handle("/metrics", promhttp.Handler())
 	}
 
 	// Server public JWKS for runtime JWT verification
-	err = mux.HandlePath("GET", "/.well-known/jwks.json", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
-		s.issuer.WellKnownHandleFunc(w, r)
-	})
-	if err != nil {
-		return nil, err
-	}
+	mux.Handle("/.well-known/jwks.json", s.issuer.WellKnownHandler())
+
+	// Add auth endpoints (not gRPC handlers, just regular endpoints on /auth/*)
+	s.authenticator.RegisterEndpoints(mux)
+
+	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
+	s.registerGithubEndpoints(mux)
 
 	// Build CORS options for admin server
 

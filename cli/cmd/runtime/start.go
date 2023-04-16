@@ -7,7 +7,6 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
-
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -114,6 +113,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				HTTPPort:        conf.HTTPPort,
 				GRPCPort:        conf.GRPCPort,
 				AllowedOrigins:  conf.AllowedOrigins,
+				ServePrometheus: conf.MetricsExporter == observability.PrometheusExporter,
 				AuthEnable:      conf.AuthEnable,
 				AuthIssuerURL:   conf.AuthIssuerURL,
 				AuthAudienceURL: conf.AuthAudienceURL,

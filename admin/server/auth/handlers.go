@@ -8,9 +8,9 @@ import (
 	"net/url"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
 )
 
@@ -24,49 +24,23 @@ const (
 // RegisterEndpoints adds HTTP endpoints for auth.
 // The mux must be served on the ExternalURL of the Authenticator since the logic in these handlers relies on knowing the full external URIs.
 // Note that these are not gRPC handlers, just regular HTTP endpoints that we mount on the gRPC-gateway mux.
-func (a *Authenticator) RegisterEndpoints(mux *gateway.ServeMux, logger *zap.Logger) error {
-	err := mux.HandlePath("GET", "/auth/login", observability.LoggingMiddleware(a.authLogin, logger))
-	if err != nil {
-		return err
-	}
-
-	err = mux.HandlePath("GET", "/auth/callback", observability.LoggingMiddleware(a.authLoginCallback, logger))
-	if err != nil {
-		return err
-	}
-
-	err = mux.HandlePath("GET", "/auth/logout", observability.LoggingMiddleware(a.authLogout, logger))
-	if err != nil {
-		return err
-	}
-
-	err = mux.HandlePath("GET", "/auth/logout/callback", observability.LoggingMiddleware(a.authLogoutCallback, logger))
-	if err != nil {
-		return err
-	}
-
-	err = mux.HandlePath("POST", "/auth/oauth/device_authorization", observability.LoggingMiddleware(a.handleDeviceCodeRequest, logger))
-	if err != nil {
-		return err
-	}
-
-	err = mux.HandlePath("POST", "/auth/oauth/device", observability.LoggingMiddleware(a.HTTPMiddleware(a.handleUserCodeConfirmation), logger))
-	if err != nil {
-		return err
-	}
-
-	err = mux.HandlePath("POST", "/auth/oauth/token", observability.LoggingMiddleware(a.getAccessToken, logger))
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux) {
+	// TODO: Add helper utils to clean this up
+	inner := http.NewServeMux()
+	inner.Handle("/login", otelhttp.WithRouteTag("/auth/login", http.HandlerFunc(a.authLogin)))
+	inner.Handle("/callback", otelhttp.WithRouteTag("/auth/callback", http.HandlerFunc(a.authLoginCallback)))
+	inner.Handle("/logout", otelhttp.WithRouteTag("/auth/logout", http.HandlerFunc(a.authLogout)))
+	inner.Handle("/logout/callback", otelhttp.WithRouteTag("/auth/logout/callback", http.HandlerFunc(a.authLogoutCallback)))
+	inner.Handle("/oauth/device_authorization", otelhttp.WithRouteTag("/auth/oauth/device_authorization", http.HandlerFunc(a.handleDeviceCodeRequest)))
+	inner.Handle("/oauth/device", otelhttp.WithRouteTag("/auth/oauth/device", a.HTTPMiddleware(http.HandlerFunc(a.handleUserCodeConfirmation)))) // NOTE: Uses auth middleware
+	inner.Handle("/oauth/token", otelhttp.WithRouteTag("/auth/oauth/token", http.HandlerFunc(a.getAccessToken)))
+	mux.Handle("/auth", observability.Middleware("admin", a.logger, inner))
 }
 
 // authLogin starts an OAuth and OIDC flow that redirects the user for authentication with the auth provider.
 // After auth, the user is redirected back to authLoginCallback, which in turn will redirect the user to "/".
 // You can override the redirect destination by passing a `?redirect=URI` query to this endpoint.
-func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request) {
 	// Generate random state for CSRF
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
@@ -106,7 +80,7 @@ func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request, pathPa
 // It validates the OAuth info, fetches user profile info, and creates/updates the user in our DB.
 // It then issues a new user auth token and saves it in a cookie.
 // Finally, it redirects the user to the location specified in the initial call to authLogin.
-func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request) {
 	// Get auth cookie
 	sess, err := a.cookies.Get(r, cookieName)
 	if err != nil {
@@ -213,7 +187,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 
 // authLogout implements user logout. It revokes the current user auth token, then redirects to the auth provider's logout flow.
 // Once the logout has completed, the auth provider will redirect the user to authLogoutCallback.
-func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request) {
 	// Get auth cookie
 	sess, err := a.cookies.Get(r, cookieName)
 	if err != nil {
@@ -268,7 +242,7 @@ func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request, pathP
 }
 
 // authLogoutCallback is called when a logout flow iniated by authLogout has completed.
-func (a *Authenticator) authLogoutCallback(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (a *Authenticator) authLogoutCallback(w http.ResponseWriter, r *http.Request) {
 	// Get auth cookie
 	sess, err := a.cookies.Get(r, cookieName)
 	if err != nil {

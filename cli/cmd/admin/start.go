@@ -131,6 +131,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				FrontendURL:            conf.FrontendURL,
 				SessionKeyPairs:        keyPairs,
 				AllowedOrigins:         conf.AllowedOrigins,
+				ServePrometheus:        conf.MetricsExporter == observability.PrometheusExporter,
 				AuthDomain:             conf.AuthDomain,
 				AuthClientID:           conf.AuthClientID,
 				AuthClientSecret:       conf.AuthClientSecret,

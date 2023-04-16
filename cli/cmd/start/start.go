@@ -1,14 +1,12 @@
 package start
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
-	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/spf13/cobra"
 )
 
@@ -43,23 +41,6 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 					projectPath = repoName
 				}
 			}
-
-			// Init telemetry
-			shutdown, err := observability.Start(&observability.Options{
-				MetricsExporter: observability.PrometheusExporter,
-				TracesExporter:  observability.NoopExporter,
-				ServiceName:     "rill-local",
-				ServiceVersion:  cfg.Version.String(),
-			})
-			if err != nil {
-				return err
-			}
-			defer func() {
-				err := shutdown(context.Background())
-				if err != nil {
-					fmt.Printf("telemetry shutdown failed: %s\n", err.Error())
-				}
-			}()
 
 			parsedLogFormat, ok := local.ParseLogFormat(logFormat)
 			if !ok {

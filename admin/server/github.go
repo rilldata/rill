@@ -8,9 +8,10 @@ import (
 	"strconv"
 
 	"github.com/google/go-github/v50/github"
-	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -56,30 +57,20 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 }
 
 // registerGithubEndpoints registers the non-gRPC endpoints for the Github integration.
-func (s *Server) registerGithubEndpoints(mux *gateway.ServeMux) error {
-	err := mux.HandlePath("POST", "/github/webhook", s.githubWebhook)
-	if err != nil {
-		return err
-	}
-
-	err = mux.HandlePath("GET", "/github/connect", s.authenticator.HTTPMiddleware(s.githubConnect))
-	if err != nil {
-		return err
-	}
-
-	err = mux.HandlePath("GET", "/github/connect/callback", s.authenticator.HTTPMiddleware(s.githubConnectCallback))
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (s *Server) registerGithubEndpoints(mux *http.ServeMux) {
+	// TODO: Add helper utils to clean this up
+	inner := http.NewServeMux()
+	inner.Handle("/webhook", otelhttp.WithRouteTag("/github/webhook", http.HandlerFunc(s.githubWebhook)))
+	inner.Handle("/connect", otelhttp.WithRouteTag("/github/connect", s.authenticator.HTTPMiddleware(http.HandlerFunc(s.githubConnect))))
+	inner.Handle("/connect/callback", otelhttp.WithRouteTag("/github/connect/callback", s.authenticator.HTTPMiddleware(http.HandlerFunc(s.githubConnectCallback))))
+	mux.Handle("/github", observability.Middleware("admin", s.logger, inner))
 }
 
 // githubConnect starts an installation flow of the Github App.
 // It's implemented as a non-gRPC endpoint mounted directly on /github/connect.
 // It redirects the user to Github to authorize Rill to access one or more repositories.
 // After the Github flow completes, the user is redirected back to githubConnectCallback.
-func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request) {
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(r.Context())
 	if claims.OwnerType() != auth.OwnerTypeUser {
@@ -97,7 +88,7 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request, pathParam
 
 // githubConnectCallback is called after a Github App authorization flow initiated by githubConnect has completed.
 // It's implemented as a non-gRPC endpoint mounted directly on /github/connect/callback.
-func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 	// TODO: Enable user authorization and verify user per https://roadie.io/blog/avoid-leaking-github-org-data/
 
 	// Extract info from query string
@@ -140,7 +131,12 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request, p
 // githubWebhook is called by Github to deliver events about new pushes, pull requests, changes to a repository, etc.
 // It's implemented as a non-gRPC endpoint mounted directly on /github/webhook.
 // Note that Github webhooks have a timeout of 10 seconds. Webhook processing is moved to the background to prevent timeouts.
-func (s *Server) githubWebhook(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (s *Server) githubWebhook(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "expected a POST request", http.StatusBadRequest)
+		return
+	}
+
 	payload, err := github.ValidatePayload(r, []byte(s.opts.GithubAppWebhookSecret))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("invalid github payload: %s", err), http.StatusUnauthorized)

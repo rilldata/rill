@@ -38,7 +38,12 @@ type TokenRequest struct {
 // to the client. The device code is used to poll for an access token, and the user code is displayed
 // to the user and is used to authorize the device. The device code and user code are stored in the
 // server's device code store.
-func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "expected a POST request", http.StatusBadRequest)
+		return
+	}
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to read request body: %w", err))
@@ -101,7 +106,11 @@ func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.R
 // handleUserCodeConfirmation handles the user code confirmation page. The user code is displayed
 // to the user and they are asked to confirm that they want to authorize the device. If the user
 // confirms, the device code is marked as approved in the server's device code store.
-func (a *Authenticator) handleUserCodeConfirmation(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (a *Authenticator) handleUserCodeConfirmation(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "expected a POST request", http.StatusBadRequest)
+		return
+	}
 	userCode := r.URL.Query().Get("user_code")
 	if userCode == "" {
 		http.Error(w, "user_code is required", http.StatusBadRequest)
@@ -156,7 +165,11 @@ func (a *Authenticator) handleUserCodeConfirmation(w http.ResponseWriter, r *htt
 }
 
 // getAccessToken verifies the device code and returns an access token if the request is approved
-func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "expected a POST request", http.StatusBadRequest)
+		return
+	}
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to read request body: %w", err))
