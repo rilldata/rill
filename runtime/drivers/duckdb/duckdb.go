@@ -201,9 +201,3 @@ func (c *connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.C
 
 	return conn, release, nil
 }
-
-func panicIf(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
