@@ -8,6 +8,7 @@ import (
 
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
 
@@ -100,7 +101,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 		// ignoring the dropDB error since if db is already dropped it may not be possible to retry
 		err = svc.Olap.DropDB()
 		if err != nil {
-			r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID))
+			r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
 	}
 

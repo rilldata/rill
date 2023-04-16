@@ -2,12 +2,12 @@ package duckdb
 
 import (
 	"context"
-	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -71,7 +71,7 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 	// When cfg.PoolSize is 1, we set olapSem to still allow 1 query at a time.
 	// This creates contention for the same connection in database/sql's pool, but its locks will handle that.
 
-	sqlDB := sql.OpenDB(connector)
+	sqlDB := otelsql.OpenDB(connector)
 	db := sqlx.NewDb(sqlDB, "duckdb")
 	db.SetMaxOpenConns(cfg.PoolSize)
 
@@ -89,6 +89,7 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 		config:  cfg,
 	}
 
+	// Return nice error for old macOS versions
 	conn, err := c.db.Connx(context.Background())
 	if err != nil && strings.Contains(err.Error(), "Symbol not found") {
 		fmt.Printf("This MacOS version is not supported. Please upgrade.")
