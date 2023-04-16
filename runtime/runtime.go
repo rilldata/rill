@@ -27,10 +27,6 @@ type Runtime struct {
 	queryCache         *queryCache
 }
 
-func (r *Runtime) Logger() *zap.Logger {
-	return r.logger
-}
-
 func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 	// Open metadata db connection
 	metastore, err := drivers.Open(opts.MetastoreDriver, opts.MetastoreDSN, logger)

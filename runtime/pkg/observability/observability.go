@@ -25,7 +25,6 @@ type Exporter string
 const (
 	NoopExporter       Exporter = ""
 	OtelExporter       Exporter = "otel"
-	StdoutExporter     Exporter = "stdout"
 	PrometheusExporter Exporter = "prometheus"
 )
 
@@ -73,10 +72,7 @@ func Start(opts *Options) (ShutdownFunc, error) {
 		if err != nil {
 			return nil, err
 		}
-		r := metric.NewPeriodicReader(
-			exp,
-			metric.WithInterval(15*time.Second),
-		)
+		r := metric.NewPeriodicReader(exp, metric.WithInterval(15*time.Second))
 		meterProvider = metric.NewMeterProvider(metric.WithResource(res), metric.WithReader(r))
 	case NoopExporter:
 		// Nothing to do

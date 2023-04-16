@@ -27,14 +27,14 @@ const (
 func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux) {
 	// TODO: Add helper utils to clean this up
 	inner := http.NewServeMux()
-	inner.Handle("/login", otelhttp.WithRouteTag("/auth/login", http.HandlerFunc(a.authLogin)))
-	inner.Handle("/callback", otelhttp.WithRouteTag("/auth/callback", http.HandlerFunc(a.authLoginCallback)))
-	inner.Handle("/logout", otelhttp.WithRouteTag("/auth/logout", http.HandlerFunc(a.authLogout)))
-	inner.Handle("/logout/callback", otelhttp.WithRouteTag("/auth/logout/callback", http.HandlerFunc(a.authLogoutCallback)))
-	inner.Handle("/oauth/device_authorization", otelhttp.WithRouteTag("/auth/oauth/device_authorization", http.HandlerFunc(a.handleDeviceCodeRequest)))
-	inner.Handle("/oauth/device", otelhttp.WithRouteTag("/auth/oauth/device", a.HTTPMiddleware(http.HandlerFunc(a.handleUserCodeConfirmation)))) // NOTE: Uses auth middleware
-	inner.Handle("/oauth/token", otelhttp.WithRouteTag("/auth/oauth/token", http.HandlerFunc(a.getAccessToken)))
-	mux.Handle("/auth", observability.Middleware("admin", a.logger, inner))
+	inner.Handle("/auth/login", otelhttp.WithRouteTag("/auth/login", http.HandlerFunc(a.authLogin)))
+	inner.Handle("/auth/callback", otelhttp.WithRouteTag("/auth/callback", http.HandlerFunc(a.authLoginCallback)))
+	inner.Handle("/auth/logout", otelhttp.WithRouteTag("/auth/logout", http.HandlerFunc(a.authLogout)))
+	inner.Handle("/auth/logout/callback", otelhttp.WithRouteTag("/auth/logout/callback", http.HandlerFunc(a.authLogoutCallback)))
+	inner.Handle("/auth/oauth/device_authorization", otelhttp.WithRouteTag("/auth/oauth/device_authorization", http.HandlerFunc(a.handleDeviceCodeRequest)))
+	inner.Handle("/auth/oauth/device", otelhttp.WithRouteTag("/auth/oauth/device", a.HTTPMiddleware(http.HandlerFunc(a.handleUserCodeConfirmation)))) // NOTE: Uses auth middleware
+	inner.Handle("/auth/oauth/token", otelhttp.WithRouteTag("/auth/oauth/token", http.HandlerFunc(a.getAccessToken)))
+	mux.Handle("/auth/", observability.Middleware("admin", a.logger, inner))
 }
 
 // authLogin starts an OAuth and OIDC flow that redirects the user for authentication with the auth provider.

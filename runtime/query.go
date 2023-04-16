@@ -11,8 +11,8 @@ import (
 
 var (
 	meter                   = global.Meter("runtime")
-	queryCacheHitsCounter   = observability.Must(meter.Int64Counter("query_cache_hits"))
-	queryCacheMissesCounter = observability.Must(meter.Int64Counter("query_cache_misses"))
+	queryCacheHitsCounter   = observability.Must(meter.Int64Counter("query_cache.hits"))
+	queryCacheMissesCounter = observability.Must(meter.Int64Counter("query_cache.misses"))
 )
 
 type Query interface {

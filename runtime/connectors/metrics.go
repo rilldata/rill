@@ -34,5 +34,9 @@ func RecordDownloadMetrics(ctx context.Context, m *DownloadMetrics) {
 
 	downloadTimeHistogram.Record(ctx, m.Duration.Seconds(), attrs...)
 	downloadSizeCounter.Add(ctx, m.Size, attrs...)
-	downloadSpeedCounter.Add(ctx, float64(m.Size)/m.Duration.Seconds(), attrs...)
+
+	secs := m.Duration.Seconds()
+	if secs != 0 {
+		downloadSpeedCounter.Add(ctx, float64(m.Size)/secs, attrs...)
+	}
 }

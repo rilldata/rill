@@ -121,7 +121,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	)
 
 	adminv1.RegisterAdminServiceServer(server, s)
-	s.logger.With(observability.ZapCtx(ctx)).Sugar().Infof("serving admin gRPC on port:%v", s.opts.GRPCPort)
+	s.logger.Sugar().Infof("serving admin gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
@@ -133,7 +133,7 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 	}
 
 	server := &http.Server{Handler: handler}
-	s.logger.With(observability.ZapCtx(ctx)).Sugar().Infof("serving admin HTTP on port:%v", s.opts.HTTPPort)
+	s.logger.Sugar().Infof("serving admin HTTP on port:%v", s.opts.HTTPPort)
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 

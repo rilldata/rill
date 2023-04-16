@@ -5,7 +5,9 @@ receivers:
 
 exporters:
   prometheus:
-    endpoint: :8889
+    endpoint: "0.0.0.0:8889"
+    
+  logging:
 
   zipkin:
     endpoint: "http://zipkin:9411/api/v2/spans"
