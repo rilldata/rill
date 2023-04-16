@@ -28,11 +28,11 @@ export async function uploadFile(
   // add table button
   await page.locator("button#add-table").click();
   // click local file tab
-  await page.locator(".portal [slot='title'] button:nth-child(4)").click();
+  await page.getByRole("tab", { name: "Local file" }).click();
   // wait for file chooser while clicking on upload button
   const [fileChooser] = await Promise.all([
     page.waitForEvent("filechooser"),
-    page.locator(".portal .flex-grow .grid button").click(),
+    page.getByText("Upload a CSV, JSON or Parquet file").click(),
   ]);
   // input the `file` after joining with `testDataPath`
   const fileUploadPromise = fileChooser.setFiles([
@@ -62,9 +62,7 @@ export async function uploadFile(
     // if not duplicate wait and make sure `Duplicate source name` modal is not open
     await asyncWait(100);
     await playwrightExpect(
-      page.locator(".portal h1", {
-        hasText: "Duplicate source name",
-      })
+      page.getByText("Duplicate source name")
     ).toBeHidden();
   }
 }
@@ -75,11 +73,9 @@ export async function createOrReplaceSource(
   name: string
 ) {
   try {
-    await page
-      .locator(getEntityLink(page, TestEntityType.Source, name))
-      .waitFor({
-        timeout: 100,
-      });
+    await getEntityLink(page, name).waitFor({
+      timeout: 100,
+    });
     await uploadFile(page, file, true, false);
   } catch (err) {
     await uploadFile(page, file);

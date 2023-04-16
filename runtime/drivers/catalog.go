@@ -32,16 +32,17 @@ type CatalogStore interface {
 
 // CatalogEntry represents one object in the catalog, such as a source.
 type CatalogEntry struct {
-	Name        string
-	Type        ObjectType
-	Object      proto.Message
-	Path        string
-	Embedded    bool
-	Parents     []string
-	Children    []string
-	CreatedOn   time.Time
-	UpdatedOn   time.Time
-	RefreshedOn time.Time
+	Name          string
+	Type          ObjectType
+	Object        proto.Message
+	Path          string
+	Embedded      bool
+	BytesIngested int64
+	Parents       []string
+	Children      []string
+	CreatedOn     time.Time
+	UpdatedOn     time.Time
+	RefreshedOn   time.Time
 }
 
 func (e *CatalogEntry) GetTable() *runtimev1.Table {

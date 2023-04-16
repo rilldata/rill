@@ -1,6 +1,6 @@
 <script lang="ts">
   import { invalidateRuntimeQueries } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "./runtime-store";
 
   export let host: string;
@@ -19,6 +19,6 @@
   $: host && invalidateRuntimeQueries(queryClient);
 </script>
 
-{#if $runtime.host && $runtime.instanceId}
+{#if $runtime.host !== undefined && $runtime.instanceId}
   <slot />
 {/if}

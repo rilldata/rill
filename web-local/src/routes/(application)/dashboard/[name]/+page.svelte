@@ -1,35 +1,34 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-  import { base64ToProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-  import { fromProto } from "@rilldata/web-common/features/dashboards/proto-state/fromProto.js";
+  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { StateSyncManager } from "@rilldata/web-common/features/dashboards/proto-state/StateSyncManager";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
   import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceGetFile,
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { error, redirect } from "@sveltejs/kit";
-  import { onMount, tick } from "svelte";
+  import { error } from "@sveltejs/kit";
   import { featureFlags } from "../../../../lib/application-state-stores/application-store";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
 
   $: metricViewName = $page.params.name;
+  $: metricsExplorer = useDashboardStore(metricViewName);
 
-  onMount(async () => {
-    await tick();
-    const state = new URL(location.href).searchParams.get("state");
-    if (!state) return;
-    const [filters, selectedTimeRage] = fromProto(
-      base64ToProto(decodeURIComponent(state))
-    );
-    metricsExplorerStore.create(metricViewName, filters, selectedTimeRage);
-  });
+  $: stateSyncManager = new StateSyncManager(metricViewName);
 
-  $: fileQuery = useRuntimeServiceGetFile(
+  $: if ($metricsExplorer) {
+    stateSyncManager.handleStateChange($metricsExplorer);
+  }
+  $: if ($page) {
+    stateSyncManager.handleUrlChange();
+  }
+
+  $: fileQuery = createRuntimeServiceGetFile(
     $runtime.instanceId,
     getFilePathFromNameAndType(metricViewName, EntityType.MetricsDefinition),
     {
@@ -45,18 +44,20 @@
     }
   );
 
-  $: catalogQuery = useRuntimeServiceGetCatalogEntry(
+  $: catalogQuery = createRuntimeServiceGetCatalogEntry(
     $runtime.instanceId,
     metricViewName,
     {
       query: {
         onError: () => {
+          if (!metricViewName) return;
+
           // When the catalog entry doesn't exist, the dashboard config is invalid
           if ($featureFlags.readOnly) {
             throw error(400, "Invalid dashboard");
           }
 
-          throw redirect(307, `/dashboard/${metricViewName}/edit`);
+          goto(`/dashboard/${metricViewName}/edit`);
         },
       },
     }
@@ -74,6 +75,6 @@
     bgClass="bg-white"
     inspector={false}
   >
-    <Dashboard {metricViewName} slot="body" />
+    <Dashboard {metricViewName} hasTitle slot="body" />
   </WorkspaceContainer>
 {/if}

@@ -1,8 +1,12 @@
 package gitutil
 
 import (
+	"errors"
 	"fmt"
+	"net/url"
 	"os"
+	"path"
+	"strings"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -10,14 +14,16 @@ import (
 	exec "golang.org/x/sys/execabs"
 )
 
-func CloneRepo(url string) (string, error) {
-	endpoint, err := transport.NewEndpoint(url)
+var ErrGitRemoteNotFound = errors.New("no git remotes found")
+
+func CloneRepo(repoURL string) (string, error) {
+	endpoint, err := transport.NewEndpoint(repoURL)
 	if err != nil {
 		return "", err
 	}
 
 	repoName := fileutil.Stem(endpoint.Path)
-	cmd := exec.Command("git", "clone", url)
+	cmd := exec.Command("git", "clone", repoURL)
 	cmd.Stderr = os.Stderr
 	_, err = cmd.Output()
 	if err != nil {
@@ -58,4 +64,71 @@ func ExtractRemotes(projectPath string) ([]Remote, error) {
 	}
 
 	return res, nil
+}
+
+func RemotesToGithubURL(remotes []Remote) (string, error) {
+	// Return the first Github URL found.
+	// If no Github remotes were found, return the first error.
+	var firstErr error
+	for _, remote := range remotes {
+		ghurl, err := remoteToGithubURL(remote.URL)
+		if err == nil {
+			// Found a Github remote. Success!
+			return ghurl, nil
+		}
+		if firstErr == nil {
+			firstErr = fmt.Errorf("invalid remote %q: %w", remote.URL, err)
+		}
+	}
+
+	if firstErr == nil {
+		return "", ErrGitRemoteNotFound
+	}
+
+	return "", firstErr
+}
+
+func remoteToGithubURL(remote string) (string, error) {
+	ep, err := transport.NewEndpoint(remote)
+	if err != nil {
+		return "", err
+	}
+
+	if ep.Host != "github.com" {
+		return "", fmt.Errorf("must be a git remote on github.com")
+	}
+
+	account, repo := path.Split(ep.Path)
+	account = strings.Trim(account, "/")
+	repo = strings.TrimSuffix(repo, ".git")
+	if account == "" || repo == "" || strings.Contains(account, "/") {
+		return "", fmt.Errorf("not a valid github.com remote")
+	}
+
+	githubURL := &url.URL{
+		Scheme: "https",
+		Host:   ep.Host,
+		Path:   strings.TrimSuffix(ep.Path, ".git"),
+	}
+
+	return githubURL.String(), nil
+}
+
+func SplitGithubURL(githubURL string) (account, repo string, ok bool) {
+	ep, err := transport.NewEndpoint(githubURL)
+	if err != nil {
+		return "", "", false
+	}
+
+	if ep.Host != "github.com" {
+		return "", "", false
+	}
+
+	account, repo = path.Split(ep.Path)
+	account = strings.Trim(account, "/")
+	if account == "" || repo == "" || strings.Contains(account, "/") {
+		return "", "", false
+	}
+
+	return account, repo, true
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -45,9 +46,17 @@ type Config struct {
 	GithubAppName          string                 `split_words:"true"`
 	GithubAppPrivateKey    string                 `split_words:"true"`
 	GithubAppWebhookSecret string                 `split_words:"true"`
+	GithubClientID         string                 `split_words:"true"`
+	GithubClientSecret     string                 `split_words:"true"`
 	ProvisionerSpec        string                 `split_words:"true"`
 	SigningJWKS            string                 `split_words:"true"`
 	SigningKeyID           string                 `split_words:"true"`
+	EmailSMTPHost          string                 `split_words:"true"`
+	EmailSMTPPort          int                    `split_words:"true"`
+	EmailSMTPUsername      string                 `split_words:"true"`
+	EmailSMTPPassword      string                 `split_words:"true"`
+	EmailSenderEmail       string                 `split_words:"true"`
+	EmailSenderName        string                 `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -99,6 +108,21 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				logger.Fatal("error creating runtime jwt issuer", zap.Error(err))
 			}
 
+			// Init email client
+			emailOpts := &email.Options{
+				SMTPHost:     conf.EmailSMTPHost,
+				SMTPPort:     conf.EmailSMTPPort,
+				SMTPUsername: conf.EmailSMTPUsername,
+				SMTPPassword: conf.EmailSMTPPassword,
+				SenderEmail:  conf.EmailSenderEmail,
+				SenderName:   conf.EmailSenderName,
+				FrontendURL:  conf.FrontendURL,
+			}
+			emailClient, err := email.NewEmail(emailOpts)
+			if err != nil {
+				logger.Fatal("error creating email client", zap.Error(err))
+			}
+
 			// Init admin service
 			admOpts := &admin.Options{
 				DatabaseDriver:      conf.DatabaseDriver,
@@ -107,7 +131,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				GithubAppPrivateKey: conf.GithubAppPrivateKey,
 				ProvisionerSpec:     conf.ProvisionerSpec,
 			}
-			adm, err := admin.New(admOpts, logger, issuer)
+			adm, err := admin.New(admOpts, logger, issuer, emailClient)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}
@@ -137,6 +161,8 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				AuthClientSecret:       conf.AuthClientSecret,
 				GithubAppName:          conf.GithubAppName,
 				GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
+				GithubClientID:         conf.GithubClientID,
+				GithubClientSecret:     conf.GithubClientSecret,
 			}
 			srv, err := server.New(srvOpts, logger, adm, issuer)
 			if err != nil {

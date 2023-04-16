@@ -8,21 +8,24 @@ import type {
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
+import type {
+  CreateBaseMutationResult,
+  QueryClient,
+} from "@tanstack/svelte-query";
 
 export async function createSource(
   queryClient: QueryClient,
   instanceId: string,
   tableName: string,
   yaml: string,
-  createSourceMutation: UseMutationResult<V1PutFileAndReconcileResponse>
+  createSourceMutation: CreateBaseMutationResult<V1PutFileAndReconcileResponse>
 ): Promise<V1ReconcileError[]> {
   const resp = await createSourceMutation.mutateAsync({
     data: {
       instanceId,
       path: getFilePathFromNameAndType(tableName, EntityType.Table),
       blob: yaml,
-      create: true,
+      syncFromUrl: true,
       // create source is used to upload and replace.
       // so we cannot send createOnly=true until we refactor it to use refresh source
       createOnly: false,

@@ -1,44 +1,43 @@
-<!--
-@component
-Constructs a TimeSeriesTimeRange object – to be used as the filter in MetricsExplorer – by taking as input:
-- a base time range
-- a time grain (e.g., "hour" or "day")
-- the dataset's full time range (so its end time can be used in relative time ranges)
-
-We should rename TimeSeriesTimeRange to a better name.
--->
 <script lang="ts">
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time//config";
   import {
+    getAvailableComparisonsForTimeRange,
+    getComparisonRange,
+  } from "@rilldata/web-common/lib/time/comparisons";
+  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
+  import {
+    checkValidTimeGrain,
+    getDefaultTimeGrain,
+    getTimeGrainOptions,
+  } from "@rilldata/web-common/lib/time/grains";
+  import {
+    convertTimeRangePreset,
+    ISODurationToTimePreset,
+    isRangeInsideOther,
+  } from "@rilldata/web-common/lib/time/ranges";
+  import {
+    DashboardTimeControls,
+    TimeComparisonOption,
+    TimeGrainOption,
     TimeRange,
-    TimeRangeName,
-    TimeSeriesTimeRange,
-  } from "@rilldata/web-common/features/dashboards/time-controls/time-control-types";
+    TimeRangePreset,
+    TimeRangeType,
+  } from "@rilldata/web-common/lib/time/types";
   import {
-    useRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceGetCatalogEntry,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@sveltestack/svelte-query";
-  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
+  import type { CreateQueryResult } from "@tanstack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
-  import {
-    addGrains,
-    checkValidTimeGrain,
-    floorDate,
-    getDefaultTimeGrain,
-    getDefaultTimeRange,
-    getTimeGrainOptions,
-    ISODurationToTimeRange,
-    makeRelativeTimeRange,
-    supportedTimeGrainEnums,
-    TimeGrainOption,
-  } from "./time-range-utils";
+  import TimeComparisonSelector from "./TimeComparisonSelector.svelte";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
 
@@ -48,12 +47,12 @@ We should rename TimeSeriesTimeRange to a better name.
   $: dashboardStore = useDashboardStore(metricViewName);
 
   let baseTimeRange: TimeRange;
-  let defaultTimeRange: TimeRangeName;
+  let defaultTimeRange: TimeRangeType;
   let minTimeGrain: V1TimeGrain;
 
   let metricsViewQuery;
   $: if ($runtime.instanceId) {
-    metricsViewQuery = useRuntimeServiceGetCatalogEntry(
+    metricsViewQuery = createRuntimeServiceGetCatalogEntry(
       $runtime.instanceId,
       metricViewName
     );
@@ -65,7 +64,7 @@ We should rename TimeSeriesTimeRange to a better name.
   );
   $: hasTimeSeries = $hasTimeSeriesQuery?.data;
 
-  let allTimeRangeQuery: UseQueryStoreResult;
+  let allTimeRangeQuery: CreateQueryResult;
   $: if (
     hasTimeSeries &&
     !!$runtime?.instanceId &&
@@ -77,60 +76,79 @@ We should rename TimeSeriesTimeRange to a better name.
       $metricsViewQuery.data.entry.metricsView.model,
       $metricsViewQuery.data.entry.metricsView.timeDimension
     );
-
-    defaultTimeRange = ISODurationToTimeRange(
+    defaultTimeRange = ISODurationToTimePreset(
       $metricsViewQuery.data.entry.metricsView?.defaultTimeRange
     );
     minTimeGrain =
       $metricsViewQuery.data.entry.metricsView?.smallestTimeGrain ||
       V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
   }
-  $: allTimeRange = $allTimeRangeQuery?.data as TimeRange | undefined;
-
-  // once we have the allTimeRange, set the default time range and time grain
-  $: if (allTimeRange) {
+  $: allTimeRange = $allTimeRangeQuery?.data as TimeRange;
+  // Once we have the allTimeRange, set the default time range and time grain.
+  // This reactive statement feels a bit precarious!
+  $: if (allTimeRange && allTimeRange?.start && $dashboardStore !== undefined) {
     if (!$dashboardStore?.selectedTimeRange) {
       setDefaultTimeControls(allTimeRange);
-    } else if (!$dashboardStore?.selectedTimeRange.start) {
-      setTimeControlsFromUrl(
-        $dashboardStore.selectedTimeRange.name,
-        allTimeRange
-      );
+    } else {
+      setTimeControlsFromUrl(allTimeRange);
     }
   }
 
-  function setDefaultTimeControls(allTimeRange: TimeRange) {
+  function setDefaultTimeControls(allTimeRange: DashboardTimeControls) {
     baseTimeRange =
-      makeRelativeTimeRange(defaultTimeRange, allTimeRange) ||
-      getDefaultTimeRange(allTimeRange);
+      convertTimeRangePreset(
+        defaultTimeRange,
+        allTimeRange.start,
+        allTimeRange.end
+      ) || allTimeRange;
 
     const timeGrain = getDefaultTimeGrain(
       baseTimeRange.start,
       baseTimeRange.end
     );
-    makeTimeSeriesTimeRangeAndUpdateAppState(baseTimeRange, timeGrain);
-  }
-
-  function setTimeControlsFromUrl(name: string, allTimeRange: TimeRange) {
-    baseTimeRange = makeRelativeTimeRange(
-      $dashboardStore?.selectedTimeRange.name,
-      allTimeRange
-    );
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
-      $dashboardStore?.selectedTimeRange.interval
+      timeGrain.grain,
+      {}
+    );
+  }
+
+  function setTimeControlsFromUrl(allTimeRange: TimeRange) {
+    if ($dashboardStore?.selectedTimeRange.name === TimeRangePreset.CUSTOM) {
+      /** set the time range to the fixed custom time range */
+      baseTimeRange = {
+        name: TimeRangePreset.CUSTOM,
+        start: new Date($dashboardStore?.selectedTimeRange.start),
+        end: new Date($dashboardStore?.selectedTimeRange.end),
+      };
+    } else {
+      /** rebuild off of relative time range */
+      baseTimeRange =
+        convertTimeRangePreset(
+          $dashboardStore?.selectedTimeRange.name,
+          allTimeRange.start,
+          allTimeRange.end
+        ) || allTimeRange;
+    }
+
+    makeTimeSeriesTimeRangeAndUpdateAppState(
+      baseTimeRange,
+      $dashboardStore?.selectedTimeRange.interval,
+      // do not reset the comparison state when pullling from the URL
+      $dashboardStore?.selectedComparisonTimeRange
     );
   }
 
   // we get the timeGrainOptions so that we can assess whether or not the
   // activeTimeGrain is valid whenever the baseTimeRange changes
   let timeGrainOptions: TimeGrainOption[];
+  // FIXME: we should be deprecating this getTimeGrainOptions in favor of getAllowedTimeGrains.
   $: timeGrainOptions = getTimeGrainOptions(
     new Date($dashboardStore?.selectedTimeRange?.start),
     new Date($dashboardStore?.selectedTimeRange?.end)
   );
 
-  function onSelectTimeRange(name: TimeRangeName, start: string, end: string) {
+  function onSelectTimeRange(name: TimeRangeType, start: Date, end: Date) {
     baseTimeRange = {
       name,
       start: new Date(start),
@@ -138,20 +156,42 @@ We should rename TimeSeriesTimeRange to a better name.
     };
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
-      $dashboardStore.selectedTimeRange.interval
+      $dashboardStore.selectedTimeRange?.interval,
+      // reset the comparison range
+      {}
     );
   }
 
   function onSelectTimeGrain(timeGrain: V1TimeGrain) {
-    makeTimeSeriesTimeRangeAndUpdateAppState(baseTimeRange, timeGrain);
+    makeTimeSeriesTimeRangeAndUpdateAppState(
+      baseTimeRange,
+      timeGrain,
+      $dashboardStore?.selectedComparisonTimeRange
+    );
+  }
+
+  function onSelectComparisonRange(
+    name: TimeComparisonOption,
+    start: Date,
+    end: Date
+  ) {
+    metricsExplorerStore.setSelectedComparisonRange(metricViewName, {
+      name,
+      start,
+      end,
+    });
   }
 
   function makeTimeSeriesTimeRangeAndUpdateAppState(
     timeRange: TimeRange,
-    timeGrain: V1TimeGrain
+    timeGrain: V1TimeGrain,
+    /** we should only reset the comparison range when the user has explicitly chosen a new
+     * time range. Otherwise, the current comparison state should continue to be the
+     * source of truth.
+     */
+    comparisonTimeRange: DashboardTimeControls
   ) {
     const { name, start, end } = timeRange;
-    console.log(timeRange, timeGrain);
 
     // validate time range name + time grain combination
     // (necessary because when the time range name is changed, the current time grain may not be valid for the new time range name)
@@ -162,8 +202,10 @@ We should rename TimeSeriesTimeRange to a better name.
       minTimeGrain
     );
     if (!isValidTimeGrain) {
-      const defaultTimeGrain = getDefaultTimeGrain(start, end);
-      const timeGrainEnums = supportedTimeGrainEnums();
+      const defaultTimeGrain = getDefaultTimeGrain(start, end).grain;
+      const timeGrainEnums = Object.values(TIME_GRAIN).map(
+        (timeGrain) => timeGrain.grain
+      );
 
       const defaultGrainIndex = timeGrainEnums.indexOf(defaultTimeGrain);
       timeGrain = defaultTimeGrain;
@@ -181,47 +223,110 @@ We should rename TimeSeriesTimeRange to a better name.
       }
     }
 
-    // Round start time to nearest lower time grain
-    const adjustedStart = floorDate(start, timeGrain);
-
-    // Round end time to start of next grain
-    // because the runtime uses exlusive end times, whereas user inputs are inclusive
-    let adjustedEnd: Date;
-    if (timeRange.name === TimeRangeName.Custom) {
-      // Custom Range always snaps to the end of the day
-      adjustedEnd = addGrains(new Date(end), 1, V1TimeGrain.TIME_GRAIN_DAY);
-      adjustedEnd = floorDate(adjustedEnd, timeGrain);
-    } else {
-      adjustedEnd = addGrains(new Date(end), 1, timeGrain);
-      adjustedEnd = floorDate(adjustedEnd, timeGrain);
-    }
-
     // the adjusted time range
-    const newTimeRange: TimeSeriesTimeRange = {
-      name: name,
-      start: adjustedStart.toISOString(),
-      end: adjustedEnd.toISOString(),
+    const newTimeRange: DashboardTimeControls = {
+      name,
+      start,
+      end,
       interval: timeGrain,
     };
 
     cancelDashboardQueries(queryClient, metricViewName);
+
     metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
+
+    // reset comparisonOption to the default for the new time range.
+
+    // if no name in comprisonTimeRange, set selectedComparisonTimeRange to default.
+    if (comparisonTimeRange !== undefined) {
+      let selectedComparisonTimeRange;
+      if (!comparisonTimeRange?.name) {
+        const comparisonOption = DEFAULT_TIME_RANGES[name]
+          ?.defaultComparison as TimeComparisonOption;
+        const range = getComparisonRange(start, end, comparisonOption);
+
+        selectedComparisonTimeRange = {
+          ...range,
+          name: comparisonOption,
+        };
+      } else if (comparisonTimeRange.name === TimeComparisonOption.CUSTOM) {
+        selectedComparisonTimeRange = comparisonTimeRange;
+      } else {
+        // variable time range of some kind.
+        const comparisonOption =
+          comparisonTimeRange.name as TimeComparisonOption;
+        const range = getComparisonRange(start, end, comparisonOption);
+
+        selectedComparisonTimeRange = {
+          ...range,
+          name: comparisonOption,
+        };
+      }
+
+      metricsExplorerStore.setSelectedComparisonRange(
+        metricViewName,
+        selectedComparisonTimeRange
+      );
+    }
+  }
+
+  let isComparisonRangeAvailable;
+  let availableComparisons;
+
+  $: if (
+    allTimeRange?.start &&
+    $dashboardStore?.selectedTimeRange?.start &&
+    hasTimeSeries
+  ) {
+    isComparisonRangeAvailable = isRangeInsideOther(
+      allTimeRange.start,
+      allTimeRange.end,
+      $dashboardStore?.selectedComparisonTimeRange?.start,
+      $dashboardStore?.selectedComparisonTimeRange?.end
+    );
+
+    availableComparisons = getAvailableComparisonsForTimeRange(
+      allTimeRange.start,
+      allTimeRange.end,
+      $dashboardStore?.selectedTimeRange?.start,
+      $dashboardStore?.selectedTimeRange?.end,
+      [...Object.values(TimeComparisonOption)],
+      [
+        $dashboardStore?.selectedComparisonTimeRange
+          ?.name as TimeComparisonOption,
+      ]
+    );
   }
 </script>
 
-<div class="flex flex-row gap-x-1">
+<div class="flex flex-row items-center gap-x-1">
   {#if !hasTimeSeries}
     <NoTimeDimensionCTA
       {metricViewName}
       modelName={$metricsViewQuery?.data?.entry?.metricsView?.model}
     />
-  {:else}
+  {:else if allTimeRange?.start}
     <TimeRangeSelector
       {metricViewName}
-      {allTimeRange}
       {minTimeGrain}
+      boundaryStart={allTimeRange.start}
+      boundaryEnd={allTimeRange.end}
+      selectedRange={$dashboardStore?.selectedTimeRange}
       on:select-time-range={(e) =>
         onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
+    />
+    <TimeComparisonSelector
+      on:select-comparison={(e) => {
+        onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
+      }}
+      {minTimeGrain}
+      currentStart={$dashboardStore?.selectedTimeRange?.start}
+      currentEnd={$dashboardStore?.selectedTimeRange?.end}
+      boundaryStart={allTimeRange.start}
+      boundaryEnd={allTimeRange.end}
+      showComparison={isComparisonRangeAvailable}
+      selectedComparison={$dashboardStore?.selectedComparisonTimeRange}
+      comparisonOptions={availableComparisons}
     />
     <TimeGrainSelector
       on:select-time-grain={(e) => onSelectTimeGrain(e.detail.timeGrain)}

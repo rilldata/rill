@@ -4,16 +4,15 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServicePutFileAndReconcile,
     V1PutFileAndReconcileResponse,
     V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import type { SelectorOption } from "@rilldata/web-local/lib/components/table-editable/ColumnConfig";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { onMount, setContext } from "svelte";
   import { writable } from "svelte/store";
   import { WorkspaceContainer } from "../../../layout/workspace";
@@ -44,7 +43,7 @@
   });
   setContext("rill:metrics-config:errors", configurationErrorStore);
 
-  $: dashboardConfig = useRuntimeServiceGetCatalogEntry(
+  $: dashboardConfig = createRuntimeServiceGetCatalogEntry(
     instanceId,
     metricsDefName
   );
@@ -62,7 +61,7 @@
 
   $: switchToMetrics(metricsDefName);
 
-  const metricMigrate = useRuntimeServicePutFileAndReconcile();
+  const metricMigrate = createRuntimeServicePutFileAndReconcile();
   async function callReconcileAndUpdateYaml(internalYamlString) {
     const filePath = getFilePathFromNameAndType(
       metricsDefName,
@@ -109,7 +108,7 @@
   $: dimensions = $metricsInternalRep.getDimensions();
 
   $: modelName = $metricsInternalRep.getMetricKey("model");
-  $: getModel = useRuntimeServiceGetCatalogEntry(instanceId, modelName);
+  $: getModel = createRuntimeServiceGetCatalogEntry(instanceId, modelName);
   $: model = $getModel.data?.entry?.model;
 
   function handleCreateMeasure() {
@@ -142,7 +141,7 @@
     $metricsInternalRep.deleteDimension(evt.detail);
   }
 
-  let validDimensionSelectorOption: SelectorOption[] = [];
+  let validDimensionSelectorOption = [];
   $: if (model) {
     const selectedMetricsDefModelProfile = model?.schema?.fields ?? [];
     validDimensionSelectorOption = selectedMetricsDefModelProfile
@@ -172,50 +171,50 @@
     : MetricsSourceSelectionError(errors);
 </script>
 
-<WorkspaceContainer inspector={false} assetID={`${metricsDefName}-config`}>
-  <MetricsWorkspaceHeader slot="header" {metricsDefName} {metricsInternalRep} />
+<WorkspaceContainer assetID={`${metricsDefName}-config`} inspector={false}>
+  <MetricsWorkspaceHeader {metricsDefName} {metricsInternalRep} slot="header" />
 
-  <div use:listenToNodeResize slot="body">
+  <div slot="body" use:listenToNodeResize>
     <div
       class="editor-pane bg-gray-100 p-6 flex flex-col"
       style:height="calc(100vh - var(--header-height))"
     >
       <ConfigParameters
         {metricsInternalRep}
-        {model}
         {metricsSourceSelectionError}
+        {model}
         updateRuntime={callReconcileAndUpdateYaml}
       />
 
       <div
-        style="display: flex; flex-direction:column; overflow:hidden;"
         class="flex-1"
+        style="display: flex; flex-direction:column; overflow:hidden;"
       >
-        <LayoutManager let:topResizeCallback let:bottomResizeCallback>
+        <LayoutManager let:bottomResizeCallback let:topResizeCallback>
           <MetricsEntityTable
-            slot="top-item"
-            resizeCallback={topResizeCallback}
-            label={"Measures"}
-            addEntityHandler={handleCreateMeasure}
-            updateEntityHandler={handleUpdateMeasure}
-            deleteEntityHandler={handleDeleteMeasure}
-            rows={measures ?? []}
-            columnNames={MeasuresColumns}
-            tooltipText={"Add a new measure"}
             addButtonId={"add-measure-button"}
+            addEntityHandler={handleCreateMeasure}
+            columnNames={MeasuresColumns}
+            deleteEntityHandler={handleDeleteMeasure}
+            label={"Measures"}
+            resizeCallback={topResizeCallback}
+            rows={measures ?? []}
+            slot="top-item"
+            tooltipText={"Add a new measure"}
+            updateEntityHandler={handleUpdateMeasure}
           />
 
           <MetricsEntityTable
-            slot="bottom-item"
-            resizeCallback={bottomResizeCallback}
-            label={"Dimensions"}
-            addEntityHandler={handleCreateDimension}
-            updateEntityHandler={handleUpdateDimension}
-            deleteEntityHandler={handleDeleteDimension}
-            rows={dimensions ?? []}
-            columnNames={DimensionColumns}
-            tooltipText={"Add a new dimension"}
             addButtonId={"add-dimension-button"}
+            addEntityHandler={handleCreateDimension}
+            columnNames={DimensionColumns}
+            deleteEntityHandler={handleDeleteDimension}
+            label={"Dimensions"}
+            resizeCallback={bottomResizeCallback}
+            rows={dimensions ?? []}
+            slot="bottom-item"
+            tooltipText={"Add a new dimension"}
+            updateEntityHandler={handleUpdateDimension}
           />
         </LayoutManager>
       </div>

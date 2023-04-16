@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -83,8 +84,8 @@ type ArtifactError struct {
 // TODO: support loading existing projects
 
 func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*ReconcileResult, error) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+	s.Meta.lock.Lock()
+	defer s.Meta.lock.Unlock()
 
 	result := NewReconcileResult()
 
@@ -106,8 +107,8 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 
 	if !conf.DryRun {
 		// TODO: changes to the file will not be picked up if done while running migration
-		s.LastMigration = time.Now()
-		s.hasMigrated = true
+		s.Meta.LastMigration = time.Now()
+		s.Meta.hasMigrated = true
 	}
 	result.collectAffectedPaths()
 	return result, nil
@@ -148,7 +149,7 @@ func (s *Service) collectMigrationItems(
 				} else {
 					item.Type = MigrationUpdate
 				}
-			} else if _, ok := s.NameToPath[item.NormalizedName]; ok {
+			} else if _, ok := s.Meta.NameToPath[item.NormalizedName]; ok {
 				// this allows parents later in the order to re add children
 				visited[name] = -1
 				continue
@@ -172,12 +173,12 @@ func (s *Service) collectMigrationItems(
 
 		// get all the children and make sure they are not present before the parent in the order
 		children := arrayutil.Dedupe(append(
-			s.dag.GetDeepChildren(name),
+			s.Meta.dag.GetDeepChildren(name),
 			newChildren...,
 		))
 		if item.FromName != "" {
 			children = append(children, arrayutil.Dedupe(append(
-				s.dag.GetDeepChildren(strings.ToLower(item.FromNormalizedName)),
+				s.Meta.dag.GetDeepChildren(strings.ToLower(item.FromNormalizedName)),
 				tempDag.GetDeepChildren(strings.ToLower(item.FromNormalizedName))...,
 			))...)
 		}
@@ -325,7 +326,7 @@ func (s *Service) runMigrationItems(
 					})
 				}
 			}
-			_, err = s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+			_, err = s.Meta.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 			if err != nil {
 				result.Errors = append(result.Errors, &runtimev1.ReconcileError{
 					Code:     runtimev1.ReconcileError_CODE_OLAP,
@@ -354,9 +355,9 @@ func (s *Service) runMigrationItems(
 }
 
 func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error {
-	s.NameToPath[item.NormalizedName] = item.Path
+	s.Meta.NameToPath[item.NormalizedName] = item.Path
 	// add the item to dag
-	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	_, err := s.Meta.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 	if err != nil {
 		return err
 	}
@@ -366,9 +367,15 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 		return err
 	}
 
+	// NOTE :: IngestStorageLimitInBytes check will only work if sources are ingested in serial
+	opts := migrator.Options{
+		InstanceEnv:               inst.ResolveVariables(),
+		IngestStorageLimitInBytes: s.getSourceIngestionLimit(ctx, inst),
+	}
+
 	// create in olap
 	err = s.wrapMigrator(item.CatalogInFile, func() error {
-		return migrator.Create(ctx, s.Olap, s.Repo, inst.ResolveVariables(), item.CatalogInFile)
+		return migrator.Create(ctx, s.Olap, s.Repo, opts, item.CatalogInFile)
 	})
 	if err != nil {
 		return err
@@ -389,12 +396,12 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 
 func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error {
 	fromLowerName := strings.ToLower(item.FromName)
-	delete(s.NameToPath, fromLowerName)
-	s.NameToPath[item.NormalizedName] = item.Path
+	delete(s.Meta.NameToPath, fromLowerName)
+	s.Meta.NameToPath[item.NormalizedName] = item.Path
 
 	// delete old item and add new item to dag
-	s.dag.Delete(fromLowerName)
-	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	s.Meta.dag.Delete(fromLowerName)
+	_, err := s.Meta.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 	if err != nil {
 		return err
 	}
@@ -420,9 +427,9 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error 
 }
 
 func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error {
-	s.NameToPath[item.NormalizedName] = item.Path
+	s.Meta.NameToPath[item.NormalizedName] = item.Path
 	// add the item to dag with new dependencies
-	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	_, err := s.Meta.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 	if err != nil {
 		return err
 	}
@@ -435,7 +442,11 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 	// update in olap
 	if item.Type == MigrationUpdate {
 		err = s.wrapMigrator(item.CatalogInFile, func() error {
-			return migrator.Update(ctx, s.Olap, s.Repo, inst.ResolveVariables(), item.CatalogInStore, item.CatalogInFile)
+			opts := migrator.Options{
+				InstanceEnv:               inst.ResolveVariables(),
+				IngestStorageLimitInBytes: s.getSourceIngestionLimit(ctx, inst),
+			}
+			return migrator.Update(ctx, s.Olap, s.Repo, opts, item.CatalogInStore, item.CatalogInFile)
 		})
 		if err != nil {
 			return err
@@ -450,10 +461,10 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 }
 
 func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error {
-	delete(s.NameToPath, item.NormalizedName)
+	delete(s.Meta.NameToPath, item.NormalizedName)
 
 	// delete item from dag
-	s.dag.Delete(item.NormalizedName)
+	s.Meta.dag.Delete(item.NormalizedName)
 	// delete item from olap
 	err := migrator.Delete(ctx, s.Olap, item.CatalogInStore)
 	if err != nil {
@@ -508,12 +519,12 @@ func (s *Service) wrapMigrator(catalogEntry *drivers.CatalogEntry, run func() er
 }
 
 func (s *Service) addToDag(item *MigrationItem) *runtimev1.ReconcileError {
-	if _, ok := s.NameToPath[item.NormalizedName]; ok {
+	if _, ok := s.Meta.NameToPath[item.NormalizedName]; ok {
 		return nil
 	}
 	// this is perhaps an init. so populate cache data
-	s.NameToPath[item.NormalizedName] = item.Path
-	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	s.Meta.NameToPath[item.NormalizedName] = item.Path
+	_, err := s.Meta.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 	if err != nil {
 		return &runtimev1.ReconcileError{
 			Code:     runtimev1.ReconcileError_CODE_SOURCE,
@@ -522,4 +533,23 @@ func (s *Service) addToDag(item *MigrationItem) *runtimev1.ReconcileError {
 		}
 	}
 	return nil
+}
+
+func (s *Service) getSourceIngestionLimit(ctx context.Context, inst *drivers.Instance) int64 {
+	if inst.IngestionLimitBytes == 0 {
+		return math.MaxInt64
+	}
+
+	var sizeSoFar int64
+	entries := s.Catalog.FindEntries(ctx, s.InstID, drivers.ObjectTypeSource)
+	for _, entry := range entries {
+		sizeSoFar += entry.BytesIngested
+	}
+
+	limitInBytes := inst.IngestionLimitBytes
+	limitInBytes -= sizeSoFar
+	if limitInBytes < 0 {
+		return 0
+	}
+	return limitInBytes
 }

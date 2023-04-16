@@ -1,7 +1,7 @@
 /**
  * This is temporary until everything is moved to using svelte-query
  */
-import { QueryClient } from "@sveltestack/svelte-query";
+import { QueryClient } from "@tanstack/svelte-query";
 
 export function createQueryClient() {
   return new QueryClient({

@@ -16,11 +16,11 @@
   } from "@rilldata/web-common/features/sources/selectors";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
+    createRuntimeServiceDeleteFileAndReconcile,
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceRefreshAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
-    useRuntimeServiceDeleteFileAndReconcile,
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndReconcile,
-    useRuntimeServiceRefreshAndReconcile,
     V1ReconcileResponse,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
@@ -33,7 +33,7 @@
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
@@ -54,7 +54,7 @@
 
   const dispatch = createEventDispatcher();
 
-  $: getSource = useRuntimeServiceGetCatalogEntry(
+  $: getSource = createRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     sourceName
   );
@@ -72,11 +72,11 @@
   $: modelNames = useModelNames($runtime.instanceId);
   $: dashboardNames = useDashboardNames($runtime.instanceId);
 
-  const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
-  const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
-  const createEntityMutation = useRuntimeServicePutFileAndReconcile();
+  const deleteSource = createRuntimeServiceDeleteFileAndReconcile();
+  const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
+  const createEntityMutation = createRuntimeServicePutFileAndReconcile();
   const createDashboardFromSourceMutation = useCreateDashboardFromSource();
-  const createFileMutation = useRuntimeServicePutFileAndReconcile();
+  const createFileMutation = createRuntimeServicePutFileAndReconcile();
 
   const handleDeleteSource = async (tableName: string) => {
     await deleteFileArtifact(

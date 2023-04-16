@@ -31,6 +31,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		{"local_file", filepath.Join(testdataPathRel, "AdBids.parquet"), nil},
 		{"local_file", filepath.Join(testdataPathAbs, "AdBids.parquet"), nil},
 		{"local_file", filepath.Join(testdataPathAbs, "AdBids.txt"), nil},
+		{"local_file", "../../../runtime/testruntime/testdata/ad_bids/data/AdBids.csv.gz", nil},
 		// something wrong with this particular file. duckdb fails to extract
 		// TODO: move the generator to go and fix the parquet file
 		//{"local_file", testdataPath + "AdBids.parquet.gz", nil},
@@ -61,15 +62,71 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 			props["path"] = tt.Path
 
 			e := &connectors.Env{
-				RepoDriver: "file",
-				RepoDSN:    ".",
+				RepoDriver:      "file",
+				RepoRoot:        ".",
+				AllowHostAccess: true,
 			}
 			s := &connectors.Source{
 				Name:       "foo",
 				Connector:  tt.Connector,
 				Properties: props,
 			}
-			err = olap.Ingest(ctx, e, s)
+			_, err = olap.Ingest(ctx, e, s)
+			require.NoError(t, err)
+
+			var count int
+			rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT count(timestamp) FROM foo"})
+			require.NoError(t, err)
+			require.True(t, rows.Next())
+			require.NoError(t, rows.Scan(&count))
+			require.GreaterOrEqual(t, count, 100)
+			require.False(t, rows.Next())
+			require.NoError(t, rows.Close())
+		})
+	}
+}
+
+func TestConnectorWithGithubRepoDriver(t *testing.T) {
+	testdataPathRel := "../../../web-local/test/data"
+	testdataPathAbs, err := filepath.Abs(testdataPathRel)
+	require.NoError(t, err)
+
+	sources := []struct {
+		Connector string
+		Path      string
+		repoRoot  string
+		isError   bool
+	}{
+		{"local_file", "AdBids.csv", testdataPathAbs, false},
+		{"local_file", filepath.Join(testdataPathAbs, "AdBids.csv"), testdataPathAbs, false},
+		{"local_file", "../../../runtime/testruntime/testdata/ad_bids/data/AdBids.csv.gz", testdataPathAbs, true},
+	}
+
+	ctx := context.Background()
+	conn, err := Driver{}.Open("?access_mode=read_write", zap.NewNop())
+	require.NoError(t, err)
+	olap, _ := conn.OLAPStore()
+
+	for _, tt := range sources {
+		t.Run(fmt.Sprintf("%s - %s", tt.Connector, tt.Path), func(t *testing.T) {
+			props := make(map[string]any)
+			props["path"] = tt.Path
+
+			e := &connectors.Env{
+				RepoDriver:      "github",
+				RepoRoot:        tt.repoRoot,
+				AllowHostAccess: false,
+			}
+			s := &connectors.Source{
+				Name:       "foo",
+				Connector:  tt.Connector,
+				Properties: props,
+			}
+			_, err = olap.Ingest(ctx, e, s)
+			if tt.isError {
+				require.Error(t, err)
+				return
+			}
 			require.NoError(t, err)
 
 			var count int
@@ -94,9 +151,10 @@ func TestCSVDelimiter(t *testing.T) {
 	require.NoError(t, err)
 	testDelimiterCsvPath := filepath.Join(testdataPathAbs, "test-delimiter.csv")
 
-	err = olap.Ingest(ctx, &connectors.Env{
-		RepoDriver: "file",
-		RepoDSN:    ".",
+	_, err = olap.Ingest(ctx, &connectors.Env{
+		RepoDriver:      "file",
+		RepoRoot:        ".",
+		AllowHostAccess: true,
 	}, &connectors.Source{
 		Name:      "foo",
 		Connector: "local_file",
@@ -113,9 +171,10 @@ func TestCSVDelimiter(t *testing.T) {
 	require.Len(t, cols, 3)
 	require.NoError(t, rows.Close())
 
-	err = olap.Ingest(ctx, &connectors.Env{
-		RepoDriver: "file",
-		RepoDSN:    ".",
+	_, err = olap.Ingest(ctx, &connectors.Env{
+		RepoDriver:      "file",
+		RepoRoot:        ".",
+		AllowHostAccess: true,
 	}, &connectors.Source{
 		Name:      "foo",
 		Connector: "local_file",
@@ -144,9 +203,10 @@ func TestFileFormatAndDelimiter(t *testing.T) {
 	require.NoError(t, err)
 	testDelimiterCsvPath := filepath.Join(testdataPathAbs, "test-format.log")
 
-	err = olap.Ingest(ctx, &connectors.Env{
-		RepoDriver: "file",
-		RepoDSN:    ".",
+	_, err = olap.Ingest(ctx, &connectors.Env{
+		RepoDriver:      "file",
+		RepoRoot:        ".",
+		AllowHostAccess: true,
 	}, &connectors.Source{
 		Name:      "foo",
 		Connector: "local_file",

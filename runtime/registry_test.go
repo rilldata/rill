@@ -39,7 +39,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				OLAPDSN:      "",
 				RepoDriver:   "file",
 				EmbedCatalog: true,
-				Variables:    map[string]string{"host": "localhost", "allow_host_credentials": "false"},
+				Variables:    map[string]string{"host": "localhost", "allow_host_access": "true"},
 			},
 		},
 		{
@@ -57,7 +57,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				OLAPDSN:      "",
 				RepoDriver:   "file",
 				EmbedCatalog: false,
-				Variables:    map[string]string{"host": "localhost", "allow_host_credentials": "false"},
+				Variables:    map[string]string{"host": "localhost", "allow_host_access": "true"},
 			},
 		},
 		{
@@ -75,7 +75,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				OLAPDSN:      "?access_mode=read_write",
 				RepoDriver:   "file",
 				EmbedCatalog: false,
-				Variables:    map[string]string{"host": "localhost", "allow_host_credentials": "false"},
+				Variables:    map[string]string{"host": "localhost", "allow_host_access": "true"},
 			},
 			clearCache: true,
 		},
@@ -94,7 +94,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				OLAPDSN:      "",
 				RepoDriver:   "file",
 				EmbedCatalog: false,
-				Variables:    map[string]string{"host": "localhost", "allow_host_credentials": "false"},
+				Variables:    map[string]string{"host": "localhost", "allow_host_access": "true"},
 			},
 			clearCache: true,
 		},
@@ -136,7 +136,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			}
 			require.NoError(t, rt.CreateInstance(context.Background(), inst))
 			// load all caches
-			svc, err := rt.catalogCache.get(ctx, rt, inst.ID)
+			svc, err := rt.NewCatalogService(ctx, inst.ID)
 			require.NoError(t, err)
 
 			// edit instance
@@ -164,7 +164,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			// verify older olap connection is closed and cache updated if olap changed
 			require.Equal(t, !tt.clearCache, rt.connCache.cache.Contains(inst.ID+inst.OLAPDriver+inst.OLAPDSN))
 			require.Equal(t, !tt.clearCache, rt.connCache.cache.Contains(inst.ID+inst.RepoDriver+inst.RepoDSN))
-			_, ok := rt.catalogCache.cache[inst.ID]
+			_, ok := rt.migrationMetaCache.cache.Get(inst.ID)
 			require.Equal(t, !tt.clearCache, ok)
 			_, err = svc.Olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
 			require.Equal(t, tt.clearCache, err != nil)
@@ -199,7 +199,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			}
 			require.NoError(t, rt.CreateInstance(context.Background(), inst))
 			// load all caches
-			svc, err := rt.catalogCache.get(ctx, rt, inst.ID)
+			svc, err := rt.NewCatalogService(ctx, inst.ID)
 			require.NoError(t, err)
 
 			// ingest some data
@@ -230,7 +230,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			// verify older olap connection is closed and cache updated
 			require.False(t, rt.connCache.cache.Contains(inst.ID+inst.OLAPDriver+inst.OLAPDSN))
 			require.False(t, rt.connCache.cache.Contains(inst.ID+inst.RepoDriver+inst.RepoDSN))
-			_, ok := rt.catalogCache.cache[inst.ID]
+			_, ok := rt.migrationMetaCache.cache.Get(inst.ID)
 			require.False(t, ok)
 			_, err = svc.Olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
 			require.True(t, err != nil)
@@ -249,8 +249,9 @@ func NewTestRunTime(t *testing.T) *Runtime {
 		MetastoreDriver:     "sqlite",
 		// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 		// "cache=shared" is needed to prevent threading problems.
-		MetastoreDSN:   fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
-		QueryCacheSize: 10000,
+		MetastoreDSN:    fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
+		QueryCacheSize:  10000,
+		AllowHostAccess: true,
 	}
 	rt, err := New(opts, zap.NewNop())
 	require.NoError(t, err)

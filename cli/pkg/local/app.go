@@ -102,11 +102,11 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 
 	// Create a local runtime with an in-memory metastore
 	rtOpts := &runtime.Options{
-		ConnectionCacheSize:  100,
-		MetastoreDriver:      "sqlite",
-		MetastoreDSN:         "file:rill?mode=memory&cache=shared",
-		QueryCacheSize:       10000,
-		AllowHostCredentials: true,
+		ConnectionCacheSize: 100,
+		MetastoreDriver:     "sqlite",
+		MetastoreDSN:        "file:rill?mode=memory&cache=shared",
+		QueryCacheSize:      10000,
+		AllowHostAccess:     true,
 	}
 	rt, err := runtime.New(rtOpts, logger)
 	if err != nil {

@@ -12,12 +12,15 @@ import type {
   V1RefreshAndReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
+import type {
+  CreateBaseMutationResult,
+  QueryClient,
+} from "@tanstack/svelte-query";
 
 export async function refreshAndReconcile(
   sourceName: string,
   instanceId: string,
-  refreshSource: UseMutationResult<V1RefreshAndReconcileResponse>,
+  refreshSource: CreateBaseMutationResult<V1RefreshAndReconcileResponse>,
   queryClient: QueryClient,
   path: string,
   displayName = undefined
@@ -38,8 +41,8 @@ export async function refreshSource(
   connector: string,
   sourceName: string,
   instanceId: string,
-  refreshSource: UseMutationResult<V1RefreshAndReconcileResponse>,
-  createSource: UseMutationResult<V1PutFileAndReconcileResponse>,
+  refreshSource: CreateBaseMutationResult<V1RefreshAndReconcileResponse>,
+  createSource: CreateBaseMutationResult<V1PutFileAndReconcileResponse>,
   queryClient: QueryClient,
   displayName = undefined
 ) {
@@ -78,7 +81,7 @@ export async function refreshSource(
       instanceId,
       path: artifactPath,
       blob: yaml,
-      create: true,
+      syncFromUrl: true,
       strict: true,
     },
   });

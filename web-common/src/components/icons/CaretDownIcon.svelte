@@ -1,6 +1,7 @@
 <script>
   export let size = "1em";
   export let color = "currentColor";
+  export let className = "";
 </script>
 
 <svg
@@ -14,6 +15,7 @@
   xml:space="preserve"
   xmlns:serif="http://www.serif.com/"
   style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;"
+  class={className}
 >
   <path
     d="M14.657,7.343L9,13L3.343,7.343L4.757,5.929L9,10.172L13.243,5.929L14.657,7.343"

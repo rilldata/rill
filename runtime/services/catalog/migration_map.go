@@ -83,9 +83,9 @@ func (s *Service) getMigrationMap(ctx context.Context, conf ReconcileConfig) (ma
 			}
 
 			// go through the children only if forced paths is false
-			children := s.dag.GetDeepChildren(item.NormalizedName)
+			children := s.Meta.dag.GetDeepChildren(item.NormalizedName)
 			for _, child := range children {
-				childPath, ok := s.NameToPath[child]
+				childPath, ok := s.Meta.NameToPath[child]
 				if !ok || (changedPathsHint && changedPathsMap[childPath]) {
 					// if there is no entry for name to path or already in forced path then ignore the child
 					continue
@@ -109,7 +109,7 @@ func (s *Service) getMigrationMap(ctx context.Context, conf ReconcileConfig) (ma
 		}
 		// ignore embedded sources
 		if storeEntry.Embedded {
-			if _, added := migrationMap[normalisedStoreName]; !added && !s.hasMigrated {
+			if _, added := migrationMap[normalisedStoreName]; !added && !s.Meta.hasMigrated {
 				// only add if it was the 1st migration and has not already been added
 				migrationMap[normalisedStoreName] = s.newEmbeddedMigrationItem(storeEntry, MigrationNoChange)
 			}
@@ -187,7 +187,7 @@ func (s *Service) isInvalidDuplicate(
 
 	if changedPathsHint {
 		// this handles the case where an item is renamed with the same name but different case.
-		if existingPath, ok := s.NameToPath[item.NormalizedName]; ok && existingPath != item.Path && !changedPathsMap[existingPath] {
+		if existingPath, ok := s.Meta.NameToPath[item.NormalizedName]; ok && existingPath != item.Path && !changedPathsMap[existingPath] {
 			return false, item.Path
 		}
 	}
@@ -246,7 +246,7 @@ func (s *Service) checkDeletionForEmbeddedSources(
 	migrationMap map[string]*MigrationItem,
 	storeObjectsMap map[string]*drivers.CatalogEntry,
 ) {
-	parents := s.dag.GetParents(normalisedName)
+	parents := s.Meta.dag.GetParents(normalisedName)
 	for _, parent := range parents {
 		_, migrating := migrationMap[parent]
 		if migrating {

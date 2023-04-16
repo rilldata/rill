@@ -38,19 +38,37 @@ type queryCacheKey struct {
 }
 
 func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, priority int) error {
-	// if key is empty, skip caching
-	if query.Key() == "" {
+	// If key is empty, skip caching
+	qk := query.Key()
+	if qk == "" {
 		return query.Resolve(ctx, r, instanceID, priority)
 	}
+
+	// Get dependency cache keys
 	deps := query.Deps()
 	depKeys := make([]string, len(deps))
 	for i, dep := range deps {
 		entry, err := r.GetCatalogEntry(ctx, instanceID, dep)
 		if err != nil {
+			// This err usually means the query has a dependency that does not exist in the catalog.
+			// Returning the error is not critical, it just saves a redundant subsequent query to the OLAP, which would likely fail.
+			// However, for dependencies created in the OLAP DB directly (and are hence not tracked in the catalog), the query would actually succeed.
+			// For read-only Druid dashboards on existing tables, we specifically need the ColumnTimeRange to succeed.
+			// TODO: Remove this horrible hack when discovery of existing tables is implemented. Then we can safely return an error in all cases.
+			if strings.HasPrefix(qk, "ColumnTimeRange") {
+				continue
+			}
 			return fmt.Errorf("query dependency %q not found", dep)
 		}
 		depKeys[i] = entry.Name + ":" + entry.RefreshedOn.String()
 	}
+
+	// If there were no known dependencies, skip caching
+	if len(depKeys) == 0 {
+		return query.Resolve(ctx, r, instanceID, priority)
+	}
+
+	// Build cache key
 	depKey := strings.Join(depKeys, ";")
 	key := queryCacheKey{
 		instanceID:    instanceID,
@@ -65,6 +83,7 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	}
 	queryCacheMissesCounter.Add(ctx, 1)
 
+	// Cache miss. Run the query.
 	err := query.Resolve(ctx, r, instanceID, priority)
 	if err != nil {
 		return err

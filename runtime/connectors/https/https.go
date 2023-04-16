@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -90,6 +91,12 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		Duration:  time.Since(start),
 		Size:      size,
 	})
+
+	if info, err := os.Stat(file); err == nil { // ignoring error since only possible error is path error
+		if info.Size() > env.StorageLimitInBytes {
+			return nil, connectors.ErrIngestionLimitExceeded
+		}
+	}
 
 	return &iterator{ctx: ctx, files: []string{file}}, nil
 }

@@ -3,7 +3,6 @@ package org
 import (
 	"context"
 
-	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -15,19 +14,19 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 		Use:   "list",
 		Short: "List",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
 
-			orgs, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
+			res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
 			if err != nil {
 				return err
 			}
 
-			cmdutil.TextPrinter("Organizations list \n")
-			cmdutil.TablePrinter(toTable(orgs.Organization))
+			cmdutil.SuccessPrinter("Organizations list \n")
+			cmdutil.TablePrinter(toTable(res.Organizations))
 			return nil
 		},
 	}

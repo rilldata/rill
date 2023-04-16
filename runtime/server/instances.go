@@ -56,13 +56,14 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 	}
 
 	inst := &drivers.Instance{
-		ID:           req.InstanceId,
-		OLAPDriver:   req.OlapDriver,
-		OLAPDSN:      req.OlapDsn,
-		RepoDriver:   req.RepoDriver,
-		RepoDSN:      req.RepoDsn,
-		EmbedCatalog: req.EmbedCatalog,
-		Variables:    req.Variables,
+		ID:                  req.InstanceId,
+		OLAPDriver:          req.OlapDriver,
+		OLAPDSN:             req.OlapDsn,
+		RepoDriver:          req.RepoDriver,
+		RepoDSN:             req.RepoDsn,
+		EmbedCatalog:        req.EmbedCatalog,
+		Variables:           req.Variables,
+		IngestionLimitBytes: req.IngestionLimitBytes,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -82,13 +83,14 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 	}
 
 	inst := &drivers.Instance{
-		ID:           req.InstanceId,
-		OLAPDriver:   req.OlapDriver,
-		OLAPDSN:      req.OlapDsn,
-		RepoDriver:   req.RepoDriver,
-		RepoDSN:      req.RepoDsn,
-		EmbedCatalog: req.EmbedCatalog,
-		Variables:    req.Variables,
+		ID:                  req.InstanceId,
+		OLAPDriver:          req.OlapDriver,
+		OLAPDSN:             req.OlapDsn,
+		RepoDriver:          req.RepoDriver,
+		RepoDSN:             req.RepoDsn,
+		EmbedCatalog:        req.EmbedCatalog,
+		Variables:           req.Variables,
+		IngestionLimitBytes: req.IngestionLimitBytes,
 	}
 
 	err := s.runtime.EditInstance(ctx, inst)
@@ -117,13 +119,14 @@ func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstan
 
 func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
 	return &runtimev1.Instance{
-		InstanceId:       inst.ID,
-		OlapDriver:       inst.OLAPDriver,
-		OlapDsn:          inst.OLAPDSN,
-		RepoDriver:       inst.RepoDriver,
-		RepoDsn:          inst.RepoDSN,
-		EmbedCatalog:     inst.EmbedCatalog,
-		Variables:        inst.Variables,
-		ProjectVariables: inst.ProjectVariables,
+		InstanceId:          inst.ID,
+		OlapDriver:          inst.OLAPDriver,
+		OlapDsn:             inst.OLAPDSN,
+		RepoDriver:          inst.RepoDriver,
+		RepoDsn:             inst.RepoDSN,
+		EmbedCatalog:        inst.EmbedCatalog,
+		Variables:           inst.Variables,
+		ProjectVariables:    inst.ProjectVariables,
+		IngestionLimitBytes: inst.IngestionLimitBytes,
 	}
 }

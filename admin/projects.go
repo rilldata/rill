@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/provisioner"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -16,11 +17,48 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-func (s *Service) CreateProject(ctx context.Context, proj *database.Project) (*database.Project, error) {
+func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
 	// TODO: Make this actually fault tolerant.
 
+	org, err := s.DB.FindOrganizationByID(ctx, opts.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+
+	txCtx, tx, err := s.DB.NewTx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
 	// Create the project
-	proj, err := s.DB.CreateProject(ctx, proj.OrganizationID, proj)
+	proj, err := s.DB.InsertProject(txCtx, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	adminRole, err := s.DB.FindProjectRole(txCtx, database.ProjectAdminRoleName)
+	if err != nil {
+		panic(errors.Wrap(err, "failed to find project admin role"))
+	}
+
+	// add project admin role to the user
+	err = s.DB.InsertProjectMemberUser(txCtx, proj.ID, opts.UserID, adminRole.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// add project viewer role to the all_user_group of the org
+	viewerRole, err := s.DB.FindProjectRole(txCtx, database.ProjectViewerRoleName)
+	if err != nil {
+		panic(errors.Wrap(err, "failed to find project viewer role"))
+	}
+	err = s.DB.InsertProjectMemberUsergroup(txCtx, *org.AllUsergroupID, proj.ID, viewerRole.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
 	if err != nil {
 		return nil, err
 	}
@@ -29,16 +67,19 @@ func (s *Service) CreateProject(ctx context.Context, proj *database.Project) (*d
 		return nil, fmt.Errorf("cannot create project without github info")
 	}
 
-	opts := &provisioner.ProvisionOptions{
+	// Provision it
+	provOpts := &provisioner.ProvisionOptions{
+		OLAPDriver:           proj.ProductionOLAPDriver,
+		OLAPDSN:              proj.ProductionOLAPDSN,
+		Region:               proj.Region,
 		Slots:                proj.ProductionSlots,
 		GithubURL:            *proj.GithubURL,
 		GitBranch:            proj.ProductionBranch,
 		GithubInstallationID: *proj.GithubInstallationID,
 		Variables:            proj.ProductionVariables,
 	}
-
-	// Provision it
-	inst, err := s.provisioner.Provision(ctx, opts)
+	// start using original context again since transaction in txCtx is done
+	inst, err := s.provisioner.Provision(ctx, provOpts)
 	if err != nil {
 		err = fmt.Errorf("provisioner: %w", err)
 		err2 := s.DB.DeleteProject(ctx, proj.ID)
@@ -46,7 +87,7 @@ func (s *Service) CreateProject(ctx context.Context, proj *database.Project) (*d
 	}
 
 	// Store deployment
-	depl := &database.Deployment{
+	depl, err := s.DB.InsertDeployment(ctx, &database.InsertDeploymentOptions{
 		ProjectID:         proj.ID,
 		Branch:            proj.ProductionBranch,
 		Slots:             proj.ProductionSlots,
@@ -55,20 +96,26 @@ func (s *Service) CreateProject(ctx context.Context, proj *database.Project) (*d
 		RuntimeAudience:   inst.Audience,
 		Status:            database.DeploymentStatusPending,
 		Logs:              "",
-	}
-	depl, err = s.DB.InsertDeployment(ctx, depl)
+	})
 	if err != nil {
-		err2 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID)
+		err2 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID, proj.ProductionOLAPDriver)
 		err3 := s.DB.DeleteProject(ctx, proj.ID)
 		return nil, multierr.Combine(err, err2, err3)
 	}
 
 	// Update prod deployment on project
-	proj.ProductionDeploymentID = &depl.ID
-	res, err := s.DB.UpdateProject(ctx, proj)
+	res, err := s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Description:            proj.Description,
+		Public:                 proj.Public,
+		ProductionBranch:       proj.ProductionBranch,
+		ProductionVariables:    proj.ProductionVariables,
+		GithubURL:              proj.GithubURL,
+		GithubInstallationID:   proj.GithubInstallationID,
+		ProductionDeploymentID: &depl.ID,
+	})
 	if err != nil {
 		err2 := s.DB.DeleteDeployment(ctx, depl.ID)
-		err3 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID)
+		err3 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID, proj.ProductionOLAPDriver)
 		err4 := s.DB.DeleteProject(ctx, proj.ID)
 		return nil, multierr.Combine(err, err2, err3, err4)
 	}
@@ -92,7 +139,7 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 	}
 
 	for _, d := range ds {
-		err := s.provisioner.Teardown(ctx, d.RuntimeHost, d.RuntimeInstanceID)
+		err := s.provisioner.Teardown(ctx, d.RuntimeHost, d.RuntimeInstanceID, p.ProductionOLAPDriver)
 		if err != nil {
 			return err
 		}
@@ -196,22 +243,24 @@ func (s *Service) TriggerReconcile(ctx context.Context, deploymentID string) err
 	return nil
 }
 
-func (s *Service) UpdateProject(ctx context.Context, p *database.Project) (*database.Project, error) {
+func (s *Service) UpdateProject(ctx context.Context, projID string, opts *database.UpdateProjectOptions) (*database.Project, error) {
 	// TODO: Make this actually fault tolerant.
 
-	ds, err := s.DB.FindDeployments(ctx, p.ID)
+	// TODO: Handle if ProductionBranch or GithubURL was changed.
+
+	ds, err := s.DB.FindDeployments(ctx, projID)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, d := range ds {
-		if err := s.editInstance(ctx, d, p.ProductionVariables); err != nil {
+		if err := s.editInstance(ctx, d, opts.ProductionVariables); err != nil {
 			return nil, err
 		}
 	}
 
 	// Update the project
-	proj, err := s.DB.UpdateProject(ctx, p)
+	proj, err := s.DB.UpdateProject(ctx, projID, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -244,13 +293,14 @@ func (s *Service) editInstance(ctx context.Context, d *database.Deployment, vari
 	// Edit the instance
 	inst := resp.Instance
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
-		InstanceId:   d.RuntimeInstanceID,
-		OlapDriver:   inst.OlapDriver,
-		OlapDsn:      inst.OlapDsn,
-		RepoDriver:   inst.RepoDriver,
-		RepoDsn:      inst.RepoDsn,
-		EmbedCatalog: inst.EmbedCatalog,
-		Variables:    variables,
+		InstanceId:          d.RuntimeInstanceID,
+		OlapDriver:          inst.OlapDriver,
+		OlapDsn:             inst.OlapDsn,
+		RepoDriver:          inst.RepoDriver,
+		RepoDsn:             inst.RepoDsn,
+		EmbedCatalog:        inst.EmbedCatalog,
+		Variables:           variables,
+		IngestionLimitBytes: inst.IngestionLimitBytes,
 	})
 	return err
 }

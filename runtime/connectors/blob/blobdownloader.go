@@ -53,6 +53,10 @@ type Options struct {
 	GlobPageSize          int
 	ExtractPolicy         *runtimev1.Source_ExtractPolicy
 	GlobPattern           string
+	// Although at this point GlobMaxTotalSize and StorageLimitInBytes have same impl but
+	// this is total size the source should consume on disk and is calculated upstream basis how much data one instance has already consumed
+	// across other sources and the instance level limits
+	StorageLimitInBytes int64
 }
 
 // sets defaults if not set by user
@@ -81,6 +85,9 @@ func (opts *Options) validateLimits(size int64, matchCount int, fetched int64) e
 	}
 	if fetched > opts.GlobMaxObjectsListed {
 		return fmt.Errorf("glob pattern exceeds limits: listed more than %d files", opts.GlobMaxObjectsListed)
+	}
+	if size > opts.StorageLimitInBytes {
+		return connectors.ErrIngestionLimitExceeded
 	}
 	return nil
 }

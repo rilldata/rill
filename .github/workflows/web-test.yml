@@ -33,8 +33,28 @@ jobs:
         with:
           node-version: 18
 
+      - name: Set up go for E2E
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.x
+      - name: go build cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Download librillsql
+        shell: bash
+        run: go generate ./runtime/sql
+
       - name: NPM Install
         run: npm install
+
+      - name: Build and embed static UI
+        run: make cli
 
       - name: Install browser for UI tests
         run: npx playwright install
@@ -44,18 +64,21 @@ jobs:
         run: |-
           npx prettier --check "web-common/**/*"
           npx eslint web-common --quiet
+          npx svelte-check --workspace web-common --no-tsconfig --ignore "src/components/(data-graphic|table-editable|notifications|column-profile|virtualized-table|menu|modal|chip|overlay|floating-element|data-types|BarAndLabel.svelte|button|icons/CaretDownIcon.svelte|preview-table/ConnectedPreviewTable.svelte),src/features/models/workspace/inspector,src/**/workspace,src/features/dashboards/(time-series|leaderboard|time-controls),src/layout/navigation/NavigationEntry.svelte"
 
       - name: Prettier checks and lint for web local
         if: steps.filter.outputs.local == 'true'
         run: |-
           npx prettier --check "web-local/**/*"
           npx eslint web-local --quiet
+          npx svelte-check --workspace web-local --no-tsconfig --ignore "src/routes/dev,src/routes/\(application\)/(dashboard|model|source)/[name]"
 
       - name: Prettier checks and lint for web admin
         if: steps.filter.outputs.admin == 'true'
         run: |-
           npx prettier --check "web-admin/**/*"
           npx eslint web-admin --quiet
+          npx svelte-check --workspace web-admin --no-tsconfig
 
       - name: Build & Test the web local
         if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}

@@ -13,12 +13,25 @@ see more button
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
+  import {
+    LIST_SLIDE_DURATION,
+    TOOLTIP_STRING_LIMIT,
+  } from "@rilldata/web-common/layout/config";
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { createEventDispatcher } from "svelte";
+  import PercentageChange from "../../../components/data-types/PercentageChange.svelte";
+  import { PERC_DIFF } from "../../../components/data-types/type-utils";
+  import {
+    formatMeasurePercentageDifference,
+    humanizeDataType,
+  } from "../humanize-numbers";
   import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
 
   export let values;
+  export let comparisonValues;
+  export let showComparison = false;
+
   export let activeValues: Array<unknown>;
   // false = include, true = exclude
   export let filterExcludeMode: boolean;
@@ -26,28 +39,50 @@ see more button
   export let referenceValue;
   export let atLeastOneActive;
   export let loading = false;
+  export let formatPreset;
 
   const { shiftClickAction } = createShiftClickAction();
 
   const dispatch = createEventDispatcher();
   let renderValues = [];
-  $: {
-    renderValues = values.map((v) => {
-      const active = activeValues.findIndex((value) => value === v.label) >= 0;
 
-      // Super important special case: if there is not at least one "active" (selected) value,
-      // we need to set *all* items to be included, because by default if a user has not
-      // selected any values, we assume they want all values included in all calculations.
-      const excluded = atLeastOneActive
-        ? (filterExcludeMode && active) || (!filterExcludeMode && !active)
-        : false;
+  $: comparsionMap = new Map(comparisonValues?.map((v) => [v.label, v.value]));
+  $: renderValues = values.map((v) => {
+    const active = activeValues.findIndex((value) => value === v.label) >= 0;
+    const comparisonValue = comparsionMap.get(v.label);
 
-      return { ...v, active, excluded };
-    });
+    // Super important special case: if there is not at least one "active" (selected) value,
+    // we need to set *all* items to be included, because by default if a user has not
+    // selected any values, we assume they want all values included in all calculations.
+    const excluded = atLeastOneActive
+      ? (filterExcludeMode && active) || (!filterExcludeMode && !active)
+      : false;
+
+    return { ...v, active, excluded, comparisonValue };
+  });
+
+  let comparisonLabelToReveal = undefined;
+  function revealComparisonNumber(value) {
+    return () => {
+      if (showComparison) comparisonLabelToReveal = value;
+    };
+  }
+
+  function getFormatterValueForPercDiff(comparisonValue, value) {
+    if (comparisonValue === 0) return PERC_DIFF.PREV_VALUE_ZERO;
+    if (!comparisonValue) return PERC_DIFF.PREV_VALUE_NO_DATA;
+    if (value === null || value === undefined)
+      return PERC_DIFF.CURRENT_VALUE_NO_DATA;
+
+    const percDiff = (value - comparisonValue) / comparisonValue;
+    return formatMeasurePercentageDifference(percDiff);
   }
 </script>
 
-{#each renderValues as { label, value, __formatted_value, active, excluded } (label)}
+{#each renderValues as { label, value, active, excluded, comparisonValue } (label)}
+  {@const formattedValue = humanizeDataType(value, formatPreset)}
+  {@const showComparisonForThisValue = comparisonLabelToReveal === label}
+
   <div
     use:shiftClickAction
     on:click={() => {
@@ -55,6 +90,8 @@ see more button
         label,
       });
     }}
+    on:mouseenter={revealComparisonNumber(label)}
+    on:mouseleave={revealComparisonNumber(undefined)}
     on:keydown
     on:shift-click={async () => {
       await navigator.clipboard.writeText(label);
@@ -69,6 +106,7 @@ see more button
   >
     <DimensionLeaderboardEntry
       measureValue={value}
+      showContext={showComparison}
       {loading}
       {isSummableMeasure}
       {referenceValue}
@@ -79,9 +117,24 @@ see more button
       <svelte:fragment slot="label">
         {label}
       </svelte:fragment>
-      <svelte:fragment slot="right">
-        {__formatted_value || value || "∅"}
-      </svelte:fragment>
+      <div slot="right" class="flex items-baseline gap-x-1">
+        {#if showComparisonForThisValue && comparisonValue !== undefined}
+          <span
+            class="inline-block opacity-50"
+            transition:slideRight={{ duration: LIST_SLIDE_DURATION }}
+          >
+            {humanizeDataType(comparisonValue, formatPreset)}
+            →
+          </span>
+        {/if}
+
+        {formattedValue || value || "∅"}
+      </div>
+      <span slot="context">
+        <PercentageChange
+          value={getFormatterValueForPercDiff(comparisonValue, value)}
+        />
+      </span>
       <svelte:fragment slot="tooltip">
         <TooltipTitle>
           <svelte:fragment slot="name">

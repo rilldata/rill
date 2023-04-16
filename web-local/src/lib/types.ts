@@ -10,6 +10,7 @@ export interface ProfileColumn {
 export interface VirtualizedTableColumns extends ProfileColumn {
   label?: string;
   total?: number;
+  description?: string;
   enableResize?: boolean;
 }
 
@@ -60,14 +61,6 @@ export enum TableSourceType {
   // table is loaded from an existing duckdb table
   DuckDB,
 }
-export const FILE_EXTENSION_TO_TABLE_TYPE = {
-  parquet: TableSourceType.ParquetFile,
-  csv: TableSourceType.CSVFile,
-  tsv: TableSourceType.CSVFile,
-  txt: TableSourceType.CSVFile,
-  json: TableSourceType.JSONFile,
-  ndjson: TableSourceType.JSONFile,
-};
 
 export interface Table extends ColumnarItem {
   path: string;

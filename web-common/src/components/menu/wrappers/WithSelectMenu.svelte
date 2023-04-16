@@ -15,13 +15,13 @@ and the menu closes.
   export let selection = undefined;
 
   export let dark: boolean = undefined;
-  export let disabled: boolean = undefined;
   export let multiSelect: boolean = undefined;
   export let location: Location = "bottom";
   export let alignment: Alignment = "start";
   export let distance = 16;
   export let paddingTop: number = undefined;
   export let paddingBottom: number = undefined;
+  export let minWidth: string = undefined;
 
   export let active = false;
 
@@ -87,6 +87,7 @@ and the menu closes.
   <slot {active} {handleClose} toggleMenu={toggleFloatingElement} />
 
   <Menu
+    {minWidth}
     {paddingTop}
     {paddingBottom}
     slot="floating-element"
@@ -123,7 +124,11 @@ and the menu closes.
             <Spacer />
           {/if}
         </svelte:fragment>
-        <div class:text-gray-400={disabled}>
+        <div
+          class:text-gray-400={disabled}
+          class:font-bold={showCheckJustAfterClick(key) ||
+            isAlreadySelectedButNotBeingAnimated(key, selected)}
+        >
           {main}
         </div>
         <svelte:fragment slot="description">

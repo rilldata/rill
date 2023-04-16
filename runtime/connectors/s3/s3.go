@@ -54,6 +54,22 @@ var spec = connectors.Spec{
 			Href:        "https://docs.rilldata.com/using-rill/import-data#setting-amazon-s3-credentials",
 		},
 	},
+	ConnectorVariables: []connectors.VariableSchema{
+		{
+			Key:    "aws_access_key_id",
+			Help:   "Leave blank if public access enabled",
+			Secret: true,
+		},
+		{
+			Key:    "aws_secret_access_key",
+			Help:   "Leave blank if public access enabled",
+			Secret: true,
+		},
+		{
+			Key:     "region",
+			Default: "us-east-1",
+		},
+	},
 }
 
 type Config struct {
@@ -127,6 +143,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		GlobPageSize:          conf.GlobPageSize,
 		GlobPattern:           url.Path,
 		ExtractPolicy:         source.ExtractPolicy,
+		StorageLimitInBytes:   env.StorageLimitInBytes,
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts)
@@ -225,7 +242,7 @@ func getCredentials(env *connectors.Env) (*credentials.Credentials, error) {
 	// the credential lookup will proceed to next provider in chain
 	providers = append(providers, staticProvider)
 
-	if env.AllowHostCredentials {
+	if env.AllowHostAccess {
 		// allowed to access host credentials so we add them in chain
 		// The chain used here is a duplicate of defaults.CredProviders(), but without the remote credentials lookup (since they resolve too slowly).
 		providers = append(providers, &credentials.EnvProvider{}, &credentials.SharedCredentialsProvider{Filename: "", Profile: ""})

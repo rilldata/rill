@@ -3,7 +3,6 @@ package org
 import (
 	"context"
 
-	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
@@ -15,17 +14,17 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 	var description string
 
 	createCmd := &cobra.Command{
-		Use:   "create",
+		Use:   "create <org-name>",
 		Short: "Create",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken())
+			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
 
-			org, err := client.CreateOrganization(context.Background(), &adminv1.CreateOrganizationRequest{
+			res, err := client.CreateOrganization(context.Background(), &adminv1.CreateOrganizationRequest{
 				Name:        args[0],
 				Description: description,
 			})
@@ -34,13 +33,13 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Switching to the created org
-			err = dotrill.SetDefaultOrg(args[0])
+			err = dotrill.SetDefaultOrg(res.Organization.Name)
 			if err != nil {
 				return err
 			}
 
-			cmdutil.TextPrinter("Created organization \n")
-			cmdutil.TablePrinter(toRow(org.Organization))
+			cmdutil.SuccessPrinter("Created organization \n")
+			cmdutil.TablePrinter(toRow(res.Organization))
 			return nil
 		},
 	}

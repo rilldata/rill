@@ -1,7 +1,7 @@
 <script lang="ts">
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { QueryClient, QueryClientProvider } from "@sveltestack/svelte-query";
+  import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
   import TopNavigationBar from "../components/navigation/TopNavigationBar.svelte";
 
   const queryClient = new QueryClient({
@@ -28,16 +28,13 @@
 
 <RillTheme>
   <QueryClientProvider client={queryClient}>
-    <div class="flex flex-col min-h-screen">
+    <div class="flex flex-col h-screen">
       <main class="flex-grow flex flex-col">
         <TopNavigationBar />
-        <div class="flex-grow overflow-auto mt-4">
+        <div class="flex-grow overflow-auto">
           <slot />
         </div>
       </main>
-      <footer class="text-center">
-        <p>Rill Data</p>
-      </footer>
     </div>
   </QueryClientProvider>
 </RillTheme>

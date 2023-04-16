@@ -22,9 +22,10 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 	require.Len(t, objs, 0)
 
 	obj1 := &drivers.CatalogEntry{
-		Name: "bar",
-		Type: drivers.ObjectTypeSource,
-		Path: "sources/bar.yaml",
+		Name:          "bar",
+		Type:          drivers.ObjectTypeSource,
+		Path:          "sources/bar.yaml",
+		BytesIngested: 1029,
 		Object: &runtimev1.Source{
 			Name:       "bar",
 			Connector:  "local_file",
@@ -62,6 +63,7 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 	require.Equal(t, objs[0].Name, obj1.Name)
 	require.Equal(t, objs[0].Type, obj1.Type)
 	require.Equal(t, objs[0].Path, obj1.Path)
+	require.Equal(t, objs[0].BytesIngested, obj1.BytesIngested)
 	require.True(t, proto.Equal(objs[0].GetSource(), obj1.GetSource()))
 
 	objs = catalog.FindEntries(ctx, instanceID, drivers.ObjectTypeUnspecified)

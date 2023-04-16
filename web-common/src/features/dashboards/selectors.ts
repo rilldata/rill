@@ -1,16 +1,16 @@
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
-  useRuntimeServiceGetCatalogEntry,
-  useQueryServiceColumnTimeRange,
-  useRuntimeServiceListCatalogEntries,
-  useRuntimeServiceListFiles,
+  createQueryServiceColumnTimeRange,
+  createRuntimeServiceGetCatalogEntry,
+  createRuntimeServiceListCatalogEntries,
+  createRuntimeServiceListFiles,
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
-import { TimeRangeName } from "./time-controls/time-control-types";
 
-export function useDashboardNames(repoId: string) {
-  return useRuntimeServiceListFiles(
-    repoId,
+export function useDashboardNames(instanceId: string) {
+  return createRuntimeServiceListFiles(
+    instanceId,
     {
       glob: "{sources,models,dashboards}/*.{yaml,sql}",
     },
@@ -37,7 +37,7 @@ export const useMetaQuery = <T = V1MetricsView>(
   metricViewName: string,
   selector?: (meta: V1MetricsView) => T
 ) => {
-  return useRuntimeServiceGetCatalogEntry(instanceId, metricViewName, {
+  return createRuntimeServiceGetCatalogEntry(instanceId, metricViewName, {
     query: {
       select: (data) =>
         selector
@@ -57,7 +57,7 @@ export function useModelAllTimeRange(
   modelName: string,
   timeDimension: string
 ) {
-  return useQueryServiceColumnTimeRange(
+  return createQueryServiceColumnTimeRange(
     instanceId,
     modelName,
     {
@@ -69,7 +69,7 @@ export function useModelAllTimeRange(
           if (!data.timeRangeSummary?.min || !data.timeRangeSummary?.max)
             return undefined;
           return {
-            name: TimeRangeName.AllTime,
+            name: TimeRangePreset.ALL_TIME,
             start: new Date(data.timeRangeSummary.min),
             end: new Date(data.timeRangeSummary.max),
           };
@@ -85,7 +85,7 @@ export const useMetaMeasure = (
   measureName: string
 ) =>
   useMetaQuery(instanceId, metricViewName, (meta) =>
-    meta.measures?.find((measure) => measure.name === measureName)
+    meta?.measures?.find((measure) => measure.name === measureName)
   );
 
 export const useMetaDimension = (
@@ -94,7 +94,7 @@ export const useMetaDimension = (
   dimensionName: string
 ) =>
   useMetaQuery(instanceId, metricViewName, (meta) =>
-    meta.dimensions?.find((dimension) => dimension.name === dimensionName)
+    meta?.dimensions?.find((dimension) => dimension.name === dimensionName)
   );
 
 /**
@@ -125,7 +125,7 @@ export const useGetDashboardsForModel = (
   instanceId: string,
   modelName: string
 ) => {
-  return useRuntimeServiceListCatalogEntries(
+  return createRuntimeServiceListCatalogEntries(
     instanceId,
     { type: "OBJECT_TYPE_METRICS_VIEW" },
     {

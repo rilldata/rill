@@ -22,18 +22,35 @@
       name,
       enableResize,
       type: columns[header.index]?.type,
+      description: columns[header.index]?.description || "",
       pinned: pinnedColumns.some((column) => column.name === name),
       isSelected: selectedColumn === columns[header.index]?.name,
     };
   };
+
+  function isDelta(column) {
+    return column?.endsWith("_delta");
+  }
+
+  function isDeltaPercentage(column) {
+    return column?.endsWith("_delta_perc");
+  }
+
+  function isHighlightedColumn(column) {
+    return isDelta(column) || isDeltaPercentage(column);
+  }
 </script>
 
 <div class="w-full sticky relative top-0 z-10">
   {#each virtualColumnItems as header (header.key)}
+    {@const props = getColumnHeaderProps(header)}
     <ColumnHeader
       on:resize-column
       on:reset-column-size
-      {...getColumnHeaderProps(header)}
+      bgClass={props.isSelected || isHighlightedColumn(header?.key)
+        ? `bg-gray-50`
+        : "surface"}
+      {...props}
       {header}
       {noPin}
       {showDataIcon}

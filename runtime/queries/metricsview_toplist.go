@@ -59,7 +59,7 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return err
 	}
 
-	if olap.Dialect() != drivers.DialectDuckDB {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -73,7 +73,7 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	}
 
 	// Build query
-	sql, args, err := q.buildMetricsTopListSQL(mv)
+	sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect())
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -92,7 +92,7 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	return nil
 }
 
-func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView) (string, []any, error) {
+func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
 	dimName := safeName(q.DimensionName)
 	selectCols := []string{dimName}
 	for _, n := range q.MeasureNames {
@@ -132,21 +132,27 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView) (
 		args = append(args, clauseArgs...)
 	}
 
-	orderClause := "true"
+	sortingCriteria := make([]string, 0, len(q.Sort))
 	for _, s := range q.Sort {
-		orderClause += ", "
-		orderClause += safeName(s.Name)
+		sortCriterion := safeName(s.Name)
 		if !s.Ascending {
-			orderClause += " DESC"
+			sortCriterion += " DESC"
 		}
-		orderClause += " NULLS LAST"
+		if dialect == drivers.DialectDuckDB {
+			sortCriterion += " NULLS LAST"
+		}
+		sortingCriteria = append(sortingCriteria, sortCriterion)
+	}
+	orderClause := ""
+	if len(sortingCriteria) > 0 {
+		orderClause = "ORDER BY " + strings.Join(sortingCriteria, ", ")
 	}
 
 	if q.Limit == 0 {
 		q.Limit = 100
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s GROUP BY %s ORDER BY %s LIMIT %d",
+	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s GROUP BY %s %s LIMIT %d",
 		strings.Join(selectCols, ", "),
 		mv.Model,
 		whereClause,

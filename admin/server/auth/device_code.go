@@ -75,7 +75,7 @@ func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	verificationURI, err := url.JoinPath(a.opts.FrontendURL, "/auth/device")
+	verificationURI, err := url.JoinPath(a.opts.FrontendURL, "/-/auth/device")
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to create verification uri: %w", err))
 		return
@@ -142,7 +142,7 @@ func (a *Authenticator) handleUserCodeConfirmation(w http.ResponseWriter, r *htt
 		internalServerError(w, fmt.Errorf("failed to get auth code for userCode: %s, %w", userCode, err))
 		return
 	}
-	if authCode.ApprovalState != database.Pending {
+	if authCode.ApprovalState != database.AuthCodeStatePending {
 		http.Error(w, "device code already used", http.StatusBadRequest)
 		return
 	}
@@ -154,9 +154,9 @@ func (a *Authenticator) handleUserCodeConfirmation(w http.ResponseWriter, r *htt
 	// Update user code with user id and approval
 	authCode.UserID = &userID
 	if confirmation != "true" {
-		authCode.ApprovalState = database.Rejected
+		authCode.ApprovalState = database.AuthCodeStateRejected
 	} else {
-		authCode.ApprovalState = database.Approved
+		authCode.ApprovalState = database.AuthCodeStateApproved
 	}
 	err = a.admin.DB.UpdateAuthCode(r.Context(), userCode, userID, authCode.ApprovalState)
 	if err != nil {
@@ -211,7 +211,7 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "expired_token", http.StatusUnauthorized)
 		return
 	}
-	if authCode.ApprovalState == database.Rejected {
+	if authCode.ApprovalState == database.AuthCodeStateRejected {
 		err = a.admin.DB.DeleteAuthCode(r.Context(), deviceCode)
 		if err != nil {
 			internalServerError(w, fmt.Errorf("failed to clean up rejected code: %s, %w", deviceCode, err))
@@ -220,11 +220,11 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "rejected", http.StatusUnauthorized)
 		return
 	}
-	if authCode.ApprovalState == database.Pending {
+	if authCode.ApprovalState == database.AuthCodeStatePending {
 		http.Error(w, "authorization_pending", http.StatusUnauthorized)
 		return
 	}
-	if authCode.ApprovalState != database.Approved || authCode.UserID == nil {
+	if authCode.ApprovalState != database.AuthCodeStateApproved || authCode.UserID == nil {
 		internalServerError(w, fmt.Errorf("inconsistent state, %w", errors.New("server error")))
 		return
 	}

@@ -4,8 +4,8 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { SourceWorkspace } from "@rilldata/web-common/features/sources";
   import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceGetFile,
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
@@ -21,7 +21,7 @@
   });
 
   // try to get the catalog entry.
-  $: catalogQuery = useRuntimeServiceGetCatalogEntry(
+  $: catalogQuery = createRuntimeServiceGetCatalogEntry(
     $runtime.instanceId,
     sourceName,
     {
@@ -35,7 +35,7 @@
   $: embedded = $catalogQuery.data?.entry?.embedded;
   $: path = $catalogQuery.data?.entry?.source.properties.path;
 
-  $: fileQuery = useRuntimeServiceGetFile(
+  $: fileQuery = createRuntimeServiceGetFile(
     $runtime.instanceId,
     getFilePathFromNameAndType(sourceName, EntityType.Table),
     {

@@ -11,7 +11,8 @@ import (
 // It mirrors a file system, but may be virtualized by a database for non-local deployments.
 type RepoStore interface {
 	Driver() string
-	DSN() string
+	// Root returns directory where artifacts are stored.
+	Root() string
 	ListRecursive(ctx context.Context, instID string, glob string) ([]string, error)
 	Get(ctx context.Context, instID string, path string) (string, error)
 	Stat(ctx context.Context, instID string, path string) (*RepoObjectStat, error)

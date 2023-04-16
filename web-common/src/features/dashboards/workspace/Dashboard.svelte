@@ -1,17 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import {
-    protoToBase64,
-    toProto,
-  } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
   import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
+  import { createRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
-  import { MEASURE_CONFIG } from "../config";
   import { metricsExplorerStore } from "../dashboard-stores";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
@@ -20,6 +15,9 @@
   import DashboardHeader from "./DashboardHeader.svelte";
 
   export let metricViewName: string;
+  export let hasTitle: boolean;
+
+  export let leftMargin = undefined;
 
   const switchToMetrics = async (metricViewName: string) => {
     if (!metricViewName) return;
@@ -29,7 +27,7 @@
 
   $: switchToMetrics(metricViewName);
 
-  $: metricsViewQuery = useRuntimeServiceGetCatalogEntry(
+  $: metricsViewQuery = createRuntimeServiceGetCatalogEntry(
     $runtime.instanceId,
     metricViewName,
     {
@@ -60,25 +58,12 @@
     metricViewName
   );
   $: hasTimeSeries = $metricTimeSeries.data;
-  $: gridConfig = hasTimeSeries
-    ? `${
-        width >= MEASURE_CONFIG.breakpoint
-          ? MEASURE_CONFIG.container.width.full
-          : MEASURE_CONFIG.container.width.breakpoint
-      }px minmax(355px, auto)`
-    : "max-content minmax(355px, auto)";
-
-  $: if (!$featureFlags.readOnly && metricsExplorer) {
-    const binary = toProto(metricsExplorer).toBinary();
-    const message = protoToBase64(binary);
-    goto(`/dashboard/${metricViewName}?state=${message}`);
-  }
 </script>
 
-<DashboardContainer bind:exploreContainerWidth {gridConfig} bind:width>
-  <DashboardHeader {metricViewName} slot="header" />
+<DashboardContainer bind:exploreContainerWidth bind:width {leftMargin}>
+  <DashboardHeader {metricViewName} {hasTitle} slot="header" />
 
-  <svelte:fragment slot="metrics" let:width>
+  <svelte:fragment let:width slot="metrics">
     {#key metricViewName}
       {#if hasTimeSeries}
         <MetricsTimeSeriesCharts {metricViewName} workspaceWidth={width} />
