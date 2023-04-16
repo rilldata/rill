@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -25,7 +26,10 @@ func New(runtimeHost, bearerToken string) (*Client, error) {
 		return nil, err
 	}
 
-	var opts []grpc.DialOption
+	opts := []grpc.DialOption{
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+	}
 
 	if uri.Scheme == "http" {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
