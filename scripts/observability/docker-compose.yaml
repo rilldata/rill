@@ -1,15 +1,9 @@
 version: "2"
 services:
-  zipkin-all-in-one:
-    image: openzipkin/zipkin:latest
-    restart: always
-    ports:
-      - "9411:9411"
-
   otel-collector:
-    image: ${OTELCOL_IMG}
+    image: otel/opentelemetry-collector
     restart: always
-    command: ["--config=/etc/otel-collector-config.yaml", "${OTELCOL_ARGS}"]
+    command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
@@ -19,7 +13,13 @@ services:
       - "4317:4317" # OTLP gRPC receiver
       - "55679:55679" # zpages extension
     depends_on:
-      - zipkin-all-in-one
+      - zipkin
+
+  zipkin:
+    image: openzipkin/zipkin:latest
+    restart: always
+    ports:
+      - "9411:9411"
 
   prometheus:
     container_name: prometheus
@@ -28,4 +28,4 @@ services:
     volumes:
       - ./prometheus.yaml:/etc/prometheus/prometheus.yml
     ports:
-      - "19090:9090"
+      - "9412:9090"

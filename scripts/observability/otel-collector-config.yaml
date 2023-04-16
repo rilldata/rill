@@ -5,14 +5,10 @@ receivers:
 
 exporters:
   prometheus:
-    endpoint: "0.0.0.0:8889"
-    const_labels:
-      label1: value1
-
-  logging:
+    endpoint: :8889
 
   zipkin:
-    endpoint: "http://zipkin-all-in-one:9411/api/v2/spans"
+    endpoint: "http://zipkin:9411/api/v2/spans"
     format: proto
 
 processors:
