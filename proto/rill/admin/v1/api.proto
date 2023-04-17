@@ -185,6 +185,7 @@ message GetOrganizationRequest {
 
 message GetOrganizationResponse {
   Organization organization = 1;
+  OrganizationPermissions permissions = 2;
 }
 
 message CreateOrganizationRequest {
@@ -231,6 +232,7 @@ message GetProjectResponse {
   Project project = 1;
   Deployment production_deployment = 2;
   string jwt = 3;
+  ProjectPermissions project_permissions = 4;
 }
 
 message CreateProjectRequest {
@@ -379,6 +381,7 @@ message ListOrganizationMembersRequest {
 // Response message for AdminService.ListOrganizationMembers
 message ListOrganizationMembersResponse {
   repeated Member members = 1;
+  repeated UserInvite invites = 3;
   string next_page_token = 2;
 }
 
@@ -390,7 +393,9 @@ message AddOrganizationMemberRequest {
 }
 
 // Response message for AdminService.AddOrganizationMember
-message AddOrganizationMemberResponse {}
+message AddOrganizationMemberResponse {
+  bool pending_signup = 1;
+}
 
 // Request message for AdminService.RemoveOrganizationMember
 message RemoveOrganizationMemberRequest {
@@ -430,6 +435,7 @@ message ListProjectMembersRequest {
 // Response message for AdminService.ListProjectMembers
 message ListProjectMembersResponse {
   repeated Member members = 1;
+  repeated UserInvite invites = 3;
   string next_page_token = 2;
 }
 
@@ -442,7 +448,9 @@ message AddProjectMemberRequest {
 }
 
 // Response message for AdminService.AddProjectMember
-message AddProjectMemberResponse {}
+message AddProjectMemberResponse {
+  bool pending_signup = 1;
+}
 
 // Request message for AdminService.RemoveProjectMember
 message RemoveProjectMemberRequest {
@@ -472,4 +480,31 @@ message Member {
   string role_name = 4;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
+}
+
+message OrganizationPermissions {
+  bool read_org = 1;
+  bool manage_org = 2;
+  bool read_projects = 3;
+  bool create_projects = 4;
+  bool manage_projects = 5;
+  bool read_org_members = 6;
+  bool manage_org_members = 7;
+}
+
+message ProjectPermissions {
+  bool read_project = 1;
+  bool manage_project = 2;
+  bool read_prod_branch = 3;
+  bool manage_prod_branch = 4;
+  bool read_dev_branches = 5;
+  bool manage_dev_branches = 6;
+  bool read_project_members = 7;
+  bool manage_project_members = 8;
+}
+
+message UserInvite {
+  string email = 1;
+  string role = 2;
+  string invited_by = 3;
 }

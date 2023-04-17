@@ -16,7 +16,7 @@
   }
 </script>
 
-<li class="flex flex items-center gap-x-3 p-2">
+<li class="flex flex items-center gap-x-2 p-2">
   <slot name="icon" />
   {#if !menuOptions}
     <span class={isCurrentPage ? activeClass : inactiveClass}>{label}</span>
@@ -41,7 +41,7 @@
         on:mouseleave={() => setHovered(false)}
       >
         <span>{label}</span>
-        <div class="transition-transform" class:translate-y-2={hovered}>
+        <div class="transition-transform {hovered ? 'translate-y-[2px]' : ''}">
           <CaretDownIcon size="14px" />
         </div>
       </button>
