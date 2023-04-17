@@ -8,6 +8,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -97,9 +98,12 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
+	projectPermissions := claims.ProjectPermissions(ctx, proj.ID)
+
 	if proj.ProductionDeploymentID == nil {
 		return &adminv1.GetProjectResponse{
-			Project: projToDTO(proj, org.Name),
+			Project:            projToDTO(proj, org.Name),
+			ProjectPermissions: projectPermissions,
 		}, nil
 	}
 
@@ -135,6 +139,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		Project:              projToDTO(proj, org.Name),
 		ProductionDeployment: deploymentToDTO(depl),
 		Jwt:                  jwt,
+		ProjectPermissions:   projectPermissions,
 	}, nil
 }
 
@@ -158,14 +163,10 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
 	}
 
-	// Get Github installation ID for the repo
-	installationID, ok, err := s.admin.GetUserGithubInstallation(ctx, claims.OwnerID(), req.GithubUrl)
+	// check github app is installed and caller has access on the repo
+	installationID, err := s.fetchInstallationID(ctx, req.GithubUrl, claims.OwnerID())
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Github installation: %w", err)
-	}
-	// Check that the user has access to the installation
-	if !ok {
-		return nil, fmt.Errorf("you have not granted Rill access to %q", req.GithubUrl)
+		return nil, err
 	}
 
 	// TODO: Validate that req.ProductionBranch is an actual branch.
@@ -244,18 +245,15 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
 
-	// If changing the Github URL, check the caller has access
+	// If changing the Github URL, check github app is installed and caller has access on the repo
 	if safeStr(proj.GithubURL) != req.GithubUrl {
-		_, ok, err := s.admin.GetUserGithubInstallation(ctx, claims.OwnerID(), req.GithubUrl)
+		_, err = s.fetchInstallationID(ctx, req.GithubUrl, claims.OwnerID())
 		if err != nil {
-			return nil, fmt.Errorf("failed to get Github installation: %w", err)
-		}
-		if !ok {
-			return nil, fmt.Errorf("you have not granted Rill access to %q", req.GithubUrl)
+			return nil, err
 		}
 	}
 
-	var githubURL *string
+	githubURL := proj.GithubURL
 	if req.GithubUrl != "" {
 		githubURL = &req.GithubUrl
 	}
@@ -264,7 +262,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Description:            req.Description,
 		Public:                 req.Public,
 		ProductionBranch:       req.ProductionBranch,
-		ProductionVariables:    req.Variables,
+		ProductionVariables:    proj.ProductionVariables,
 		GithubURL:              githubURL,
 		GithubInstallationID:   proj.GithubInstallationID,
 		ProductionDeploymentID: proj.ProductionDeploymentID,
@@ -303,7 +301,20 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 		dtos[i] = memberToPB(member)
 	}
 
-	return &adminv1.ListProjectMembersResponse{Members: dtos}, nil
+	// get pending user invites for this project
+	userInvites, err := s.admin.DB.FindProjectMemberInvitations(ctx, proj.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))
+	for _, invite := range userInvites {
+		invitesDtos = append(invitesDtos, inviteToPB(invite))
+	}
+
+	return &adminv1.ListProjectMembersResponse{
+		Members: dtos,
+		Invites: invitesDtos,
+	}, nil
 }
 
 func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMemberRequest) (*adminv1.AddProjectMemberResponse, error) {
@@ -321,19 +332,6 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add project members")
 	}
 
-	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
-	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-		// Create phantom user
-		// TODO: Replace by an invite-based approach
-		user, err = s.admin.CreateOrUpdateUser(ctx, req.Email, "", "")
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	}
-
 	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -342,12 +340,37 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		// Invite user to join the project
+		invitedBy := ""
+		if claims.OwnerType() == auth.OwnerTypeUser {
+			invitedBy = claims.OwnerID()
+		}
+		err = s.admin.InviteUserToProject(ctx, req.Email, invitedBy, proj.ID, role.ID, proj.Name, role.Name)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		return &adminv1.AddProjectMemberResponse{
+			PendingSignup: true,
+		}, nil
+	}
+
 	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
 	if err != nil {
+		if errors.Is(err, database.ErrNotUnique) {
+			return nil, status.Error(codes.InvalidArgument, "user already member of org")
+		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.AddProjectMemberResponse{}, nil
+	return &adminv1.AddProjectMemberResponse{
+		PendingSignup: false,
+	}, nil
 }
 
 func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemoveProjectMemberRequest) (*adminv1.RemoveProjectMemberResponse, error) {
@@ -368,7 +391,19 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "user not found")
+			// check if there is a pending invite
+			invite, err := s.admin.DB.FindProjectMemberUserInvitation(ctx, proj.ID, req.Email)
+			if err != nil {
+				if errors.Is(err, database.ErrNotFound) {
+					return nil, status.Error(codes.InvalidArgument, "user not found")
+				}
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			err = s.admin.DB.DeleteProjectMemberUserInvitation(ctx, invite.ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			return &adminv1.RemoveProjectMemberResponse{}, nil
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -420,6 +455,87 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 	return &adminv1.SetProjectMemberRoleResponse{}, nil
 }
 
+func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjectVariablesRequest) (*adminv1.GetProjectVariablesResponse, error) {
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "proj not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.CanProject(ctx, proj.ID, auth.ManageProject) {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project variables")
+	}
+
+	return &adminv1.GetProjectVariablesResponse{Variables: proj.ProductionVariables}, nil
+}
+
+func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.UpdateProjectVariablesRequest) (*adminv1.UpdateProjectVariablesResponse, error) {
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "proj not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.CanProject(ctx, proj.ID, auth.ManageProject) {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
+	}
+
+	proj, err = s.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Description:            proj.Description,
+		Public:                 proj.Public,
+		ProductionBranch:       proj.ProductionBranch,
+		GithubURL:              proj.GithubURL,
+		GithubInstallationID:   proj.GithubInstallationID,
+		ProductionDeploymentID: proj.ProductionDeploymentID,
+		ProductionVariables:    req.Variables,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "variables updated failed with error %s", err.Error())
+	}
+
+	return &adminv1.UpdateProjectVariablesResponse{Variables: proj.ProductionVariables}, nil
+}
+
+// fetchInstallationID returns a valid installation ID iff app is installed and user is a collaborator of the repo
+func (s *Server) fetchInstallationID(ctx context.Context, githubURL, userID string) (int64, error) {
+	// Get Github installation ID for the repo
+	installationID, err := s.admin.GetGithubInstallation(ctx, githubURL)
+	if err != nil {
+		if errors.Is(err, admin.ErrGithubInstallationNotFound) {
+			return 0, status.Errorf(codes.PermissionDenied, "you have not granted Rill access to %q", githubURL)
+		}
+
+		return 0, status.Errorf(codes.Internal, "failed to get Github installation: %q", err.Error())
+	}
+
+	if installationID == 0 {
+		return 0, status.Errorf(codes.Internal, "you have not granted Rill access to %q", githubURL)
+	}
+
+	user, err := s.admin.DB.FindUser(ctx, userID)
+	if err != nil {
+		return 0, status.Error(codes.Internal, err.Error())
+	}
+
+	// check that user is a collaborator on the repo
+	_, err = s.admin.LookupGithubRepoForUser(ctx, installationID, githubURL, user.GithubUsername)
+	if err != nil {
+		if errors.Is(err, admin.ErrUserIsNotCollaborator) {
+			return 0, status.Errorf(codes.PermissionDenied, "you are not collaborator to the repo %q", githubURL)
+		}
+
+		return 0, status.Error(codes.Internal, err.Error())
+	}
+
+	return installationID, nil
+}
+
 func projToDTO(p *database.Project, orgName string) *adminv1.Project {
 	return &adminv1.Project{
 		Id:                     p.ID,
@@ -437,7 +553,6 @@ func projToDTO(p *database.Project, orgName string) *adminv1.Project {
 		ProductionDeploymentId: safeStr(p.ProductionDeploymentID),
 		CreatedOn:              timestamppb.New(p.CreatedOn),
 		UpdatedOn:              timestamppb.New(p.UpdatedOn),
-		Variables:              p.ProductionVariables,
 	}
 }
 

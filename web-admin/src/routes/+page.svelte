@@ -1,21 +1,12 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "../client";
-  import { ADMIN_URL } from "../client/http-client";
+  import AuthRedirect from "../components/authentication/AuthRedirect.svelte";
   import OrganizationList from "../components/home/OrganizationList.svelte";
 
-  const user = createAdminServiceGetCurrentUser({
-    query: {
-      onSuccess: (data) => {
-        if (!data.user) {
-          goto(`${ADMIN_URL}/auth/login?redirect=${window.origin}`);
-        }
-      },
-    },
-  });
+  const user = createAdminServiceGetCurrentUser();
 </script>
 
-{#if $user.data && $user.data.user}
+<AuthRedirect>
   <section class="flex flex-col justify-center w-4/5 mx-auto h-2/5">
     <h1 class="text-4xl leading-10 font-light mb-2">
       Hi {$user.data.user.displayName}!
@@ -25,4 +16,4 @@
     </h3>
     <OrganizationList />
   </section>
-{/if}
+</AuthRedirect>

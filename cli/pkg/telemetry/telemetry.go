@@ -88,7 +88,7 @@ type BehaviourEventFields struct {
 	ScreenName string
 }
 
-func (t *Telemetry) emitBehaviourEvent(ctx context.Context, action, medium, space, screenName string) error {
+func (t *Telemetry) emitBehaviourEvent(ctx context.Context, action, medium, space, screenName string) {
 	fields := BehaviourEventFields{
 		AppName:    RillDeveloperApp,
 		InstallID:  t.InstallID,
@@ -103,35 +103,35 @@ func (t *Telemetry) emitBehaviourEvent(ctx context.Context, action, medium, spac
 	}
 	body, err := json.Marshal(&fields)
 	if err != nil {
-		return err
+		return
 	}
 
-	return t.emit(ctx, body)
+	go t.emit(ctx, body)
 }
 
 // Error events are not needed. Will be inferred from missing events by product.
 // For internal debugging we should use logs.
 
-func (t *Telemetry) EmitDeployStart(ctx context.Context) error {
-	return t.emitBehaviourEvent(ctx, "deploy-start", "cli", "terminal", "terminal")
+func (t *Telemetry) EmitDeployStart(ctx context.Context) {
+	t.emitBehaviourEvent(ctx, "deploy-start", "cli", "terminal", "terminal")
 }
 
-func (t *Telemetry) EmitDeploySuccess(ctx context.Context) error {
-	return t.emitBehaviourEvent(ctx, "deploy-success", "cli", "terminal", "terminal")
+func (t *Telemetry) EmitDeploySuccess(ctx context.Context) {
+	t.emitBehaviourEvent(ctx, "deploy-success", "cli", "terminal", "terminal")
 }
 
-func (t *Telemetry) EmitGithubConnectedStart(ctx context.Context) error {
-	return t.emitBehaviourEvent(ctx, "ghconnected-start", "cli", "terminal", "terminal")
+func (t *Telemetry) EmitGithubConnectedStart(ctx context.Context) {
+	t.emitBehaviourEvent(ctx, "ghconnected-start", "cli", "terminal", "terminal")
 }
 
-func (t *Telemetry) EmitGithubConnectedSuccess(ctx context.Context) error {
-	return t.emitBehaviourEvent(ctx, "ghconnected-success", "cli", "terminal", "terminal")
+func (t *Telemetry) EmitGithubConnectedSuccess(ctx context.Context) {
+	t.emitBehaviourEvent(ctx, "ghconnected-success", "cli", "terminal", "terminal")
 }
 
-func (t *Telemetry) EmitDataAccessConnectedStart(ctx context.Context) error {
-	return t.emitBehaviourEvent(ctx, "dataaccess-start", "cli", "terminal", "terminal")
+func (t *Telemetry) EmitDataAccessConnectedStart(ctx context.Context) {
+	t.emitBehaviourEvent(ctx, "dataaccess-start", "cli", "terminal", "terminal")
 }
 
-func (t *Telemetry) EmitDataAccessConnectedSuccess(ctx context.Context) error {
-	return t.emitBehaviourEvent(ctx, "dataaccess-success", "cli", "terminal", "terminal")
+func (t *Telemetry) EmitDataAccessConnectedSuccess(ctx context.Context) {
+	t.emitBehaviourEvent(ctx, "dataaccess-success", "cli", "terminal", "terminal")
 }

@@ -197,7 +197,7 @@ export function humanizeDataType(
   type: NicelyFormattedTypes,
   options?: FormatterFactoryOptions
 ): string {
-  if (value === undefined) return "";
+  if (value === undefined || value === null) return "";
   if (typeof value != "number") return value.toString();
 
   const numberKind = nicelyFormattedTypesToNumberKind(type);

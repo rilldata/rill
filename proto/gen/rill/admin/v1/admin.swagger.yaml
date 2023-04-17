@@ -567,6 +567,59 @@ paths:
                 type: string
               public:
                 type: boolean
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/projects/{name}/variables:
+    get:
+      summary: 'GetProjectVariables returns project variables. NOTE: Get project API doesn''t return variables.'
+      operationId: AdminService_GetProjectVariables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectVariablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    put:
+      summary: 'UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn''t update variables.'
+      operationId: AdminService_UpdateProjectVariables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateProjectVariablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
               variables:
                 type: object
                 additionalProperties:
@@ -639,9 +692,15 @@ definitions:
         type: string
   v1AddOrganizationMemberResponse:
     type: object
+    properties:
+      pendingSignup:
+        type: boolean
     title: Response message for AdminService.AddOrganizationMember
   v1AddProjectMemberResponse:
     type: object
+    properties:
+      pendingSignup:
+        type: boolean
     title: Response message for AdminService.AddProjectMember
   v1CreateOrganizationRequest:
     type: object
@@ -720,6 +779,8 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
+      permissions:
+        $ref: '#/definitions/v1OrganizationPermissions'
   v1GetProjectResponse:
     type: object
     properties:
@@ -729,12 +790,25 @@ definitions:
         $ref: '#/definitions/v1Deployment'
       project:
         $ref: '#/definitions/v1Project'
+      projectPermissions:
+        $ref: '#/definitions/v1ProjectPermissions'
+  v1GetProjectVariablesResponse:
+    type: object
+    properties:
+      variables:
+        type: object
+        additionalProperties:
+          type: string
   v1LeaveOrganizationResponse:
     type: object
     title: Response message for AdminService.LeaveOrganization
   v1ListOrganizationMembersResponse:
     type: object
     properties:
+      invites:
+        type: array
+        items:
+          $ref: '#/definitions/v1UserInvite'
       members:
         type: array
         items:
@@ -754,6 +828,10 @@ definitions:
   v1ListProjectMembersResponse:
     type: object
     properties:
+      invites:
+        type: array
+        items:
+          $ref: '#/definitions/v1UserInvite'
       members:
         type: array
         items:
@@ -803,6 +881,23 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1OrganizationPermissions:
+    type: object
+    properties:
+      createProjects:
+        type: boolean
+      manageOrg:
+        type: boolean
+      manageOrgMembers:
+        type: boolean
+      manageProjects:
+        type: boolean
+      readOrg:
+        type: boolean
+      readOrgMembers:
+        type: boolean
+      readProjects:
+        type: boolean
   v1PingResponse:
     type: object
     properties:
@@ -848,10 +943,25 @@ definitions:
       updatedOn:
         type: string
         format: date-time
-      variables:
-        type: object
-        additionalProperties:
-          type: string
+  v1ProjectPermissions:
+    type: object
+    properties:
+      manageDevBranches:
+        type: boolean
+      manageProdBranch:
+        type: boolean
+      manageProject:
+        type: boolean
+      manageProjectMembers:
+        type: boolean
+      readDevBranches:
+        type: boolean
+      readProdBranch:
+        type: boolean
+      readProject:
+        type: boolean
+      readProjectMembers:
+        type: boolean
   v1RemoveOrganizationMemberResponse:
     type: object
     title: Response message for AdminService.RemoveOrganizationMember
@@ -879,6 +989,13 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
+  v1UpdateProjectVariablesResponse:
+    type: object
+    properties:
+      variables:
+        type: object
+        additionalProperties:
+          type: string
   v1User:
     type: object
     properties:
@@ -896,3 +1013,12 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1UserInvite:
+    type: object
+    properties:
+      email:
+        type: string
+      invitedBy:
+        type: string
+      role:
+        type: string
