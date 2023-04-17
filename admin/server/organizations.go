@@ -137,7 +137,10 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
 	}
 
-	org, err = s.admin.DB.UpdateOrganization(ctx, req.Name, req.Description)
+	org, err = s.admin.DB.UpdateOrganization(ctx, &database.UpdateOrganizationOptions{
+		Name:        req.Name,
+		Description: req.Description,
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
