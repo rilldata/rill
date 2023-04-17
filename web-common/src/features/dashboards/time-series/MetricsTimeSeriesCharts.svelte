@@ -27,6 +27,7 @@
     createQueryServiceMetricsViewTotals,
     V1MetricsViewTimeSeriesResponse,
     V1MetricsViewTotalsResponse,
+    V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { isRangeInsideOther } from "../../../lib/time/ranges";
@@ -69,6 +70,24 @@
     V1MetricsViewTotalsResponse,
     Error
   >;
+
+  /** Get extra data point for interpolating the chart for the first point*/
+  function getAdjustedStartTime(date: Date, interval: V1TimeGrain) {
+    if (!date) return undefined;
+    const offsetedDate = getOffset(
+      date,
+      TIME_GRAIN[interval].duration,
+      TimeOffsetType.SUBTRACT
+    );
+
+    // the data point previous to the first date inside the chart.
+    const trucatedOffsetedDate = getStartOfPeriod(
+      offsetedDate,
+      TIME_GRAIN[interval].duration
+    );
+
+    return trucatedOffsetedDate.toISOString();
+  }
 
   let isComparisonRangeAvailable = false;
 
@@ -143,7 +162,10 @@
       {
         measureNames: selectedMeasureNames,
         filter: $dashboardStore?.filters,
-        timeStart: $dashboardStore.selectedTimeRange?.start.toISOString(),
+        timeStart: getAdjustedStartTime(
+          $dashboardStore.selectedTimeRange?.start,
+          interval
+        ),
         timeEnd: $dashboardStore.selectedTimeRange?.end.toISOString(),
         timeGranularity: interval,
       }
@@ -155,8 +177,10 @@
         {
           measureNames: selectedMeasureNames,
           filter: $dashboardStore?.filters,
-          timeStart:
-            $dashboardStore?.selectedComparisonTimeRange?.start.toISOString(),
+          timeStart: getAdjustedStartTime(
+            $dashboardStore?.selectedComparisonTimeRange?.start,
+            interval
+          ),
           timeEnd:
             $dashboardStore?.selectedComparisonTimeRange?.end.toISOString(),
           timeGranularity: interval,
@@ -197,11 +221,13 @@
     $dashboardStore?.selectedTimeRange &&
     $dashboardStore?.selectedTimeRange?.start
   ) {
-    startValue = getStartOfPeriod(
-      new Date($dashboardStore?.selectedTimeRange?.start),
-      TIME_GRAIN[interval].duration
+    // startValue = getStartOfPeriod(
+    //   new Date($dashboardStore?.selectedTimeRange?.start),
+    //   TIME_GRAIN[interval].duration
+    // );
+    startValue = removeTimezoneOffset(
+      new Date($dashboardStore?.selectedTimeRange?.start)
     );
-    startValue = removeTimezoneOffset(startValue);
 
     // selectedTimeRange.end is exclusive and rounded to the time grain ("interval").
     // Since values are grouped with DATE_TRUNC, we subtract one grain to get the (inclusive) axis end.
