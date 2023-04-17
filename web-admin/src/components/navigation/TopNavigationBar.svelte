@@ -10,8 +10,9 @@
 
   $: organization = $page.params.organization;
 
-  const userQuery = createAdminServiceGetCurrentUser();
-  $: signedIn = !!$userQuery.data?.user;
+  const user = createAdminServiceGetCurrentUser({
+    query: { placeholderData: undefined },
+  });
 </script>
 
 <div class="border-b flex items-center">
@@ -29,11 +30,13 @@
     <Breadcrumbs />
   {/if}
   <div class="flex-grow" />
-  <div class="p-2">
-    {#if signedIn}
-      <UserButton />
-    {:else}
-      <SignIn />
-    {/if}
-  </div>
+  {#if $user.isSuccess}
+    <div class="p-2">
+      {#if $user.data && $user.data.user}
+        <UserButton />
+      {:else}
+        <SignIn />
+      {/if}
+    </div>
+  {/if}
 </div>

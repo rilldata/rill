@@ -663,6 +663,35 @@ func (m *GetOrganizationResponse) validate(all bool) error {
 		}
 	}
 
+	if all {
+		switch v := interface{}(m.GetPermissions()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetOrganizationResponseValidationError{
+					field:  "Permissions",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetOrganizationResponseValidationError{
+					field:  "Permissions",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPermissions()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetOrganizationResponseValidationError{
+				field:  "Permissions",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return GetOrganizationResponseMultiError(errors)
 	}
@@ -2135,6 +2164,35 @@ func (m *GetProjectResponse) validate(all bool) error {
 	}
 
 	// no validation rules for Jwt
+
+	if all {
+		switch v := interface{}(m.GetProjectPermissions()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetProjectResponseValidationError{
+					field:  "ProjectPermissions",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetProjectResponseValidationError{
+					field:  "ProjectPermissions",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetProjectPermissions()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetProjectResponseValidationError{
+				field:  "ProjectPermissions",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return GetProjectResponseMultiError(errors)
@@ -4861,6 +4919,40 @@ func (m *ListOrganizationMembersResponse) validate(all bool) error {
 
 	}
 
+	for idx, item := range m.GetInvites() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListOrganizationMembersResponseValidationError{
+						field:  fmt.Sprintf("Invites[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListOrganizationMembersResponseValidationError{
+						field:  fmt.Sprintf("Invites[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListOrganizationMembersResponseValidationError{
+					field:  fmt.Sprintf("Invites[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
@@ -5074,6 +5166,8 @@ func (m *AddOrganizationMemberResponse) validate(all bool) error {
 	}
 
 	var errors []error
+
+	// no validation rules for PendingSignup
 
 	if len(errors) > 0 {
 		return AddOrganizationMemberResponseMultiError(errors)
@@ -5956,6 +6050,40 @@ func (m *ListProjectMembersResponse) validate(all bool) error {
 
 	}
 
+	for idx, item := range m.GetInvites() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListProjectMembersResponseValidationError{
+						field:  fmt.Sprintf("Invites[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListProjectMembersResponseValidationError{
+						field:  fmt.Sprintf("Invites[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListProjectMembersResponseValidationError{
+					field:  fmt.Sprintf("Invites[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
@@ -6169,6 +6297,8 @@ func (m *AddProjectMemberResponse) validate(all bool) error {
 	}
 
 	var errors []error
+
+	// no validation rules for PendingSignup
 
 	if len(errors) > 0 {
 		return AddProjectMemberResponseMultiError(errors)
@@ -6838,3 +6968,342 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MemberValidationError{}
+
+// Validate checks the field values on OrganizationPermissions with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *OrganizationPermissions) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on OrganizationPermissions with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// OrganizationPermissionsMultiError, or nil if none found.
+func (m *OrganizationPermissions) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OrganizationPermissions) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ReadOrg
+
+	// no validation rules for ManageOrg
+
+	// no validation rules for ReadProjects
+
+	// no validation rules for CreateProjects
+
+	// no validation rules for ManageProjects
+
+	// no validation rules for ReadOrgMembers
+
+	// no validation rules for ManageOrgMembers
+
+	if len(errors) > 0 {
+		return OrganizationPermissionsMultiError(errors)
+	}
+
+	return nil
+}
+
+// OrganizationPermissionsMultiError is an error wrapping multiple validation
+// errors returned by OrganizationPermissions.ValidateAll() if the designated
+// constraints aren't met.
+type OrganizationPermissionsMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OrganizationPermissionsMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OrganizationPermissionsMultiError) AllErrors() []error { return m }
+
+// OrganizationPermissionsValidationError is the validation error returned by
+// OrganizationPermissions.Validate if the designated constraints aren't met.
+type OrganizationPermissionsValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OrganizationPermissionsValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OrganizationPermissionsValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OrganizationPermissionsValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OrganizationPermissionsValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OrganizationPermissionsValidationError) ErrorName() string {
+	return "OrganizationPermissionsValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OrganizationPermissionsValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOrganizationPermissions.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OrganizationPermissionsValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OrganizationPermissionsValidationError{}
+
+// Validate checks the field values on ProjectPermissions with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ProjectPermissions) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProjectPermissions with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ProjectPermissionsMultiError, or nil if none found.
+func (m *ProjectPermissions) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProjectPermissions) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ReadProject
+
+	// no validation rules for ManageProject
+
+	// no validation rules for ReadProdBranch
+
+	// no validation rules for ManageProdBranch
+
+	// no validation rules for ReadDevBranches
+
+	// no validation rules for ManageDevBranches
+
+	// no validation rules for ReadProjectMembers
+
+	// no validation rules for ManageProjectMembers
+
+	if len(errors) > 0 {
+		return ProjectPermissionsMultiError(errors)
+	}
+
+	return nil
+}
+
+// ProjectPermissionsMultiError is an error wrapping multiple validation errors
+// returned by ProjectPermissions.ValidateAll() if the designated constraints
+// aren't met.
+type ProjectPermissionsMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ProjectPermissionsMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ProjectPermissionsMultiError) AllErrors() []error { return m }
+
+// ProjectPermissionsValidationError is the validation error returned by
+// ProjectPermissions.Validate if the designated constraints aren't met.
+type ProjectPermissionsValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ProjectPermissionsValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ProjectPermissionsValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ProjectPermissionsValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ProjectPermissionsValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ProjectPermissionsValidationError) ErrorName() string {
+	return "ProjectPermissionsValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ProjectPermissionsValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sProjectPermissions.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ProjectPermissionsValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ProjectPermissionsValidationError{}
+
+// Validate checks the field values on UserInvite with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *UserInvite) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UserInvite with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in UserInviteMultiError, or
+// nil if none found.
+func (m *UserInvite) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UserInvite) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Email
+
+	// no validation rules for Role
+
+	// no validation rules for InvitedBy
+
+	if len(errors) > 0 {
+		return UserInviteMultiError(errors)
+	}
+
+	return nil
+}
+
+// UserInviteMultiError is an error wrapping multiple validation errors
+// returned by UserInvite.ValidateAll() if the designated constraints aren't met.
+type UserInviteMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UserInviteMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UserInviteMultiError) AllErrors() []error { return m }
+
+// UserInviteValidationError is the validation error returned by
+// UserInvite.Validate if the designated constraints aren't met.
+type UserInviteValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UserInviteValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UserInviteValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UserInviteValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UserInviteValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UserInviteValidationError) ErrorName() string { return "UserInviteValidationError" }
+
+// Error satisfies the builtin error interface
+func (e UserInviteValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUserInvite.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UserInviteValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UserInviteValidationError{}

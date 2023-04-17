@@ -725,9 +725,15 @@ definitions:
         type: string
   v1AddOrganizationMemberResponse:
     type: object
+    properties:
+      pendingSignup:
+        type: boolean
     title: Response message for AdminService.AddOrganizationMember
   v1AddProjectMemberResponse:
     type: object
+    properties:
+      pendingSignup:
+        type: boolean
     title: Response message for AdminService.AddProjectMember
   v1CreateOrganizationRequest:
     type: object
@@ -806,6 +812,8 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
+      permissions:
+        $ref: '#/definitions/v1OrganizationPermissions'
   v1GetProjectResponse:
     type: object
     properties:
@@ -815,6 +823,8 @@ definitions:
         $ref: '#/definitions/v1Deployment'
       project:
         $ref: '#/definitions/v1Project'
+      projectPermissions:
+        $ref: '#/definitions/v1ProjectPermissions'
   v1GetProjectVariablesResponse:
     type: object
     properties:
@@ -828,6 +838,10 @@ definitions:
   v1ListOrganizationMembersResponse:
     type: object
     properties:
+      invites:
+        type: array
+        items:
+          $ref: '#/definitions/v1UserInvite'
       members:
         type: array
         items:
@@ -847,6 +861,10 @@ definitions:
   v1ListProjectMembersResponse:
     type: object
     properties:
+      invites:
+        type: array
+        items:
+          $ref: '#/definitions/v1UserInvite'
       members:
         type: array
         items:
@@ -905,6 +923,23 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1OrganizationPermissions:
+    type: object
+    properties:
+      createProjects:
+        type: boolean
+      manageOrg:
+        type: boolean
+      manageOrgMembers:
+        type: boolean
+      manageProjects:
+        type: boolean
+      readOrg:
+        type: boolean
+      readOrgMembers:
+        type: boolean
+      readProjects:
+        type: boolean
   v1PingResponse:
     type: object
     properties:
@@ -950,6 +985,25 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1ProjectPermissions:
+    type: object
+    properties:
+      manageDevBranches:
+        type: boolean
+      manageProdBranch:
+        type: boolean
+      manageProject:
+        type: boolean
+      manageProjectMembers:
+        type: boolean
+      readDevBranches:
+        type: boolean
+      readProdBranch:
+        type: boolean
+      readProject:
+        type: boolean
+      readProjectMembers:
+        type: boolean
   v1RemoveOrganizationMemberResponse:
     type: object
     title: Response message for AdminService.RemoveOrganizationMember
@@ -1001,3 +1055,12 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1UserInvite:
+    type: object
+    properties:
+      email:
+        type: string
+      invitedBy:
+        type: string
+      role:
+        type: string
