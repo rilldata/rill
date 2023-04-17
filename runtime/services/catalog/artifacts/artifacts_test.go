@@ -119,7 +119,7 @@ region: us-east-2
 							Format:      "humanise",
 						},
 						{
-							Name:        "measure_1",
+							Name:        "avg_measure",
 							Label:       "Mea1_L",
 							Expression:  "avg(c1)",
 							Description: "Mea1_D",
@@ -145,10 +145,12 @@ dimensions:
   description: Dim1_D
 measures:
 - label: Mea0_L
+  name: measure_0
   expression: count(c0)
   description: Mea0_D
   format_preset: humanise
 - label: Mea1_L
+  name: avg_measure
   expression: avg(c1)
   description: Mea1_D
   format_preset: humanise
