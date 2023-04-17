@@ -33,6 +33,12 @@
   export let yAccessor = "value";
   export let mouseoverValue;
   export let hovered = false;
+
+  export let showYAxis = true;
+  export let showTimeMouseover = true;
+  export let showGrid = true;
+  export let showArea = true;
+
   export let mouseoverFormat: (d: number | Date | string) => string = (v) =>
     v.toString();
   export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
@@ -121,7 +127,7 @@
   {height}
   top={4}
   left={12}
-  right={50}
+  right={showYAxis ? 50 : 4}
   bind:mouseoverValue
   bind:hovered
   let:config
@@ -131,8 +137,13 @@
   xMaxTweenProps={tweenProps}
   xMinTweenProps={tweenProps}
 >
-  <Axis side="right" format={mouseoverFormat} {numberKind} />
-  <Grid />
+  {#if showYAxis}
+    <Axis side="left" format={mouseoverFormat} {numberKind} />
+  {/if}
+
+  {#if showGrid}
+    <Grid />
+  {/if}
   <Body>
     <!-- key on the time range itself to prevent weird tweening animations.
     We'll need to migrate this to a more robust solution once we've figured out
@@ -146,7 +157,7 @@
           class:opacity-40={!mouseoverValue?.x}
         >
           <ChunkedLine
-            area={false}
+            showArea={false}
             lineColor={`hsl(217, 10%, 60%)`}
             delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
             duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 200}
@@ -158,6 +169,7 @@
         </g>
       {/if}
       <ChunkedLine
+        {showArea}
         delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
         duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 200}
         {data}
@@ -182,30 +194,32 @@
         value={roundedValue}
         let:point
       >
-        <g transition:fly|local={{ duration: 100, x: -4 }}>
-          <text
-            class="fill-gray-600"
-            style:paint-order="stroke"
-            stroke="white"
-            stroke-width="3px"
-            x={config.plotLeft + config.bodyBuffer + 6}
-            y={config.plotTop + 10 + config.bodyBuffer}
-          >
-            {mouseoverTimeFormat(point[xAccessor])}
-          </text>
-          {#if showComparison}
+        {#if showTimeMouseover}
+          <g transition:fly|local={{ duration: 100, x: -4 }}>
             <text
+              class="fill-gray-600"
               style:paint-order="stroke"
               stroke="white"
               stroke-width="3px"
-              class="fill-gray-400"
               x={config.plotLeft + config.bodyBuffer + 6}
-              y={config.plotTop + 24 + config.bodyBuffer}
+              y={config.plotTop + 10 + config.bodyBuffer}
             >
-              {mouseoverTimeFormat(point[`comparison.${xAccessor}`])} prev.
+              {mouseoverTimeFormat(point[xAccessor])}
             </text>
-          {/if}
-        </g>
+            {#if showComparison}
+              <text
+                style:paint-order="stroke"
+                stroke="white"
+                stroke-width="3px"
+                class="fill-gray-400"
+                x={config.plotLeft + config.bodyBuffer + 6}
+                y={config.plotTop + 24 + config.bodyBuffer}
+              >
+                {mouseoverTimeFormat(point[`comparison.${xAccessor}`])} prev.
+              </text>
+            {/if}
+          </g>
+        {/if}
         <g transition:fly|local={{ duration: 100, x: -4 }}>
           <MeasureValueMouseover
             {point}

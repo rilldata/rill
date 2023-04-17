@@ -17,8 +17,8 @@
   import { parseDocument } from "yaml";
   import { WorkspaceContainer } from "../../../layout/workspace";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import ConfigInspector from "./ConfigInspector.svelte";
   import MetricsWorkspaceHeader from "./MetricsWorkspaceHeader.svelte";
+  import ConfigInspector from "./inspector/ConfigInspector.svelte";
   import {
     createPlaceholderElement,
     rillEditorPlaceholder,
@@ -180,6 +180,8 @@
   const { createUpdater, extension: lineStatusExtensions } =
     createLineStatusSystem();
   $: updateLineStatus = createUpdater([...mappedErrors, ...mappedSyntaxErrors]);
+
+  let cursor;
 </script>
 
 <WorkspaceContainer inspector={true} assetID={`${metricsDefName}-config`}>
@@ -193,6 +195,9 @@
         <YAMLEditor
           content={yaml}
           on:update={updateYAML}
+          on:cursor={(event) => {
+            cursor = event.detail;
+          }}
           plugins={[placeholder, lineStatusExtensions]}
           stateFieldUpdaters={[updateLineStatus]}
         />

@@ -1,13 +1,15 @@
 <script lang="ts">
+  import ModelInspectorModelProfile from "@rilldata/web-common/features/models/workspace/inspector/ModelInspectorModelProfile.svelte";
   import {
     createRuntimeServiceGetCatalogEntry,
     createRuntimeServiceListCatalogEntries,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import ModelInspectorModelProfile from "../../models/workspace/inspector/ModelInspectorModelProfile.svelte";
-  import { getModelOutOfPossiblyMalformedYAML } from "../utils";
+  import { getModelOutOfPossiblyMalformedYAML } from "../../utils";
+  import ConfigPreviews from "./ConfigPreviews.svelte";
 
   export let yaml: string;
+  export let metricsDefName: string;
 
   // get file.
   $: modelName = getModelOutOfPossiblyMalformedYAML(yaml).replace(/"/g, "");
@@ -31,7 +33,8 @@
   }
 </script>
 
-{#if modelName && !$modelQuery?.isError && isValidModel && false}
+{#if modelName && !$modelQuery?.isError && isValidModel}
+  <ConfigPreviews {modelName} {metricsDefName} />
   <ModelInspectorModelProfile {modelName} />
 {:else if modelName !== undefined}
   Model {modelName} not found.

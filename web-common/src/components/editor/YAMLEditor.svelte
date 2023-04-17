@@ -163,11 +163,19 @@
           ),
           keymap.of([indentWithTab]),
           EditorView.updateListener.of((v) => {
+            const state = v.state;
+            const cursor = state.selection.main.head;
+            const line = state.doc.lineAt(cursor);
+            // dispatch current cursor location
+            dispatch("cursor", {
+              line: line.number,
+              column: cursor - line.from,
+            });
             if (v.focusChanged && v.view.hasFocus) {
               dispatch("receive-focus");
             }
             if (v.docChanged) {
-              dispatch("update", { content: v.state.doc.toString() });
+              dispatch("update", { content: state.doc.toString() });
               stateFieldUpdaters.forEach((updater) => {
                 updater(view);
               });

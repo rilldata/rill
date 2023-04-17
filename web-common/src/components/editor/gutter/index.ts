@@ -1,6 +1,6 @@
 import { gutter, GutterMarker } from "@codemirror/view";
 import type { SvelteComponent } from "svelte";
-import { lineStatusStateField, updateLineStatus } from "../line-status";
+import { lineStatusesStateField, updateLineStatuses } from "../line-status";
 import StatusGutterMarkerComponent from "./StatusGutterMarker.svelte";
 
 class StatusGutterMarker extends GutterMarker {
@@ -32,8 +32,8 @@ export const createStatusLineGutter = () =>
     lineMarker(view, line) {
       const hasContents = view.state.doc.toString() !== "";
 
-      const lineStates = view.state
-        .field(lineStatusStateField)
+      const lineStatuses = view.state
+        .field(lineStatusesStateField)
         .filter((line) => {
           return line.line !== null && line.line !== 0;
         })
@@ -44,8 +44,8 @@ export const createStatusLineGutter = () =>
             to: hasContents ? view?.state?.doc?.line(line.line)?.to : null,
           };
         });
-      const matchFromAndTo = lineStates.find((lineState) => {
-        return lineState.from === line.from && lineState.to === line.to;
+      const matchFromAndTo = lineStatuses.find((lineStatus) => {
+        return lineStatus.from === line.from && lineStatus.to === line.to;
       });
 
       const currentLine = view.state.doc.lineAt(
@@ -66,7 +66,7 @@ export const createStatusLineGutter = () =>
 
     lineMarkerChange(update) {
       return update.transactions.some((tr) => {
-        return tr.effects.some((effect) => effect.is(updateLineStatus));
+        return tr.effects.some((effect) => effect.is(updateLineStatuses));
       });
     },
   });

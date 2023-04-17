@@ -31,7 +31,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   export let data;
   export let xAccessor: string;
   export let yAccessor: string;
-  export let area = true;
+  export let showArea = true;
   /** time in ms to trigger a delay when the underlying data changes */
   export let delay = 0;
   export let duration = 400;
@@ -62,7 +62,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
       // it reaches zero.
       pathDefined: () => true,
     });
-    if (area) {
+    if (showArea) {
       areaFunction = areaFactory({
         xScale: $xScale,
         yScale: (d) => $yScale(d || 0),
@@ -129,7 +129,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
         style="clip-path: url(#path-segments-{id})"
       />
     </WithTween>
-    {#if area}
+    {#if showArea}
       <WithTween
         value={areaFunction(yAccessor)(delayedFilteredData)}
         tweenProps={{

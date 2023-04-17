@@ -4,13 +4,19 @@
  */
 import { StateEffect, StateField } from "@codemirror/state";
 
-/** defines a state effect that updates the lineState field. */
-export const updateLineStatus = StateEffect.define<{
-  lineState: Array<{ line: number; message: string; level: string }>;
+export interface LineStatus {
+  line: number;
+  message: string;
+  level: string;
+}
+
+/** defines a state effect that updates the lineStatuses field. */
+export const updateLineStatuses = StateEffect.define<{
+  lineStatuses: Array<LineStatus>;
 }>({
   map: (value, mapping) => {
     return {
-      lineState: value.lineState
+      lineStatuses: value.lineStatuses
         .filter((line) => line.line !== null && line.line !== 0)
         .map((line) => ({
           line: mapping.mapPos(line.line),
@@ -24,14 +30,14 @@ export const updateLineStatus = StateEffect.define<{
 /** defines the line status state field, used to show different kinds of
  * ... line statuses, such as errors, warnings, info, etc.
  */
-export const lineStatusStateField = StateField.define({
+export const lineStatusesStateField = StateField.define({
   create: () => [],
   update: (lines, tr) => {
     // Handle transactions with the updateLineState effect
     for (const effect of tr.effects) {
-      if (effect.is(updateLineStatus)) {
+      if (effect.is(updateLineStatuses)) {
         // Clear the existing errors and set the new errors
-        return effect.value.lineState.slice();
+        return effect.value.lineStatuses.slice();
       }
     }
 

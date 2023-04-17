@@ -1,6 +1,6 @@
 import { createStatusLineGutter } from "../gutter";
 import { createLineStatusHighlighter } from "../highlighter";
-import { lineStatusStateField, updateLineStatus } from "../line-status";
+import { lineStatusesStateField, updateLineStatuses } from "../line-status";
 
 // class HintTextWidget extends WidgetType {
 //   text: string;
@@ -69,16 +69,18 @@ export function createLineStatusSystem() {
   return {
     /** closes the line status state over a function that dispatches a transaction.
      */
-    createUpdater(state) {
+    createUpdater(lineStatuses) {
       return (view) => {
-        const transaction = updateLineStatus.of({ lineState: state });
+        const transaction = updateLineStatuses.of({
+          lineStatuses: lineStatuses,
+        });
         view.dispatch({
           effects: [transaction],
         });
       };
     },
     extension: [
-      lineStatusStateField,
+      lineStatusesStateField,
       createStatusLineGutter(),
       createLineStatusHighlighter(),
     ],

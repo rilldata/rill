@@ -5,9 +5,9 @@ import {
   ViewPlugin,
   ViewUpdate,
 } from "@codemirror/view";
-import { levels, lineStatusStateField } from "../line-status";
-function bgDeco(view) {
-  const lineStatuses = view.state.field(lineStatusStateField);
+import { levels, lineStatusesStateField } from "../line-status";
+function backgroundColorDecoration(view) {
+  const lineStatuses = view.state.field(lineStatusesStateField);
 
   const builder = new RangeSetBuilder<Decoration>();
 
@@ -41,11 +41,11 @@ export function createLineStatusHighlighter() {
       hints: DecorationSet;
 
       constructor(view) {
-        this.decorations = bgDeco(view);
+        this.decorations = backgroundColorDecoration(view);
       }
 
       update(update: ViewUpdate) {
-        this.decorations = bgDeco(update.view);
+        this.decorations = backgroundColorDecoration(update.view);
       }
     },
     {

@@ -17,6 +17,8 @@
   export let width = 360;
   export let height = 120;
   export let color = "hsl(217, 10%, 50%)";
+  export let areaColor = color;
+  export let stopOpacity: number = undefined;
 
   // the color of the zoom window
   export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
@@ -88,7 +90,7 @@
   >
     <g transition:scaleVertical|local={{ duration: 400, start: 0.3 }}>
       <Line {data} {xAccessor} {yAccessor} {color} lineThickness={0.5} />
-      <Area {data} {xAccessor} {yAccessor} {color} />
+      <Area {data} {xAccessor} {yAccessor} color={areaColor} {stopOpacity} />
     </g>
     <!-- show zoom boundaries -->
     {#if zoomWindowXMin && zoomWindowXMax}
