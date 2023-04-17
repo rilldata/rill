@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -136,6 +137,18 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				prodBranch = ghRes.DefaultBranch
 			}
 
+			// check there are no local changes
+			err = isLocalInSyncWithRemote(projectPath, prodBranch)
+			var gitSync *gitSyncError
+			if err != nil && errors.As(err, &gitSync) {
+				msg := gitSync.Error() + ". These changes will not be present in deployed project. Confirm deploy."
+				if !cmdutil.ConfirmPrompt(msg, true) {
+					return nil
+				}
+
+				// ignore other errors since check is best effort and can fail in multiple cases
+			}
+
 			// If no project name was provided, default to Git repo name
 			if name == "" {
 				name = ghRepo
@@ -200,7 +213,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	deployCmd.Flags().StringVar(&dbDSN, "prod-db-dsn", "", "Database driver configuration")
 	deployCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
-	deployCmd.Flags().StringVar(&name, "name", "", "Project name (default: taken from rill.yaml)")
+	deployCmd.Flags().StringVar(&name, "name", "", "Project name (default: Git repo name)")
 
 	return deployCmd
 }
@@ -471,6 +484,63 @@ func extractGitRemote(projectPath string) (string, error) {
 	}
 	// Parse into a https://github.com/account/repo (no .git) format
 	return gitutil.RemotesToGithubURL(remotes)
+}
+
+func isLocalInSyncWithRemote(repoPath, branch string) error {
+	repo, err := git.PlainOpen(repoPath)
+	if err != nil {
+		return err
+	}
+
+	ref, err := repo.Head()
+	if err != nil {
+		return err
+	}
+
+	// if user is not on required branch
+	if !ref.Name().IsBranch() || ref.Name().Short() != branch {
+		return fmt.Errorf("not on required branch")
+	}
+
+	w, err := repo.Worktree()
+	if err != nil {
+		if errors.Is(err, git.ErrIsBareRepository) {
+			// no commits can be made in bare repository
+			return nil
+		}
+		return err
+	}
+
+	repoStatus, err := w.Status()
+	if err != nil {
+		return err
+	}
+
+	// check all files are in unmodified state
+	if !repoStatus.IsClean() {
+		return &gitSyncError{"Some files have been locally modified"}
+	}
+
+	// check if there are local commits not pushed to remote yet
+	// no easy way to get it from go-get library so running git command directly and checking response
+	cmd := exec.Command("git", "-C", repoPath, "log", "@{u}..")
+	data, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+
+	if len(data) != 0 {
+		return &gitSyncError{"Local commits are not pushed to remote yet"}
+	}
+	return nil
+}
+
+type gitSyncError struct {
+	Message string
+}
+
+func (e *gitSyncError) Error() string {
+	return e.Message
 }
 
 func isNameExistsErr(err error) bool {
