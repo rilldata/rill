@@ -105,6 +105,7 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 
 	// Update prod deployment on project
 	res, err := s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Name:                   proj.Name,
 		Description:            proj.Description,
 		Public:                 proj.Public,
 		ProductionBranch:       proj.ProductionBranch,

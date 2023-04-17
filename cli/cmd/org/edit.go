@@ -1,8 +1,6 @@
 package org
 
 import (
-	"context"
-
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -17,14 +15,24 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: "Edit",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
 
-			org, err := client.UpdateOrganization(context.Background(), &adminv1.UpdateOrganizationRequest{
-				Name:        args[0],
+			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: args[0]})
+			if err != nil {
+				return err
+			}
+
+			org := resp.Organization
+
+			updatedOrg, err := client.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
+				Id:          org.Id,
+				Name:        org.Name,
 				Description: description,
 			})
 			if err != nil {
@@ -32,7 +40,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			cmdutil.SuccessPrinter("Updated organization \n")
-			cmdutil.TablePrinter(toRow(org.Organization))
+			cmdutil.TablePrinter(toRow(updatedOrg.Organization))
 			return nil
 		},
 	}

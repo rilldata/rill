@@ -24,7 +24,6 @@ import (
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
@@ -138,6 +137,11 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				prodBranch = ghRes.DefaultBranch
 			}
 
+			if !repoInSyncFlow(projectPath, prodBranch) {
+				warn.Printf("User aborted!!!")
+				return nil
+			}
+
 			// If no project name was provided, default to Git repo name
 			if name == "" {
 				name = ghRepo
@@ -206,7 +210,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	deployCmd.Flags().StringVar(&dbDSN, "prod-db-dsn", "", "Database driver configuration")
 	deployCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
-	deployCmd.Flags().StringVar(&name, "name", "", "Project name (default: taken from rill.yaml)")
+	deployCmd.Flags().StringVar(&name, "name", "", "Project name (default: Git repo name)")
 
 	return deployCmd
 }
@@ -363,7 +367,7 @@ func orgNamePrompt(ctx context.Context, client *adminclient.Client) (string, err
 					return fmt.Errorf("empty name")
 				}
 
-				exist, err := orgNameExists(ctx, client, name)
+				exist, err := cmdutil.OrgExists(ctx, client, name)
 				if err != nil {
 					return fmt.Errorf("org name %q is already taken", name)
 				}
@@ -383,19 +387,6 @@ func orgNamePrompt(ctx context.Context, client *adminclient.Client) (string, err
 	}
 
 	return name, nil
-}
-
-func orgNameExists(ctx context.Context, client *adminclient.Client, name string) (bool, error) {
-	resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
-	if err != nil {
-		if st, ok := status.FromError(err); ok {
-			if st.Code() == codes.NotFound {
-				return false, nil
-			}
-		}
-		return false, err
-	}
-	return resp.Organization.Name == name, nil
 }
 
 func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
@@ -450,6 +441,28 @@ func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adm
 	return res, err
 }
 
+func repoInSyncFlow(projectPath, branch string) bool {
+	syncStatus, err := gitutil.GetSyncStatus(projectPath, branch)
+	if err != nil {
+		// ignore errors since check is best effort and can fail in multiple cases
+		return true
+	}
+
+	warn := color.New(color.Bold).Add(color.FgYellow)
+	switch syncStatus {
+	case gitutil.SyncStatusUnspecified:
+		return true
+	case gitutil.SyncStatusSynced:
+		return true
+	case gitutil.SyncStatusModified:
+		warn.Println("Some files have been locally modified. These changes will not be present in deployed project.")
+	case gitutil.SyncStatusAhead:
+		warn.Println("Local commits are not pushed to remote yet. These changes will not be present in deployed project.")
+	}
+
+	return cmdutil.ConfirmPrompt("Do you want to continue", true)
+}
+
 func projectNamePrompt(ctx context.Context, client *adminclient.Client, orgName string) (string, error) {
 	questions := []*survey.Question{
 		{
@@ -462,7 +475,7 @@ func projectNamePrompt(ctx context.Context, client *adminclient.Client, orgName 
 				if name == "" {
 					return fmt.Errorf("empty name")
 				}
-				exists, err := projectExists(ctx, client, orgName, name)
+				exists, err := cmdutil.ProjectExists(ctx, client, orgName, name)
 				if err != nil {
 					return fmt.Errorf("project already exists at %s/%s", orgName, name)
 				}
@@ -481,19 +494,6 @@ func projectNamePrompt(ctx context.Context, client *adminclient.Client, orgName 
 	}
 
 	return name, nil
-}
-
-func projectExists(ctx context.Context, client *adminclient.Client, orgName, projectName string) (bool, error) {
-	resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: orgName, Name: projectName})
-	if err != nil {
-		if st, ok := status.FromError(err); ok {
-			if st.Code() == codes.NotFound {
-				return false, nil
-			}
-		}
-		return false, err
-	}
-	return resp.Project.Name == projectName, nil
 }
 
 func hasRillProject(dir string) bool {

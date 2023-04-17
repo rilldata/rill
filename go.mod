@@ -9,6 +9,7 @@ require (
 	github.com/MicahParks/keyfunc v1.9.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/XSAM/otelsql v0.20.0
+	github.com/alecthomas/participle/v2 v2.0.0-beta.5
 	github.com/apache/arrow/go/v11 v11.0.0
 	github.com/apache/calcite-avatica-go/v5 v5.1.0
 	github.com/aws/aws-sdk-go v1.44.118
@@ -22,16 +23,23 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.9.1
 	github.com/fatih/color v1.13.0
 	github.com/go-git/go-git/v5 v5.5.2
+	github.com/go-playground/validator/v10 v10.12.0
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/google/go-github/v50 v50.1.0
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/sessions v1.2.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
+	github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2 v2.0.0-20220505152843-58a406687f2d
+	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.0-rc.2.0.20220505152843-58a406687f2d
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.3
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/jackc/pgx/v4 v4.16.1
 	github.com/jinzhu/copier v0.3.5
+	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.5.1
+	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lensesio/tableprinter v0.0.0-20201125135848-89e81fc956e7
 	github.com/marcboeker/go-duckdb v1.2.1
 	github.com/mitchellh/mapstructure v1.5.0
@@ -58,7 +66,11 @@ require (
 	gocloud.dev v0.27.0
 	golang.org/x/exp v0.0.0-20221230185412-738e83a70c30
 	golang.org/x/oauth2 v0.4.0
+	golang.org/x/sync v0.1.0
+	golang.org/x/sys v0.6.0
+	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f
 	google.golang.org/grpc v1.53.0
+	google.golang.org/protobuf v1.28.1
 	gopkg.in/square/go-jose.v2 v2.6.0
 	modernc.org/sqlite v1.10.6
 )
@@ -115,6 +127,8 @@ require (
 	github.com/go-git/go-billy/v5 v5.4.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/go-playground/locales v0.14.1 // indirect
+	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/goccy/go-json v0.9.11 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -154,6 +168,7 @@ require (
 	github.com/klauspost/asmfmt v1.3.2 // indirect
 	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
+	github.com/leodido/go-urn v1.2.2 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
@@ -193,10 +208,12 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.37.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	golang.org/x/crypto v0.3.0 // indirect
-	golang.org/x/mod v0.7.0 // indirect
-	golang.org/x/term v0.5.0 // indirect
-	golang.org/x/tools v0.3.0 // indirect
+	golang.org/x/crypto v0.7.0 // indirect
+	golang.org/x/mod v0.8.0 // indirect
+	golang.org/x/net v0.8.0 // indirect
+	golang.org/x/term v0.6.0 // indirect
+	golang.org/x/text v0.8.0 // indirect
+	golang.org/x/tools v0.6.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.103.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
@@ -212,22 +229,6 @@ require (
 	modernc.org/opt v0.1.3 // indirect
 	modernc.org/strutil v1.1.3 // indirect
 	modernc.org/token v1.0.1 // indirect
-)
-
-require (
-	github.com/alecthomas/participle/v2 v2.0.0-beta.5
-	github.com/google/uuid v1.3.0
-	github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2 v2.0.0-20220505152843-58a406687f2d
-	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.0-rc.2.0.20220505152843-58a406687f2d
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.3
-	github.com/jmoiron/sqlx v1.3.5
-	github.com/kelseyhightower/envconfig v1.4.0
-	golang.org/x/net v0.7.0 // indirect
-	golang.org/x/sync v0.1.0
-	golang.org/x/sys v0.5.0
-	golang.org/x/text v0.7.0 // indirect
-	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f
-	google.golang.org/protobuf v1.28.1
 )
 
 replace github.com/apache/calcite-avatica-go/v5 v5.1.0 => github.com/begelundmuller/calcite-avatica-go/v5 v5.0.0-20230323102415-9c0eba2fbe15

@@ -140,6 +140,8 @@ paths:
             properties:
               description:
                 type: string
+              id:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/members:
@@ -562,6 +564,8 @@ paths:
               description:
                 type: string
               githubUrl:
+                type: string
+              id:
                 type: string
               productionBranch:
                 type: string

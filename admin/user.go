@@ -19,7 +19,11 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	// Update user if exists
 	user, err := s.DB.FindUserByEmail(ctx, email)
 	if err == nil {
-		return s.DB.UpdateUser(ctx, user.ID, name, photoURL, user.GithubUsername)
+		return s.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
+			DisplayName:    name,
+			PhotoURL:       photoURL,
+			GithubUsername: user.GithubUsername,
+		})
 	} else if !errors.Is(err, database.ErrNotFound) {
 		return nil, err
 	}
@@ -41,7 +45,11 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	defer func() { _ = tx.Rollback() }()
 
 	// User does not exist. Creating a new user.
-	user, err = s.DB.InsertUser(ctx, email, name, photoURL)
+	user, err = s.DB.InsertUser(ctx, &database.InsertUserOptions{
+		Email:       email,
+		DisplayName: name,
+		PhotoURL:    photoURL,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +93,10 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	org, err := s.DB.InsertOrganization(ctx, orgName, description)
+	org, err := s.DB.InsertOrganization(ctx, &database.InsertOrganizationOptions{
+		Name:        orgName,
+		Description: description,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -146,12 +157,15 @@ func (s *Service) InviteUserToProject(ctx context.Context, email, inviterID, pro
 
 func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string) (*database.Organization, error) {
 	// create all user group for this org
-	userGroup, err := s.DB.InsertOrganizationMemberUsergroup(ctx, orgID, "all-users")
+	userGroup, err := s.DB.InsertUsergroup(ctx, &database.InsertUsergroupOptions{
+		OrgID: orgID,
+		Name:  "all-users",
+	})
 	if err != nil {
 		return nil, err
 	}
 	// update org with all user group
-	org, err := s.DB.UpdateOrganizationMemberAllUsergroup(ctx, orgID, userGroup.ID)
+	org, err := s.DB.UpdateOrganizationAllUsergroup(ctx, orgID, userGroup.ID)
 	if err != nil {
 		return nil, err
 	}
