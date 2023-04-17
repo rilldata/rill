@@ -1495,7 +1495,16 @@ func (m *ListProjectsForOrganizationRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for OrganizationName
+	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+		err := ListProjectsForOrganizationRequestValidationError{
+			field:  "OrganizationName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for PageSize
 

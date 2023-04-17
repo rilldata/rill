@@ -138,7 +138,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if !repoInSyncFlow(projectPath, prodBranch) {
-				warn.Printf("User aborted!!!")
+				warn.Println("User aborted!!!")
 				return nil
 			}
 
@@ -157,6 +157,35 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				success.Printf("Created org %q. Run \"rill org edit\" to change name if required.\n", cfg.Org)
 			} else {
 				info.Printf("Using org %q.\n", cfg.Org)
+			}
+
+			nameExist := false
+			// check if a project with github url already exists in this org
+			resp, err := client.ListProjectsForOrganizationAndGithubURL(ctx, &adminv1.ListProjectsForOrganizationAndGithubURLRequest{
+				OrganizationName: cfg.Org,
+				GithubUrl:        githubURL,
+			})
+			if err == nil && len(resp.Projects) != 0 { // ignoring error since this is just for a confirmation prompt
+				for _, p := range resp.Projects {
+					if strings.EqualFold(name, p.Name) {
+						nameExist = true
+						break
+					}
+				}
+
+				warn.Printf("Another project %q already deploys from %q\n", resp.Projects[0].Name, githubURL)
+				if !cmdutil.ConfirmPrompt("Do you want to continue", "", true) {
+					warn.Println("User aborted!!!")
+					return nil
+				}
+			}
+
+			if nameExist {
+				// we for sure know that project name exists, prompt for new name before creating projecting and checking if name already exists
+				name, err = projectNamePrompt(ctx, client, cfg.Org)
+				if err != nil {
+					return err
+				}
 			}
 
 			// Run flow to get connector credentials and other variables
@@ -181,7 +210,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			})
 			if err != nil {
 				if errors.Is(err, errUserAbortedFlow) {
-					warn.Print(err.Error())
+					warn.Print("User aborted!!!")
 					return nil
 				}
 				return fmt.Errorf("create project failed with error %w", err)
@@ -390,38 +419,6 @@ func orgNamePrompt(ctx context.Context, client *adminclient.Client) (string, err
 }
 
 func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
-	nameExist := false
-
-	// check if a project with github url already exists in this org
-	if resp, err := client.ListProjectsForOrganizationAndGithubURL(ctx, &adminv1.ListProjectsForOrganizationAndGithubURLRequest{
-		OrganizationName: req.OrganizationName,
-		GithubUrl:        req.GithubUrl,
-	}); err == nil { // ignoring error since this is just for a confirmation prompt
-		if len(resp.Projects) != 0 {
-			names := ""
-			for _, p := range resp.Projects {
-				if !nameExist && strings.EqualFold(req.Name, p.Name) {
-					nameExist = true
-				}
-				names = names + p.Name + " "
-			}
-
-			if !cmdutil.ConfirmPrompt("A project already exists for this repo in this org (enter ? to check project name(s))", names, true) {
-				return nil, errUserAbortedFlow
-			}
-		}
-	}
-
-	if nameExist {
-		// we for sure know that project name exists, prompt for new name before creating projecting and checking if name already exists
-		name, err := projectNamePrompt(ctx, client, req.OrganizationName)
-		if err != nil {
-			return nil, err
-		}
-
-		req.Name = name
-	}
-
 	// Create the project (automatically deploys prod branch)
 	res, err := client.CreateProject(ctx, req)
 	if err != nil {
@@ -460,7 +457,7 @@ func repoInSyncFlow(projectPath, branch string) bool {
 		warn.Println("Local commits are not pushed to remote yet. These changes will not be present in deployed project.")
 	}
 
-	return cmdutil.ConfirmPrompt("Do you want to continue", true)
+	return cmdutil.ConfirmPrompt("Do you want to continue", "", true)
 }
 
 func projectNamePrompt(ctx context.Context, client *adminclient.Client, orgName string) (string, error) {
