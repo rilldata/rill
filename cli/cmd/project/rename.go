@@ -41,7 +41,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				if len(resp.Projects) == 0 {
-					return fmt.Errorf("No projects found for the org %q", cfg.Org)
+					return fmt.Errorf("No projects found for org %q", cfg.Org)
 				}
 
 				var projectNames []string
@@ -49,14 +49,14 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 					projectNames = append(projectNames, proj.Name)
 				}
 
-				currentName = cmdutil.SelectPrompt("Select the project for rename", projectNames, "")
+				currentName = cmdutil.SelectPrompt("Select project to rename", projectNames, "")
 
 				// Get the new project name from user if not provided in the args
 				question := []*survey.Question{
 					{
 						Name: "name",
 						Prompt: &survey.Input{
-							Message: "New project name",
+							Message: "Rename to",
 						},
 						Validate: func(any interface{}) error {
 							name := any.(string)

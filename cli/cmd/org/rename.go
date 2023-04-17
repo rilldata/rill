@@ -42,7 +42,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				if len(resp.Organizations) == 0 {
-					return fmt.Errorf("No org available, Please create using `rill org create`")
+					return fmt.Errorf("You are not a member of any orgs")
 				}
 
 				var orgNames []string
@@ -50,14 +50,14 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 					orgNames = append(orgNames, org.Name)
 				}
 
-				currentName = cmdutil.SelectPrompt("Select the org for rename", orgNames, "")
+				currentName = cmdutil.SelectPrompt("Select org to rename", orgNames, "")
 
 				// Get the new org name from user if not provided in the args
 				questions := []*survey.Question{
 					{
 						Name: "name",
 						Prompt: &survey.Input{
-							Message: "New org name",
+							Message: "Rename to",
 						},
 						Validate: func(any interface{}) error {
 							name := any.(string)
@@ -109,7 +109,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Renamed organization \n")
+			cmdutil.SuccessPrinter("Renamed organization\n")
 			cmdutil.TablePrinter(toRow(updatedOrg.Organization))
 			return nil
 		},
