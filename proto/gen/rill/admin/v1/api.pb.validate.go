@@ -1246,6 +1246,8 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for Id
+
 	if utf8.RuneCountInString(m.GetName()) < 1 {
 		err := UpdateOrganizationRequestValidationError{
 			field:  "Name",
@@ -2523,6 +2525,8 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 	}
 
 	var errors []error
+
+	// no validation rules for Id
 
 	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
 		err := UpdateProjectRequestValidationError{

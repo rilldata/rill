@@ -86,7 +86,7 @@ func testOrganizations(t *testing.T, db database.DB) {
 	require.Equal(t, "foo", org.Name)
 	require.Equal(t, "hello world", org.Description)
 
-	org, err = db.UpdateOrganization(ctx, &database.UpdateOrganizationOptions{
+	org, err = db.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:        org.Name,
 		Description: "",
 	})
@@ -133,6 +133,7 @@ func testProjects(t *testing.T, db database.DB) {
 
 	proj.Description = ""
 	proj, err = db.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Name:        proj.Name,
 		Description: proj.Description,
 	})
 	require.NoError(t, err)

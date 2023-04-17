@@ -51,10 +51,11 @@ type DB interface {
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
 	FindOrganizationByID(ctx context.Context, id string) (*Organization, error)
 	InsertOrganization(ctx context.Context, opts *InsertOrganizationOptions) (*Organization, error)
-	UpdateOrganization(ctx context.Context, opts *UpdateOrganizationOptions) (*Organization, error)
+	UpdateOrganization(ctx context.Context, id string, opts *UpdateOrganizationOptions) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
 
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
+	FindProjectByID(ctx context.Context, id string) (*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
 	FindProjectByGithubURL(ctx context.Context, githubURL string) (*Project, error)
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
@@ -241,6 +242,7 @@ type InsertProjectOptions struct {
 
 // UpdateProjectOptions defines options for updating a Project.
 type UpdateProjectOptions struct {
+	Name                   string
 	Description            string
 	Public                 bool
 	ProductionBranch       string
