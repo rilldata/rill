@@ -17,6 +17,7 @@
   import { fly } from "svelte/transition";
   import MeasureValueMouseover from "./MeasureValueMouseover.svelte";
   import { niceMeasureExtents } from "./utils";
+  import { TimeRoundingStrategy } from "../../../lib/time/types";
 
   export let width: number = undefined;
   export let height: number = undefined;
@@ -175,7 +176,12 @@
     />
   </Body>
   {#if !scrubbing && mouseoverValue?.x}
-    <WithRoundToTimegrain value={mouseoverValue.x} {timeGrain} let:roundedValue>
+    <WithRoundToTimegrain
+      strategy={TimeRoundingStrategy.PREVIOUS}
+      value={mouseoverValue.x}
+      {timeGrain}
+      let:roundedValue
+    >
       <WithBisector
         {data}
         callback={(d) => d[xAccessor]}

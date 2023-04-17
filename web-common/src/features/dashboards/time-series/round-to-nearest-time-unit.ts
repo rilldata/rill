@@ -56,3 +56,12 @@ export function roundToNearestTimeUnit(
 
   return roundedDateTime.toJSDate();
 }
+
+export function roundDownToTimeUnit(date, unit: DateTimeUnit | keyof DateTime) {
+  const dateTime = DateTime.fromJSDate(date);
+  if (!DateTime.isDateTime(dateTime)) {
+    throw new Error("Invalid Luxon DateTime object");
+  }
+
+  return dateTime.startOf(unit as DateTimeUnit).toJSDate();
+}

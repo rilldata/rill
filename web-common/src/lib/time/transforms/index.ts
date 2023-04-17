@@ -119,3 +119,13 @@ export function relativePointInTimeToAbsolute(
     endDate,
   };
 }
+
+/** Returns the ISO Duration as a multiple of given duration  */
+export function getDurationMultiple(duration: string, multiple: number) {
+  const durationObj = Duration.fromISO(duration);
+  const totalDuration = durationObj.as("milliseconds");
+  const newDuration = totalDuration * multiple;
+  return Duration.fromMillis(newDuration)
+    .shiftTo("days", "hours", "minutes", "seconds")
+    .toISO();
+}

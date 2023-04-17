@@ -15,7 +15,12 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import { getOffset } from "@rilldata/web-common/lib/time/transforms";
+  import {
+    getDurationMultiple,
+    getEndOfPeriod,
+    getOffset,
+    getStartOfPeriod,
+  } from "@rilldata/web-common/lib/time/transforms";
   import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import {
     createQueryServiceMetricsViewTimeSeries,
@@ -41,7 +46,6 @@
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
-  $: timeDimension = $metaQuery.data?.timeDimension;
   $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
   $: interval = $dashboardStore?.selectedTimeRange?.interval;
 
@@ -141,7 +145,7 @@
         filter: $dashboardStore?.filters,
         timeStart: $dashboardStore.selectedTimeRange?.start.toISOString(),
         timeEnd: $dashboardStore.selectedTimeRange?.end.toISOString(),
-        timeGranularity: $dashboardStore.selectedTimeRange?.interval,
+        timeGranularity: interval,
       }
     );
     if (isComparisonRangeAvailable) {
@@ -155,7 +159,7 @@
             $dashboardStore?.selectedComparisonTimeRange?.start.toISOString(),
           timeEnd:
             $dashboardStore?.selectedComparisonTimeRange?.end.toISOString(),
-          timeGranularity: $dashboardStore.selectedTimeRange?.interval,
+          timeGranularity: interval,
         }
       );
     }
@@ -176,7 +180,11 @@
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
   $: if (dataCopy && dataCopy?.length) {
-    formattedData = prepareTimeSeries(dataCopy, dataComparisonCopy);
+    formattedData = prepareTimeSeries(
+      dataCopy,
+      dataComparisonCopy,
+      TIME_GRAIN[interval].duration
+    );
   }
 
   let mouseoverValue = undefined;
@@ -189,19 +197,26 @@
     $dashboardStore?.selectedTimeRange &&
     $dashboardStore?.selectedTimeRange?.start
   ) {
-    startValue = removeTimezoneOffset(
-      new Date($dashboardStore?.selectedTimeRange?.start)
+    startValue = getStartOfPeriod(
+      new Date($dashboardStore?.selectedTimeRange?.start),
+      TIME_GRAIN[interval].duration
     );
+    startValue = removeTimezoneOffset(startValue);
 
     // selectedTimeRange.end is exclusive and rounded to the time grain ("interval").
     // Since values are grouped with DATE_TRUNC, we subtract one grain to get the (inclusive) axis end.
     endValue = new Date($dashboardStore?.selectedTimeRange?.end);
 
-    endValue = getOffset(
-      new Date($dashboardStore?.selectedTimeRange?.end),
-      TIME_GRAIN[$dashboardStore?.selectedTimeRange?.interval].duration,
-      TimeOffsetType.SUBTRACT
-    );
+    // FIXME: Do we need an operation here? The selected end date is
+    // inherently exclusive
+
+    // endValue = getOffset(
+    //   new Date($dashboardStore?.selectedTimeRange?.end),
+    //   TIME_GRAIN[interval].duration,
+    //   TimeOffsetType.ADD
+    // );
+
+    // endValue = getStartOfPeriod(endValue, TIME_GRAIN[interval].duration);
 
     endValue = removeTimezoneOffset(endValue);
   }
@@ -264,8 +279,8 @@
           <MeasureChart
             bind:mouseoverValue
             data={formattedData}
-            xAccessor="ts"
-            timeGrain={$dashboardStore?.selectedTimeRange?.interval}
+            xAccessor="ts_position"
+            timeGrain={interval}
             yAccessor={measure.name}
             xMin={startValue}
             xMax={endValue}
@@ -274,17 +289,14 @@
               /** format the date according to the time grain */
               return new Date(value).toLocaleDateString(
                 undefined,
-                TIME_GRAIN[$dashboardStore?.selectedTimeRange?.interval]
-                  .formatDate
+                TIME_GRAIN[interval].formatDate
               );
             }}
             numberKind={nicelyFormattedTypesToNumberKind(measure?.format)}
             mouseoverFormat={(value) =>
               formatPreset === NicelyFormattedTypes.NONE
                 ? `${value}`
-                : humanizeDataType(value, measure?.format, {
-                    excludeDecimalZeros: true,
-                  })}
+                : humanizeDataType(value, measure?.format)}
           />
         {:else}
           <div>

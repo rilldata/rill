@@ -49,9 +49,13 @@ Over time, we'll make this the default Line implementation, but it's not quite t
 
   let lineFunction;
   let areaFunction;
+
+  $: curveType = data?.length < 10 ? "curveStep" : "curveLinear";
+
   // FIXME:
   $: if ($xScale && $yScale) {
     lineFunction = lineFactory({
+      curve: curveType,
       xScale: $xScale,
       // the y should always plot a line segment so that we can
       // smoothly tween
@@ -64,6 +68,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     });
     if (area) {
       areaFunction = areaFactory({
+        curve: curveType,
         xScale: $xScale,
         yScale: (d) => $yScale(d || 0),
         xAccessor,
