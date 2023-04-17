@@ -23,7 +23,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	var noUI bool
 	var noOpen bool
 	var strict bool
-	var mode bool
+	var interactive bool
 	var logFormat string
 	var variables []string
 	var exampleName string
@@ -44,15 +44,16 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 					projectPath = repoName
 				}
 			} else {
-				if mode {
-					return fmt.Errorf("please provide the project path, please run 'rill start <project-path>' ")
+				if !interactive {
+					return fmt.Errorf("required arg <path> missing")
 				}
 
+				fmt.Println("No existing project found. Enter name to initialize a new Rill project.")
 				questions := []*survey.Question{
 					{
 						Name: "name",
 						Prompt: &survey.Input{
-							Message: "Enter a project path",
+							Message: "Enter project name",
 							Default: "rill-untitled",
 						},
 						Validate: func(any interface{}) error {
@@ -69,6 +70,8 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 					if err := survey.Ask(questions, &projectPath); err != nil {
 						return err
 					}
+				} else {
+					projectPath = exampleName
 				}
 			}
 
@@ -118,7 +121,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	startCmd.Flags().SortFlags = false
-	startCmd.Flags().BoolVar(&mode, "non-interactive", false, "Non Interactive mode")
+	startCmd.Flags().BoolVar(&interactive, "interactive", true, "Non Interactive mode")
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
 	startCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	startCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
