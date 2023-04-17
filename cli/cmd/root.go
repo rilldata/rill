@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/spf13/cobra/doc"
+	"log"
 	"os"
 
 	"github.com/rilldata/rill/cli/cmd/admin"
@@ -96,4 +98,11 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	}
 
 	return rootCmd.ExecuteContext(ctx)
+}
+
+func GenerateDocs(ctx context.Context) {
+	err := doc.GenMarkdownTree(rootCmd, "docs/cmd/")
+	if err != nil {
+		log.Fatal(err)
+	}
 }

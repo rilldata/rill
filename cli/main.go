@@ -25,6 +25,6 @@ func main() {
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
-
 	cmd.Execute(ctx, ver)
+	cmd.GenerateDocs(ctx)
 }
