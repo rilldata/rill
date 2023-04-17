@@ -8,8 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/admin/database"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 
 	// Load postgres driver
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -22,12 +24,18 @@ func init() {
 type driver struct{}
 
 func (d driver) Open(dsn string) (database.DB, error) {
-	db, err := sqlx.Connect("pgx", dsn)
+	db, err := otelsql.Open("pgx", dsn)
 	if err != nil {
 		return nil, err
 	}
 
-	return &connection{db: db}, nil
+	err = otelsql.RegisterDBStatsMetrics(db, otelsql.WithAttributes(semconv.DBSystemPostgreSQL))
+	if err != nil {
+		return nil, err
+	}
+
+	dbx := sqlx.NewDb(db, "pgx")
+	return &connection{db: dbx}, nil
 }
 
 type connection struct {
@@ -65,58 +73,26 @@ func (c *connection) FindOrganizationByID(ctx context.Context, orgID string) (*d
 	return res, nil
 }
 
-func (c *connection) InsertOrganization(ctx context.Context, name, description string) (*database.Organization, error) {
+func (c *connection) InsertOrganization(ctx context.Context, opts *database.InsertOrganizationOptions) (*database.Organization, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO organizations(name, description) VALUES ($1, $2) RETURNING *", name, description).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO organizations(name, description) VALUES ($1, $2) RETURNING *", opts.Name, opts.Description).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
 	return res, nil
 }
 
-func (c *connection) InsertOrganizationFromSeeds(ctx context.Context, nameSeeds []string, description string) (*database.Organization, error) {
-	// If this is called in a transaction, we must use savepoints to avoid aborting the whole transaction when a unique constraint is violated.
-	isTx := txFromContext(ctx) != nil
-
-	for _, name := range nameSeeds {
-		// Create savepoint if in tx
-		if isTx {
-			_, err := c.getDB(ctx).ExecContext(ctx, "SAVEPOINT bi")
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		// Try to create the org
-		org, err := c.InsertOrganization(ctx, name, description)
-		if err == nil {
-			return org, nil
-		}
-
-		// If the error is not a name uniqueness violation, return err
-		err = parseErr(err)
-		if !errors.Is(err, database.ErrNotUnique) {
-			return nil, err
-		}
-
-		// Name is not unique. Continue to try the next seed.
-
-		// If in tx, rollback to the savepoint first.
-		if isTx {
-			_, err := c.getDB(ctx).ExecContext(ctx, "ROLLBACK TO SAVEPOINT bi")
-			if err != nil {
-				return nil, err
-			}
-		}
+func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *database.UpdateOrganizationOptions) (*database.Organization, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
 	}
 
-	// No seed was unique
-	return nil, database.ErrNotUnique
-}
-
-func (c *connection) UpdateOrganization(ctx context.Context, id, name, description string) (*database.Organization, error) {
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE organizations SET description=$1, name=$2, updated_on=now() WHERE id=$3 RETURNING *", description, name, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE organizations SET name=$1, description=$2, updated_on=now() WHERE id=$3 RETURNING *", opts.Name, opts.Description, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -165,6 +141,10 @@ func (c *connection) FindProjectByGithubURL(ctx context.Context, githubURL strin
 }
 
 func (c *connection) InsertProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO projects (org_id, name, description, public, region, production_olap_driver, production_olap_dsn, production_slots, production_branch, production_variables, github_url, github_installation_id)
@@ -178,6 +158,10 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 }
 
 func (c *connection) UpdateProject(ctx context.Context, id string, opts *database.UpdateProjectOptions) (*database.Project, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		UPDATE projects SET name=$1, description=$2, public=$3, production_branch=$4, production_variables=$5, github_url=$6, github_installation_id=$7, production_deployment_id=$8, updated_on=now()
@@ -222,22 +206,30 @@ func (c *connection) FindUserByEmail(ctx context.Context, email string) (*databa
 	return res, nil
 }
 
-func (c *connection) InsertUser(ctx context.Context, email, displayName, photoURL string) (*database.User, error) {
+func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOptions) (*database.User, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url) VALUES ($1, $2, $3) RETURNING *", email, displayName, photoURL).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url) VALUES ($1, $2, $3) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
 	return res, nil
 }
 
-func (c *connection) UpdateUser(ctx context.Context, id, displayName, photoURL, githubUsername string) (*database.User, error) {
+func (c *connection) UpdateUser(ctx context.Context, id string, opts *database.UpdateUserOptions) (*database.User, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
 	res := &database.User{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, updated_on=now() WHERE id=$1 RETURNING *",
 		id,
-		displayName,
-		photoURL,
-		githubUsername).StructScan(res)
+		opts.DisplayName,
+		opts.PhotoURL,
+		opts.GithubUsername).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -268,6 +260,10 @@ func (c *connection) FindUserAuthToken(ctx context.Context, id string) (*databas
 }
 
 func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.InsertUserAuthTokenOptions) (*database.UserAuthToken, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
 	res := &database.UserAuthToken{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id)
@@ -370,6 +366,10 @@ func (c *connection) FindDeployment(ctx context.Context, id string) (*database.D
 }
 
 func (c *connection) InsertDeployment(ctx context.Context, opts *database.InsertDeploymentOptions) (*database.Deployment, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO deployments (project_id, slots, branch, runtime_host, runtime_instance_id, runtime_audience, status, logs)
@@ -574,18 +574,22 @@ func (c *connection) FindProjectRole(ctx context.Context, name string) (*databas
 	return role, nil
 }
 
-func (c *connection) InsertOrganizationMemberUsergroup(ctx context.Context, orgID, groupName string) (*database.Usergroup, error) {
+func (c *connection) InsertUsergroup(ctx context.Context, opts *database.InsertUsergroupOptions) (*database.Usergroup, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
 	res := &database.Usergroup{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO usergroups (org_id, name) VALUES ($1, $2) RETURNING *
-	`, orgID, groupName).StructScan(res)
+	`, opts.OrgID, opts.Name).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
 	return res, nil
 }
 
-func (c *connection) UpdateOrganizationMemberAllUsergroup(ctx context.Context, orgID, groupID string) (*database.Organization, error) {
+func (c *connection) UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*database.Organization, error) {
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		UPDATE organizations SET all_usergroup_id = $1 WHERE id = $2 RETURNING *
@@ -713,4 +717,94 @@ func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID
 		return nil, parseErr(err)
 	}
 	return res, nil
+}
+
+func (c *connection) InsertOrganizationMemberUserInvitation(ctx context.Context, email, invitedByID, orgID, roleID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO user_org_invites (email, invited_by_user_id, org_id, org_role_id) VALUES ($1, $2, $3, $4)", email, invitedByID, orgID, roleID)
+	if err != nil {
+		return parseErr(err)
+	}
+	return nil
+}
+
+func (c *connection) InsertProjectMemberUserInvitation(ctx context.Context, email, invitedByID, projectID, roleID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO user_project_invites (email, invited_by_user_id, project_id, project_role_id) VALUES ($1, $2, $3, $4)", email, invitedByID, projectID, roleID)
+	if err != nil {
+		return parseErr(err)
+	}
+	return nil
+}
+
+func (c *connection) FindOrganizationMemberInvitations(ctx context.Context, orgID string) ([]*database.UserInvite, error) {
+	var res []*database.UserInvite
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+			SELECT uoi.email, ur.name as role, u.email as invited_by 
+			FROM user_org_invites uoi JOIN org_roles ur ON uoi.org_role_id = ur.id JOIN users u ON uoi.invited_by_user_id = u.id WHERE uoi.org_id = $1`, orgID)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindOrganizationMemberUserInvitations(ctx context.Context, userEmail string) ([]*database.OrganizationMemberUserInvitation, error) {
+	var res []*database.OrganizationMemberUserInvitation
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM user_org_invites WHERE lower(email) = lower($1)", userEmail)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindOrganizationMemberUserInvitation(ctx context.Context, orgID, userEmail string) (*database.OrganizationMemberUserInvitation, error) {
+	res := &database.OrganizationMemberUserInvitation{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM user_org_invites WHERE lower(email) = lower($1) AND org_id = $2", userEmail, orgID).StructScan(res)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectMemberInvitations(ctx context.Context, projectID string) ([]*database.UserInvite, error) {
+	var res []*database.UserInvite
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+			SELECT upi.email, ur.name as role, u.email as invited_by 
+			FROM user_project_invites upi JOIN project_roles ur ON upi.project_role_id = ur.id JOIN users u ON upi.invited_by_user_id = u.id WHERE upi.project_id = $1`, projectID)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectMemberUserInvitations(ctx context.Context, userEmail string) ([]*database.ProjectMemberUserInvitation, error) {
+	var res []*database.ProjectMemberUserInvitation
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM user_project_invites WHERE lower(email) = lower($1)", userEmail)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectMemberUserInvitation(ctx context.Context, projectID, userEmail string) (*database.ProjectMemberUserInvitation, error) {
+	res := &database.ProjectMemberUserInvitation{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM user_project_invites WHERE lower(email) = lower($1) AND project_id = $2", userEmail, projectID).StructScan(res)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteOrganizationMemberUserInvitation(ctx context.Context, id string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_org_invites WHERE id = $1", id)
+	if err != nil {
+		return parseErr(err)
+	}
+	return nil
+}
+
+func (c *connection) DeleteProjectMemberUserInvitation(ctx context.Context, id string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_project_invites WHERE id = $1", id)
+	if err != nil {
+		return parseErr(err)
+	}
+	return nil
 }

@@ -9,6 +9,8 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -62,9 +64,9 @@ func StreamServerInterceptor(aud *Audience) grpc.StreamServerInterceptor {
 	}
 }
 
-// HTTPMiddleware is a HTTP middleware variant of UnaryServerInterceptor.
-// It should be used for non-gRPC HTTP endpoints.
-func HTTPMiddleware(aud *Audience, next gateway.HandlerFunc) gateway.HandlerFunc {
+// GatewayMiddleware is a gRPC-gateway middleware variant of UnaryServerInterceptor.
+// It should be used for non-gRPC HTTP endpoints mounted directly on the gRPC-gateway mux.
+func GatewayMiddleware(aud *Audience, next gateway.HandlerFunc) gateway.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 		authHeader := r.Header.Get("Authorization")
 		newCtx, err := parseClaims(r.Context(), aud, authHeader)
@@ -75,6 +77,21 @@ func HTTPMiddleware(aud *Audience, next gateway.HandlerFunc) gateway.HandlerFunc
 
 		next(w, r.WithContext(newCtx), pathParams)
 	}
+}
+
+// HTTPMiddleware is a HTTP middleware variant of UnaryServerInterceptor.
+// It should be used for non-gRPC HTTP endpoints.
+func HTTPMiddleware(aud *Audience, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		newCtx, err := parseClaims(r.Context(), aud, authHeader)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r.WithContext(newCtx))
+	})
 }
 
 func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string) (context.Context, error) {
@@ -102,6 +119,13 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 	claims, err := aud.ParseAndValidate(bearerToken)
 	if err != nil {
 		return nil, err
+	}
+
+	// Set subject in span
+	subject := claims.Subject()
+	if subject != "" {
+		span := trace.SpanFromContext(ctx)
+		span.SetAttributes(semconv.EnduserID(subject))
 	}
 
 	ctx = context.WithValue(ctx, claimsContextKey{}, claims)

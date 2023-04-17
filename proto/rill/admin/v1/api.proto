@@ -185,6 +185,7 @@ message GetOrganizationRequest {
 
 message GetOrganizationResponse {
   Organization organization = 1;
+  OrganizationPermissions permissions = 2;
 }
 
 message CreateOrganizationRequest {
@@ -204,7 +205,7 @@ message DeleteOrganizationResponse {}
 
 message UpdateOrganizationRequest {
   string id = 1;
-  string name = 2;
+  string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
 }
 
@@ -232,10 +233,11 @@ message GetProjectResponse {
   Project project = 1;
   Deployment production_deployment = 2;
   string jwt = 3;
+  ProjectPermissions project_permissions = 4;
 }
 
 message CreateProjectRequest {
-  string organization_name = 1;
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
   string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
   bool public = 4;
@@ -262,8 +264,8 @@ message DeleteProjectResponse {}
 
 message UpdateProjectRequest {
   string id = 1;
-  string organization_name = 2;
-  string name = 3;
+  string organization_name = 2 [(validate.rules).string.min_len = 1];
+  string name = 3 [(validate.rules).string.min_len = 1];
   string description = 4;
   bool public = 5;
   string production_branch = 6;
@@ -284,8 +286,8 @@ message GetProjectVariablesResponse {
 }
 
 message UpdateProjectVariablesRequest {
-  string organization_name = 1;
-  string name = 2;
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string name = 2 [(validate.rules).string.min_len = 1];
   map<string, string> variables = 3;
 }
 
@@ -381,23 +383,26 @@ message ListOrganizationMembersRequest {
 // Response message for AdminService.ListOrganizationMembers
 message ListOrganizationMembersResponse {
   repeated Member members = 1;
+  repeated UserInvite invites = 3;
   string next_page_token = 2;
 }
 
 // Request message for AdminService.AddOrganizationMember
 message AddOrganizationMemberRequest {
-  string organization = 1;
-  string email = 2;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.email = true];
   string role = 3;
 }
 
 // Response message for AdminService.AddOrganizationMember
-message AddOrganizationMemberResponse {}
+message AddOrganizationMemberResponse {
+  bool pending_signup = 1;
+}
 
 // Request message for AdminService.RemoveOrganizationMember
 message RemoveOrganizationMemberRequest {
-  string organization = 1;
-  string email = 2;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.email = true];
 }
 
 // Response message for AdminService.RemoveOrganizationMember
@@ -405,9 +410,9 @@ message RemoveOrganizationMemberResponse {}
 
 // Request message for AdminService.SetOrganizationMemberRole
 message SetOrganizationMemberRoleRequest {
-  string organization = 1;
-  string email = 2;
-  string role = 3;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.email = true];
+  string role = 3 [(validate.rules).string.min_len = 1];
 }
 
 // Response message for AdminService.SetOrganizationMemberRole
@@ -415,7 +420,7 @@ message SetOrganizationMemberRoleResponse {}
 
 // Request message for AdminService.LeaveOrganization
 message LeaveOrganizationRequest {
-  string organization = 1;
+  string organization = 1 [(validate.rules).string.min_len = 1];
 }
 
 // Response message for AdminService.LeaveOrganization
@@ -423,8 +428,8 @@ message LeaveOrganizationResponse {}
 
 // Request message for AdminService.ListProjectMembers
 message ListProjectMembersRequest {
-  string organization = 1;
-  string project = 2;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
   uint32 page_size = 3;
   string page_token = 4;
 }
@@ -432,25 +437,28 @@ message ListProjectMembersRequest {
 // Response message for AdminService.ListProjectMembers
 message ListProjectMembersResponse {
   repeated Member members = 1;
+  repeated UserInvite invites = 3;
   string next_page_token = 2;
 }
 
 // Request message for AdminService.AddProjectMember
 message AddProjectMemberRequest {
-  string organization = 1;
-  string project = 2;
-  string email = 3;
-  string role = 4;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string email = 3 [(validate.rules).string.email = true];
+  string role = 4 [(validate.rules).string.min_len = 1];
 }
 
 // Response message for AdminService.AddProjectMember
-message AddProjectMemberResponse {}
+message AddProjectMemberResponse {
+  bool pending_signup = 1;
+}
 
 // Request message for AdminService.RemoveProjectMember
 message RemoveProjectMemberRequest {
-  string organization = 1;
-  string project = 2;
-  string email = 3;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string email = 3 [(validate.rules).string.email = true];
 }
 
 // Response message for AdminService.RemoveProjectMember
@@ -458,10 +466,10 @@ message RemoveProjectMemberResponse {}
 
 // Request message for AdminService.SetProjectMemberRole
 message SetProjectMemberRoleRequest {
-  string organization = 1;
-  string project = 2;
-  string email = 3;
-  string role = 4;
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string email = 3 [(validate.rules).string.email = true];
+  string role = 4 [(validate.rules).string.min_len = 1];
 }
 
 // Response message for AdminService.SetProjectMemberRole
@@ -474,4 +482,31 @@ message Member {
   string role_name = 4;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
+}
+
+message OrganizationPermissions {
+  bool read_org = 1;
+  bool manage_org = 2;
+  bool read_projects = 3;
+  bool create_projects = 4;
+  bool manage_projects = 5;
+  bool read_org_members = 6;
+  bool manage_org_members = 7;
+}
+
+message ProjectPermissions {
+  bool read_project = 1;
+  bool manage_project = 2;
+  bool read_prod_branch = 3;
+  bool manage_prod_branch = 4;
+  bool read_dev_branches = 5;
+  bool manage_dev_branches = 6;
+  bool read_project_members = 7;
+  bool manage_project_members = 8;
+}
+
+message UserInvite {
+  string email = 1;
+  string role = 2;
+  string invited_by = 3;
 }

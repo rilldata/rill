@@ -80,3 +80,11 @@ func memberToPB(m *database.Member) *adminv1.Member {
 		UpdatedOn: timestamppb.New(m.UpdatedOn),
 	}
 }
+
+func inviteToPB(i *database.UserInvite) *adminv1.UserInvite {
+	return &adminv1.UserInvite{
+		Email:     i.Email,
+		Role:      i.Role,
+		InvitedBy: i.InvitedBy,
+	}
+}
