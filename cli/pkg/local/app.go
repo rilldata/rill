@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/examples"
+	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/rilldata/rill/cli/pkg/variable"
 	"github.com/rilldata/rill/cli/pkg/web"
 	"github.com/rilldata/rill/runtime"
@@ -308,6 +309,17 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	gctx := graceful.WithCancelOnTerminate(a.Context)
 	group, ctx := errgroup.WithContext(gctx)
 
+	// Get the latest version available
+	latestVersion, err := update.LatestVersion(gctx)
+	if err != nil {
+		a.Logger.Warnf("error finding latest version: %v", err)
+	}
+
+	versionInfo := &versionInfo{
+		CurrentVersion: a.Version.Number,
+		LatestVersion:  latestVersion.Version,
+	}
+
 	// Create a runtime server
 	opts := &runtimeserver.Options{
 		HTTPPort:       httpPort,
@@ -332,6 +344,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 				mux.Handle("/", web.StaticHandler())
 			}
 			mux.Handle("/local/config", a.infoHandler(inf))
+			mux.Handle("/local/version", a.versionHandler(versionInfo))
 			mux.Handle("/local/track", a.trackingHandler(inf))
 		})
 	})
@@ -381,6 +394,11 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 	}
 }
 
+type versionInfo struct {
+	CurrentVersion string `json:"current_version"`
+	LatestVersion  string `json:"latest_version"`
+}
+
 type localInfo struct {
 	InstanceID       string `json:"instance_id"`
 	GRPCPort         int    `json:"grpc_port"`
@@ -396,6 +414,23 @@ type localInfo struct {
 
 // infoHandler servers the local info struct.
 func (a *App) infoHandler(info *localInfo) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data, err := json.Marshal(info)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		w.Header().Add("Content-Type", "application/json")
+		_, err = w.Write(data)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to write response data: %s", err), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+// versionHandler servers the version struct.
+func (a *App) versionHandler(info *versionInfo) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		data, err := json.Marshal(info)
 		if err != nil {

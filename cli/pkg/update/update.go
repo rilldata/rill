@@ -18,6 +18,7 @@ import (
 const (
 	StateFilename       = "state.yaml"
 	VersionInfoStateKey = "version_info"
+	Addr                = "https://api.github.com/repos/rilldata/rill-developer/releases/latest"
 )
 
 type UpdateInfo struct {
@@ -84,8 +85,7 @@ func checkVersion(ctx context.Context, currentVersion string) (*UpdateInfo, erro
 	}
 
 	// Check with latest release on github
-	addr := "https://api.github.com/repos/rilldata/rill-developer/releases/latest"
-	info, err := latestVersion(ctx, addr)
+	info, err := LatestVersion(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -122,8 +122,9 @@ func checkVersion(ctx context.Context, currentVersion string) (*UpdateInfo, erro
 	}, nil
 }
 
-func latestVersion(ctx context.Context, addr string) (*ReleaseInfo, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, addr, http.NoBody)
+// This will fetch the latest version available for rill on github releases
+func LatestVersion(ctx context.Context) (*ReleaseInfo, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, Addr, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -168,18 +169,18 @@ func latestVersion(ctx context.Context, addr string) (*ReleaseInfo, error) {
 	return info, nil
 }
 
-type VerionInfo struct {
+type VersionInfo struct {
 	UpdateAt      time.Time   `yaml:"update_at"`
 	LatestRelease ReleaseInfo `yaml:"latest_release"`
 }
 
-func getVersionInfo() (*VerionInfo, error) {
+func getVersionInfo() (*VersionInfo, error) {
 	content, err := dotrill.Get(StateFilename, VersionInfoStateKey)
 	if err != nil {
 		return nil, err
 	}
 
-	var verionInfo VerionInfo
+	var verionInfo VersionInfo
 	err = yaml.Unmarshal([]byte(content), &verionInfo)
 	if err != nil {
 		return nil, err
@@ -189,7 +190,7 @@ func getVersionInfo() (*VerionInfo, error) {
 }
 
 func setVersionInfo(t time.Time, r ReleaseInfo) error {
-	data := VerionInfo{
+	data := VersionInfo{
 		UpdateAt:      t,
 		LatestRelease: r,
 	}
