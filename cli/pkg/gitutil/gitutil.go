@@ -132,3 +132,63 @@ func SplitGithubURL(githubURL string) (account, repo string, ok bool) {
 
 	return account, repo, true
 }
+
+type SyncStatus int
+
+const (
+	NA       SyncStatus = iota
+	MODIFIED            // Local branch has untracked/modified changes
+	AHEAD               // Local branch is ahead of remote branch
+	SYNCED              // Local branch is in sync with remote branch
+)
+
+// GetSyncStatus returns the status of current branch as compared to remote
+// Need to implement cases like local branch is behind/diverged from remote branch
+func GetSyncStatus(repoPath, branch string) (SyncStatus, error) {
+	repo, err := git.PlainOpen(repoPath)
+	if err != nil {
+		return NA, err
+	}
+
+	ref, err := repo.Head()
+	if err != nil {
+		return NA, err
+	}
+
+	// if user is not on required branch
+	if !ref.Name().IsBranch() || ref.Name().Short() != branch {
+		return NA, fmt.Errorf("not on required branch")
+	}
+
+	w, err := repo.Worktree()
+	if err != nil {
+		if errors.Is(err, git.ErrIsBareRepository) {
+			// no commits can be made in bare repository
+			return SYNCED, nil
+		}
+		return NA, err
+	}
+
+	repoStatus, err := w.Status()
+	if err != nil {
+		return NA, err
+	}
+
+	// check all files are in unmodified state
+	if !repoStatus.IsClean() {
+		return MODIFIED, nil
+	}
+
+	// check if there are local commits not pushed to remote yet
+	// no easy way to get it from go-get library so running git command directly and checking response
+	cmd := exec.Command("git", "-C", repoPath, "log", "@{u}..")
+	data, err := cmd.Output()
+	if err != nil {
+		return NA, err
+	}
+
+	if len(data) != 0 {
+		return AHEAD, nil
+	}
+	return SYNCED, nil
+}
