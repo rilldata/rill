@@ -32,8 +32,6 @@ const (
 	pollInterval = 5 * time.Second
 )
 
-var errUserAbortedFlow = fmt.Errorf("user aborted")
-
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
 func DeployCmd(cfg *config.Config) *cobra.Command {
 	var description, projectPath, region, dbDriver, dbDSN, prodBranch, name string
@@ -181,7 +179,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if nameExist {
-				// we for sure know that project name exists, prompt for new name before creating projecting and checking if name already exists
+				// we for sure know that project name exists, prompt for new name before creating project
 				name, err = projectNamePrompt(ctx, client, cfg.Org)
 				if err != nil {
 					return err
@@ -209,10 +207,6 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				Variables:            variables,
 			})
 			if err != nil {
-				if errors.Is(err, errUserAbortedFlow) {
-					warn.Print("User aborted!!!")
-					return nil
-				}
 				return fmt.Errorf("create project failed with error %w", err)
 			}
 

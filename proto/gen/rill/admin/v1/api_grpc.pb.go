@@ -36,7 +36,7 @@ type AdminServiceClient interface {
 	UpdateOrganization(ctx context.Context, in *UpdateOrganizationRequest, opts ...grpc.CallOption) (*UpdateOrganizationResponse, error)
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(ctx context.Context, in *ListProjectsForOrganizationRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationResponse, error)
-	// SearchProjects searched projects based on query passed
+	// ListProjectsForOrganizationAndGithubURL lists all the project for org deployed from githubURL
 	ListProjectsForOrganizationAndGithubURL(ctx context.Context, in *ListProjectsForOrganizationAndGithubURLRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationAndGithubURLResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
@@ -337,7 +337,7 @@ type AdminServiceServer interface {
 	UpdateOrganization(context.Context, *UpdateOrganizationRequest) (*UpdateOrganizationResponse, error)
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error)
-	// SearchProjects searched projects based on query passed
+	// ListProjectsForOrganizationAndGithubURL lists all the project for org deployed from githubURL
 	ListProjectsForOrganizationAndGithubURL(context.Context, *ListProjectsForOrganizationAndGithubURLRequest) (*ListProjectsForOrganizationAndGithubURLResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)

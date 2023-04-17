@@ -632,7 +632,7 @@ paths:
         - AdminService
   /v1/organizations/{organizationName}/projects_by_github_url:
     get:
-      summary: SearchProjects searched projects based on query passed
+      summary: ListProjectsForOrganizationAndGithubURL lists all the project for org deployed from githubURL
       operationId: AdminService_ListProjectsForOrganizationAndGithubURL
       responses:
         "200":

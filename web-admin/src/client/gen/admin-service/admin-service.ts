@@ -1355,7 +1355,7 @@ export const createAdminServiceUpdateProjectVariables = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary SearchProjects searched projects based on query passed
+ * @summary ListProjectsForOrganizationAndGithubURL lists all the project for org deployed from githubURL
  */
 export const adminServiceListProjectsForOrganizationAndGithubURL = (
   organizationName: string,

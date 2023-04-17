@@ -1757,9 +1757,27 @@ func (m *ListProjectsForOrganizationAndGithubURLRequest) validate(all bool) erro
 
 	var errors []error
 
-	// no validation rules for OrganizationName
+	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+		err := ListProjectsForOrganizationAndGithubURLRequestValidationError{
+			field:  "OrganizationName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for GithubUrl
+	if utf8.RuneCountInString(m.GetGithubUrl()) < 1 {
+		err := ListProjectsForOrganizationAndGithubURLRequestValidationError{
+			field:  "GithubUrl",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for PageSize
 
