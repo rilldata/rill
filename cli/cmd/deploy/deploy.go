@@ -154,7 +154,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Run flow to get connector credentials and other variables
-			variables, err := variablesFlow(projectPath)
+			variables, err := variablesFlow(ctx, projectPath)
 			if err != nil {
 				return err
 			}
@@ -257,8 +257,8 @@ func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string) (*
 	return res, nil
 }
 
-func variablesFlow(projectPath string) (map[string]string, error) {
-	connectors, err := rillv1beta.ExtractConnectors(projectPath)
+func variablesFlow(ctx context.Context, projectPath string) (map[string]string, error) {
+	connectors, err := rillv1beta.ExtractConnectors(ctx, projectPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract connectors %w", err)
 	}
@@ -266,13 +266,17 @@ func variablesFlow(projectPath string) (map[string]string, error) {
 	vars := make(map[string]string)
 	for _, c := range connectors {
 		connectorVariables := c.Spec.ConnectorVariables
-		if len(connectorVariables) != 0 {
+		if len(connectorVariables) != 0 && !c.AnonymousAccess {
 			fmt.Printf("\nConnector %s requires credentials\n\n", c.Type)
 		}
 		if c.Spec.Help != "" {
 			fmt.Println(c.Spec.Help)
 		}
 		for _, prop := range connectorVariables {
+			if prop.Secret && c.AnonymousAccess {
+				// ignore all secrets if anonymous access enabled
+				continue
+			}
 			question := &survey.Question{}
 			msg := fmt.Sprintf("connector.%s.%s", c.Name, prop.Key)
 			if prop.Help != "" {
