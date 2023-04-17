@@ -266,7 +266,7 @@ func variablesFlow(ctx context.Context, projectPath string) (map[string]string, 
 	vars := make(map[string]string)
 	for _, c := range connectors {
 		if c.AnonymousAccess {
-			// ignore asking for credentials if credentials can be obtained in a generic way
+			// ignore asking for credentials if external source can be access anonymously
 			continue
 		}
 		connectorVariables := c.Spec.ConnectorVariables
