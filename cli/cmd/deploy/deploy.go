@@ -425,19 +425,19 @@ func repoInSyncFlow(projectPath, branch string) bool {
 		return true
 	}
 
-	msg := ""
+	warn := color.New(color.Bold).Add(color.FgYellow)
 	switch syncStatus {
-	case gitutil.NA:
+	case gitutil.SyncStatusUnspecified:
 		return true
-	case gitutil.SYNCED:
+	case gitutil.SyncStatusSynced:
 		return true
-	case gitutil.MODIFIED:
-		msg = "Some files have been locally modified. These changes will not be present in deployed project. Confirm deploy."
-	case gitutil.AHEAD:
-		msg = "Local commits are not pushed to remote yet. These changes will not be present in deployed project. Confirm deploy."
+	case gitutil.SyncStatusModified:
+		warn.Println("Some files have been locally modified. These changes will not be present in deployed project.")
+	case gitutil.SyncStatusAhead:
+		warn.Println("Local commits are not pushed to remote yet. These changes will not be present in deployed project.")
 	}
 
-	return cmdutil.ConfirmPrompt(msg, true)
+	return cmdutil.ConfirmPrompt("Do you want to continue", true)
 }
 
 func projectNamePrompt(ctx context.Context, client *adminclient.Client, orgName string) (string, error) {
