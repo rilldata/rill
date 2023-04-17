@@ -194,7 +194,6 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			// telemetry errors shouldn't fail deploy command
 			tel.EmitDeploySuccess(ctx)
-			// TODO :: add rill docs here
 			return nil
 		},
 	}

@@ -27,7 +27,7 @@ const (
 	RillIntakeURL  = "https://intake.rilldata.io/events/data-modeler-metrics"
 	RillIntakeUser = "data-modeler"
 	// TODO: get this from vault and embedd into the binary
-	RillIntakePassword = "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug=="
+	RillIntakePassword = "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug==" //nolint:gosec
 	RillDeveloperApp   = "rill-developer"
 )
 
@@ -106,7 +106,10 @@ func (t *Telemetry) emitBehaviourEvent(ctx context.Context, action, medium, spac
 		return
 	}
 
-	go t.emit(ctx, body)
+	go func() {
+		fmt.Println(body)
+		_ = t.emit(ctx, body)
+	}()
 }
 
 // Error events are not needed. Will be inferred from missing events by product.
