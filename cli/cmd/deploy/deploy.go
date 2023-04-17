@@ -265,18 +265,18 @@ func variablesFlow(ctx context.Context, projectPath string) (map[string]string, 
 
 	vars := make(map[string]string)
 	for _, c := range connectors {
+		if c.AnonymousAccess {
+			// ignore asking for credentials if credentials can be obtained in a generic way
+			continue
+		}
 		connectorVariables := c.Spec.ConnectorVariables
-		if len(connectorVariables) != 0 && !c.AnonymousAccess {
+		if len(connectorVariables) != 0 {
 			fmt.Printf("\nConnector %s requires credentials\n\n", c.Type)
 		}
 		if c.Spec.Help != "" {
 			fmt.Println(c.Spec.Help)
 		}
 		for _, prop := range connectorVariables {
-			if prop.Secret && c.AnonymousAccess {
-				// ignore all secrets if anonymous access enabled
-				continue
-			}
 			question := &survey.Question{}
 			msg := fmt.Sprintf("connector.%s.%s", c.Name, prop.Key)
 			if prop.Help != "" {
