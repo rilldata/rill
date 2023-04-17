@@ -135,6 +135,11 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				prodBranch = ghRes.DefaultBranch
 			}
 
+			if !repoInSyncFlow(projectPath, prodBranch) {
+				warn.Printf("User aborted!!!")
+				return nil
+			}
+
 			// If no project name was provided, default to Git repo name
 			if name == "" {
 				name = ghRepo
@@ -199,7 +204,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	deployCmd.Flags().StringVar(&dbDSN, "prod-db-dsn", "", "Database driver configuration")
 	deployCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
-	deployCmd.Flags().StringVar(&name, "name", "", "Project name (default: taken from rill.yaml)")
+	deployCmd.Flags().StringVar(&name, "name", "", "Project name (default: Git repo name)")
 
 	return deployCmd
 }
@@ -397,6 +402,28 @@ func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adm
 		return client.CreateProject(ctx, req)
 	}
 	return res, err
+}
+
+func repoInSyncFlow(projectPath, branch string) bool {
+	syncStatus, err := gitutil.GetSyncStatus(projectPath, branch)
+	if err != nil {
+		// ignore errors since check is best effort and can fail in multiple cases
+		return true
+	}
+
+	warn := color.New(color.Bold).Add(color.FgYellow)
+	switch syncStatus {
+	case gitutil.SyncStatusUnspecified:
+		return true
+	case gitutil.SyncStatusSynced:
+		return true
+	case gitutil.SyncStatusModified:
+		warn.Println("Some files have been locally modified. These changes will not be present in deployed project.")
+	case gitutil.SyncStatusAhead:
+		warn.Println("Local commits are not pushed to remote yet. These changes will not be present in deployed project.")
+	}
+
+	return cmdutil.ConfirmPrompt("Do you want to continue", true)
 }
 
 func projectNamePrompt(ctx context.Context, client *adminclient.Client, orgName string) (string, error) {
