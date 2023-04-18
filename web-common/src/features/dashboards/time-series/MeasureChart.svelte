@@ -197,7 +197,7 @@
             x={config.plotLeft + config.bodyBuffer + 6}
             y={config.plotTop + 10 + config.bodyBuffer}
           >
-            {mouseoverTimeFormat(point[xAccessor])}
+            {mouseoverTimeFormat(point["ts"])}
           </text>
           {#if showComparison}
             <text
@@ -208,7 +208,7 @@
               x={config.plotLeft + config.bodyBuffer + 6}
               y={config.plotTop + 24 + config.bodyBuffer}
             >
-              {mouseoverTimeFormat(point[`comparison.${xAccessor}`])} prev.
+              {mouseoverTimeFormat(point["comparison.ts"])} prev.
             </text>
           {/if}
         </g>
