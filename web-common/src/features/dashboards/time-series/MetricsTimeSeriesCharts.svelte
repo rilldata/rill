@@ -221,29 +221,12 @@
     $dashboardStore?.selectedTimeRange &&
     $dashboardStore?.selectedTimeRange?.start
   ) {
-    // startValue = getStartOfPeriod(
-    //   new Date($dashboardStore?.selectedTimeRange?.start),
-    //   TIME_GRAIN[interval].duration
-    // );
     startValue = removeTimezoneOffset(
       new Date($dashboardStore?.selectedTimeRange?.start)
     );
 
     // selectedTimeRange.end is exclusive and rounded to the time grain ("interval").
-    // Since values are grouped with DATE_TRUNC, we subtract one grain to get the (inclusive) axis end.
     endValue = new Date($dashboardStore?.selectedTimeRange?.end);
-
-    // FIXME: Do we need an operation here? The selected end date is
-    // inherently exclusive
-
-    // endValue = getOffset(
-    //   new Date($dashboardStore?.selectedTimeRange?.end),
-    //   TIME_GRAIN[interval].duration,
-    //   TimeOffsetType.ADD
-    // );
-
-    // endValue = getStartOfPeriod(endValue, TIME_GRAIN[interval].duration);
-
     endValue = removeTimezoneOffset(endValue);
   }
 </script>
