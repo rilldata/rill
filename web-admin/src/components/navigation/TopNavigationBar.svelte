@@ -15,7 +15,10 @@
   });
 </script>
 
-<div class="border-b flex items-center">
+<div
+  class="border-b grid items-center w-full justify-stretch pr-4"
+  style:grid-template-columns="max-content auto max-content"
+>
   <Tooltip distance={2}>
     <a
       href="/"
@@ -32,15 +35,23 @@
   </Tooltip>
   {#if organization}
     <Breadcrumbs />
+  {:else}
+    <div />
   {/if}
-  <div class="flex-grow" />
-  {#if $user.isSuccess}
-    <div class="p-2">
-      {#if $user.data && $user.data.user}
-        <UserButton />
-      {:else}
-        <SignIn />
-      {/if}
-    </div>
-  {/if}
+  <div class="flex gap-x-3 items-center">
+    <a
+      class="font-medium"
+      href="https://discord.com/invite/ngVV4KzEGv?utm_source=rill&utm_medium=rill-cloud-nav"
+      >Ask for help</a
+    >
+    {#if $user.isSuccess}
+      <div>
+        {#if $user.data && $user.data.user}
+          <UserButton />
+        {:else}
+          <SignIn />
+        {/if}
+      </div>
+    {/if}
+  </div>
 </div>
