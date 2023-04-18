@@ -7,8 +7,8 @@
     createAdminServiceGetProject,
     V1DeploymentStatus,
   } from "../../../../client";
-  import ProjectBuilding from "../../../../components/deployments/ProjectBuilding.svelte";
-  import ProjectErrored from "../../../../components/deployments/ProjectErrored.svelte";
+  import ProjectBuilding from "../../../../components/projects/ProjectBuilding.svelte";
+  import ProjectErrored from "../../../../components/projects/ProjectErrored.svelte";
 
   // TODO: add 404 logic as in `web-local`'s `dashboard/[name]/+page.svelte`
 
