@@ -12,7 +12,7 @@
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
@@ -98,7 +98,7 @@
     </Tooltip>
 
     {#if !searchToggle}
-      <div
+      <button
         class="flex items-center ui-copy-icon"
         in:fly={{ x: 10, duration: 300 }}
         style:grid-column-gap=".2rem"
@@ -106,20 +106,20 @@
       >
         <SearchIcon size="16px" />
         <span> Search </span>
-      </div>
+      </button>
     {:else}
       <div
         transition:slideRight|local={{ leftOffset: 8 }}
         class="flex items-center"
       >
         <Search bind:value={searchText} on:input={onSearch} />
-        <span
+        <button
           class="ui-copy-icon"
           style:cursor="pointer"
           on:click={() => closeSearchBar()}
         >
           <Close />
-        </span>
+        </button>
       </div>
     {/if}
   </div>

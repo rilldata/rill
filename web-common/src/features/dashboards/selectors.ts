@@ -1,18 +1,18 @@
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   RpcStatus,
-  useQueryServiceColumnTimeRange,
-  useRuntimeServiceGetCatalogEntry,
-  useRuntimeServiceListCatalogEntries,
-  useRuntimeServiceListFiles,
+  createQueryServiceColumnTimeRange,
+  createRuntimeServiceGetCatalogEntry,
+  createRuntimeServiceListCatalogEntries,
+  createRuntimeServiceListFiles,
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
-import type { UseQueryResult } from "@sveltestack/svelte-query";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
 
-export function useDashboardNames(repoId: string) {
-  return useRuntimeServiceListFiles(
-    repoId,
+export function useDashboardNames(instanceId: string) {
+  return createRuntimeServiceListFiles(
+    instanceId,
     {
       glob: "{sources,models,dashboards}/*.{yaml,sql}",
     },
@@ -39,7 +39,7 @@ export const useMetaQuery = <T = V1MetricsView>(
   metricViewName: string,
   selector?: (meta: V1MetricsView) => T
 ) => {
-  return useRuntimeServiceGetCatalogEntry(instanceId, metricViewName, {
+  return createRuntimeServiceGetCatalogEntry(instanceId, metricViewName, {
     query: {
       select: (data) =>
         selector
@@ -54,11 +54,11 @@ export const useMetaQuery = <T = V1MetricsView>(
  * using the "label" if available but falling back to the expression
  * if needed.
  *
- * @param metaQuery: UseQueryResult<V1MetricsView, RpcStatus>
+ * @param metaQuery: QueryObserverResult<V1MetricsView, RpcStatus>
  * @returns string[]
  */
 export const selectBestMeasureStrings = (
-  metaQuery: UseQueryResult<V1MetricsView, RpcStatus>
+  metaQuery: QueryObserverResult<V1MetricsView, RpcStatus>
 ): string[] => {
   if (metaQuery && metaQuery.isSuccess && !metaQuery.isRefetching) {
     return metaQuery.data?.measures?.map((m) => m.label || m.expression) ?? [];
@@ -79,11 +79,11 @@ export const selectBestMeasureStrings = (
  * adding unique IDS that could be used to replace these temporary keys. 
  * Once those become available the fields below should be updated.
 
- * @param metaQuery: UseQueryResult<V1MetricsView, RpcStatus>
+ * @param metaQuery: QueryObserverResult<V1MetricsView, RpcStatus>
  * @returns string[]
  */
 export const selectMeasureKeys = (
-  metaQuery: UseQueryResult<V1MetricsView, RpcStatus>
+  metaQuery: QueryObserverResult<V1MetricsView, RpcStatus>
 ): string[] => {
   if (metaQuery && metaQuery.isSuccess && !metaQuery.isRefetching) {
     return metaQuery.data?.measures?.map((m) => m.expression) ?? [];
@@ -95,11 +95,11 @@ export const selectMeasureKeys = (
  * This selector returns the best available string for each dimension,
  * using the "label" if available but falling back to the name of
  * the categorical column (which must be present) if needed
- * @param metaQuery: UseQueryResult<V1MetricsView, RpcStatus>
+ * @param metaQuery: QueryObserverResult<V1MetricsView, RpcStatus>
  * @returns string[]
  */
 export const selectBestDimensionStrings = (
-  metaQuery: UseQueryResult<V1MetricsView, RpcStatus>
+  metaQuery: QueryObserverResult<V1MetricsView, RpcStatus>
 ): string[] => {
   if (metaQuery && metaQuery.isSuccess && !metaQuery.isRefetching)
     return metaQuery.data?.dimensions?.map((d) => d.label || d.name) ?? [];
@@ -119,11 +119,11 @@ export const selectBestDimensionStrings = (
  * adding unique IDS that could be used to replace these temporary keys. 
  * Once those become available the fields below should be updated.
 
- * @param metaQuery: UseQueryResult<V1MetricsView, RpcStatus>
+ * @param metaQuery: QueryObserverResult<V1MetricsView, RpcStatus>
  * @returns string[]
  */
 export const selectDimensionKeys = (
-  metaQuery: UseQueryResult<V1MetricsView, RpcStatus>
+  metaQuery: QueryObserverResult<V1MetricsView, RpcStatus>
 ): string[] => {
   if (metaQuery && metaQuery.isSuccess && !metaQuery.isRefetching) {
     return metaQuery.data?.dimensions?.map((d) => d.name) ?? [];
@@ -141,7 +141,7 @@ export function useModelAllTimeRange(
   modelName: string,
   timeDimension: string
 ) {
-  return useQueryServiceColumnTimeRange(
+  return createQueryServiceColumnTimeRange(
     instanceId,
     modelName,
     {
@@ -209,7 +209,7 @@ export const useGetDashboardsForModel = (
   instanceId: string,
   modelName: string
 ) => {
-  return useRuntimeServiceListCatalogEntries(
+  return createRuntimeServiceListCatalogEntries(
     instanceId,
     { type: "OBJECT_TYPE_METRICS_VIEW" },
     {

@@ -17,6 +17,7 @@
   import { fly } from "svelte/transition";
   import MeasureValueMouseover from "./MeasureValueMouseover.svelte";
   import { niceMeasureExtents } from "./utils";
+
   export let width: number = undefined;
   export let height: number = undefined;
   export let xMin: Date = undefined;

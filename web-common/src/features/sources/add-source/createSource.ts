@@ -8,14 +8,17 @@ import type {
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
 import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
+import type {
+  CreateBaseMutationResult,
+  QueryClient,
+} from "@tanstack/svelte-query";
 
 export async function createSource(
   queryClient: QueryClient,
   instanceId: string,
   tableName: string,
   yaml: string,
-  createSourceMutation: UseMutationResult<V1PutFileAndReconcileResponse>
+  createSourceMutation: CreateBaseMutationResult<V1PutFileAndReconcileResponse>
 ): Promise<V1ReconcileError[]> {
   const resp = await createSourceMutation.mutateAsync({
     data: {

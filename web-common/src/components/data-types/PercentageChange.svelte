@@ -6,7 +6,6 @@
   export let dark = false;
   export let customStyle = "";
   export let value;
-  export let type = "RILL_PERCENTAGE_CHANGE";
   export let tabularNumber = true;
 
   $: diffIsNegative = value?.neg === "-";

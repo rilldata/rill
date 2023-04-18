@@ -23,31 +23,32 @@ func ProjectCmd(cfg *config.Config) *cobra.Command {
 	projectCmd.AddCommand(ListCmd(cfg))
 	projectCmd.AddCommand(EnvCmd(cfg))
 	projectCmd.AddCommand(MembersCmd(cfg))
+	projectCmd.AddCommand(RenameCmd(cfg))
 	return projectCmd
 }
 
 func toTable(projects []*adminv1.Project) []*project {
-	orgs := make([]*project, 0, len(projects))
+	projs := make([]*project, 0, len(projects))
 
-	for _, org := range projects {
-		orgs = append(orgs, toRow(org))
+	for _, proj := range projects {
+		projs = append(projs, toRow(proj))
 	}
 
-	return orgs
+	return projs
 }
 
 func toRow(o *adminv1.Project) *project {
 	return &project{
-		Name:      o.Name,
-		Public:    o.Public,
-		GithubURL: o.GithubUrl,
-		CreatedAt: o.CreatedOn.AsTime().String(),
+		Name:         o.Name,
+		Public:       o.Public,
+		GithubURL:    o.GithubUrl,
+		Organization: o.OrgName,
 	}
 }
 
 type project struct {
-	Name      string `header:"name" json:"name"`
-	Public    bool   `header:"public" json:"public"`
-	GithubURL string `header:"github" json:"github"`
-	CreatedAt string `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
+	Name         string `header:"name" json:"name"`
+	Public       bool   `header:"public" json:"public"`
+	GithubURL    string `header:"github" json:"github"`
+	Organization string `header:"organization" json:"organization"`
 }

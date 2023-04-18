@@ -51,7 +51,7 @@
   }
 </script>
 
-<div
+<button
   on:mouseover={focus}
   on:mouseleave={blur}
   on:focus={focus}
@@ -62,7 +62,7 @@
   style:height="{position === "left"
     ? config.rowHeight
     : config.columnHeaderHeight}px"
-  class="{positionClasses}
+  class="block {positionClasses}
    {bgClass} text-left {borderClassesOuterDiv}"
 >
   <div
@@ -100,4 +100,4 @@
       </div>
     {/if}
   </div>
-</div>
+</button>

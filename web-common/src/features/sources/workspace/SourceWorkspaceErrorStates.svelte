@@ -5,13 +5,13 @@
   import { refreshSource } from "@rilldata/web-common/features/sources/refreshSource";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
+    createRuntimeServiceGetFile,
+    createRuntimeServiceListConnectors,
+    createRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceRefreshAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
-    useRuntimeServiceGetFile,
-    useRuntimeServiceListConnectors,
-    useRuntimeServicePutFileAndReconcile,
-    useRuntimeServiceRefreshAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { parseDocument } from "yaml";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
@@ -22,10 +22,10 @@
 
   let sourcePath: string;
   $: sourcePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
-  $: getSource = useRuntimeServiceGetFile($runtime?.instanceId, sourcePath);
+  $: getSource = createRuntimeServiceGetFile($runtime?.instanceId, sourcePath);
   $: source = parseDocument($getSource?.data?.blob || "{}").toJS();
 
-  $: connectors = useRuntimeServiceListConnectors();
+  $: connectors = createRuntimeServiceListConnectors();
 
   // get the connector for this source type, if valid
   $: currentConnector = $connectors?.data?.connectors?.find(
@@ -39,8 +39,8 @@
   );
 
   const queryClient = useQueryClient();
-  const createSource = useRuntimeServicePutFileAndReconcile();
-  const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
+  const createSource = createRuntimeServicePutFileAndReconcile();
+  const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
 
   const onRefreshClick = async (tableName: string) => {
     try {

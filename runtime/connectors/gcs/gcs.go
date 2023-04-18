@@ -10,6 +10,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"gocloud.dev/blob/gcsblob"
 	"gocloud.dev/gcp"
@@ -54,7 +55,13 @@ var spec = connectors.Spec{
 					// user can chhose to leave empty for public sources
 					return nil
 				}
-				_, err := os.Stat(val)
+
+				path, err := fileutil.ExpandHome(val)
+				if err != nil {
+					return err
+				}
+
+				_, err = os.Stat(path)
 				return err
 			},
 			TransformFunc: func(any interface{}) interface{} {
@@ -62,8 +69,14 @@ var spec = connectors.Spec{
 				if val == "" {
 					return ""
 				}
+
+				path, err := fileutil.ExpandHome(val)
+				if err != nil {
+					return err
+				}
+
 				// ignoring error since PathError is already validated
-				content, _ := os.ReadFile(val)
+				content, _ := os.ReadFile(path)
 				return string(content)
 			},
 		},
@@ -159,7 +172,7 @@ func resolvedCredentials(ctx context.Context, env *connectors.Env) (*google.Cred
 		return google.CredentialsFromJSON(ctx, []byte(secretJSON), "https://www.googleapis.com/auth/cloud-platform")
 	}
 	// gcs_credentials is not set
-	if env.AllowHostCredentials {
+	if env.AllowHostAccess {
 		// use host credentials
 		return gcp.DefaultCredentials(ctx)
 	}

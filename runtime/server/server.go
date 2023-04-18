@@ -2,22 +2,17 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
-	metrics "github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2"
-	"github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2"
-	grpczaplog "github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
 	"go.uber.org/zap"
@@ -34,6 +29,7 @@ type Options struct {
 	HTTPPort        int
 	GRPCPort        int
 	AllowedOrigins  []string
+	ServePrometheus bool
 	AuthEnable      bool
 	AuthIssuerURL   string
 	AuthAudienceURL string
@@ -82,26 +78,34 @@ func (s *Server) Close() error {
 	return nil
 }
 
+// Ping implements RuntimeService
+func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtimev1.PingResponse, error) {
+	resp := &runtimev1.PingResponse{
+		Version: "", // TODO: Return version
+		Time:    timestamppb.New(time.Now()),
+	}
+	return resp, nil
+}
+
 // ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
-			tracing.StreamServerInterceptor(opentracing.InterceptorTracer()),
-			metrics.StreamServerInterceptor(metrics.NewServerMetrics()),
-			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
-			recovery.StreamServerInterceptor(),
+			observability.TracingStreamServerInterceptor(),
+			observability.LoggingStreamServerInterceptor(s.logger),
+			observability.RecovererStreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
 		),
 		grpc.ChainUnaryInterceptor(
-			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
-			metrics.UnaryServerInterceptor(metrics.NewServerMetrics()),
-			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
-			recovery.UnaryServerInterceptor(),
+			observability.TracingUnaryServerInterceptor(),
+			observability.LoggingUnaryServerInterceptor(s.logger),
+			observability.RecovererUnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
 		),
 	)
+
 	runtimev1.RegisterRuntimeServiceServer(server, s)
 	runtimev1.RegisterQueryServiceServer(server, s)
 	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
@@ -120,57 +124,31 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 
-// ErrorToCode maps an error to a gRPC code for logging. It wraps the default behavior and adds handling of context errors.
-func ErrorToCode(err error) codes.Code {
-	if errors.Is(err, context.DeadlineExceeded) {
-		return codes.DeadlineExceeded
-	}
-	if errors.Is(err, context.Canceled) {
-		return codes.Canceled
-	}
-	return logging.DefaultErrorToCode(err)
-}
-
-// GRPCCodeToLevel overrides the log level of various gRPC codes.
-// We're currently not doing very granular error handling, so we get quite a lot of codes.Unknown errors, which we do not want to emit as error logs.
-func GRPCCodeToLevel(code codes.Code) logging.Level {
-	switch code {
-	case codes.OK, codes.NotFound, codes.Canceled, codes.AlreadyExists, codes.InvalidArgument, codes.Unauthenticated,
-		codes.Unknown, codes.PermissionDenied, codes.ResourceExhausted, codes.FailedPrecondition, codes.OutOfRange:
-		return logging.INFO
-	case codes.Unimplemented, codes.DeadlineExceeded, codes.Aborted, codes.Unavailable:
-		return logging.WARNING
-	case codes.Internal, codes.DataLoss:
-		return logging.ERROR
-	default:
-		return logging.ERROR
-	}
-}
-
 // HTTPHandler HTTP handler serving REST gateway.
 func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux)) (http.Handler, error) {
 	// Create REST gateway
-	mux := gateway.NewServeMux(gateway.WithErrorHandler(HTTPErrorHandler))
+	gwMux := gateway.NewServeMux(gateway.WithErrorHandler(HTTPErrorHandler))
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
-	err := runtimev1.RegisterRuntimeServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
+	err := runtimev1.RegisterRuntimeServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
 	if err != nil {
 		return nil, err
 	}
-
-	err = runtimev1.RegisterQueryServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
+	err = runtimev1.RegisterQueryServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// One-off REST-only path for multipart file upload
-	err = mux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", auth.HTTPMiddleware(s.aud, s.UploadMultipartFile))
+	// NOTE: It's local only and we should deprecate it in favor of a cloud-friendly alternative.
+	err = gwMux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", auth.GatewayMiddleware(s.aud, s.UploadMultipartFile))
 	if err != nil {
 		panic(err)
 	}
 
 	// One-off REST-only path for file export
-	err = mux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", auth.HTTPMiddleware(s.aud, s.ExportTable))
+	// NOTE: It's local only and we should deprecate it in favor of a cloud-friendly alternative.
+	err = gwMux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", auth.GatewayMiddleware(s.aud, s.ExportTable))
 	if err != nil {
 		panic(err)
 	}
@@ -182,8 +160,13 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 		registerAdditionalHandlers(httpMux)
 	}
 
-	// Add gRPC-gateway mux on /v1
-	httpMux.Handle("/v1/", mux)
+	// Add httpMux on gRPC-gateway
+	httpMux.Handle("/v1/", gwMux)
+
+	// Add Prometheus
+	if s.opts.ServePrometheus {
+		httpMux.Handle("/metrics", promhttp.Handler())
+	}
 
 	// Build CORS options for runtime server
 
@@ -231,13 +214,4 @@ func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gate
 		err = &gateway.HTTPStatusError{HTTPStatus: http.StatusBadRequest, Err: err}
 	}
 	gateway.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
-}
-
-// Ping implements RuntimeService
-func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtimev1.PingResponse, error) {
-	resp := &runtimev1.PingResponse{
-		Version: "", // TODO: Return version
-		Time:    timestamppb.New(time.Now()),
-	}
-	return resp, nil
 }

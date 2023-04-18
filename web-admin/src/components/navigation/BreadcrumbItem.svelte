@@ -1,27 +1,50 @@
 <script lang="ts">
-  import { IconButton } from "@rilldata/web-common/components/button";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import SimpleActionMenu from "@rilldata/web-common/components/menu/wrappers/SimpleActionMenu.svelte";
+  import WithSelectMenu from "@rilldata/web-common/components/menu/wrappers/WithSelectMenu.svelte";
 
   export let label: string;
-  export let isActive = false;
-  export let options: { main: string; callback: () => void }[] = [];
+  export let isCurrentPage = false;
+  export let menuOptions: { key: string; main: string }[] = [];
+  export let onSelectMenuOption: (option: string) => void = undefined;
 
-  const inactiveClass = "text-gray-500";
   const activeClass = "text-gray-800 font-semibold";
+  const inactiveClass = "text-gray-500";
+
+  let hovered = false;
+  function setHovered(value: boolean) {
+    hovered = value;
+  }
 </script>
 
-<li class={isActive ? activeClass : inactiveClass}>
-  <div class="p-2 flex items-center gap-x-2">
-    <span>
-      {label}
-    </span>
-    {#if options}
-      <SimpleActionMenu {options} let:toggleMenu minWidth="0px" distance={4}>
-        <IconButton on:click={toggleMenu}>
-          <CaretDownIcon size="14px" className="text-gray-500" />
-        </IconButton>
-      </SimpleActionMenu>
-    {/if}
-  </div>
+<li class="flex flex items-center gap-x-2 p-2">
+  <slot name="icon" />
+  {#if !menuOptions}
+    <span class={isCurrentPage ? activeClass : inactiveClass}>{label}</span>
+  {:else}
+    <WithSelectMenu
+      minWidth="0px"
+      distance={4}
+      options={menuOptions}
+      selection={{
+        key: label,
+        main: label,
+      }}
+      on:select={({ detail: { key } }) => onSelectMenuOption(key)}
+      let:toggleMenu
+    >
+      <button
+        class="flex flex-row gap-x-1 items-center {isCurrentPage
+          ? activeClass
+          : inactiveClass}"
+        on:click={toggleMenu}
+        on:mouseenter={() => setHovered(true)}
+        on:mouseleave={() => setHovered(false)}
+      >
+        <span>{label}</span>
+        <div class="transition-transform {hovered ? 'translate-y-[2px]' : ''}">
+          <CaretDownIcon size="14px" />
+        </div>
+      </button>
+    </WithSelectMenu>
+  {/if}
 </li>

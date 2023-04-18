@@ -7,13 +7,13 @@
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import {
+    createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
-    useQueryServiceMetricsViewTotals,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
-  import { useQueryClient } from "@sveltestack/svelte-query";
-  import type { UseQueryStoreResult } from "@sveltestack/svelte-query";
+
+  import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
@@ -56,7 +56,7 @@
     (activeMeasure?.format as NicelyFormattedTypes) ??
     NicelyFormattedTypes.HUMANIZE;
 
-  let totalsQuery: UseQueryStoreResult<V1MetricsViewTotalsResponse, Error>;
+  let totalsQuery: CreateQueryResult<V1MetricsViewTotalsResponse, Error>;
   $: if (
     metricsExplorer &&
     metaQuery &&
@@ -73,7 +73,7 @@
         },
       };
     }
-    totalsQuery = useQueryServiceMetricsViewTotals(
+    totalsQuery = createQueryServiceMetricsViewTotals(
       $runtime.instanceId,
       metricViewName,
       totalsQueryParams

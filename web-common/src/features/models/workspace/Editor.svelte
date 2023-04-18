@@ -14,10 +14,10 @@
     insertNewline,
   } from "@codemirror/commands";
   import {
+    SQLDialect,
     keywordCompletionSource,
     schemaCompletionSource,
     sql,
-    SQLDialect,
   } from "@codemirror/lang-sql";
   import {
     bracketMatching,
@@ -38,9 +38,9 @@
   import {
     Decoration,
     DecorationSet,
+    EditorView,
     drawSelection,
     dropCursor,
-    EditorView,
     highlightActiveLine,
     highlightActiveLineGutter,
     highlightSpecialChars,
@@ -51,9 +51,9 @@
   import { Debounce } from "@rilldata/web-common/features/models/utils/Debounce";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceListCatalogEntries,
     V1Model,
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceListCatalogEntries,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -69,7 +69,7 @@
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
   // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
 
-  $: getModel = useRuntimeServiceGetCatalogEntry(
+  $: getModel = createRuntimeServiceGetCatalogEntry(
     $runtime.instanceId,
     modelName
   );
@@ -102,6 +102,9 @@
       "&.cm-focused": {
         outline: "none",
       },
+    },
+    ".cm-scroller": {
+      fontFamily: "var(--monospace)",
     },
     "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
       { backgroundColor: "rgb(65 99 255 / 25%)" },
@@ -139,7 +142,7 @@
     },
     ".cm-completionLabel": {
       fontSize: "13px",
-      fontFamily: "MD IO",
+      fontFamily: "var(--monospace)",
     },
     ".cm-completionMatchedText": {
       textDecoration: "none",
@@ -148,13 +151,21 @@
     ".cm-underline": {
       backgroundColor: "rgb(254 240 138)",
     },
+    ".ͼb": {
+      fontWeight: "700",
+    },
+    ".ͼe": {
+      fontStyle: "italic",
+      fontWeight: "600",
+      color: "hsl(200, 70%, 50%)",
+    },
   });
 
   // AUTOCOMPLETE
 
   let autocompleteCompartment = new Compartment();
 
-  $: sourceCatalogsQuery = useRuntimeServiceListCatalogEntries(
+  $: sourceCatalogsQuery = createRuntimeServiceListCatalogEntries(
     $runtime.instanceId,
     {
       type: "OBJECT_TYPE_SOURCE",
@@ -360,6 +371,9 @@
       on:click={() => {
         /** give the editor focus no matter where we click */
         if (!editor.hasFocus) editor.focus();
+      }}
+      on:keydown={() => {
+        /** no op for now */
       }}
     />
   </div>

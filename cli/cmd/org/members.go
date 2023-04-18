@@ -1,6 +1,8 @@
 package org
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -42,6 +44,7 @@ func ListMembersCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			cmdutil.PrintMembers(resp.Members)
+			cmdutil.PrintInvites(resp.Invites)
 			return nil
 		},
 	}
@@ -62,7 +65,7 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			defer client.Close()
-			_, err = client.AddOrganizationMember(cmd.Context(), &adminv1.AddOrganizationMemberRequest{
+			res, err := client.AddOrganizationMember(cmd.Context(), &adminv1.AddOrganizationMemberRequest{
 				Organization: orgName,
 				Email:        args[0],
 				Role:         args[1],
@@ -70,7 +73,11 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cmdutil.SuccessPrinter("Done")
+			if res.PendingSignup {
+				cmdutil.SuccessPrinter(fmt.Sprintf("Invitation sent to %q to join organization %q as %q", args[0], orgName, args[1]))
+				return nil
+			}
+			cmdutil.SuccessPrinter(fmt.Sprintf("User %q added to the organization %q as %q", args[0], orgName, args[1]))
 			return nil
 		},
 	}

@@ -11,7 +11,10 @@ import {
   invalidateAfterReconcile,
   removeEntityQueries,
 } from "@rilldata/web-local/lib/svelte-query/invalidation";
-import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
+import type {
+  CreateBaseMutationResult,
+  QueryClient,
+} from "@tanstack/svelte-query";
 import {
   getFilePathFromNameAndType,
   getLabel,
@@ -27,7 +30,7 @@ export async function renameFileArtifact(
   fromName: string,
   toName: string,
   type: EntityType,
-  renameMutation: UseMutationResult<V1RenameFileAndReconcileResponse>
+  renameMutation: CreateBaseMutationResult<V1RenameFileAndReconcileResponse>
 ) {
   const resp = await renameMutation.mutateAsync({
     data: {
@@ -56,7 +59,7 @@ export async function deleteFileArtifact(
   instanceId: string,
   name: string,
   type: EntityType,
-  deleteMutation: UseMutationResult<V1DeleteFileAndReconcileResponse>,
+  deleteMutation: CreateBaseMutationResult<V1DeleteFileAndReconcileResponse>,
   activeEntity: ActiveEntity,
   names: Array<string>,
   showNotification = true

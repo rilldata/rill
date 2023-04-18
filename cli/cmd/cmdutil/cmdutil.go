@@ -1,6 +1,7 @@
 package cmdutil
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -14,6 +15,8 @@ import (
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type PreRunCheck func(cmd *cobra.Command, args []string) error
@@ -135,6 +138,32 @@ func InputPrompt(msg, def string) string {
 	return result
 }
 
+func ProjectExists(ctx context.Context, c *client.Client, orgName, projectName string) (bool, error) {
+	_, err := c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: orgName, Name: projectName})
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			if st.Code() == codes.NotFound {
+				return false, nil
+			}
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func OrgExists(ctx context.Context, c *client.Client, name string) (bool, error) {
+	_, err := c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			if st.Code() == codes.NotFound {
+				return false, nil
+			}
+		}
+		return false, err
+	}
+	return true, nil
+}
+
 func WarnPrinter(str string) {
 	boldYellow := color.New(color.FgYellow).Add(color.Bold)
 	boldYellow.Fprintln(color.Output, str)
@@ -148,6 +177,15 @@ func PrintMembers(members []*adminv1.Member) {
 
 	SuccessPrinter("Members list \n")
 	TablePrinter(toMemberTable(members))
+}
+
+func PrintInvites(invites []*adminv1.UserInvite) {
+	if len(invites) == 0 {
+		return
+	}
+
+	SuccessPrinter("Pending user invites \n")
+	TablePrinter(toInvitesTable(invites))
 }
 
 func toMemberTable(members []*adminv1.Member) []*member {
@@ -178,6 +216,29 @@ type member struct {
 	RoleName  string `header:"role_name" json:"role_name"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
 	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_on"`
+}
+
+func toInvitesTable(invites []*adminv1.UserInvite) []*userInvite {
+	allInvites := make([]*userInvite, 0, len(invites))
+
+	for _, i := range invites {
+		allInvites = append(allInvites, toInviteRow(i))
+	}
+	return allInvites
+}
+
+func toInviteRow(i *adminv1.UserInvite) *userInvite {
+	return &userInvite{
+		Email:     i.Email,
+		RoleName:  i.Role,
+		InvitedBy: i.InvitedBy,
+	}
+}
+
+type userInvite struct {
+	Email     string `header:"email" json:"email"`
+	RoleName  string `header:"role_name" json:"role_name"`
+	InvitedBy string `header:"invited_by" json:"invited_by"`
 }
 
 func contains(vals []string, key string) bool {

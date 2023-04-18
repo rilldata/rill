@@ -1,6 +1,8 @@
 package project
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -46,6 +48,7 @@ func ListMembersCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			cmdutil.PrintMembers(resp.Members)
+			cmdutil.PrintInvites(resp.Invites)
 			return nil
 		},
 	}
@@ -55,7 +58,7 @@ func ListMembersCmd(cfg *config.Config) *cobra.Command {
 
 func AddCmd(cfg *config.Config) *cobra.Command {
 	addCmd := &cobra.Command{
-		Use:   "add <project-name> <email> {admin|collaborator|viewer}",
+		Use:   "add <project-name> <email> {admin|viewer}",
 		Short: "Add Member",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -66,7 +69,7 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			defer client.Close()
-			_, err = client.AddProjectMember(cmd.Context(), &adminv1.AddProjectMemberRequest{
+			res, err := client.AddProjectMember(cmd.Context(), &adminv1.AddProjectMemberRequest{
 				Organization: orgName,
 				Project:      args[0],
 				Email:        args[1],
@@ -75,7 +78,12 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cmdutil.SuccessPrinter("Done")
+
+			if res.PendingSignup {
+				cmdutil.SuccessPrinter(fmt.Sprintf("Invitation sent to %q to join project %q as %q", args[1], args[0], args[2]))
+				return nil
+			}
+			cmdutil.SuccessPrinter(fmt.Sprintf("User %q added to the project %q as %q", args[1], args[0], args[2]))
 			return nil
 		},
 	}
@@ -112,7 +120,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 
 func SetRoleCmd(cfg *config.Config) *cobra.Command {
 	setRoleCmd := &cobra.Command{
-		Use:   "set-role <project-name> <email> {admin|collaborator|viewer}",
+		Use:   "set-role <project-name> <email> {admin|viewer}",
 		Short: "Set role of Member",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {

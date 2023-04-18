@@ -50,12 +50,12 @@ type DB interface {
 	FindOrganizations(ctx context.Context) ([]*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
 	FindOrganizationByID(ctx context.Context, id string) (*Organization, error)
-	InsertOrganization(ctx context.Context, name string, description string) (*Organization, error)
-	InsertOrganizationFromSeeds(ctx context.Context, nameSeeds []string, description string) (*Organization, error)
-	UpdateOrganization(ctx context.Context, name string, description string) (*Organization, error)
+	InsertOrganization(ctx context.Context, opts *InsertOrganizationOptions) (*Organization, error)
+	UpdateOrganization(ctx context.Context, id string, opts *UpdateOrganizationOptions) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
 
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
+	FindProjectByID(ctx context.Context, id string) (*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
 	FindProjectByGithubURL(ctx context.Context, githubURL string) (*Project, error)
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
@@ -65,8 +65,8 @@ type DB interface {
 	FindUsers(ctx context.Context) ([]*User, error)
 	FindUser(ctx context.Context, id string) (*User, error)
 	FindUserByEmail(ctx context.Context, email string) (*User, error)
-	InsertUser(ctx context.Context, email, displayName, photoURL string) (*User, error)
-	UpdateUser(ctx context.Context, id, displayName, photoURL string) (*User, error)
+	InsertUser(ctx context.Context, opts *InsertUserOptions) (*User, error)
+	UpdateUser(ctx context.Context, id string, opts *UpdateUserOptions) (*User, error)
 	DeleteUser(ctx context.Context, id string) error
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
@@ -84,10 +84,6 @@ type DB interface {
 	UpdateAuthCode(ctx context.Context, userCode, userID string, approvalState AuthCodeState) error
 	// DeleteAuthCode deletes the authorization code data from the store
 	DeleteAuthCode(ctx context.Context, deviceCode string) error
-
-	FindUserGithubInstallation(ctx context.Context, userID string, installationID int64) (*UserGithubInstallation, error)
-	UpsertUserGithubInstallation(ctx context.Context, userID string, installationID int64) error
-	DeleteUserGithubInstallations(ctx context.Context, installationID int64) error
 
 	FindDeployments(ctx context.Context, projectID string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
@@ -116,8 +112,8 @@ type DB interface {
 	// ResolveProjectMemberUserRoles resolves the direct and group roles of a user in a project
 	ResolveProjectMemberUserRoles(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
 
-	InsertOrganizationMemberUsergroup(ctx context.Context, orgID, groupName string) (*Usergroup, error)
-	UpdateOrganizationMemberAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
+	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
+	UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
 	InsertUserInUsergroup(ctx context.Context, userID, groupID string) error
 	DeleteUserFromUsergroup(ctx context.Context, userID, groupID string) error
 	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
@@ -125,6 +121,24 @@ type DB interface {
 
 	FindOrganizationsForUser(ctx context.Context, userID string) ([]*Organization, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
+	FindProjectsForOrganization(ctx context.Context, orgID string) ([]*Project, error)
+
+	FindProjectsForProjectMemberUser(ctx context.Context, orgID, userID string) ([]*Project, error)
+	FindPublicProjectsInOrganization(ctx context.Context, orgID string) ([]*Project, error)
+
+	CheckOrganizationProjectsHasMemberUser(ctx context.Context, orgID, userID string) (bool, error)
+	CheckOrganizationHasPublicProjects(ctx context.Context, orgID string) (bool, error)
+
+	InsertOrganizationMemberUserInvitation(ctx context.Context, email, invitedByID, orgID, roleID string) error
+	InsertProjectMemberUserInvitation(ctx context.Context, email, invitedByID, projectID, roleID string) error
+	FindOrganizationMemberInvitations(ctx context.Context, orgID string) ([]*UserInvite, error)
+	FindOrganizationMemberUserInvitations(ctx context.Context, userEmail string) ([]*OrganizationMemberUserInvitation, error)
+	FindOrganizationMemberUserInvitation(ctx context.Context, orgID, userEmail string) (*OrganizationMemberUserInvitation, error)
+	FindProjectMemberInvitations(ctx context.Context, projectID string) ([]*UserInvite, error)
+	FindProjectMemberUserInvitations(ctx context.Context, userEmail string) ([]*ProjectMemberUserInvitation, error)
+	FindProjectMemberUserInvitation(ctx context.Context, projectID, userEmail string) (*ProjectMemberUserInvitation, error)
+	DeleteOrganizationMemberUserInvitation(ctx context.Context, id string) error
+	DeleteProjectMemberUserInvitation(ctx context.Context, id string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -165,11 +179,23 @@ type Organization struct {
 	AllUsergroupID *string   `db:"all_usergroup_id"`
 }
 
+// InsertOrganizationOptions defines options for inserting a new org
+type InsertOrganizationOptions struct {
+	Name        string `validate:"slug"`
+	Description string
+}
+
+// UpdateOrganizationOptions defines options for updating an existing org
+type UpdateOrganizationOptions struct {
+	Name        string `validate:"slug"`
+	Description string
+}
+
 // Project represents one Git connection.
 // Projects belong to an organization.
 type Project struct {
 	ID                     string
-	OrganizationID         string `db:"organization_id"`
+	OrganizationID         string `db:"org_id"`
 	Name                   string
 	Description            string
 	Public                 bool
@@ -199,8 +225,8 @@ func (e *Variables) Scan(value interface{}) error {
 
 // InsertProjectOptions defines options for inserting a new Project.
 type InsertProjectOptions struct {
-	OrganizationID       string
-	Name                 string
+	OrganizationID       string `validate:"required"`
+	Name                 string `validate:"slug"`
 	UserID               string
 	Description          string
 	Public               bool
@@ -209,31 +235,53 @@ type InsertProjectOptions struct {
 	ProductionOLAPDSN    string
 	ProductionSlots      int
 	ProductionBranch     string
-	GithubURL            *string
-	GithubInstallationID *int64
+	GithubURL            *string `validate:"omitempty,http_url"`
+	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
 	ProductionVariables  map[string]string
 }
 
 // UpdateProjectOptions defines options for updating a Project.
 type UpdateProjectOptions struct {
+	Name                   string
 	Description            string
 	Public                 bool
 	ProductionBranch       string
 	ProductionVariables    map[string]string
-	GithubURL              *string
-	GithubInstallationID   *int64
+	GithubURL              *string `validate:"omitempty,http_url"`
+	GithubInstallationID   *int64  `validate:"omitempty,ne=0"`
 	ProductionDeploymentID *string
 }
 
 // User is a person registered in Rill.
 // Users may belong to multiple organizations and projects.
 type User struct {
-	ID          string
-	Email       string
-	DisplayName string    `db:"display_name"`
-	PhotoURL    string    `db:"photo_url"`
-	CreatedOn   time.Time `db:"created_on"`
-	UpdatedOn   time.Time `db:"updated_on"`
+	ID             string
+	Email          string
+	DisplayName    string    `db:"display_name"`
+	PhotoURL       string    `db:"photo_url"`
+	GithubUsername string    `db:"github_username"`
+	CreatedOn      time.Time `db:"created_on"`
+	UpdatedOn      time.Time `db:"updated_on"`
+}
+
+// InsertUserOptions defines options for inserting a new user
+type InsertUserOptions struct {
+	Email       string `validate:"email"`
+	DisplayName string
+	PhotoURL    string
+}
+
+// UpdateUserOptions defines options for updating an existing user
+type UpdateUserOptions struct {
+	DisplayName    string
+	PhotoURL       string
+	GithubUsername string
+}
+
+// InsertUsergroupOptions defines options for inserting a new usergroup
+type InsertUsergroupOptions struct {
+	OrgID string
+	Name  string `validate:"slug"`
 }
 
 // UserAuthToken is a persistent API token for a user.
@@ -292,14 +340,6 @@ type AuthCode struct {
 	UpdatedOn     time.Time     `db:"updated_on"`
 }
 
-// UserGithubInstallation represents a confirmed user relationship to an installation of our Github app
-type UserGithubInstallation struct {
-	ID             string    `db:"id"`
-	UserID         string    `db:"user_id"`
-	InstallationID int64     `db:"installation_id"`
-	CreatedOn      time.Time `db:"created_on"`
-}
-
 // DeploymentStatus is an enum representing the state of a deployment
 type DeploymentStatus int
 
@@ -331,9 +371,9 @@ type Deployment struct {
 type InsertDeploymentOptions struct {
 	ProjectID         string
 	Slots             int
-	Branch            string
-	RuntimeHost       string
-	RuntimeInstanceID string
+	Branch            string `validate:"required"`
+	RuntimeHost       string `validate:"required"`
+	RuntimeInstanceID string `validate:"required"`
 	RuntimeAudience   string
 	Status            DeploymentStatus
 	Logs              string
@@ -392,4 +432,28 @@ type Member struct {
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
 	RoleName    string    `db:"name"`
+}
+
+type OrganizationMemberUserInvitation struct {
+	ID              string
+	Email           string
+	InvitedByUserID string    `db:"invited_by_user_id"`
+	OrgID           string    `db:"org_id"`
+	OrgRoleID       string    `db:"org_role_id"`
+	CreatedOn       time.Time `db:"created_on"`
+}
+
+type ProjectMemberUserInvitation struct {
+	ID              string
+	Email           string
+	InvitedByUserID string    `db:"invited_by_user_id"`
+	ProjectID       string    `db:"project_id"`
+	ProjectRoleID   string    `db:"project_role_id"`
+	CreatedOn       time.Time `db:"created_on"`
+}
+
+type UserInvite struct {
+	Email     string
+	Role      string
+	InvitedBy string `db:"invited_by"`
 }

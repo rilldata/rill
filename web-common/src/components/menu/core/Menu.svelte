@@ -154,7 +154,6 @@
     : 'bg-white dark:bg-gray-700 border-[.5px] border-gray-300 dark:border-none shadow-lg dark:shadow-xl'}
         "
   style:outline="none"
-  tabindex="0"
   {...ariaProperties}
 >
   <slot />

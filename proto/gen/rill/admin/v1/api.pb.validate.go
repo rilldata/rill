@@ -663,6 +663,35 @@ func (m *GetOrganizationResponse) validate(all bool) error {
 		}
 	}
 
+	if all {
+		switch v := interface{}(m.GetPermissions()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetOrganizationResponseValidationError{
+					field:  "Permissions",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetOrganizationResponseValidationError{
+					field:  "Permissions",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPermissions()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetOrganizationResponseValidationError{
+				field:  "Permissions",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return GetOrganizationResponseMultiError(errors)
 	}
@@ -765,9 +794,16 @@ func (m *CreateOrganizationRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Id
-
-	// no validation rules for Name
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := CreateOrganizationRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Description
 
@@ -1210,7 +1246,18 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Name
+	// no validation rules for Id
+
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := UpdateOrganizationRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Description
 
@@ -1425,22 +1472,23 @@ var _ interface {
 	ErrorName() string
 } = UpdateOrganizationResponseValidationError{}
 
-// Validate checks the field values on ListProjectsRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ListProjectsRequest) Validate() error {
+// Validate checks the field values on ListProjectsForOrganizationRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *ListProjectsForOrganizationRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ListProjectsRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ListProjectsRequestMultiError, or nil if none found.
-func (m *ListProjectsRequest) ValidateAll() error {
+// ValidateAll checks the field values on ListProjectsForOrganizationRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// ListProjectsForOrganizationRequestMultiError, or nil if none found.
+func (m *ListProjectsForOrganizationRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ListProjectsRequest) validate(all bool) error {
+func (m *ListProjectsForOrganizationRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1454,19 +1502,20 @@ func (m *ListProjectsRequest) validate(all bool) error {
 	// no validation rules for PageToken
 
 	if len(errors) > 0 {
-		return ListProjectsRequestMultiError(errors)
+		return ListProjectsForOrganizationRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ListProjectsRequestMultiError is an error wrapping multiple validation
-// errors returned by ListProjectsRequest.ValidateAll() if the designated
+// ListProjectsForOrganizationRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// ListProjectsForOrganizationRequest.ValidateAll() if the designated
 // constraints aren't met.
-type ListProjectsRequestMultiError []error
+type ListProjectsForOrganizationRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ListProjectsRequestMultiError) Error() string {
+func (m ListProjectsForOrganizationRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1475,11 +1524,12 @@ func (m ListProjectsRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ListProjectsRequestMultiError) AllErrors() []error { return m }
+func (m ListProjectsForOrganizationRequestMultiError) AllErrors() []error { return m }
 
-// ListProjectsRequestValidationError is the validation error returned by
-// ListProjectsRequest.Validate if the designated constraints aren't met.
-type ListProjectsRequestValidationError struct {
+// ListProjectsForOrganizationRequestValidationError is the validation error
+// returned by ListProjectsForOrganizationRequest.Validate if the designated
+// constraints aren't met.
+type ListProjectsForOrganizationRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1487,24 +1537,24 @@ type ListProjectsRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e ListProjectsRequestValidationError) Field() string { return e.field }
+func (e ListProjectsForOrganizationRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ListProjectsRequestValidationError) Reason() string { return e.reason }
+func (e ListProjectsForOrganizationRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ListProjectsRequestValidationError) Cause() error { return e.cause }
+func (e ListProjectsForOrganizationRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ListProjectsRequestValidationError) Key() bool { return e.key }
+func (e ListProjectsForOrganizationRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ListProjectsRequestValidationError) ErrorName() string {
-	return "ListProjectsRequestValidationError"
+func (e ListProjectsForOrganizationRequestValidationError) ErrorName() string {
+	return "ListProjectsForOrganizationRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ListProjectsRequestValidationError) Error() string {
+func (e ListProjectsForOrganizationRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1516,14 +1566,14 @@ func (e ListProjectsRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sListProjectsRequest.%s: %s%s",
+		"invalid %sListProjectsForOrganizationRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ListProjectsRequestValidationError{}
+var _ error = ListProjectsForOrganizationRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -1531,24 +1581,25 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ListProjectsRequestValidationError{}
+} = ListProjectsForOrganizationRequestValidationError{}
 
-// Validate checks the field values on ListProjectsResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ListProjectsResponse) Validate() error {
+// Validate checks the field values on ListProjectsForOrganizationResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *ListProjectsForOrganizationResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ListProjectsResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ListProjectsResponseMultiError, or nil if none found.
-func (m *ListProjectsResponse) ValidateAll() error {
+// ValidateAll checks the field values on ListProjectsForOrganizationResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// ListProjectsForOrganizationResponseMultiError, or nil if none found.
+func (m *ListProjectsForOrganizationResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ListProjectsResponse) validate(all bool) error {
+func (m *ListProjectsForOrganizationResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1562,7 +1613,7 @@ func (m *ListProjectsResponse) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ListProjectsResponseValidationError{
+					errors = append(errors, ListProjectsForOrganizationResponseValidationError{
 						field:  fmt.Sprintf("Projects[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -1570,7 +1621,7 @@ func (m *ListProjectsResponse) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, ListProjectsResponseValidationError{
+					errors = append(errors, ListProjectsForOrganizationResponseValidationError{
 						field:  fmt.Sprintf("Projects[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -1579,7 +1630,7 @@ func (m *ListProjectsResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return ListProjectsResponseValidationError{
+				return ListProjectsForOrganizationResponseValidationError{
 					field:  fmt.Sprintf("Projects[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -1592,19 +1643,20 @@ func (m *ListProjectsResponse) validate(all bool) error {
 	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
-		return ListProjectsResponseMultiError(errors)
+		return ListProjectsForOrganizationResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// ListProjectsResponseMultiError is an error wrapping multiple validation
-// errors returned by ListProjectsResponse.ValidateAll() if the designated
+// ListProjectsForOrganizationResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// ListProjectsForOrganizationResponse.ValidateAll() if the designated
 // constraints aren't met.
-type ListProjectsResponseMultiError []error
+type ListProjectsForOrganizationResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ListProjectsResponseMultiError) Error() string {
+func (m ListProjectsForOrganizationResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1613,11 +1665,12 @@ func (m ListProjectsResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ListProjectsResponseMultiError) AllErrors() []error { return m }
+func (m ListProjectsForOrganizationResponseMultiError) AllErrors() []error { return m }
 
-// ListProjectsResponseValidationError is the validation error returned by
-// ListProjectsResponse.Validate if the designated constraints aren't met.
-type ListProjectsResponseValidationError struct {
+// ListProjectsForOrganizationResponseValidationError is the validation error
+// returned by ListProjectsForOrganizationResponse.Validate if the designated
+// constraints aren't met.
+type ListProjectsForOrganizationResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1625,24 +1678,24 @@ type ListProjectsResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e ListProjectsResponseValidationError) Field() string { return e.field }
+func (e ListProjectsForOrganizationResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ListProjectsResponseValidationError) Reason() string { return e.reason }
+func (e ListProjectsForOrganizationResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ListProjectsResponseValidationError) Cause() error { return e.cause }
+func (e ListProjectsForOrganizationResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ListProjectsResponseValidationError) Key() bool { return e.key }
+func (e ListProjectsForOrganizationResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ListProjectsResponseValidationError) ErrorName() string {
-	return "ListProjectsResponseValidationError"
+func (e ListProjectsForOrganizationResponseValidationError) ErrorName() string {
+	return "ListProjectsForOrganizationResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ListProjectsResponseValidationError) Error() string {
+func (e ListProjectsForOrganizationResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1654,14 +1707,14 @@ func (e ListProjectsResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sListProjectsResponse.%s: %s%s",
+		"invalid %sListProjectsForOrganizationResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ListProjectsResponseValidationError{}
+var _ error = ListProjectsForOrganizationResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -1669,7 +1722,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ListProjectsResponseValidationError{}
+} = ListProjectsForOrganizationResponseValidationError{}
 
 // Validate checks the field values on GetProjectRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -1859,6 +1912,35 @@ func (m *GetProjectResponse) validate(all bool) error {
 
 	// no validation rules for Jwt
 
+	if all {
+		switch v := interface{}(m.GetProjectPermissions()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetProjectResponseValidationError{
+					field:  "ProjectPermissions",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetProjectResponseValidationError{
+					field:  "ProjectPermissions",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetProjectPermissions()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetProjectResponseValidationError{
+				field:  "ProjectPermissions",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return GetProjectResponseMultiError(errors)
 	}
@@ -1961,9 +2043,27 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for OrganizationName
+	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+		err := CreateProjectRequestValidationError{
+			field:  "OrganizationName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Name
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := CreateProjectRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Description
 
@@ -2426,9 +2526,29 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for OrganizationName
+	// no validation rules for Id
 
-	// no validation rules for Name
+	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+		err := UpdateProjectRequestValidationError{
+			field:  "OrganizationName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := UpdateProjectRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Description
 
@@ -2437,8 +2557,6 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 	// no validation rules for ProductionBranch
 
 	// no validation rules for GithubUrl
-
-	// no validation rules for Variables
 
 	if len(errors) > 0 {
 		return UpdateProjectRequestMultiError(errors)
@@ -2650,6 +2768,449 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = UpdateProjectResponseValidationError{}
+
+// Validate checks the field values on GetProjectVariablesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetProjectVariablesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetProjectVariablesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetProjectVariablesRequestMultiError, or nil if none found.
+func (m *GetProjectVariablesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetProjectVariablesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for OrganizationName
+
+	// no validation rules for Name
+
+	if len(errors) > 0 {
+		return GetProjectVariablesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetProjectVariablesRequestMultiError is an error wrapping multiple
+// validation errors returned by GetProjectVariablesRequest.ValidateAll() if
+// the designated constraints aren't met.
+type GetProjectVariablesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetProjectVariablesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetProjectVariablesRequestMultiError) AllErrors() []error { return m }
+
+// GetProjectVariablesRequestValidationError is the validation error returned
+// by GetProjectVariablesRequest.Validate if the designated constraints aren't met.
+type GetProjectVariablesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetProjectVariablesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetProjectVariablesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetProjectVariablesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetProjectVariablesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetProjectVariablesRequestValidationError) ErrorName() string {
+	return "GetProjectVariablesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetProjectVariablesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetProjectVariablesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetProjectVariablesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetProjectVariablesRequestValidationError{}
+
+// Validate checks the field values on GetProjectVariablesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetProjectVariablesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetProjectVariablesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetProjectVariablesResponseMultiError, or nil if none found.
+func (m *GetProjectVariablesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetProjectVariablesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Variables
+
+	if len(errors) > 0 {
+		return GetProjectVariablesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetProjectVariablesResponseMultiError is an error wrapping multiple
+// validation errors returned by GetProjectVariablesResponse.ValidateAll() if
+// the designated constraints aren't met.
+type GetProjectVariablesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetProjectVariablesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetProjectVariablesResponseMultiError) AllErrors() []error { return m }
+
+// GetProjectVariablesResponseValidationError is the validation error returned
+// by GetProjectVariablesResponse.Validate if the designated constraints
+// aren't met.
+type GetProjectVariablesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetProjectVariablesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetProjectVariablesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetProjectVariablesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetProjectVariablesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetProjectVariablesResponseValidationError) ErrorName() string {
+	return "GetProjectVariablesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetProjectVariablesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetProjectVariablesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetProjectVariablesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetProjectVariablesResponseValidationError{}
+
+// Validate checks the field values on UpdateProjectVariablesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateProjectVariablesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateProjectVariablesRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// UpdateProjectVariablesRequestMultiError, or nil if none found.
+func (m *UpdateProjectVariablesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateProjectVariablesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+		err := UpdateProjectVariablesRequestValidationError{
+			field:  "OrganizationName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := UpdateProjectVariablesRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Variables
+
+	if len(errors) > 0 {
+		return UpdateProjectVariablesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateProjectVariablesRequestMultiError is an error wrapping multiple
+// validation errors returned by UpdateProjectVariablesRequest.ValidateAll()
+// if the designated constraints aren't met.
+type UpdateProjectVariablesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateProjectVariablesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateProjectVariablesRequestMultiError) AllErrors() []error { return m }
+
+// UpdateProjectVariablesRequestValidationError is the validation error
+// returned by UpdateProjectVariablesRequest.Validate if the designated
+// constraints aren't met.
+type UpdateProjectVariablesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateProjectVariablesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateProjectVariablesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateProjectVariablesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateProjectVariablesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateProjectVariablesRequestValidationError) ErrorName() string {
+	return "UpdateProjectVariablesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateProjectVariablesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateProjectVariablesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateProjectVariablesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateProjectVariablesRequestValidationError{}
+
+// Validate checks the field values on UpdateProjectVariablesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateProjectVariablesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateProjectVariablesResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// UpdateProjectVariablesResponseMultiError, or nil if none found.
+func (m *UpdateProjectVariablesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateProjectVariablesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Variables
+
+	if len(errors) > 0 {
+		return UpdateProjectVariablesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateProjectVariablesResponseMultiError is an error wrapping multiple
+// validation errors returned by UpdateProjectVariablesResponse.ValidateAll()
+// if the designated constraints aren't met.
+type UpdateProjectVariablesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateProjectVariablesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateProjectVariablesResponseMultiError) AllErrors() []error { return m }
+
+// UpdateProjectVariablesResponseValidationError is the validation error
+// returned by UpdateProjectVariablesResponse.Validate if the designated
+// constraints aren't met.
+type UpdateProjectVariablesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateProjectVariablesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateProjectVariablesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateProjectVariablesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateProjectVariablesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateProjectVariablesResponseValidationError) ErrorName() string {
+	return "UpdateProjectVariablesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateProjectVariablesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateProjectVariablesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateProjectVariablesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateProjectVariablesResponseValidationError{}
 
 // Validate checks the field values on GetCurrentUserRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -3497,6 +4058,10 @@ func (m *Project) validate(all bool) error {
 
 	// no validation rules for Public
 
+	// no validation rules for OrgId
+
+	// no validation rules for OrgName
+
 	// no validation rules for Region
 
 	// no validation rules for ProductionOlapDriver
@@ -3568,8 +4133,6 @@ func (m *Project) validate(all bool) error {
 			}
 		}
 	}
-
-	// no validation rules for Variables
 
 	if len(errors) > 0 {
 		return ProjectMultiError(errors)
@@ -4150,6 +4713,40 @@ func (m *ListOrganizationMembersResponse) validate(all bool) error {
 
 	}
 
+	for idx, item := range m.GetInvites() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListOrganizationMembersResponseValidationError{
+						field:  fmt.Sprintf("Invites[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListOrganizationMembersResponseValidationError{
+						field:  fmt.Sprintf("Invites[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListOrganizationMembersResponseValidationError{
+					field:  fmt.Sprintf("Invites[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
@@ -4255,9 +4852,28 @@ func (m *AddOrganizationMemberRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := AddOrganizationMemberRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Email
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = AddOrganizationMemberRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Role
 
@@ -4266,6 +4882,56 @@ func (m *AddOrganizationMemberRequest) validate(all bool) error {
 	}
 
 	return nil
+}
+
+func (m *AddOrganizationMemberRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *AddOrganizationMemberRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
 }
 
 // AddOrganizationMemberRequestMultiError is an error wrapping multiple
@@ -4363,6 +5029,8 @@ func (m *AddOrganizationMemberResponse) validate(all bool) error {
 	}
 
 	var errors []error
+
+	// no validation rules for PendingSignup
 
 	if len(errors) > 0 {
 		return AddOrganizationMemberResponseMultiError(errors)
@@ -4467,15 +5135,84 @@ func (m *RemoveOrganizationMemberRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := RemoveOrganizationMemberRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Email
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = RemoveOrganizationMemberRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return RemoveOrganizationMemberRequestMultiError(errors)
 	}
 
 	return nil
+}
+
+func (m *RemoveOrganizationMemberRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *RemoveOrganizationMemberRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
 }
 
 // RemoveOrganizationMemberRequestMultiError is an error wrapping multiple
@@ -4680,17 +5417,95 @@ func (m *SetOrganizationMemberRoleRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := SetOrganizationMemberRoleRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Email
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = SetOrganizationMemberRoleRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Role
+	if utf8.RuneCountInString(m.GetRole()) < 1 {
+		err := SetOrganizationMemberRoleRequestValidationError{
+			field:  "Role",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return SetOrganizationMemberRoleRequestMultiError(errors)
 	}
 
 	return nil
+}
+
+func (m *SetOrganizationMemberRoleRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *SetOrganizationMemberRoleRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
 }
 
 // SetOrganizationMemberRoleRequestMultiError is an error wrapping multiple
@@ -4895,7 +5710,16 @@ func (m *LeaveOrganizationRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := LeaveOrganizationRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return LeaveOrganizationRequestMultiError(errors)
@@ -5101,9 +5925,27 @@ func (m *ListProjectMembersRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := ListProjectMembersRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Project
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := ListProjectMembersRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for PageSize
 
@@ -5245,6 +6087,40 @@ func (m *ListProjectMembersResponse) validate(all bool) error {
 
 	}
 
+	for idx, item := range m.GetInvites() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListProjectMembersResponseValidationError{
+						field:  fmt.Sprintf("Invites[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListProjectMembersResponseValidationError{
+						field:  fmt.Sprintf("Invites[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListProjectMembersResponseValidationError{
+					field:  fmt.Sprintf("Invites[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
@@ -5349,19 +6225,106 @@ func (m *AddProjectMemberRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := AddProjectMemberRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Project
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := AddProjectMemberRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Email
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = AddProjectMemberRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Role
+	if utf8.RuneCountInString(m.GetRole()) < 1 {
+		err := AddProjectMemberRequestValidationError{
+			field:  "Role",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return AddProjectMemberRequestMultiError(errors)
 	}
 
 	return nil
+}
+
+func (m *AddProjectMemberRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *AddProjectMemberRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
 }
 
 // AddProjectMemberRequestMultiError is an error wrapping multiple validation
@@ -5458,6 +6421,8 @@ func (m *AddProjectMemberResponse) validate(all bool) error {
 	}
 
 	var errors []error
+
+	// no validation rules for PendingSignup
 
 	if len(errors) > 0 {
 		return AddProjectMemberResponseMultiError(errors)
@@ -5561,17 +6526,95 @@ func (m *RemoveProjectMemberRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := RemoveProjectMemberRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Project
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := RemoveProjectMemberRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Email
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = RemoveProjectMemberRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return RemoveProjectMemberRequestMultiError(errors)
 	}
 
 	return nil
+}
+
+func (m *RemoveProjectMemberRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *RemoveProjectMemberRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
 }
 
 // RemoveProjectMemberRequestMultiError is an error wrapping multiple
@@ -5772,19 +6815,106 @@ func (m *SetProjectMemberRoleRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := SetProjectMemberRoleRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Project
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := SetProjectMemberRoleRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Email
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = SetProjectMemberRoleRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Role
+	if utf8.RuneCountInString(m.GetRole()) < 1 {
+		err := SetProjectMemberRoleRequestValidationError{
+			field:  "Role",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return SetProjectMemberRoleRequestMultiError(errors)
 	}
 
 	return nil
+}
+
+func (m *SetProjectMemberRoleRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *SetProjectMemberRoleRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
 }
 
 // SetProjectMemberRoleRequestMultiError is an error wrapping multiple
@@ -6127,3 +7257,342 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MemberValidationError{}
+
+// Validate checks the field values on OrganizationPermissions with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *OrganizationPermissions) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on OrganizationPermissions with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// OrganizationPermissionsMultiError, or nil if none found.
+func (m *OrganizationPermissions) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OrganizationPermissions) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ReadOrg
+
+	// no validation rules for ManageOrg
+
+	// no validation rules for ReadProjects
+
+	// no validation rules for CreateProjects
+
+	// no validation rules for ManageProjects
+
+	// no validation rules for ReadOrgMembers
+
+	// no validation rules for ManageOrgMembers
+
+	if len(errors) > 0 {
+		return OrganizationPermissionsMultiError(errors)
+	}
+
+	return nil
+}
+
+// OrganizationPermissionsMultiError is an error wrapping multiple validation
+// errors returned by OrganizationPermissions.ValidateAll() if the designated
+// constraints aren't met.
+type OrganizationPermissionsMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OrganizationPermissionsMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OrganizationPermissionsMultiError) AllErrors() []error { return m }
+
+// OrganizationPermissionsValidationError is the validation error returned by
+// OrganizationPermissions.Validate if the designated constraints aren't met.
+type OrganizationPermissionsValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OrganizationPermissionsValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OrganizationPermissionsValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OrganizationPermissionsValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OrganizationPermissionsValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OrganizationPermissionsValidationError) ErrorName() string {
+	return "OrganizationPermissionsValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OrganizationPermissionsValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOrganizationPermissions.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OrganizationPermissionsValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OrganizationPermissionsValidationError{}
+
+// Validate checks the field values on ProjectPermissions with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ProjectPermissions) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ProjectPermissions with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ProjectPermissionsMultiError, or nil if none found.
+func (m *ProjectPermissions) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ProjectPermissions) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ReadProject
+
+	// no validation rules for ManageProject
+
+	// no validation rules for ReadProdBranch
+
+	// no validation rules for ManageProdBranch
+
+	// no validation rules for ReadDevBranches
+
+	// no validation rules for ManageDevBranches
+
+	// no validation rules for ReadProjectMembers
+
+	// no validation rules for ManageProjectMembers
+
+	if len(errors) > 0 {
+		return ProjectPermissionsMultiError(errors)
+	}
+
+	return nil
+}
+
+// ProjectPermissionsMultiError is an error wrapping multiple validation errors
+// returned by ProjectPermissions.ValidateAll() if the designated constraints
+// aren't met.
+type ProjectPermissionsMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ProjectPermissionsMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ProjectPermissionsMultiError) AllErrors() []error { return m }
+
+// ProjectPermissionsValidationError is the validation error returned by
+// ProjectPermissions.Validate if the designated constraints aren't met.
+type ProjectPermissionsValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ProjectPermissionsValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ProjectPermissionsValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ProjectPermissionsValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ProjectPermissionsValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ProjectPermissionsValidationError) ErrorName() string {
+	return "ProjectPermissionsValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ProjectPermissionsValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sProjectPermissions.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ProjectPermissionsValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ProjectPermissionsValidationError{}
+
+// Validate checks the field values on UserInvite with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *UserInvite) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UserInvite with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in UserInviteMultiError, or
+// nil if none found.
+func (m *UserInvite) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UserInvite) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Email
+
+	// no validation rules for Role
+
+	// no validation rules for InvitedBy
+
+	if len(errors) > 0 {
+		return UserInviteMultiError(errors)
+	}
+
+	return nil
+}
+
+// UserInviteMultiError is an error wrapping multiple validation errors
+// returned by UserInvite.ValidateAll() if the designated constraints aren't met.
+type UserInviteMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UserInviteMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UserInviteMultiError) AllErrors() []error { return m }
+
+// UserInviteValidationError is the validation error returned by
+// UserInvite.Validate if the designated constraints aren't met.
+type UserInviteValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UserInviteValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UserInviteValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UserInviteValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UserInviteValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UserInviteValidationError) ErrorName() string { return "UserInviteValidationError" }
+
+// Error satisfies the builtin error interface
+func (e UserInviteValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUserInvite.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UserInviteValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UserInviteValidationError{}

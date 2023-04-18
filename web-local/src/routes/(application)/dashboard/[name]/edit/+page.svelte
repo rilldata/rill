@@ -4,8 +4,8 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { MetricsWorkspace } from "@rilldata/web-common/features/metrics-views";
   import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceGetFile,
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
@@ -21,7 +21,7 @@
     }
   });
 
-  $: fileQuery = useRuntimeServiceGetFile(
+  $: fileQuery = createRuntimeServiceGetFile(
     $runtime.instanceId,
     getFilePathFromNameAndType(metricViewName, EntityType.MetricsDefinition),
     {
@@ -40,7 +40,7 @@
   $: yaml = $fileQuery.data?.blob || "";
 
   let nonStandardError: string | undefined;
-  $: catalogQuery = useRuntimeServiceGetCatalogEntry(
+  $: catalogQuery = createRuntimeServiceGetCatalogEntry(
     $runtime.instanceId,
     metricViewName,
     {

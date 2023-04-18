@@ -7,8 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/pkg/nameseeds"
-	"go.uber.org/zap"
 )
 
 func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL string) (*database.User, error) {
@@ -21,46 +19,71 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	// Update user if exists
 	user, err := s.DB.FindUserByEmail(ctx, email)
 	if err == nil {
-		return s.DB.UpdateUser(ctx, user.ID, name, photoURL)
+		return s.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
+			DisplayName:    name,
+			PhotoURL:       photoURL,
+			GithubUsername: user.GithubUsername,
+		})
 	} else if !errors.Is(err, database.ErrNotFound) {
 		return nil, err
 	}
 
-	// User does not exist. Creating a new user.
-	user, err = s.DB.InsertUser(ctx, email, name, photoURL)
+	// Get user invites if exists
+	orgInvites, err := s.DB.FindOrganizationMemberUserInvitations(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	projectInvites, err := s.DB.FindProjectMemberUserInvitations(ctx, email)
 	if err != nil {
 		return nil, err
 	}
 
-	// We create an initial org with a name derived from the user's info
-	err = s.createOrganizationForUser(ctx, email, user.ID, name)
-	if err != nil {
-		s.logger.Error("failed to create organization for user", zap.String("user.id", user.ID), zap.Error(err))
-		// continuing, since user was created successfully
-	}
-
-	return user, nil
-}
-
-func (s *Service) createOrganizationForUser(ctx context.Context, email, userID, name string) error {
-	// Start a tx for creating org and adding the user
 	ctx, tx, err := s.DB.NewTx(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	orgNameSeeds := nameseeds.ForUser(email, name)
+	// User does not exist. Creating a new user.
+	user, err = s.DB.InsertUser(ctx, &database.InsertUserOptions{
+		Email:       email,
+		DisplayName: name,
+		PhotoURL:    photoURL,
+	})
+	if err != nil {
+		return nil, err
+	}
 
-	org, err := s.DB.InsertOrganizationFromSeeds(ctx, orgNameSeeds, name)
-	if err != nil {
-		return err
+	// handle org invites
+	for _, invite := range orgInvites {
+		err = s.DB.InsertOrganizationMemberUser(ctx, invite.OrgID, user.ID, invite.OrgRoleID)
+		if err != nil {
+			return nil, err
+		}
+		err = s.DB.DeleteOrganizationMemberUserInvitation(ctx, invite.ID)
+		if err != nil {
+			return nil, err
+		}
 	}
-	_, err = s.prepareOrganization(ctx, org.ID, userID)
-	if err != nil {
-		return err
+
+	// handle project invites
+	for _, invite := range projectInvites {
+		err = s.DB.InsertProjectMemberUser(ctx, invite.ProjectID, user.ID, invite.ProjectRoleID)
+		if err != nil {
+			return nil, err
+		}
+		err = s.DB.DeleteProjectMemberUserInvitation(ctx, invite.ID)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return tx.Commit()
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName, description string) (*database.Organization, error) {
@@ -70,7 +93,10 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	org, err := s.DB.InsertOrganization(ctx, orgName, description)
+	org, err := s.DB.InsertOrganization(ctx, &database.InsertOrganizationOptions{
+		Name:        orgName,
+		Description: description,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -87,14 +113,59 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 	return org, nil
 }
 
+func (s *Service) InviteUserToOrganization(ctx context.Context, email, inviterID, orgID, roleID, orgName, roleName string) error {
+	// Validate email address
+	_, err := mail.ParseAddress(email)
+	if err != nil {
+		return fmt.Errorf("invalid user email address %q", email)
+	}
+
+	// Create invite
+	err = s.DB.InsertOrganizationMemberUserInvitation(ctx, email, inviterID, orgID, roleID)
+	if err != nil {
+		return err
+	}
+	// send invitation email
+	err = s.email.SendOrganizationInvite(email, "", orgName, roleName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) InviteUserToProject(ctx context.Context, email, inviterID, projectID, roleID, projectName, roleName string) error {
+	// Validate email address
+	_, err := mail.ParseAddress(email)
+	if err != nil {
+		return fmt.Errorf("invalid user email address %q", email)
+	}
+
+	// Create invite
+	err = s.DB.InsertProjectMemberUserInvitation(ctx, email, inviterID, projectID, roleID)
+	if err != nil {
+		return err
+	}
+	// send invitation email
+	err = s.email.SendProjectInvite(email, "", projectName, roleName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string) (*database.Organization, error) {
 	// create all user group for this org
-	userGroup, err := s.DB.InsertOrganizationMemberUsergroup(ctx, orgID, "all-users")
+	userGroup, err := s.DB.InsertUsergroup(ctx, &database.InsertUsergroupOptions{
+		OrgID: orgID,
+		Name:  "all-users",
+	})
 	if err != nil {
 		return nil, err
 	}
 	// update org with all user group
-	org, err := s.DB.UpdateOrganizationMemberAllUsergroup(ctx, orgID, userGroup.ID)
+	org, err := s.DB.UpdateOrganizationAllUsergroup(ctx, orgID, userGroup.ID)
 	if err != nil {
 		return nil, err
 	}

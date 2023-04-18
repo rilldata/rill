@@ -4,9 +4,9 @@
     isGrainBigger,
   } from "@rilldata/web-common/lib/time/grains";
   import { createEventDispatcher } from "svelte";
-  import { Button } from "@rilldata/web-common/components/button";
-  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { Button } from "../../../components/button";
   import type { DashboardTimeControls } from "../../../lib/time/types";
+  import type { V1TimeGrain } from "../../../runtime-client";
 
   export let minTimeGrain: V1TimeGrain;
   export let boundaryStart: Date;
