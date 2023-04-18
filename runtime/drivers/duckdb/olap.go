@@ -2,6 +2,7 @@ package duckdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -10,8 +11,19 @@ import (
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/metric/instrument"
+)
+
+// Create instruments
+var (
+	meter                 = global.Meter("runtime/drivers/duckdb")
+	queriesCounter        = observability.Must(meter.Int64Counter("queries"))
+	queueLatencyHistogram = observability.Must(meter.Int64Histogram("queue_latency", instrument.WithUnit("ms")))
+	queryLatencyHistogram = observability.Must(meter.Int64Histogram("query_latency", instrument.WithUnit("ms")))
+	totalLatencyHistogram = observability.Must(meter.Int64Histogram("total_latency", instrument.WithUnit("ms")))
 )
 
 func (c *connection) Dialect() drivers.Dialect {
@@ -48,7 +60,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	return res.Close()
 }
 
-func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
+func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
 	// We use the meta conn for dry run queries
 	if stmt.DryRun {
 		conn, release, err := c.acquireMetaConn(ctx)
@@ -69,37 +81,45 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		return nil, err
 	}
 
+	// Gather metrics only for actual queries
+	var acquiredTime time.Time
+	acquired := false
+	start := time.Now()
+	defer func() {
+		totalLatency := time.Since(start).Milliseconds()
+		queueLatency := acquiredTime.Sub(start).Milliseconds()
+
+		attrs := []attribute.KeyValue{
+			attribute.String("db", c.config.DBFilePath),
+			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
+			attribute.Bool("failed", outErr != nil),
+		}
+
+		queriesCounter.Add(ctx, 1, attrs...)
+		queueLatencyHistogram.Record(ctx, queueLatency, attrs...)
+		totalLatencyHistogram.Record(ctx, totalLatency, attrs...)
+		if acquired {
+			// Only track query latency when not cancelled in queue
+			queryLatencyHistogram.Record(ctx, totalLatency-queueLatency, attrs...)
+		}
+	}()
+
 	// Acquire connection
-	startAcquireConnection := time.Now()
 	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority)
+	acquiredTime = time.Now()
 	if err != nil {
-		c.logMetricSet(stmt, map[string]interface{}{
-			"elapsed_time": time.Since(startAcquireConnection),
-			"query_status": "acquire_connection_failure",
-		})
 		return nil, err
 	}
-	c.logMetricSet(stmt, map[string]interface{}{
-		"elapsed_time": time.Since(startAcquireConnection),
-		"query_status": "acquire_connection_success",
-	})
+	acquired = true
+
 	// NOTE: We can't just "defer release()" because release() will block until rows.Close() is called.
 	// We must be careful to make sure release() is called on all code paths.
 
-	startQuery := time.Now()
 	rows, err := conn.QueryxContext(ctx, stmt.Query, stmt.Args...)
 	if err != nil {
-		c.logMetricSet(stmt, map[string]interface{}{
-			"elapsed_time": time.Since(startQuery),
-			"query_status": "query_failure",
-		})
 		_ = release()
 		return nil, err
 	}
-	c.logMetricSet(stmt, map[string]interface{}{
-		"elapsed_time": time.Since(startQuery),
-		"query_status": "query_success",
-	})
 
 	schema, err := rowsToSchema(rows)
 	if err != nil {
@@ -108,7 +128,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		return nil, err
 	}
 
-	res := &drivers.Result{Rows: rows, Schema: schema}
+	res = &drivers.Result{Rows: rows, Schema: schema}
 	res.SetCleanupFunc(release) // Will call release when res.Close() is called.
 
 	return res, nil
@@ -149,22 +169,4 @@ func (c *connection) DropDB() error {
 	// ignoring close error
 	c.Close()
 	return os.Remove(c.config.DBFilePath)
-}
-
-func (c *connection) logMetricSet(stmt *drivers.Statement, metricSet map[string]interface{}) {
-	finalMetricSet := map[string]interface{}{
-		"query":    stmt.Query,
-		"dry_run":  stmt.DryRun,
-		"args_cnt": len(stmt.Args),
-	}
-	for k, v := range metricSet {
-		finalMetricSet[k] = v
-	}
-	fields := make([]zapcore.Field, 0, len(finalMetricSet))
-	for k, v := range finalMetricSet {
-		fields = append(fields, zap.Any(k, v))
-	}
-	if c.logger != nil { // logger might be undefined in tests
-		c.logger.Debug("query metrics", fields...)
-	}
 }

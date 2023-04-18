@@ -58,6 +58,7 @@ type MetricsView struct {
 
 type Measure struct {
 	Label       string
+	Name        string
 	Expression  string
 	Description string
 	Format      string `yaml:"format_preset"`
@@ -311,7 +312,9 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 
 	// this is needed since measure names are not given by the user
 	for i, measure := range apiMetrics.Measures {
-		measure.Name = fmt.Sprintf("measure_%d", i)
+		if measure.Name == "" {
+			measure.Name = fmt.Sprintf("measure_%d", i)
+		}
 	}
 
 	timeGrainEnum, err := getTimeGrainEnum(metrics.SmallestTimeGrain)

@@ -23,6 +23,7 @@ func OrgCmd(cfg *config.Config) *cobra.Command {
 	orgCmd.AddCommand(SwitchCmd(cfg))
 	orgCmd.AddCommand(ListCmd(cfg))
 	orgCmd.AddCommand(DeleteCmd(cfg))
+	orgCmd.AddCommand(RenameCmd(cfg))
 
 	return orgCmd
 }

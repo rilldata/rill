@@ -15,6 +15,7 @@ export type AdminServiceUpdateProjectVariablesBody = {
 export type AdminServiceUpdateProjectBody = {
   description?: string;
   githubUrl?: string;
+  id?: string;
   productionBranch?: string;
   public?: boolean;
 };
@@ -69,6 +70,7 @@ export type AdminServiceListOrganizationMembersParams = {
 
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
+  id?: string;
 };
 
 export type AdminServiceListOrganizationsParams = {
