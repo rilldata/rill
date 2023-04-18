@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import ProjectDeploymentLogs from "../../../../../components/projects/ProjectDeploymentLogs.svelte";
   import ProjectGithubConnection from "../../../../../components/projects/ProjectGithubConnection.svelte";
-  import ProjectLogs from "../../../../../components/projects/ProjectLogs.svelte";
   import ProjectStatus from "../../../../../components/projects/ProjectStatus.svelte";
   import ShareProjectCta from "../../../../../components/projects/ShareProjectCTA.svelte";
 </script>
@@ -16,7 +16,7 @@
     <ProjectGithubConnection />
     <ShareProjectCta />
   </div>
-  <ProjectLogs
+  <ProjectDeploymentLogs
     organization={$page.params.organization}
     project={$page.params.project}
   />
