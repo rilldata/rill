@@ -16,20 +16,20 @@
 </script>
 
 <div class="border-b flex items-center">
-  <a
-    href="/"
-    class="inline-flex items-center hover:bg-gray-200 grid place-items-center rounded"
-    style:margin-left="8px"
-    style:margin-top="4px"
-    style:margin-bottom="4px"
-    style:height="36px"
-    style:width="36px"
-  >
-    <Tooltip distance={12}>
+  <Tooltip distance={2}>
+    <a
+      href="/"
+      class="inline-flex items-center hover:bg-gray-200 grid place-items-center rounded"
+      style:margin-left="8px"
+      style:margin-top="4px"
+      style:margin-bottom="4px"
+      style:height="36px"
+      style:width="36px"
+    >
       <Home size="20px" color="black" />
-      <TooltipContent slot="tooltip-content">Home</TooltipContent>
-    </Tooltip>
-  </a>
+    </a>
+    <TooltipContent slot="tooltip-content">Home</TooltipContent>
+  </Tooltip>
   {#if organization}
     <Breadcrumbs />
   {/if}
