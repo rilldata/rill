@@ -53,5 +53,5 @@
 {:else if isProjectErrored}
   <ProjectErrored organization={org} project={proj} />
 {:else if isProjectOK}
-  <Dashboard leftMargin={"44px"} hasTitle={false} metricViewName={dash} />
+  <Dashboard leftMargin={"48px"} hasTitle={false} metricViewName={dash} />
 {/if}
