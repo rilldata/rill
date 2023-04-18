@@ -215,7 +215,7 @@ func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.Met
 	}
 
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, drivers.DialectDruid)
 		if err != nil {
 			return "", "", nil, err
 		}
