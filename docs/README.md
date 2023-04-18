@@ -29,3 +29,9 @@ npm run preview
 ## Deploying the docs
 
 The docs site is deployed via Netlify.
+
+## Creating a new version
+
+```
+npm run docusaurus docs:version <version> 
+```
