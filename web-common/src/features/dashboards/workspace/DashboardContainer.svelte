@@ -29,7 +29,11 @@
   class="grid items-stretch surface"
   style:grid-template-columns="max-content minmax(355px, auto)"
 >
-  <div class="explore-header border-b mb-3" style:padding-left={leftSide}>
+  <div
+    class="explore-header border-b mb-3"
+    style:padding-left={leftSide}
+    style:width={width + "px"}
+  >
     <slot name="header" />
   </div>
   <div class="explore-metrics mb-8" style:padding-left={leftSide}>
