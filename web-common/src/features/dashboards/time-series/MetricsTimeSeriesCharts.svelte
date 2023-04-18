@@ -16,8 +16,6 @@
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import {
-    getDurationMultiple,
-    getEndOfPeriod,
     getOffset,
     getStartOfPeriod,
   } from "@rilldata/web-common/lib/time/transforms";
