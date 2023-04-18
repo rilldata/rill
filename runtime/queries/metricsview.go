@@ -86,12 +86,12 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 // buildFilterClauseForMetricsViewFilter builds a SQL string of conditions joined with AND.
 // Unless the result is empty, it is prefixed with "AND".
 // I.e. it has the format "AND (...) AND (...) ...".
-func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter) (string, []any, error) {
+func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter, dialect drivers.Dialect) (string, []any, error) {
 	var clauses []string
 	var args []any
 
 	if filter != nil && filter.Include != nil {
-		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Include, false)
+		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Include, false, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -100,7 +100,7 @@ func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter) 
 	}
 
 	if filter != nil && filter.Exclude != nil {
-		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Exclude, true)
+		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Exclude, true, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -112,12 +112,12 @@ func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter) 
 }
 
 // buildFilterClauseForConditions returns a string with the format "AND (...) AND (...) ..."
-func buildFilterClauseForConditions(conds []*runtimev1.MetricsViewFilter_Cond, exclude bool) (string, []any, error) {
+func buildFilterClauseForConditions(conds []*runtimev1.MetricsViewFilter_Cond, exclude bool, dialect drivers.Dialect) (string, []any, error) {
 	var clauses []string
 	var args []any
 
 	for _, cond := range conds {
-		condClause, condArgs, err := buildFilterClauseForCondition(cond, exclude)
+		condClause, condArgs, err := buildFilterClauseForCondition(cond, exclude, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -132,7 +132,7 @@ func buildFilterClauseForConditions(conds []*runtimev1.MetricsViewFilter_Cond, e
 }
 
 // buildFilterClauseForCondition returns a string with the format "AND (...)"
-func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclude bool) (string, []any, error) {
+func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclude bool, dialect drivers.Dialect) (string, []any, error) {
 	var clauses []string
 	var args []any
 
@@ -171,11 +171,15 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 	// Build "dim [NOT] ILIKE ?"
 	if len(cond.Like) > 0 {
 		for _, val := range cond.Like {
-			// Add arg
-			args = append(args, val)
+			var clause string
+			if dialect == drivers.DialectDruid {
+				// Druid does not support ILIKE
+				clause = fmt.Sprintf("LOWER(%s) %s LIKE LOWER(?)", name, notKeyword)
+			} else {
+				clause = fmt.Sprintf("%s %s ILIKE ?", name, notKeyword)
+			}
 
-			// Add clause
-			clause := fmt.Sprintf("%s %s ILIKE ?", name, notKeyword)
+			args = append(args, val)
 			clauses = append(clauses, clause)
 		}
 	}
