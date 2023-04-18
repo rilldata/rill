@@ -1,1 +1,3 @@
-<div class="w-36 h-12 border">Project status placeholder</div>
+<div class="border bg-gray-50 p-2 text-gray-400">
+  Placeholder for project status
+</div>
