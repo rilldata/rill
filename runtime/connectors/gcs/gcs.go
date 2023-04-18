@@ -21,7 +21,7 @@ func init() {
 	connectors.Register("gcs", connector{})
 }
 
-var errNoCredentials = errors.New("empty credentials: set gcs_credentials env variable")
+var errNoCredentials = errors.New("empty credentials: set `GOOGLE_APPLICATION_CREDENTIALS` env variable")
 
 var spec = connectors.Spec{
 	DisplayName: "Google Cloud Storage",
@@ -47,7 +47,7 @@ var spec = connectors.Spec{
 	},
 	ConnectorVariables: []connectors.VariableSchema{
 		{
-			Key:  "gcs_credentials",
+			Key:  "GOOGLE_APPLICATION_CREDENTIALS",
 			Help: "Enter path of file to load from. Leave blank if public access enabled.",
 			ValidateFunc: func(any interface{}) error {
 				val := any.(string)
@@ -112,7 +112,7 @@ func (c connector) Spec() connectors.Spec {
 }
 
 // ConsumeAsIterator returns a file iterator over objects stored in gcs.
-// The credential json is read from a env variable GCS_CREDENTIALS.
+// The credential json is read from a env variable GOOGLE_APPLICATION_CREDENTIALS.
 // Additionally in case `env.AllowHostCredentials` is true it looks for "Application Default Credentials" as well
 func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
@@ -167,11 +167,11 @@ func createClient(ctx context.Context, env *connectors.Env) (*gcp.HTTPClient, er
 }
 
 func resolvedCredentials(ctx context.Context, env *connectors.Env) (*google.Credentials, error) {
-	if secretJSON := env.Variables["GCS_CREDENTIALS"]; secretJSON != "" {
-		// gcs_credentials is set, use credentials from json string provided by user
+	if secretJSON := env.Variables["GOOGLE_APPLICATION_CREDENTIALS"]; secretJSON != "" {
+		// GOOGLE_APPLICATION_CREDENTIALS is set, use credentials from json string provided by user
 		return google.CredentialsFromJSON(ctx, []byte(secretJSON), "https://www.googleapis.com/auth/cloud-platform")
 	}
-	// gcs_credentials is not set
+	// GOOGLE_APPLICATION_CREDENTIALS is not set
 	if env.AllowHostAccess {
 		// use host credentials
 		return gcp.DefaultCredentials(ctx)

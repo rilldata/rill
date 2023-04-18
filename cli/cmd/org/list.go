@@ -26,7 +26,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			cmdutil.SuccessPrinter("Organizations list \n")
-			cmdutil.TablePrinter(toTable(res.Organizations))
+			cmdutil.TablePrinter(toTable(res.Organizations, cfg.Org))
 			return nil
 		},
 	}

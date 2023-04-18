@@ -1,6 +1,8 @@
 package org
 
 import (
+	"strings"
+
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -28,10 +30,13 @@ func OrgCmd(cfg *config.Config) *cobra.Command {
 	return orgCmd
 }
 
-func toTable(organizations []*adminv1.Organization) []*organization {
+func toTable(organizations []*adminv1.Organization, defaultOrg string) []*organization {
 	orgs := make([]*organization, 0, len(organizations))
 
 	for _, org := range organizations {
+		if strings.EqualFold(org.Name, defaultOrg) {
+			org.Name += "*"
+		}
 		orgs = append(orgs, toRow(org))
 	}
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -15,6 +14,7 @@ import (
 	adminclient "github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -57,7 +57,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Verify that the projectPath contains a Rill project
-			if !hasRillProject(projectPath) {
+			if !rillv1beta.HasRillProject(projectPath) {
 				fullpath, err := filepath.Abs(projectPath)
 				if err != nil {
 					return err
@@ -70,7 +70,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Verify projectPath is a Git repo with remote on Github
-			githubURL, err := extractGitRemote(projectPath)
+			githubURL, err := gitutil.ExtractGitRemote(projectPath)
 			if err != nil {
 				if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
 					info.Print(githubSetupMsg)
@@ -187,7 +187,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Run flow to get connector credentials and other variables
-			variables, err := variablesFlow(projectPath)
+			variables, err := env.VariablesFlow(projectPath)
 			if err != nil {
 				return err
 			}
@@ -288,60 +288,6 @@ func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string) (*
 	}
 
 	return res, nil
-}
-
-func variablesFlow(projectPath string) (map[string]string, error) {
-	connectors, err := rillv1beta.ExtractConnectors(projectPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to extract connectors %w", err)
-	}
-
-	vars := make(map[string]string)
-	for _, c := range connectors {
-		connectorVariables := c.Spec.ConnectorVariables
-		if len(connectorVariables) != 0 {
-			fmt.Printf("\nConnector %s requires credentials\n\n", c.Type)
-		}
-		if c.Spec.Help != "" {
-			fmt.Println(c.Spec.Help)
-		}
-		for _, prop := range connectorVariables {
-			question := &survey.Question{}
-			msg := fmt.Sprintf("connector.%s.%s", c.Name, prop.Key)
-			if prop.Help != "" {
-				msg = fmt.Sprintf(msg+" (%s)", prop.Help)
-			}
-
-			if prop.Secret {
-				question.Prompt = &survey.Password{Message: msg}
-			} else {
-				question.Prompt = &survey.Input{Message: msg, Default: prop.Default}
-			}
-
-			if prop.TransformFunc != nil {
-				question.Transform = prop.TransformFunc
-			}
-
-			if prop.ValidateFunc != nil {
-				question.Validate = prop.ValidateFunc
-			}
-
-			answer := ""
-			if err := survey.Ask([]*survey.Question{question}, &answer); err != nil {
-				return nil, fmt.Errorf("variables prompt failed with error %w", err)
-			}
-
-			if answer != "" {
-				vars[prop.Key] = answer
-			}
-		}
-	}
-
-	if len(connectors) > 0 {
-		fmt.Println("")
-	}
-
-	return vars, nil
 }
 
 func createOrgFlow(ctx context.Context, cfg *config.Config, client *adminclient.Client, defaultName string) error {
@@ -485,20 +431,6 @@ func projectNamePrompt(ctx context.Context, client *adminclient.Client, orgName 
 	}
 
 	return name, nil
-}
-
-func hasRillProject(dir string) bool {
-	_, err := os.Open(filepath.Join(dir, "rill.yaml"))
-	return err == nil
-}
-
-func extractGitRemote(projectPath string) (string, error) {
-	remotes, err := gitutil.ExtractRemotes(projectPath)
-	if err != nil {
-		return "", err
-	}
-	// Parse into a https://github.com/account/repo (no .git) format
-	return gitutil.RemotesToGithubURL(remotes)
 }
 
 func isNameExistsErr(err error) bool {
