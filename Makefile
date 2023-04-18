@@ -1,3 +1,7 @@
+.PHONY: docs
+docs: cli
+	rill docs generate docs/docs/references/cmd/
+
 .PHONY: cli
 cli: cli.prepare
 	go build -o rill cli/main.go 
