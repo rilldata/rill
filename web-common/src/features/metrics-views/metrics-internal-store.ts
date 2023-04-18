@@ -21,6 +21,7 @@ export interface MetricsParams {
   model: string;
 }
 export interface MeasureEntity {
+  name?: string;
   label?: string;
   expression?: string;
   description?: string;
@@ -124,6 +125,7 @@ export class MetricsInternalRepresentation {
     this.internalYAML = temporaryRepresentation.toString({
       collectionStyle: "block",
     });
+    console.log(this.internalYAML);
 
     // Update svelte store
     this.updateStore(this);

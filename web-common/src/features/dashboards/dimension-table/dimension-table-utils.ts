@@ -89,6 +89,25 @@ export function getFilterForComparisonTable(
 // Custom sort that implements the following logic:
 // Input - [ "measure_1", "measure_10", "measure_1_delta", "measure_1_delta_perc", "measure_2", "measure_0", "measure_20" ]
 // Output -  [ "measure_0", "measure_1", "measure_1_delta", "measure_1_delta_perc", "measure_2", "measure_10", "measure_20" ]
+export function customMeasureSortGetter(measureName: string) {
+  return (measure1: string, measure2: string) => {
+    const a_num = parseFloat(
+      measure1
+        .replace(measureName, "")
+        .replace("_delta", ".1")
+        .replace("_delta_perc", ".2")
+    );
+    const b_num = parseFloat(
+      measure2
+        .replace(measureName, "")
+        .replace("_delta", ".1")
+        .replace("_delta_perc", ".2")
+    );
+
+    return a_num - b_num;
+  };
+}
+
 export function customSortMeasures(measure1: string, measure2: string) {
   const a_num = parseFloat(
     measure1
@@ -110,16 +129,11 @@ export function customSortMeasures(measure1: string, measure2: string) {
  * with fields named measure_x_delta and measure_x_delta_perc */
 export function computeComparisonValues(
   comparisonData: V1MetricsViewToplistResponse,
-  values: V1MetricsViewToplistResponseDataItem[]
+  values: V1MetricsViewToplistResponseDataItem[],
+  dimensionName: string,
+  measureName: string
 ) {
   if (comparisonData?.meta?.length !== 2) return values;
-
-  const measureName = comparisonData?.meta[0].name.includes("measure_")
-    ? comparisonData?.meta[0].name
-    : comparisonData?.meta[1].name;
-  const dimensionName = comparisonData?.meta[0].name.includes("measure_")
-    ? comparisonData?.meta[1].name
-    : comparisonData?.meta[0].name;
 
   const dimensionToValueMap = new Map(
     comparisonData?.data?.map((obj) => [obj[dimensionName], obj[measureName]])

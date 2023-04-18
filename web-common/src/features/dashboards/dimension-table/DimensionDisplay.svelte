@@ -37,6 +37,7 @@
   } from "../humanize-numbers";
   import {
     computeComparisonValues,
+    customMeasureSortGetter,
     customSortMeasures,
     getComparisonProperties,
     getFilterForComparisonTable,
@@ -284,7 +285,7 @@
       if (selectedMeasure?.format != NicelyFormattedTypes.PERCENTAGE)
         columnNames.push(`${sortByColumn}_delta_perc`);
     }
-    columnNames = columnNames.sort(customSortMeasures);
+    columnNames = columnNames.sort(customMeasureSortGetter(sortByColumn));
 
     // Make dimension the first column
     columnNames.unshift(dimension?.name);
@@ -352,7 +353,12 @@
     values.length &&
     isComparisonRangeAvailable
   ) {
-    values = computeComparisonValues($comparisonTopListQuery?.data, values);
+    values = computeComparisonValues(
+      $comparisonTopListQuery?.data,
+      values,
+      dimensionName,
+      leaderboardMeasureName
+    );
   }
 
   $: if (values) {
