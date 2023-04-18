@@ -60,7 +60,11 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			// telemetry errors shouldn't fail deploy command
 			tel, _ := telemetry.NewTelemetry(cfg.Version)
-			tel.EmitDeployStart(ctx)
+			tel.EmitDeployStart()
+			defer func() {
+				// telemetry errors shouldn't fail deploy command
+				_ = tel.Flush(ctx)
+			}()
 
 			// Verify that the projectPath contains a Rill project
 			if !hasRillProject(projectPath) {
@@ -192,8 +196,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				_ = browser.Open(res.ProjectUrl)
 			}
 
-			// telemetry errors shouldn't fail deploy command
-			tel.EmitDeploySuccess(ctx)
+			tel.EmitDeploySuccess()
 			return nil
 		},
 	}
@@ -229,7 +232,7 @@ func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string, te
 		time.Sleep(3 * time.Second)
 		fmt.Printf("Open this URL in your browser to grant Rill access to Github:\n\n")
 		fmt.Printf("\t%s\n\n", res.GrantAccessUrl)
-		tel.EmitGithubConnectedStart(ctx)
+		tel.EmitGithubConnectedStart()
 
 		// Open browser if possible
 		_ = browser.Open(res.GrantAccessUrl)
@@ -255,7 +258,7 @@ func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string, te
 
 			if pollRes.HasAccess {
 				// Success
-				tel.EmitGithubConnectedSuccess(ctx)
+				tel.EmitGithubConnectedSuccess()
 				return pollRes, nil
 			}
 

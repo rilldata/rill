@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
@@ -21,13 +22,13 @@ type Telemetry struct {
 	BuildTime   string
 	IsDev       bool
 	authHeader  string
+	events      [][]byte
 }
 
 const (
-	RillIntakeURL  = "https://intake.rilldata.io/events/data-modeler-metrics"
-	RillIntakeUser = "data-modeler"
-	// TODO: get this from vault and embedd into the binary
-	RillIntakePassword = "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug==" //nolint:gosec
+	RillIntakeURL      = "https://intake.rilldata.io/events/data-modeler-metrics"
+	RillIntakeUser     = "data-modeler"
+	RillIntakePassword = "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug==" //nolint:gosec //Need to figure out a way to add this during build time.
 	RillDeveloperApp   = "rill-developer"
 )
 
@@ -51,6 +52,7 @@ func NewTelemetry(ver config.Version) (*Telemetry, error) {
 		BuildTime:   ver.Timestamp,
 		IsDev:       ver.IsDev(),
 		authHeader:  fmt.Sprintf("Basic %s", encodedAuth),
+		events:      make([][]byte, 0),
 	}, nil
 }
 
@@ -76,65 +78,81 @@ func (t *Telemetry) emit(ctx context.Context, body []byte) error {
 }
 
 type BehaviourEventFields struct {
-	AppName    string
-	InstallID  string
-	BuildID    string
-	Version    string
-	IsDev      bool
-	Mode       string
-	Action     string
-	Medium     string
-	Space      string
-	ScreenName string
+	AppName       string `json:"app_name"`
+	InstallID     string `json:"install_id"`
+	BuildID       string `json:"build_id"`
+	Version       string `json:"version"`
+	IsDev         bool   `json:"is_dev"`
+	Mode          string `json:"mode"`
+	Action        string `json:"action"`
+	Medium        string `json:"medium"`
+	Space         string `json:"space"`
+	ScreenName    string `json:"screen_name"`
+	EventDatetime int64  `json:"event_datetime"`
+	EventType     string `json:"event_type"`
 }
 
-func (t *Telemetry) emitBehaviourEvent(ctx context.Context, action, medium, space, screenName string) {
+func (t *Telemetry) emitBehaviourEvent(action, medium, space, screenName string) {
 	fields := BehaviourEventFields{
-		AppName:    RillDeveloperApp,
-		InstallID:  t.InstallID,
-		BuildID:    t.BuildCommit,
-		Version:    t.Version,
-		IsDev:      t.IsDev,
-		Mode:       "edit",
-		Action:     action,
-		Medium:     medium,
-		Space:      space,
-		ScreenName: screenName,
+		AppName:       RillDeveloperApp,
+		InstallID:     t.InstallID,
+		BuildID:       t.BuildCommit,
+		Version:       t.Version,
+		IsDev:         t.IsDev,
+		Mode:          "edit",
+		Action:        action,
+		Medium:        medium,
+		Space:         space,
+		ScreenName:    screenName,
+		EventDatetime: time.Now().Unix() * 1000,
+		EventType:     "behavioral",
 	}
-	body, err := json.Marshal(&fields)
+	event, err := json.Marshal(&fields)
 	if err != nil {
 		return
 	}
 
-	go func() {
-		fmt.Println(body)
-		_ = t.emit(ctx, body)
-	}()
+	t.events = append(t.events, event)
+}
+
+func (t *Telemetry) Flush(ctx context.Context) error {
+	if len(t.events) == 0 {
+		return nil
+	}
+
+	body := make([]byte, 0)
+	for _, event := range t.events {
+		body = append(body, event...)
+		body = append(body, '\n')
+	}
+
+	t.events = make([][]byte, 0)
+	return t.emit(ctx, body)
 }
 
 // Error events are not needed. Will be inferred from missing events by product.
 // For internal debugging we should use logs.
 
-func (t *Telemetry) EmitDeployStart(ctx context.Context) {
-	t.emitBehaviourEvent(ctx, "deploy-start", "cli", "terminal", "terminal")
+func (t *Telemetry) EmitDeployStart() {
+	t.emitBehaviourEvent("deploy-start", "cli", "terminal", "terminal")
 }
 
-func (t *Telemetry) EmitDeploySuccess(ctx context.Context) {
-	t.emitBehaviourEvent(ctx, "deploy-success", "cli", "terminal", "terminal")
+func (t *Telemetry) EmitDeploySuccess() {
+	t.emitBehaviourEvent("deploy-success", "cli", "terminal", "terminal")
 }
 
-func (t *Telemetry) EmitGithubConnectedStart(ctx context.Context) {
-	t.emitBehaviourEvent(ctx, "ghconnected-start", "cli", "terminal", "terminal")
+func (t *Telemetry) EmitGithubConnectedStart() {
+	t.emitBehaviourEvent("ghconnected-start", "cli", "terminal", "terminal")
 }
 
-func (t *Telemetry) EmitGithubConnectedSuccess(ctx context.Context) {
-	t.emitBehaviourEvent(ctx, "ghconnected-success", "cli", "terminal", "terminal")
+func (t *Telemetry) EmitGithubConnectedSuccess() {
+	t.emitBehaviourEvent("ghconnected-success", "cli", "terminal", "terminal")
 }
 
-func (t *Telemetry) EmitDataAccessConnectedStart(ctx context.Context) {
-	t.emitBehaviourEvent(ctx, "dataaccess-start", "cli", "terminal", "terminal")
+func (t *Telemetry) EmitDataAccessConnectedStart() {
+	t.emitBehaviourEvent("dataaccess-start", "cli", "terminal", "terminal")
 }
 
-func (t *Telemetry) EmitDataAccessConnectedSuccess(ctx context.Context) {
-	t.emitBehaviourEvent(ctx, "dataaccess-success", "cli", "terminal", "terminal")
+func (t *Telemetry) EmitDataAccessConnectedSuccess() {
+	t.emitBehaviourEvent("dataaccess-success", "cli", "terminal", "terminal")
 }
