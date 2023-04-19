@@ -75,6 +75,39 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	return &adminv1.ListProjectsForOrganizationResponse{Projects: dtos}, nil
 }
 
+func (s *Server) ListProjectsForOrganizationAndGithubURL(ctx context.Context, req *adminv1.ListProjectsForOrganizationAndGithubURLRequest) (*adminv1.ListProjectsForOrganizationAndGithubURLResponse, error) {
+	claims := auth.GetClaims(ctx)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "org not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if !claims.CanOrganization(ctx, org.ID, auth.ReadProjects) {
+		return nil, status.Errorf(codes.PermissionDenied, "does not have permission to read projects in org %s", req.OrganizationName)
+	}
+
+	projects, err := s.admin.DB.FindProjectsByOrgIDAndGithubURL(ctx, org.ID, req.GithubUrl)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Errorf(codes.NotFound, "project with github url %s not found in org %s", req.GithubUrl, req.OrganizationName)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	accessibleProjects := make([]*adminv1.Project, 0)
+	for _, p := range projects {
+		if claims.CanProject(ctx, p.ID, auth.ReadProject) {
+			accessibleProjects = append(accessibleProjects, projToDTO(p, org.Name))
+		}
+	}
+
+	return &adminv1.ListProjectsForOrganizationAndGithubURLResponse{Projects: accessibleProjects}, nil
+}
+
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {

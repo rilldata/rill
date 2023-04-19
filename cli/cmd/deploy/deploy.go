@@ -136,7 +136,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if !repoInSyncFlow(projectPath, prodBranch) {
-				warn.Printf("User aborted!!!")
+				warn.Println("You can run `rill deploy` again once local changes are added to remote repo.")
 				return nil
 			}
 
@@ -155,6 +155,35 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				success.Printf("Created org %q. Run \"rill org edit\" to change name if required.\n", cfg.Org)
 			} else {
 				info.Printf("Using org %q.\n", cfg.Org)
+			}
+
+			nameExist := false
+			// check if a project with github url already exists in this org
+			resp, err := client.ListProjectsForOrganizationAndGithubURL(ctx, &adminv1.ListProjectsForOrganizationAndGithubURLRequest{
+				OrganizationName: cfg.Org,
+				GithubUrl:        githubURL,
+			})
+			if err == nil && len(resp.Projects) != 0 { // ignoring error since this is just for a confirmation prompt
+				for _, p := range resp.Projects {
+					if strings.EqualFold(name, p.Name) {
+						nameExist = true
+						break
+					}
+				}
+
+				warn.Printf("Another project %q already deploys from %q\n", resp.Projects[0].Name, githubURL)
+				if !cmdutil.ConfirmPrompt("Do you want to continue", "", true) {
+					warn.Println("Aborted")
+					return nil
+				}
+			}
+
+			if nameExist {
+				// we for sure know that project name exists, prompt for new name before creating project
+				name, err = projectNamePrompt(ctx, client, cfg.Org)
+				if err != nil {
+					return err
+				}
 			}
 
 			// Run flow to get connector credentials and other variables
@@ -392,7 +421,6 @@ func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adm
 		}
 
 		// project name already exists, prompt for project name and create project with new name again
-
 		name, err := projectNamePrompt(ctx, client, req.OrganizationName)
 		if err != nil {
 			return nil, err
@@ -423,7 +451,7 @@ func repoInSyncFlow(projectPath, branch string) bool {
 		warn.Println("Local commits are not pushed to remote yet. These changes will not be present in deployed project.")
 	}
 
-	return cmdutil.ConfirmPrompt("Do you want to continue", true)
+	return cmdutil.ConfirmPrompt("Do you want to continue", "", true)
 }
 
 func projectNamePrompt(ctx context.Context, client *adminclient.Client, orgName string) (string, error) {
