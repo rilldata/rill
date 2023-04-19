@@ -1,3 +1,8 @@
+/**
+ * The `errorStore` holds the state of any runtime errors, which
+ * the `ErrorBoundary` component catches and routes to the `ErrorPage`.
+ */
+
 import { derived, writable, Writable } from "svelte/store";
 
 export interface ErrorStoreState {
