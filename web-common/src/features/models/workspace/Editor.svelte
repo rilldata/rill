@@ -103,6 +103,9 @@
         outline: "none",
       },
     },
+    ".cm-scroller": {
+      fontFamily: "var(--monospace)",
+    },
     "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
       { backgroundColor: "rgb(65 99 255 / 25%)" },
     ".cm-selectionMatch": { backgroundColor: "rgb(189 233 255)" },
@@ -139,7 +142,7 @@
     },
     ".cm-completionLabel": {
       fontSize: "13px",
-      fontFamily: "MD IO",
+      fontFamily: "var(--monospace)",
     },
     ".cm-completionMatchedText": {
       textDecoration: "none",
@@ -147,6 +150,14 @@
     },
     ".cm-underline": {
       backgroundColor: "rgb(254 240 138)",
+    },
+    ".ͼb": {
+      fontWeight: "700",
+    },
+    ".ͼe": {
+      fontStyle: "italic",
+      fontWeight: "600",
+      color: "hsl(200, 70%, 50%)",
     },
   });
 

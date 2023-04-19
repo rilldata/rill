@@ -68,7 +68,7 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	ql, args, err := q.buildMetricsTotalsSQL(mv)
+	ql, args, err := q.buildMetricsTotalsSQL(mv, olap.Dialect())
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -90,7 +90,7 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	return nil
 }
 
-func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsView) (string, []any, error) {
+func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
 	selectCols := []string{}
 	for _, n := range q.MeasureNames {
 		found := false
@@ -121,7 +121,7 @@ func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsView) (st
 	}
 
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, dialect)
 		if err != nil {
 			return "", nil, err
 		}

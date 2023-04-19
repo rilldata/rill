@@ -85,7 +85,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			return nil
 		}
 
-		filter, args, err := buildFilterClauseForMetricsViewFilter(q.Filters)
+		filter, args, err := buildFilterClauseForMetricsViewFilter(q.Filters, olap.Dialect())
 		if err != nil {
 			return err
 		}
