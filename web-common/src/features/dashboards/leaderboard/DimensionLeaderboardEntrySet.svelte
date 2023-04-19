@@ -27,6 +27,7 @@ see more button
     humanizeDataType,
   } from "../humanize-numbers";
   import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
+  import { FormattedDataType } from "../../../components/data-types";
 
   export let values;
   export let comparisonValues;
@@ -115,7 +116,7 @@ see more button
       {excluded}
     >
       <svelte:fragment slot="label">
-        {label}
+        <FormattedDataType isNull={label === null} value={label} />
       </svelte:fragment>
       <div slot="right" class="flex items-baseline gap-x-1">
         {#if showComparisonForThisValue && comparisonValue !== undefined}
