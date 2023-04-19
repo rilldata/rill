@@ -87,12 +87,12 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				return fmt.Errorf("invalid remote %q", githubURL)
 			}
 
-			silentGitAccess := false
+			silentGitFlow := false
 			// If user is not authenticated, run login flow
 			if !cfg.IsAuthenticated() {
 				warn.Println("You are not yet authenticated. Opening browser to log in or sign up for Rill Cloud.")
 				time.Sleep(2 * time.Second)
-				silentGitAccess = true
+				silentGitFlow = true
 				authURL := cfg.AdminURL
 				if strings.Contains(authURL, "http://localhost:9090") {
 					authURL = "http://localhost:8080"
@@ -113,7 +113,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Run flow for access to the Github remote (if necessary)
-			ghRes, err := githubFlow(ctx, client, githubURL, silentGitAccess)
+			ghRes, err := githubFlow(ctx, client, githubURL, silentGitFlow)
 			if err != nil {
 				return fmt.Errorf("failed Github flow: %w", err)
 			}

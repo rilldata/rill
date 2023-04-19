@@ -1,34 +1,25 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { createAdminServiceGetCurrentUser } from "../../../../client";
   import { Button } from "@rilldata/web-common/components/button";
-  import { onMount } from "svelte";
   import { ADMIN_URL } from "../../../../client/http-client";
 
-  let user;
-  let userCode;
   let actionTaken = false;
   let successMsg = "";
   let errorMsg = "";
-  let redirectURL = "";
+  const urlParams = new URLSearchParams(window.location.search)
+  const redirectURL = urlParams.get("redirect_url");
+  const userCode = urlParams.get("user_code");
 
-  async function fetchUserData() {
-    const urlParams = new URLSearchParams(window.location.search);
-    userCode = urlParams.get("user_code");
-    redirectURL = urlParams.get("redirect_url");
-
-    const response = await fetch(ADMIN_URL + "/v1/users/current", {
-      method: "GET",
-      credentials: "include",
-    });
-    let data = await response.json();
-    if (!data.user) {
-      window.location.href =
-        ADMIN_URL +
-        "/auth/login?redirect=" +
-        encodeURIComponent(window.location.href);
-    } else {
-      user = data.user;
-    }
-  }
+  const user = createAdminServiceGetCurrentUser({
+    query: {
+      onSuccess: (data) => {
+        if (!data.user) {
+          goto(`${ADMIN_URL}/auth/login?redirect=${window.location.href}`);
+        }
+      },
+    },
+  });
 
   function confirmUserCode() {
     fetch(
@@ -41,6 +32,8 @@
     ).then((response) => {
       if (response.ok) {
         if (redirectURL !== "") {
+          // This msg creates a tight coupling b/w login flow and github access flow
+          // but is required for better user experience
           successMsg = "User code confirmed, verifying github access...";
           setTimeout(function () {
             window.location.href = decodeURIComponent(redirectURL);
@@ -85,18 +78,16 @@
       }
     });
   }
-
-  onMount(fetchUserData);
 </script>
 
 <svelte:head>
   <meta name="description" content="User code confirmation" />
 </svelte:head>
 
-{#if user}
+{#if $user.data && $user.data.user}
   <div class="flex flex-col justify-center items-center h-3/5">
     <h1 class="text-3xl font-medium text-gray-800 mb-4">
-      Hello, {user.displayName}!
+      Hello, {$user.data.user.displayName}!
     </h1>
     <p class="text-lg text-gray-700 mb-6">Your user code is: {userCode}</p>
 

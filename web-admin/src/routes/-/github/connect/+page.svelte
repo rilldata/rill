@@ -1,38 +1,32 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
-  import { onMount } from "svelte";
   import { ADMIN_URL } from "../../../../client/http-client";
+  import { goto } from "$app/navigation";
+  import { createAdminServiceGetCurrentUser } from "../../../../client";
 
-  let user;
-  let redirectURL;
+  const redirectURL = new URLSearchParams(window.location.search).get(
+    "redirect_url"
+  );
+  const user = createAdminServiceGetCurrentUser({
+    query: {
+      onSuccess: (data) => {
+        if (!data.user) {
+          goto(`${ADMIN_URL}/auth/login?redirect=${window.location.href}`);
+        }
+      },
+    },
+  });
 
-  async function init() {
-    const urlParams = new URLSearchParams(window.location.search);
-    redirectURL = urlParams.get("redirect_url");
-
-    const response = await fetch(ADMIN_URL + "/v1/users/current", {
-      method: "GET",
-      credentials: "include",
-    });
-    let data = await response.json();
-    if (!data.user) {
-      window.location.href =
-        ADMIN_URL + "/auth/login?redirect=" + window.location.href;
-    } else {
-      user = data.user;
-    }
-  }
   function handleGoToGithub() {
     window.location.href = redirectURL;
   }
-  onMount(init);
 </script>
 
 <svelte:head>
   <title>Connect to Github</title>
 </svelte:head>
 
-{#if user}
+{#if $user.data && $user.data.user}
   <div class="flex flex-col justify-center items-center h-3/5">
     <h1 class="text-3xl font-medium text-gray-800 mb-4">Connect to Github</h1>
     <p class="text-lg text-gray-700 mb-6">
