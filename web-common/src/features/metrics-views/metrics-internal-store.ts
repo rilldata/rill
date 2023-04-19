@@ -1,3 +1,4 @@
+import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
 import { guidGenerator } from "@rilldata/web-common/lib/guid";
 import type {
@@ -125,7 +126,6 @@ export class MetricsInternalRepresentation {
     this.internalYAML = temporaryRepresentation.toString({
       collectionStyle: "block",
     });
-    console.log(this.internalYAML);
 
     // Update svelte store
     this.updateStore(this);
@@ -176,9 +176,15 @@ export class MetricsInternalRepresentation {
   }
 
   addNewMeasure() {
+    const newName = getName(
+      "measure",
+      this.internalRepresentation.measures.map((measure) => measure.name)
+    );
+
     const measureNode = this.internalRepresentationDocument.createNode({
       label: "",
       expression: "",
+      name: newName,
       description: "",
       format_preset: "humanize",
       __GUID__: guidGenerator(),
@@ -274,6 +280,7 @@ export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
   const measureNode = doc.createNode({
     label: "Total records",
     expression: "count(*)",
+    name: "total_records",
     description: "Total number of records present",
     format_preset: "humanize",
   });
