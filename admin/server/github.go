@@ -44,7 +44,7 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 		}
 
 		// If no access, return instructions for granting access
-		grantAccessURL, err := urlutil.UrlWithQuery(s.urls.githubConnect, map[string]string{"remote": req.GithubUrl})
+		grantAccessURL, err := urlutil.WithQuery(s.urls.githubConnect, map[string]string{"remote": req.GithubUrl})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create redirect URL: %s", err)
 		}
@@ -65,7 +65,7 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 
 	// user has not authorized github app
 	if user.GithubUsername == "" {
-		redirectURL, err := urlutil.UrlWithQuery(s.urls.githubAuth, map[string]string{"remote": req.GithubUrl})
+		redirectURL, err := urlutil.WithQuery(s.urls.githubAuth, map[string]string{"remote": req.GithubUrl})
 		if err != nil {
 			return nil, err
 		}
@@ -82,7 +82,7 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 	if err != nil {
 		if errors.Is(err, admin.ErrUserIsNotCollaborator) {
 			// may be user authorised from another username
-			redirectURL, err := urlutil.UrlWithQuery(s.urls.githubAuthRetry, map[string]string{"remote": req.GithubUrl, "githubUsername": user.GithubUsername})
+			redirectURL, err := urlutil.WithQuery(s.urls.githubAuthRetry, map[string]string{"remote": req.GithubUrl, "githubUsername": user.GithubUsername})
 			if err != nil {
 				return nil, err
 			}
@@ -136,7 +136,7 @@ func (s *Server) githubConnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectURL, err := urlutil.UrlWithQuery(s.urls.githubAppInstallation, map[string]string{"state": remote})
+	redirectURL, err := urlutil.WithQuery(s.urls.githubAppInstallation, map[string]string{"state": remote})
 	if err != nil {
 		http.Error(w, "failed to generate URL", http.StatusInternalServerError)
 		return
@@ -225,7 +225,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 
 	if setupAction == "request" {
 		// access requested
-		redirectURL, err := urlutil.UrlWithQuery(s.urls.githubConnectRequest, map[string]string{"remote": remoteURL})
+		redirectURL, err := urlutil.WithQuery(s.urls.githubConnectRequest, map[string]string{"remote": remoteURL})
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to create connect request url: %s", err.Error()), http.StatusInternalServerError)
 			return
@@ -258,7 +258,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 
 		// no access
 		// Redirect to UI retry page
-		redirectURL, err := urlutil.UrlWithQuery(s.urls.githubConnectRetry, map[string]string{"remote": remoteURL})
+		redirectURL, err := urlutil.WithQuery(s.urls.githubConnectRetry, map[string]string{"remote": remoteURL})
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to create retry request url: %s", err.Error()), http.StatusInternalServerError)
 			return
@@ -282,7 +282,7 @@ func (s *Server) githubAuthLogin(w http.ResponseWriter, r *http.Request) {
 	claims := auth.GetClaims(r.Context())
 	if claims.OwnerType() != auth.OwnerTypeUser {
 		// Redirect to the auth site, with a redirect back to here after successful auth.
-		redirectURL, err := urlutil.UrlWithQuery(s.urls.authLogin, map[string]string{"redirect": r.URL.RequestURI()})
+		redirectURL, err := urlutil.WithQuery(s.urls.authLogin, map[string]string{"redirect": r.URL.RequestURI()})
 		if err != nil {
 			http.Error(w, "failed to generate URL", http.StatusInternalServerError)
 			return
@@ -420,7 +420,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !ok {
-		redirectURL, err := urlutil.UrlWithQuery(s.urls.githubAuthRetry, map[string]string{"remote": remote, "githubUsername": user.GithubUsername})
+		redirectURL, err := urlutil.WithQuery(s.urls.githubAuthRetry, map[string]string{"remote": remote, "githubUsername": user.GithubUsername})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -489,13 +489,13 @@ func (s *Server) githubRepoStatus(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// If no access, redirect to github connect page
-		grantAccessURL, err := urlutil.UrlWithQuery(s.urls.githubConnect, map[string]string{"remote": githubURL})
+		grantAccessURL, err := urlutil.WithQuery(s.urls.githubConnect, map[string]string{"remote": githubURL})
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
 			return
 		}
 
-		redirectURL, err := urlutil.UrlWithQuery(s.urls.githubConnectUI, map[string]string{"redirect_url": grantAccessURL})
+		redirectURL, err := urlutil.WithQuery(s.urls.githubConnectUI, map[string]string{"redirect_url": grantAccessURL})
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
 			return
@@ -515,13 +515,13 @@ func (s *Server) githubRepoStatus(w http.ResponseWriter, r *http.Request) {
 
 	// user has not authorized github app
 	if user.GithubUsername == "" {
-		grantAccessURL, err := urlutil.UrlWithQuery(s.urls.githubAuth, map[string]string{"remote": githubURL})
+		grantAccessURL, err := urlutil.WithQuery(s.urls.githubAuth, map[string]string{"remote": githubURL})
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
 			return
 		}
 
-		redirectURL, err := urlutil.UrlWithQuery(s.urls.githubConnectUI, map[string]string{"redirect_url": grantAccessURL})
+		redirectURL, err := urlutil.WithQuery(s.urls.githubConnectUI, map[string]string{"redirect_url": grantAccessURL})
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
 			return
@@ -536,13 +536,13 @@ func (s *Server) githubRepoStatus(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, admin.ErrUserIsNotCollaborator) {
 			// may be user authorised from another username
-			retryURL, err := urlutil.UrlWithQuery(s.urls.githubAuthRetry, map[string]string{"remote": githubURL, "githubUsername": user.GithubUsername})
+			retryURL, err := urlutil.WithQuery(s.urls.githubAuthRetry, map[string]string{"remote": githubURL, "githubUsername": user.GithubUsername})
 			if err != nil {
 				http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
 				return
 			}
 
-			redirectURL, err := urlutil.UrlWithQuery(s.urls.githubConnectUI, map[string]string{"redirect_url": retryURL})
+			redirectURL, err := urlutil.WithQuery(s.urls.githubConnectUI, map[string]string{"redirect_url": retryURL})
 			if err != nil {
 				http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
 				return
@@ -597,7 +597,7 @@ func (s *Server) isCollaborator(ctx context.Context, owner, repo string, client 
 }
 
 func (s *Server) redirectLogin(w http.ResponseWriter, r *http.Request) {
-	redirectURL, err := urlutil.UrlWithQuery(s.urls.authLogin, map[string]string{"redirect": r.URL.RequestURI()})
+	redirectURL, err := urlutil.WithQuery(s.urls.authLogin, map[string]string{"redirect": r.URL.RequestURI()})
 	if err != nil {
 		http.Error(w, "failed to generate URL", http.StatusInternalServerError)
 		return

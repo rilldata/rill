@@ -40,9 +40,13 @@
       }
     ).then((response) => {
       if (response.ok) {
-        successMsg = "User code confirmed, this page can be closed now";
         if (redirectURL !== "") {
-          window.location.href = decodeURIComponent(redirectURL);
+          successMsg = "User code confirmed, verifying github access...";
+          setTimeout(function () {
+            window.location.href = decodeURIComponent(redirectURL);
+          }, 2 * 1000);
+        } else {
+          successMsg = "User code confirmed, this page can be closed now";
         }
       } else {
         errorMsg = "User code confirmation failed";

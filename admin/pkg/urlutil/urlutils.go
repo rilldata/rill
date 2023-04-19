@@ -2,7 +2,7 @@ package urlutil
 
 import "net/url"
 
-func UrlWithQuery(urlString string, query map[string]string) (string, error) {
+func WithQuery(urlString string, query map[string]string) (string, error) {
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
 		return "", err

@@ -97,7 +97,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				if strings.Contains(authURL, "http://localhost:9090") {
 					authURL = "http://localhost:8080"
 				}
-				redirectURL, err := urlutil.UrlWithQuery(urlutil.MustJoinURL(authURL, "/github/repo_status"), map[string]string{"remote": githubURL})
+				redirectURL, err := urlutil.WithQuery(urlutil.MustJoinURL(authURL, "/github/repo_status"), map[string]string{"remote": githubURL})
 				if err != nil {
 					return err
 				}

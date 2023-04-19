@@ -87,7 +87,7 @@ func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.R
 		qry["redirect_url"] = values.Get("redirect_url")
 	}
 
-	verificationCompleteURI, err := urlutil.UrlWithQuery(verificationURI, qry)
+	verificationCompleteURI, err := urlutil.WithQuery(verificationURI, qry)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to create verification uri: %w", err))
 		return
