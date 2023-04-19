@@ -169,6 +169,26 @@ func OrgExists(ctx context.Context, c *client.Client, name string) (bool, error)
 	return true, nil
 }
 
+func ProjectNames(ctx context.Context, c *client.Client, orgName, githubURL string) ([]string, error) {
+	resp, err := c.ListProjectsForOrganizationAndGithubURL(ctx, &adminv1.ListProjectsForOrganizationAndGithubURLRequest{
+		OrganizationName: orgName,
+		GithubUrl:        githubURL,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.Projects) == 0 {
+		return nil, fmt.Errorf("No project with githubURL %q exist in org %q", githubURL, orgName)
+	}
+
+	names := make([]string, len(resp.Projects))
+	for i, p := range resp.Projects {
+		names[i] = p.Name
+	}
+	return names, nil
+}
+
 func WarnPrinter(str string) {
 	boldYellow := color.New(color.FgYellow).Add(color.Bold)
 	boldYellow.Fprintln(color.Output, str)

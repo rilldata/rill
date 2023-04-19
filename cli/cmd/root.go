@@ -92,7 +92,6 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.AddCommand(docs.DocsCmd())
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(versioncmd.VersionCmd())
-	rootCmd.AddCommand(env.EnvCmd(cfg))
 
 	cmd := auth.AuthCmd(cfg)
 	cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
@@ -104,6 +103,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		org.OrgCmd(cfg),
 		project.ProjectCmd(cfg),
 		deploy.DeployCmd(cfg),
+		env.EnvCmd(cfg),
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")

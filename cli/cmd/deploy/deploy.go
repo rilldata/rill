@@ -225,7 +225,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	deployCmd.Flags().SortFlags = false
-	deployCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
+	deployCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	deployCmd.Flags().IntVar(&slots, "prod-slots", 2, "Slots to allocate for production deployments")
 	deployCmd.Flags().StringVar(&description, "description", "", "Project description")
 	deployCmd.Flags().StringVar(&region, "region", "", "Deployment region")
@@ -233,7 +233,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	deployCmd.Flags().StringVar(&dbDSN, "prod-db-dsn", "", "Database driver configuration")
 	deployCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
-	deployCmd.Flags().StringVar(&name, "name", "", "Project name (default: Git repo name)")
+	deployCmd.Flags().StringVar(&name, "project", "", "Project name (default: Git repo name)")
 
 	return deployCmd
 }

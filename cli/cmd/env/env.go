@@ -27,6 +27,9 @@ func EnvCmd(cfg *config.Config) *cobra.Command {
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 	}
 	envCmd.AddCommand(ConfigureCmd(cfg))
+	envCmd.AddCommand(SetCmd(cfg))
+	envCmd.AddCommand(RmCmd(cfg))
+	envCmd.AddCommand(ShowEnvCmd(cfg))
 	return envCmd
 }
 
@@ -56,14 +59,8 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				warn.Printf("Directory at %q doesn't contain a valid Rill project.\n\n", fullpath)
-				warn.Printf("Run \"rill env configure\" from a Rill project directory or use \"--project\" to pass a project path.\n")
+				warn.Printf("Run \"rill env configure\" from a Rill project directory or use \"--path\" to pass a project path.\n")
 				return nil
-			}
-
-			// Verify projectPath is a Git repo with remote on Github
-			githubURL, err := gitutil.ExtractGitRemote(projectPath)
-			if err != nil {
-				return err
 			}
 
 			ctx := cmd.Context()
@@ -73,29 +70,24 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			resp, err := client.ListProjectsForOrganizationAndGithubURL(ctx, &adminv1.ListProjectsForOrganizationAndGithubURLRequest{
-				OrganizationName: cfg.Org,
-				GithubUrl:        githubURL,
-			})
-			if err != nil {
-				return err
-			}
-
-			if len(resp.Projects) == 0 {
-				warn.Printf("No project with githubURL %q exist.\n", githubURL)
-				warn.Println("Run `rill deploy` to create a project.")
-				return nil
-			}
-
 			if projectName == "" {
-				if len(resp.Projects) == 1 {
-					projectName = resp.Projects[0].Name
-				} else {
-					names := make([]string, len(resp.Projects))
-					for i, p := range resp.Projects {
-						names[i] = p.Name
-					}
+				// no project name provided infer name from githubURL
+				// Verify projectPath is a Git repo with remote on Github
+				githubURL, err := gitutil.ExtractGitRemote(projectPath)
+				if err != nil {
+					return err
+				}
 
+				// fetch project names for github url
+				names, err := cmdutil.ProjectNames(ctx, client, cfg.Org, githubURL)
+				if err != nil {
+					return err
+				}
+
+				if len(names) == 1 {
+					projectName = names[0]
+				} else {
+					// prompt for name from user
 					projectName = cmdutil.SelectPrompt("select project to configure env", names, "")
 				}
 			}
@@ -139,10 +131,141 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	configureCommand.Flags().SortFlags = false
-	configureCommand.Flags().StringVar(&projectPath, "project", ".", "Project directory")
-	configureCommand.Flags().StringVar(&projectName, "name", "", "")
+	configureCommand.Flags().StringVar(&projectPath, "path", ".", "Project directory")
+	configureCommand.Flags().StringVar(&projectName, "project", "", "")
 
 	return configureCommand
+}
+
+// SetCmd is sub command for env. Sets the variable for a project
+func SetCmd(cfg *config.Config) *cobra.Command {
+	var projectName string
+	setCmd := &cobra.Command{
+		Use:   "set <key> <value> --project <project name>",
+		Args:  cobra.ExactArgs(3),
+		Short: "set variable",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			projectName := args[0]
+			key := args[1]
+			value := args[2]
+			client, err := cmdutil.Client(cfg)
+			if err != nil {
+				return err
+			}
+			defer client.Close()
+
+			ctx := cmd.Context()
+			resp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
+				OrganizationName: cfg.Org,
+				Name:             projectName,
+			})
+			if err != nil {
+				return err
+			}
+
+			if val, ok := resp.Variables[key]; ok && val == value {
+				return nil
+			}
+
+			if resp.Variables == nil {
+				resp.Variables = make(map[string]string)
+			}
+			resp.Variables[key] = value
+			updateResp, err := client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+				OrganizationName: cfg.Org,
+				Name:             projectName,
+				Variables:        resp.Variables,
+			})
+			if err != nil {
+				return err
+			}
+
+			cmdutil.SuccessPrinter("Updated project variables\n")
+			tableprinter.PrintHeadList(os.Stdout, variable.Serialize(updateResp.Variables), "Project Variables")
+			return nil
+		},
+	}
+
+	setCmd.Flags().StringVar(&projectName, "project", "", "")
+	return setCmd
+}
+
+// RmCmd is sub command for env. Removes the variable for a project
+func RmCmd(cfg *config.Config) *cobra.Command {
+	var projectName string
+	rmCmd := &cobra.Command{
+		Use:   "rm <key> --project <project name>",
+		Args:  cobra.ExactArgs(2),
+		Short: "remove variable",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			projectName := args[0]
+			key := args[1]
+			client, err := cmdutil.Client(cfg)
+			if err != nil {
+				return err
+			}
+			defer client.Close()
+
+			ctx := cmd.Context()
+			resp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
+				OrganizationName: cfg.Org,
+				Name:             projectName,
+			})
+			if err != nil {
+				return err
+			}
+
+			if _, ok := resp.Variables[key]; !ok {
+				return nil
+			}
+
+			delete(resp.Variables, key)
+			update, err := client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+				OrganizationName: cfg.Org,
+				Name:             projectName,
+				Variables:        resp.Variables,
+			})
+			if err != nil {
+				return err
+			}
+
+			cmdutil.SuccessPrinter("Updated project \n")
+			tableprinter.PrintHeadList(os.Stdout, variable.Serialize(update.Variables), "Project Variables")
+			return nil
+		},
+	}
+	rmCmd.Flags().StringVar(&projectName, "project", "", "")
+	return rmCmd
+}
+
+func ShowEnvCmd(cfg *config.Config) *cobra.Command {
+	var projectName string
+	showCmd := &cobra.Command{
+		Use:   "show --project <project name>",
+		Args:  cobra.ExactArgs(1),
+		Short: "show variable for project",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			projectName := args[0]
+			client, err := cmdutil.Client(cfg)
+			if err != nil {
+				return err
+			}
+			defer client.Close()
+
+			resp, err := client.GetProjectVariables(cmd.Context(), &adminv1.GetProjectVariablesRequest{
+				OrganizationName: cfg.Org,
+				Name:             projectName,
+			})
+			if err != nil {
+				return err
+			}
+
+			tableprinter.PrintHeadList(os.Stdout, variable.Serialize(resp.Variables), "Project Variables")
+			return nil
+		},
+	}
+	showCmd.Flags().StringVar(&projectName, "project", "", "")
+	return showCmd
 }
 
 func VariablesFlow(projectPath string) (map[string]string, error) {
