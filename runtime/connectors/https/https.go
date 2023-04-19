@@ -101,6 +101,10 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 	return &iterator{ctx: ctx, files: []string{file}}, nil
 }
 
+func (c connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {
+	return true, nil
+}
+
 // implements connector.FileIterator
 type iterator struct {
 	ctx   context.Context

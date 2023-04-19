@@ -1,6 +1,7 @@
 package env
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -268,14 +269,18 @@ func ShowEnvCmd(cfg *config.Config) *cobra.Command {
 	return showCmd
 }
 
-func VariablesFlow(projectPath string) (map[string]string, error) {
-	connectors, err := rillv1beta.ExtractConnectors(projectPath)
+func VariablesFlow(ctx context.Context, projectPath string) (map[string]string, error) {
+	connectors, err := rillv1beta.ExtractConnectors(ctx, projectPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract connectors %w", err)
 	}
 
 	vars := make(map[string]string)
 	for _, c := range connectors {
+		if c.AnonymousAccess {
+			// ignore asking for credentials if external source can be access anonymously
+			continue
+		}
 		connectorVariables := c.Spec.ConnectorVariables
 		if len(connectorVariables) != 0 {
 			fmt.Printf("\nConnector %s requires credentials\n\n", c.Type)
