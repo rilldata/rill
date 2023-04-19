@@ -5,7 +5,7 @@ import type {
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
 import { readable, Subscriber } from "svelte/store";
-import { Document, Pair, ParsedNode, parseDocument, YAMLMap } from "yaml";
+import { Document, ParsedNode, parseDocument, YAMLMap } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
 import { selectTimestampColumnFromSchema } from "./column-selectors";
 
