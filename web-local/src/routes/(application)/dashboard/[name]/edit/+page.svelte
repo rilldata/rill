@@ -37,7 +37,7 @@
     }
   );
 
-  $: projectData = $fileQuery.data?.blob || "";
+  $: yaml = $fileQuery.data?.blob || "";
 
   let nonStandardError: string | undefined;
   $: catalogQuery = createRuntimeServiceGetCatalogEntry(

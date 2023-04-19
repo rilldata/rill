@@ -38,7 +38,7 @@
           style:height="20px"
         >
           <div>
-            {shorthandTitle(projectData?.name || "Ri")}
+            {shorthandTitle(projectData?.title || "Ri")}
           </div>
         </div>
       </a>
@@ -50,11 +50,11 @@
         class="font-semibold text-black grow text-ellipsis overflow-hidden whitespace-nowrap pr-12"
         href="/"
       >
-        {projectData?.name || "Untitled Rill Project"}
+        {projectData?.title || "Untitled Rill Project"}
       </a>
       <TooltipContent maxWidth="300px" slot="tooltip-content">
         <div class="font-bold">
-          {projectData?.name || "Untitled Rill Project"}
+          {projectData?.title || "Untitled Rill Project"}
         </div>
       </TooltipContent>
     </Tooltip>

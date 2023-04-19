@@ -107,6 +107,6 @@ See our Using Rill guide for an [example](../using-rill/metrics-dashboard#using-
 
 ## Project definition
 
-- _**`display_name`**_ — the name of your project which will be displayed in the upper left hand corner
+- _**`title`**_ — the name of your project which will be displayed in the upper left hand corner
 - _**`compiler`**_ — the version of the runtime compiler that is compatible with the artifacts (ex: `rill-beta`)
 - _**`rill_version`**_ — the version of Rill Developer  that is compatible with the artifacts (ex: `v0.16`)
