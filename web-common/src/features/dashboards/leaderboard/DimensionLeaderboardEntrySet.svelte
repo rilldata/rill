@@ -119,7 +119,7 @@ see more button
         <FormattedDataType isNull={label === null} value={label} />
       </svelte:fragment>
       <div slot="right" class="flex items-baseline gap-x-1">
-        {#if showComparisonForThisValue && comparisonValue !== undefined}
+        {#if showComparisonForThisValue && comparisonValue !== undefined && comparisonValue !== null}
           <span
             class="inline-block opacity-50"
             transition:slideRight={{ duration: LIST_SLIDE_DURATION }}
