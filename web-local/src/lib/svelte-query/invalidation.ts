@@ -93,6 +93,7 @@ export function isProfilingQuery(queryHash: string, name: string) {
   const r = new RegExp(
     `/v1/instances/[a-zA-Z0-9-]+/queries/[a-zA-Z0-9-]+/tables/${name}`
   );
+  console.log(queryHash, r.test(queryHash));
   return r.test(queryHash);
 }
 
@@ -106,11 +107,12 @@ export const invalidateMetricsViewData = (
   queryClient.removeQueries({
     predicate: (query) =>
       invalidationForMetricsViewData(query, metricsViewName),
-    active: false,
+    type: "inactive",
   });
   return queryClient.invalidateQueries({
     predicate: (query) =>
       invalidationForMetricsViewData(query, metricsViewName),
+    type: "active",
   });
 };
 
@@ -120,10 +122,11 @@ export function invalidateProfilingQueries(
 ) {
   queryClient.removeQueries({
     predicate: (query) => isProfilingQuery(query.queryHash, name),
-    active: false,
+    type: "inactive",
   });
-  return queryClient.invalidateQueries({
+  return queryClient.refetchQueries({
     predicate: (query) => isProfilingQuery(query.queryHash, name),
+    type: "active",
   });
 }
 
