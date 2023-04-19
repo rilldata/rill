@@ -308,8 +308,8 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))
-	for _, invite := range userInvites {
-		invitesDtos = append(invitesDtos, inviteToPB(invite))
+	for i, invite := range userInvites {
+		invitesDtos[i] = inviteToPB(invite)
 	}
 
 	return &adminv1.ListProjectMembersResponse{
