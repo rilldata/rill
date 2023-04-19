@@ -36,6 +36,8 @@ type AdminServiceClient interface {
 	UpdateOrganization(ctx context.Context, in *UpdateOrganizationRequest, opts ...grpc.CallOption) (*UpdateOrganizationResponse, error)
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(ctx context.Context, in *ListProjectsForOrganizationRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationResponse, error)
+	// ListProjectsForOrganizationAndGithubURL lists all the project for org deployed from githubURL
+	ListProjectsForOrganizationAndGithubURL(ctx context.Context, in *ListProjectsForOrganizationAndGithubURLRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationAndGithubURLResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
 	// CreateProject creates a new project
@@ -140,6 +142,15 @@ func (c *adminServiceClient) UpdateOrganization(ctx context.Context, in *UpdateO
 func (c *adminServiceClient) ListProjectsForOrganization(ctx context.Context, in *ListProjectsForOrganizationRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationResponse, error) {
 	out := new(ListProjectsForOrganizationResponse)
 	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/ListProjectsForOrganization", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListProjectsForOrganizationAndGithubURL(ctx context.Context, in *ListProjectsForOrganizationAndGithubURLRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationAndGithubURLResponse, error) {
+	out := new(ListProjectsForOrganizationAndGithubURLResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/ListProjectsForOrganizationAndGithubURL", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -326,6 +337,8 @@ type AdminServiceServer interface {
 	UpdateOrganization(context.Context, *UpdateOrganizationRequest) (*UpdateOrganizationResponse, error)
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error)
+	// ListProjectsForOrganizationAndGithubURL lists all the project for org deployed from githubURL
+	ListProjectsForOrganizationAndGithubURL(context.Context, *ListProjectsForOrganizationAndGithubURLRequest) (*ListProjectsForOrganizationAndGithubURLResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
 	// CreateProject creates a new project
@@ -390,6 +403,9 @@ func (UnimplementedAdminServiceServer) UpdateOrganization(context.Context, *Upda
 }
 func (UnimplementedAdminServiceServer) ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForOrganization not implemented")
+}
+func (UnimplementedAdminServiceServer) ListProjectsForOrganizationAndGithubURL(context.Context, *ListProjectsForOrganizationAndGithubURLRequest) (*ListProjectsForOrganizationAndGithubURLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForOrganizationAndGithubURL not implemented")
 }
 func (UnimplementedAdminServiceServer) GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProject not implemented")
@@ -580,6 +596,24 @@ func _AdminService_ListProjectsForOrganization_Handler(srv interface{}, ctx cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).ListProjectsForOrganization(ctx, req.(*ListProjectsForOrganizationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListProjectsForOrganizationAndGithubURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectsForOrganizationAndGithubURLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListProjectsForOrganizationAndGithubURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.admin.v1.AdminService/ListProjectsForOrganizationAndGithubURL",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListProjectsForOrganizationAndGithubURL(ctx, req.(*ListProjectsForOrganizationAndGithubURLRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -942,6 +976,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListProjectsForOrganization",
 			Handler:    _AdminService_ListProjectsForOrganization_Handler,
+		},
+		{
+			MethodName: "ListProjectsForOrganizationAndGithubURL",
+			Handler:    _AdminService_ListProjectsForOrganizationAndGithubURL_Handler,
 		},
 		{
 			MethodName: "GetProject",
