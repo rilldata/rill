@@ -5,7 +5,7 @@ import type {
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
 import { readable, Subscriber } from "svelte/store";
-import { Document, ParsedNode, parseDocument, YAMLMap } from "yaml";
+import { Document, Pair, ParsedNode, parseDocument, YAMLMap } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
 import { selectTimestampColumnFromSchema } from "./column-selectors";
 
@@ -15,6 +15,7 @@ export interface MetricsConfig extends MetricsParams {
 }
 export interface MetricsParams {
   display_name: string;
+  title: string;
   timeseries: string;
   smallest_time_grain?: string;
   default_time_range?: string;
@@ -50,6 +51,9 @@ export class MetricsInternalRepresentation {
   updateRuntime: (yamlString: string) => void;
 
   constructor(yamlString: string, updateRuntime) {
+    // backwards compatibility for dashboard title
+    yamlString = yamlString.replace(/^display_name:/m, "title:");
+
     this.internalRepresentation = this.decorateInternalRepresentation(
       yamlString
     ) as MetricsConfig;
@@ -245,7 +249,7 @@ export function initBlankDashboardYAML(dashboardName: string) {
   const metricsTemplate = `
 # Visit https://docs.rilldata.com/references/project-files to learn more about Rill project files.
 
-display_name: ""
+title: ""
 model: ""
 default_time_range: ""
 smallest_time_grain: ""

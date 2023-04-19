@@ -19,6 +19,7 @@
   );
 
   $: projectData = parseDocument($projectYaml?.data?.blob || "{}")?.toJS();
+  $: title = projectData.title ?? projectData.name;
 </script>
 
 <header
@@ -38,7 +39,7 @@
           style:height="20px"
         >
           <div>
-            {shorthandTitle(projectData?.title || "Ri")}
+            {shorthandTitle(title || "Ri")}
           </div>
         </div>
       </a>
@@ -50,11 +51,11 @@
         class="font-semibold text-black grow text-ellipsis overflow-hidden whitespace-nowrap pr-12"
         href="/"
       >
-        {projectData?.title || "Untitled Rill Project"}
+        {title || "Untitled Rill Project"}
       </a>
       <TooltipContent maxWidth="300px" slot="tooltip-content">
         <div class="font-bold">
-          {projectData?.title || "Untitled Rill Project"}
+          {title || "Untitled Rill Project"}
         </div>
       </TooltipContent>
     </Tooltip>
