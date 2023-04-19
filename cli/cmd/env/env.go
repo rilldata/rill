@@ -19,7 +19,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// EnvCmd sets/rm variables for a project
 func EnvCmd(cfg *config.Config) *cobra.Command {
 	envCmd := &cobra.Command{
 		Use:               "env",
@@ -34,14 +33,13 @@ func EnvCmd(cfg *config.Config) *cobra.Command {
 	return envCmd
 }
 
-// ConfigureCmd is sub command for env. Sets the variable for a project
 func ConfigureCmd(cfg *config.Config) *cobra.Command {
 	var projectPath, projectName string
 
 	configureCommand := &cobra.Command{
 		Use:   "env configure",
 		Args:  cobra.ExactArgs(3),
-		Short: "sets connector variables for all sources",
+		Short: "configures connector variables for all sources",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			warn := color.New(color.Bold).Add(color.FgYellow)
 			if projectPath != "" {
@@ -93,7 +91,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			variables, err := VariablesFlow(projectPath)
+			variables, err := VariablesFlow(ctx, projectPath)
 			if err != nil {
 				return fmt.Errorf("failed to get variables %w", err)
 			}
