@@ -27,7 +27,7 @@ see more button
     humanizeDataType,
   } from "../humanize-numbers";
   import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
-  import { FormattedDataType } from "../../../components/data-types";
+  import { FormattedDataType, Number } from "../../../components/data-types";
 
   export let values;
   export let comparisonValues;
@@ -128,8 +128,11 @@ see more button
             →
           </span>
         {/if}
-
-        {formattedValue || value || "∅"}
+        <Number
+          type="INTEGER"
+          isNull={!(formattedValue || value)}
+          value={formattedValue || value}
+        />
       </div>
       <span slot="context">
         <PercentageChange
