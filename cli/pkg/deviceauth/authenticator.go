@@ -75,10 +75,11 @@ func New(authURL string) (*DeviceAuthenticator, error) {
 }
 
 // VerifyDevice performs the device verification API calls.
-func (d *DeviceAuthenticator) VerifyDevice(ctx context.Context) (*DeviceVerification, error) {
+func (d *DeviceAuthenticator) VerifyDevice(ctx context.Context, redirectURL string) (*DeviceVerification, error) {
 	req, err := d.newFormRequest(ctx, "auth/oauth/device_authorization", url.Values{
-		"client_id": []string{d.ClientID},
-		"scope":     []string{"full_account"},
+		"client_id":    []string{d.ClientID},
+		"scope":        []string{"full_account"},
+		"redirect_url": []string{redirectURL},
 	})
 	if err != nil {
 		return nil, err

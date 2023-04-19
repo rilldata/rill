@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/go-git/go-git/v5"
 	adminclient "github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/cmd/org"
@@ -85,11 +87,22 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				return fmt.Errorf("invalid remote %q", githubURL)
 			}
 
+			silentGitAccess := false
 			// If user is not authenticated, run login flow
 			if !cfg.IsAuthenticated() {
 				warn.Println("You are not yet authenticated. Opening browser to log in or sign up for Rill Cloud.")
 				time.Sleep(2 * time.Second)
-				if err := auth.Login(ctx, cfg); err != nil {
+				silentGitAccess = true
+				authURL := cfg.AdminURL
+				if strings.Contains(authURL, "http://localhost:9090") {
+					authURL = "http://localhost:8080"
+				}
+				redirectURL, err := urlutil.UrlWithQuery(urlutil.MustJoinURL(authURL, "/github/repo_status"), map[string]string{"remote": githubURL})
+				if err != nil {
+					return err
+				}
+
+				if err := auth.Login(ctx, cfg, url.QueryEscape(redirectURL)); err != nil {
 					return fmt.Errorf("login failed: %w", err)
 				}
 				fmt.Println("")
@@ -97,6 +110,26 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
+			}
+
+			// Run flow for access to the Github remote (if necessary)
+			ghRes, err := githubFlow(ctx, client, githubURL, silentGitAccess)
+			if err != nil {
+				return fmt.Errorf("failed Github flow: %w", err)
+			}
+
+			if prodBranch == "" {
+				prodBranch = ghRes.DefaultBranch
+			}
+
+			if !repoInSyncFlow(projectPath, prodBranch) {
+				warn.Printf("User aborted!!!")
+				return nil
+			}
+
+			// If no project name was provided, default to Git repo name
+			if name == "" {
+				name = ghRepo
 			}
 
 			// Set a default org for the user if necessary
@@ -123,26 +156,6 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 						return err
 					}
 				}
-			}
-
-			// Run flow for access to the Github remote (if necessary)
-			ghRes, err := githubFlow(ctx, client, githubURL)
-			if err != nil {
-				return fmt.Errorf("failed Github flow: %w", err)
-			}
-
-			if prodBranch == "" {
-				prodBranch = ghRes.DefaultBranch
-			}
-
-			if !repoInSyncFlow(projectPath, prodBranch) {
-				warn.Printf("User aborted!!!")
-				return nil
-			}
-
-			// If no project name was provided, default to Git repo name
-			if name == "" {
-				name = ghRepo
 			}
 
 			// If no default org is set by now, it means the user is not in an org yet.
@@ -209,7 +222,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	return deployCmd
 }
 
-func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string) (*adminv1.GetGithubRepoStatusResponse, error) {
+func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string, silent bool) (*adminv1.GetGithubRepoStatusResponse, error) {
 	// Check for access to the Github repo
 	res, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
 		GithubUrl: githubURL,
@@ -221,14 +234,18 @@ func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string) (*
 	// If the user has not already granted access, open browser and poll for access
 	if !res.HasAccess {
 		// Print instructions to grant access
-		fmt.Printf("Rill projects deploy continuously when you push changes to Github.\n")
-		fmt.Printf("You need to grant Rill read only access to your repository on Github.\n\n")
-		time.Sleep(3 * time.Second)
-		fmt.Printf("Open this URL in your browser to grant Rill access to Github:\n\n")
-		fmt.Printf("\t%s\n\n", res.GrantAccessUrl)
+		if !silent {
+			fmt.Printf("Rill projects deploy continuously when you push changes to Github.\n")
+			fmt.Printf("You need to grant Rill read only access to your repository on Github.\n\n")
+			time.Sleep(3 * time.Second)
+			fmt.Printf("Open this URL in your browser to grant Rill access to Github:\n\n")
+			fmt.Printf("\t%s\n\n", res.GrantAccessUrl)
 
-		// Open browser if possible
-		_ = browser.Open(res.GrantAccessUrl)
+			// Open browser if possible
+			_ = browser.Open(res.GrantAccessUrl)
+		} else {
+			fmt.Println("polling for github access")
+		}
 
 		// Poll for permission granted
 		pollCtx, cancel := context.WithTimeout(ctx, pollTimeout)

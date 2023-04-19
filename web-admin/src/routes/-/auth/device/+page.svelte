@@ -8,10 +8,12 @@
   let actionTaken = false;
   let successMsg = "";
   let errorMsg = "";
+  let redirectURL = "";
 
   async function fetchUserData() {
     const urlParams = new URLSearchParams(window.location.search);
     userCode = urlParams.get("user_code");
+    redirectURL = urlParams.get("redirect_url");
 
     const response = await fetch(ADMIN_URL + "/v1/users/current", {
       method: "GET",
@@ -20,7 +22,9 @@
     let data = await response.json();
     if (!data.user) {
       window.location.href =
-        ADMIN_URL + "/auth/login?redirect=" + window.location.href;
+        ADMIN_URL +
+        "/auth/login?redirect=" +
+        encodeURIComponent(window.location.href);
     } else {
       user = data.user;
     }
@@ -37,6 +41,9 @@
     ).then((response) => {
       if (response.ok) {
         successMsg = "User code confirmed, this page can be closed now";
+        if (redirectURL !== "") {
+          window.location.href = decodeURIComponent(redirectURL);
+        }
       } else {
         errorMsg = "User code confirmation failed";
         response.body
