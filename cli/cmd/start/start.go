@@ -23,7 +23,6 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	var noUI bool
 	var noOpen bool
 	var strict bool
-	var interactive bool
 	var logFormat string
 	var variables []string
 	var exampleName string
@@ -44,7 +43,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 					projectPath = repoName
 				}
 			} else {
-				if !interactive {
+				if !cfg.Interactive {
 					return fmt.Errorf("required arg <path> missing")
 				}
 
@@ -121,7 +120,6 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	startCmd.Flags().SortFlags = false
-	startCmd.Flags().BoolVar(&interactive, "interactive", true, "Non Interactive mode")
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
 	startCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	startCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")

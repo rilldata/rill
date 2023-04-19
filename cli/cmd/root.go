@@ -82,6 +82,9 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", "https://admin.rilldata.io", "Base URL for the admin API")
 	rootCmd.AddCommand(cmd)
 
+	// Set prompt for missing required parameters in config
+	rootCmd.PersistentFlags().BoolVar(&cfg.Interactive, "interactive", true, "Prompt for missing required parameters")
+
 	// Add sub-commands for admin
 	// (This allows us to add persistent flags that apply only to the admin-related commands.)
 	adminCmds := []*cobra.Command{

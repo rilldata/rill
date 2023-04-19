@@ -20,7 +20,6 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 	var exampleName string
 	var listExamples bool
 	var verbose bool
-	var interactive bool
 	var variables []string
 
 	initCmd := &cobra.Command{
@@ -39,7 +38,7 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 					projectPath = repoName
 				}
 			} else {
-				if !interactive {
+				if !cfg.Interactive {
 					return fmt.Errorf("required arg <path> missing")
 				}
 
@@ -130,7 +129,6 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 	initCmd.Flags().BoolVar(&listExamples, "list-examples", false, "List available example projects")
 	initCmd.Flags().StringVar(&exampleName, "example", "default", "Name of example project")
 	initCmd.Flags().Lookup("example").NoOptDefVal = "default" // Allows "--example" without a specific name
-	initCmd.Flags().BoolVar(&interactive, "interactive", true, "Non Interactive mode")
 	initCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	initCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
 	initCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
