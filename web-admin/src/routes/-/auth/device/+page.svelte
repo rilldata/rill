@@ -7,7 +7,7 @@
   let actionTaken = false;
   let successMsg = "";
   let errorMsg = "";
-  const urlParams = new URLSearchParams(window.location.search)
+  const urlParams = new URLSearchParams(window.location.search);
   const redirectURL = urlParams.get("redirect_url");
   const userCode = urlParams.get("user_code");
 
