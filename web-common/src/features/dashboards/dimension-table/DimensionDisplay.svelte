@@ -38,7 +38,6 @@
   import {
     computeComparisonValues,
     customMeasureSortGetter,
-    customSortMeasures,
     getComparisonProperties,
     getFilterForComparisonTable,
     updateFilterOnSearch,
