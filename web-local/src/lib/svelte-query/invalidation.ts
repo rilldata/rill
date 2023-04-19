@@ -93,7 +93,6 @@ export function isProfilingQuery(queryHash: string, name: string) {
   const r = new RegExp(
     `/v1/instances/[a-zA-Z0-9-]+/queries/[a-zA-Z0-9-]+/tables/${name}`
   );
-  console.log(queryHash, r.test(queryHash));
   return r.test(queryHash);
 }
 
