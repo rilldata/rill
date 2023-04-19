@@ -30,6 +30,9 @@ type Connector interface {
 	// Consume(ctx context.Context, source Source) error
 
 	ConsumeAsIterator(ctx context.Context, env *Env, source *Source) (FileIterator, error)
+
+	// HasAnonymousAccess returns true if external system can be accessed without credentials
+	HasAnonymousAccess(ctx context.Context, env *Env, source *Source) (bool, error)
 }
 
 // Spec provides metadata about a connector and the properties it supports.

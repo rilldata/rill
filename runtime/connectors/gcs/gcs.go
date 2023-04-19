@@ -89,6 +89,7 @@ type Config struct {
 	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
 	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
 	GlobPageSize          int    `mapstructure:"glob.page_size"`
+	url                   *globutil.URL
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -102,6 +103,16 @@ func ParseConfig(props map[string]any) (*Config, error) {
 		// keeping it here to have gcs specific validations
 		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
 	}
+	url, err := globutil.ParseBucketURL(conf.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse path %q, %w", conf.Path, err)
+	}
+
+	if url.Scheme != "gs" {
+		return nil, fmt.Errorf("invalid gcs path %q, should start with gs://", conf.Path)
+	}
+
+	conf.url = url
 	return conf, nil
 }
 
@@ -120,23 +131,14 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	url, err := globutil.ParseBucketURL(conf.Path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %q, %w", conf.Path, err)
-	}
-
-	if url.Scheme != "gs" {
-		return nil, fmt.Errorf("invalid gcs path %q, should start with gs://", conf.Path)
-	}
-
 	client, err := createClient(ctx, env)
 	if err != nil {
 		return nil, err
 	}
 
-	bucketObj, err := gcsblob.OpenBucket(ctx, client, url.Host, nil)
+	bucketObj, err := gcsblob.OpenBucket(ctx, client, conf.url.Host, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
+		return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
 	}
 
 	// prepare fetch configs
@@ -145,11 +147,26 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
 		GlobPageSize:          conf.GlobPageSize,
-		GlobPattern:           url.Path,
+		GlobPattern:           conf.url.Path,
 		ExtractPolicy:         source.ExtractPolicy,
 		StorageLimitInBytes:   env.StorageLimitInBytes,
 	}
 	return rillblob.NewIterator(ctx, bucketObj, opts)
+}
+
+func (c connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {
+	conf, err := ParseConfig(source.Properties)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	client := gcp.NewAnonymousHTTPClient(gcp.DefaultTransport())
+	bucketObj, err := gcsblob.OpenBucket(ctx, client, conf.url.Host, nil)
+	if err != nil {
+		return false, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
+	}
+
+	return bucketObj.IsAccessible(ctx)
 }
 
 func createClient(ctx context.Context, env *connectors.Env) (*gcp.HTTPClient, error) {
