@@ -27,6 +27,10 @@ func init() {
 	cobra.EnableCommandSorting = false
 }
 
+// defaultAdminURL is the default admin server URL.
+// Users can override it with the "--api-url" flag or by setting "api_url" in ~/.rill/config.yaml.
+const defaultAdminURL = "https://admin.rilldata.io"
+
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
 	Use:   "rill <command>",
@@ -68,6 +72,16 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	}
 	cfg.Org = defaultOrg
 
+	// Load admin URL from .rill (override with --api-url)
+	url, err := dotrill.GetDefaultAdminURL()
+	if err != nil {
+		return fmt.Errorf("could not parse default api URL from ~/.rill: %w", err)
+	}
+	if url == "" {
+		url = defaultAdminURL
+	}
+	cfg.AdminURL = url
+
 	// Add sub-commands
 	rootCmd.AddCommand(initialize.InitCmd(cfg))
 	rootCmd.AddCommand(start.StartCmd(cfg))
@@ -81,7 +95,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.AddCommand(env.EnvCmd(cfg))
 
 	cmd := auth.AuthCmd(cfg)
-	cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", "https://admin.rilldata.io", "Base URL for the admin API")
+	cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
 	rootCmd.AddCommand(cmd)
 
 	// Add sub-commands for admin
@@ -92,7 +106,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		deploy.DeployCmd(cfg),
 	}
 	for _, cmd := range adminCmds {
-		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", "https://admin.rilldata.io", "Base URL for the admin API")
+		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
 		cmd.PersistentFlags().StringVar(&cfg.AdminTokenOverride, "api-token", "", "Token for authenticating with the admin API")
 		rootCmd.AddCommand(cmd)
 	}

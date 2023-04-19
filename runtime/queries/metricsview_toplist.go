@@ -124,7 +124,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 	}
 
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, dialect)
 		if err != nil {
 			return "", nil, err
 		}

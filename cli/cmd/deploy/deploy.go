@@ -136,7 +136,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if !repoInSyncFlow(projectPath, prodBranch) {
-				warn.Println("User aborted!!!")
+				warn.Println("You can run `rill deploy` again once local changes are added to remote repo.")
 				return nil
 			}
 
@@ -173,7 +173,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 				warn.Printf("Another project %q already deploys from %q\n", resp.Projects[0].Name, githubURL)
 				if !cmdutil.ConfirmPrompt("Do you want to continue", "", true) {
-					warn.Println("User aborted!!!")
+					warn.Println("Aborted")
 					return nil
 				}
 			}
