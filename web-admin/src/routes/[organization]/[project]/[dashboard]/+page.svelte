@@ -10,8 +10,6 @@
   import ProjectBuilding from "../../../../components/projects/ProjectBuilding.svelte";
   import ProjectErrored from "../../../../components/projects/ProjectErrored.svelte";
 
-  // TODO: add 404 logic as in `web-local`'s `dashboard/[name]/+page.svelte`
-
   $: org = $page.params.organization;
   $: proj = $page.params.project;
   $: dash = $page.params.dashboard;
