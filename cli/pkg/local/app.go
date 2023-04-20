@@ -309,17 +309,6 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	gctx := graceful.WithCancelOnTerminate(a.Context)
 	group, ctx := errgroup.WithContext(gctx)
 
-	// Get the latest version available
-	latestVersion, err := update.LatestVersion(gctx)
-	if err != nil {
-		a.Logger.Warnf("error finding latest version: %v", err)
-	}
-
-	versionInfo := &versionInfo{
-		CurrentVersion: a.Version.Number,
-		LatestVersion:  latestVersion.Version,
-	}
-
 	// Create a runtime server
 	opts := &runtimeserver.Options{
 		HTTPPort:       httpPort,
@@ -344,7 +333,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 				mux.Handle("/", web.StaticHandler())
 			}
 			mux.Handle("/local/config", a.infoHandler(inf))
-			mux.Handle("/local/version", a.versionHandler(versionInfo))
+			mux.Handle("/local/version", a.versionHandler(gctx))
 			mux.Handle("/local/track", a.trackingHandler(inf))
 		})
 	})
@@ -394,11 +383,6 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 	}
 }
 
-type versionInfo struct {
-	CurrentVersion string `json:"current_version"`
-	LatestVersion  string `json:"latest_version"`
-}
-
 type localInfo struct {
 	InstanceID       string `json:"instance_id"`
 	GRPCPort         int    `json:"grpc_port"`
@@ -430,9 +414,20 @@ func (a *App) infoHandler(info *localInfo) http.Handler {
 }
 
 // versionHandler servers the version struct.
-func (a *App) versionHandler(info *versionInfo) http.Handler {
+func (a *App) versionHandler(ctx context.Context) http.Handler {
+	// Get the latest version available
+	latestVersion, err := update.LatestVersion(ctx)
+	if err != nil {
+		a.Logger.Warnf("error finding latest version: %v", err)
+	}
+
+	inf := &versionInfo{
+		CurrentVersion: a.Version.Number,
+		LatestVersion:  latestVersion.Version,
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		data, err := json.Marshal(info)
+		data, err := json.Marshal(inf)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -444,6 +439,11 @@ func (a *App) versionHandler(info *versionInfo) http.Handler {
 			return
 		}
 	})
+}
+
+type versionInfo struct {
+	CurrentVersion string `json:"current_version"`
+	LatestVersion  string `json:"latest_version"`
 }
 
 // trackingHandler proxies events to intake.rilldata.io.

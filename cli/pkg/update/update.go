@@ -15,11 +15,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const (
-	StateFilename       = "state.yaml"
-	VersionInfoStateKey = "version_info"
-	Addr                = "https://api.github.com/repos/rilldata/rill-developer/releases/latest"
-)
+const addr = "https://api.github.com/repos/rilldata/rill-developer/releases/latest"
 
 type UpdateInfo struct {
 	Update      bool
@@ -124,7 +120,7 @@ func checkVersion(ctx context.Context, currentVersion string) (*UpdateInfo, erro
 
 // This will fetch the latest version available for rill on github releases
 func LatestVersion(ctx context.Context) (*ReleaseInfo, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, Addr, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, addr, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +153,7 @@ func LatestVersion(ctx context.Context) (*ReleaseInfo, error) {
 
 	success := resp.StatusCode >= 200 && resp.StatusCode < 300
 	if !success {
-		return nil, fmt.Errorf("error fetching latest release: %v", string(out))
+		return nil, fmt.Errorf("error fetching latest release: %s", string(out))
 	}
 
 	var info *ReleaseInfo
@@ -169,18 +165,18 @@ func LatestVersion(ctx context.Context) (*ReleaseInfo, error) {
 	return info, nil
 }
 
-type VersionInfo struct {
+type versionInfo struct {
 	UpdateAt      time.Time   `yaml:"update_at"`
 	LatestRelease ReleaseInfo `yaml:"latest_release"`
 }
 
-func getVersionInfo() (*VersionInfo, error) {
-	content, err := dotrill.Get(StateFilename, VersionInfoStateKey)
+func getVersionInfo() (*versionInfo, error) {
+	content, err := dotrill.GetVersionInfo()
 	if err != nil {
 		return nil, err
 	}
 
-	var verionInfo VersionInfo
+	var verionInfo versionInfo
 	err = yaml.Unmarshal([]byte(content), &verionInfo)
 	if err != nil {
 		return nil, err
@@ -190,7 +186,7 @@ func getVersionInfo() (*VersionInfo, error) {
 }
 
 func setVersionInfo(t time.Time, r ReleaseInfo) error {
-	data := VersionInfo{
+	data := versionInfo{
 		UpdateAt:      t,
 		LatestRelease: r,
 	}
@@ -200,7 +196,7 @@ func setVersionInfo(t time.Time, r ReleaseInfo) error {
 		return err
 	}
 
-	err = dotrill.Set(StateFilename, VersionInfoStateKey, string(content))
+	err = dotrill.SetVersionInfo(string(content))
 	if err != nil {
 		return err
 	}
