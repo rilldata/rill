@@ -4,7 +4,7 @@
   export let variant: "primary" | "primary-outline" | "secondary" = "primary";
   export let disabled = false;
 
-  function getVariantClass() {
+  function getVariantClass(variant: string) {
     switch (variant) {
       case "primary":
         return "border-blue-600 bg-blue-600 text-white hover:bg-blue-500 hover:border-blue-500";
@@ -27,8 +27,9 @@
 </script>
 
 <button
-  class="max-w-[400px] h-10 border rounded-sm {getVariantClass()} {disabled &&
-    disabledClasses}"
+  class="max-w-[400px] h-10 border rounded-sm {getVariantClass(
+    variant
+  )} {disabled && disabledClasses}"
   on:click={handleClick}
   {disabled}
 >
