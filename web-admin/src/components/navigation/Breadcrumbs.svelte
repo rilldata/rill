@@ -10,7 +10,6 @@
     createAdminServiceListOrganizations,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
-  import DeploymentStatusChip from "../home/DeploymentStatusChip.svelte";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
   import OrganizationAvatar from "./OrganizationAvatar.svelte";
 
@@ -73,9 +72,7 @@
             callback: () => goto(`/${organization}/${proj.name}`),
           }))}
         onSelectMenuOption={(project) => goto(`/${organization}/${project}`)}
-      >
-        <DeploymentStatusChip {organization} {project} slot="icon" />
-      </BreadcrumbItem>
+      />
     {/if}
     {#if currentDashboard}
       <span class="text-gray-600">/</span>

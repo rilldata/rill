@@ -71,3 +71,7 @@ func (c connector) Spec() connectors.Spec {
 func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+
+func (c connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {
+	return true, nil
+}

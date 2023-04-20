@@ -181,8 +181,8 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))
-	for _, invite := range userInvites {
-		invitesDtos = append(invitesDtos, inviteToPB(invite))
+	for i, invite := range userInvites {
+		invitesDtos[i] = inviteToPB(invite)
 	}
 
 	return &adminv1.ListOrganizationMembersResponse{
