@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { ADMIN_URL } from "../../../../../client/http-client";
-  import { createAdminServiceGetCurrentUser } from "../../../../../client";
+  import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
 
   const remote = new URLSearchParams(window.location.search).get("remote");
   const user = createAdminServiceGetCurrentUser({

@@ -2,8 +2,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
-  import { ADMIN_URL } from "../../../../../client/http-client";
-  import { createAdminServiceGetCurrentUser } from "../../../../../client";
+  import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
 
   const urlParams = new URLSearchParams(window.location.search);
   const remote = urlParams.get("remote");
@@ -33,7 +33,7 @@
   <div class="flex flex-col justify-center items-center h-3/5">
     <h1 class="text-3xl font-medium text-gray-800 mb-4">Connect to Github</h1>
     <p class="text-lg text-gray-700 text-2xl mb-4">
-      Your authorised github user {@html githubUsername} is not a collaborator to
+      Your authorised github user `{@html githubUsername}` is not a collaborator to
       repo {@html remote}.<br />
       Click the button below to re-authorise/authorise another account.
     </p>

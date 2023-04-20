@@ -83,8 +83,8 @@ func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.R
 	}
 
 	qry := map[string]string{"user_code": authCode.UserCode}
-	if values.Get("redirect_url") != "" {
-		qry["redirect_url"] = values.Get("redirect_url")
+	if values.Get("redirect") != "" {
+		qry["redirect"] = values.Get("redirect")
 	}
 
 	verificationCompleteURI, err := urlutil.WithQuery(verificationURI, qry)

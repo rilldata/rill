@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -97,12 +96,12 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				if strings.Contains(authURL, "http://localhost:9090") {
 					authURL = "http://localhost:8080"
 				}
-				redirectURL, err := urlutil.WithQuery(urlutil.MustJoinURL(authURL, "/github/repo_status"), map[string]string{"remote": githubURL})
+				redirectURL, err := urlutil.WithQuery(urlutil.MustJoinURL(authURL, "/github/post-auth-redirect"), map[string]string{"remote": githubURL})
 				if err != nil {
 					return err
 				}
 
-				if err := auth.Login(ctx, cfg, url.QueryEscape(redirectURL)); err != nil {
+				if err := auth.Login(ctx, cfg, redirectURL); err != nil {
 					return fmt.Errorf("login failed: %w", err)
 				}
 				fmt.Println("")
@@ -273,7 +272,7 @@ func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string, si
 			// Open browser if possible
 			_ = browser.Open(res.GrantAccessUrl)
 		} else {
-			fmt.Println("polling for github access")
+			fmt.Printf("Polling for Github access. (If the browser did not redirect, visit this URL to grant access: %q\n)", res.GrantAccessUrl)
 		}
 
 		// Poll for permission granted

@@ -112,7 +112,7 @@ func (s *Server) registerGithubEndpoints(mux *http.ServeMux) {
 	inner.Handle("/github/connect/callback", otelhttp.WithRouteTag("/github/connect/callback", s.authenticator.HTTPMiddleware(http.HandlerFunc(s.githubConnectCallback))))
 	inner.Handle("/github/auth/login", otelhttp.WithRouteTag("github/auth/login", s.authenticator.HTTPMiddleware(http.HandlerFunc(s.githubAuthLogin))))
 	inner.Handle("/github/auth/callback", otelhttp.WithRouteTag("github/auth/callback", s.authenticator.HTTPMiddleware(http.HandlerFunc(s.githubAuthCallback))))
-	inner.Handle("/github/repo_status", otelhttp.WithRouteTag("github/repo_status", s.authenticator.HTTPMiddleware(http.HandlerFunc(s.githubRepoStatus))))
+	inner.Handle("/github/post-auth-redirect", otelhttp.WithRouteTag("github/post-auth-redirect", s.authenticator.HTTPMiddleware(http.HandlerFunc(s.githubRepoStatus))))
 	mux.Handle("/github/", observability.Middleware("admin", s.logger, inner))
 }
 
@@ -465,7 +465,8 @@ func (s *Server) githubWebhook(w http.ResponseWriter, r *http.Request) {
 }
 
 // githubRepoStatus is a http wrapper over [GetGithubRepoStatus]. It redirects to the grantAccessURL if there is no access.
-// It's implemented as a non-gRPC endpoint mounted directly on /github/repo_status.
+// It's implemented as a non-gRPC endpoint mounted directly on /github/post-auth-redirect.
+// TODO :: refactor this and [GetGithubRepoStatus] to call some common service function.
 func (s *Server) githubRepoStatus(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// Check the request is made by an authenticated user
@@ -475,24 +476,84 @@ func (s *Server) githubRepoStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := s.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{GithubUrl: r.URL.Query().Get("remote")})
+	githubURL := r.URL.Query().Get("remote")
+	// Check whether we have the access to the repo
+	installationID, err := s.admin.GetGithubInstallation(ctx, githubURL)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to fetch github repo status: %s", err), http.StatusInternalServerError)
+		if !errors.Is(err, admin.ErrGithubInstallationNotFound) {
+			http.Error(w, fmt.Sprintf("failed to check Github access: %s", err), http.StatusBadRequest)
+			return
+		}
+
+		// If no access, redirect to github connect page
+		grantAccessURL, err := urlutil.WithQuery(s.urls.githubConnect, map[string]string{"remote": githubURL})
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
+			return
+		}
+
+		redirectURL, err := urlutil.WithQuery(s.urls.githubConnectUI, map[string]string{"redirect": grantAccessURL})
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
 
-	if resp.HasAccess {
-		http.Redirect(w, r, s.urls.githubConnectSuccess, http.StatusTemporaryRedirect)
-		return
-	}
-
-	redirectURL, err := urlutil.WithQuery(s.urls.githubConnectUI, map[string]string{"redirect_url": resp.GrantAccessUrl})
+	// we have access need to check if user is a collaborator and has authorised app on their account
+	userID := claims.OwnerID()
+	user, err := s.admin.DB.FindUser(ctx, userID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("failed to find user: %s", err), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+	// user has not authorized github app
+	if user.GithubUsername == "" {
+		grantAccessURL, err := urlutil.WithQuery(s.urls.githubAuth, map[string]string{"remote": githubURL})
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
+			return
+		}
+
+		redirectURL, err := urlutil.WithQuery(s.urls.githubConnectUI, map[string]string{"redirect": grantAccessURL})
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+		return
+	}
+
+	// Get repo info for user and return.
+	_, err = s.admin.LookupGithubRepoForUser(ctx, installationID, githubURL, user.GithubUsername)
+	if err != nil {
+		if errors.Is(err, admin.ErrUserIsNotCollaborator) {
+			// may be user authorised from another username
+			retryURL, err := urlutil.WithQuery(s.urls.githubAuthRetry, map[string]string{"remote": githubURL, "githubUsername": user.GithubUsername})
+			if err != nil {
+				http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
+				return
+			}
+
+			redirectURL, err := urlutil.WithQuery(s.urls.githubConnectUI, map[string]string{"redirect": retryURL})
+			if err != nil {
+				http.Error(w, fmt.Sprintf("failed to create redirect URL: %s", err), http.StatusInternalServerError)
+				return
+			}
+
+			http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+			return
+		}
+
+		http.Error(w, fmt.Sprintf("failed to lookup repo for user: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, s.urls.githubConnectSuccess, http.StatusTemporaryRedirect)
 }
 
 func (s *Server) userAuthGithubClient(ctx context.Context, code string) (*github.Client, error) {

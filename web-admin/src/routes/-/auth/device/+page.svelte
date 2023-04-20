@@ -1,14 +1,14 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { createAdminServiceGetCurrentUser } from "../../../../client";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
-  import { ADMIN_URL } from "../../../../client/http-client";
+  import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
 
   let actionTaken = false;
   let successMsg = "";
   let errorMsg = "";
   const urlParams = new URLSearchParams(window.location.search);
-  const redirectURL = urlParams.get("redirect_url");
+  const redirectURL = urlParams.get("redirect");
   const userCode = urlParams.get("user_code");
 
   const user = createAdminServiceGetCurrentUser({
@@ -32,12 +32,7 @@
     ).then((response) => {
       if (response.ok) {
         if (redirectURL !== "") {
-          // This msg creates a tight coupling b/w login flow and github access flow
-          // but is required for better user experience
-          successMsg = "User code confirmed, verifying github access...";
-          setTimeout(function () {
-            window.location.href = decodeURIComponent(redirectURL);
-          }, 2 * 1000);
+          window.location.href = decodeURIComponent(redirectURL);
         } else {
           successMsg = "User code confirmed, this page can be closed now";
         }
