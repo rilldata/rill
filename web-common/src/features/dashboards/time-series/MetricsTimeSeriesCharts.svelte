@@ -41,9 +41,7 @@
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
-  $: timeDimension = $metaQuery.data?.timeDimension;
   $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
-  $: interval = $dashboardStore?.selectedTimeRange?.interval;
   $: showComparison = $dashboardStore?.showComparison;
 
   let totalsQuery: CreateQueryResult<V1MetricsViewTotalsResponse, Error>;
