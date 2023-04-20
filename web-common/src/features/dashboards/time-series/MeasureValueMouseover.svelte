@@ -24,7 +24,7 @@
   $: comparisonIsPositive = diff >= 0;
 
   $: isDiffValid = !isNaN(
-    formatMeasurePercentageDifference((y - comparisonY) / comparisonY).int
+    formatMeasurePercentageDifference((y - comparisonY) / comparisonY)?.int
   );
 
   $: diffLabel =
