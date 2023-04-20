@@ -32,6 +32,8 @@ are details left to the consumer of the component; this component should remain 
   export let excludeMode = false;
   export let colors: ChipColors = defaultChipColors;
 
+  $: console.log("RemovableListChip -- update excludeMode to:", excludeMode);
+
   const dispatch = createEventDispatcher();
 
   let active = false;
@@ -39,7 +41,6 @@ are details left to the consumer of the component; this component should remain 
 
 <WithTogglableFloatingElement
   let:toggleFloatingElement
-  bind:active
   distance={8}
   alignment="start"
 >
@@ -85,15 +86,17 @@ are details left to the consumer of the component; this component should remain 
       </TooltipContent>
     </div>
   </Tooltip>
-  <RemovableListMenu
-    {excludeMode}
-    slot="floating-element"
-    on:escape={toggleFloatingElement}
-    on:click-outside={toggleFloatingElement}
-    on:apply
-    on:search
-    on:toggle
-    {selectedValues}
-    {searchedValues}
-  />
+  <svelte:fragment slot="floating-element">
+    <RemovableListMenu
+      {excludeMode}
+      slot="floating-element"
+      on:escape={toggleFloatingElement}
+      on:click-outside={toggleFloatingElement}
+      on:apply
+      on:search
+      on:toggle
+      {selectedValues}
+      {searchedValues}
+    /></svelte:fragment
+  >
 </WithTogglableFloatingElement>

@@ -12,6 +12,8 @@
   export let searchedValues: string[] = [];
   export let excludeMode = false;
 
+  $: console.log("RemovableListMenu -- update excludeMode to:", excludeMode);
+
   let searchText = "";
 
   const dispatch = createEventDispatcher();
