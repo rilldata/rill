@@ -25,7 +25,6 @@ require (
 	github.com/fatih/color v1.13.0
 	github.com/go-git/go-git/v5 v5.5.2
 	github.com/go-playground/validator/v10 v10.12.0
-	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-github/v50 v50.2.0
 	github.com/google/uuid v1.3.0
@@ -73,6 +72,7 @@ require (
 	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/square/go-jose.v2 v2.6.0
+	gopkg.in/yaml.v2 v2.4.0
 	modernc.org/sqlite v1.10.6
 )
 
