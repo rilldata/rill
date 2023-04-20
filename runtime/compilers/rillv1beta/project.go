@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gopkg.in/yaml.v2"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"gopkg.in/yaml.v2"
 )
 
 const Version = "rill-beta"
