@@ -37,12 +37,14 @@ func BuildCmd(cfg *config.Config) *cobra.Command {
 			return nil
 		},
 	}
-	buildCmd.Flags().SortFlags = false
-	buildCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
-	buildCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
-	buildCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
-	buildCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
-	buildCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
+	flags := buildCmd.Flags()
+	flags.SortFlags = false
+	flags.StringVar(&projectPath, "project", ".", "Project directory")
+	_ = flags.MarkHidden("project")
+	flags.StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
+	flags.StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
+	flags.BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
+	flags.StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
 
 	return buildCmd
 }

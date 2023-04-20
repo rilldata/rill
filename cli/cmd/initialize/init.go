@@ -99,6 +99,7 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 	initCmd.Flags().StringVar(&exampleName, "example", "default", "Name of example project")
 	initCmd.Flags().Lookup("example").NoOptDefVal = "default" // Allows "--example" without a specific name
 	initCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
+	_ = initCmd.Flags().MarkHidden("project")
 	initCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	initCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
 	initCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
