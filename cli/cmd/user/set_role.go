@@ -26,24 +26,31 @@ func SetRoleCmd(cfg *config.Config) *cobra.Command {
 				return errors.New("only one of organization or project has to be specified")
 			}
 
-			if orgName == "" {
-				orgName = cfg.Org
-			}
-
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
 
-			_, err = client.SetProjectMemberRole(cmd.Context(), &adminv1.SetProjectMemberRoleRequest{
-				Organization: orgName,
-				Project:      projectName,
-				Email:        email,
-				Role:         role,
-			})
-			if err != nil {
-				return err
+			if orgName != "" {
+				_, err = client.SetOrganizationMemberRole(cmd.Context(), &adminv1.SetOrganizationMemberRoleRequest{
+					Organization: orgName,
+					Email:        email,
+					Role:         role,
+				})
+				if err != nil {
+					return err
+				}
+			} else {
+				_, err = client.SetProjectMemberRole(cmd.Context(), &adminv1.SetProjectMemberRoleRequest{
+					Organization: cfg.Org,
+					Project:      projectName,
+					Email:        email,
+					Role:         role,
+				})
+				if err != nil {
+					return err
+				}
 			}
 
 			cmdutil.SuccessPrinter("Updated")

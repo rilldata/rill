@@ -25,23 +25,29 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 				return errors.New("only one of organization or project has to be specified")
 			}
 
-			if orgName == "" {
-				orgName = cfg.Org
-			}
-
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
 
-			_, err = client.RemoveProjectMember(cmd.Context(), &adminv1.RemoveProjectMemberRequest{
-				Organization: orgName,
-				Project:      projectName,
-				Email:        email,
-			})
-			if err != nil {
-				return err
+			if orgName != "" {
+				_, err = client.RemoveOrganizationMember(cmd.Context(), &adminv1.RemoveOrganizationMemberRequest{
+					Organization: orgName,
+					Email:        email,
+				})
+				if err != nil {
+					return err
+				}
+			} else {
+				_, err = client.RemoveProjectMember(cmd.Context(), &adminv1.RemoveProjectMemberRequest{
+					Organization: cfg.Org,
+					Project:      projectName,
+					Email:        email,
+				})
+				if err != nil {
+					return err
+				}
 			}
 
 			cmdutil.SuccessPrinter("Removed")

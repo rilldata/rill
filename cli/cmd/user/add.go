@@ -27,27 +27,37 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 				return errors.New("only one of organization or project has to be specified")
 			}
 
-			if orgName == "" {
-				orgName = cfg.Org
-			}
-
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
 
-			res, err := client.AddProjectMember(cmd.Context(), &adminv1.AddProjectMemberRequest{
-				Organization: orgName,
-				Project:      projectName,
-				Email:        email,
-				Role:         role,
-			})
-			if err != nil {
-				return err
+			var pendingSignup bool
+			if orgName != "" {
+				res, err := client.AddOrganizationMember(cmd.Context(), &adminv1.AddOrganizationMemberRequest{
+					Organization: orgName,
+					Email:        email,
+					Role:         role,
+				})
+				if err != nil {
+					return err
+				}
+				pendingSignup = res.PendingSignup
+			} else {
+				res, err := client.AddProjectMember(cmd.Context(), &adminv1.AddProjectMemberRequest{
+					Organization: cfg.Org,
+					Project:      projectName,
+					Email:        email,
+					Role:         role,
+				})
+				if err != nil {
+					return err
+				}
+				pendingSignup = res.PendingSignup
 			}
 
-			if res.PendingSignup {
+			if pendingSignup {
 				cmdutil.SuccessPrinter(fmt.Sprintf("Invitation sent to %q to join project %q as %q", email, projectName, role))
 				return nil
 			}
