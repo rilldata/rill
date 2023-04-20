@@ -24,11 +24,7 @@
     : `calc(${$navigationVisibilityTween * 24}px + 1.25rem)`;
 </script>
 
-<section
-  use:listenToNodeResize
-  class="grid items-stretch surface"
-  style:grid-template-columns="max-content minmax(355px, auto)"
->
+<section use:listenToNodeResize class="grid items-stretch surface">
   <div
     class="explore-header border-b mb-3"
     style:padding-left={leftSide}
@@ -50,6 +46,8 @@
 <style>
   section {
     grid-template-rows: auto auto 1fr;
+    grid-template-columns: min-content 1fr;
+    column-gap: 16px;
     height: 100vh;
     overflow-x: auto;
     overflow-y: hidden;
