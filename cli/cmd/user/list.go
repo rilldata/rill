@@ -40,6 +40,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				cmdutil.PrintMembers(res.Members)
+				cmdutil.PrintInvites(res.Invites)
 			} else if projectName != "" {
 				res, err := client.ListProjectMembers(context.Background(), &adminv1.ListProjectMembersRequest{
 					Organization: cfg.Org,
@@ -50,6 +51,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				cmdutil.PrintMembers(res.Members)
+				cmdutil.PrintInvites(res.Invites)
 				// TODO: user groups
 			}
 

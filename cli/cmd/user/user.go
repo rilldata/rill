@@ -13,6 +13,9 @@ func UserCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	userCmd.AddCommand(ListCmd(cfg))
+	userCmd.AddCommand(AddCmd(cfg))
+	userCmd.AddCommand(RemoveCmd(cfg))
+	userCmd.AddCommand(SetRoleCmd(cfg))
 
 	return userCmd
 }
