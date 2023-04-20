@@ -75,6 +75,8 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
+			fmt.Println("Warn: Renaming an org would invalidate dashboard URLs")
+
 			confirm := false
 			prompt := &survey.Confirm{
 				Message: fmt.Sprintf("Do you want to rename org \"%s\" to \"%s\"?", color.YellowString(currentName), color.YellowString(newName)),
