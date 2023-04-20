@@ -23,10 +23,16 @@
 
   $: comparisonIsPositive = diff >= 0;
 
-  $: diffLabel = formatMeasurePercentageDifference(
-    (y - comparisonY) / comparisonY,
-    "stringFormat"
+  $: isDiffValid = !isNaN(
+    formatMeasurePercentageDifference((y - comparisonY) / comparisonY).int
   );
+
+  $: diffLabel =
+    isDiffValid &&
+    formatMeasurePercentageDifference(
+      (y - comparisonY) / comparisonY,
+      "stringFormat"
+    );
 
   let lastAvailableCurrentY;
   let lastAvailableComparisonY;
@@ -55,7 +61,8 @@
       hasValidComparisonPoint &&
       !currentPointIsNull &&
       !comparisonPointIsNull &&
-      numberKind !== NumberKind.PERCENT
+      numberKind !== NumberKind.PERCENT &&
+      isDiffValid
         ? `(${diffLabel})`
         : "",
     pointColorClass: "fill-blue-700",
