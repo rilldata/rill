@@ -6,9 +6,9 @@ import (
 	"errors"
 	"path/filepath"
 
-	"github.com/go-yaml/yaml"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
+	"gopkg.in/yaml.v2"
 )
 
 type artifact struct{}

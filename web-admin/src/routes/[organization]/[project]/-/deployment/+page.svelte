@@ -16,7 +16,7 @@
 <div class="flex flex-col items-center">
   <div class="flex space-x-10 border-b border-gray-200 w-full px-12 py-5">
     <ProjectDeploymentStatus {organization} {project} />
-    <ProjectGithubConnection />
+    <ProjectGithubConnection {organization} {project} />
     <ShareProjectCta />
   </div>
   <ProjectDeploymentLogs {organization} {project} />
