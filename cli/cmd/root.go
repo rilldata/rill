@@ -16,6 +16,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/runtime"
 	"github.com/rilldata/rill/cli/cmd/source"
 	"github.com/rilldata/rill/cli/cmd/start"
+	"github.com/rilldata/rill/cli/cmd/user"
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
@@ -92,9 +93,16 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(versioncmd.VersionCmd())
 
-	cmd := auth.AuthCmd(cfg)
-	cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
-	rootCmd.AddCommand(cmd)
+	// Add auth specific sub-commands for admin
+	// Only api-url persistent flag needs to be added here.
+	authCmds := []*cobra.Command{
+		auth.LoginCmd(cfg),
+		auth.LogoutCmd(cfg),
+	}
+	for _, cmd := range authCmds {
+		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
+		rootCmd.AddCommand(cmd)
+	}
 
 	// Add sub-commands for admin
 	// (This allows us to add persistent flags that apply only to the admin-related commands.)
@@ -102,6 +110,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		org.OrgCmd(cfg),
 		project.ProjectCmd(cfg),
 		deploy.DeployCmd(cfg),
+		user.UserCmd(cfg),
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
