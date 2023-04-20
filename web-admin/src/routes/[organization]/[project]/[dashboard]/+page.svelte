@@ -1,12 +1,14 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
+  import {
+    createProjectStatusStore,
+    ProjectStatusStore,
+  } from "@rilldata/web-admin/components/projects/project-status-store";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import { StateSyncManager } from "@rilldata/web-common/features/dashboards/proto-state/StateSyncManager";
-  import {
-    createAdminServiceGetProject,
-    V1DeploymentStatus,
-  } from "../../../../client";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import ProjectBuilding from "../../../../components/projects/ProjectBuilding.svelte";
   import ProjectErrored from "../../../../components/projects/ProjectErrored.svelte";
 
@@ -14,23 +16,14 @@
   $: proj = $page.params.project;
   $: dash = $page.params.dashboard;
 
-  // Poll for project status
-  $: project = createAdminServiceGetProject(org, proj, {
-    query: {
-      refetchInterval: 1000,
-    },
-  });
-  $: isProjectBuilding =
-    $project.data?.productionDeployment?.status ===
-      V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
-    $project.data?.productionDeployment?.status ===
-      V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING;
-  $: isProjectErrored =
-    $project.data?.productionDeployment?.status ===
-    V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR;
-  $: isProjectOK =
-    $project.data?.productionDeployment?.status ===
-    V1DeploymentStatus.DEPLOYMENT_STATUS_OK;
+  const queryClient = useQueryClient();
+
+  $: projectStatusQuery = createAdminServiceGetProject(org, proj);
+  let projectStatusStore: ProjectStatusStore;
+  $: projectStatusStore = createProjectStatusStore(
+    queryClient,
+    projectStatusQuery
+  );
 
   $: metricsExplorer = useDashboardStore(dash);
   const stateSyncManager = new StateSyncManager(dash);
@@ -46,10 +39,10 @@
   <title>Rill | {dash}</title>
 </svelte:head>
 
-{#if isProjectBuilding}
+{#if $projectStatusStore.pending || $projectStatusStore.reconciling}
   <ProjectBuilding organization={org} project={proj} />
-{:else if isProjectErrored}
+{:else if $projectStatusStore.errored}
   <ProjectErrored organization={org} project={proj} />
-{:else if isProjectOK}
+{:else if $projectStatusStore.ok}
   <Dashboard leftMargin={"48px"} hasTitle={false} metricViewName={dash} />
 {/if}
