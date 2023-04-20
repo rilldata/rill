@@ -37,8 +37,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 	var projectPath, projectName string
 
 	configureCommand := &cobra.Command{
-		Use:   "env configure",
-		Args:  cobra.ExactArgs(3),
+		Use:   "configure",
 		Short: "configures connector variables for all sources",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			warn := color.New(color.Bold).Add(color.FgYellow)
@@ -141,12 +140,11 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 	var projectName string
 	setCmd := &cobra.Command{
 		Use:   "set <key> <value> --project <project name>",
-		Args:  cobra.ExactArgs(3),
+		Args:  cobra.ExactArgs(2),
 		Short: "set variable",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			projectName := args[0]
-			key := args[1]
-			value := args[2]
+			key := args[0]
+			value := args[1]
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -186,6 +184,7 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	setCmd.Flags().StringVar(&projectName, "project", "", "")
+	_ = setCmd.MarkFlagRequired("project")
 	return setCmd
 }
 
@@ -194,11 +193,10 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 	var projectName string
 	rmCmd := &cobra.Command{
 		Use:   "rm <key> --project <project name>",
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(1),
 		Short: "remove variable",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			projectName := args[0]
-			key := args[1]
+			key := args[0]
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -234,6 +232,7 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 	rmCmd.Flags().StringVar(&projectName, "project", "", "")
+	_ = rmCmd.MarkFlagRequired("project")
 	return rmCmd
 }
 
@@ -241,10 +240,8 @@ func ShowEnvCmd(cfg *config.Config) *cobra.Command {
 	var projectName string
 	showCmd := &cobra.Command{
 		Use:   "show --project <project name>",
-		Args:  cobra.ExactArgs(1),
 		Short: "show variable for project",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			projectName := args[0]
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -264,6 +261,7 @@ func ShowEnvCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 	showCmd.Flags().StringVar(&projectName, "project", "", "")
+	_ = showCmd.MarkFlagRequired("project")
 	return showCmd
 }
 
