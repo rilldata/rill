@@ -31,9 +31,8 @@
             rel="noreferrer"
           >
             <Github className="inline-block w-4 h-4" />
-            <span
-              class="font-semibold text-[12px] leading-5"
-              style="font-family: Source Code Variable">{prettyGithubRepo}</span
+            <span class="font-semibold text-[12px] leading-5 font-mono"
+              >{prettyGithubRepo}</span
             ></a
           >
         </div>
