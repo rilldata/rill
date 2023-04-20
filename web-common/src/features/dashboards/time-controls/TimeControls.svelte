@@ -111,6 +111,9 @@
       timeGrain.grain,
       {}
     );
+
+    /** enable comparisons by default */
+    metricsExplorerStore.toggleComparison(metricViewName, true);
   }
 
   function setTimeControlsFromUrl(allTimeRange: TimeRange) {
@@ -137,6 +140,14 @@
       // do not reset the comparison state when pullling from the URL
       $dashboardStore?.selectedComparisonTimeRange
     );
+
+    /** FIXME: showComparison is always undefined on fresh reload
+     * add showComparison to URL Proto.
+     * For now enable comparisons if not defined
+     */
+    if ($dashboardStore?.showComparison === undefined) {
+      metricsExplorerStore.toggleComparison(metricViewName, true);
+    }
   }
 
   // we get the timeGrainOptions so that we can assess whether or not the
@@ -180,6 +191,7 @@
       start,
       end,
     });
+    metricsExplorerStore.toggleComparison(metricViewName, true);
   }
 
   function makeTimeSeriesTimeRangeAndUpdateAppState(
@@ -319,12 +331,15 @@
       on:select-comparison={(e) => {
         onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
       }}
+      on:disable-comparison={() =>
+        metricsExplorerStore.toggleComparison(metricViewName, false)}
       {minTimeGrain}
       currentStart={$dashboardStore?.selectedTimeRange?.start}
       currentEnd={$dashboardStore?.selectedTimeRange?.end}
       boundaryStart={allTimeRange.start}
       boundaryEnd={allTimeRange.end}
-      showComparison={isComparisonRangeAvailable}
+      {isComparisonRangeAvailable}
+      showComparison={$dashboardStore?.showComparison}
       selectedComparison={$dashboardStore?.selectedComparisonTimeRange}
       comparisonOptions={availableComparisons}
     />

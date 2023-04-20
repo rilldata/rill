@@ -194,6 +194,8 @@
 
   let comparisonTopListQuery;
   let isComparisonRangeAvailable = false;
+  let displayComparison = false;
+
   // create the right compareTopListParams.
   $: if (
     !$topListQuery?.isFetching &&
@@ -209,6 +211,8 @@
       $dashboardStore?.selectedComparisonTimeRange?.start,
       $dashboardStore?.selectedComparisonTimeRange?.end
     );
+    displayComparison =
+      $dashboardStore?.showComparison && isComparisonRangeAvailable;
 
     const selectedComparisonTimeRange =
       $dashboardStore?.selectedComparisonTimeRange;
@@ -293,7 +297,7 @@
           loading={$topListQuery?.isFetching}
           values={values.slice(0, slice)}
           {comparisonValues}
-          showComparison={isComparisonRangeAvailable}
+          showComparison={displayComparison}
           {activeValues}
           {filterExcludeMode}
           {atLeastOneActive}
@@ -309,7 +313,7 @@
             loading={$topListQuery?.isFetching}
             values={selectedValuesThatAreBelowTheFold}
             {comparisonValues}
-            showComparison={isComparisonRangeAvailable}
+            showComparison={displayComparison}
             {activeValues}
             {filterExcludeMode}
             {atLeastOneActive}

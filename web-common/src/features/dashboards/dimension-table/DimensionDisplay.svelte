@@ -165,6 +165,8 @@
 
   let comparisonTopListQuery;
   let isComparisonRangeAvailable = false;
+  let displayComparison = false;
+
   // create the right compareTopListParams.
   $: if (
     !$topListQuery?.isFetching &&
@@ -186,6 +188,8 @@
 
     const { start, end } = comparisonTimeRange;
     isComparisonRangeAvailable = comparisonTimeRange.isComparisonRangeAvailable;
+    displayComparison =
+      metricsExplorer?.showComparison && isComparisonRangeAvailable;
 
     let comparisonFilterSet = getFilterForComparisonTable(
       filterForDimension,
@@ -212,8 +216,8 @@
         ...comparisonParams,
 
         ...{
-          timeStart: isComparisonRangeAvailable ? start : undefined,
-          timeEnd: isComparisonRangeAvailable ? end : undefined,
+          timeStart: displayComparison ? start : undefined,
+          timeEnd: displayComparison ? end : undefined,
         },
       };
     }
@@ -224,7 +228,7 @@
       comparisonParams
     );
   } else if (!hasTimeSeries) {
-    isComparisonRangeAvailable = false;
+    displayComparison = false;
   }
 
   let totalsQuery;
@@ -277,7 +281,7 @@
 
     const selectedMeasure = allMeasures.find((m) => m.name === sortByColumn);
     // Add comparison columns if available
-    if (isComparisonRangeAvailable) {
+    if (displayComparison) {
       columnNames.push(`${sortByColumn}_delta`);
 
       // Only push percentage delta column if selected measure is not a percentage
@@ -347,11 +351,7 @@
     }
   }
 
-  $: if (
-    $comparisonTopListQuery?.data &&
-    values.length &&
-    isComparisonRangeAvailable
-  ) {
+  $: if ($comparisonTopListQuery?.data && values.length && displayComparison) {
     values = computeComparisonValues($comparisonTopListQuery?.data, values);
   }
 
