@@ -1,10 +1,22 @@
 <script lang="ts">
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
+  import {
+    QueryCache,
+    QueryClient,
+    QueryClientProvider,
+  } from "@tanstack/svelte-query";
+  import { globalErrorCallback } from "../components/errors/error-utils";
+  import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../components/navigation/TopNavigationBar.svelte";
 
   const queryClient = new QueryClient({
+    queryCache: new QueryCache({
+      // Motivation:
+      // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
+      // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks
+      onError: globalErrorCallback,
+    }),
     defaultOptions: {
       queries: {
         refetchOnMount: false,
@@ -32,7 +44,9 @@
       <main class="flex-grow flex flex-col">
         <TopNavigationBar />
         <div class="flex-grow overflow-auto">
-          <slot />
+          <ErrorBoundary>
+            <slot />
+          </ErrorBoundary>
         </div>
       </main>
     </div>
