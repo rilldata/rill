@@ -156,6 +156,27 @@ func ProjectExists(ctx context.Context, c *client.Client, orgName, projectName s
 	return true, nil
 }
 
+func PromptIfUnset(flag *string, name string) error {
+	questions := []*survey.Question{
+		{
+			Name: "flag",
+			Prompt: &survey.Input{
+				Message: fmt.Sprintf("Enter the %s", name),
+			},
+			Validate: func(any interface{}) error {
+				flag := any.(string)
+				if flag == "" {
+					return fmt.Errorf("empty value")
+				}
+
+				return nil
+			},
+		},
+	}
+
+	return survey.Ask(questions, flag)
+}
+
 func OrgExists(ctx context.Context, c *client.Client, name string) (bool, error) {
 	_, err := c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
 	if err != nil {
