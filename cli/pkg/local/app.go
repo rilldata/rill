@@ -90,7 +90,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 	logger = logger.WithOptions(zap.IncreaseLevel(lvl))
 
 	// Init Prometheus telemetry
-	shutdown, err := observability.Start(&observability.Options{
+	shutdown, err := observability.Start(ctx, &observability.Options{
 		MetricsExporter: observability.PrometheusExporter,
 		TracesExporter:  observability.NoopExporter,
 		ServiceName:     "rill-local",
@@ -164,10 +164,14 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 }
 
 func (a *App) Close() error {
-	err := a.observabilityShutdown(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	err := a.observabilityShutdown(ctx)
 	if err != nil {
 		fmt.Printf("telemetry shutdown failed: %s\n", err.Error())
 	}
+
 	return a.Runtime.Close()
 }
 
