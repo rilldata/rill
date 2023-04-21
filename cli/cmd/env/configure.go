@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
+	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -74,7 +75,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			variables, err := VariablesFlow(ctx, projectPath)
+			variables, err := VariablesFlow(ctx, projectPath, nil)
 			if err != nil {
 				return fmt.Errorf("failed to get variables %w", err)
 			}
@@ -118,10 +119,14 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 	return configureCommand
 }
 
-func VariablesFlow(ctx context.Context, projectPath string) (map[string]string, error) {
+func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telemetry) (map[string]string, error) {
 	connectors, err := rillv1beta.ExtractConnectors(ctx, projectPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract connectors %w", err)
+	}
+
+	if tel != nil {
+		tel.EmitDataAccessConnectedStart()
 	}
 
 	vars := make(map[string]string)
@@ -171,6 +176,10 @@ func VariablesFlow(ctx context.Context, projectPath string) (map[string]string, 
 
 	if len(connectors) > 0 {
 		fmt.Println("")
+	}
+
+	if tel != nil {
+		tel.EmitDataAccessConnectedSuccess()
 	}
 
 	return vars, nil

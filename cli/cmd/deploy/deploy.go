@@ -207,7 +207,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Run flow to get connector credentials and other variables
-			variables, err := env.VariablesFlow(ctx, projectPath)
+			variables, err := env.VariablesFlow(ctx, projectPath, tel)
 			if err != nil {
 				return err
 			}
