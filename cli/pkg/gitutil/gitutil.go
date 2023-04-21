@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	exec "golang.org/x/sys/execabs"
@@ -66,7 +67,7 @@ func ExtractRemotes(projectPath string) ([]Remote, error) {
 	return res, nil
 }
 
-func RemotesToGithubURL(remotes []Remote) (string, error) {
+func RemotesToGithubURL(remotes []Remote) (*Remote, string, error) {
 	// Return the first Github URL found.
 	// If no Github remotes were found, return the first error.
 	var firstErr error
@@ -74,7 +75,7 @@ func RemotesToGithubURL(remotes []Remote) (string, error) {
 		ghurl, err := remoteToGithubURL(remote.URL)
 		if err == nil {
 			// Found a Github remote. Success!
-			return ghurl, nil
+			return &remote, ghurl, nil
 		}
 		if firstErr == nil {
 			firstErr = fmt.Errorf("invalid remote %q: %w", remote.URL, err)
@@ -82,10 +83,10 @@ func RemotesToGithubURL(remotes []Remote) (string, error) {
 	}
 
 	if firstErr == nil {
-		return "", ErrGitRemoteNotFound
+		return nil, "", ErrGitRemoteNotFound
 	}
 
-	return "", firstErr
+	return nil, "", firstErr
 }
 
 func remoteToGithubURL(remote string) (string, error) {
@@ -133,10 +134,10 @@ func SplitGithubURL(githubURL string) (account, repo string, ok bool) {
 	return account, repo, true
 }
 
-func ExtractGitRemote(projectPath string) (string, error) {
+func ExtractGitRemote(projectPath string) (*Remote, string, error) {
 	remotes, err := ExtractRemotes(projectPath)
 	if err != nil {
-		return "", err
+		return nil, "", err
 	}
 	// Parse into a https://github.com/account/repo (no .git) format
 	return RemotesToGithubURL(remotes)
@@ -151,9 +152,9 @@ const (
 	SyncStatusSynced                 // Local branch is in sync with remote branch
 )
 
-// GetSyncStatus returns the status of current branch as compared to remote
+// GetSyncStatus returns the status of current branch as compared to remote/branch
 // TODO: Need to implement cases like local branch is behind/diverged from remote branch
-func GetSyncStatus(repoPath, branch string) (SyncStatus, error) {
+func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
 	repo, err := git.PlainOpen(repoPath)
 	if err != nil {
 		return SyncStatusUnspecified, err
@@ -162,6 +163,16 @@ func GetSyncStatus(repoPath, branch string) (SyncStatus, error) {
 	ref, err := repo.Head()
 	if err != nil {
 		return SyncStatusUnspecified, err
+	}
+
+	if branch == "" {
+		// try to infer default branch from local repo
+		remoteRef, err := repo.Reference(plumbing.NewRemoteHEADReferenceName(remote), true)
+		if err != nil {
+			return SyncStatusUnspecified, err
+		}
+
+		_, branch, _ = strings.Cut(remoteRef.Name().Short(), fmt.Sprintf("%s/", remote))
 	}
 
 	// if user is not on required branch

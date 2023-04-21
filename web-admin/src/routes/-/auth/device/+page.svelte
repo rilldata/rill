@@ -4,7 +4,6 @@
   import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
 
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
-  import type { V1User } from "@rilldata/web-admin/client";
   import CtaButton from "@rilldata/web-admin/components/CTAButton.svelte";
 
   let actionTaken = false;
@@ -17,7 +16,8 @@
     query: {
       onSuccess: (data) => {
         if (!data.user) {
-          goto(`${ADMIN_URL}/auth/login?redirect=${window.location.href}`);
+          let redirect = encodeURIComponent(window.location.href);
+          goto(`${ADMIN_URL}/auth/login?redirect=${redirect}`);
         }
       },
     },
