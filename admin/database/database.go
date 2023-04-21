@@ -148,17 +148,6 @@ var ErrNotFound = errors.New("database: not found")
 // ErrNotUnique is returned when a unique constraint is violated
 var ErrNotUnique = errors.New("database: violates unique constraint")
 
-// Entity is an enum representing the entities in this package.
-type Entity string
-
-const (
-	EntityOrganization  Entity = "Organization"
-	EntityProject       Entity = "Project"
-	EntityUser          Entity = "User"
-	EntityUserAuthToken Entity = "UserAuthToken"
-	EntityClient        Entity = "Client"
-)
-
 // Organization represents a tenant.
 type Organization struct {
 	ID             string
@@ -242,94 +231,6 @@ type UpdateProjectOptions struct {
 	ProductionDeploymentID *string
 }
 
-// User is a person registered in Rill.
-// Users may belong to multiple organizations and projects.
-type User struct {
-	ID             string
-	Email          string
-	DisplayName    string    `db:"display_name"`
-	PhotoURL       string    `db:"photo_url"`
-	GithubUsername string    `db:"github_username"`
-	CreatedOn      time.Time `db:"created_on"`
-	UpdatedOn      time.Time `db:"updated_on"`
-}
-
-// InsertUserOptions defines options for inserting a new user
-type InsertUserOptions struct {
-	Email       string `validate:"email"`
-	DisplayName string
-	PhotoURL    string
-}
-
-// UpdateUserOptions defines options for updating an existing user
-type UpdateUserOptions struct {
-	DisplayName    string
-	PhotoURL       string
-	GithubUsername string
-}
-
-// InsertUsergroupOptions defines options for inserting a new usergroup
-type InsertUsergroupOptions struct {
-	OrgID string
-	Name  string `validate:"slug"`
-}
-
-// UserAuthToken is a persistent API token for a user.
-type UserAuthToken struct {
-	ID           string
-	SecretHash   []byte    `db:"secret_hash"`
-	UserID       string    `db:"user_id"`
-	DisplayName  string    `db:"display_name"`
-	AuthClientID *string   `db:"auth_client_id"`
-	CreatedOn    time.Time `db:"created_on"`
-}
-
-// InsertUserAuthTokenOptions defines options for creating a UserAuthToken.
-type InsertUserAuthTokenOptions struct {
-	ID           string
-	SecretHash   []byte
-	UserID       string
-	DisplayName  string
-	AuthClientID *string
-}
-
-// AuthClient is a client that requests and consumes auth tokens.
-type AuthClient struct {
-	ID          string
-	DisplayName string
-	CreatedOn   time.Time `db:"created_on"`
-	UpdatedOn   time.Time `db:"updated_on"`
-}
-
-// Hard-coded auth client IDs (created in the migrations).
-const (
-	AuthClientIDRillWeb = "12345678-0000-0000-0000-000000000001"
-	AuthClientIDRillCLI = "12345678-0000-0000-0000-000000000002"
-)
-
-// DeviceAuthCodeState is an enum representing the approval state of an DeviceAuthCode
-type DeviceAuthCodeState int
-
-const (
-	DeviceAuthCodeStatePending  DeviceAuthCodeState = 0
-	DeviceAuthCodeStateApproved DeviceAuthCodeState = 1
-	DeviceAuthCodeStateRejected DeviceAuthCodeState = 2
-)
-
-// DeviceAuthCode represents a user authentication code as part of the OAuth2 device flow.
-// They're currently used for authenticating users in the CLI.
-type DeviceAuthCode struct {
-	ID            string              `db:"id"`
-	DeviceCode    string              `db:"device_code"`
-	UserCode      string              `db:"user_code"`
-	Expiry        time.Time           `db:"expires_on"`
-	ApprovalState DeviceAuthCodeState `db:"approval_state"`
-	ClientID      string              `db:"client_id"`
-	UserID        *string             `db:"user_id"`
-	CreatedOn     time.Time           `db:"created_on"`
-	UpdatedOn     time.Time           `db:"updated_on"`
-}
-
 // DeploymentStatus is an enum representing the state of a deployment
 type DeploymentStatus int
 
@@ -375,6 +276,112 @@ type RuntimeSlotsUsed struct {
 	SlotsUsed   int    `db:"slots_used"`
 }
 
+// User is a person registered in Rill.
+// Users may belong to multiple organizations and projects.
+type User struct {
+	ID             string
+	Email          string
+	DisplayName    string    `db:"display_name"`
+	PhotoURL       string    `db:"photo_url"`
+	GithubUsername string    `db:"github_username"`
+	CreatedOn      time.Time `db:"created_on"`
+	UpdatedOn      time.Time `db:"updated_on"`
+}
+
+// InsertUserOptions defines options for inserting a new user
+type InsertUserOptions struct {
+	Email       string `validate:"email"`
+	DisplayName string
+	PhotoURL    string
+}
+
+// UpdateUserOptions defines options for updating an existing user
+type UpdateUserOptions struct {
+	DisplayName    string
+	PhotoURL       string
+	GithubUsername string
+}
+
+// Usergroup represents a group of org members
+type Usergroup struct {
+	ID    string `db:"id"`
+	OrgID string `db:"org_id"`
+	Name  string `db:"name"`
+}
+
+// InsertUsergroupOptions defines options for inserting a new usergroup
+type InsertUsergroupOptions struct {
+	OrgID string
+	Name  string `validate:"slug"`
+}
+
+// UserAuthToken is a persistent API token for a user.
+type UserAuthToken struct {
+	ID           string
+	SecretHash   []byte    `db:"secret_hash"`
+	UserID       string    `db:"user_id"`
+	DisplayName  string    `db:"display_name"`
+	AuthClientID *string   `db:"auth_client_id"`
+	CreatedOn    time.Time `db:"created_on"`
+}
+
+// InsertUserAuthTokenOptions defines options for creating a UserAuthToken.
+type InsertUserAuthTokenOptions struct {
+	ID           string
+	SecretHash   []byte
+	UserID       string
+	DisplayName  string
+	AuthClientID *string
+}
+
+// AuthClient is a client that requests and consumes auth tokens.
+type AuthClient struct {
+	ID          string
+	DisplayName string
+	CreatedOn   time.Time `db:"created_on"`
+	UpdatedOn   time.Time `db:"updated_on"`
+}
+
+// Hard-coded auth client IDs (created in the migrations).
+const (
+	AuthClientIDRillWeb = "12345678-0000-0000-0000-000000000001"
+	AuthClientIDRillCLI = "12345678-0000-0000-0000-000000000002"
+)
+
+// DeviceAuthCodeState is an enum representing the approval state of a DeviceAuthCode
+type DeviceAuthCodeState int
+
+const (
+	DeviceAuthCodeStatePending  DeviceAuthCodeState = 0
+	DeviceAuthCodeStateApproved DeviceAuthCodeState = 1
+	DeviceAuthCodeStateRejected DeviceAuthCodeState = 2
+)
+
+// DeviceAuthCode represents a user authentication code as part of the OAuth2 Device Authorization flow.
+// They're currently used for authenticating users in the CLI.
+type DeviceAuthCode struct {
+	ID            string              `db:"id"`
+	DeviceCode    string              `db:"device_code"`
+	UserCode      string              `db:"user_code"`
+	Expiry        time.Time           `db:"expires_on"`
+	ApprovalState DeviceAuthCodeState `db:"approval_state"`
+	ClientID      string              `db:"client_id"`
+	UserID        *string             `db:"user_id"`
+	CreatedOn     time.Time           `db:"created_on"`
+	UpdatedOn     time.Time           `db:"updated_on"`
+}
+
+// Constants for known role names (created in migrations).
+const (
+	OrganizationAdminRoleName        = "admin"
+	OrganizationCollaboratorRoleName = "collaborator"
+	OrganizationViewerRoleName       = "viewer"
+	ProjectAdminRoleName             = "admin"
+	ProjectCollaboratorRoleName      = "collaborator"
+	ProjectViewerRoleName            = "viewer"
+)
+
+// OrganizationRole represents roles for orgs.
 type OrganizationRole struct {
 	ID               string
 	Name             string
@@ -387,6 +394,7 @@ type OrganizationRole struct {
 	ManageOrgMembers bool `db:"manage_org_members"`
 }
 
+// ProjectRole represents roles for projects.
 type ProjectRole struct {
 	ID                   string
 	Name                 string
@@ -402,30 +410,17 @@ type ProjectRole struct {
 	ManageProjectMembers bool `db:"manage_project_members"`
 }
 
-const (
-	OrganizationAdminRoleName        = "admin"
-	OrganizationCollaboratorRoleName = "collaborator"
-	OrganizationViewerRoleName       = "viewer"
-	ProjectAdminRoleName             = "admin"
-	ProjectCollaboratorRoleName      = "collaborator"
-	ProjectViewerRoleName            = "viewer"
-)
-
-type Usergroup struct {
-	ID    string `db:"id"`
-	OrgID string `db:"org_id"`
-	Name  string `db:"name"`
-}
-
+// Member is a convenience type used for display-friendly representation of an org or project member.
 type Member struct {
 	ID          string
 	Email       string
 	DisplayName string    `db:"display_name"`
+	RoleName    string    `db:"name"`
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
-	RoleName    string    `db:"name"`
 }
 
+// OrganizationInvite represents an outstanding invitation to join an org.
 type OrganizationInvite struct {
 	ID              string
 	Email           string
@@ -435,6 +430,7 @@ type OrganizationInvite struct {
 	CreatedOn       time.Time `db:"created_on"`
 }
 
+// ProjectInvite represents an outstanding invitation to join a project.
 type ProjectInvite struct {
 	ID              string
 	Email           string
@@ -444,6 +440,7 @@ type ProjectInvite struct {
 	CreatedOn       time.Time `db:"created_on"`
 }
 
+// Invite is a convenience type used for display-friendly representation of an OrganizationInvite or ProjectInvite.
 type Invite struct {
 	Email     string
 	Role      string
