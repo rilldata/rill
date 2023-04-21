@@ -13,9 +13,8 @@ import (
 )
 
 func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUserRequest) (*adminv1.GetCurrentUserResponse, error) {
-	claims := auth.GetClaims(ctx)
-
 	// Return an empty result if not authenticated.
+	claims := auth.GetClaims(ctx)
 	if claims.OwnerType() == auth.OwnerTypeAnon {
 		return &adminv1.GetCurrentUserResponse{}, nil
 	}
