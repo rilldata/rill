@@ -1,6 +1,10 @@
 package project
 
 import (
+	"fmt"
+
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/fatih/color"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -8,12 +12,12 @@ import (
 )
 
 func EditCmd(cfg *config.Config) *cobra.Command {
-	var name, description, prodBranch string
+	var name, description, prodBranch, repoPath string
 	var public bool
 
 	editCmd := &cobra.Command{
-		Use:   "edit <project-name>",
-		Args:  cobra.ExactArgs(1),
+		Use:   "edit",
+		Args:  cobra.NoArgs,
 		Short: "Edit",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -24,12 +28,46 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: args[0]})
+			if !cmd.Flags().Changed("project") {
+				err := cmdutil.PromptIfUnset(&name, "Project Name", "")
+				if err != nil {
+					return err
+				}
+			}
+
+			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: name})
 			if err != nil {
 				return err
 			}
 
 			proj := resp.Project
+
+			if !cmd.Flags().Changed("description") {
+				err := cmdutil.PromptIfUnset(&description, "Project Description", proj.Description)
+				if err != nil {
+					return err
+				}
+			}
+
+			if !cmd.Flags().Changed("prod-branch") {
+				err := cmdutil.PromptIfUnset(&prodBranch, "Project Production Branch", proj.ProductionBranch)
+				if err != nil {
+					return err
+				}
+			}
+
+			if !cmd.Flags().Changed("public") {
+				prompt := &survey.Confirm{
+					Message: fmt.Sprintf("Do you want project \"%s\" to public?", color.YellowString(name)),
+				}
+
+				err = survey.AskOne(prompt, &public)
+				if err != nil {
+					return err
+				}
+			}
+
+			// Todo: Need to add prompt for repo_path <path_for_monorepo>
 
 			updatedProj, err := client.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
 				Id:               proj.Id,
@@ -52,9 +90,10 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 
 	editCmd.Flags().SortFlags = false
 
-	editCmd.Flags().StringVar(&name, "name", "noname", "Name")
+	editCmd.Flags().StringVar(&name, "project", "noname", "Name")
 	editCmd.Flags().StringVar(&description, "description", "", "Description")
 	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "noname", "Production branch name")
+	editCmd.Flags().StringVar(&repoPath, "repo_path", "", "Repo Path")
 	editCmd.Flags().BoolVar(&public, "public", false, "Public")
 
 	return editCmd
