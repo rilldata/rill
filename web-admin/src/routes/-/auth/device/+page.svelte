@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
-  import { Button } from "@rilldata/web-common/components/button";
   import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
 
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
