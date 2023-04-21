@@ -84,22 +84,27 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 		return err
 	}
 
-	svc, err := r.NewCatalogService(ctx, inst.ID)
-	if err != nil { // return error if db handlers can't be opened
-		return err
-	}
-
 	// delete instance related data if catalog is not embedded
 	if !inst.EmbedCatalog {
-		err := svc.Catalog.DeleteEntries(ctx, instanceID)
+		catalog, err := r.Catalog(ctx, instanceID)
+		if err != nil {
+			return err
+		}
+
+		err = catalog.DeleteEntries(ctx, instanceID)
 		if err != nil {
 			return err
 		}
 	}
 
 	if dropDB {
+		olap, err := r.OLAP(ctx, instanceID)
+		if err != nil {
+			return err
+		}
+
 		// ignoring the dropDB error since if db is already dropped it may not be possible to retry
-		err = svc.Olap.DropDB()
+		err = olap.DropDB()
 		if err != nil {
 			r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}

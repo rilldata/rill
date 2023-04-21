@@ -85,7 +85,19 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 		}
 	}
 
+	measureNames := make(map[string]bool)
 	for i, measure := range mv.Measures {
+		if _, ok := measureNames[measure.Name]; ok {
+			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
+				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
+				FilePath:     catalog.Path,
+				Message:      "duplicate measure name",
+				PropertyPath: []string{"Measures", strconv.Itoa(i)},
+			})
+			continue
+		}
+		measureNames[measure.Name] = true
+
 		err := validateMeasure(ctx, olap, model, measure)
 		if err != nil {
 			validationErrors = append(validationErrors, &runtimev1.ReconcileError{

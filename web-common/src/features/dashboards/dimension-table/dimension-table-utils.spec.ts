@@ -1,7 +1,6 @@
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import {
   computeComparisonValues,
-  customSortMeasures,
   getFilterForComparsion,
   updateFilterOnSearch,
 } from "./dimension-table-utils";
@@ -61,32 +60,6 @@ describe("getFilterForComparsion", () => {
       include: [{ name: "fruit", in: ["banana", "grapes", "oranges"] }],
       exclude: [],
     });
-  });
-});
-
-const measures = [
-  "measure_1",
-  "measure_10",
-  "measure_1_delta",
-  "measure_1_delta_perc",
-  "measure_2",
-  "measure_0",
-  "measure_20",
-];
-const expectedMeasures = [
-  "measure_0",
-  "measure_1",
-  "measure_1_delta",
-  "measure_1_delta_perc",
-  "measure_2",
-  "measure_10",
-  "measure_20",
-];
-
-describe("customSortMeasures", () => {
-  it("should sort the measures in the correct order", () => {
-    const sortedMeasures = measures.sort(customSortMeasures);
-    expect(sortedMeasures).toEqual(expectedMeasures);
   });
 });
 
@@ -173,7 +146,12 @@ const expectedData = [
 
 describe("computeComparisonValues", () => {
   it("should compute comparison values correctly", () => {
-    const computedValues = computeComparisonValues(comparisonResponse, values);
+    const computedValues = computeComparisonValues(
+      comparisonResponse,
+      values,
+      "fruit",
+      "measure_0"
+    );
     expect(computedValues).toEqual(expectedData);
   });
 });

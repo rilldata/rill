@@ -8,6 +8,7 @@ type Config struct {
 	AdminTokenOverride string
 	AdminTokenDefault  string
 	Org                string
+	Interactive        bool
 }
 
 func (c *Config) IsDev() bool {
