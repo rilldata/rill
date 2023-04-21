@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -24,6 +25,13 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 			warn := color.New(color.Bold).Add(color.FgYellow)
 			ctx := cmd.Context()
 
+			tel := telemetry.NewTelemetry(cfg.Version)
+			defer func() {
+				// telemetry errors shouldn't fail deploy command
+				_ = tel.Flush(ctx)
+			}()
+			tel.EmitLoginStart()
+
 			if cfg.AdminTokenDefault != "" {
 				warn.Println("You are already logged in. To log in again, run `rill auth logout` first.")
 				return nil
@@ -32,6 +40,8 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 			if err := Login(ctx, cfg, ""); err != nil {
 				return err
 			}
+
+			tel.EmitLoginSuccess()
 
 			// Set default org after login
 			client, err := cmdutil.Client(cfg)

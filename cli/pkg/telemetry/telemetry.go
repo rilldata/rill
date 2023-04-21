@@ -155,3 +155,19 @@ func (t *Telemetry) EmitDataAccessConnectedStart() {
 func (t *Telemetry) EmitDataAccessConnectedSuccess() {
 	t.emitBehaviourEvent("dataaccess-success", "cli", "terminal", "terminal")
 }
+
+func (t *Telemetry) EmitLoginStart() {
+	t.emitBehaviourEvent("login-start", "cli", "terminal", "terminal")
+}
+
+func (t *Telemetry) EmitLoginSuccess() {
+	t.emitBehaviourEvent("login-success", "cli", "terminal", "terminal")
+}
+
+func (t *Telemetry) EmitLogoutStart() {
+	t.emitBehaviourEvent("logout-start", "cli", "terminal", "terminal")
+}
+
+func (t *Telemetry) EmitLogoutSuccess() {
+	t.emitBehaviourEvent("logout-success", "cli", "terminal", "terminal")
+}
