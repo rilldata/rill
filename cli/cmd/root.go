@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/build"
 	"github.com/rilldata/rill/cli/cmd/deploy"
 	"github.com/rilldata/rill/cli/cmd/docs"
+	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/cmd/initialize"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/cmd/project"
@@ -105,6 +106,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		org.OrgCmd(cfg),
 		project.ProjectCmd(cfg),
 		deploy.DeployCmd(cfg),
+		env.EnvCmd(cfg),
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
