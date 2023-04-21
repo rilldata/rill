@@ -22,6 +22,10 @@ type SMTPOptions struct {
 	FromName     string
 }
 
+type smtpSender struct {
+	opts *SMTPOptions
+}
+
 func NewSMTPSender(opts *SMTPOptions) (Sender, error) {
 	if opts.SMTPPassword == "" {
 		return nil, fmt.Errorf("SMTP server password is required")
@@ -33,10 +37,6 @@ func NewSMTPSender(opts *SMTPOptions) (Sender, error) {
 	}
 
 	return &smtpSender{opts: opts}, nil
-}
-
-type smtpSender struct {
-	opts *SMTPOptions
 }
 
 func (s *smtpSender) Send(toEmail, toName, subject, body string) error {
