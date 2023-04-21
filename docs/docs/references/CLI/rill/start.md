@@ -9,7 +9,6 @@ rill start [flags]
 ### Options
 
 ```
-      --project string      Project directory (default ".")
       --no-open             Do not open browser
       --db string           Database DSN (default "stage.db")
       --db-driver string    Database driver (default "duckdb")

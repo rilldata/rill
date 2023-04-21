@@ -70,22 +70,21 @@ func GenMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHa
 	nm := cmd.Name()
 	filename := filepath.Join(dir, nm+".md")
 	if len(cmd.Commands()) > 0 {
-		filename = filepath.Join(dir+"/"+cmd.Name(), nm+".md")
+		filename = filepath.Join(dir, cmd.Name(), nm+".md")
 	}
 
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
+
 	defer f.Close()
 
 	if _, err := f.WriteString(filePrepender(filename)); err != nil {
 		return err
 	}
-	if err := GenMarkdownCustom(cmd, f, linkHandler); err != nil {
-		return err
-	}
-	return nil
+
+	return GenMarkdownCustom(cmd, f, linkHandler)
 }
 
 func hasSeeAlso(cmd *cobra.Command) bool {
@@ -159,7 +158,7 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 			pname := parent.CommandPath()
 			link := parent.Name() + ".md"
 			if len(cmd.Commands()) > 0 {
-				link = "../" + link
+				link = filepath.Join("..", link)
 			}
 
 			buf.WriteString(fmt.Sprintf("* [%s](%s)\t - %s\n", pname, link, parent.Short))
@@ -181,7 +180,7 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 			cname := name + " " + child.Name()
 			link := child.Name() + ".md"
 			if len(child.Commands()) > 0 {
-				link = child.Name() + "/" + link
+				link = filepath.Join(child.Name(), link)
 			}
 
 			buf.WriteString(fmt.Sprintf("* [%s](%s)\t - %s\n", cname, link, child.Short))

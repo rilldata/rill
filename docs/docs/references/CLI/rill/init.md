@@ -11,7 +11,6 @@ rill init [flags]
 ```
       --list-examples                List available example projects
       --example string[="default"]   Name of example project (default "default")
-      --project string               Project directory (default ".")
       --db string                    Database DSN (default "stage.db")
       --db-driver string             Database driver (default "duckdb")
       --verbose                      Sets the log level to debug

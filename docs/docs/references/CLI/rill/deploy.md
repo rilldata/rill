@@ -9,7 +9,6 @@ rill deploy [flags]
 ### Options
 
 ```
-      --project string          Project directory (default ".")
       --prod-slots int          Slots to allocate for production deployments (default 2)
       --description string      Project description
       --region string           Deployment region
