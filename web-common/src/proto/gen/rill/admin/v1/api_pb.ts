@@ -761,9 +761,9 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
   project?: Project;
 
   /**
-   * @generated from field: rill.admin.v1.Deployment production_deployment = 2;
+   * @generated from field: rill.admin.v1.Deployment prod_deployment = 2;
    */
-  productionDeployment?: Deployment;
+  prodDeployment?: Deployment;
 
   /**
    * @generated from field: string jwt = 3;
@@ -784,7 +784,7 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
   static readonly typeName = "rill.admin.v1.GetProjectResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project", kind: "message", T: Project },
-    { no: 2, name: "production_deployment", kind: "message", T: Deployment },
+    { no: 2, name: "prod_deployment", kind: "message", T: Deployment },
     { no: 3, name: "jwt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "project_permissions", kind: "message", T: ProjectPermissions },
   ]);
@@ -836,24 +836,24 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   region = "";
 
   /**
-   * @generated from field: string production_olap_driver = 10;
+   * @generated from field: string prod_olap_driver = 10;
    */
-  productionOlapDriver = "";
+  prodOlapDriver = "";
 
   /**
-   * @generated from field: string production_olap_dsn = 11;
+   * @generated from field: string prod_olap_dsn = 11;
    */
-  productionOlapDsn = "";
+  prodOlapDsn = "";
 
   /**
-   * @generated from field: int64 production_slots = 5;
+   * @generated from field: int64 prod_slots = 5;
    */
-  productionSlots = protoInt64.zero;
+  prodSlots = protoInt64.zero;
 
   /**
-   * @generated from field: string production_branch = 6;
+   * @generated from field: string prod_branch = 6;
    */
-  productionBranch = "";
+  prodBranch = "";
 
   /**
    * @generated from field: string github_url = 7;
@@ -878,10 +878,10 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "production_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 11, name: "production_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "production_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 6, name: "production_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "prod_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "prod_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 6, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
@@ -1050,9 +1050,9 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   public = false;
 
   /**
-   * @generated from field: string production_branch = 6;
+   * @generated from field: string prod_branch = 6;
    */
-  productionBranch = "";
+  prodBranch = "";
 
   /**
    * @generated from field: string github_url = 7;
@@ -1072,7 +1072,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 6, name: "production_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -1623,24 +1623,24 @@ export class Project extends Message<Project> {
   region = "";
 
   /**
-   * @generated from field: string production_olap_driver = 13;
+   * @generated from field: string prod_olap_driver = 13;
    */
-  productionOlapDriver = "";
+  prodOlapDriver = "";
 
   /**
-   * @generated from field: string production_olap_dsn = 14;
+   * @generated from field: string prod_olap_dsn = 14;
    */
-  productionOlapDsn = "";
+  prodOlapDsn = "";
 
   /**
-   * @generated from field: int64 production_slots = 5;
+   * @generated from field: int64 prod_slots = 5;
    */
-  productionSlots = protoInt64.zero;
+  prodSlots = protoInt64.zero;
 
   /**
-   * @generated from field: string production_branch = 6;
+   * @generated from field: string prod_branch = 6;
    */
-  productionBranch = "";
+  prodBranch = "";
 
   /**
    * @generated from field: string github_url = 7;
@@ -1648,9 +1648,9 @@ export class Project extends Message<Project> {
   githubUrl = "";
 
   /**
-   * @generated from field: string production_deployment_id = 8;
+   * @generated from field: string prod_deployment_id = 8;
    */
-  productionDeploymentId = "";
+  prodDeploymentId = "";
 
   /**
    * @generated from field: google.protobuf.Timestamp created_on = 9;
@@ -1677,12 +1677,12 @@ export class Project extends Message<Project> {
     { no: 15, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 13, name: "production_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 14, name: "production_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "production_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 6, name: "production_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "prod_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "prod_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 6, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "production_deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "prod_deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "created_on", kind: "message", T: Timestamp },
     { no: 10, name: "updated_on", kind: "message", T: Timestamp },
   ]);

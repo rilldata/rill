@@ -468,13 +468,13 @@ paths:
                 type: string
               name:
                 type: string
-              productionBranch:
+              prodBranch:
                 type: string
-              productionOlapDriver:
+              prodOlapDriver:
                 type: string
-              productionOlapDsn:
+              prodOlapDsn:
                 type: string
-              productionSlots:
+              prodSlots:
                 type: string
                 format: int64
               public:
@@ -567,7 +567,7 @@ paths:
                 type: string
               id:
                 type: string
-              productionBranch:
+              prodBranch:
                 type: string
               public:
                 type: boolean
@@ -823,7 +823,7 @@ definitions:
     properties:
       jwt:
         type: string
-      productionDeployment:
+      prodDeployment:
         $ref: '#/definitions/v1Deployment'
       project:
         $ref: '#/definitions/v1Project'
@@ -971,15 +971,15 @@ definitions:
         type: string
       orgName:
         type: string
-      productionBranch:
+      prodBranch:
         type: string
-      productionDeploymentId:
+      prodDeploymentId:
         type: string
-      productionOlapDriver:
+      prodOlapDriver:
         type: string
-      productionOlapDsn:
+      prodOlapDsn:
         type: string
-      productionSlots:
+      prodSlots:
         type: string
         format: int64
       public:

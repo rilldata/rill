@@ -128,14 +128,14 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
-	if proj.ProductionDeploymentID == nil {
+	if proj.ProdDeploymentID == nil {
 		return &adminv1.GetProjectResponse{
 			Project:            projToDTO(proj, org.Name),
 			ProjectPermissions: claims.ProjectPermissions(ctx, proj.ID),
 		}, nil
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProductionDeploymentID)
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "project does not have a production deployment")
@@ -164,10 +164,10 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	}
 
 	return &adminv1.GetProjectResponse{
-		Project:              projToDTO(proj, org.Name),
-		ProductionDeployment: deploymentToDTO(depl),
-		Jwt:                  jwt,
-		ProjectPermissions:   claims.ProjectPermissions(ctx, proj.ID),
+		Project:            projToDTO(proj, org.Name),
+		ProdDeployment:     deploymentToDTO(depl),
+		Jwt:                jwt,
+		ProjectPermissions: claims.ProjectPermissions(ctx, proj.ID),
 	}, nil
 }
 
@@ -197,11 +197,11 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, err
 	}
 
-	// TODO: Validate that req.ProductionBranch is an actual branch.
+	// TODO: Validate that req.ProdBranch is an actual branch.
 
-	// TODO: Validate that req.ProductionSlots is an allowed tier for the caller.
+	// TODO: Validate that req.ProdSlots is an allowed tier for the caller.
 
-	// TODO: Validate that req.ProductionOlapDriver and req.ProductionOlapDsn are acceptable.
+	// TODO: Validate that req.ProdOlapDriver and req.ProdOlapDsn are acceptable.
 
 	// Create the project
 	proj, err := s.admin.CreateProject(ctx, &database.InsertProjectOptions{
@@ -211,13 +211,13 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		Description:          req.Description,
 		Public:               req.Public,
 		Region:               req.Region,
-		ProductionOLAPDriver: req.ProductionOlapDriver,
-		ProductionOLAPDSN:    req.ProductionOlapDsn,
-		ProductionSlots:      int(req.ProductionSlots),
-		ProductionBranch:     req.ProductionBranch,
+		ProdOLAPDriver:       req.ProdOlapDriver,
+		ProdOLAPDSN:          req.ProdOlapDsn,
+		ProdSlots:            int(req.ProdSlots),
+		ProdBranch:           req.ProdBranch,
 		GithubURL:            &req.GithubUrl,
 		GithubInstallationID: &installationID,
-		ProductionVariables:  req.Variables,
+		ProdVariables:        req.Variables,
 	})
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -285,14 +285,14 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 
 	proj, err = s.admin.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
-		Name:                   req.Name,
-		Description:            req.Description,
-		Public:                 req.Public,
-		ProductionBranch:       req.ProductionBranch,
-		ProductionVariables:    proj.ProductionVariables,
-		GithubURL:              githubURL,
-		GithubInstallationID:   proj.GithubInstallationID,
-		ProductionDeploymentID: proj.ProductionDeploymentID,
+		Name:                 req.Name,
+		Description:          req.Description,
+		Public:               req.Public,
+		ProdBranch:           req.ProdBranch,
+		ProdVariables:        proj.ProdVariables,
+		GithubURL:            githubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		ProdDeploymentID:     proj.ProdDeploymentID,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -492,7 +492,7 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project variables")
 	}
 
-	return &adminv1.GetProjectVariablesResponse{Variables: proj.ProductionVariables}, nil
+	return &adminv1.GetProjectVariablesResponse{Variables: proj.ProdVariables}, nil
 }
 
 func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.UpdateProjectVariablesRequest) (*adminv1.UpdateProjectVariablesResponse, error) {
@@ -510,20 +510,20 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 	}
 
 	proj, err = s.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
-		Name:                   proj.Name,
-		Description:            proj.Description,
-		Public:                 proj.Public,
-		ProductionBranch:       proj.ProductionBranch,
-		GithubURL:              proj.GithubURL,
-		GithubInstallationID:   proj.GithubInstallationID,
-		ProductionDeploymentID: proj.ProductionDeploymentID,
-		ProductionVariables:    req.Variables,
+		Name:                 proj.Name,
+		Description:          proj.Description,
+		Public:               proj.Public,
+		ProdBranch:           proj.ProdBranch,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		ProdDeploymentID:     proj.ProdDeploymentID,
+		ProdVariables:        req.Variables,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "variables updated failed with error %s", err.Error())
 	}
 
-	return &adminv1.UpdateProjectVariablesResponse{Variables: proj.ProductionVariables}, nil
+	return &adminv1.UpdateProjectVariablesResponse{Variables: proj.ProdVariables}, nil
 }
 
 // fetchInstallationID returns a valid installation ID iff app is installed and user is a collaborator of the repo
@@ -562,21 +562,21 @@ func (s *Server) fetchInstallationID(ctx context.Context, githubURL, userID stri
 
 func projToDTO(p *database.Project, orgName string) *adminv1.Project {
 	return &adminv1.Project{
-		Id:                     p.ID,
-		Name:                   p.Name,
-		Description:            p.Description,
-		Public:                 p.Public,
-		OrgId:                  p.OrganizationID,
-		OrgName:                orgName,
-		Region:                 p.Region,
-		ProductionOlapDriver:   p.ProductionOLAPDriver,
-		ProductionOlapDsn:      p.ProductionOLAPDSN,
-		ProductionSlots:        int64(p.ProductionSlots),
-		ProductionBranch:       p.ProductionBranch,
-		GithubUrl:              safeStr(p.GithubURL),
-		ProductionDeploymentId: safeStr(p.ProductionDeploymentID),
-		CreatedOn:              timestamppb.New(p.CreatedOn),
-		UpdatedOn:              timestamppb.New(p.UpdatedOn),
+		Id:               p.ID,
+		Name:             p.Name,
+		Description:      p.Description,
+		Public:           p.Public,
+		OrgId:            p.OrganizationID,
+		OrgName:          orgName,
+		Region:           p.Region,
+		ProdOlapDriver:   p.ProdOLAPDriver,
+		ProdOlapDsn:      p.ProdOLAPDSN,
+		ProdSlots:        int64(p.ProdSlots),
+		ProdBranch:       p.ProdBranch,
+		GithubUrl:        safeStr(p.GithubURL),
+		ProdDeploymentId: safeStr(p.ProdDeploymentID),
+		CreatedOn:        timestamppb.New(p.CreatedOn),
+		UpdatedOn:        timestamppb.New(p.UpdatedOn),
 	}
 }
 

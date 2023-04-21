@@ -2173,11 +2173,11 @@ func (m *GetProjectResponse) validate(all bool) error {
 	}
 
 	if all {
-		switch v := interface{}(m.GetProductionDeployment()).(type) {
+		switch v := interface{}(m.GetProdDeployment()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, GetProjectResponseValidationError{
-					field:  "ProductionDeployment",
+					field:  "ProdDeployment",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -2185,16 +2185,16 @@ func (m *GetProjectResponse) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, GetProjectResponseValidationError{
-					field:  "ProductionDeployment",
+					field:  "ProdDeployment",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetProductionDeployment()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetProdDeployment()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return GetProjectResponseValidationError{
-				field:  "ProductionDeployment",
+				field:  "ProdDeployment",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -2362,13 +2362,13 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for Region
 
-	// no validation rules for ProductionOlapDriver
+	// no validation rules for ProdOlapDriver
 
-	// no validation rules for ProductionOlapDsn
+	// no validation rules for ProdOlapDsn
 
-	// no validation rules for ProductionSlots
+	// no validation rules for ProdSlots
 
-	// no validation rules for ProductionBranch
+	// no validation rules for ProdBranch
 
 	// no validation rules for GithubUrl
 
@@ -2845,7 +2845,7 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 
 	// no validation rules for Public
 
-	// no validation rules for ProductionBranch
+	// no validation rules for ProdBranch
 
 	// no validation rules for GithubUrl
 
@@ -4355,17 +4355,17 @@ func (m *Project) validate(all bool) error {
 
 	// no validation rules for Region
 
-	// no validation rules for ProductionOlapDriver
+	// no validation rules for ProdOlapDriver
 
-	// no validation rules for ProductionOlapDsn
+	// no validation rules for ProdOlapDsn
 
-	// no validation rules for ProductionSlots
+	// no validation rules for ProdSlots
 
-	// no validation rules for ProductionBranch
+	// no validation rules for ProdBranch
 
 	// no validation rules for GithubUrl
 
-	// no validation rules for ProductionDeploymentId
+	// no validation rules for ProdDeploymentId
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

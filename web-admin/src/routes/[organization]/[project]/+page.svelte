@@ -12,7 +12,7 @@
 
   // Go to first dashboard
   $: dashboardsQuery = useDashboardNames(
-    $proj.data?.productionDeployment?.runtimeInstanceId
+    $proj.data?.prodDeployment?.runtimeInstanceId
   );
   $: if ($dashboardsQuery.data && $dashboardsQuery.data.length > 0) {
     goto(

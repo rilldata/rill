@@ -173,22 +173,22 @@ type UpdateOrganizationOptions struct {
 // Project represents one Git connection.
 // Projects belong to an organization.
 type Project struct {
-	ID                     string
-	OrganizationID         string `db:"org_id"`
-	Name                   string
-	Description            string
-	Public                 bool
-	Region                 string
-	ProductionSlots        int       `db:"production_slots"`
-	ProductionOLAPDriver   string    `db:"production_olap_driver"`
-	ProductionOLAPDSN      string    `db:"production_olap_dsn"`
-	ProductionBranch       string    `db:"production_branch"`
-	ProductionVariables    Variables `db:"production_variables"`
-	GithubURL              *string   `db:"github_url"`
-	GithubInstallationID   *int64    `db:"github_installation_id"`
-	ProductionDeploymentID *string   `db:"production_deployment_id"`
-	CreatedOn              time.Time `db:"created_on"`
-	UpdatedOn              time.Time `db:"updated_on"`
+	ID                   string
+	OrganizationID       string `db:"org_id"`
+	Name                 string
+	Description          string
+	Public               bool
+	Region               string
+	ProdSlots            int       `db:"prod_slots"`
+	ProdOLAPDriver       string    `db:"prod_olap_driver"`
+	ProdOLAPDSN          string    `db:"prod_olap_dsn"`
+	ProdBranch           string    `db:"prod_branch"`
+	ProdVariables        Variables `db:"prod_variables"`
+	GithubURL            *string   `db:"github_url"`
+	GithubInstallationID *int64    `db:"github_installation_id"`
+	ProdDeploymentID     *string   `db:"prod_deployment_id"`
+	CreatedOn            time.Time `db:"created_on"`
+	UpdatedOn            time.Time `db:"updated_on"`
 }
 
 // Variables implements JSON SQL encoding of variables in Project.
@@ -210,25 +210,25 @@ type InsertProjectOptions struct {
 	Description          string
 	Public               bool
 	Region               string
-	ProductionOLAPDriver string
-	ProductionOLAPDSN    string
-	ProductionSlots      int
-	ProductionBranch     string
+	ProdOLAPDriver       string
+	ProdOLAPDSN          string
+	ProdSlots            int
+	ProdBranch           string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
-	ProductionVariables  map[string]string
+	ProdVariables        map[string]string
 }
 
 // UpdateProjectOptions defines options for updating a Project.
 type UpdateProjectOptions struct {
-	Name                   string `validate:"slug"`
-	Description            string
-	Public                 bool
-	ProductionBranch       string
-	ProductionVariables    map[string]string
-	GithubURL              *string `validate:"omitempty,http_url"`
-	GithubInstallationID   *int64  `validate:"omitempty,ne=0"`
-	ProductionDeploymentID *string
+	Name                 string `validate:"slug"`
+	Description          string
+	Public               bool
+	ProdBranch           string
+	ProdVariables        map[string]string
+	GithubURL            *string `validate:"omitempty,http_url"`
+	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	ProdDeploymentID     *string
 }
 
 // DeploymentStatus is an enum representing the state of a deployment

@@ -36,7 +36,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			cmdutil.SuccessPrinter("Found project\n")
 			cmdutil.TablePrinter(toRow(proj.Project))
 
-			depl := proj.ProductionDeployment
+			depl := proj.ProdDeployment
 			if depl != nil {
 				logs, err := logsFormatter(depl.Logs)
 				if err != nil {

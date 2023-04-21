@@ -248,7 +248,7 @@ message GetProjectRequest {
 
 message GetProjectResponse {
   Project project = 1;
-  Deployment production_deployment = 2;
+  Deployment prod_deployment = 2;
   string jwt = 3;
   ProjectPermissions project_permissions = 4;
 }
@@ -259,10 +259,10 @@ message CreateProjectRequest {
   string description = 3;
   bool public = 4;
   string region = 9;
-  string production_olap_driver = 10;
-  string production_olap_dsn = 11;
-  int64 production_slots = 5;
-  string production_branch = 6;
+  string prod_olap_driver = 10;
+  string prod_olap_dsn = 11;
+  int64 prod_slots = 5;
+  string prod_branch = 6;
   string github_url = 7;
   map<string, string> variables = 8;
 }
@@ -285,7 +285,7 @@ message UpdateProjectRequest {
   string name = 3 [(validate.rules).string.min_len = 1];
   string description = 4;
   bool public = 5;
-  string production_branch = 6;
+  string prod_branch = 6;
   string github_url = 7;
 }
 
@@ -350,12 +350,12 @@ message Project {
   string org_id = 15;
   string org_name = 16;
   string region = 12;
-  string production_olap_driver = 13;
-  string production_olap_dsn = 14;
-  int64 production_slots = 5;
-  string production_branch = 6;
+  string prod_olap_driver = 13;
+  string prod_olap_dsn = 14;
+  int64 prod_slots = 5;
+  string prod_branch = 6;
   string github_url = 7;
-  string production_deployment_id = 8;
+  string prod_deployment_id = 8;
   google.protobuf.Timestamp created_on = 9;
   google.protobuf.Timestamp updated_on = 10;
 }

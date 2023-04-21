@@ -22,7 +22,7 @@ export type AdminServiceUpdateProjectBody = {
   description?: string;
   githubUrl?: string;
   id?: string;
-  productionBranch?: string;
+  prodBranch?: string;
   public?: boolean;
 };
 
@@ -32,10 +32,10 @@ export type AdminServiceCreateProjectBody = {
   description?: string;
   githubUrl?: string;
   name?: string;
-  productionBranch?: string;
-  productionOlapDriver?: string;
-  productionOlapDsn?: string;
-  productionSlots?: string;
+  prodBranch?: string;
+  prodOlapDriver?: string;
+  prodOlapDsn?: string;
+  prodSlots?: string;
   public?: boolean;
   region?: string;
   variables?: AdminServiceCreateProjectBodyVariables;
@@ -160,11 +160,11 @@ export interface V1Project {
   name?: string;
   orgId?: string;
   orgName?: string;
-  productionBranch?: string;
-  productionDeploymentId?: string;
-  productionOlapDriver?: string;
-  productionOlapDsn?: string;
-  productionSlots?: string;
+  prodBranch?: string;
+  prodDeploymentId?: string;
+  prodOlapDriver?: string;
+  prodOlapDsn?: string;
+  prodSlots?: string;
   public?: boolean;
   region?: string;
   updatedOn?: string;
@@ -241,7 +241,7 @@ export interface V1GetProjectVariablesResponse {
 
 export interface V1GetProjectResponse {
   jwt?: string;
-  productionDeployment?: V1Deployment;
+  prodDeployment?: V1Deployment;
   project?: V1Project;
   projectPermissions?: V1ProjectPermissions;
 }

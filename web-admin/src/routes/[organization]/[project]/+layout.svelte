@@ -9,11 +9,11 @@
   );
 
   // Hack: in development, the runtime host is actually on port 8081
-  $: runtimeHost = $proj.data?.productionDeployment?.runtimeHost.replace(
+  $: runtimeHost = $proj.data?.prodDeployment?.runtimeHost.replace(
     "localhost:9091",
     "localhost:8081"
   );
-  $: runtimeInstanceId = $proj.data?.productionDeployment?.runtimeInstanceId;
+  $: runtimeInstanceId = $proj.data?.prodDeployment?.runtimeInstanceId;
   $: jwt = $proj.data.jwt;
 </script>
 

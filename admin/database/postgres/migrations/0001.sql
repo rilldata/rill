@@ -20,11 +20,11 @@ CREATE TABLE projects (
     region TEXT NOT NULL,
     github_url TEXT,
     github_installation_id BIGINT,
-    production_branch TEXT NOT NULL,
-    production_variables JSONB DEFAULT '{}'::jsonb NOT NULL,
-    production_olap_driver TEXT NOT NULL,
-    production_olap_dsn TEXT NOT NULL,
-    production_slots INTEGER NOT NULL,
+    prod_branch TEXT NOT NULL,
+    prod_variables JSONB DEFAULT '{}'::jsonb NOT NULL,
+    prod_olap_driver TEXT NOT NULL,
+    prod_olap_dsn TEXT NOT NULL,
+    prod_slots INTEGER NOT NULL,
 	created_on TIMESTAMPTZ DEFAULT now() NOT NULL,
 	updated_on TIMESTAMPTZ DEFAULT now() NOT NULL
 );
@@ -48,5 +48,5 @@ CREATE TABLE deployments (
 
 CREATE INDEX deployments_project_id_idx ON deployments (project_id);
 
-ALTER TABLE projects ADD COLUMN production_deployment_id UUID REFERENCES deployments ON DELETE SET NULL;
-CREATE UNIQUE INDEX projects_deployment_id_idx ON projects (production_deployment_id);
+ALTER TABLE projects ADD COLUMN prod_deployment_id UUID REFERENCES deployments ON DELETE SET NULL;
+CREATE UNIQUE INDEX projects_deployment_id_idx ON projects (prod_deployment_id);
