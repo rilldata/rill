@@ -2,7 +2,7 @@
   import { page } from "$app/stores";
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
   import {
-    createProjectStatusStore,
+    getProjectStatusStore,
     ProjectStatusStore,
   } from "@rilldata/web-admin/components/projects/project-status-store";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
@@ -20,7 +20,9 @@
 
   $: projectStatusQuery = createAdminServiceGetProject(org, proj);
   let projectStatusStore: ProjectStatusStore;
-  $: projectStatusStore = createProjectStatusStore(
+  $: projectStatusStore = getProjectStatusStore(
+    org,
+    proj,
     queryClient,
     projectStatusQuery
   );

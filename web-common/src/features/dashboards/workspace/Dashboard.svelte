@@ -61,12 +61,16 @@
 </script>
 
 <DashboardContainer bind:exploreContainerWidth bind:width {leftMargin}>
-  <DashboardHeader {metricViewName} {hasTitle} slot="header" />
+  <DashboardHeader {hasTitle} {metricViewName} slot="header" />
 
   <svelte:fragment let:width slot="metrics">
     {#key metricViewName}
       {#if hasTimeSeries}
-        <MetricsTimeSeriesCharts {metricViewName} workspaceWidth={width} />
+        <MetricsTimeSeriesCharts
+          {metricViewName}
+          workspaceWidth={width}
+          on:query-error={() => console.log("QueryError")}
+        />
       {:else}
         <MeasuresContainer {exploreContainerWidth} {metricViewName} />
       {/if}

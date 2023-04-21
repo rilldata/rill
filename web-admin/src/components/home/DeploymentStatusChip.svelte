@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createProjectStatusStore } from "@rilldata/web-admin/components/projects/project-status-store";
+  import { getProjectStatusStore } from "@rilldata/web-admin/components/projects/project-status-store";
   import type { ProjectStatusStore } from "@rilldata/web-admin/components/projects/project-status-store";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
@@ -17,7 +17,12 @@
 
   $: proj = createAdminServiceGetProject(organization, project);
   let projectStatusStore: ProjectStatusStore;
-  $: projectStatusStore = createProjectStatusStore(queryClient, proj);
+  $: projectStatusStore = getProjectStatusStore(
+    organization,
+    project,
+    queryClient,
+    proj
+  );
 </script>
 
 {#if $projectStatusStore.queryRunning}
