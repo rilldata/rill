@@ -46,27 +46,9 @@ export type AdminServiceListProjectsForOrganizationParams = {
   pageToken?: string;
 };
 
-export type AdminServiceSetProjectMemberRoleBody = {
-  role?: string;
-};
-
-export type AdminServiceAddProjectMemberBody = {
-  email?: string;
-  role?: string;
-};
-
 export type AdminServiceListProjectMembersParams = {
   pageSize?: number;
   pageToken?: string;
-};
-
-export type AdminServiceSetOrganizationMemberRoleBody = {
-  role?: string;
-};
-
-export type AdminServiceAddOrganizationMemberBody = {
-  email?: string;
-  role?: string;
 };
 
 export type AdminServiceListOrganizationMembersParams = {
@@ -86,6 +68,15 @@ export type AdminServiceListOrganizationsParams = {
 
 export type AdminServiceGetGithubRepoStatusParams = {
   githubUrl?: string;
+};
+
+export type AdminServiceAddOrganizationMemberBodyBody = {
+  email?: string;
+  role?: string;
+};
+
+export type AdminServiceSetOrganizationMemberRoleBodyBody = {
+  role?: string;
 };
 
 export interface V1UserInvite {

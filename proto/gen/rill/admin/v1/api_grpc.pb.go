@@ -40,33 +40,26 @@ type AdminServiceClient interface {
 	ListProjectsForOrganizationAndGithubURL(ctx context.Context, in *ListProjectsForOrganizationAndGithubURLRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationAndGithubURLResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
+	// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
+	GetProjectVariables(ctx context.Context, in *GetProjectVariablesRequest, opts ...grpc.CallOption) (*GetProjectVariablesResponse, error)
 	// CreateProject creates a new project
 	CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*CreateProjectResponse, error)
 	// DeleteProject deletes an project
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error)
-	// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
-	GetProjectVariables(ctx context.Context, in *GetProjectVariablesRequest, opts ...grpc.CallOption) (*GetProjectVariablesResponse, error)
 	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
 	UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error)
-	// GetCurrentUser returns the currently authenticated user (if any)
-	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
-	// RevokeCurrentAuthToken revoke the current auth token
-	RevokeCurrentAuthToken(ctx context.Context, in *RevokeCurrentAuthTokenRequest, opts ...grpc.CallOption) (*RevokeCurrentAuthTokenResponse, error)
-	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
-	// If the caller has not granted access to the repository, instructions for granting access are returned.
-	GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error)
 	// ListOrganizationMembers lists all the org members
 	ListOrganizationMembers(ctx context.Context, in *ListOrganizationMembersRequest, opts ...grpc.CallOption) (*ListOrganizationMembersResponse, error)
 	// AddOrganizationMember lists all the org members
 	AddOrganizationMember(ctx context.Context, in *AddOrganizationMemberRequest, opts ...grpc.CallOption) (*AddOrganizationMemberResponse, error)
 	// RemoveOrganizationMember removes member from the organization
 	RemoveOrganizationMember(ctx context.Context, in *RemoveOrganizationMemberRequest, opts ...grpc.CallOption) (*RemoveOrganizationMemberResponse, error)
-	// SetOrganizationMemberRole sets the role for the member
-	SetOrganizationMemberRole(ctx context.Context, in *SetOrganizationMemberRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberRoleResponse, error)
 	// LeaveOrganization removes the current user from the organization
 	LeaveOrganization(ctx context.Context, in *LeaveOrganizationRequest, opts ...grpc.CallOption) (*LeaveOrganizationResponse, error)
+	// SetOrganizationMemberRole sets the role for the member
+	SetOrganizationMemberRole(ctx context.Context, in *SetOrganizationMemberRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberRoleResponse, error)
 	// ListProjectMembers lists all the project members
 	ListProjectMembers(ctx context.Context, in *ListProjectMembersRequest, opts ...grpc.CallOption) (*ListProjectMembersResponse, error)
 	// AddProjectMember adds a member to the project
@@ -75,6 +68,13 @@ type AdminServiceClient interface {
 	RemoveProjectMember(ctx context.Context, in *RemoveProjectMemberRequest, opts ...grpc.CallOption) (*RemoveProjectMemberResponse, error)
 	// SetProjectMemberRole sets the role for the member
 	SetProjectMemberRole(ctx context.Context, in *SetProjectMemberRoleRequest, opts ...grpc.CallOption) (*SetProjectMemberRoleResponse, error)
+	// GetCurrentUser returns the currently authenticated user (if any)
+	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
+	// RevokeCurrentAuthToken revoke the current auth token
+	RevokeCurrentAuthToken(ctx context.Context, in *RevokeCurrentAuthTokenRequest, opts ...grpc.CallOption) (*RevokeCurrentAuthTokenResponse, error)
+	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
+	// If the caller has not granted access to the repository, instructions for granting access are returned.
+	GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error)
 }
 
 type adminServiceClient struct {
@@ -166,6 +166,15 @@ func (c *adminServiceClient) GetProject(ctx context.Context, in *GetProjectReque
 	return out, nil
 }
 
+func (c *adminServiceClient) GetProjectVariables(ctx context.Context, in *GetProjectVariablesRequest, opts ...grpc.CallOption) (*GetProjectVariablesResponse, error) {
+	out := new(GetProjectVariablesResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/GetProjectVariables", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) CreateProject(ctx context.Context, in *CreateProjectRequest, opts ...grpc.CallOption) (*CreateProjectResponse, error) {
 	out := new(CreateProjectResponse)
 	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/CreateProject", in, out, opts...)
@@ -193,45 +202,9 @@ func (c *adminServiceClient) UpdateProject(ctx context.Context, in *UpdateProjec
 	return out, nil
 }
 
-func (c *adminServiceClient) GetProjectVariables(ctx context.Context, in *GetProjectVariablesRequest, opts ...grpc.CallOption) (*GetProjectVariablesResponse, error) {
-	out := new(GetProjectVariablesResponse)
-	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/GetProjectVariables", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *adminServiceClient) UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error) {
 	out := new(UpdateProjectVariablesResponse)
 	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/UpdateProjectVariables", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error) {
-	out := new(GetCurrentUserResponse)
-	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/GetCurrentUser", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) RevokeCurrentAuthToken(ctx context.Context, in *RevokeCurrentAuthTokenRequest, opts ...grpc.CallOption) (*RevokeCurrentAuthTokenResponse, error) {
-	out := new(RevokeCurrentAuthTokenResponse)
-	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/RevokeCurrentAuthToken", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error) {
-	out := new(GetGithubRepoStatusResponse)
-	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/GetGithubRepoStatus", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -265,18 +238,18 @@ func (c *adminServiceClient) RemoveOrganizationMember(ctx context.Context, in *R
 	return out, nil
 }
 
-func (c *adminServiceClient) SetOrganizationMemberRole(ctx context.Context, in *SetOrganizationMemberRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberRoleResponse, error) {
-	out := new(SetOrganizationMemberRoleResponse)
-	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/SetOrganizationMemberRole", in, out, opts...)
+func (c *adminServiceClient) LeaveOrganization(ctx context.Context, in *LeaveOrganizationRequest, opts ...grpc.CallOption) (*LeaveOrganizationResponse, error) {
+	out := new(LeaveOrganizationResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/LeaveOrganization", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *adminServiceClient) LeaveOrganization(ctx context.Context, in *LeaveOrganizationRequest, opts ...grpc.CallOption) (*LeaveOrganizationResponse, error) {
-	out := new(LeaveOrganizationResponse)
-	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/LeaveOrganization", in, out, opts...)
+func (c *adminServiceClient) SetOrganizationMemberRole(ctx context.Context, in *SetOrganizationMemberRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberRoleResponse, error) {
+	out := new(SetOrganizationMemberRoleResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/SetOrganizationMemberRole", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -319,6 +292,33 @@ func (c *adminServiceClient) SetProjectMemberRole(ctx context.Context, in *SetPr
 	return out, nil
 }
 
+func (c *adminServiceClient) GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error) {
+	out := new(GetCurrentUserResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/GetCurrentUser", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RevokeCurrentAuthToken(ctx context.Context, in *RevokeCurrentAuthTokenRequest, opts ...grpc.CallOption) (*RevokeCurrentAuthTokenResponse, error) {
+	out := new(RevokeCurrentAuthTokenResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/RevokeCurrentAuthToken", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error) {
+	out := new(GetGithubRepoStatusResponse)
+	err := c.cc.Invoke(ctx, "/rill.admin.v1.AdminService/GetGithubRepoStatus", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility
@@ -341,33 +341,26 @@ type AdminServiceServer interface {
 	ListProjectsForOrganizationAndGithubURL(context.Context, *ListProjectsForOrganizationAndGithubURLRequest) (*ListProjectsForOrganizationAndGithubURLResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
+	// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
+	GetProjectVariables(context.Context, *GetProjectVariablesRequest) (*GetProjectVariablesResponse, error)
 	// CreateProject creates a new project
 	CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error)
 	// DeleteProject deletes an project
 	DeleteProject(context.Context, *DeleteProjectRequest) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
-	// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
-	GetProjectVariables(context.Context, *GetProjectVariablesRequest) (*GetProjectVariablesResponse, error)
 	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
 	UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error)
-	// GetCurrentUser returns the currently authenticated user (if any)
-	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
-	// RevokeCurrentAuthToken revoke the current auth token
-	RevokeCurrentAuthToken(context.Context, *RevokeCurrentAuthTokenRequest) (*RevokeCurrentAuthTokenResponse, error)
-	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
-	// If the caller has not granted access to the repository, instructions for granting access are returned.
-	GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error)
 	// ListOrganizationMembers lists all the org members
 	ListOrganizationMembers(context.Context, *ListOrganizationMembersRequest) (*ListOrganizationMembersResponse, error)
 	// AddOrganizationMember lists all the org members
 	AddOrganizationMember(context.Context, *AddOrganizationMemberRequest) (*AddOrganizationMemberResponse, error)
 	// RemoveOrganizationMember removes member from the organization
 	RemoveOrganizationMember(context.Context, *RemoveOrganizationMemberRequest) (*RemoveOrganizationMemberResponse, error)
-	// SetOrganizationMemberRole sets the role for the member
-	SetOrganizationMemberRole(context.Context, *SetOrganizationMemberRoleRequest) (*SetOrganizationMemberRoleResponse, error)
 	// LeaveOrganization removes the current user from the organization
 	LeaveOrganization(context.Context, *LeaveOrganizationRequest) (*LeaveOrganizationResponse, error)
+	// SetOrganizationMemberRole sets the role for the member
+	SetOrganizationMemberRole(context.Context, *SetOrganizationMemberRoleRequest) (*SetOrganizationMemberRoleResponse, error)
 	// ListProjectMembers lists all the project members
 	ListProjectMembers(context.Context, *ListProjectMembersRequest) (*ListProjectMembersResponse, error)
 	// AddProjectMember adds a member to the project
@@ -376,6 +369,13 @@ type AdminServiceServer interface {
 	RemoveProjectMember(context.Context, *RemoveProjectMemberRequest) (*RemoveProjectMemberResponse, error)
 	// SetProjectMemberRole sets the role for the member
 	SetProjectMemberRole(context.Context, *SetProjectMemberRoleRequest) (*SetProjectMemberRoleResponse, error)
+	// GetCurrentUser returns the currently authenticated user (if any)
+	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
+	// RevokeCurrentAuthToken revoke the current auth token
+	RevokeCurrentAuthToken(context.Context, *RevokeCurrentAuthTokenRequest) (*RevokeCurrentAuthTokenResponse, error)
+	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
+	// If the caller has not granted access to the repository, instructions for granting access are returned.
+	GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -410,6 +410,9 @@ func (UnimplementedAdminServiceServer) ListProjectsForOrganizationAndGithubURL(c
 func (UnimplementedAdminServiceServer) GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProject not implemented")
 }
+func (UnimplementedAdminServiceServer) GetProjectVariables(context.Context, *GetProjectVariablesRequest) (*GetProjectVariablesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProjectVariables not implemented")
+}
 func (UnimplementedAdminServiceServer) CreateProject(context.Context, *CreateProjectRequest) (*CreateProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateProject not implemented")
 }
@@ -419,20 +422,8 @@ func (UnimplementedAdminServiceServer) DeleteProject(context.Context, *DeletePro
 func (UnimplementedAdminServiceServer) UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateProject not implemented")
 }
-func (UnimplementedAdminServiceServer) GetProjectVariables(context.Context, *GetProjectVariablesRequest) (*GetProjectVariablesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetProjectVariables not implemented")
-}
 func (UnimplementedAdminServiceServer) UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateProjectVariables not implemented")
-}
-func (UnimplementedAdminServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
-}
-func (UnimplementedAdminServiceServer) RevokeCurrentAuthToken(context.Context, *RevokeCurrentAuthTokenRequest) (*RevokeCurrentAuthTokenResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RevokeCurrentAuthToken not implemented")
-}
-func (UnimplementedAdminServiceServer) GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetGithubRepoStatus not implemented")
 }
 func (UnimplementedAdminServiceServer) ListOrganizationMembers(context.Context, *ListOrganizationMembersRequest) (*ListOrganizationMembersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationMembers not implemented")
@@ -443,11 +434,11 @@ func (UnimplementedAdminServiceServer) AddOrganizationMember(context.Context, *A
 func (UnimplementedAdminServiceServer) RemoveOrganizationMember(context.Context, *RemoveOrganizationMemberRequest) (*RemoveOrganizationMemberResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveOrganizationMember not implemented")
 }
-func (UnimplementedAdminServiceServer) SetOrganizationMemberRole(context.Context, *SetOrganizationMemberRoleRequest) (*SetOrganizationMemberRoleResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetOrganizationMemberRole not implemented")
-}
 func (UnimplementedAdminServiceServer) LeaveOrganization(context.Context, *LeaveOrganizationRequest) (*LeaveOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LeaveOrganization not implemented")
+}
+func (UnimplementedAdminServiceServer) SetOrganizationMemberRole(context.Context, *SetOrganizationMemberRoleRequest) (*SetOrganizationMemberRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetOrganizationMemberRole not implemented")
 }
 func (UnimplementedAdminServiceServer) ListProjectMembers(context.Context, *ListProjectMembersRequest) (*ListProjectMembersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectMembers not implemented")
@@ -460,6 +451,15 @@ func (UnimplementedAdminServiceServer) RemoveProjectMember(context.Context, *Rem
 }
 func (UnimplementedAdminServiceServer) SetProjectMemberRole(context.Context, *SetProjectMemberRoleRequest) (*SetProjectMemberRoleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetProjectMemberRole not implemented")
+}
+func (UnimplementedAdminServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
+}
+func (UnimplementedAdminServiceServer) RevokeCurrentAuthToken(context.Context, *RevokeCurrentAuthTokenRequest) (*RevokeCurrentAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RevokeCurrentAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGithubRepoStatus not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -636,6 +636,24 @@ func _AdminService_GetProject_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetProjectVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProjectVariablesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetProjectVariables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.admin.v1.AdminService/GetProjectVariables",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetProjectVariables(ctx, req.(*GetProjectVariablesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_CreateProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateProjectRequest)
 	if err := dec(in); err != nil {
@@ -690,24 +708,6 @@ func _AdminService_UpdateProject_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_GetProjectVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetProjectVariablesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).GetProjectVariables(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/rill.admin.v1.AdminService/GetProjectVariables",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetProjectVariables(ctx, req.(*GetProjectVariablesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _AdminService_UpdateProjectVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateProjectVariablesRequest)
 	if err := dec(in); err != nil {
@@ -722,60 +722,6 @@ func _AdminService_UpdateProjectVariables_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).UpdateProjectVariables(ctx, req.(*UpdateProjectVariablesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_GetCurrentUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetCurrentUserRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).GetCurrentUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/rill.admin.v1.AdminService/GetCurrentUser",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetCurrentUser(ctx, req.(*GetCurrentUserRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_RevokeCurrentAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RevokeCurrentAuthTokenRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).RevokeCurrentAuthToken(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/rill.admin.v1.AdminService/RevokeCurrentAuthToken",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).RevokeCurrentAuthToken(ctx, req.(*RevokeCurrentAuthTokenRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_GetGithubRepoStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetGithubRepoStatusRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).GetGithubRepoStatus(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/rill.admin.v1.AdminService/GetGithubRepoStatus",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetGithubRepoStatus(ctx, req.(*GetGithubRepoStatusRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -834,24 +780,6 @@ func _AdminService_RemoveOrganizationMember_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_SetOrganizationMemberRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SetOrganizationMemberRoleRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).SetOrganizationMemberRole(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/rill.admin.v1.AdminService/SetOrganizationMemberRole",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).SetOrganizationMemberRole(ctx, req.(*SetOrganizationMemberRoleRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _AdminService_LeaveOrganization_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LeaveOrganizationRequest)
 	if err := dec(in); err != nil {
@@ -866,6 +794,24 @@ func _AdminService_LeaveOrganization_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).LeaveOrganization(ctx, req.(*LeaveOrganizationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SetOrganizationMemberRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetOrganizationMemberRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SetOrganizationMemberRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.admin.v1.AdminService/SetOrganizationMemberRole",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SetOrganizationMemberRole(ctx, req.(*SetOrganizationMemberRoleRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -942,6 +888,60 @@ func _AdminService_SetProjectMemberRole_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetCurrentUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCurrentUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetCurrentUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.admin.v1.AdminService/GetCurrentUser",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetCurrentUser(ctx, req.(*GetCurrentUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RevokeCurrentAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeCurrentAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RevokeCurrentAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.admin.v1.AdminService/RevokeCurrentAuthToken",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RevokeCurrentAuthToken(ctx, req.(*RevokeCurrentAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetGithubRepoStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGithubRepoStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetGithubRepoStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rill.admin.v1.AdminService/GetGithubRepoStatus",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetGithubRepoStatus(ctx, req.(*GetGithubRepoStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -986,6 +986,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetProject_Handler,
 		},
 		{
+			MethodName: "GetProjectVariables",
+			Handler:    _AdminService_GetProjectVariables_Handler,
+		},
+		{
 			MethodName: "CreateProject",
 			Handler:    _AdminService_CreateProject_Handler,
 		},
@@ -998,24 +1002,8 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_UpdateProject_Handler,
 		},
 		{
-			MethodName: "GetProjectVariables",
-			Handler:    _AdminService_GetProjectVariables_Handler,
-		},
-		{
 			MethodName: "UpdateProjectVariables",
 			Handler:    _AdminService_UpdateProjectVariables_Handler,
-		},
-		{
-			MethodName: "GetCurrentUser",
-			Handler:    _AdminService_GetCurrentUser_Handler,
-		},
-		{
-			MethodName: "RevokeCurrentAuthToken",
-			Handler:    _AdminService_RevokeCurrentAuthToken_Handler,
-		},
-		{
-			MethodName: "GetGithubRepoStatus",
-			Handler:    _AdminService_GetGithubRepoStatus_Handler,
 		},
 		{
 			MethodName: "ListOrganizationMembers",
@@ -1030,12 +1018,12 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_RemoveOrganizationMember_Handler,
 		},
 		{
-			MethodName: "SetOrganizationMemberRole",
-			Handler:    _AdminService_SetOrganizationMemberRole_Handler,
-		},
-		{
 			MethodName: "LeaveOrganization",
 			Handler:    _AdminService_LeaveOrganization_Handler,
+		},
+		{
+			MethodName: "SetOrganizationMemberRole",
+			Handler:    _AdminService_SetOrganizationMemberRole_Handler,
 		},
 		{
 			MethodName: "ListProjectMembers",
@@ -1052,6 +1040,18 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetProjectMemberRole",
 			Handler:    _AdminService_SetProjectMemberRole_Handler,
+		},
+		{
+			MethodName: "GetCurrentUser",
+			Handler:    _AdminService_GetCurrentUser_Handler,
+		},
+		{
+			MethodName: "RevokeCurrentAuthToken",
+			Handler:    _AdminService_RevokeCurrentAuthToken_Handler,
+		},
+		{
+			MethodName: "GetGithubRepoStatus",
+			Handler:    _AdminService_GetGithubRepoStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

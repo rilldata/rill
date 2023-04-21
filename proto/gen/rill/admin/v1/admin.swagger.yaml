@@ -200,7 +200,6 @@ paths:
                 type: string
               role:
                 type: string
-            title: Request message for AdminService.AddOrganizationMember
       tags:
         - AdminService
   /v1/organizations/{organization}/members/{email}:
@@ -256,7 +255,6 @@ paths:
             properties:
               role:
                 type: string
-            title: Request message for AdminService.SetOrganizationMemberRole
       tags:
         - AdminService
   /v1/organizations/{organization}/members/current:
@@ -343,7 +341,6 @@ paths:
                 type: string
               role:
                 type: string
-            title: Request message for AdminService.AddProjectMember
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/members/{email}:
@@ -407,7 +404,6 @@ paths:
             properties:
               role:
                 type: string
-            title: Request message for AdminService.SetProjectMemberRole
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects:
@@ -732,13 +728,11 @@ definitions:
     properties:
       pendingSignup:
         type: boolean
-    title: Response message for AdminService.AddOrganizationMember
   v1AddProjectMemberResponse:
     type: object
     properties:
       pendingSignup:
         type: boolean
-    title: Response message for AdminService.AddProjectMember
   v1CreateOrganizationRequest:
     type: object
     properties:
@@ -838,7 +832,6 @@ definitions:
           type: string
   v1LeaveOrganizationResponse:
     type: object
-    title: Response message for AdminService.LeaveOrganization
   v1ListOrganizationMembersResponse:
     type: object
     properties:
@@ -852,7 +845,6 @@ definitions:
           $ref: '#/definitions/v1Member'
       nextPageToken:
         type: string
-    title: Response message for AdminService.ListOrganizationMembers
   v1ListOrganizationsResponse:
     type: object
     properties:
@@ -875,7 +867,6 @@ definitions:
           $ref: '#/definitions/v1Member'
       nextPageToken:
         type: string
-    title: Response message for AdminService.ListProjectMembers
   v1ListProjectsForOrganizationAndGithubURLResponse:
     type: object
     properties:
@@ -1014,10 +1005,8 @@ definitions:
         type: boolean
   v1RemoveOrganizationMemberResponse:
     type: object
-    title: Response message for AdminService.RemoveOrganizationMember
   v1RemoveProjectMemberResponse:
     type: object
-    title: Response message for AdminService.RemoveProjectMember
   v1RevokeCurrentAuthTokenResponse:
     type: object
     properties:
@@ -1025,10 +1014,8 @@ definitions:
         type: string
   v1SetOrganizationMemberRoleResponse:
     type: object
-    title: Response message for AdminService.SetOrganizationMemberRole
   v1SetProjectMemberRoleResponse:
     type: object
-    title: Response message for AdminService.SetProjectMemberRole
   v1UpdateOrganizationResponse:
     type: object
     properties:
