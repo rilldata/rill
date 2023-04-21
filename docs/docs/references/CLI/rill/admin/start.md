@@ -6,7 +6,7 @@ Start admin server
 rill admin start [flags]
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
   -h, --help   Print usage

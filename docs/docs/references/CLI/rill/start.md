@@ -6,7 +6,7 @@ Build project and start web app
 rill start [flags]
 ```
 
-### Options
+### Flags
 
 ```
       --no-open             Do not open browser
@@ -22,7 +22,7 @@ rill start [flags]
   -e, --env strings         Set project variables
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
   -h, --help   Print usage

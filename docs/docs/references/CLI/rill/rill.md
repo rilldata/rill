@@ -2,7 +2,7 @@
 
 Rill CLI
 
-### Options
+### Flags
 
 ```
   -h, --help      Print usage

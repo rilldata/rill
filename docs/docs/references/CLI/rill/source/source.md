@@ -2,7 +2,7 @@
 
 Create or drop a source
 
-### Options inherited from parent commands
+### Global flags
 
 ```
   -h, --help   Print usage

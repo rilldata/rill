@@ -6,7 +6,7 @@ Logout of the Rill API
 rill auth logout [flags]
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
       --api-url string   Base URL for the admin API (default "https://admin.rilldata.io")

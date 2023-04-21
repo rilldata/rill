@@ -6,7 +6,7 @@ Add Member
 rill org members add <email> {admin|collaborator|viewer} [flags]
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
       --api-token string   Token for authenticating with the admin API

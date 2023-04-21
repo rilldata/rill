@@ -10,7 +10,7 @@ A longer description
 rill version [flags]
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
   -h, --help   Print usage

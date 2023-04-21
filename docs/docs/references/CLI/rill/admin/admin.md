@@ -2,7 +2,7 @@
 
 Manage an admin server
 
-### Options inherited from parent commands
+### Global flags
 
 ```
   -h, --help   Print usage

@@ -2,13 +2,13 @@
 
 Manage authentication
 
-### Options
+### Flags
 
 ```
       --api-url string   Base URL for the admin API (default "https://admin.rilldata.io")
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
   -h, --help   Print usage

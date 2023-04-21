@@ -6,7 +6,7 @@ Add Member
 rill project members add <project-name> <email> {admin|viewer} [flags]
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
       --api-token string   Token for authenticating with the admin API

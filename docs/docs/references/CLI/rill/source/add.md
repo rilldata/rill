@@ -10,7 +10,7 @@ Add a local file source. Supported file types include .parquet, .csv, .tsv.
 rill source add <file> [flags]
 ```
 
-### Options
+### Flags
 
 ```
       --name string        Source name (defaults to file name)
@@ -21,7 +21,7 @@ rill source add <file> [flags]
       --verbose            Sets the log level to debug
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
   -h, --help   Print usage

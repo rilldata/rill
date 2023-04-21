@@ -6,7 +6,7 @@ Generate CLI documentation
 rill docs generate [flags]
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
   -h, --help   Print usage

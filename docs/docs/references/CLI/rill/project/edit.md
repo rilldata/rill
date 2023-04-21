@@ -6,7 +6,7 @@ Edit
 rill project edit <project-name> [flags]
 ```
 
-### Options
+### Flags
 
 ```
       --name string          Name (default "noname")
@@ -15,7 +15,7 @@ rill project edit <project-name> [flags]
       --public               Public
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
       --api-token string   Token for authenticating with the admin API

@@ -2,7 +2,7 @@
 
 Manage stand-alone runtimes
 
-### Options inherited from parent commands
+### Global flags
 
 ```
   -h, --help   Print usage

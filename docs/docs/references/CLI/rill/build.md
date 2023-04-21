@@ -6,7 +6,7 @@ Build project without starting web app
 rill build [flags]
 ```
 
-### Options
+### Flags
 
 ```
       --db string          Database DSN (default "stage.db")
@@ -15,7 +15,7 @@ rill build [flags]
   -e, --env strings        Set project variables
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
   -h, --help   Print usage

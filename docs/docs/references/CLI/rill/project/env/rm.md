@@ -6,7 +6,7 @@ remove variable
 rill project env rm <project name> <key> [flags]
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
       --api-token string   Token for authenticating with the admin API

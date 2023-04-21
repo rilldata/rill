@@ -6,7 +6,7 @@ Delete
 rill org delete <org-name> [flags]
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
       --api-token string   Token for authenticating with the admin API

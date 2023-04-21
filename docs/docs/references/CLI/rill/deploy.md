@@ -6,7 +6,7 @@ Deploy project to Rill Cloud
 rill deploy [flags]
 ```
 
-### Options
+### Flags
 
 ```
       --prod-slots int          Slots to allocate for production deployments (default 2)
@@ -21,7 +21,7 @@ rill deploy [flags]
       --api-url string          Base URL for the admin API (default "https://admin.rilldata.io")
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
   -h, --help   Print usage

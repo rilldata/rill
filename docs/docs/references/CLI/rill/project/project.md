@@ -2,7 +2,7 @@
 
 Manage projects
 
-### Options
+### Flags
 
 ```
       --api-token string   Token for authenticating with the admin API
@@ -10,7 +10,7 @@ Manage projects
       --org string         Organization Name
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
   -h, --help   Print usage

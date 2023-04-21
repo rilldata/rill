@@ -6,13 +6,13 @@ Ping
 rill runtime ping [flags]
 ```
 
-### Options
+### Flags
 
 ```
       --base-url string   Base URL for the runtime (default "http://localhost:9010")
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
   -h, --help   Print usage

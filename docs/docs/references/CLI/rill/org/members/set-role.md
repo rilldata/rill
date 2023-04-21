@@ -6,7 +6,7 @@ Set role of Member
 rill org members set-role <email> {admin|collaborator|viewer} [flags]
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
       --api-token string   Token for authenticating with the admin API

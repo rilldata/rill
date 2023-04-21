@@ -6,7 +6,7 @@ Set role of Member
 rill project members set-role <project-name> <email> {admin|viewer} [flags]
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
       --api-token string   Token for authenticating with the admin API

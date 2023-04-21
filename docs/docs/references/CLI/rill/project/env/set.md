@@ -6,7 +6,7 @@ set variable
 rill project env set <project name> <key> <value> [flags]
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
       --api-token string   Token for authenticating with the admin API

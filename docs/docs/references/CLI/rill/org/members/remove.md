@@ -6,7 +6,7 @@ Remove Member
 rill org members remove <email> [flags]
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
       --api-token string   Token for authenticating with the admin API

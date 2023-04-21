@@ -6,7 +6,7 @@ Initialize a new project
 rill init [flags]
 ```
 
-### Options
+### Flags
 
 ```
       --list-examples                List available example projects
@@ -17,7 +17,7 @@ rill init [flags]
   -e, --env strings                  Set project variables
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
   -h, --help   Print usage

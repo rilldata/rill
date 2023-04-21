@@ -6,7 +6,7 @@ Open docs.rilldata.com
 rill docs open [flags]
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
   -h, --help   Print usage

@@ -6,13 +6,13 @@ Create
 rill org create <org-name> [flags]
 ```
 
-### Options
+### Flags
 
 ```
       --description string   Description
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
       --api-token string   Token for authenticating with the admin API

@@ -6,7 +6,7 @@ Start stand-alone runtime server
 rill runtime start [flags]
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
   -h, --help   Print usage

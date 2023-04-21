@@ -6,7 +6,7 @@ show variable for project
 rill project env show <project name> [flags]
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
       --api-token string   Token for authenticating with the admin API

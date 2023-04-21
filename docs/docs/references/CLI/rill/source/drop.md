@@ -6,7 +6,7 @@ Drop a source
 rill source drop <source> [flags]
 ```
 
-### Options
+### Flags
 
 ```
       --db string          Database DSN (default "stage.db")
@@ -14,7 +14,7 @@ rill source drop <source> [flags]
       --verbose            Sets the log level to debug
 ```
 
-### Options inherited from parent commands
+### Global flags
 
 ```
   -h, --help   Print usage
