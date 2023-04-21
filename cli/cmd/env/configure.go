@@ -118,26 +118,6 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 	return configureCommand
 }
 
-func projectNames(ctx context.Context, c *client.Client, orgName, githubURL string) ([]string, error) {
-	resp, err := c.ListProjectsForOrganizationAndGithubURL(ctx, &adminv1.ListProjectsForOrganizationAndGithubURLRequest{
-		OrganizationName: orgName,
-		GithubUrl:        githubURL,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if len(resp.Projects) == 0 {
-		return nil, fmt.Errorf("No project with githubURL %q exist in org %q", githubURL, orgName)
-	}
-
-	names := make([]string, len(resp.Projects))
-	for i, p := range resp.Projects {
-		names[i] = p.Name
-	}
-	return names, nil
-}
-
 func VariablesFlow(ctx context.Context, projectPath string) (map[string]string, error) {
 	connectors, err := rillv1beta.ExtractConnectors(ctx, projectPath)
 	if err != nil {
@@ -194,4 +174,24 @@ func VariablesFlow(ctx context.Context, projectPath string) (map[string]string, 
 	}
 
 	return vars, nil
+}
+
+func projectNames(ctx context.Context, c *client.Client, orgName, githubURL string) ([]string, error) {
+	resp, err := c.ListProjectsForOrganizationAndGithubURL(ctx, &adminv1.ListProjectsForOrganizationAndGithubURLRequest{
+		OrganizationName: orgName,
+		GithubUrl:        githubURL,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.Projects) == 0 {
+		return nil, fmt.Errorf("No project with githubURL %q exist in org %q", githubURL, orgName)
+	}
+
+	names := make([]string, len(resp.Projects))
+	for i, p := range resp.Projects {
+		names[i] = p.Name
+	}
+	return names, nil
 }
