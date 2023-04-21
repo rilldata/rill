@@ -25,7 +25,8 @@ const (
 	AnalyticsEnabledConfigKey = "analytics_enabled"
 	AccessTokenCredentialsKey = "token"
 	InstallIDStateKey         = "install_id"
-	VersionInfoStateKey       = "version_info"
+	VersionKey                = "latest_version"
+	VersionUpdatedAtKey       = "latest_version_checked_at"
 )
 
 // homeDir is the user's home directory. We keep this as a global to override in unit tests.
@@ -117,12 +118,20 @@ func SetAccessToken(token string) error {
 	return Set(CredentialsFilename, AccessTokenCredentialsKey, token)
 }
 
-func GetVersionInfo() (string, error) {
-	return Get(StateFilename, VersionInfoStateKey)
+func GetVersion() (string, error) {
+	return Get(StateFilename, VersionKey)
 }
 
-func SetVersionInfo(info string) error {
-	return Set(StateFilename, VersionInfoStateKey, info)
+func GetVersionUpdatedAt() (string, error) {
+	return Get(StateFilename, VersionUpdatedAtKey)
+}
+
+func SetVersionUpdatedAt(updatedAt string) error {
+	return Set(StateFilename, VersionUpdatedAtKey, updatedAt)
+}
+
+func SetVersion(version string) error {
+	return Set(StateFilename, VersionKey, version)
 }
 
 // AnalyticsInfo returns analytics info.

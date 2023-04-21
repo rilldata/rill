@@ -423,7 +423,7 @@ func (a *App) versionHandler(ctx context.Context) http.Handler {
 
 	inf := &versionInfo{
 		CurrentVersion: a.Version.Number,
-		LatestVersion:  latestVersion.Version,
+		LatestVersion:  latestVersion,
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
