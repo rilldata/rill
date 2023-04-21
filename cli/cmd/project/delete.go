@@ -11,9 +11,12 @@ import (
 )
 
 func DeleteCmd(cfg *config.Config) *cobra.Command {
+	var name string
+	var force bool
+
 	deleteCmd := &cobra.Command{
-		Use:   "delete <project-name>",
-		Args:  cobra.ExactArgs(1),
+		Use:   "delete",
+		Args:  cobra.NoArgs,
 		Short: "Delete",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
@@ -22,17 +25,45 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
+			if !cmd.Flags().Changed("project") {
+				err := cmdutil.PromptIfUnset(&name, "Project Name", "")
+				if err != nil {
+					return err
+				}
+			}
+
+			if !cmd.Flags().Changed("org") {
+				err := cmdutil.PromptIfUnset(&cfg.Org, "Org Name", cfg.Org)
+				if err != nil {
+					return err
+				}
+			}
+
+			if !force {
+				fmt.Printf("Warn: Deleting an project %q will remove all metadata associated with the project\n", name)
+				msg := fmt.Sprintf("Enter %q to confirm deletion", name)
+				project := cmdutil.InputPrompt(msg, "")
+				if project != name {
+					return fmt.Errorf("Entered incorrect name : %s", name)
+				}
+			}
+
 			_, err = client.DeleteProject(context.Background(), &adminv1.DeleteProjectRequest{
 				OrganizationName: cfg.Org,
-				Name:             args[0],
+				Name:             name,
 			})
 			if err != nil {
 				return err
 			}
 
-			cmdutil.SuccessPrinter(fmt.Sprintf("Deleted project: %v\n", args[0]))
+			cmdutil.SuccessPrinter(fmt.Sprintf("Deleted project: %v\n", name))
 			return nil
 		},
 	}
+
+	deleteCmd.Flags().SortFlags = false
+	deleteCmd.Flags().BoolVar(&force, "force", false, "Delete forcefully, skips the confirmation")
+	deleteCmd.Flags().StringVar(&name, "project", "", "Name")
+
 	return deleteCmd
 }

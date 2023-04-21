@@ -12,18 +12,14 @@ import (
 )
 
 func RenameCmd(cfg *config.Config) *cobra.Command {
+	var name, newName string
+
 	renameCmd := &cobra.Command{
-		Use:   "rename <from-project-name> <to-project-name>",
-		Args:  cobra.MaximumNArgs(2),
+		Use:   "rename",
+		Args:  cobra.NoArgs,
 		Short: "Rename",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			var currentName string
-			var newName string
-
-			if len(args) == 1 {
-				return fmt.Errorf("Invalid args provided, required 0 or 2 args")
-			}
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -31,10 +27,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if len(args) > 1 {
-				currentName = args[0]
-				newName = args[1]
-			} else {
+			if !cmd.Flags().Changed("project") {
 				resp, err := client.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{OrganizationName: cfg.Org})
 				if err != nil {
 					return err
@@ -49,34 +42,22 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 					projectNames = append(projectNames, proj.Name)
 				}
 
-				currentName = cmdutil.SelectPrompt("Select project to rename", projectNames, "")
+				name = cmdutil.SelectPrompt("Select project to rename", projectNames, "")
+			}
 
-				// Get the new project name from user if not provided in the args
-				question := []*survey.Question{
-					{
-						Name: "name",
-						Prompt: &survey.Input{
-							Message: "Rename to",
-						},
-						Validate: func(any interface{}) error {
-							name := any.(string)
-							if name == "" {
-								return fmt.Errorf("empty name")
-							}
-
-							return nil
-						},
-					},
-				}
-
-				if err := survey.Ask(question, &newName); err != nil {
+			if !cmd.Flags().Changed("new_name") {
+				// Get the new org name from user if not provided in the flag
+				err := cmdutil.PromptIfUnset(&newName, "Rename to", name)
+				if err != nil {
 					return err
 				}
 			}
 
+			fmt.Println("Warn: Renaming an project would invalidate dashboard URLs")
+
 			confirm := false
 			prompt := &survey.Confirm{
-				Message: fmt.Sprintf("Do you want to rename project \"%s\" to \"%s\"?", color.YellowString(currentName), color.YellowString(newName)),
+				Message: fmt.Sprintf("Do you want to rename project \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName)),
 			}
 
 			err = survey.AskOne(prompt, &confirm)
@@ -88,7 +69,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: currentName})
+			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: name})
 			if err != nil {
 				return err
 			}
@@ -114,6 +95,10 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			return nil
 		},
 	}
+
+	renameCmd.Flags().SortFlags = false
+	renameCmd.Flags().StringVar(&name, "project", "", "Current Name")
+	renameCmd.Flags().StringVar(&newName, "new_name", "", "New Name")
 
 	return renameCmd
 }

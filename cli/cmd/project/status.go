@@ -14,9 +14,11 @@ import (
 )
 
 func StatusCmd(cfg *config.Config) *cobra.Command {
+	var name string
+
 	statusCmd := &cobra.Command{
-		Use:   "status <project-name>",
-		Args:  cobra.ExactArgs(1),
+		Use:   "status",
+		Args:  cobra.NoArgs,
 		Short: "Status",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
@@ -25,9 +27,23 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
+			if !cmd.Flags().Changed("project") {
+				err := cmdutil.PromptIfUnset(&name, "Project Name", "")
+				if err != nil {
+					return err
+				}
+			}
+
+			if !cmd.Flags().Changed("org") {
+				err := cmdutil.PromptIfUnset(&cfg.Org, "Org Name", cfg.Org)
+				if err != nil {
+					return err
+				}
+			}
+
 			proj, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{
 				OrganizationName: cfg.Org,
-				Name:             args[0],
+				Name:             name,
 			})
 			if err != nil {
 				return err
@@ -55,6 +71,8 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			return nil
 		},
 	}
+
+	statusCmd.Flags().StringVar(&name, "project", "", "Name")
 
 	return statusCmd
 }
