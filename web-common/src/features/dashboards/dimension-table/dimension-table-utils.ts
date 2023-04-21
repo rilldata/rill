@@ -1,3 +1,5 @@
+import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
+import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import type {
   MetricsViewMeasure,
@@ -8,8 +10,6 @@ import {
   formatMeasurePercentageDifference,
   NicelyFormattedTypes,
 } from "../humanize-numbers";
-import DeltaChange from "./DeltaChange.svelte";
-import DeltaChangePercentage from "./DeltaChangePercentage.svelte";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -89,25 +89,6 @@ export function getFilterForComparisonTable(
 // Custom sort that implements the following logic:
 // Input - [ "measure_1", "measure_10", "measure_1_delta", "measure_1_delta_perc", "measure_2", "measure_0", "measure_20" ]
 // Output -  [ "measure_0", "measure_1", "measure_1_delta", "measure_1_delta_perc", "measure_2", "measure_10", "measure_20" ]
-export function customMeasureSortGetter(measureName: string) {
-  return (measure1: string, measure2: string) => {
-    const a_num = parseFloat(
-      measure1
-        .replace(measureName, "")
-        .replace("_delta", ".1")
-        .replace("_delta_perc", ".2")
-    );
-    const b_num = parseFloat(
-      measure2
-        .replace(measureName, "")
-        .replace("_delta", ".1")
-        .replace("_delta_perc", ".2")
-    );
-
-    return a_num - b_num;
-  };
-}
-
 export function customSortMeasures(measure1: string, measure2: string) {
   const a_num = parseFloat(
     measure1
