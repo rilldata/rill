@@ -113,19 +113,23 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}
 
 			// Init email client
-			emailOpts := &email.Options{
-				SMTPHost:     conf.EmailSMTPHost,
-				SMTPPort:     conf.EmailSMTPPort,
-				SMTPUsername: conf.EmailSMTPUsername,
-				SMTPPassword: conf.EmailSMTPPassword,
-				SenderEmail:  conf.EmailSenderEmail,
-				SenderName:   conf.EmailSenderName,
-				FrontendURL:  conf.FrontendURL,
+			var sender email.Sender
+			if conf.EmailSMTPHost != "" {
+				sender, err = email.NewSMTPSender(&email.SMTPOptions{
+					SMTPHost:     conf.EmailSMTPHost,
+					SMTPPort:     conf.EmailSMTPPort,
+					SMTPUsername: conf.EmailSMTPUsername,
+					SMTPPassword: conf.EmailSMTPPassword,
+					FromEmail:    conf.EmailSenderEmail,
+					FromName:     conf.EmailSenderName,
+				})
+			} else {
+				sender, err = email.NewConsoleSender(logger, conf.EmailSenderEmail, conf.EmailSenderName)
 			}
-			emailClient, err := email.NewEmail(emailOpts)
 			if err != nil {
-				logger.Fatal("error creating email client", zap.Error(err))
+				logger.Fatal("error creating email sender", zap.Error(err))
 			}
+			emailClient := email.New(sender, conf.FrontendURL)
 
 			// Init admin service
 			admOpts := &admin.Options{

@@ -125,7 +125,8 @@ func (s *Service) InviteUserToOrganization(ctx context.Context, email, inviterID
 	if err != nil {
 		return err
 	}
-	// send invitation email
+
+	// Send invitation email
 	err = s.email.SendOrganizationInvite(email, "", orgName, roleName)
 	if err != nil {
 		return err
@@ -146,7 +147,8 @@ func (s *Service) InviteUserToProject(ctx context.Context, email, inviterID, pro
 	if err != nil {
 		return err
 	}
-	// send invitation email
+
+	// Send invitation email
 	err = s.email.SendProjectInvite(email, "", projectName, roleName)
 	if err != nil {
 		return err
