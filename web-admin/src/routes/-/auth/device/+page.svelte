@@ -13,7 +13,7 @@
   const urlParams = new URLSearchParams(window.location.search);
   const redirectURL = urlParams.get("redirect");
   const userCode = urlParams.get("user_code");
-  const user: V1User = createAdminServiceGetCurrentUser({
+  const user = createAdminServiceGetCurrentUser({
     query: {
       onSuccess: (data) => {
         if (!data.user) {
