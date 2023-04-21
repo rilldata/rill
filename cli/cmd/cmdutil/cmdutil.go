@@ -156,12 +156,13 @@ func ProjectExists(ctx context.Context, c *client.Client, orgName, projectName s
 	return true, nil
 }
 
-func PromptIfUnset(flag *string, name string) error {
+func PromptIfUnset(flag *string, name, def string) error {
 	questions := []*survey.Question{
 		{
 			Name: "flag",
 			Prompt: &survey.Input{
 				Message: fmt.Sprintf("Enter the %s", name),
+				Default: def,
 			},
 			Validate: func(any interface{}) error {
 				flag := any.(string)
