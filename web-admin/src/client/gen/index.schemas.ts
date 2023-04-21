@@ -4,6 +4,12 @@
  * rill/admin/v1/api.proto
  * OpenAPI spec version: version not set
  */
+export type AdminServiceListProjectsForOrganizationAndGithubURLParams = {
+  githubUrl?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
   [key: string]: string;
 };
@@ -15,6 +21,7 @@ export type AdminServiceUpdateProjectVariablesBody = {
 export type AdminServiceUpdateProjectBody = {
   description?: string;
   githubUrl?: string;
+  id?: string;
   productionBranch?: string;
   public?: boolean;
 };
@@ -69,6 +76,7 @@ export type AdminServiceListOrganizationMembersParams = {
 
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
+  id?: string;
 };
 
 export type AdminServiceListOrganizationsParams = {
@@ -193,6 +201,11 @@ export interface V1Member {
 }
 
 export interface V1ListProjectsForOrganizationResponse {
+  nextPageToken?: string;
+  projects?: V1Project[];
+}
+
+export interface V1ListProjectsForOrganizationAndGithubURLResponse {
   nextPageToken?: string;
   projects?: V1Project[];
 }

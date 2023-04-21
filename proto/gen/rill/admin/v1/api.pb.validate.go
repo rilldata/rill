@@ -1246,7 +1246,18 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Name
+	// no validation rules for Id
+
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := UpdateOrganizationRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Description
 
@@ -1484,7 +1495,16 @@ func (m *ListProjectsForOrganizationRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for OrganizationName
+	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+		err := ListProjectsForOrganizationRequestValidationError{
+			field:  "OrganizationName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for PageSize
 
@@ -1712,6 +1732,288 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListProjectsForOrganizationResponseValidationError{}
+
+// Validate checks the field values on
+// ListProjectsForOrganizationAndGithubURLRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ListProjectsForOrganizationAndGithubURLRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// ListProjectsForOrganizationAndGithubURLRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in
+// ListProjectsForOrganizationAndGithubURLRequestMultiError, or nil if none found.
+func (m *ListProjectsForOrganizationAndGithubURLRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListProjectsForOrganizationAndGithubURLRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+		err := ListProjectsForOrganizationAndGithubURLRequestValidationError{
+			field:  "OrganizationName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetGithubUrl()) < 1 {
+		err := ListProjectsForOrganizationAndGithubURLRequestValidationError{
+			field:  "GithubUrl",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for PageSize
+
+	// no validation rules for PageToken
+
+	if len(errors) > 0 {
+		return ListProjectsForOrganizationAndGithubURLRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListProjectsForOrganizationAndGithubURLRequestMultiError is an error
+// wrapping multiple validation errors returned by
+// ListProjectsForOrganizationAndGithubURLRequest.ValidateAll() if the
+// designated constraints aren't met.
+type ListProjectsForOrganizationAndGithubURLRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListProjectsForOrganizationAndGithubURLRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListProjectsForOrganizationAndGithubURLRequestMultiError) AllErrors() []error { return m }
+
+// ListProjectsForOrganizationAndGithubURLRequestValidationError is the
+// validation error returned by
+// ListProjectsForOrganizationAndGithubURLRequest.Validate if the designated
+// constraints aren't met.
+type ListProjectsForOrganizationAndGithubURLRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) Reason() string {
+	return e.reason
+}
+
+// Cause function returns cause value.
+func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) ErrorName() string {
+	return "ListProjectsForOrganizationAndGithubURLRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListProjectsForOrganizationAndGithubURLRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListProjectsForOrganizationAndGithubURLRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListProjectsForOrganizationAndGithubURLRequestValidationError{}
+
+// Validate checks the field values on
+// ListProjectsForOrganizationAndGithubURLResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ListProjectsForOrganizationAndGithubURLResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// ListProjectsForOrganizationAndGithubURLResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in
+// ListProjectsForOrganizationAndGithubURLResponseMultiError, or nil if none found.
+func (m *ListProjectsForOrganizationAndGithubURLResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListProjectsForOrganizationAndGithubURLResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetProjects() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListProjectsForOrganizationAndGithubURLResponseValidationError{
+						field:  fmt.Sprintf("Projects[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListProjectsForOrganizationAndGithubURLResponseValidationError{
+						field:  fmt.Sprintf("Projects[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListProjectsForOrganizationAndGithubURLResponseValidationError{
+					field:  fmt.Sprintf("Projects[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for NextPageToken
+
+	if len(errors) > 0 {
+		return ListProjectsForOrganizationAndGithubURLResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListProjectsForOrganizationAndGithubURLResponseMultiError is an error
+// wrapping multiple validation errors returned by
+// ListProjectsForOrganizationAndGithubURLResponse.ValidateAll() if the
+// designated constraints aren't met.
+type ListProjectsForOrganizationAndGithubURLResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListProjectsForOrganizationAndGithubURLResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListProjectsForOrganizationAndGithubURLResponseMultiError) AllErrors() []error { return m }
+
+// ListProjectsForOrganizationAndGithubURLResponseValidationError is the
+// validation error returned by
+// ListProjectsForOrganizationAndGithubURLResponse.Validate if the designated
+// constraints aren't met.
+type ListProjectsForOrganizationAndGithubURLResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListProjectsForOrganizationAndGithubURLResponseValidationError) Field() string {
+	return e.field
+}
+
+// Reason function returns reason value.
+func (e ListProjectsForOrganizationAndGithubURLResponseValidationError) Reason() string {
+	return e.reason
+}
+
+// Cause function returns cause value.
+func (e ListProjectsForOrganizationAndGithubURLResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListProjectsForOrganizationAndGithubURLResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListProjectsForOrganizationAndGithubURLResponseValidationError) ErrorName() string {
+	return "ListProjectsForOrganizationAndGithubURLResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListProjectsForOrganizationAndGithubURLResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListProjectsForOrganizationAndGithubURLResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListProjectsForOrganizationAndGithubURLResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListProjectsForOrganizationAndGithubURLResponseValidationError{}
 
 // Validate checks the field values on GetProjectRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -2032,7 +2334,16 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for OrganizationName
+	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+		err := CreateProjectRequestValidationError{
+			field:  "OrganizationName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if utf8.RuneCountInString(m.GetName()) < 1 {
 		err := CreateProjectRequestValidationError{
@@ -2506,9 +2817,29 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for OrganizationName
+	// no validation rules for Id
 
-	// no validation rules for Name
+	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+		err := UpdateProjectRequestValidationError{
+			field:  "OrganizationName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := UpdateProjectRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Description
 
@@ -2962,9 +3293,27 @@ func (m *UpdateProjectVariablesRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for OrganizationName
+	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
+		err := UpdateProjectVariablesRequestValidationError{
+			field:  "OrganizationName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Name
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := UpdateProjectVariablesRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Variables
 
@@ -4794,9 +5143,28 @@ func (m *AddOrganizationMemberRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := AddOrganizationMemberRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Email
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = AddOrganizationMemberRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Role
 
@@ -4805,6 +5173,56 @@ func (m *AddOrganizationMemberRequest) validate(all bool) error {
 	}
 
 	return nil
+}
+
+func (m *AddOrganizationMemberRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *AddOrganizationMemberRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
 }
 
 // AddOrganizationMemberRequestMultiError is an error wrapping multiple
@@ -5008,15 +5426,84 @@ func (m *RemoveOrganizationMemberRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := RemoveOrganizationMemberRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Email
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = RemoveOrganizationMemberRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return RemoveOrganizationMemberRequestMultiError(errors)
 	}
 
 	return nil
+}
+
+func (m *RemoveOrganizationMemberRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *RemoveOrganizationMemberRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
 }
 
 // RemoveOrganizationMemberRequestMultiError is an error wrapping multiple
@@ -5221,17 +5708,95 @@ func (m *SetOrganizationMemberRoleRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := SetOrganizationMemberRoleRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Email
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = SetOrganizationMemberRoleRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Role
+	if utf8.RuneCountInString(m.GetRole()) < 1 {
+		err := SetOrganizationMemberRoleRequestValidationError{
+			field:  "Role",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return SetOrganizationMemberRoleRequestMultiError(errors)
 	}
 
 	return nil
+}
+
+func (m *SetOrganizationMemberRoleRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *SetOrganizationMemberRoleRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
 }
 
 // SetOrganizationMemberRoleRequestMultiError is an error wrapping multiple
@@ -5436,7 +6001,16 @@ func (m *LeaveOrganizationRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := LeaveOrganizationRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return LeaveOrganizationRequestMultiError(errors)
@@ -5642,9 +6216,27 @@ func (m *ListProjectMembersRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := ListProjectMembersRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Project
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := ListProjectMembersRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for PageSize
 
@@ -5924,19 +6516,106 @@ func (m *AddProjectMemberRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := AddProjectMemberRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Project
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := AddProjectMemberRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Email
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = AddProjectMemberRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Role
+	if utf8.RuneCountInString(m.GetRole()) < 1 {
+		err := AddProjectMemberRequestValidationError{
+			field:  "Role",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return AddProjectMemberRequestMultiError(errors)
 	}
 
 	return nil
+}
+
+func (m *AddProjectMemberRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *AddProjectMemberRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
 }
 
 // AddProjectMemberRequestMultiError is an error wrapping multiple validation
@@ -6138,17 +6817,95 @@ func (m *RemoveProjectMemberRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := RemoveProjectMemberRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Project
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := RemoveProjectMemberRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Email
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = RemoveProjectMemberRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return RemoveProjectMemberRequestMultiError(errors)
 	}
 
 	return nil
+}
+
+func (m *RemoveProjectMemberRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *RemoveProjectMemberRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
 }
 
 // RemoveProjectMemberRequestMultiError is an error wrapping multiple
@@ -6349,19 +7106,106 @@ func (m *SetProjectMemberRoleRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Organization
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := SetProjectMemberRoleRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Project
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := SetProjectMemberRoleRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Email
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = SetProjectMemberRoleRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Role
+	if utf8.RuneCountInString(m.GetRole()) < 1 {
+		err := SetProjectMemberRoleRequestValidationError{
+			field:  "Role",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return SetProjectMemberRoleRequestMultiError(errors)
 	}
 
 	return nil
+}
+
+func (m *SetProjectMemberRoleRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *SetProjectMemberRoleRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
 }
 
 // SetProjectMemberRoleRequestMultiError is an error wrapping multiple

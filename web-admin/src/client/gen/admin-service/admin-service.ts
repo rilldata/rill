@@ -51,6 +51,8 @@ import type {
   V1GetProjectVariablesResponse,
   V1UpdateProjectVariablesResponse,
   AdminServiceUpdateProjectVariablesBody,
+  V1ListProjectsForOrganizationAndGithubURLResponse,
+  AdminServiceListProjectsForOrganizationAndGithubURLParams,
   V1PingResponse,
   V1RevokeCurrentAuthTokenResponse,
   V1GetCurrentUserResponse,
@@ -1352,6 +1354,96 @@ export const createAdminServiceUpdateProjectVariables = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary ListProjectsForOrganizationAndGithubURL lists all the project for org deployed from githubURL
+ */
+export const adminServiceListProjectsForOrganizationAndGithubURL = (
+  organizationName: string,
+  params?: AdminServiceListProjectsForOrganizationAndGithubURLParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1ListProjectsForOrganizationAndGithubURLResponse>({
+    url: `/v1/organizations/${organizationName}/projects_by_github_url`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceListProjectsForOrganizationAndGithubURLQueryKey = (
+  organizationName: string,
+  params?: AdminServiceListProjectsForOrganizationAndGithubURLParams
+) =>
+  [
+    `/v1/organizations/${organizationName}/projects_by_github_url`,
+    ...(params ? [params] : []),
+  ] as const;
+
+export type AdminServiceListProjectsForOrganizationAndGithubURLQueryResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
+    >
+  >;
+export type AdminServiceListProjectsForOrganizationAndGithubURLQueryError =
+  RpcStatus;
+
+export const createAdminServiceListProjectsForOrganizationAndGithubURL = <
+  TData = Awaited<
+    ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
+  >,
+  TError = RpcStatus
+>(
+  organizationName: string,
+  params?: AdminServiceListProjectsForOrganizationAndGithubURLParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<
+        ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
+      >,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListProjectsForOrganizationAndGithubURLQueryKey(
+      organizationName,
+      params
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<
+      ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
+    >
+  > = ({ signal }) =>
+    adminServiceListProjectsForOrganizationAndGithubURL(
+      organizationName,
+      params,
+      signal
+    );
+
+  const query = createQuery<
+    Awaited<
+      ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
+    >,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!organizationName,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary Ping returns information about the server
  */

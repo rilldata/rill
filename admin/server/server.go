@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -254,6 +255,7 @@ func CheckUserAgent(ctx context.Context) (context.Context, error) {
 }
 
 type externalURLs struct {
+	githubConnectUI       string
 	githubConnect         string
 	githubConnectRetry    string
 	githubConnectRequest  string
@@ -267,36 +269,15 @@ type externalURLs struct {
 
 func newURLRegistry(opts *Options) *externalURLs {
 	return &externalURLs{
-		githubConnect:         mustJoinURL(opts.ExternalURL, "/github/connect"),
-		githubConnectRetry:    mustJoinURL(opts.FrontendURL, "/-/github/connect/retry-install"),
-		githubConnectRequest:  mustJoinURL(opts.FrontendURL, "/-/github/connect/request"),
-		githubConnectSuccess:  mustJoinURL(opts.FrontendURL, "/-/github/connect/success"),
+		githubConnectUI:       urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect"),
+		githubConnect:         urlutil.MustJoinURL(opts.ExternalURL, "/github/connect"),
+		githubConnectRetry:    urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect/retry-install"),
+		githubConnectRequest:  urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect/request"),
+		githubConnectSuccess:  urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect/success"),
 		githubAppInstallation: fmt.Sprintf("https://github.com/apps/%s/installations/new", opts.GithubAppName),
-		githubAuth:            mustJoinURL(opts.ExternalURL, "/github/auth/login"),
-		githubAuthCallback:    mustJoinURL(opts.ExternalURL, "/github/auth/callback"),
-		githubAuthRetry:       mustJoinURL(opts.FrontendURL, "/-/github/connect/retry-auth"),
-		authLogin:             mustJoinURL(opts.ExternalURL, "/auth/login"),
+		githubAuth:            urlutil.MustJoinURL(opts.ExternalURL, "/github/auth/login"),
+		githubAuthCallback:    urlutil.MustJoinURL(opts.ExternalURL, "/github/auth/callback"),
+		githubAuthRetry:       urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect/retry-auth"),
+		authLogin:             urlutil.MustJoinURL(opts.ExternalURL, "/auth/login"),
 	}
-}
-
-func urlWithQuery(urlString string, query map[string]string) (string, error) {
-	parsedURL, err := url.Parse(urlString)
-	if err != nil {
-		return "", err
-	}
-
-	qry := parsedURL.Query()
-	for key, value := range query {
-		qry.Set(key, value)
-	}
-	parsedURL.RawQuery = qry.Encode()
-	return parsedURL.String(), nil
-}
-
-func mustJoinURL(base string, elem ...string) string {
-	joinedURL, err := url.JoinPath(base, elem...)
-	if err != nil {
-		panic(err)
-	}
-	return joinedURL
 }

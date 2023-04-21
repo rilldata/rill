@@ -125,7 +125,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrganizationRequest) (*adminv1.UpdateOrganizationResponse, error) {
 	claims := auth.GetClaims(ctx)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
+	org, err := s.admin.DB.FindOrganizationByID(ctx, req.Id)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "org not found")
@@ -137,7 +137,10 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
 	}
 
-	org, err = s.admin.DB.UpdateOrganization(ctx, req.Name, req.Description)
+	org, err = s.admin.DB.UpdateOrganization(ctx, req.Id, &database.UpdateOrganizationOptions{
+		Name:        req.Name,
+		Description: req.Description,
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -178,8 +181,8 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))
-	for _, invite := range userInvites {
-		invitesDtos = append(invitesDtos, inviteToPB(invite))
+	for i, invite := range userInvites {
+		invitesDtos[i] = inviteToPB(invite)
 	}
 
 	return &adminv1.ListOrganizationMembersResponse{

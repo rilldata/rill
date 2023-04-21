@@ -34,10 +34,12 @@ const (
 
 var ErrRillIntake = errors.New("failed to fire telemetry")
 
-func NewTelemetry(ver config.Version) (*Telemetry, error) {
+func NewTelemetry(ver config.Version) *Telemetry {
 	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {
-		return nil, err
+		// if there is any error just disable the telemetry.
+		// this is simpler than null checking everywhere telemetry methods are called
+		enabled = false
 	}
 
 	encodedAuth := base64.StdEncoding.EncodeToString(
@@ -53,7 +55,7 @@ func NewTelemetry(ver config.Version) (*Telemetry, error) {
 		IsDev:       ver.IsDev(),
 		authHeader:  fmt.Sprintf("Basic %s", encodedAuth),
 		events:      make([][]byte, 0),
-	}, nil
+	}
 }
 
 func (t *Telemetry) emit(ctx context.Context, body []byte) error {
@@ -93,6 +95,10 @@ type BehaviourEventFields struct {
 }
 
 func (t *Telemetry) emitBehaviourEvent(action, medium, space, screenName string) {
+	if !t.Enabled {
+		return
+	}
+
 	fields := BehaviourEventFields{
 		AppName:       RillDeveloperApp,
 		InstallID:     t.InstallID,

@@ -50,14 +50,15 @@ type DB interface {
 	FindOrganizations(ctx context.Context) ([]*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
 	FindOrganizationByID(ctx context.Context, id string) (*Organization, error)
-	InsertOrganization(ctx context.Context, name string, description string) (*Organization, error)
-	InsertOrganizationFromSeeds(ctx context.Context, nameSeeds []string, description string) (*Organization, error)
-	UpdateOrganization(ctx context.Context, name string, description string) (*Organization, error)
+	InsertOrganization(ctx context.Context, opts *InsertOrganizationOptions) (*Organization, error)
+	UpdateOrganization(ctx context.Context, id string, opts *UpdateOrganizationOptions) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
 
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
+	FindProjectByID(ctx context.Context, id string) (*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
-	FindProjectByGithubURL(ctx context.Context, githubURL string) (*Project, error)
+	FindProjectsByOrgIDAndGithubURL(ctx context.Context, orgID string, githubURL string) ([]*Project, error)
+	FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*Project, error)
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
@@ -65,8 +66,8 @@ type DB interface {
 	FindUsers(ctx context.Context) ([]*User, error)
 	FindUser(ctx context.Context, id string) (*User, error)
 	FindUserByEmail(ctx context.Context, email string) (*User, error)
-	InsertUser(ctx context.Context, email, displayName, photoURL string) (*User, error)
-	UpdateUser(ctx context.Context, id, displayName, photoURL, githubUsername string) (*User, error)
+	InsertUser(ctx context.Context, opts *InsertUserOptions) (*User, error)
+	UpdateUser(ctx context.Context, id string, opts *UpdateUserOptions) (*User, error)
 	DeleteUser(ctx context.Context, id string) error
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
@@ -112,8 +113,8 @@ type DB interface {
 	// ResolveProjectMemberUserRoles resolves the direct and group roles of a user in a project
 	ResolveProjectMemberUserRoles(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
 
-	InsertOrganizationMemberUsergroup(ctx context.Context, orgID, groupName string) (*Usergroup, error)
-	UpdateOrganizationMemberAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
+	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
+	UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
 	InsertUserInUsergroup(ctx context.Context, userID, groupID string) error
 	DeleteUserFromUsergroup(ctx context.Context, userID, groupID string) error
 	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
@@ -179,6 +180,18 @@ type Organization struct {
 	AllUsergroupID *string   `db:"all_usergroup_id"`
 }
 
+// InsertOrganizationOptions defines options for inserting a new org
+type InsertOrganizationOptions struct {
+	Name        string `validate:"slug"`
+	Description string
+}
+
+// UpdateOrganizationOptions defines options for updating an existing org
+type UpdateOrganizationOptions struct {
+	Name        string `validate:"slug"`
+	Description string
+}
+
 // Project represents one Git connection.
 // Projects belong to an organization.
 type Project struct {
@@ -213,8 +226,8 @@ func (e *Variables) Scan(value interface{}) error {
 
 // InsertProjectOptions defines options for inserting a new Project.
 type InsertProjectOptions struct {
-	OrganizationID       string
-	Name                 string
+	OrganizationID       string `validate:"required"`
+	Name                 string `validate:"slug"`
 	UserID               string
 	Description          string
 	Public               bool
@@ -223,19 +236,20 @@ type InsertProjectOptions struct {
 	ProductionOLAPDSN    string
 	ProductionSlots      int
 	ProductionBranch     string
-	GithubURL            *string
-	GithubInstallationID *int64
+	GithubURL            *string `validate:"omitempty,http_url"`
+	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
 	ProductionVariables  map[string]string
 }
 
 // UpdateProjectOptions defines options for updating a Project.
 type UpdateProjectOptions struct {
+	Name                   string `validate:"slug"`
 	Description            string
 	Public                 bool
 	ProductionBranch       string
 	ProductionVariables    map[string]string
-	GithubURL              *string
-	GithubInstallationID   *int64
+	GithubURL              *string `validate:"omitempty,http_url"`
+	GithubInstallationID   *int64  `validate:"omitempty,ne=0"`
 	ProductionDeploymentID *string
 }
 
@@ -249,6 +263,26 @@ type User struct {
 	GithubUsername string    `db:"github_username"`
 	CreatedOn      time.Time `db:"created_on"`
 	UpdatedOn      time.Time `db:"updated_on"`
+}
+
+// InsertUserOptions defines options for inserting a new user
+type InsertUserOptions struct {
+	Email       string `validate:"email"`
+	DisplayName string
+	PhotoURL    string
+}
+
+// UpdateUserOptions defines options for updating an existing user
+type UpdateUserOptions struct {
+	DisplayName    string
+	PhotoURL       string
+	GithubUsername string
+}
+
+// InsertUsergroupOptions defines options for inserting a new usergroup
+type InsertUsergroupOptions struct {
+	OrgID string
+	Name  string `validate:"slug"`
 }
 
 // UserAuthToken is a persistent API token for a user.
@@ -338,9 +372,9 @@ type Deployment struct {
 type InsertDeploymentOptions struct {
 	ProjectID         string
 	Slots             int
-	Branch            string
-	RuntimeHost       string
-	RuntimeInstanceID string
+	Branch            string `validate:"required"`
+	RuntimeHost       string `validate:"required"`
+	RuntimeInstanceID string `validate:"required"`
 	RuntimeAudience   string
 	Status            DeploymentStatus
 	Logs              string

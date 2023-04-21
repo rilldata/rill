@@ -140,6 +140,8 @@ paths:
             properties:
               description:
                 type: string
+              id:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/members:
@@ -563,6 +565,8 @@ paths:
                 type: string
               githubUrl:
                 type: string
+              id:
+                type: string
               productionBranch:
                 type: string
               public:
@@ -624,6 +628,39 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/projects_by_github_url:
+    get:
+      summary: ListProjectsForOrganizationAndGithubURL lists all the project for org deployed from githubURL
+      operationId: AdminService_ListProjectsForOrganizationAndGithubURL
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectsForOrganizationAndGithubURLResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: githubUrl
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
       tags:
         - AdminService
   /v1/ping:
@@ -839,6 +876,15 @@ definitions:
       nextPageToken:
         type: string
     title: Response message for AdminService.ListProjectMembers
+  v1ListProjectsForOrganizationAndGithubURLResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      projects:
+        type: array
+        items:
+          $ref: '#/definitions/v1Project'
   v1ListProjectsForOrganizationResponse:
     type: object
     properties:

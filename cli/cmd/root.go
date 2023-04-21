@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/build"
 	"github.com/rilldata/rill/cli/cmd/deploy"
 	"github.com/rilldata/rill/cli/cmd/docs"
+	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/cmd/initialize"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/cmd/project"
@@ -25,6 +26,10 @@ import (
 func init() {
 	cobra.EnableCommandSorting = false
 }
+
+// defaultAdminURL is the default admin server URL.
+// Users can override it with the "--api-url" flag or by setting "api_url" in ~/.rill/config.yaml.
+const defaultAdminURL = "https://admin.rilldata.io"
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
@@ -67,6 +72,16 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	}
 	cfg.Org = defaultOrg
 
+	// Load admin URL from .rill (override with --api-url)
+	url, err := dotrill.GetDefaultAdminURL()
+	if err != nil {
+		return fmt.Errorf("could not parse default api URL from ~/.rill: %w", err)
+	}
+	if url == "" {
+		url = defaultAdminURL
+	}
+	cfg.AdminURL = url
+
 	// Add sub-commands
 	rootCmd.AddCommand(initialize.InitCmd(cfg))
 	rootCmd.AddCommand(start.StartCmd(cfg))
@@ -79,8 +94,11 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.AddCommand(versioncmd.VersionCmd())
 
 	cmd := auth.AuthCmd(cfg)
-	cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", "https://admin.rilldata.io", "Base URL for the admin API")
+	cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
 	rootCmd.AddCommand(cmd)
+
+	// Set prompt for missing required parameters in config
+	rootCmd.PersistentFlags().BoolVar(&cfg.Interactive, "interactive", true, "Prompt for missing required parameters")
 
 	// Add sub-commands for admin
 	// (This allows us to add persistent flags that apply only to the admin-related commands.)
@@ -88,9 +106,10 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		org.OrgCmd(cfg),
 		project.ProjectCmd(cfg),
 		deploy.DeployCmd(cfg),
+		env.EnvCmd(cfg),
 	}
 	for _, cmd := range adminCmds {
-		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", "https://admin.rilldata.io", "Base URL for the admin API")
+		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
 		cmd.PersistentFlags().StringVar(&cfg.AdminTokenOverride, "api-token", "", "Token for authenticating with the admin API")
 		rootCmd.AddCommand(cmd)
 	}

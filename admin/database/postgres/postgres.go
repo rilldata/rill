@@ -73,58 +73,26 @@ func (c *connection) FindOrganizationByID(ctx context.Context, orgID string) (*d
 	return res, nil
 }
 
-func (c *connection) InsertOrganization(ctx context.Context, name, description string) (*database.Organization, error) {
+func (c *connection) InsertOrganization(ctx context.Context, opts *database.InsertOrganizationOptions) (*database.Organization, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO organizations(name, description) VALUES ($1, $2) RETURNING *", name, description).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO organizations(name, description) VALUES ($1, $2) RETURNING *", opts.Name, opts.Description).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
 	return res, nil
 }
 
-func (c *connection) InsertOrganizationFromSeeds(ctx context.Context, nameSeeds []string, description string) (*database.Organization, error) {
-	// If this is called in a transaction, we must use savepoints to avoid aborting the whole transaction when a unique constraint is violated.
-	isTx := txFromContext(ctx) != nil
-
-	for _, name := range nameSeeds {
-		// Create savepoint if in tx
-		if isTx {
-			_, err := c.getDB(ctx).ExecContext(ctx, "SAVEPOINT bi")
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		// Try to create the org
-		org, err := c.InsertOrganization(ctx, name, description)
-		if err == nil {
-			return org, nil
-		}
-
-		// If the error is not a name uniqueness violation, return err
-		err = parseErr(err)
-		if !errors.Is(err, database.ErrNotUnique) {
-			return nil, err
-		}
-
-		// Name is not unique. Continue to try the next seed.
-
-		// If in tx, rollback to the savepoint first.
-		if isTx {
-			_, err := c.getDB(ctx).ExecContext(ctx, "ROLLBACK TO SAVEPOINT bi")
-			if err != nil {
-				return nil, err
-			}
-		}
+func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *database.UpdateOrganizationOptions) (*database.Organization, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
 	}
 
-	// No seed was unique
-	return nil, database.ErrNotUnique
-}
-
-func (c *connection) UpdateOrganization(ctx context.Context, name, description string) (*database.Organization, error) {
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE organizations SET description=$1, updated_on=now() WHERE lower(name)=lower($2) RETURNING *", description, name).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE organizations SET name=$1, description=$2, updated_on=now() WHERE id=$3 RETURNING *", opts.Name, opts.Description, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -145,6 +113,15 @@ func (c *connection) FindProjects(ctx context.Context, orgName string) ([]*datab
 	return res, nil
 }
 
+func (c *connection) FindProjectByID(ctx context.Context, id string) (*database.Project, error) {
+	res := &database.Project{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM projects WHERE id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindProjectByName(ctx context.Context, orgName, name string) (*database.Project, error) {
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT p.* FROM projects p JOIN organizations o ON p.org_id = o.id WHERE lower(p.name)=lower($1) AND lower(o.name)=lower($2)", name, orgName).StructScan(res)
@@ -154,16 +131,31 @@ func (c *connection) FindProjectByName(ctx context.Context, orgName, name string
 	return res, nil
 }
 
-func (c *connection) FindProjectByGithubURL(ctx context.Context, githubURL string) (*database.Project, error) {
-	res := &database.Project{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1)", githubURL).StructScan(res)
+func (c *connection) FindProjectsByOrgIDAndGithubURL(ctx context.Context, orgID, githubURL string) ([]*database.Project, error) {
+	result := make([]*database.Project, 0)
+	err := c.getDB(ctx).SelectContext(ctx, &result, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) AND org_id=$2", githubURL, orgID)
 	if err != nil {
 		return nil, parseErr(err)
 	}
-	return res, nil
+
+	return result, nil
+}
+
+func (c *connection) FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*database.Project, error) {
+	result := make([]*database.Project, 0)
+	err := c.getDB(ctx).SelectContext(ctx, &result, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) ", githubURL)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+
+	return result, nil
 }
 
 func (c *connection) InsertProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO projects (org_id, name, description, public, region, production_olap_driver, production_olap_dsn, production_slots, production_branch, production_variables, github_url, github_installation_id)
@@ -177,11 +169,15 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 }
 
 func (c *connection) UpdateProject(ctx context.Context, id string, opts *database.UpdateProjectOptions) (*database.Project, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET description=$1, public=$2, production_branch=$3, production_variables=$4, github_url=$5, github_installation_id=$6, production_deployment_id=$7, updated_on=now()
-		WHERE id=$8 RETURNING *`,
-		opts.Description, opts.Public, opts.ProductionBranch, database.Variables(opts.ProductionVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProductionDeploymentID, id,
+		UPDATE projects SET name=$1, description=$2, public=$3, production_branch=$4, production_variables=$5, github_url=$6, github_installation_id=$7, production_deployment_id=$8, updated_on=now()
+		WHERE id=$9 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProductionBranch, database.Variables(opts.ProductionVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProductionDeploymentID, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
@@ -221,22 +217,30 @@ func (c *connection) FindUserByEmail(ctx context.Context, email string) (*databa
 	return res, nil
 }
 
-func (c *connection) InsertUser(ctx context.Context, email, displayName, photoURL string) (*database.User, error) {
+func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOptions) (*database.User, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url) VALUES ($1, $2, $3) RETURNING *", email, displayName, photoURL).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url) VALUES ($1, $2, $3) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
 	return res, nil
 }
 
-func (c *connection) UpdateUser(ctx context.Context, id, displayName, photoURL, githubUsername string) (*database.User, error) {
+func (c *connection) UpdateUser(ctx context.Context, id string, opts *database.UpdateUserOptions) (*database.User, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
 	res := &database.User{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, updated_on=now() WHERE id=$1 RETURNING *",
 		id,
-		displayName,
-		photoURL,
-		githubUsername).StructScan(res)
+		opts.DisplayName,
+		opts.PhotoURL,
+		opts.GithubUsername).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -267,6 +271,10 @@ func (c *connection) FindUserAuthToken(ctx context.Context, id string) (*databas
 }
 
 func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.InsertUserAuthTokenOptions) (*database.UserAuthToken, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
 	res := &database.UserAuthToken{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id)
@@ -369,6 +377,10 @@ func (c *connection) FindDeployment(ctx context.Context, id string) (*database.D
 }
 
 func (c *connection) InsertDeployment(ctx context.Context, opts *database.InsertDeploymentOptions) (*database.Deployment, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO deployments (project_id, slots, branch, runtime_host, runtime_instance_id, runtime_audience, status, logs)
@@ -573,18 +585,22 @@ func (c *connection) FindProjectRole(ctx context.Context, name string) (*databas
 	return role, nil
 }
 
-func (c *connection) InsertOrganizationMemberUsergroup(ctx context.Context, orgID, groupName string) (*database.Usergroup, error) {
+func (c *connection) InsertUsergroup(ctx context.Context, opts *database.InsertUsergroupOptions) (*database.Usergroup, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
 	res := &database.Usergroup{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO usergroups (org_id, name) VALUES ($1, $2) RETURNING *
-	`, orgID, groupName).StructScan(res)
+	`, opts.OrgID, opts.Name).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
 	return res, nil
 }
 
-func (c *connection) UpdateOrganizationMemberAllUsergroup(ctx context.Context, orgID, groupID string) (*database.Organization, error) {
+func (c *connection) UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*database.Organization, error) {
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		UPDATE organizations SET all_usergroup_id = $1 WHERE id = $2 RETURNING *
