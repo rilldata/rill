@@ -46,7 +46,8 @@ type ExtractConfig struct {
 }
 
 type MetricsView struct {
-	Label             string `yaml:"display_name"`
+	Label             string `yaml:"title"`
+	DisplayName       string `yaml:"name,omitempty"` // for backwards compatibility
 	Description       string
 	Model             string
 	TimeDimension     string `yaml:"timeseries"`
@@ -275,6 +276,11 @@ func getBytes(size string) (uint64, error) {
 }
 
 func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.CatalogEntry, error) {
+	if metrics.DisplayName != "" && metrics.Label == "" {
+		// backwards compatibility
+		metrics.Label = metrics.DisplayName
+	}
+
 	// remove ignored measures and dimensions
 	var measures []*Measure
 	for _, measure := range metrics.Measures {

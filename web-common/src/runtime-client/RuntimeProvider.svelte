@@ -16,7 +16,7 @@
   // Re-run all runtime queries when `host` changes
   // By default, a new `instanceId` triggers a re-run because it's in the queryKeys
   const queryClient = useQueryClient();
-  $: host && invalidateRuntimeQueries(queryClient);
+  $: $runtime.host && invalidateRuntimeQueries(queryClient);
 </script>
 
 {#if $runtime.host !== undefined && $runtime.instanceId}
