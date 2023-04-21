@@ -3,6 +3,8 @@ import type {
   RpcStatus,
   V1GetProjectResponse,
 } from "@rilldata/web-admin/client";
+import { getDashboardsForProject } from "@rilldata/web-admin/components/projects/dashboards";
+import { invalidateProject } from "@rilldata/web-admin/components/projects/invalidations";
 import type {
   QueryKey,
   QueryClient,
@@ -11,20 +13,21 @@ import type {
 import { get, Readable, Writable, writable } from "svelte/store";
 
 export type ProjectStatusState = {
+  orgName: string;
+  projectName: string;
   queryRunning: boolean;
   pending: boolean;
   reconciling: boolean;
   errored: boolean;
-  ok: boolean;
+  ready: boolean;
   prevStatus: V1DeploymentStatus;
 };
-const DefaultStatusValues: ProjectStatusState = {
+const DefaultStatusValues = {
   queryRunning: false,
   pending: false,
   reconciling: false,
   errored: false,
-  ok: false,
-  prevStatus: undefined,
+  ready: false,
 };
 
 export const ProjectReconcilingPollTime = 1000; // 1 sec
@@ -37,52 +40,57 @@ function setValueFromStatus(
   projectStatusStore: Writable<ProjectStatusState>,
   status: V1DeploymentStatus
 ) {
-  // memoization
-  if (get(projectStatusStore).prevStatus === status) return;
+  projectStatusStore.update((state) => {
+    // memoization
+    if (state.prevStatus === status) return state;
 
-  if (!status) {
-    // query is still running
-    projectStatusStore.set({
-      ...DefaultStatusValues,
-      queryRunning: true,
-      prevStatus: status,
-    });
-    return;
-  }
+    // set all flags to default to reset previous states
+    for (const flag in DefaultStatusValues) {
+      state[flag] = DefaultStatusValues[flag];
+    }
 
-  switch (status) {
-    case "DEPLOYMENT_STATUS_PENDING":
-      projectStatusStore.set({
-        ...DefaultStatusValues,
-        pending: true,
-        prevStatus: status,
-      });
-      break;
+    if (!status) {
+      // query is still running
+      state.queryRunning = true;
+      return state;
+    }
 
-    case "DEPLOYMENT_STATUS_RECONCILING":
-      projectStatusStore.set({
-        ...DefaultStatusValues,
-        reconciling: true,
-        prevStatus: status,
-      });
-      break;
+    switch (status) {
+      case "DEPLOYMENT_STATUS_PENDING":
+        state.pending = true;
+        break;
 
-    case "DEPLOYMENT_STATUS_ERROR":
-      projectStatusStore.set({
-        ...DefaultStatusValues,
-        errored: true,
-        prevStatus: status,
-      });
-      break;
+      case "DEPLOYMENT_STATUS_RECONCILING":
+        state.reconciling = true;
+        break;
 
-    case "DEPLOYMENT_STATUS_OK":
-      projectStatusStore.set({
-        ...DefaultStatusValues,
-        ok: true,
-        prevStatus: status,
-      });
-      break;
-  }
+      case "DEPLOYMENT_STATUS_ERROR":
+        state.errored = true;
+        break;
+
+      case "DEPLOYMENT_STATUS_OK":
+        state.ready = true;
+        break;
+    }
+
+    return state;
+  });
+}
+
+async function projectIsReady(
+  queryClient: QueryClient,
+  projectStatusStore: Writable<ProjectStatusState>,
+  projectData: V1GetProjectResponse
+) {
+  const projectStatusState = get(projectStatusStore);
+  const dashboards = await getDashboardsForProject(projectData);
+  // TODO: find a way to get the reconcile affected_paths and pass that instead of all dashboards
+  return invalidateProject(
+    queryClient,
+    projectStatusState.orgName,
+    projectStatusState.projectName,
+    dashboards.map((dashboard) => dashboard.name)
+  );
 }
 
 const stores = new Map<string, ProjectStatusStore>();
@@ -96,36 +104,45 @@ export function getProjectStatusStore(
   },
   reconcilingPollTime = ProjectReconcilingPollTime,
   erroredPollTime = ProjectErroredPollTime,
-  okPollTime = ProjectOkPollTime
+  readyPollTime = ProjectOkPollTime
 ) {
   const key = `${orgName}__${projectName}`;
   if (stores.has(key)) return stores.get(key);
 
   const store = createProjectStatusStore(
+    orgName,
+    projectName,
     queryClient,
     getProjectQuery,
     reconcilingPollTime,
     erroredPollTime,
-    okPollTime
+    readyPollTime
   );
   stores.set(key, store);
   return store;
 }
 
 export function createProjectStatusStore(
+  orgName: string,
+  projectName: string,
   queryClient: QueryClient,
   getProjectQuery: CreateQueryResult<V1GetProjectResponse, RpcStatus> & {
     queryKey: QueryKey;
   },
   reconcilingPollTime = ProjectReconcilingPollTime,
   erroredPollTime = ProjectErroredPollTime,
-  okPollTime = ProjectOkPollTime
+  readyPollTime = ProjectOkPollTime
 ): ProjectStatusStore {
   const projectStatusStore = writable<ProjectStatusState>({
     ...DefaultStatusValues,
+    orgName,
+    projectName,
+    prevStatus: undefined,
   });
 
   getProjectQuery.subscribe((projectStatusResponse) => {
+    const wasNotReady = !get(projectStatusStore).ready;
+
     setValueFromStatus(
       projectStatusStore,
       projectStatusResponse.data?.productionDeployment?.status
@@ -137,8 +154,15 @@ export function createProjectStatusStore(
       pollTime = reconcilingPollTime;
     } else if (state.errored) {
       pollTime = erroredPollTime;
-    } else if (state.ok) {
-      pollTime = okPollTime;
+    } else if (state.ready) {
+      pollTime = readyPollTime;
+      if (wasNotReady) {
+        projectIsReady(
+          queryClient,
+          projectStatusStore,
+          get(getProjectQuery).data
+        );
+      }
     }
 
     if (pollTime) {

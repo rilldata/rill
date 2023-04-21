@@ -31,7 +31,7 @@
   <Timer className="text-amber-600 hover:text-amber-500" />
 {:else if $projectStatusStore.reconciling}
   <Spinner status={EntityStatus.Running} />
-{:else if $projectStatusStore.ok}
+{:else if $projectStatusStore.ready}
   <CheckCircle className="text-blue-500 hover:text-blue-400" />
 {:else if $projectStatusStore.errored}
   <CancelCircle className="text-red-500 hover:text-red-400" />

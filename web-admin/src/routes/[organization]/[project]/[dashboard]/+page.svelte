@@ -45,6 +45,6 @@
   <ProjectBuilding organization={org} project={proj} />
 {:else if $projectStatusStore.errored}
   <ProjectErrored organization={org} project={proj} />
-{:else if $projectStatusStore.ok}
+{:else if $projectStatusStore.ready}
   <Dashboard leftMargin={"48px"} hasTitle={false} metricViewName={dash} />
 {/if}
