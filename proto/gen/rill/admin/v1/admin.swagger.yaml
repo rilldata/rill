@@ -138,9 +138,9 @@ paths:
           schema:
             type: object
             properties:
-              description:
-                type: string
               id:
+                type: string
+              description:
                 type: string
       tags:
         - AdminService
@@ -458,13 +458,13 @@ paths:
           schema:
             type: object
             properties:
-              description:
-                type: string
-              githubUrl:
-                type: string
               name:
                 type: string
-              prodBranch:
+              description:
+                type: string
+              public:
+                type: boolean
+              region:
                 type: string
               prodOlapDriver:
                 type: string
@@ -473,9 +473,9 @@ paths:
               prodSlots:
                 type: string
                 format: int64
-              public:
-                type: boolean
-              region:
+              prodBranch:
+                type: string
+              githubUrl:
                 type: string
               variables:
                 type: object
@@ -557,16 +557,16 @@ paths:
           schema:
             type: object
             properties:
-              description:
-                type: string
-              githubUrl:
-                type: string
               id:
                 type: string
-              prodBranch:
+              description:
                 type: string
               public:
                 type: boolean
+              prodBranch:
+                type: string
+              githubUrl:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}/variables:
@@ -717,12 +717,13 @@ definitions:
       code:
         type: integer
         format: int32
+      message:
+        type: string
       details:
         type: array
         items:
+          type: object
           $ref: '#/definitions/protobufAny'
-      message:
-        type: string
   v1AddOrganizationMemberResponse:
     type: object
     properties:
@@ -736,9 +737,9 @@ definitions:
   v1CreateOrganizationRequest:
     type: object
     properties:
-      description:
-        type: string
       name:
+        type: string
+      description:
         type: string
   v1CreateOrganizationResponse:
     type: object
@@ -759,26 +760,26 @@ definitions:
   v1Deployment:
     type: object
     properties:
-      branch:
-        type: string
-      createdOn:
-        type: string
-        format: date-time
       id:
         type: string
-      logs:
-        type: string
       projectId:
+        type: string
+      slots:
+        type: string
+        format: int64
+      branch:
         type: string
       runtimeHost:
         type: string
       runtimeInstanceId:
         type: string
-      slots:
-        type: string
-        format: int64
       status:
         $ref: '#/definitions/v1DeploymentStatus'
+      logs:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
       updatedOn:
         type: string
         format: date-time
@@ -799,12 +800,12 @@ definitions:
   v1GetGithubRepoStatusResponse:
     type: object
     properties:
-      defaultBranch:
-        type: string
-      grantAccessUrl:
-        type: string
       hasAccess:
         type: boolean
+      grantAccessUrl:
+        type: string
+      defaultBranch:
+        type: string
   v1GetOrganizationResponse:
     type: object
     properties:
@@ -815,12 +816,12 @@ definitions:
   v1GetProjectResponse:
     type: object
     properties:
-      jwt:
-        type: string
-      prodDeployment:
-        $ref: '#/definitions/v1Deployment'
       project:
         $ref: '#/definitions/v1Project'
+      prodDeployment:
+        $ref: '#/definitions/v1Deployment'
+      jwt:
+        type: string
       projectPermissions:
         $ref: '#/definitions/v1ProjectPermissions'
   v1GetProjectVariablesResponse:
@@ -835,124 +836,124 @@ definitions:
   v1ListOrganizationMembersResponse:
     type: object
     properties:
-      invites:
-        type: array
-        items:
-          $ref: '#/definitions/v1UserInvite'
       members:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1Member'
+      invites:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1UserInvite'
       nextPageToken:
         type: string
   v1ListOrganizationsResponse:
     type: object
     properties:
-      nextPageToken:
-        type: string
       organizations:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1Organization'
+      nextPageToken:
+        type: string
   v1ListProjectMembersResponse:
     type: object
     properties:
-      invites:
-        type: array
-        items:
-          $ref: '#/definitions/v1UserInvite'
       members:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1Member'
+      invites:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1UserInvite'
       nextPageToken:
         type: string
   v1ListProjectsForOrganizationAndGithubURLResponse:
     type: object
     properties:
-      nextPageToken:
-        type: string
       projects:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1Project'
+      nextPageToken:
+        type: string
   v1ListProjectsForOrganizationResponse:
     type: object
     properties:
-      nextPageToken:
-        type: string
       projects:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1Project'
+      nextPageToken:
+        type: string
   v1Member:
     type: object
     properties:
-      createdOn:
-        type: string
-        format: date-time
-      roleName:
-        type: string
-      updatedOn:
-        type: string
-        format: date-time
-      userEmail:
-        type: string
       userId:
+        type: string
+      userEmail:
         type: string
       userName:
         type: string
-  v1Organization:
-    type: object
-    properties:
+      roleName:
+        type: string
       createdOn:
         type: string
         format: date-time
-      description:
+      updatedOn:
         type: string
+        format: date-time
+  v1Organization:
+    type: object
+    properties:
       id:
         type: string
       name:
         type: string
         title: Globally unique
+      description:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
       updatedOn:
         type: string
         format: date-time
   v1OrganizationPermissions:
     type: object
     properties:
-      createProjects:
+      readOrg:
         type: boolean
       manageOrg:
         type: boolean
-      manageOrgMembers:
+      readProjects:
+        type: boolean
+      createProjects:
         type: boolean
       manageProjects:
         type: boolean
-      readOrg:
-        type: boolean
       readOrgMembers:
         type: boolean
-      readProjects:
+      manageOrgMembers:
         type: boolean
   v1PingResponse:
     type: object
     properties:
+      version:
+        type: string
       time:
         type: string
         format: date-time
-      version:
-        type: string
   v1Project:
     type: object
     properties:
-      createdOn:
-        type: string
-        format: date-time
-      description:
-        type: string
-      githubUrl:
-        type: string
       id:
         type: string
       name:
@@ -962,9 +963,15 @@ definitions:
         type: string
       orgName:
         type: string
-      prodBranch:
+      description:
         type: string
-      prodDeploymentId:
+      public:
+        type: boolean
+      region:
+        type: string
+      githubUrl:
+        type: string
+      prodBranch:
         type: string
       prodOlapDriver:
         type: string
@@ -973,35 +980,36 @@ definitions:
       prodSlots:
         type: string
         format: int64
-      public:
-        type: boolean
-      region:
+      prodDeploymentId:
         type: string
+      createdOn:
+        type: string
+        format: date-time
       updatedOn:
         type: string
         format: date-time
   v1ProjectPermissions:
     type: object
     properties:
-      manageDev:
-        type: boolean
-      manageProd:
+      readProject:
         type: boolean
       manageProject:
-        type: boolean
-      manageProjectMembers:
-        type: boolean
-      readDev:
-        type: boolean
-      readDevStatus:
         type: boolean
       readProd:
         type: boolean
       readProdStatus:
         type: boolean
-      readProject:
+      manageProd:
+        type: boolean
+      readDev:
+        type: boolean
+      readDevStatus:
+        type: boolean
+      manageDev:
         type: boolean
       readProjectMembers:
+        type: boolean
+      manageProjectMembers:
         type: boolean
   v1RemoveOrganizationMemberResponse:
     type: object
@@ -1036,17 +1044,17 @@ definitions:
   v1User:
     type: object
     properties:
-      createdOn:
-        type: string
-        format: date-time
-      displayName:
+      id:
         type: string
       email:
         type: string
-      id:
+      displayName:
         type: string
       photoUrl:
         type: string
+      createdOn:
+        type: string
+        format: date-time
       updatedOn:
         type: string
         format: date-time
@@ -1055,7 +1063,7 @@ definitions:
     properties:
       email:
         type: string
-      invitedBy:
-        type: string
       role:
+        type: string
+      invitedBy:
         type: string

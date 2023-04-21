@@ -292,7 +292,7 @@ func local_request_AdminService_UpdateOrganization_0(ctx context.Context, marsha
 }
 
 var (
-	filter_AdminService_ListProjectsForOrganization_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization_name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_AdminService_ListProjectsForOrganization_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization_name": 0, "organizationName": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
 func request_AdminService_ListProjectsForOrganization_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -362,7 +362,7 @@ func local_request_AdminService_ListProjectsForOrganization_0(ctx context.Contex
 }
 
 var (
-	filter_AdminService_ListProjectsForOrganizationAndGithubURL_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization_name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_AdminService_ListProjectsForOrganizationAndGithubURL_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization_name": 0, "organizationName": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
 func request_AdminService_ListProjectsForOrganizationAndGithubURL_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -892,7 +892,7 @@ func local_request_AdminService_UpdateProjectVariables_0(ctx context.Context, ma
 }
 
 var (
-	filter_AdminService_ListOrganizationMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_AdminService_ListOrganizationMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
 )
 
 func request_AdminService_ListOrganizationMembers_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1242,7 +1242,7 @@ func local_request_AdminService_SetOrganizationMemberRole_0(ctx context.Context,
 }
 
 var (
-	filter_AdminService_ListProjectMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization": 0, "project": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_AdminService_ListProjectMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization": 0, "project": 1}, Base: []int{1, 2, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 2, 3, 3}}
 )
 
 func request_AdminService_ListProjectMembers_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -2353,7 +2353,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 // RegisterAdminServiceHandlerFromEndpoint is same as RegisterAdminServiceHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
 func RegisterAdminServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
-	conn, err := grpc.Dial(endpoint, opts...)
+	conn, err := grpc.DialContext(ctx, endpoint, opts...)
 	if err != nil {
 		return err
 	}
