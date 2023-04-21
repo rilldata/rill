@@ -116,7 +116,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 						warn.Println("Run `rill deploy` again.")
 						return nil
 					} else if errors.Is(err, deviceauth.ErrCodeRejected) {
-						warn.Println("Login failed: Confirmation code rejected")
+						errorWriter.Println("Login failed: Confirmation code rejected")
 						return nil
 					}
 					return fmt.Errorf("login failed: %w", err)
@@ -315,6 +315,8 @@ func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string, si
 
 			if pollRes.HasAccess {
 				// Success
+				_, ghRepo, _ := gitutil.SplitGithubURL(githubURL)
+				color.New(color.Bold).Add(color.FgGreen).Printf("You have connected to the %q project in Github.\n", ghRepo)
 				return pollRes, nil
 			}
 
