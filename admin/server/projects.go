@@ -143,6 +143,10 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	if !claims.CanProject(ctx, proj.ID, auth.ReadProdStatus) {
+		depl.Logs = ""
+	}
+
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL: depl.RuntimeAudience,
 		Subject:     claims.OwnerID(),

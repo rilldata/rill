@@ -49,7 +49,9 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 				fmt.Printf("  Slots: %d\n", depl.Slots)
 				fmt.Printf("  Branch: %s\n", depl.Branch)
 				fmt.Printf("  Status: %s\n", depl.Status.String())
-				fmt.Println(logs)
+				if proj.ProjectPermissions.ReadProdStatus {
+					fmt.Println(logs)
+				}
 			}
 
 			return nil
