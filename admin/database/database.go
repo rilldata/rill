@@ -153,9 +153,9 @@ type Organization struct {
 	ID             string
 	Name           string
 	Description    string
+	AllUsergroupID *string   `db:"all_usergroup_id"`
 	CreatedOn      time.Time `db:"created_on"`
 	UpdatedOn      time.Time `db:"updated_on"`
-	AllUsergroupID *string   `db:"all_usergroup_id"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
@@ -179,13 +179,13 @@ type Project struct {
 	Description          string
 	Public               bool
 	Region               string
-	ProdSlots            int       `db:"prod_slots"`
-	ProdOLAPDriver       string    `db:"prod_olap_driver"`
-	ProdOLAPDSN          string    `db:"prod_olap_dsn"`
-	ProdBranch           string    `db:"prod_branch"`
-	ProdVariables        Variables `db:"prod_variables"`
 	GithubURL            *string   `db:"github_url"`
 	GithubInstallationID *int64    `db:"github_installation_id"`
+	ProdBranch           string    `db:"prod_branch"`
+	ProdVariables        Variables `db:"prod_variables"`
+	ProdOLAPDriver       string    `db:"prod_olap_driver"`
+	ProdOLAPDSN          string    `db:"prod_olap_dsn"`
+	ProdSlots            int       `db:"prod_slots"`
 	ProdDeploymentID     *string   `db:"prod_deployment_id"`
 	CreatedOn            time.Time `db:"created_on"`
 	UpdatedOn            time.Time `db:"updated_on"`
@@ -210,13 +210,13 @@ type InsertProjectOptions struct {
 	Description          string
 	Public               bool
 	Region               string
+	GithubURL            *string `validate:"omitempty,http_url"`
+	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	ProdBranch           string
+	ProdVariables        map[string]string
 	ProdOLAPDriver       string
 	ProdOLAPDSN          string
 	ProdSlots            int
-	ProdBranch           string
-	GithubURL            *string `validate:"omitempty,http_url"`
-	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
-	ProdVariables        map[string]string
 }
 
 // UpdateProjectOptions defines options for updating a Project.
@@ -224,10 +224,10 @@ type UpdateProjectOptions struct {
 	Name                 string `validate:"slug"`
 	Description          string
 	Public               bool
-	ProdBranch           string
-	ProdVariables        map[string]string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	ProdBranch           string
+	ProdVariables        map[string]string
 	ProdDeploymentID     *string
 }
 
@@ -306,7 +306,7 @@ type UpdateUserOptions struct {
 type Usergroup struct {
 	ID    string `db:"id"`
 	OrgID string `db:"org_id"`
-	Name  string `db:"name"`
+	Name  string `db:"name" validate:"slug"`
 }
 
 // InsertUsergroupOptions defines options for inserting a new usergroup
@@ -424,9 +424,9 @@ type Member struct {
 type OrganizationInvite struct {
 	ID              string
 	Email           string
-	InvitedByUserID string    `db:"invited_by_user_id"`
 	OrgID           string    `db:"org_id"`
 	OrgRoleID       string    `db:"org_role_id"`
+	InvitedByUserID string    `db:"invited_by_user_id"`
 	CreatedOn       time.Time `db:"created_on"`
 }
 
@@ -434,9 +434,9 @@ type OrganizationInvite struct {
 type ProjectInvite struct {
 	ID              string
 	Email           string
-	InvitedByUserID string    `db:"invited_by_user_id"`
 	ProjectID       string    `db:"project_id"`
 	ProjectRoleID   string    `db:"project_role_id"`
+	InvitedByUserID string    `db:"invited_by_user_id"`
 	CreatedOn       time.Time `db:"created_on"`
 }
 
