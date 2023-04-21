@@ -151,3 +151,8 @@ func ProjectName(dir string) (string, error) {
 
 	return c.SanitizedName(), nil
 }
+
+func HasRillProject(dir string) bool {
+	_, err := os.Open(filepath.Join(dir, "rill.yaml"))
+	return err == nil
+}

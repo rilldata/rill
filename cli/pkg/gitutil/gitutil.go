@@ -133,6 +133,15 @@ func SplitGithubURL(githubURL string) (account, repo string, ok bool) {
 	return account, repo, true
 }
 
+func ExtractGitRemote(projectPath string) (string, error) {
+	remotes, err := ExtractRemotes(projectPath)
+	if err != nil {
+		return "", err
+	}
+	// Parse into a https://github.com/account/repo (no .git) format
+	return RemotesToGithubURL(remotes)
+}
+
 type SyncStatus int
 
 const (
