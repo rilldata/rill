@@ -1,8 +1,17 @@
+import { goto } from "$app/navigation";
 import type { AxiosError } from "axios";
 import type { RpcStatus } from "../../client";
+import { ADMIN_URL } from "../../client/http-client";
 import { ErrorStoreState, errorStore, isErrorStoreEmpty } from "./error-store";
 
 export function globalErrorCallback(error: AxiosError): void {
+  // If Unauthorized, redirect to login page
+  if (error.response.status === 401) {
+    goto(`${ADMIN_URL}/auth/login?redirect=${window.origin}`);
+    return;
+  }
+
+  // Create a pretty message for the error page
   const errorStoreState = createErrorStoreStateFromAxiosError(error);
 
   // Sometimes there are multiple errors in one page load. When one of them is a 404, we
