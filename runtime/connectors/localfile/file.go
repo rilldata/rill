@@ -36,8 +36,8 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path          string `mapstructure:"path"`
-	Format        string `mapstructure:"format"` // TODO delete
+	Path   string `mapstructure:"path"`
+	Format string `mapstructure:"format"` // TODO delete
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {

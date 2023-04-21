@@ -204,4 +204,3 @@ func convertToFunctionParamsStr(ingestionProperties map[string]interface{}) stri
 	}
 	return paramsJoined
 }
-

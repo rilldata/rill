@@ -40,8 +40,8 @@ func TestSourceReadWrite(t *testing.T) {
 					Name:      "Source",
 					Connector: "local_file",
 					Properties: toProtoStruct(map[string]any{
-						"path":          "data/source.csv",
-						"format":        "csv",
+						"path":   "data/source.csv",
+						"format": "csv",
 					}),
 				},
 			},
@@ -313,9 +313,9 @@ region: {{.env.region}}
 					Name:      "Source",
 					Connector: "s3",
 					Properties: toProtoStruct(map[string]any{
-						"path":          "s3://bucket/file",
-						"format":        "csv",
-						"region":        "us-east-2",
+						"path":   "s3://bucket/file",
+						"format": "csv",
+						"region": "us-east-2",
 					}),
 				},
 			},
