@@ -258,7 +258,7 @@ measures: []
 dimensions: []
 `;
   const template = parseDocument(metricsTemplate);
-  template.set("display_name", dashboardName);
+  template.set("title", dashboardName);
   return template.toString();
 }
 
