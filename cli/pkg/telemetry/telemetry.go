@@ -15,21 +15,17 @@ import (
 )
 
 type Telemetry struct {
-	Enabled     bool
-	InstallID   string
-	Version     string
-	BuildCommit string
-	BuildTime   string
-	IsDev       bool
-	authHeader  string
-	events      [][]byte
+	Enabled   bool
+	InstallID string
+	Version   config.Version
+	events    [][]byte
 }
 
 const (
-	RillIntakeURL      = "https://intake.rilldata.io/events/data-modeler-metrics"
-	RillIntakeUser     = "data-modeler"
-	RillIntakePassword = "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug==" //nolint:gosec //Need to figure out a way to add this during build time.
-	RillDeveloperApp   = "rill-developer"
+	intakeURL    = "https://intake.rilldata.io/events/data-modeler-metrics"
+	intakeUser   = "data-modeler"
+	intakeKey    = "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug=="
+	developerApp = "rill-developer"
 )
 
 var ErrRillIntake = errors.New("failed to fire telemetry")
@@ -42,29 +38,26 @@ func NewTelemetry(ver config.Version) *Telemetry {
 		enabled = false
 	}
 
-	encodedAuth := base64.StdEncoding.EncodeToString(
-		[]byte(fmt.Sprintf("%s:%s", RillIntakeUser, RillIntakePassword)),
-	)
-
 	return &Telemetry{
-		Enabled:     enabled,
-		InstallID:   installID,
-		Version:     ver.Number,
-		BuildCommit: ver.Commit,
-		BuildTime:   ver.Timestamp,
-		IsDev:       ver.IsDev(),
-		authHeader:  fmt.Sprintf("Basic %s", encodedAuth),
-		events:      make([][]byte, 0),
+		Enabled:   enabled,
+		InstallID: installID,
+		Version:   ver,
+		events:    make([][]byte, 0),
 	}
 }
 
 func (t *Telemetry) emit(ctx context.Context, body []byte) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, RillIntakeURL, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, intakeURL, bytes.NewReader(body))
 	if err != nil {
 		return ErrRillIntake
 	}
 	req.Header = http.Header{
-		"Authorization": []string{t.authHeader},
+		"Authorization": []string{fmt.Sprintf(
+			"Basic %s",
+			base64.StdEncoding.EncodeToString(
+				[]byte(fmt.Sprintf("%s:%s", intakeUser, intakeKey)),
+			),
+		)},
 	}
 
 	resp, err := http.DefaultClient.Do(req)
@@ -100,11 +93,11 @@ func (t *Telemetry) emitBehaviourEvent(action, medium, space, screenName string)
 	}
 
 	fields := BehaviourEventFields{
-		AppName:       RillDeveloperApp,
+		AppName:       developerApp,
 		InstallID:     t.InstallID,
-		BuildID:       t.BuildCommit,
-		Version:       t.Version,
-		IsDev:         t.IsDev,
+		BuildID:       t.Version.Commit,
+		Version:       t.Version.Number,
+		IsDev:         t.Version.IsDev(),
 		Mode:          "edit",
 		Action:        action,
 		Medium:        medium,
