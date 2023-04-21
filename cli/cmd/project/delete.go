@@ -25,6 +25,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
+			// Get the new project name from user if not provided in the flag
 			if !cmd.Flags().Changed("project") {
 				err := cmdutil.PromptIfUnset(&name, "Project Name", "")
 				if err != nil {
@@ -32,6 +33,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
+			// Get the new org name from user if not provided in the flag
 			if !cmd.Flags().Changed("org") {
 				err := cmdutil.PromptIfUnset(&cfg.Org, "Org Name", cfg.Org)
 				if err != nil {
@@ -41,6 +43,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 
 			if !force {
 				fmt.Printf("Warn: Deleting an project %q will remove all metadata associated with the project\n", name)
+
 				msg := fmt.Sprintf("Enter %q to confirm deletion", name)
 				project := cmdutil.InputPrompt(msg, "")
 				if project != name {

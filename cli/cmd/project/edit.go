@@ -12,7 +12,7 @@ import (
 )
 
 func EditCmd(cfg *config.Config) *cobra.Command {
-	var name, description, prodBranch, repoPath string
+	var name, description, prodBranch string
 	var public bool
 
 	editCmd := &cobra.Command{
@@ -74,8 +74,8 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				OrganizationName: cfg.Org,
 				Name:             proj.Name,
 				Description:      description,
-				Public:           proj.Public,
-				ProductionBranch: proj.ProductionBranch,
+				Public:           public,
+				ProductionBranch: prodBranch,
 				GithubUrl:        proj.GithubUrl,
 			})
 			if err != nil {
@@ -93,7 +93,6 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	editCmd.Flags().StringVar(&name, "project", "noname", "Name")
 	editCmd.Flags().StringVar(&description, "description", "", "Description")
 	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "noname", "Production branch name")
-	editCmd.Flags().StringVar(&repoPath, "repo_path", "", "Repo Path")
 	editCmd.Flags().BoolVar(&public, "public", false, "Public")
 
 	return editCmd

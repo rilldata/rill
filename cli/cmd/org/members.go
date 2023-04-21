@@ -13,7 +13,26 @@ func MembersCmd(cfg *config.Config) *cobra.Command {
 	membersCmd := &cobra.Command{
 		Use:   "members",
 		Short: "Members",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			client, err := cmdutil.Client(cfg)
+			if err != nil {
+				return err
+			}
+			defer client.Close()
+
+			resp, err := client.ListOrganizationMembers(cmd.Context(), &adminv1.ListOrganizationMembersRequest{
+				Organization: cfg.Org,
+			})
+			if err != nil {
+				return err
+			}
+
+			cmdutil.PrintMembers(resp.Members)
+			cmdutil.PrintInvites(resp.Invites)
+			return nil
+		},
 	}
+
 	membersCmd.AddCommand(ListMembersCmd(cfg))
 	membersCmd.AddCommand(AddCmd(cfg))
 	membersCmd.AddCommand(RemoveCmd(cfg))

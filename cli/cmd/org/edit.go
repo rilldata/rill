@@ -10,7 +10,7 @@ import (
 )
 
 func EditCmd(cfg *config.Config) *cobra.Command {
-	var org, description string
+	var orgName, description string
 
 	editCmd := &cobra.Command{
 		Use:   "edit",
@@ -27,7 +27,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 
 			if !cmd.Flags().Changed("org") {
 				// Get the new org name from user if not provided in the flag
-				err := cmdutil.PromptIfUnset(&org, "Org Name", org)
+				err := cmdutil.PromptIfUnset(&orgName, "Org Name", orgName)
 				if err != nil {
 					return err
 				}
@@ -41,16 +41,16 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			exists, err := cmdutil.OrgExists(ctx, client, org)
+			exists, err := cmdutil.OrgExists(ctx, client, orgName)
 			if err != nil {
 				return err
 			}
 
 			if !exists {
-				return fmt.Errorf("Org name %q not exists, please run `rill org list` to list available orgs", org)
+				return fmt.Errorf("Org name %q not exists, please run `rill org list` to list available orgs", orgName)
 			}
 
-			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: org})
+			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: orgName})
 			if err != nil {
 				return err
 			}
@@ -72,7 +72,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 	editCmd.Flags().SortFlags = false
-	editCmd.Flags().StringVar(&org, "org", cfg.Org, "Organization name")
+	editCmd.Flags().StringVar(&orgName, "org", cfg.Org, "Organization name")
 	editCmd.Flags().StringVar(&description, "description", "Unknown", "Description")
 
 	return editCmd

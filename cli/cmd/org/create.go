@@ -27,8 +27,6 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			fmt.Println("Value flag name set", cmd.Flags().Changed("name"))
-
 			if !cmd.Flags().Changed("name") {
 				// Get the new org name from user if not provided in the flag
 				err := cmdutil.PromptIfUnset(&name, "Org Name", "")
