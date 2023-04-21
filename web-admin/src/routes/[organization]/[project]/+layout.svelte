@@ -9,7 +9,7 @@
     {
       query: {
         // Proactively refetch the JWT because it's only valid for 1 hour
-        refetchInterval: 1000 * 60 * 59, // 59 minutes
+        refetchInterval: 1000 * 60 * 30, // 30 minutes
       },
     }
   );
