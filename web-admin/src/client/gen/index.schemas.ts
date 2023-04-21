@@ -134,12 +134,14 @@ export interface V1RemoveOrganizationMemberResponse {
 }
 
 export interface V1ProjectPermissions {
-  manageDevBranches?: boolean;
-  manageProdBranch?: boolean;
+  manageDev?: boolean;
+  manageProd?: boolean;
   manageProject?: boolean;
   manageProjectMembers?: boolean;
-  readDevBranches?: boolean;
-  readProdBranch?: boolean;
+  readDev?: boolean;
+  readDevStatus?: boolean;
+  readProd?: boolean;
+  readProdStatus?: boolean;
   readProject?: boolean;
   readProjectMembers?: boolean;
 }

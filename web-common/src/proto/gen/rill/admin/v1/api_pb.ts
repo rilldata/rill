@@ -2723,32 +2723,42 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
   manageProject = false;
 
   /**
-   * @generated from field: bool read_prod_branch = 3;
+   * @generated from field: bool read_prod = 3;
    */
-  readProdBranch = false;
+  readProd = false;
 
   /**
-   * @generated from field: bool manage_prod_branch = 4;
+   * @generated from field: bool read_prod_status = 4;
    */
-  manageProdBranch = false;
+  readProdStatus = false;
 
   /**
-   * @generated from field: bool read_dev_branches = 5;
+   * @generated from field: bool manage_prod = 5;
    */
-  readDevBranches = false;
+  manageProd = false;
 
   /**
-   * @generated from field: bool manage_dev_branches = 6;
+   * @generated from field: bool read_dev = 6;
    */
-  manageDevBranches = false;
+  readDev = false;
 
   /**
-   * @generated from field: bool read_project_members = 7;
+   * @generated from field: bool read_dev_status = 7;
+   */
+  readDevStatus = false;
+
+  /**
+   * @generated from field: bool manage_dev = 8;
+   */
+  manageDev = false;
+
+  /**
+   * @generated from field: bool read_project_members = 9;
    */
   readProjectMembers = false;
 
   /**
-   * @generated from field: bool manage_project_members = 8;
+   * @generated from field: bool manage_project_members = 10;
    */
   manageProjectMembers = false;
 
@@ -2762,12 +2772,14 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "read_project", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "manage_project", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "read_prod_branch", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 4, name: "manage_prod_branch", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 5, name: "read_dev_branches", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 6, name: "manage_dev_branches", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "read_project_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 8, name: "manage_project_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "read_prod", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "read_prod_status", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "manage_prod", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "read_dev", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "read_dev_status", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "manage_dev", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "read_project_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 10, name: "manage_project_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectPermissions {

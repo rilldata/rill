@@ -402,10 +402,12 @@ type ProjectRole struct {
 	Name                 string
 	ReadProject          bool `db:"read_project"`
 	ManageProject        bool `db:"manage_project"`
-	ReadProdBranch       bool `db:"read_prod_branch"`
-	ManageProdBranch     bool `db:"manage_prod_branch"`
-	ReadDevBranches      bool `db:"read_dev_branches"`
-	ManageDevBranches    bool `db:"manage_dev_branches"`
+	ReadProd             bool `db:"read_prod"`
+	ReadProdStatus       bool `db:"read_prod_status"`
+	ManageProd           bool `db:"manage_prod"`
+	ReadDev              bool `db:"read_dev"`
+	ReadDevStatus        bool `db:"read_dev_status"`
+	ManageDev            bool `db:"manage_dev"`
 	ReadProjectMembers   bool `db:"read_project_members"`
 	ManageProjectMembers bool `db:"manage_project_members"`
 }

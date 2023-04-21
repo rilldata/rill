@@ -157,14 +157,18 @@ func (c *authTokenClaims) CanProject(ctx context.Context, projectID string, p Pr
 			return permissions.ReadProject
 		case ManageProject:
 			return permissions.ManageProject
-		case ReadProdBranch:
-			return permissions.ReadProdBranch
-		case ManageProdBranch:
-			return permissions.ManageProdBranch
-		case ReadDevBranches:
-			return permissions.ReadDevBranches
-		case ManageDevBranches:
-			return permissions.ManageDevBranches
+		case ReadProd:
+			return permissions.ReadProd
+		case ReadProdStatus:
+			return permissions.ReadProdStatus
+		case ManageProd:
+			return permissions.ManageProd
+		case ReadDev:
+			return permissions.ReadDev
+		case ReadDevStatus:
+			return permissions.ReadDevStatus
+		case ManageDev:
+			return permissions.ManageDev
 		case ReadProjectMembers:
 			return permissions.ReadProjectMembers
 		case ManageProjectMembers:
@@ -239,10 +243,12 @@ func unionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *
 	return &adminv1.ProjectPermissions{
 		ReadProject:          a.ReadProject || b.ReadProject,
 		ManageProject:        a.ManageProject || b.ManageProject,
-		ReadProdBranch:       a.ReadProdBranch || b.ReadProdBranch,
-		ManageProdBranch:     a.ManageProdBranch || b.ManageProdBranch,
-		ReadDevBranches:      a.ReadDevBranches || b.ReadDevBranches,
-		ManageDevBranches:    a.ManageDevBranches || b.ManageDevBranches,
+		ReadProd:             a.ReadProd || b.ReadProd,
+		ReadProdStatus:       a.ReadProdStatus || b.ReadProdStatus,
+		ManageProd:           a.ManageProd || b.ManageProd,
+		ReadDev:              a.ReadDev || b.ReadDev,
+		ReadDevStatus:        a.ReadDevStatus || b.ReadDevStatus,
+		ManageDev:            a.ManageDev || b.ManageDev,
 		ReadProjectMembers:   a.ReadProjectMembers || b.ReadProjectMembers,
 		ManageProjectMembers: a.ManageProjectMembers || b.ManageProjectMembers,
 	}

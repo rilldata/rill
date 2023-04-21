@@ -950,17 +950,21 @@ definitions:
   v1ProjectPermissions:
     type: object
     properties:
-      manageDevBranches:
+      manageDev:
         type: boolean
-      manageProdBranch:
+      manageProd:
         type: boolean
       manageProject:
         type: boolean
       manageProjectMembers:
         type: boolean
-      readDevBranches:
+      readDev:
         type: boolean
-      readProdBranch:
+      readDevStatus:
+        type: boolean
+      readProd:
+        type: boolean
+      readProdStatus:
         type: boolean
       readProject:
         type: boolean

@@ -497,12 +497,14 @@ message OrganizationPermissions {
 message ProjectPermissions {
   bool read_project = 1;
   bool manage_project = 2;
-  bool read_prod_branch = 3;
-  bool manage_prod_branch = 4;
-  bool read_dev_branches = 5;
-  bool manage_dev_branches = 6;
-  bool read_project_members = 7;
-  bool manage_project_members = 8;
+  bool read_prod = 3;
+  bool read_prod_status = 4;
+  bool manage_prod = 5;
+  bool read_dev = 6;
+  bool read_dev_status = 7;
+  bool manage_dev = 8;
+  bool read_project_members = 9;
+  bool manage_project_members = 10;
 }
 
 message UserInvite {

@@ -7400,13 +7400,17 @@ func (m *ProjectPermissions) validate(all bool) error {
 
 	// no validation rules for ManageProject
 
-	// no validation rules for ReadProdBranch
+	// no validation rules for ReadProd
 
-	// no validation rules for ManageProdBranch
+	// no validation rules for ReadProdStatus
 
-	// no validation rules for ReadDevBranches
+	// no validation rules for ManageProd
 
-	// no validation rules for ManageDevBranches
+	// no validation rules for ReadDev
+
+	// no validation rules for ReadDevStatus
+
+	// no validation rules for ManageDev
 
 	// no validation rules for ReadProjectMembers
 

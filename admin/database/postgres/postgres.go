@@ -48,7 +48,7 @@ func (c *connection) Close() error {
 
 func (c *connection) FindOrganizations(ctx context.Context) ([]*database.Organization, error) {
 	var res []*database.Organization
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM organizations ORDER BY lower(name)")
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs ORDER BY lower(name)")
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -57,7 +57,7 @@ func (c *connection) FindOrganizations(ctx context.Context) ([]*database.Organiz
 
 func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*database.Organization, error) {
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM organizations WHERE lower(name)=lower($1)", name).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM orgs WHERE lower(name)=lower($1)", name).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -66,7 +66,7 @@ func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*
 
 func (c *connection) FindOrganizationByID(ctx context.Context, orgID string) (*database.Organization, error) {
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM organizations WHERE id = $1", orgID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM orgs WHERE id = $1", orgID).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -79,7 +79,7 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO organizations(name, description) VALUES ($1, $2) RETURNING *", opts.Name, opts.Description).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO orgs(name, description) VALUES ($1, $2) RETURNING *", opts.Name, opts.Description).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -92,7 +92,7 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE organizations SET name=$1, description=$2, updated_on=now() WHERE id=$3 RETURNING *", opts.Name, opts.Description, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, description=$2, updated_on=now() WHERE id=$3 RETURNING *", opts.Name, opts.Description, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -100,13 +100,13 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 }
 
 func (c *connection) DeleteOrganization(ctx context.Context, name string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM organizations WHERE lower(name)=lower($1)", name)
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM orgs WHERE lower(name)=lower($1)", name)
 	return parseErr(err)
 }
 
 func (c *connection) FindProjects(ctx context.Context, orgName string) ([]*database.Project, error) {
 	var res []*database.Project
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p JOIN organizations o ON p.org_id = o.id WHERE lower(o.name)=lower($1) ORDER BY lower(p.name)", orgName)
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p JOIN orgs o ON p.org_id = o.id WHERE lower(o.name)=lower($1) ORDER BY lower(p.name)", orgName)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -124,7 +124,7 @@ func (c *connection) FindProjectByID(ctx context.Context, id string) (*database.
 
 func (c *connection) FindProjectByName(ctx context.Context, orgName, name string) (*database.Project, error) {
 	res := &database.Project{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT p.* FROM projects p JOIN organizations o ON p.org_id = o.id WHERE lower(p.name)=lower($1) AND lower(o.name)=lower($2)", name, orgName).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT p.* FROM projects p JOIN orgs o ON p.org_id = o.id WHERE lower(p.name)=lower($1) AND lower(o.name)=lower($2)", name, orgName).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -284,7 +284,7 @@ func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
 func (c *connection) InsertAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*database.AuthCode, error) {
 	res := &database.AuthCode{}
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		`INSERT INTO device_code_auth (device_code, user_code, expires_on, approval_state, client_id)
+		`INSERT INTO device_auth_codes (device_code, user_code, expires_on, approval_state, client_id)
 		VALUES ($1, $2, $3, $4, $5)  RETURNING *`, deviceCode, userCode, expiresOn, database.AuthCodeStatePending, clientID).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
@@ -294,7 +294,7 @@ func (c *connection) InsertAuthCode(ctx context.Context, deviceCode, userCode, c
 
 func (c *connection) FindAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.AuthCode, error) {
 	authCode := &database.AuthCode{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_code_auth WHERE device_code = $1", deviceCode).StructScan(authCode)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_auth_codes WHERE device_code = $1", deviceCode).StructScan(authCode)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -303,7 +303,7 @@ func (c *connection) FindAuthCodeByDeviceCode(ctx context.Context, deviceCode st
 
 func (c *connection) FindAuthCodeByUserCode(ctx context.Context, userCode string) (*database.AuthCode, error) {
 	authCode := &database.AuthCode{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_code_auth WHERE user_code = $1", userCode).StructScan(authCode)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_auth_codes WHERE user_code = $1", userCode).StructScan(authCode)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -311,7 +311,7 @@ func (c *connection) FindAuthCodeByUserCode(ctx context.Context, userCode string
 }
 
 func (c *connection) UpdateAuthCode(ctx context.Context, userCode, userID string, approvalState database.AuthCodeState) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, "UPDATE device_code_auth SET approval_state=$1, user_id=$2, updated_on=now() WHERE user_code=$3",
+	res, err := c.getDB(ctx).ExecContext(ctx, "UPDATE device_auth_codes SET approval_state=$1, user_id=$2, updated_on=now() WHERE user_code=$3",
 		approvalState, userID, userCode)
 	if err != nil {
 		return parseErr(err)
@@ -330,7 +330,7 @@ func (c *connection) UpdateAuthCode(ctx context.Context, userCode, userID string
 }
 
 func (c *connection) DeleteAuthCode(ctx context.Context, deviceCode string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM device_code_auth WHERE device_code=$1", deviceCode)
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM device_auth_codes WHERE device_code=$1", deviceCode)
 	if err != nil {
 		return parseErr(err)
 	}
@@ -539,7 +539,7 @@ func (c *connection) ResolveOrganizationMemberUserRoles(ctx context.Context, use
 		WHERE uor.user_id = $1 AND uor.org_id = $2
 		UNION
 		SELECT * FROM org_roles WHERE id IN (
-			SELECT org_role_id FROM usergroups_orgs_roles uor JOIN users_usergroups uug 
+			SELECT org_role_id FROM usergroups_orgs_roles uor JOIN usergroups_users uug 
 			ON uor.usergroup_id = uug.usergroup_id WHERE uug.user_id = $1 AND uor.org_id = $2
 		)`, userID, orgID)
 	if err != nil {
@@ -556,7 +556,7 @@ func (c *connection) ResolveProjectMemberUserRoles(ctx context.Context, userID, 
 		WHERE upr.user_id = $1 AND upr.project_id = $2
 		UNION
 		SELECT * FROM project_roles WHERE id IN (
-			SELECT project_role_id FROM usergroups_projects_roles upr JOIN users_usergroups uug 
+			SELECT project_role_id FROM usergroups_projects_roles upr JOIN usergroups_users uug 
 			ON upr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $1 AND upr.project_id = $2
 		)`, userID, projectID)
 	if err != nil {
@@ -592,7 +592,7 @@ func (c *connection) InsertUsergroup(ctx context.Context, opts *database.InsertU
 func (c *connection) UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*database.Organization, error) {
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE organizations SET all_usergroup_id = $1 WHERE id = $2 RETURNING *
+		UPDATE orgs SET all_usergroup_id = $1 WHERE id = $2 RETURNING *
 	`, groupID, orgID).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
@@ -601,7 +601,7 @@ func (c *connection) UpdateOrganizationAllUsergroup(ctx context.Context, orgID, 
 }
 
 func (c *connection) InsertUserInUsergroup(ctx context.Context, userID, groupID string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO users_usergroups (user_id, usergroup_id) VALUES ($1, $2)", userID, groupID)
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO usergroups_users (user_id, usergroup_id) VALUES ($1, $2)", userID, groupID)
 	if err != nil {
 		return parseErr(err)
 	}
@@ -609,7 +609,7 @@ func (c *connection) InsertUserInUsergroup(ctx context.Context, userID, groupID 
 }
 
 func (c *connection) DeleteUserFromUsergroup(ctx context.Context, userID, groupID string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM users_usergroups WHERE user_id = $1 AND usergroup_id = $2", userID, groupID)
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups_users WHERE user_id = $1 AND usergroup_id = $2", userID, groupID)
 	if err != nil {
 		return parseErr(err)
 	}
@@ -627,7 +627,7 @@ func (c *connection) InsertProjectMemberUsergroup(ctx context.Context, groupID, 
 func (c *connection) FindUsersUsergroups(ctx context.Context, userID, orgID string) ([]*database.Usergroup, error) {
 	var res []*database.Usergroup
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT ug.* FROM usergroups ug JOIN users_usergroups uug ON ug.id = uug.usergroup_id
+		SELECT ug.* FROM usergroups ug JOIN usergroups_users uug ON ug.id = uug.usergroup_id
 		WHERE uug.user_id = $1 AND ug.org_id = $2
 	`, userID, orgID)
 	if err != nil {
@@ -639,14 +639,14 @@ func (c *connection) FindUsersUsergroups(ctx context.Context, userID, orgID stri
 func (c *connection) FindOrganizationsForUser(ctx context.Context, userID string) ([]*database.Organization, error) {
 	var res []*database.Organization
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT o.* FROM organizations o JOIN users_orgs_roles uor ON o.id = uor.org_id
+		SELECT o.* FROM orgs o JOIN users_orgs_roles uor ON o.id = uor.org_id
 		WHERE uor.user_id = $1
 		UNION
-		SELECT o.* FROM organizations o JOIN usergroups_orgs_roles ugor ON o.id = ugor.org_id
-		JOIN users_usergroups uug ON ugor.usergroup_id = uug.usergroup_id
+		SELECT o.* FROM orgs o JOIN usergroups_orgs_roles ugor ON o.id = ugor.org_id
+		JOIN usergroups_users uug ON ugor.usergroup_id = uug.usergroup_id
 		WHERE uug.user_id = $1
 		UNION
-		SELECT o.* FROM organizations o JOIN projects p ON o.id = p.org_id
+		SELECT o.* FROM orgs o JOIN projects p ON o.id = p.org_id
 		JOIN users_projects_roles upr ON p.id = upr.project_id
 		WHERE upr.user_id = $1
 	`, userID)
@@ -663,7 +663,7 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 		WHERE upr.user_id = $1
 		UNION
 		SELECT p.* FROM projects p JOIN usergroups_projects_roles upgr ON p.id = upgr.project_id
-		JOIN users_usergroups uug ON upgr.usergroup_id = uug.usergroup_id
+		JOIN usergroups_users uug ON upgr.usergroup_id = uug.usergroup_id
 		WHERE uug.user_id = $1
 	`, userID)
 	if err != nil {
