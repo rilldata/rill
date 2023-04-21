@@ -30,7 +30,7 @@ CREATE TABLE projects (
 );
 
 CREATE UNIQUE INDEX projects_name_idx ON projects (org_id, lower(name));
-CREATE UNIQUE INDEX projects_github_url_idx ON projects (lower(github_url));
+CREATE INDEX projects_github_url_idx ON projects (lower(github_url), org_id);
 
 CREATE TABLE deployments (
 	id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,

@@ -57,7 +57,8 @@ type DB interface {
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
 	FindProjectByID(ctx context.Context, id string) (*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
-	FindProjectByGithubURL(ctx context.Context, githubURL string) (*Project, error)
+	FindProjectsByOrgIDAndGithubURL(ctx context.Context, orgID string, githubURL string) ([]*Project, error)
+	FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*Project, error)
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
@@ -242,7 +243,7 @@ type InsertProjectOptions struct {
 
 // UpdateProjectOptions defines options for updating a Project.
 type UpdateProjectOptions struct {
-	Name                   string
+	Name                   string `validate:"slug"`
 	Description            string
 	Public                 bool
 	ProductionBranch       string

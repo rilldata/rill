@@ -12,6 +12,7 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
 )
 
@@ -81,11 +82,22 @@ func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	qry := map[string]string{"user_code": authCode.UserCode}
+	if values.Get("redirect") != "" {
+		qry["redirect"] = values.Get("redirect")
+	}
+
+	verificationCompleteURI, err := urlutil.WithQuery(verificationURI, qry)
+	if err != nil {
+		internalServerError(w, fmt.Errorf("failed to create verification uri: %w", err))
+		return
+	}
+
 	resp := DeviceCodeResponse{
 		DeviceCode:              authCode.DeviceCode,
 		UserCode:                authCode.UserCode,
 		VerificationURI:         verificationURI,
-		VerificationCompleteURI: verificationURI + "?user_code=" + authCode.UserCode,
+		VerificationCompleteURI: verificationCompleteURI,
 		ExpiresIn:               int(admin.AuthCodeTTL.Seconds()),
 		PollingInterval:         5,
 	}

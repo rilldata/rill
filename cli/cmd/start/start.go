@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
@@ -24,6 +25,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	var strict bool
 	var logFormat string
 	var variables []string
+	var exampleName string
 
 	startCmd := &cobra.Command{
 		Use:   "start",
@@ -40,6 +42,36 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 
 					projectPath = repoName
 				}
+			} else {
+				if !cfg.Interactive {
+					return fmt.Errorf("required arg <path> missing")
+				}
+
+				fmt.Println("No existing project found. Enter name to initialize a new Rill project.")
+				questions := []*survey.Question{
+					{
+						Name: "name",
+						Prompt: &survey.Input{
+							Message: "Enter project name",
+							Default: "rill-untitled",
+						},
+						Validate: func(any interface{}) error {
+							name := any.(string)
+							if name == "" {
+								return fmt.Errorf("empty name")
+							}
+							return nil
+						},
+					},
+				}
+
+				if !cmd.Flags().Changed("example") {
+					if err := survey.Ask(questions, &projectPath); err != nil {
+						return err
+					}
+				} else {
+					projectPath = exampleName
+				}
 			}
 
 			parsedLogFormat, ok := local.ParseLogFormat(logFormat)
@@ -52,6 +84,18 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			defer app.Close()
+
+			if cmd.Flags().Changed("example") {
+				if exampleName != "" {
+					fmt.Println("Visit our documentation for more examples: https://docs.rilldata.com.")
+					fmt.Println("")
+				}
+
+				err = app.InitProject(exampleName)
+				if err != nil {
+					return fmt.Errorf("init project: %w", err)
+				}
+			}
 
 			// If not initialized, init repo with an empty project
 			if !app.IsProjectInit() {
@@ -76,7 +120,6 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	startCmd.Flags().SortFlags = false
-	startCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
 	startCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	startCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
@@ -88,6 +131,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	startCmd.Flags().BoolVar(&strict, "strict", false, "Exit if project has build errors")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 	startCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
+	startCmd.Flags().StringVar(&exampleName, "example", "default", "Name of example project")
 
 	return startCmd
 }

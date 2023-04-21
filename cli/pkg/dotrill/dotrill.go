@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/go-yaml/yaml"
 	"github.com/google/uuid"
+	"gopkg.in/yaml.v2"
 )
 
 // Constants for YAML files
@@ -22,6 +22,7 @@ const (
 // Constants for YAML keys
 const (
 	DefaultOrgConfigKey       = "org"
+	DefaultAdminURLConfigKey  = "api_url"
 	AnalyticsEnabledConfigKey = "analytics_enabled"
 	AccessTokenCredentialsKey = "token"
 	InstallIDStateKey         = "install_id"
@@ -104,6 +105,11 @@ func GetDefaultOrg() (string, error) {
 // SetDefaultOrg saves the default org
 func SetDefaultOrg(orgName string) error {
 	return Set(ConfigFilename, DefaultOrgConfigKey, orgName)
+}
+
+// GetDefaultAdminURL loads the default admin URL (if set)
+func GetDefaultAdminURL() (string, error) {
+	return Get(ConfigFilename, DefaultAdminURLConfigKey)
 }
 
 // GetToken loads the current auth token
