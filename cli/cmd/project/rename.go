@@ -46,7 +46,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if !cmd.Flags().Changed("new_name") {
-				// Get the new org name from user if not provided in the flag
+				// Get the new project name from user if not provided in the flag, passing current name as default
 				err := cmdutil.PromptIfUnset(&newName, "Rename to", name)
 				if err != nil {
 					return err
@@ -97,8 +97,8 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	renameCmd.Flags().SortFlags = false
-	renameCmd.Flags().StringVar(&name, "project", "", "Current Name")
-	renameCmd.Flags().StringVar(&newName, "new_name", "", "New Name")
+	renameCmd.Flags().StringVar(&name, "project", "", "Current Project Name")
+	renameCmd.Flags().StringVar(&newName, "new_name", "", "New Project Name")
 
 	return renameCmd
 }

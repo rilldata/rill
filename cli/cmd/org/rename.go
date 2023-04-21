@@ -13,7 +13,7 @@ import (
 )
 
 func RenameCmd(cfg *config.Config) *cobra.Command {
-	var org, newName string
+	var name, newName string
 
 	renameCmd := &cobra.Command{
 		Use:   "rename",
@@ -22,10 +22,6 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			if len(args) == 1 {
-				return fmt.Errorf("Invalid args provided, required 0 or 2 args")
-			}
-
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -33,35 +29,36 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			if !cmd.Flags().Changed("org") {
-				// Get the new org name from user if not provided in the flag
-				err := cmdutil.PromptIfUnset(&org, "Enter org to rename", org)
+				resp, err := client.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
 				if err != nil {
 					return err
 				}
+
+				if len(resp.Organizations) == 0 {
+					return fmt.Errorf("You are not a member of any orgs")
+				}
+
+				var orgNames []string
+				for _, org := range resp.Organizations {
+					orgNames = append(orgNames, org.Name)
+				}
+
+				name = cmdutil.SelectPrompt("Select org to rename", orgNames, "")
 			}
 
 			if !cmd.Flags().Changed("new_name") {
-				// Get the new org name from user if not provided in the flag
-				err := cmdutil.PromptIfUnset(&newName, "Rename to", newName)
+				// Get the new org name from user if not provided in the flag, passing current name as default
+				err := cmdutil.PromptIfUnset(&newName, "Rename to", name)
 				if err != nil {
 					return err
 				}
-			}
-
-			exist, err := cmdutil.OrgExists(ctx, client, newName)
-			if err != nil {
-				return err
-			}
-
-			if exist {
-				return fmt.Errorf("Org name %q already exists", newName)
 			}
 
 			fmt.Println("Warn: Renaming an org would invalidate dashboard URLs")
 
 			confirm := false
 			prompt := &survey.Confirm{
-				Message: fmt.Sprintf("Do you want to rename org \"%s\" to \"%s\"?", color.YellowString(org), color.YellowString(newName)),
+				Message: fmt.Sprintf("Do you want to rename org \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName)),
 			}
 
 			err = survey.AskOne(prompt, &confirm)
@@ -73,7 +70,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: org})
+			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
 			if err != nil {
 				return err
 			}
@@ -99,8 +96,8 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 	renameCmd.Flags().SortFlags = false
-	renameCmd.Flags().StringVar(&org, "org", cfg.Org, "Name")
-	renameCmd.Flags().StringVar(&newName, "new_name", cfg.Org, "Description")
+	renameCmd.Flags().StringVar(&name, "org", cfg.Org, "Current Org Name")
+	renameCmd.Flags().StringVar(&newName, "new_name", cfg.Org, "New Org Name")
 
 	return renameCmd
 }
