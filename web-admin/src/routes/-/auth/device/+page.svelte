@@ -82,13 +82,13 @@
   <meta name="description" content="User code confirmation" />
 </svelte:head>
 
-{#if user}
+{#if $user.data && $user.data.user}
   <div class="flex flex-col justify-center items-center h-4/5 gap-y-6">
     <RillLogoSquareNegative size="84px" />
     <h1 class="text-xl font-normal text-gray-800">Authorize Rill CLI</h1>
     <p class="text-base text-gray-500 text-center">
       You are authenticating into Rill as <span
-        class="font-medium text-gray-600">{user.email}</span
+        class="font-medium text-gray-600">{$user.data.user.email}</span
       >.<br />Please confirm this is the code displayed in the Rill CLI.
     </p>
     <div

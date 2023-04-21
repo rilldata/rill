@@ -272,7 +272,7 @@ func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string, si
 			// Open browser if possible
 			_ = browser.Open(res.GrantAccessUrl)
 		} else {
-			fmt.Printf("Polling for Github access. (If the browser did not redirect, visit this URL to grant access: %q\n)", res.GrantAccessUrl)
+			fmt.Printf("Polling for Github access. (If the browser did not redirect, visit this URL to grant access: %q\n\n)", res.GrantAccessUrl)
 		}
 
 		// Poll for permission granted
