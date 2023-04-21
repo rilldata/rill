@@ -12,7 +12,6 @@ type Source struct {
 	URI          string `yaml:"uri,omitempty"`
 	Path         string `yaml:"path,omitempty"`
 	Region       string `yaml:"region,omitempty"`
-	CSVDelimiter string `yaml:"csv.delimiter,omitempty"`
 }
 
 type ProjectConfig struct {

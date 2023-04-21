@@ -77,24 +77,7 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 
 // for files downloaded locally from remote sources
 func (c *connection) ingestIteratorFiles(ctx context.Context, source *connectors.Source, filenames []string, appendToTable bool) error {
-	format := ""
-	if value, ok := source.Properties["format"]; ok {
-		format = value.(string)
-	}
-
-	delimiter := ""
-	if value, ok := source.Properties["csv.delimiter"]; ok {
-		delimiter = value.(string)
-	}
-
-	hivePartition := 1
-	if value, ok := source.Properties["hive_partitioning"]; ok {
-		if !value.(bool) {
-			hivePartition = 0
-		}
-	}
-
-	from, err := sourceReader(filenames, delimiter, format, hivePartition)
+	from, err := sourceReader(filenames, source.Properties)
 	if err != nil {
 		return err
 	}
@@ -129,12 +112,7 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 		return fmt.Errorf("file does not exist at %s", conf.Path)
 	}
 
-	hivePartition := 1
-	if conf.HivePartition != nil && !*conf.HivePartition {
-		hivePartition = 0
-	}
-
-	from, err := sourceReader(localPaths, conf.CSVDelimiter, conf.Format, hivePartition)
+	from, err := sourceReader(localPaths, source.Properties)
 	if err != nil {
 		return err
 	}
@@ -144,33 +122,36 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 	return c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
 }
 
-func sourceReader(paths []string, csvDelimiter, format string, hivePartition int) (string, error) {
-	if format == "" {
+func sourceReader(paths []string, properties map[string]interface{}) (string, error) {
+	format, ok := properties["format"].(string)
+	if !ok {
 		format = fileutil.FullExt(paths[0])
 	} else {
-		// users will set format like csv, tsv, parquet
-		// while infering format from file name extensions its better to rely on .csv, .parquet
 		format = fmt.Sprintf(".%s", format)
 	}
-
-	if format == "" {
-		return "", fmt.Errorf("invalid file")
-	} else if strings.Contains(format, ".csv") || strings.Contains(format, ".tsv") || strings.Contains(format, ".txt") {
-		return sourceReaderWithDelimiter(paths, csvDelimiter), nil
+	ingestionPropPrefix := "duckdb."
+	ingestionProps := make(map[string]interface{})
+	for key, value := range properties {
+		if strings.HasPrefix(key, ingestionPropPrefix) {
+			ingestionProps[strings.TrimPrefix(key, ingestionPropPrefix)] = value
+		}
+	}
+	pathsStr := strings.Join(paths, "','")
+	if containsAny(format, []string{".csv", ".tsv", ".txt"}) {
+		// auto_detect is true by default
+		return fmt.Sprintf("read_csv_auto(['%s']%s)", pathsStr, convertToFunctionParamsStr(ingestionProps)), nil
 	} else if strings.Contains(format, ".parquet") {
-		return fmt.Sprintf("read_parquet(['%s'], HIVE_PARTITIONING=%v)", strings.Join(paths, "','"), hivePartition), nil
-	} else if strings.Contains(format, ".json") || strings.Contains(format, ".ndjson") {
-		return fmt.Sprintf("read_json_auto(['%s'], sample_size=-1)", strings.Join(paths, "','")), nil
+		return fmt.Sprintf("read_parquet(['%s']%s)", pathsStr, convertToFunctionParamsStr(ingestionProps)), nil
+	} else if containsAny(format, []string{".json", ".ndjson"}) {
+		// auto_detect is false by default so setting it to true simplifies the ingestion
+		// if columns are defined then DuckDB turns the auto-detection off so no need to check this case here
+		if _, autoDetectDefined := ingestionProps["auto_detect"]; !autoDetectDefined {
+			ingestionProps["auto_detect"] = true
+		}
+		return fmt.Sprintf("read_json(['%s']%s)", pathsStr, convertToFunctionParamsStr(ingestionProps)), nil
 	} else {
 		return "", fmt.Errorf("file type not supported : %s", format)
 	}
-}
-
-func sourceReaderWithDelimiter(paths []string, delimiter string) string {
-	if delimiter == "" {
-		return fmt.Sprintf("read_csv_auto(['%s'], sample_size=-1)", strings.Join(paths, "','"))
-	}
-	return fmt.Sprintf("read_csv_auto(['%s'], delim='%s', sample_size=-1)", strings.Join(paths, "','"), delimiter)
 }
 
 func fileSize(paths []string) int64 {
@@ -201,3 +182,26 @@ func resolveLocalPath(env *connectors.Env, path, sourceName string) (string, err
 	}
 	return finalPath, nil
 }
+
+func containsAny(s string, targets []string) bool {
+	source := strings.ToLower(s)
+	for _, target := range targets {
+		if strings.Contains(source, target) {
+			return true
+		}
+	}
+	return false
+}
+
+func convertToFunctionParamsStr(ingestionProperties map[string]interface{}) string {
+	ingestionParamsStr := make([]string, 0, len(ingestionProperties))
+	for key, value := range ingestionProperties {
+		ingestionParamsStr = append(ingestionParamsStr, fmt.Sprintf("%s=%v", key, value))
+	}
+	paramsJoined := strings.Join(ingestionParamsStr, ",")
+	if paramsJoined != "" {
+		paramsJoined = "," + paramsJoined
+	}
+	return paramsJoined
+}
+
