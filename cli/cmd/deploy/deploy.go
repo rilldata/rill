@@ -199,7 +199,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Run flow to get connector credentials and other variables
-			variables, err := variablesFlow(projectPath)
+			variables, err := variablesFlow(ctx, projectPath)
 			if err != nil {
 				return err
 			}
@@ -306,14 +306,18 @@ func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string, si
 	return res, nil
 }
 
-func variablesFlow(projectPath string) (map[string]string, error) {
-	connectors, err := rillv1beta.ExtractConnectors(projectPath)
+func variablesFlow(ctx context.Context, projectPath string) (map[string]string, error) {
+	connectors, err := rillv1beta.ExtractConnectors(ctx, projectPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract connectors %w", err)
 	}
 
 	vars := make(map[string]string)
 	for _, c := range connectors {
+		if c.AnonymousAccess {
+			// ignore asking for credentials if external source can be access anonymously
+			continue
+		}
 		connectorVariables := c.Spec.ConnectorVariables
 		if len(connectorVariables) != 0 {
 			fmt.Printf("\nConnector %s requires credentials\n\n", c.Type)

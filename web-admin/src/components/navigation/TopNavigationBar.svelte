@@ -6,6 +6,7 @@
   import { createAdminServiceGetCurrentUser } from "../../client";
   import SignIn from "../authentication/SignIn.svelte";
   import UserButton from "../authentication/UserButton.svelte";
+  import { isErrorStoreEmpty } from "../errors/error-store";
   import Breadcrumbs from "./Breadcrumbs.svelte";
 
   $: organization = $page.params.organization;
@@ -33,7 +34,7 @@
     </a>
     <TooltipContent slot="tooltip-content">Home</TooltipContent>
   </Tooltip>
-  {#if organization}
+  {#if $isErrorStoreEmpty && organization}
     <Breadcrumbs />
   {:else}
     <div />

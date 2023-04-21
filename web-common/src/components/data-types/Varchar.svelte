@@ -9,8 +9,12 @@
   export let value;
 </script>
 
-<Base {isNull} classes="{customStyle} {inTable && 'text-left'}" {dark}>
+<Base classes="{customStyle} {inTable && 'text-left'}" {dark}>
   <slot name="value">
-    {formatDataType(value, type)}
+    {#if isNull}
+      <span class="opacity-60 italic">null</span>
+    {:else}
+      {formatDataType(value, type)}
+    {/if}
   </slot>
 </Base>

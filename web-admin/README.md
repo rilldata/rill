@@ -1,6 +1,6 @@
 # web-admin
 
-This folder contains the control plane frontend for a hosted, multi-user Rill (not launched yet). It's implemented with TypeScript and [SvelteKit](https://kit.svelte.dev). 
+This folder contains the control plane frontend for a hosted, multi-user Rill (not launched yet). It's implemented with TypeScript and [SvelteKit](https://kit.svelte.dev).
 
 ## Running in development
 
@@ -9,6 +9,7 @@ This folder contains the control plane frontend for a hosted, multi-user Rill (n
 3. Run `npm run dev -w web-admin`
 
 There's currently no UI to create orgs or projects. You can add some directly using `curl`:
+
 ```
 # Add an organization
 curl -X POST http://localhost:8080/v1/organizations -H 'Content-Type: application/json' -d '{"name":"foo", "description":"org foo"}'
