@@ -5,7 +5,13 @@
 
   $: proj = createAdminServiceGetProject(
     $page.params.organization,
-    $page.params.project
+    $page.params.project,
+    {
+      query: {
+        // Proactively refetch the JWT because it's only valid for 1 hour
+        refetchInterval: 1000 * 60 * 30, // 30 minutes
+      },
+    }
   );
 
   // Hack: in development, the runtime host is actually on port 8081
@@ -14,7 +20,7 @@
     "localhost:8081"
   );
   $: runtimeInstanceId = $proj.data?.productionDeployment?.runtimeInstanceId;
-  $: jwt = $proj.data.jwt;
+  $: jwt = $proj.data?.jwt;
 </script>
 
 <RuntimeProvider host={runtimeHost} instanceId={runtimeInstanceId} {jwt}>

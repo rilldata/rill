@@ -243,7 +243,7 @@ type InsertProjectOptions struct {
 
 // UpdateProjectOptions defines options for updating a Project.
 type UpdateProjectOptions struct {
-	Name                   string
+	Name                   string `validate:"slug"`
 	Description            string
 	Public                 bool
 	ProductionBranch       string

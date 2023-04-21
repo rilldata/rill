@@ -521,6 +521,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 	}
 
 	proj, err = s.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Name:                   proj.Name,
 		Description:            proj.Description,
 		Public:                 proj.Public,
 		ProductionBranch:       proj.ProductionBranch,
