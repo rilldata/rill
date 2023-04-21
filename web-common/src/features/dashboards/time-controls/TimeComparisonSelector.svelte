@@ -158,7 +158,7 @@ This component needs to do the following:
       {#each options as option}
         {@const preset = TIME_COMPARISON[option.name]}
         <MenuItem
-          selected={showComparison && option.name === intermediateSelection}
+          selected={option.name === intermediateSelection}
           on:before-select={() => {
             intermediateSelection = option.name;
           }}
