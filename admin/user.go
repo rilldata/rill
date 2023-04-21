@@ -29,11 +29,11 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	}
 
 	// Get user invites if exists
-	orgInvites, err := s.DB.FindOrganizationMemberUserInvitations(ctx, email)
+	orgInvites, err := s.DB.FindOrganizationInvitesByEmail(ctx, email)
 	if err != nil {
 		return nil, err
 	}
-	projectInvites, err := s.DB.FindProjectMemberUserInvitations(ctx, email)
+	projectInvites, err := s.DB.FindProjectInvitesByEmail(ctx, email)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.DeleteOrganizationMemberUserInvitation(ctx, invite.ID)
+		err = s.DB.DeleteOrganizationInvite(ctx, invite.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -72,7 +72,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.DeleteProjectMemberUserInvitation(ctx, invite.ID)
+		err = s.DB.DeleteProjectInvite(ctx, invite.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +121,7 @@ func (s *Service) InviteUserToOrganization(ctx context.Context, email, inviterID
 	}
 
 	// Create invite
-	err = s.DB.InsertOrganizationMemberUserInvitation(ctx, email, inviterID, orgID, roleID)
+	err = s.DB.InsertOrganizationInvite(ctx, email, orgID, roleID, inviterID)
 	if err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func (s *Service) InviteUserToProject(ctx context.Context, email, inviterID, pro
 	}
 
 	// Create invite
-	err = s.DB.InsertProjectMemberUserInvitation(ctx, email, inviterID, projectID, roleID)
+	err = s.DB.InsertProjectInvite(ctx, email, projectID, roleID, inviterID)
 	if err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string)
 		return nil, err
 	}
 	// Add user to all user group
-	err = s.DB.InsertUserInUsergroup(ctx, userID, userGroup.ID)
+	err = s.DB.InsertUsergroupMember(ctx, userGroup.ID, userID)
 	if err != nil {
 		return nil, err
 	}

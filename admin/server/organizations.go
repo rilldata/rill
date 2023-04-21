@@ -60,7 +60,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 		}
 		// check if the user is outside members of a project in the org
 		if claims.OwnerType() == auth.OwnerTypeUser {
-			exists, err := s.admin.DB.CheckOrganizationProjectsHasMemberUser(ctx, org.ID, claims.OwnerID())
+			exists, err := s.admin.DB.CheckOrganizationHasOutsideUser(ctx, org.ID, claims.OwnerID())
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
@@ -125,7 +125,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrganizationRequest) (*adminv1.UpdateOrganizationResponse, error) {
 	claims := auth.GetClaims(ctx)
 
-	org, err := s.admin.DB.FindOrganizationByID(ctx, req.Id)
+	org, err := s.admin.DB.FindOrganization(ctx, req.Id)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "org not found")
@@ -176,7 +176,7 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 	}
 
 	// get pending user invites for this org
-	userInvites, err := s.admin.DB.FindOrganizationMemberInvitations(ctx, org.ID)
+	userInvites, err := s.admin.DB.FindOrganizationInvites(ctx, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -247,7 +247,7 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.admin.DB.InsertUserInUsergroup(ctx, user.ID, *org.AllUsergroupID)
+	err = s.admin.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -284,14 +284,14 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// check if there is a pending invite
-			invite, err := s.admin.DB.FindOrganizationMemberUserInvitation(ctx, org.ID, req.Email)
+			invite, err := s.admin.DB.FindOrganizationInvite(ctx, org.ID, req.Email)
 			if err != nil {
 				if errors.Is(err, database.ErrNotFound) {
 					return nil, status.Error(codes.InvalidArgument, "user not found")
 				}
 				return nil, status.Error(codes.Internal, err.Error())
 			}
-			err = s.admin.DB.DeleteOrganizationMemberUserInvitation(ctx, invite.ID)
+			err = s.admin.DB.DeleteOrganizationInvite(ctx, invite.ID)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
@@ -327,7 +327,7 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 	}
 
 	// delete from all user group
-	err = s.admin.DB.DeleteUserFromUsergroup(ctx, user.ID, *org.AllUsergroupID)
+	err = s.admin.DB.DeleteUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -442,7 +442,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 	}
 
 	// delete from all user group
-	err = s.admin.DB.DeleteUserFromUsergroup(ctx, claims.OwnerID(), *org.AllUsergroupID)
+	err = s.admin.DB.DeleteUsergroupMember(ctx, *org.AllUsergroupID, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

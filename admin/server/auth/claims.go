@@ -195,7 +195,7 @@ func (c *authTokenClaims) OrganizationPermissions(ctx context.Context, orgID str
 	}
 
 	composite := &adminv1.OrganizationPermissions{}
-	roles, err := c.admin.DB.ResolveOrganizationMemberUserRoles(ctx, c.token.OwnerID(), orgID)
+	roles, err := c.admin.DB.ResolveOrganizationRolesForUser(ctx, c.token.OwnerID(), orgID)
 	if err != nil {
 		panic(fmt.Errorf("failed to get project permissions: %w", err))
 	}
@@ -215,7 +215,7 @@ func (c *authTokenClaims) ProjectPermissions(ctx context.Context, projectID stri
 	}
 
 	composite := &adminv1.ProjectPermissions{}
-	roles, err := c.admin.DB.ResolveProjectMemberUserRoles(ctx, c.token.OwnerID(), projectID)
+	roles, err := c.admin.DB.ResolveProjectRolesForUser(ctx, c.token.OwnerID(), projectID)
 	if err != nil {
 		panic(fmt.Errorf("failed to get project permissions: %w", err))
 	}

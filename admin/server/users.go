@@ -81,7 +81,7 @@ func memberToPB(m *database.Member) *adminv1.Member {
 	}
 }
 
-func inviteToPB(i *database.UserInvite) *adminv1.UserInvite {
+func inviteToPB(i *database.Invite) *adminv1.UserInvite {
 	return &adminv1.UserInvite{
 		Email:     i.Email,
 		Role:      i.Role,

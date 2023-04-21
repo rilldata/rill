@@ -48,51 +48,63 @@ type DB interface {
 	FindMigrationVersion(ctx context.Context) (int, error)
 
 	FindOrganizations(ctx context.Context) ([]*Organization, error)
+	FindOrganizationsForUser(ctx context.Context, userID string) ([]*Organization, error)
+	FindOrganization(ctx context.Context, id string) (*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
-	FindOrganizationByID(ctx context.Context, id string) (*Organization, error)
+	CheckOrganizationHasOutsideUser(ctx context.Context, orgID, userID string) (bool, error)
+	CheckOrganizationHasPublicProjects(ctx context.Context, orgID string) (bool, error)
 	InsertOrganization(ctx context.Context, opts *InsertOrganizationOptions) (*Organization, error)
-	UpdateOrganization(ctx context.Context, id string, opts *UpdateOrganizationOptions) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
+	UpdateOrganization(ctx context.Context, id string, opts *UpdateOrganizationOptions) (*Organization, error)
+	UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
 
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
-	FindProjectByID(ctx context.Context, id string) (*Project, error)
-	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
-	FindProjectsByOrgIDAndGithubURL(ctx context.Context, orgID string, githubURL string) ([]*Project, error)
+	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
+	FindProjectsForOrganization(ctx context.Context, orgID string) ([]*Project, error)
+	FindProjectsForOrgAndOutsideUser(ctx context.Context, orgID, userID string) ([]*Project, error)
+	FindPublicProjectsInOrganization(ctx context.Context, orgID string) ([]*Project, error)
 	FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*Project, error)
+	FindProjectsByOrgAndGithubURL(ctx context.Context, orgID string, githubURL string) ([]*Project, error)
+	FindProject(ctx context.Context, id string) (*Project, error)
+	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
-	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
+	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
+
+	FindDeployments(ctx context.Context, projectID string) ([]*Deployment, error)
+	FindDeployment(ctx context.Context, id string) (*Deployment, error)
+	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
+	DeleteDeployment(ctx context.Context, id string) error
+	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, logs string) (*Deployment, error)
+
+	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
 
 	FindUsers(ctx context.Context) ([]*User, error)
 	FindUser(ctx context.Context, id string) (*User, error)
 	FindUserByEmail(ctx context.Context, email string) (*User, error)
 	InsertUser(ctx context.Context, opts *InsertUserOptions) (*User, error)
-	UpdateUser(ctx context.Context, id string, opts *UpdateUserOptions) (*User, error)
 	DeleteUser(ctx context.Context, id string) error
+	UpdateUser(ctx context.Context, id string, opts *UpdateUserOptions) (*User, error)
+
+	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
+	InsertUsergroupMember(ctx context.Context, groupID, userID string) error
+	DeleteUsergroupMember(ctx context.Context, groupID, userID string) error
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
 	DeleteUserAuthToken(ctx context.Context, id string) error
 
-	// InsertAuthCode inserts the authorization code data into the store.
-	InsertAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*AuthCode, error)
-	// FindAuthCodeByDeviceCode retrieves the authorization code data from the store
-	FindAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*AuthCode, error)
-	// FindAuthCodeByUserCode retrieves the authorization code data from the store
-	FindAuthCodeByUserCode(ctx context.Context, userCode string) (*AuthCode, error)
-	// UpdateAuthCode updates the authorization code data in the store
-	UpdateAuthCode(ctx context.Context, userCode, userID string, approvalState AuthCodeState) error
-	// DeleteAuthCode deletes the authorization code data from the store
-	DeleteAuthCode(ctx context.Context, deviceCode string) error
+	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
+	FindDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
+	InsertDeviceAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*DeviceAuthCode, error)
+	DeleteDeviceAuthCode(ctx context.Context, deviceCode string) error
+	UpdateDeviceAuthCode(ctx context.Context, userCode, userID string, state DeviceAuthCodeState) error
 
-	FindDeployments(ctx context.Context, projectID string) ([]*Deployment, error)
-	FindDeployment(ctx context.Context, id string) (*Deployment, error)
-	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
-	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, logs string) (*Deployment, error)
-	DeleteDeployment(ctx context.Context, id string) error
-
-	QueryRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
+	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
+	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
+	ResolveOrganizationRolesForUser(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
+	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
 
 	FindOrganizationMemberUsers(ctx context.Context, orgID string) ([]*Member, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
@@ -102,44 +114,21 @@ type DB interface {
 
 	FindProjectMemberUsers(ctx context.Context, projectID string) ([]*Member, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
+	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
 
-	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
-	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
+	FindOrganizationInvites(ctx context.Context, orgID string) ([]*Invite, error)
+	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
+	FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*OrganizationInvite, error)
+	InsertOrganizationInvite(ctx context.Context, email, orgID, roleID, invitedByID string) error
+	DeleteOrganizationInvite(ctx context.Context, id string) error
 
-	// ResolveOrganizationMemberUserRoles resolves the direct and group roles of a user in an organization
-	ResolveOrganizationMemberUserRoles(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
-	// ResolveProjectMemberUserRoles resolves the direct and group roles of a user in a project
-	ResolveProjectMemberUserRoles(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
-
-	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
-	UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
-	InsertUserInUsergroup(ctx context.Context, userID, groupID string) error
-	DeleteUserFromUsergroup(ctx context.Context, userID, groupID string) error
-	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
-	FindUsersUsergroups(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
-
-	FindOrganizationsForUser(ctx context.Context, userID string) ([]*Organization, error)
-	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
-	FindProjectsForOrganization(ctx context.Context, orgID string) ([]*Project, error)
-
-	FindProjectsForProjectMemberUser(ctx context.Context, orgID, userID string) ([]*Project, error)
-	FindPublicProjectsInOrganization(ctx context.Context, orgID string) ([]*Project, error)
-
-	CheckOrganizationProjectsHasMemberUser(ctx context.Context, orgID, userID string) (bool, error)
-	CheckOrganizationHasPublicProjects(ctx context.Context, orgID string) (bool, error)
-
-	InsertOrganizationMemberUserInvitation(ctx context.Context, email, invitedByID, orgID, roleID string) error
-	InsertProjectMemberUserInvitation(ctx context.Context, email, invitedByID, projectID, roleID string) error
-	FindOrganizationMemberInvitations(ctx context.Context, orgID string) ([]*UserInvite, error)
-	FindOrganizationMemberUserInvitations(ctx context.Context, userEmail string) ([]*OrganizationMemberUserInvitation, error)
-	FindOrganizationMemberUserInvitation(ctx context.Context, orgID, userEmail string) (*OrganizationMemberUserInvitation, error)
-	FindProjectMemberInvitations(ctx context.Context, projectID string) ([]*UserInvite, error)
-	FindProjectMemberUserInvitations(ctx context.Context, userEmail string) ([]*ProjectMemberUserInvitation, error)
-	FindProjectMemberUserInvitation(ctx context.Context, projectID, userEmail string) (*ProjectMemberUserInvitation, error)
-	DeleteOrganizationMemberUserInvitation(ctx context.Context, id string) error
-	DeleteProjectMemberUserInvitation(ctx context.Context, id string) error
+	FindProjectInvites(ctx context.Context, projectID string) ([]*Invite, error)
+	FindProjectInvitesByEmail(ctx context.Context, userEmail string) ([]*ProjectInvite, error)
+	FindProjectInvite(ctx context.Context, projectID, userEmail string) (*ProjectInvite, error)
+	InsertProjectInvite(ctx context.Context, email, projectID, roleID, invitedByID string) error
+	DeleteProjectInvite(ctx context.Context, id string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -318,27 +307,27 @@ const (
 	AuthClientIDRillCLI = "12345678-0000-0000-0000-000000000002"
 )
 
-// AuthCodeState is an enum representing the approval state of an AuthCode
-type AuthCodeState int
+// DeviceAuthCodeState is an enum representing the approval state of an DeviceAuthCode
+type DeviceAuthCodeState int
 
 const (
-	AuthCodeStatePending  AuthCodeState = 0
-	AuthCodeStateApproved AuthCodeState = 1
-	AuthCodeStateRejected AuthCodeState = 2
+	DeviceAuthCodeStatePending  DeviceAuthCodeState = 0
+	DeviceAuthCodeStateApproved DeviceAuthCodeState = 1
+	DeviceAuthCodeStateRejected DeviceAuthCodeState = 2
 )
 
-// AuthCode represents a user authentication code as part of the OAuth2 device flow.
+// DeviceAuthCode represents a user authentication code as part of the OAuth2 device flow.
 // They're currently used for authenticating users in the CLI.
-type AuthCode struct {
-	ID            string        `db:"id"`
-	DeviceCode    string        `db:"device_code"`
-	UserCode      string        `db:"user_code"`
-	Expiry        time.Time     `db:"expires_on"`
-	ApprovalState AuthCodeState `db:"approval_state"`
-	ClientID      string        `db:"client_id"`
-	UserID        *string       `db:"user_id"`
-	CreatedOn     time.Time     `db:"created_on"`
-	UpdatedOn     time.Time     `db:"updated_on"`
+type DeviceAuthCode struct {
+	ID            string              `db:"id"`
+	DeviceCode    string              `db:"device_code"`
+	UserCode      string              `db:"user_code"`
+	Expiry        time.Time           `db:"expires_on"`
+	ApprovalState DeviceAuthCodeState `db:"approval_state"`
+	ClientID      string              `db:"client_id"`
+	UserID        *string             `db:"user_id"`
+	CreatedOn     time.Time           `db:"created_on"`
+	UpdatedOn     time.Time           `db:"updated_on"`
 }
 
 // DeploymentStatus is an enum representing the state of a deployment
@@ -380,7 +369,7 @@ type InsertDeploymentOptions struct {
 	Logs              string
 }
 
-// RuntimeSlotsUsed is the result of a QueryRuntimeSlotsUsed query.
+// RuntimeSlotsUsed is the result of a ResolveRuntimeSlotsUsed query.
 type RuntimeSlotsUsed struct {
 	RuntimeHost string `db:"runtime_host"`
 	SlotsUsed   int    `db:"slots_used"`
@@ -437,7 +426,7 @@ type Member struct {
 	RoleName    string    `db:"name"`
 }
 
-type OrganizationMemberUserInvitation struct {
+type OrganizationInvite struct {
 	ID              string
 	Email           string
 	InvitedByUserID string    `db:"invited_by_user_id"`
@@ -446,7 +435,7 @@ type OrganizationMemberUserInvitation struct {
 	CreatedOn       time.Time `db:"created_on"`
 }
 
-type ProjectMemberUserInvitation struct {
+type ProjectInvite struct {
 	ID              string
 	Email           string
 	InvitedByUserID string    `db:"invited_by_user_id"`
@@ -455,7 +444,7 @@ type ProjectMemberUserInvitation struct {
 	CreatedOn       time.Time `db:"created_on"`
 }
 
-type UserInvite struct {
+type Invite struct {
 	Email     string
 	Role      string
 	InvitedBy string `db:"invited_by"`

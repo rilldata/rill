@@ -20,7 +20,7 @@ import (
 func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
 	// TODO: Make this actually fault tolerant.
 
-	org, err := s.DB.FindOrganizationByID(ctx, opts.OrganizationID)
+	org, err := s.DB.FindOrganization(ctx, opts.OrganizationID)
 	if err != nil {
 		return nil, err
 	}

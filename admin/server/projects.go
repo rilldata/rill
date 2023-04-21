@@ -42,7 +42,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	if !claims.CanOrganization(ctx, org.ID, auth.ReadProjects) {
 		// check if the user is an outside member of a project in the org
 		if claims.OwnerType() == auth.OwnerTypeUser {
-			projs, err := s.admin.DB.FindProjectsForProjectMemberUser(ctx, org.ID, claims.OwnerID())
+			projs, err := s.admin.DB.FindProjectsForOrgAndOutsideUser(ctx, org.ID, claims.OwnerID())
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
@@ -90,7 +90,7 @@ func (s *Server) ListProjectsForOrganizationAndGithubURL(ctx context.Context, re
 		return nil, status.Errorf(codes.PermissionDenied, "does not have permission to read projects in org %s", req.OrganizationName)
 	}
 
-	projects, err := s.admin.DB.FindProjectsByOrgIDAndGithubURL(ctx, org.ID, req.GithubUrl)
+	projects, err := s.admin.DB.FindProjectsByOrgAndGithubURL(ctx, org.ID, req.GithubUrl)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Errorf(codes.NotFound, "project with github url %s not found in org %s", req.GithubUrl, req.OrganizationName)
@@ -266,7 +266,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	claims := auth.GetClaims(ctx)
 
 	// Find project
-	proj, err := s.admin.DB.FindProjectByID(ctx, req.Id)
+	proj, err := s.admin.DB.FindProject(ctx, req.Id)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "proj not found")
@@ -336,7 +336,7 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 	}
 
 	// get pending user invites for this project
-	userInvites, err := s.admin.DB.FindProjectMemberInvitations(ctx, proj.ID)
+	userInvites, err := s.admin.DB.FindProjectInvites(ctx, proj.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -426,14 +426,14 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// check if there is a pending invite
-			invite, err := s.admin.DB.FindProjectMemberUserInvitation(ctx, proj.ID, req.Email)
+			invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
 			if err != nil {
 				if errors.Is(err, database.ErrNotFound) {
 					return nil, status.Error(codes.InvalidArgument, "user not found")
 				}
 				return nil, status.Error(codes.Internal, err.Error())
 			}
-			err = s.admin.DB.DeleteProjectMemberUserInvitation(ctx, invite.ID)
+			err = s.admin.DB.DeleteProjectInvite(ctx, invite.ID)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
