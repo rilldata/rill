@@ -35,7 +35,7 @@ func toTable(organizations []*adminv1.Organization, defaultOrg string) []*organi
 
 	for _, org := range organizations {
 		if strings.EqualFold(org.Name, defaultOrg) {
-			org.Name += "*"
+			org.Name += " (default)"
 		}
 		orgs = append(orgs, toRow(org))
 	}

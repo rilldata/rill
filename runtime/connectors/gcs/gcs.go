@@ -21,7 +21,7 @@ func init() {
 	connectors.Register("gcs", connector{})
 }
 
-var errNoCredentials = errors.New("empty credentials: set `GOOGLE_APPLICATION_CREDENTIALS` env variable")
+var errNoCredentials = errors.New("empty credentials: set `google_application_credentials` env variable")
 
 var spec = connectors.Spec{
 	DisplayName: "Google Cloud Storage",
@@ -47,7 +47,7 @@ var spec = connectors.Spec{
 	},
 	ConnectorVariables: []connectors.VariableSchema{
 		{
-			Key:  "GOOGLE_APPLICATION_CREDENTIALS",
+			Key:  "google_application_credentials",
 			Help: "Enter path of file to load from. Leave blank if public access enabled.",
 			ValidateFunc: func(any interface{}) error {
 				val := any.(string)
@@ -123,7 +123,7 @@ func (c connector) Spec() connectors.Spec {
 }
 
 // ConsumeAsIterator returns a file iterator over objects stored in gcs.
-// The credential json is read from a env variable GOOGLE_APPLICATION_CREDENTIALS.
+// The credential json is read from a env variable google_application_credentials.
 // Additionally in case `env.AllowHostCredentials` is true it looks for "Application Default Credentials" as well
 func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
