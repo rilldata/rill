@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -21,6 +22,11 @@ import (
 const (
 	formMediaType = "application/x-www-form-urlencoded"
 	jsonMediaType = "application/json"
+)
+
+var (
+	ErrAuthenticationTimedout = fmt.Errorf("authentication timed out")
+	ErrCodeRejected           = fmt.Errorf("confirmation code rejected")
 )
 
 // Authenticator is the interface for authentication via device oauth
@@ -143,7 +149,7 @@ func (d *DeviceAuthenticator) GetAccessTokenForDevice(ctx context.Context, v *De
 		}
 
 		if d.Clock.Now().After(v.ExpiresAt) {
-			return nil, errors.New("authentication timed out")
+			return nil, ErrAuthenticationTimedout
 		}
 	}
 }
@@ -234,6 +240,9 @@ func checkErrorResponse(res *http.Response) (bool, error) {
 	}
 	if bodyStr == "expired_token" || bodyStr == "rejected" {
 		return false, errors.New(bodyStr)
+	}
+	if bodyStr == "rejected" {
+		return false, ErrCodeRejected
 	}
 
 	return false, errors.New(strconv.Itoa(res.StatusCode) + ": " + bodyStr)
