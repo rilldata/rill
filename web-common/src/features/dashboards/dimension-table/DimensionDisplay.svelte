@@ -292,7 +292,6 @@
     // Make dimension the first column
     columnNames.unshift(dimension?.name);
     measureNames = allMeasures.map((m) => m.name);
-    console.log(columnNames);
 
     columns = columnNames.map((columnName) => {
       if (measureNames.includes(columnName)) {

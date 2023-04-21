@@ -86,26 +86,6 @@ export function getFilterForComparisonTable(
   getFilterForComparsion(filterForDimension, dimensionName, filterValues);
 }
 
-// Custom sort that implements the following logic:
-// Input - [ "measure_1", "measure_10", "measure_1_delta", "measure_1_delta_perc", "measure_2", "measure_0", "measure_20" ]
-// Output -  [ "measure_0", "measure_1", "measure_1_delta", "measure_1_delta_perc", "measure_2", "measure_10", "measure_20" ]
-export function customSortMeasures(measure1: string, measure2: string) {
-  const a_num = parseFloat(
-    measure1
-      .replace("measure_", "")
-      .replace("_delta", ".1")
-      .replace("_delta_perc", ".2")
-  );
-  const b_num = parseFloat(
-    measure2
-      .replace("measure_", "")
-      .replace("_delta", ".1")
-      .replace("_delta_perc", ".2")
-  );
-
-  return a_num - b_num;
-}
-
 /** Takes previous and current data to construct comparison data
  * with fields named measure_x_delta and measure_x_delta_perc */
 export function computeComparisonValues(
