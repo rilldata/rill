@@ -67,6 +67,7 @@ are details left to the consumer of the component; this component should remain 
       </svelte:fragment>
       <!-- body -->
       <RemovableListBody
+        {excludeMode}
         slot="body"
         label={name}
         values={selectedValues}

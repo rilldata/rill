@@ -10,6 +10,12 @@
   export let show = 1;
   export let labelMaxWidth = "160px";
   export let valueMaxWidth = "320px";
+  export let excludeMode;
+
+  $: console.log(
+    "RemovableListBody SANITY CHECK -- update excludeMode to:",
+    excludeMode
+  );
 
   $: visibleValues = values.slice(0, show);
   $: whatsLeft = values.length - show;
