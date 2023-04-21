@@ -141,10 +141,7 @@
       $dashboardStore?.selectedComparisonTimeRange
     );
 
-    /** FIXME: showComparison is always undefined on fresh reload
-     * add showComparison to URL Proto.
-     * For now enable comparisons if not defined
-     */
+    // enable comparisons if showComparison state is not defined
     if ($dashboardStore?.showComparison === undefined) {
       metricsExplorerStore.toggleComparison(metricViewName, true);
     }
