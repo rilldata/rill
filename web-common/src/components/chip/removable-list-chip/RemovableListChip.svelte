@@ -87,9 +87,9 @@ are details left to the consumer of the component; this component should remain 
     </div>
   </Tooltip>
   <svelte:fragment slot="floating-element">
+    <!-- {#key excludeMode} -->
     <RemovableListMenu
       {excludeMode}
-      slot="floating-element"
       on:escape={toggleFloatingElement}
       on:click-outside={toggleFloatingElement}
       on:apply
@@ -97,6 +97,7 @@ are details left to the consumer of the component; this component should remain 
       on:toggle
       {selectedValues}
       {searchedValues}
-    /></svelte:fragment
-  >
+    />
+    <!-- {/key} -->
+  </svelte:fragment>
 </WithTogglableFloatingElement>

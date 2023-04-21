@@ -10,9 +10,13 @@
 
   export let selectedValues: string[];
   export let searchedValues: string[] = [];
-  export let excludeMode = false;
+  export let excludeMode;
 
-  $: console.log("RemovableListMenu -- update excludeMode to:", excludeMode);
+  $: console.log(
+    "RemovableListMenu-- update excludeMode to:",
+    excludeMode,
+    "SHOULD LOG EVERYTIME excludeMode CHANGES IN PARENT"
+  );
 
   let searchText = "";
 
