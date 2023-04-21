@@ -140,11 +140,6 @@
       // do not reset the comparison state when pullling from the URL
       $dashboardStore?.selectedComparisonTimeRange
     );
-
-    // enable comparisons if showComparison state is not defined
-    if ($dashboardStore?.showComparison === undefined) {
-      metricsExplorerStore.toggleComparison(metricViewName, true);
-    }
   }
 
   // we get the timeGrainOptions so that we can assess whether or not the
