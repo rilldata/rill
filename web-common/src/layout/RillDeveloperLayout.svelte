@@ -43,6 +43,7 @@
     });
 
     const res = await getArtifactErrors(config.instance_id);
+    console.log("RILL_DEV_LAYOUT_SET")
     fileArtifactsStore.setErrors(res.affectedPaths, res.errors);
 
     return initMetrics(config);

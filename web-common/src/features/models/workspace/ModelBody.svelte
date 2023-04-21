@@ -17,6 +17,7 @@
   import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
+    createQueryServiceTableRows,
     createRuntimeServiceGetFile,
     createRuntimeServicePutFileAndReconcile,
     getRuntimeServiceGetFileQueryKey,
@@ -30,7 +31,7 @@
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { getContext } from "svelte";
+  import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { SIDE_PAD } from "../../../layout/config";
@@ -44,6 +45,8 @@
   export let modelName: string;
   export let focusEditorOnMount = false;
 
+  let tableQuery;
+
   const queryClient = useQueryClient();
 
   const queryHighlight: Writable<QueryHighlightState> = getContext(
@@ -52,6 +55,25 @@
 
   $: runtimeInstanceId = $runtime.instanceId;
   const updateModel = createRuntimeServicePutFileAndReconcile();
+  
+  $: tableQuery = createQueryServiceTableRows(
+      runtimeInstanceId,
+      modelName, 
+      {
+        limit: 0
+      });
+
+  $: {
+    const runtimeError = $tableQuery.error?.response.data;
+    if(runtimeError) {
+      console.log("RUNTIME ERROR", runtimeError)
+      fileArtifactsStore.setErrors([modelPath], [{
+        ...runtimeError,
+        filePath: modelPath
+      }]);
+    }
+  }
+
 
   // track innerHeight to calculate the size of the editor element.
   let innerHeight: number;
@@ -143,8 +165,15 @@
         },
       })) as V1PutFileAndReconcileResponse;
 
+      
       embeddedSourceErrors = embeddedSourcesError(resp.errors, embeddedSources);
-      fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+      const runtimeErrors = $tableQuery.error ? [{
+        ...$tableQuery.error?.response.data,
+        filePath: modelPath
+    }] : [];
+
+    const mergedErrors = [...resp.errors, ...runtimeErrors]
+      fileArtifactsStore.setErrors(resp.affectedPaths, mergedErrors);
       if (!resp.errors.length && hasChanged) {
         sanitizedQuery = sanitizeQuery(content);
       }
@@ -167,6 +196,15 @@
     from: selection?.referenceIndex,
     to: selection?.referenceIndex + selection?.reference?.length,
   })) as SelectionRange[];
+
+  $: {
+    console.log({
+      embeddedSourceErrors,
+      modelError,
+      modelPath,
+      modelName
+    })
+  }
 </script>
 
 <svelte:window bind:innerHeight />
