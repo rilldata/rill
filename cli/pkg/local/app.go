@@ -90,7 +90,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 	logger = logger.WithOptions(zap.IncreaseLevel(lvl))
 
 	// Init Prometheus telemetry
-	shutdown, err := observability.Start(ctx, &observability.Options{
+	shutdown, err := observability.Start(ctx, logger, &observability.Options{
 		MetricsExporter: observability.PrometheusExporter,
 		TracesExporter:  observability.NoopExporter,
 		ServiceName:     "rill-local",

@@ -80,7 +80,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}
 
 			// Init telemetry
-			shutdown, err := observability.Start(cmd.Context(), &observability.Options{
+			shutdown, err := observability.Start(cmd.Context(), logger, &observability.Options{
 				MetricsExporter: conf.MetricsExporter,
 				TracesExporter:  conf.TracesExporter,
 				ServiceName:     "runtime-server",

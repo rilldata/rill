@@ -3,7 +3,7 @@ CREATE TABLE users (
 	email TEXT NOT NULL,
 	display_name TEXT NOT NULL,
 	photo_url TEXT,
-	github_username TEXT NOT NULL,
+	github_username TEXT NOT NULL DEFAULT '',
 	created_on TIMESTAMPTZ DEFAULT now() NOT NULL,
 	updated_on TIMESTAMPTZ DEFAULT now() NOT NULL
 );
