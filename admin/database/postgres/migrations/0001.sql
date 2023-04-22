@@ -4,7 +4,6 @@ CREATE TABLE orgs (
 	id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
 	name TEXT NOT NULL,
 	description TEXT NOT NULL,
-	all_usergroup_id UUID,
 	created_on TIMESTAMPTZ DEFAULT now() NOT NULL,
 	updated_on TIMESTAMPTZ DEFAULT now() NOT NULL
 );
