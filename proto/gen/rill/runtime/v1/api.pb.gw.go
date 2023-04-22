@@ -308,7 +308,7 @@ func local_request_RuntimeService_DeleteInstance_0(ctx context.Context, marshale
 }
 
 var (
-	filter_RuntimeService_ListFiles_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_RuntimeService_ListFiles_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "instanceId": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
 func request_RuntimeService_ListFiles_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -678,7 +678,7 @@ func local_request_RuntimeService_RenameFile_0(ctx context.Context, marshaler ru
 }
 
 var (
-	filter_RuntimeService_ListCatalogEntries_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_RuntimeService_ListCatalogEntries_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "instanceId": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
 func request_RuntimeService_ListCatalogEntries_0(ctx context.Context, marshaler runtime.Marshaler, client RuntimeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1702,7 +1702,7 @@ func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.Serve
 // RegisterRuntimeServiceHandlerFromEndpoint is same as RegisterRuntimeServiceHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
 func RegisterRuntimeServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
-	conn, err := grpc.Dial(endpoint, opts...)
+	conn, err := grpc.DialContext(ctx, endpoint, opts...)
 	if err != nil {
 		return err
 	}

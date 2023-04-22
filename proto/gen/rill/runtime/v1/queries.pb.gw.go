@@ -540,7 +540,7 @@ func local_request_QueryService_ColumnTopK_0(ctx context.Context, marshaler runt
 }
 
 var (
-	filter_QueryService_ColumnNullCount_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_QueryService_ColumnNullCount_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "instanceId": 1, "table_name": 2, "tableName": 3}, Base: []int{1, 1, 2, 3, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 2, 3, 4, 5}}
 )
 
 func request_QueryService_ColumnNullCount_0(ctx context.Context, marshaler runtime.Marshaler, client QueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -630,7 +630,7 @@ func local_request_QueryService_ColumnNullCount_0(ctx context.Context, marshaler
 }
 
 var (
-	filter_QueryService_ColumnDescriptiveStatistics_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_QueryService_ColumnDescriptiveStatistics_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "instanceId": 1, "table_name": 2, "tableName": 3}, Base: []int{1, 1, 2, 3, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 2, 3, 4, 5}}
 )
 
 func request_QueryService_ColumnDescriptiveStatistics_0(ctx context.Context, marshaler runtime.Marshaler, client QueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -720,7 +720,7 @@ func local_request_QueryService_ColumnDescriptiveStatistics_0(ctx context.Contex
 }
 
 var (
-	filter_QueryService_ColumnTimeGrain_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_QueryService_ColumnTimeGrain_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "instanceId": 1, "table_name": 2, "tableName": 3}, Base: []int{1, 1, 2, 3, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 2, 3, 4, 5}}
 )
 
 func request_QueryService_ColumnTimeGrain_0(ctx context.Context, marshaler runtime.Marshaler, client QueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -810,7 +810,7 @@ func local_request_QueryService_ColumnTimeGrain_0(ctx context.Context, marshaler
 }
 
 var (
-	filter_QueryService_ColumnNumericHistogram_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_QueryService_ColumnNumericHistogram_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "instanceId": 1, "table_name": 2, "tableName": 3}, Base: []int{1, 1, 2, 3, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 2, 3, 4, 5}}
 )
 
 func request_QueryService_ColumnNumericHistogram_0(ctx context.Context, marshaler runtime.Marshaler, client QueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -900,7 +900,7 @@ func local_request_QueryService_ColumnNumericHistogram_0(ctx context.Context, ma
 }
 
 var (
-	filter_QueryService_ColumnRugHistogram_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_QueryService_ColumnRugHistogram_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "instanceId": 1, "table_name": 2, "tableName": 3}, Base: []int{1, 1, 2, 3, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 2, 3, 4, 5}}
 )
 
 func request_QueryService_ColumnRugHistogram_0(ctx context.Context, marshaler runtime.Marshaler, client QueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -990,7 +990,7 @@ func local_request_QueryService_ColumnRugHistogram_0(ctx context.Context, marsha
 }
 
 var (
-	filter_QueryService_ColumnTimeRange_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_QueryService_ColumnTimeRange_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "instanceId": 1, "table_name": 2, "tableName": 3}, Base: []int{1, 1, 2, 3, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 2, 3, 4, 5}}
 )
 
 func request_QueryService_ColumnTimeRange_0(ctx context.Context, marshaler runtime.Marshaler, client QueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1080,7 +1080,7 @@ func local_request_QueryService_ColumnTimeRange_0(ctx context.Context, marshaler
 }
 
 var (
-	filter_QueryService_ColumnCardinality_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_QueryService_ColumnCardinality_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "instanceId": 1, "table_name": 2, "tableName": 3}, Base: []int{1, 1, 2, 3, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 2, 3, 4, 5}}
 )
 
 func request_QueryService_ColumnCardinality_0(ctx context.Context, marshaler runtime.Marshaler, client QueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1258,7 +1258,7 @@ func local_request_QueryService_ColumnTimeSeries_0(ctx context.Context, marshale
 }
 
 var (
-	filter_QueryService_TableCardinality_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_QueryService_TableCardinality_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "instanceId": 1, "table_name": 2, "tableName": 3}, Base: []int{1, 1, 2, 3, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 2, 3, 4, 5}}
 )
 
 func request_QueryService_TableCardinality_0(ctx context.Context, marshaler runtime.Marshaler, client QueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1348,7 +1348,7 @@ func local_request_QueryService_TableCardinality_0(ctx context.Context, marshale
 }
 
 var (
-	filter_QueryService_TableColumns_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_QueryService_TableColumns_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "instanceId": 1, "table_name": 2, "tableName": 3}, Base: []int{1, 1, 2, 3, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 2, 3, 4, 5}}
 )
 
 func request_QueryService_TableColumns_0(ctx context.Context, marshaler runtime.Marshaler, client QueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1438,7 +1438,7 @@ func local_request_QueryService_TableColumns_0(ctx context.Context, marshaler ru
 }
 
 var (
-	filter_QueryService_TableRows_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "table_name": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_QueryService_TableRows_0 = &utilities.DoubleArray{Encoding: map[string]int{"instance_id": 0, "instanceId": 1, "table_name": 2, "tableName": 3}, Base: []int{1, 1, 2, 3, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 1, 1, 2, 3, 4, 5}}
 )
 
 func request_QueryService_TableRows_0(ctx context.Context, marshaler runtime.Marshaler, client QueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1964,7 +1964,7 @@ func RegisterQueryServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 // RegisterQueryServiceHandlerFromEndpoint is same as RegisterQueryServiceHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
 func RegisterQueryServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
-	conn, err := grpc.Dial(endpoint, opts...)
+	conn, err := grpc.DialContext(ctx, endpoint, opts...)
 	if err != nil {
 		return err
 	}

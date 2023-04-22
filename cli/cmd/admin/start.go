@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
@@ -86,7 +87,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}
 
 			// Init telemetry
-			shutdown, err := observability.Start(&observability.Options{
+			shutdown, err := observability.Start(cmd.Context(), logger, &observability.Options{
 				MetricsExporter: conf.MetricsExporter,
 				TracesExporter:  conf.TracesExporter,
 				ServiceName:     "admin-server",
@@ -96,7 +97,10 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				logger.Fatal("error starting telemetry", zap.Error(err))
 			}
 			defer func() {
-				err := shutdown(context.Background())
+				// Allow 10 seconds to gracefully shutdown telemetry
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				err := shutdown(ctx)
 				if err != nil {
 					logger.Error("telemetry shutdown failed", zap.Error(err))
 				}
@@ -109,19 +113,23 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}
 
 			// Init email client
-			emailOpts := &email.Options{
-				SMTPHost:     conf.EmailSMTPHost,
-				SMTPPort:     conf.EmailSMTPPort,
-				SMTPUsername: conf.EmailSMTPUsername,
-				SMTPPassword: conf.EmailSMTPPassword,
-				SenderEmail:  conf.EmailSenderEmail,
-				SenderName:   conf.EmailSenderName,
-				FrontendURL:  conf.FrontendURL,
+			var sender email.Sender
+			if conf.EmailSMTPHost != "" {
+				sender, err = email.NewSMTPSender(&email.SMTPOptions{
+					SMTPHost:     conf.EmailSMTPHost,
+					SMTPPort:     conf.EmailSMTPPort,
+					SMTPUsername: conf.EmailSMTPUsername,
+					SMTPPassword: conf.EmailSMTPPassword,
+					FromEmail:    conf.EmailSenderEmail,
+					FromName:     conf.EmailSenderName,
+				})
+			} else {
+				sender, err = email.NewConsoleSender(logger, conf.EmailSenderEmail, conf.EmailSenderName)
 			}
-			emailClient, err := email.NewEmail(emailOpts)
 			if err != nil {
-				logger.Fatal("error creating email client", zap.Error(err))
+				logger.Fatal("error creating email sender", zap.Error(err))
 			}
+			emailClient := email.New(sender, conf.FrontendURL)
 
 			// Init admin service
 			admOpts := &admin.Options{
@@ -131,7 +139,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				GithubAppPrivateKey: conf.GithubAppPrivateKey,
 				ProvisionerSpec:     conf.ProvisionerSpec,
 			}
-			adm, err := admin.New(admOpts, logger, issuer, emailClient)
+			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}

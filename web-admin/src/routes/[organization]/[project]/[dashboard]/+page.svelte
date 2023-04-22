@@ -21,15 +21,15 @@
     },
   });
   $: isProjectBuilding =
-    $project.data?.productionDeployment?.status ===
+    $project.data?.prodDeployment?.status ===
       V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
-    $project.data?.productionDeployment?.status ===
+    $project.data?.prodDeployment?.status ===
       V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING;
   $: isProjectErrored =
-    $project.data?.productionDeployment?.status ===
+    $project.data?.prodDeployment?.status ===
     V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR;
   $: isProjectOK =
-    $project.data?.productionDeployment?.status ===
+    $project.data?.prodDeployment?.status ===
     V1DeploymentStatus.DEPLOYMENT_STATUS_OK;
 
   $: metricsExplorer = useDashboardStore(dash);

@@ -30,10 +30,10 @@ type Service struct {
 	issuer         *auth.Issuer
 	closeCtx       context.Context
 	closeCtxCancel context.CancelFunc
-	email          email.Email
+	email          *email.Client
 }
 
-func New(opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient email.Email) (*Service, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client) (*Service, error) {
 	// Init db
 	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN)
 	if err != nil {
@@ -41,9 +41,22 @@ func New(opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient ema
 	}
 
 	// Auto-run migrations
-	err = db.Migrate(context.Background())
+	v1, err := db.FindMigrationVersion(ctx)
+	if err != nil {
+		logger.Fatal("error getting migration version", zap.Error(err))
+	}
+	err = db.Migrate(ctx)
 	if err != nil {
 		logger.Fatal("error migrating database", zap.Error(err))
+	}
+	v2, err := db.FindMigrationVersion(ctx)
+	if err != nil {
+		logger.Fatal("error getting migration version", zap.Error(err))
+	}
+	if v1 == v2 {
+		logger.Info("database is up to date", zap.Int("version", v2))
+	} else {
+		logger.Info("database migrated", zap.Int("from_version", v1), zap.Int("to_version", v2))
 	}
 
 	// Create Github client

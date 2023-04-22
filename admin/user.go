@@ -29,11 +29,11 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	}
 
 	// Get user invites if exists
-	orgInvites, err := s.DB.FindOrganizationMemberUserInvitations(ctx, email)
+	orgInvites, err := s.DB.FindOrganizationInvitesByEmail(ctx, email)
 	if err != nil {
 		return nil, err
 	}
-	projectInvites, err := s.DB.FindProjectMemberUserInvitations(ctx, email)
+	projectInvites, err := s.DB.FindProjectInvitesByEmail(ctx, email)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.DeleteOrganizationMemberUserInvitation(ctx, invite.ID)
+		err = s.DB.DeleteOrganizationInvite(ctx, invite.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -72,7 +72,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.DeleteProjectMemberUserInvitation(ctx, invite.ID)
+		err = s.DB.DeleteProjectInvite(ctx, invite.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -121,11 +121,12 @@ func (s *Service) InviteUserToOrganization(ctx context.Context, email, inviterID
 	}
 
 	// Create invite
-	err = s.DB.InsertOrganizationMemberUserInvitation(ctx, email, inviterID, orgID, roleID)
+	err = s.DB.InsertOrganizationInvite(ctx, email, orgID, roleID, inviterID)
 	if err != nil {
 		return err
 	}
-	// send invitation email
+
+	// Send invitation email
 	err = s.email.SendOrganizationInvite(email, "", orgName, roleName)
 	if err != nil {
 		return err
@@ -142,11 +143,12 @@ func (s *Service) InviteUserToProject(ctx context.Context, email, inviterID, pro
 	}
 
 	// Create invite
-	err = s.DB.InsertProjectMemberUserInvitation(ctx, email, inviterID, projectID, roleID)
+	err = s.DB.InsertProjectInvite(ctx, email, projectID, roleID, inviterID)
 	if err != nil {
 		return err
 	}
-	// send invitation email
+
+	// Send invitation email
 	err = s.email.SendProjectInvite(email, "", projectName, roleName)
 	if err != nil {
 		return err
@@ -170,7 +172,7 @@ func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string)
 		return nil, err
 	}
 
-	role, err := s.DB.FindOrganizationRole(ctx, database.OrganizationAdminRoleName)
+	role, err := s.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to find organization admin role"))
 	}
@@ -181,7 +183,7 @@ func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string)
 		return nil, err
 	}
 	// Add user to all user group
-	err = s.DB.InsertUserInUsergroup(ctx, userID, userGroup.ID)
+	err = s.DB.InsertUsergroupMember(ctx, userGroup.ID, userID)
 	if err != nil {
 		return nil, err
 	}
