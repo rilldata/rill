@@ -292,7 +292,7 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationAdminRoleName)
+	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to find organization admin role"))
 	}
@@ -362,8 +362,8 @@ func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.Set
 	}
 
 	// Check if the user is the last owner
-	if role.Name != database.OrganizationAdminRoleName {
-		adminRole, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationAdminRoleName)
+	if role.Name != database.OrganizationRoleNameAdmin {
+		adminRole, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 		if err != nil {
 			panic(errors.Wrap(err, "failed to find organization admin role"))
 		}
@@ -405,7 +405,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 		return nil, status.Error(codes.PermissionDenied, "not allowed to remove org members")
 	}
 
-	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationAdminRoleName)
+	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to find organization admin role"))
 	}

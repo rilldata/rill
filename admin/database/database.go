@@ -373,12 +373,12 @@ type DeviceAuthCode struct {
 
 // Constants for known role names (created in migrations).
 const (
-	OrganizationAdminRoleName        = "admin"
-	OrganizationCollaboratorRoleName = "collaborator"
-	OrganizationViewerRoleName       = "viewer"
-	ProjectAdminRoleName             = "admin"
-	ProjectCollaboratorRoleName      = "collaborator"
-	ProjectViewerRoleName            = "viewer"
+	OrganizationRoleNameAdmin        = "admin"
+	OrganizationRoleNameCollaborator = "collaborator"
+	OrganizationRoleNameViewer       = "viewer"
+	ProjectRoleNameAdmin             = "admin"
+	ProjectRoleNameCollaborator      = "collaborator"
+	ProjectRoleNameViewer            = "viewer"
 )
 
 // OrganizationRole represents roles for orgs.

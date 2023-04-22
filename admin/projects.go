@@ -37,7 +37,7 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 		return nil, err
 	}
 
-	adminRole, err := s.DB.FindProjectRole(txCtx, database.ProjectAdminRoleName)
+	adminRole, err := s.DB.FindProjectRole(txCtx, database.ProjectRoleNameAdmin)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to find project admin role"))
 	}
@@ -49,7 +49,7 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 	}
 
 	// add project viewer role to the all_user_group of the org
-	viewerRole, err := s.DB.FindProjectRole(txCtx, database.ProjectViewerRoleName)
+	viewerRole, err := s.DB.FindProjectRole(txCtx, database.ProjectRoleNameViewer)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to find project viewer role"))
 	}

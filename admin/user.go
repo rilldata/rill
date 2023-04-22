@@ -172,7 +172,7 @@ func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string)
 		return nil, err
 	}
 
-	role, err := s.DB.FindOrganizationRole(ctx, database.OrganizationAdminRoleName)
+	role, err := s.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to find organization admin role"))
 	}
