@@ -13,7 +13,9 @@
   );
 
   $: if ($projs.data && $projs.data.projects?.length > 0) {
-    goto(`/${$page.params.organization}/${$projs.data.projects[0].name}`);
+    goto(
+      `/${$page.params.organization}/${$projs.data.projects[0].name}/-/redirect`
+    );
   }
 
   function openDocs() {
