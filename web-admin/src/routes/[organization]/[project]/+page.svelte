@@ -3,6 +3,7 @@
   import { page } from "$app/stores";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createAdminServiceGetProject } from "../../../client";
 
   $: proj = createAdminServiceGetProject(
@@ -11,9 +12,7 @@
   );
 
   // Go to first dashboard
-  $: dashboardsQuery = useDashboardNames(
-    $proj.data?.prodDeployment?.runtimeInstanceId
-  );
+  $: dashboardsQuery = useDashboardNames($runtime.instanceId);
   $: if ($dashboardsQuery.data && $dashboardsQuery.data.length > 0) {
     goto(
       `/${$page.params.organization}/${$page.params.project}/${$dashboardsQuery.data[0]}`
