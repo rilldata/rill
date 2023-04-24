@@ -1,10 +1,8 @@
 import { invalidationForMetricsViewData } from "@rilldata/web-local/lib/svelte-query/invalidation";
 import type { QueryClient } from "@tanstack/svelte-query";
 
-export async function invalidateProject(
+export async function invalidateProjectQueries(
   queryClient: QueryClient,
-  orgName: string,
-  projectName: string,
   dashboardNames: Array<string>
 ) {
   // TODO: do a greater refactor of invalidations and make this O(N) instead of O(NM)
