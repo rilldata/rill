@@ -22,6 +22,7 @@ import (
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -47,14 +48,15 @@ const (
 // Here, a local environment means a non-authenticated, single-instance and single-project setup on localhost.
 // App encapsulates logic shared between different CLI commands, like start, init, build and source.
 type App struct {
-	Context     context.Context
-	Runtime     *runtime.Runtime
-	Instance    *drivers.Instance
-	Logger      *zap.SugaredLogger
-	BaseLogger  *zap.Logger
-	Version     config.Version
-	Verbose     bool
-	ProjectPath string
+	Context               context.Context
+	Runtime               *runtime.Runtime
+	Instance              *drivers.Instance
+	Logger                *zap.SugaredLogger
+	BaseLogger            *zap.Logger
+	Version               config.Version
+	Verbose               bool
+	ProjectPath           string
+	observabilityShutdown observability.ShutdownFunc
 }
 
 func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string) (*App, error) {
@@ -87,6 +89,17 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		lvl = zap.DebugLevel
 	}
 	logger = logger.WithOptions(zap.IncreaseLevel(lvl))
+
+	// Init Prometheus telemetry
+	shutdown, err := observability.Start(ctx, logger, &observability.Options{
+		MetricsExporter: observability.PrometheusExporter,
+		TracesExporter:  observability.NoopExporter,
+		ServiceName:     "rill-local",
+		ServiceVersion:  ver.String(),
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	// Create a local runtime with an in-memory metastore
 	rtOpts := &runtime.Options{
@@ -138,19 +151,28 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 
 	// Done
 	app := &App{
-		Context:     ctx,
-		Runtime:     rt,
-		Instance:    inst,
-		Logger:      logger.Sugar(),
-		BaseLogger:  logger,
-		Version:     ver,
-		Verbose:     verbose,
-		ProjectPath: projectPath,
+		Context:               ctx,
+		Runtime:               rt,
+		Instance:              inst,
+		Logger:                logger.Sugar(),
+		BaseLogger:            logger,
+		Version:               ver,
+		Verbose:               verbose,
+		ProjectPath:           projectPath,
+		observabilityShutdown: shutdown,
 	}
 	return app, nil
 }
 
 func (a *App) Close() error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	err := a.observabilityShutdown(ctx)
+	if err != nil {
+		fmt.Printf("telemetry shutdown failed: %s\n", err.Error())
+	}
+
 	return a.Runtime.Close()
 }
 
@@ -311,9 +333,10 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 
 	// Create a runtime server
 	opts := &runtimeserver.Options{
-		HTTPPort:       httpPort,
-		GRPCPort:       grpcPort,
-		AllowedOrigins: []string{"*"},
+		HTTPPort:        httpPort,
+		GRPCPort:        grpcPort,
+		AllowedOrigins:  []string{"*"},
+		ServePrometheus: true,
 	}
 	runtimeServer, err := runtimeserver.NewServer(opts, a.Runtime, serverLogger)
 	if err != nil {

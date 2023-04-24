@@ -12,13 +12,13 @@
   let dashboards: V1CatalogEntry[];
 
   $: proj = createAdminServiceGetProject(organization, project);
-  $: if ($proj.isSuccess && $proj.data?.productionDeployment) {
+  $: if ($proj.isSuccess && $proj.data?.prodDeployment) {
     getDashboardsForProject($proj.data);
   }
 
   async function getDashboardsForProject(projectData: V1GetProjectResponse) {
     // Hack: in development, the runtime host is actually on port 8081
-    const runtimeHost = projectData.productionDeployment.runtimeHost.replace(
+    const runtimeHost = projectData.prodDeployment.runtimeHost.replace(
       "localhost:9091",
       "localhost:8081"
     );
@@ -31,7 +31,7 @@
     });
 
     const { data } = await axios.get(
-      `/v1/instances/${projectData.productionDeployment.runtimeInstanceId}/catalog?type=OBJECT_TYPE_METRICS_VIEW`
+      `/v1/instances/${projectData.prodDeployment.runtimeInstanceId}/catalog?type=OBJECT_TYPE_METRICS_VIEW`
     );
 
     dashboards = data.entries;
@@ -40,7 +40,9 @@
   }
 </script>
 
-{#if $proj.isSuccess && dashboards?.length > 0}
+{#if dashboards?.length === 0}
+  <p class="text-gray-500 text-xs">This project has no dashboards yet.</p>
+{:else if dashboards?.length > 0}
   <ol>
     {#each dashboards as dashboard}
       <li class="mb-1">

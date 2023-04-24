@@ -47,9 +47,19 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects"};
   }
 
+  // ListProjectsForOrganizationAndGithubURL lists all the project for org deployed from githubURL
+  rpc ListProjectsForOrganizationAndGithubURL(ListProjectsForOrganizationAndGithubURLRequest) returns (ListProjectsForOrganizationAndGithubURLResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects_by_github_url"};
+  }
+
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}"};
+  }
+
+// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
+  rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}/variables"};
   }
 
   // CreateProject creates a new project
@@ -73,35 +83,12 @@ service AdminService {
     };
   }
 
-  // GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
-  rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}/variables"};
-  }
-
   // UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
   rpc UpdateProjectVariables(UpdateProjectVariablesRequest) returns (UpdateProjectVariablesResponse) {
     option (google.api.http) = {
       put: "/v1/organizations/{organization_name}/projects/{name}/variables",
       body: "*"
     };
-  }
-
-  // GetCurrentUser returns the currently authenticated user (if any)
-  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {
-    option (google.api.http) = {
-      get: "/v1/users/current"
-    };
-  }
-
-  // RevokeCurrentAuthToken revoke the current auth token
-  rpc RevokeCurrentAuthToken(RevokeCurrentAuthTokenRequest) returns (RevokeCurrentAuthTokenResponse) {
-    option (google.api.http) = {delete: "/v1/tokens/current"};
-  }
-
-  // GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
-  // If the caller has not granted access to the repository, instructions for granting access are returned.
-  rpc GetGithubRepoStatus(GetGithubRepoStatusRequest) returns (GetGithubRepoStatusResponse) {
-    option (google.api.http) = {get: "/v1/github/repositories"};
   }
 
   // ListOrganizationMembers lists all the org members
@@ -122,17 +109,17 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/members/{email}"};
   }
 
+  // LeaveOrganization removes the current user from the organization
+  rpc LeaveOrganization(LeaveOrganizationRequest) returns (LeaveOrganizationResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/members/current"};
+  }
+
   // SetOrganizationMemberRole sets the role for the member
   rpc SetOrganizationMemberRole(SetOrganizationMemberRoleRequest) returns (SetOrganizationMemberRoleResponse) {
     option (google.api.http) = {
       put: "/v1/organizations/{organization}/members/{email}",
       body: "*"
     };
-  }
-
-  // LeaveOrganization removes the current user from the organization
-  rpc LeaveOrganization(LeaveOrganizationRequest) returns (LeaveOrganizationResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization}/members/current"};
   }
 
   // ListProjectMembers lists all the project members
@@ -160,6 +147,25 @@ service AdminService {
       body: "*"
     };
   }
+
+  // GetCurrentUser returns the currently authenticated user (if any)
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {
+    option (google.api.http) = {
+      get: "/v1/users/current"
+    };
+  }
+
+  // RevokeCurrentAuthToken revoke the current auth token
+  rpc RevokeCurrentAuthToken(RevokeCurrentAuthTokenRequest) returns (RevokeCurrentAuthTokenResponse) {
+    option (google.api.http) = {delete: "/v1/tokens/current"};
+  }
+
+  // GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
+  // If the caller has not granted access to the repository, instructions for granting access are returned.
+  rpc GetGithubRepoStatus(GetGithubRepoStatusRequest) returns (GetGithubRepoStatusResponse) {
+    option (google.api.http) = {get: "/v1/github/repositories"};
+  }
+
 }
 
 message PingRequest {}
@@ -204,8 +210,9 @@ message DeleteOrganizationRequest {
 message DeleteOrganizationResponse {}
 
 message UpdateOrganizationRequest {
-  string name = 1;
-  string description = 2;
+  string id = 1;
+  string name = 2 [(validate.rules).string.min_len = 1];
+  string description = 3;
 }
 
 message UpdateOrganizationResponse {
@@ -213,12 +220,24 @@ message UpdateOrganizationResponse {
 }
 
 message ListProjectsForOrganizationRequest {
-  string organization_name = 1;
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
   uint32 page_size = 2;
   string page_token = 3;
 }
 
 message ListProjectsForOrganizationResponse {
+  repeated Project projects = 1;
+  string next_page_token = 2;
+}
+
+message ListProjectsForOrganizationAndGithubURLRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string github_url = 2 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 3;
+  string page_token = 4;
+}
+
+message ListProjectsForOrganizationAndGithubURLResponse {
   repeated Project projects = 1;
   string next_page_token = 2;
 }
@@ -230,23 +249,32 @@ message GetProjectRequest {
 
 message GetProjectResponse {
   Project project = 1;
-  Deployment production_deployment = 2;
+  Deployment prod_deployment = 2;
   string jwt = 3;
   ProjectPermissions project_permissions = 4;
 }
 
-message CreateProjectRequest {
+message GetProjectVariablesRequest {
   string organization_name = 1;
+  string name = 2;
+}
+
+message GetProjectVariablesResponse {
+  map<string, string> variables = 1;
+}
+
+message CreateProjectRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
   string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
   bool public = 4;
-  string region = 9;
-  string production_olap_driver = 10;
-  string production_olap_dsn = 11;
-  int64 production_slots = 5;
-  string production_branch = 6;
-  string github_url = 7;
-  map<string, string> variables = 8;
+  string region = 5;
+  string prod_olap_driver = 6;
+  string prod_olap_dsn = 7;
+  int64 prod_slots = 8;
+  string prod_branch = 9;
+  string github_url = 10;
+  map<string, string> variables = 11;
 }
 
 message CreateProjectResponse {
@@ -262,36 +290,112 @@ message DeleteProjectRequest {
 message DeleteProjectResponse {}
 
 message UpdateProjectRequest {
-  string organization_name = 1;
-  string name = 2;
-  string description = 3;
-  bool public = 4;
-  string production_branch = 5;
-  string github_url = 6;
+  string id = 1;
+  string organization_name = 2 [(validate.rules).string.min_len = 1];
+  string name = 3 [(validate.rules).string.min_len = 1];
+  string description = 4;
+  bool public = 5;
+  string prod_branch = 6;
+  string github_url = 7;
 }
 
 message UpdateProjectResponse {
   Project project = 1;
 }
 
-message GetProjectVariablesRequest {
-  string organization_name = 1;
-  string name = 2;
-}
-
-message GetProjectVariablesResponse {
-  map<string, string> variables = 1;
-}
-
 message UpdateProjectVariablesRequest {
-  string organization_name = 1;
-  string name = 2;
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string name = 2 [(validate.rules).string.min_len = 1];
   map<string, string> variables = 3;
 }
 
 message UpdateProjectVariablesResponse {
   map<string, string> variables = 1;
 }
+
+message ListOrganizationMembersRequest {
+  string organization = 1;
+  uint32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListOrganizationMembersResponse {
+  repeated Member members = 1;
+  repeated UserInvite invites = 3;
+  string next_page_token = 2;
+}
+
+message AddOrganizationMemberRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.email = true];
+  string role = 3;
+}
+
+message AddOrganizationMemberResponse {
+  bool pending_signup = 1;
+}
+
+message RemoveOrganizationMemberRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.email = true];
+}
+
+message RemoveOrganizationMemberResponse {}
+
+message LeaveOrganizationRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+}
+
+message LeaveOrganizationResponse {}
+
+message SetOrganizationMemberRoleRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.email = true];
+  string role = 3 [(validate.rules).string.min_len = 1];
+}
+
+message SetOrganizationMemberRoleResponse {}
+
+message ListProjectMembersRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 3;
+  string page_token = 4;
+}
+
+message ListProjectMembersResponse {
+  repeated Member members = 1;
+  repeated UserInvite invites = 3;
+  string next_page_token = 2;
+}
+
+message AddProjectMemberRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string email = 3 [(validate.rules).string.email = true];
+  string role = 4 [(validate.rules).string.min_len = 1];
+}
+
+message AddProjectMemberResponse {
+  bool pending_signup = 1;
+}
+
+message RemoveProjectMemberRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string email = 3 [(validate.rules).string.email = true];
+}
+
+message RemoveProjectMemberResponse {}
+
+message SetProjectMemberRoleRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string email = 3 [(validate.rules).string.email = true];
+  string role = 4 [(validate.rules).string.min_len = 1];
+}
+
+message SetProjectMemberRoleResponse {}
 
 message GetCurrentUserRequest {}
 
@@ -315,6 +419,15 @@ message GetGithubRepoStatusResponse {
   string default_branch = 3;
 }
 
+message User {
+  string id = 1;
+  string email = 2;
+  string display_name = 3;
+  string photo_url = 4;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
+}
+
 message Organization {
   string id = 1;
   string name = 2; // Globally unique
@@ -326,28 +439,19 @@ message Organization {
 message Project {
   string id = 1;
   string name = 2; // Unique in organization
-  string description = 3;
-  bool public = 4;
-  string org_id = 15;
-  string org_name = 16;
-  string region = 12;
-  string production_olap_driver = 13;
-  string production_olap_dsn = 14;
-  int64 production_slots = 5;
-  string production_branch = 6;
-  string github_url = 7;
-  string production_deployment_id = 8;
-  google.protobuf.Timestamp created_on = 9;
-  google.protobuf.Timestamp updated_on = 10;
-}
-
-message User {
-  string id = 1;
-  string email = 2;
-  string display_name = 3;
-  string photo_url = 4;
-  google.protobuf.Timestamp created_on = 5;
-  google.protobuf.Timestamp updated_on = 6;
+  string org_id = 3;
+  string org_name = 4;
+  string description = 5;
+  bool public = 6;
+  string region = 7;
+  string github_url = 8;
+  string prod_branch = 9;
+  string prod_olap_driver = 10;
+  string prod_olap_dsn = 11;
+  int64 prod_slots = 12;
+  string prod_deployment_id = 13;
+  google.protobuf.Timestamp created_on = 14;
+  google.protobuf.Timestamp updated_on = 15;
 }
 
 enum DeploymentStatus {
@@ -371,111 +475,6 @@ message Deployment {
   google.protobuf.Timestamp updated_on = 10;
 }
 
-// Request message for AdminService.ListOrganizationMembers
-message ListOrganizationMembersRequest {
-  string organization = 1;
-  uint32 page_size = 2;
-  string page_token = 3;
-}
-
-// Response message for AdminService.ListOrganizationMembers
-message ListOrganizationMembersResponse {
-  repeated Member members = 1;
-  string next_page_token = 2;
-}
-
-// Request message for AdminService.AddOrganizationMember
-message AddOrganizationMemberRequest {
-  string organization = 1;
-  string email = 2;
-  string role = 3;
-}
-
-// Response message for AdminService.AddOrganizationMember
-message AddOrganizationMemberResponse {}
-
-// Request message for AdminService.RemoveOrganizationMember
-message RemoveOrganizationMemberRequest {
-  string organization = 1;
-  string email = 2;
-}
-
-// Response message for AdminService.RemoveOrganizationMember
-message RemoveOrganizationMemberResponse {}
-
-// Request message for AdminService.SetOrganizationMemberRole
-message SetOrganizationMemberRoleRequest {
-  string organization = 1;
-  string email = 2;
-  string role = 3;
-}
-
-// Response message for AdminService.SetOrganizationMemberRole
-message SetOrganizationMemberRoleResponse {}
-
-// Request message for AdminService.LeaveOrganization
-message LeaveOrganizationRequest {
-  string organization = 1;
-}
-
-// Response message for AdminService.LeaveOrganization
-message LeaveOrganizationResponse {}
-
-// Request message for AdminService.ListProjectMembers
-message ListProjectMembersRequest {
-  string organization = 1;
-  string project = 2;
-  uint32 page_size = 3;
-  string page_token = 4;
-}
-
-// Response message for AdminService.ListProjectMembers
-message ListProjectMembersResponse {
-  repeated Member members = 1;
-  string next_page_token = 2;
-}
-
-// Request message for AdminService.AddProjectMember
-message AddProjectMemberRequest {
-  string organization = 1;
-  string project = 2;
-  string email = 3;
-  string role = 4;
-}
-
-// Response message for AdminService.AddProjectMember
-message AddProjectMemberResponse {}
-
-// Request message for AdminService.RemoveProjectMember
-message RemoveProjectMemberRequest {
-  string organization = 1;
-  string project = 2;
-  string email = 3;
-}
-
-// Response message for AdminService.RemoveProjectMember
-message RemoveProjectMemberResponse {}
-
-// Request message for AdminService.SetProjectMemberRole
-message SetProjectMemberRoleRequest {
-  string organization = 1;
-  string project = 2;
-  string email = 3;
-  string role = 4;
-}
-
-// Response message for AdminService.SetProjectMemberRole
-message SetProjectMemberRoleResponse {}
-
-message Member {
-  string user_id = 1;
-  string user_name = 2;
-  string user_email = 3;
-  string role_name = 4;
-  google.protobuf.Timestamp created_on = 5;
-  google.protobuf.Timestamp updated_on = 6;
-}
-
 message OrganizationPermissions {
   bool read_org = 1;
   bool manage_org = 2;
@@ -489,10 +488,27 @@ message OrganizationPermissions {
 message ProjectPermissions {
   bool read_project = 1;
   bool manage_project = 2;
-  bool read_prod_branch = 3;
-  bool manage_prod_branch = 4;
-  bool read_dev_branches = 5;
-  bool manage_dev_branches = 6;
-  bool read_project_members = 7;
-  bool manage_project_members = 8;
+  bool read_prod = 3;
+  bool read_prod_status = 4;
+  bool manage_prod = 5;
+  bool read_dev = 6;
+  bool read_dev_status = 7;
+  bool manage_dev = 8;
+  bool read_project_members = 9;
+  bool manage_project_members = 10;
+}
+
+message Member {
+  string user_id = 1;
+  string user_email = 3;
+  string user_name = 2;
+  string role_name = 4;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
+}
+
+message UserInvite {
+  string email = 1;
+  string role = 2;
+  string invited_by = 3;
 }
