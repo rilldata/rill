@@ -64,8 +64,13 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			tel := telemetry.NewTelemetry(cfg.Version)
 			tel.EmitDeployStart()
 			defer func() {
+				// give about 5s for emitting events over the parent context.
+				// this will make sure if user cancelled the command events are still fired.
+				telCtx, c := context.WithDeadline(ctx, time.Now().Add(time.Second*5))
+				defer c()
+
 				// telemetry errors shouldn't fail deploy command
-				_ = tel.Flush(ctx)
+				_ = tel.Flush(telCtx)
 			}()
 
 			// Verify that the projectPath contains a Rill project
