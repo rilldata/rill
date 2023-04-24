@@ -14,7 +14,7 @@ import (
 )
 
 func StatusCmd(cfg *config.Config) *cobra.Command {
-	var name string
+	var name, path string
 
 	statusCmd := &cobra.Command{
 		Use:   "status",
@@ -27,16 +27,16 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if !cmd.Flags().Changed("project") {
-				err := cmdutil.PromptIfUnset(&name, "Project Name", "")
+			// Get the new org name from user if not provided in the flag, Set Default org as default
+			if !cmd.Flags().Changed("org") {
+				err := cmdutil.PromptIfUnset(&cfg.Org, "Org Name", cfg.Org)
 				if err != nil {
 					return err
 				}
 			}
 
-			// Get the new org name from user if not provided in the flag, Set Default org as default
-			if !cmd.Flags().Changed("org") {
-				err := cmdutil.PromptIfUnset(&cfg.Org, "Org Name", cfg.Org)
+			if !cmd.Flags().Changed("project") {
+				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
 				if err != nil {
 					return err
 				}
@@ -76,6 +76,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	statusCmd.Flags().StringVar(&name, "project", "", "Name")
+	statusCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 
 	return statusCmd
 }

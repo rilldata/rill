@@ -11,7 +11,7 @@ import (
 )
 
 func DeleteCmd(cfg *config.Config) *cobra.Command {
-	var name string
+	var name, path string
 	var force bool
 
 	deleteCmd := &cobra.Command{
@@ -25,17 +25,16 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			// Get the new project name from user if not provided in the flag
-			if !cmd.Flags().Changed("project") {
-				err := cmdutil.PromptIfUnset(&name, "Project Name", "")
+			// Get the new org name from user if not provided in the flag
+			if !cmd.Flags().Changed("org") {
+				err := cmdutil.PromptIfUnset(&cfg.Org, "Org Name", cfg.Org)
 				if err != nil {
 					return err
 				}
 			}
 
-			// Get the new org name from user if not provided in the flag
-			if !cmd.Flags().Changed("org") {
-				err := cmdutil.PromptIfUnset(&cfg.Org, "Org Name", cfg.Org)
+			if !cmd.Flags().Changed("project") {
+				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
 				if err != nil {
 					return err
 				}
@@ -67,6 +66,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 	deleteCmd.Flags().SortFlags = false
 	deleteCmd.Flags().BoolVar(&force, "force", false, "Delete forcefully, skips the confirmation")
 	deleteCmd.Flags().StringVar(&name, "project", "", "Name")
+	deleteCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 
 	return deleteCmd
 }

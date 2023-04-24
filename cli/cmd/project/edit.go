@@ -12,7 +12,7 @@ import (
 )
 
 func EditCmd(cfg *config.Config) *cobra.Command {
-	var name, description, prodBranch string
+	var name, description, prodBranch, path string
 	var public bool
 
 	editCmd := &cobra.Command{
@@ -29,7 +29,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			if !cmd.Flags().Changed("project") {
-				err := cmdutil.PromptIfUnset(&name, "Project Name", "")
+				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
 				if err != nil {
 					return err
 				}
@@ -94,6 +94,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	editCmd.Flags().StringVar(&description, "description", "", "Description")
 	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "noname", "Production branch name")
 	editCmd.Flags().BoolVar(&public, "public", false, "Public")
+	editCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 
 	return editCmd
 }

@@ -276,3 +276,24 @@ func contains(vals []string, key string) bool {
 	}
 	return false
 }
+
+// ProjectNames returns names of all the projects in org deployed from githubURL
+func ProjectNames(ctx context.Context, c *client.Client, org, githubURL string) ([]string, error) {
+	resp, err := c.ListProjectsForOrganizationAndGithubURL(ctx, &adminv1.ListProjectsForOrganizationAndGithubURLRequest{
+		OrganizationName: org,
+		GithubUrl:        githubURL,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.Projects) == 0 {
+		return nil, fmt.Errorf("No project with githubURL %q exist in org %q", githubURL, org)
+	}
+
+	names := make([]string, len(resp.Projects))
+	for i, p := range resp.Projects {
+		names[i] = p.Name
+	}
+	return names, nil
+}
