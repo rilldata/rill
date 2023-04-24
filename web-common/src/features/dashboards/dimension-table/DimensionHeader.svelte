@@ -62,7 +62,7 @@
     style:grid-column-gap=".4rem"
   >
     {#if isFetching}
-      <div transition:slideRight|local={{ leftOffset: 8 }}>
+      <div>
         <Spinner size="16px" status={EntityStatus.Running} />
       </div>
     {:else}
