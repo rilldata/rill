@@ -111,6 +111,6 @@ func Login(ctx context.Context, cfg *config.Config, redirectURL string) error {
 	}
 	// set the default token to the one we just got
 	cfg.AdminTokenDefault = res1.AccessToken
-	bold.Print("Successfully logged in.\n")
+	bold.Print("Successfully logged in. Welcome to Rill!\n")
 	return nil
 }
