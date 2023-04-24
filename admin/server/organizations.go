@@ -42,7 +42,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.CanOrganization(ctx, org.ID, auth.ReadOrg) {
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrg {
 		// check if the org has any public projects, this works for anonymous users as well
 		hasPublicProject, err := s.admin.DB.CheckOrganizationHasPublicProjects(ctx, org.ID)
 		if err != nil {
@@ -106,7 +106,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.CanOrganization(ctx, org.ID, auth.ManageOrg) {
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to delete org")
 	}
 
@@ -128,7 +128,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.CanOrganization(ctx, org.ID, auth.ManageOrg) {
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
 	}
 
@@ -155,7 +155,7 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.CanOrganization(ctx, org.ID, auth.ReadOrgMembers) {
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
 	}
 
@@ -195,7 +195,7 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.CanOrganization(ctx, org.ID, auth.ManageOrgMembers) {
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add org members")
 	}
 
@@ -268,7 +268,7 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.CanOrganization(ctx, org.ID, auth.ManageOrgMembers) {
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to remove org members")
 	}
 
@@ -341,7 +341,7 @@ func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.Set
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.CanOrganization(ctx, org.ID, auth.ManageOrgMembers) {
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to set org members role")
 	}
 
@@ -401,7 +401,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if !claims.CanOrganization(ctx, org.ID, auth.ManageOrgMembers) {
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to remove org members")
 	}
 

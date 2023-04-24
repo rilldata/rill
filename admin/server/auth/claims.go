@@ -25,11 +25,8 @@ type Claims interface {
 	OwnerType() OwnerType
 	OwnerID() string
 	AuthTokenID() string
-	CanOrganization(ctx context.Context, orgID string, p OrganizationPermission) bool
-	CanProject(ctx context.Context, projectID string, p ProjectPermission) bool
-	Can(ctx context.Context, orgID string, op OrganizationPermission, projID string, pp ProjectPermission) bool
 	OrganizationPermissions(ctx context.Context, orgID string) *adminv1.OrganizationPermissions
-	ProjectPermissions(ctx context.Context, projectID string) *adminv1.ProjectPermissions
+	ProjectPermissions(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions
 }
 
 // claimsContextKey is used to set and get Claims on a request context.
@@ -61,18 +58,6 @@ func (c anonClaims) AuthTokenID() string {
 	return ""
 }
 
-func (c anonClaims) CanOrganization(ctx context.Context, orgID string, p OrganizationPermission) bool {
-	return false
-}
-
-func (c anonClaims) CanProject(ctx context.Context, projectID string, p ProjectPermission) bool {
-	return false
-}
-
-func (c anonClaims) Can(ctx context.Context, orgID string, op OrganizationPermission, projectID string, pp ProjectPermission) bool {
-	return false
-}
-
 func (c anonClaims) OrganizationPermissions(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
 	return &adminv1.OrganizationPermissions{}
 }
@@ -83,11 +68,11 @@ func (c anonClaims) ProjectPermissions(ctx context.Context, projectID string) *a
 
 // authTokenClaims represents claims for an admin.AuthToken.
 type authTokenClaims struct {
+	sync.Mutex
 	token                   admin.AuthToken
 	admin                   *admin.Service
 	orgPermissionsCache     map[string]*adminv1.OrganizationPermissions
 	projectPermissionsCache map[string]*adminv1.ProjectPermissions
-	sync.Mutex
 }
 
 func newAuthTokenClaims(token admin.AuthToken, adminService *admin.Service) Claims {
@@ -117,96 +102,64 @@ func (c *authTokenClaims) AuthTokenID() string {
 	return c.token.Token().ID.String()
 }
 
-func (c *authTokenClaims) CanOrganization(ctx context.Context, orgID string, p OrganizationPermission) bool {
-	t := c.token.Token().Type
-	switch t {
-	case authtoken.TypeUser:
-		permissions := c.OrganizationPermissions(ctx, orgID)
-		switch p {
-		case ReadOrg:
-			return permissions.ReadOrg
-		case ManageOrg:
-			return permissions.ManageOrg
-		case ReadProjects:
-			return permissions.ReadProjects
-		case CreateProjects:
-			return permissions.CreateProjects
-		case ManageProjects:
-			return permissions.ManageProjects
-		case ReadOrgMembers:
-			return permissions.ReadOrgMembers
-		case ManageOrgMembers:
-			return permissions.ManageOrgMembers
-		default:
-			panic(fmt.Errorf("unexpected organization permission %q", p))
-		}
-	case authtoken.TypeService:
-		panic(errors.New("service tokens not supported"))
-	default:
-		panic(fmt.Errorf("unexpected token type %q", t))
-	}
-}
-
-func (c *authTokenClaims) CanProject(ctx context.Context, projectID string, p ProjectPermission) bool {
-	t := c.token.Token().Type
-	switch t {
-	case authtoken.TypeUser:
-		permissions := c.ProjectPermissions(ctx, projectID)
-		switch p {
-		case ReadProject:
-			return permissions.ReadProject
-		case ManageProject:
-			return permissions.ManageProject
-		case ReadProd:
-			return permissions.ReadProd
-		case ReadProdStatus:
-			return permissions.ReadProdStatus
-		case ManageProd:
-			return permissions.ManageProd
-		case ReadDev:
-			return permissions.ReadDev
-		case ReadDevStatus:
-			return permissions.ReadDevStatus
-		case ManageDev:
-			return permissions.ManageDev
-		case ReadProjectMembers:
-			return permissions.ReadProjectMembers
-		case ManageProjectMembers:
-			return permissions.ManageProjectMembers
-		default:
-			panic(fmt.Errorf("unexpected organization permission %q", p))
-		}
-	case authtoken.TypeService:
-		panic(errors.New("service tokens not supported"))
-	default:
-		panic(fmt.Errorf("unexpected token type %q", t))
-	}
-}
-
-func (c *authTokenClaims) Can(ctx context.Context, orgID string, op OrganizationPermission, projectID string, pp ProjectPermission) bool {
-	return c.CanOrganization(ctx, orgID, op) || c.CanProject(ctx, projectID, pp)
-}
-
 func (c *authTokenClaims) OrganizationPermissions(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
+	switch c.token.Token().Type {
+	case authtoken.TypeUser:
+		// continue
+	case authtoken.TypeService:
+		panic(errors.New("service tokens not supported"))
+	default:
+		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
+	}
+
 	c.Lock()
 	defer c.Unlock()
+
 	if perm, ok := c.orgPermissionsCache[orgID]; ok {
 		return perm
 	}
 
-	composite := &adminv1.OrganizationPermissions{}
 	roles, err := c.admin.DB.ResolveOrganizationRolesForUser(ctx, c.token.OwnerID(), orgID)
 	if err != nil {
-		panic(fmt.Errorf("failed to get project permissions: %w", err))
+		panic(fmt.Errorf("failed to get org permissions: %w", err))
 	}
+
+	composite := &adminv1.OrganizationPermissions{}
 	for _, role := range roles {
 		composite = unionOrgRoles(composite, role)
 	}
+
 	c.orgPermissionsCache[orgID] = composite
 	return composite
 }
 
-func (c *authTokenClaims) ProjectPermissions(ctx context.Context, projectID string) *adminv1.ProjectPermissions {
+func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
+	switch c.token.Token().Type {
+	case authtoken.TypeUser:
+		// continue
+	case authtoken.TypeService:
+		panic(errors.New("service tokens not supported"))
+	default:
+		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
+	}
+
+	// ManageProjects permission on the org gives full access to all projects in the org (only org admins have this)
+	orgPerms := c.OrganizationPermissions(ctx, orgID)
+	if orgPerms.ManageProjects {
+		return &adminv1.ProjectPermissions{
+			ReadProject:          true,
+			ManageProject:        true,
+			ReadProd:             true,
+			ReadProdStatus:       true,
+			ManageProd:           true,
+			ReadDev:              true,
+			ReadDevStatus:        true,
+			ManageDev:            true,
+			ReadProjectMembers:   true,
+			ManageProjectMembers: true,
+		}
+	}
+
 	c.Lock()
 	defer c.Unlock()
 
@@ -214,11 +167,12 @@ func (c *authTokenClaims) ProjectPermissions(ctx context.Context, projectID stri
 		return perm
 	}
 
-	composite := &adminv1.ProjectPermissions{}
 	roles, err := c.admin.DB.ResolveProjectRolesForUser(ctx, c.token.OwnerID(), projectID)
 	if err != nil {
 		panic(fmt.Errorf("failed to get project permissions: %w", err))
 	}
+
+	composite := &adminv1.ProjectPermissions{}
 	for _, role := range roles {
 		composite = unionProjectRoles(composite, role)
 	}
