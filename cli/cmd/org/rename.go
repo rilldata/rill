@@ -3,7 +3,6 @@ package org
 import (
 	"fmt"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -56,17 +55,8 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 
 			fmt.Println("Warn: Renaming an org would invalidate dashboard URLs")
 
-			confirm := false
-			prompt := &survey.Confirm{
-				Message: fmt.Sprintf("Do you want to rename org \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName)),
-			}
-
-			err = survey.AskOne(prompt, &confirm)
-			if err != nil {
-				return err
-			}
-
-			if !confirm {
+			msg := fmt.Sprintf("Do you want to rename org \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName))
+			if !cmdutil.ConfirmPrompt(msg, "", false) {
 				return nil
 			}
 

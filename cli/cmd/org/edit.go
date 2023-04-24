@@ -27,7 +27,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 
 			if !cmd.Flags().Changed("org") {
 				// Get the new org name from user if not provided in the flag
-				err := cmdutil.PromptIfUnset(&orgName, "Org Name", orgName)
+				err := cmdutil.PromptIfUnset(&orgName, "Enter the org name", orgName)
 				if err != nil {
 					return err
 				}
@@ -35,7 +35,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 
 			if !cmd.Flags().Changed("description") {
 				// Get the new org description from user if not provided in the flag
-				err := cmdutil.PromptIfUnset(&description, "Org Description", description)
+				err := cmdutil.PromptIfUnset(&description, "Enter the org description", description)
 				if err != nil {
 					return err
 				}
