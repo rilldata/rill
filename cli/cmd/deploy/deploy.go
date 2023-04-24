@@ -64,13 +64,13 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			tel := telemetry.NewTelemetry(cfg.Version)
 			tel.EmitDeployStart()
 			defer func() {
-				// give about 5s for emitting events over the parent context.
+				// give 5s for emitting events over the parent context.
 				// this will make sure if user cancelled the command events are still fired.
-				telCtx, c := context.WithDeadline(ctx, time.Now().Add(time.Second*5))
-				defer c()
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
 
 				// telemetry errors shouldn't fail deploy command
-				_ = tel.Flush(telCtx)
+				_ = tel.Flush(ctx)
 			}()
 
 			// Verify that the projectPath contains a Rill project
@@ -123,6 +123,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
+				tel.EmitLoginStart()
 				if err := auth.Login(ctx, cfg, redirectURL); err != nil {
 					if errors.Is(err, deviceauth.ErrAuthenticationTimedout) {
 						warn.Println("Rill login has timed out as the code was not confirmed in the browser.")
@@ -134,6 +135,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 					}
 					return fmt.Errorf("login failed: %w", err)
 				}
+				tel.EmitLoginSuccess()
 				fmt.Println("")
 			}
 

@@ -34,10 +34,6 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			tel := telemetry.NewTelemetry(cfg.Version)
-			// Force disabling for now. We can enable if we ever have to emit events here
-			tel.Enabled = false
-
 			// Verify that the projectPath contains a Rill project
 			if !rillv1beta.HasRillProject(projectPath) {
 				fullpath, err := filepath.Abs(projectPath)

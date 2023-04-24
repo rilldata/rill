@@ -88,7 +88,7 @@ type BehaviourEventFields struct {
 }
 
 func (t *Telemetry) emitBehaviourEvent(action, medium, space, screenName string) {
-	if !t.Enabled {
+	if t == nil || !t.Enabled {
 		return
 	}
 

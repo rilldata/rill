@@ -7,7 +7,6 @@ import (
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
-	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -20,13 +19,6 @@ func LogoutCmd(cfg *config.Config) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			warn := color.New(color.Bold).Add(color.FgYellow)
 			ctx := cmd.Context()
-
-			tel := telemetry.NewTelemetry(cfg.Version)
-			defer func() {
-				// telemetry errors shouldn't fail deploy command
-				_ = tel.Flush(ctx)
-			}()
-			tel.EmitLogoutStart()
 
 			token := cfg.AdminToken()
 			if token == "" {
@@ -50,7 +42,6 @@ func LogoutCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			color.New(color.FgGreen).Println("Successfully logged out.")
-			tel.EmitLogoutSuccess()
 			return nil
 		},
 	}
