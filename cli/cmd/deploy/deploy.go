@@ -37,7 +37,7 @@ const (
 
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
 func DeployCmd(cfg *config.Config) *cobra.Command {
-	var description, projectPath, region, dbDriver, dbDSN, prodBranch, name string
+	var description, projectPath, region, dbDriver, dbDSN, prodBranch, name, remote, orgName string
 	var slots int
 	var public bool
 
@@ -74,7 +74,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Verify projectPath is a Git repo with remote on Github
-			remote, githubURL, err := gitutil.ExtractGitRemote(projectPath)
+			remote, githubURL, err := gitutil.ExtractGitRemote(projectPath, remote)
 			if err != nil {
 				if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
 					info.Print(githubSetupMsg)
@@ -142,6 +142,11 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			// If no project name was provided, default to Git repo name
 			if name == "" {
 				name = ghRepo
+			}
+
+			// org provided via flag
+			if orgName != "" {
+				cfg.Org = orgName
 			}
 
 			// Set a default org for the user if necessary
@@ -256,6 +261,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 	deployCmd.Flags().SortFlags = false
 	deployCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
+	deployCmd.Flags().StringVar(&orgName, "org", "", "Org to deploy project (default: default org)")
 	deployCmd.Flags().IntVar(&slots, "prod-slots", 2, "Slots to allocate for production deployments")
 	deployCmd.Flags().StringVar(&description, "description", "", "Project description")
 	deployCmd.Flags().StringVar(&region, "region", "", "Deployment region")
@@ -264,6 +270,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	deployCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	deployCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().StringVar(&name, "project", "", "Project name (default: Git repo name)")
+	deployCmd.Flags().StringVar(&remote, "remote", "", "Remote name (defaults: first github remote)")
 
 	return deployCmd
 }
