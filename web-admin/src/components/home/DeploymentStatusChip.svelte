@@ -35,7 +35,7 @@
   async function getDashboardsAndInvalidate() {
     return invalidateProjectQueries(
       queryClient,
-      await getDashboardsForProject($proj)
+      await getDashboardsForProject($proj.data)
     );
   }
 </script>

@@ -9,7 +9,7 @@
   let dashboards: V1CatalogEntry[];
 
   $: proj = createAdminServiceGetProject(organization, project);
-  $: if ($proj.isSuccess && $proj.data?.productionDeployment) {
+  $: if ($proj.isSuccess && $proj.data?.prodDeployment) {
     updateDashboardsForProject();
   }
 

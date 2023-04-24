@@ -66,11 +66,7 @@
   <svelte:fragment let:width slot="metrics">
     {#key metricViewName}
       {#if hasTimeSeries}
-        <MetricsTimeSeriesCharts
-          {metricViewName}
-          workspaceWidth={width}
-          on:query-error={() => console.log("QueryError")}
-        />
+        <MetricsTimeSeriesCharts {metricViewName} workspaceWidth={width} />
       {:else}
         <MeasuresContainer {exploreContainerWidth} {metricViewName} />
       {/if}

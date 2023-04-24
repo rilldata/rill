@@ -24,7 +24,6 @@
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
-  import { createEventDispatcher } from "svelte";
   import { isRangeInsideOther } from "../../../lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
@@ -35,8 +34,6 @@
 
   export let metricViewName;
   export let workspaceWidth: number;
-
-  const dispatch = createEventDispatcher();
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
@@ -145,11 +142,6 @@
         timeStart: $dashboardStore.selectedTimeRange?.start.toISOString(),
         timeEnd: $dashboardStore.selectedTimeRange?.end.toISOString(),
         timeGranularity: $dashboardStore.selectedTimeRange?.interval,
-      },
-      {
-        query: {
-          onError: () => dispatch("query-error"),
-        },
       }
     );
     if (isComparisonRangeAvailable) {
