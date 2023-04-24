@@ -56,7 +56,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 			if projectName == "" {
 				// no project name provided infer name from githubURL
 				// Verify projectPath is a Git repo with remote on Github
-				_, githubURL, err := gitutil.ExtractGitRemote(projectPath)
+				_, githubURL, err := gitutil.ExtractGitRemote(projectPath, "")
 				if err != nil {
 					return err
 				}
