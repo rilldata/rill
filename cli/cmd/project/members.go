@@ -10,6 +10,8 @@ import (
 )
 
 func MembersCmd(cfg *config.Config) *cobra.Command {
+	var name, path string
+
 	membersCmd := &cobra.Command{
 		Use:   "members",
 		Short: "Members",
@@ -17,17 +19,22 @@ func MembersCmd(cfg *config.Config) *cobra.Command {
 			sp := cmdutil.Spinner("Listing members...")
 			sp.Start()
 
-			orgName := cfg.Org
-			projectName := args[0]
-
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
+
+			if !cmd.Flags().Changed("project") {
+				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
+				if err != nil {
+					return err
+				}
+			}
+
 			resp, err := client.ListProjectMembers(cmd.Context(), &adminv1.ListProjectMembersRequest{
-				Organization: orgName,
-				Project:      projectName,
+				Organization: cfg.Org,
+				Project:      name,
 			})
 			if err != nil {
 				return err
@@ -43,29 +50,40 @@ func MembersCmd(cfg *config.Config) *cobra.Command {
 	membersCmd.AddCommand(RemoveCmd(cfg))
 	membersCmd.AddCommand(SetRoleCmd(cfg))
 
+	membersCmd.Flags().SortFlags = false
+	membersCmd.Flags().StringVar(&name, "project", "", "Name")
+	membersCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+
 	return membersCmd
 }
 
 func ListMembersCmd(cfg *config.Config) *cobra.Command {
-	membersCmd := &cobra.Command{
+	var name, path string
+
+	listMembersCmd := &cobra.Command{
 		Use:   "list <project-name>",
 		Short: "List Members",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			sp := cmdutil.Spinner("Listing members...")
 			sp.Start()
-
-			orgName := cfg.Org
-			projectName := args[0]
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
+
+			if !cmd.Flags().Changed("project") {
+				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
+				if err != nil {
+					return err
+				}
+			}
+
 			resp, err := client.ListProjectMembers(cmd.Context(), &adminv1.ListProjectMembersRequest{
-				Organization: orgName,
-				Project:      projectName,
+				Organization: cfg.Org,
+				Project:      name,
 			})
 			if err != nil {
 				return err
@@ -73,11 +91,16 @@ func ListMembersCmd(cfg *config.Config) *cobra.Command {
 
 			cmdutil.PrintMembers(resp.Members)
 			cmdutil.PrintInvites(resp.Invites)
+
 			return nil
 		},
 	}
 
-	return membersCmd
+	listMembersCmd.Flags().SortFlags = false
+	listMembersCmd.Flags().StringVar(&name, "project", "", "Name")
+	listMembersCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+
+	return listMembersCmd
 }
 
 func AddCmd(cfg *config.Config) *cobra.Command {

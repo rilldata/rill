@@ -25,14 +25,6 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			// Get the new org name from user if not provided in the flag
-			if !cmd.Flags().Changed("org") {
-				err := cmdutil.PromptIfUnset(&cfg.Org, "Org Name", cfg.Org)
-				if err != nil {
-					return err
-				}
-			}
-
 			if !cmd.Flags().Changed("project") {
 				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
 				if err != nil {
