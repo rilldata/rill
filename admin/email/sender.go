@@ -20,6 +20,7 @@ type SMTPOptions struct {
 	SMTPPassword string
 	FromEmail    string
 	FromName     string
+	BCC          string
 }
 
 type smtpSender struct {
@@ -36,14 +37,20 @@ func NewSMTPSender(opts *SMTPOptions) (Sender, error) {
 		return nil, fmt.Errorf("invalid sender email address %q", opts.FromEmail)
 	}
 
+	if opts.BCC != "" {
+		_, err := mail.ParseAddress(opts.BCC)
+		if err != nil {
+			return nil, fmt.Errorf("invalid bcc email address %q", opts.BCC)
+		}
+	}
+
 	return &smtpSender{opts: opts}, nil
 }
 
 func (s *smtpSender) Send(toEmail, toName, subject, body string) error {
+	// Compose the email message
 	from := mail.Address{Name: s.opts.FromName, Address: s.opts.FromEmail}
 	to := mail.Address{Name: toName, Address: toEmail}
-
-	// Compose the email message
 	message := []byte("From: " + from.String() + "\r\n" +
 		"To: " + to.String() + "\r\n" +
 		"Subject: " + subject + "\r\n" +
@@ -52,9 +59,15 @@ func (s *smtpSender) Send(toEmail, toName, subject, body string) error {
 		body + "\r\n",
 	)
 
+	// Build recipients list
+	recipients := []string{toEmail}
+	if s.opts.BCC != "" {
+		recipients = append(recipients, s.opts.BCC)
+	}
+
 	// Connect to the SMTP server
 	auth := smtp.PlainAuth("", s.opts.SMTPUsername, s.opts.SMTPPassword, s.opts.SMTPHost)
-	err := smtp.SendMail(s.opts.SMTPHost+":"+strconv.Itoa(s.opts.SMTPPort), auth, from.Address, []string{to.Address}, message)
+	err := smtp.SendMail(s.opts.SMTPHost+":"+strconv.Itoa(s.opts.SMTPPort), auth, from.Address, recipients, message)
 	if err != nil {
 		return err
 	}

@@ -58,6 +58,7 @@ type Config struct {
 	EmailSMTPPassword      string                 `split_words:"true"`
 	EmailSenderEmail       string                 `split_words:"true"`
 	EmailSenderName        string                 `split_words:"true"`
+	EmailBCC               string                 `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -122,6 +123,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 					SMTPPassword: conf.EmailSMTPPassword,
 					FromEmail:    conf.EmailSenderEmail,
 					FromName:     conf.EmailSenderName,
+					BCC:          conf.EmailBCC,
 				})
 			} else {
 				sender, err = email.NewConsoleSender(logger, conf.EmailSenderEmail, conf.EmailSenderName)
