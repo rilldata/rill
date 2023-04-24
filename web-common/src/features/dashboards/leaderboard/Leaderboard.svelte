@@ -214,10 +214,11 @@
       $dashboardStore?.selectedComparisonTimeRange;
     const { start, end } = selectedComparisonTimeRange;
     // add all sliced and active values to the include filter.
-    const currentVisibleValues = values
-      ?.slice(0, slice)
-      ?.concat(selectedValuesThatAreBelowTheFold)
-      ?.map((v) => v[dimensionName]);
+    const currentVisibleValues =
+      values
+        ?.slice(0, slice)
+        ?.concat(selectedValuesThatAreBelowTheFold)
+        ?.map((v) => v[dimensionName]) ?? [];
 
     const updatedFilters = getFilterForComparsion(
       filterForDimension,

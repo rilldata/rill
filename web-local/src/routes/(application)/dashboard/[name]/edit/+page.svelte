@@ -33,6 +33,8 @@
 
           throw error(err.response?.status || 500, err.message);
         },
+        // this will ensure that any changes done outside our app is pulled in.
+        refetchOnWindowFocus: true,
       },
     }
   );
