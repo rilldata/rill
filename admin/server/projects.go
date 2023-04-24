@@ -27,48 +27,60 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// add public projects
-	orgProjects := map[string]*database.Project{}
-	publicProjects, err := s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	for _, proj := range publicProjects {
-		orgProjects[proj.Name] = proj
-	}
-
+	// If user has ManageProjects, return all projects
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ReadProjects {
-		// check if the user is an outside member of a project in the org
-		if claims.OwnerType() == auth.OwnerTypeUser {
-			projs, err := s.admin.DB.FindProjectsForOrgAndOutsideUser(ctx, org.ID, claims.OwnerID())
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			for _, proj := range projs {
-				orgProjects[proj.Name] = proj
-			}
-		}
-		if len(orgProjects) == 0 {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to read projects")
-		}
-	} else {
+	if claims.OrganizationPermissions(ctx, org.ID).ManageProjects {
 		projs, err := s.admin.DB.FindProjectsForOrganization(ctx, org.ID)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		for _, proj := range projs {
-			orgProjects[proj.Name] = proj
+
+		dtos := make([]*adminv1.Project, len(projs))
+		for i, p := range projs {
+			dtos[i] = projToDTO(p, org.Name)
+		}
+
+		return &adminv1.ListProjectsForOrganizationResponse{
+			Projects: dtos,
+		}, nil
+	}
+
+	// Get public projects
+	projsMap := map[string]*database.Project{}
+	projs, err := s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	for _, p := range projs {
+		projsMap[p.Name] = p
+	}
+
+	// Get projects the user is a (direct or group) member of (note: the user can be a member of a project in the org, without being a member of org - we call this an "outside member")
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		projs, err := s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID())
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		for _, p := range projs {
+			projsMap[p.Name] = p
 		}
 	}
 
-	dtos := make([]*adminv1.Project, len(orgProjects))
+	// If no projects are public, and user is not an outside member of any projects, the projsMap is empty.
+	// If additionally, the user is not an org member, return permission denied (instead of an empty slice).
+	if len(projsMap) == 0 && !claims.OrganizationPermissions(ctx, org.ID).ReadProjects {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read projects")
+	}
+
+	// Convert map to slice
 	i := 0
-	for _, proj := range orgProjects {
-		dtos[i] = projToDTO(proj, org.Name)
+	dtos := make([]*adminv1.Project, len(projsMap))
+	for _, p := range projsMap {
+		dtos[i] = projToDTO(p, org.Name)
 		i++
 	}
-	// sort dtos by name
+
+	// Sort output by project name
 	sort.Slice(dtos, func(i, j int) bool { return dtos[i].Name < dtos[j].Name })
 
 	return &adminv1.ListProjectsForOrganizationResponse{Projects: dtos}, nil
