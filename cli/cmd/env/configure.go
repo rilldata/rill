@@ -125,7 +125,7 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 		return nil, fmt.Errorf("failed to extract connectors %w", err)
 	}
 
-	tel.EmitDataAccessConnectedStart()
+	tel.Emit(telemetry.ActionDataAccessStart)
 
 	vars := make(map[string]string)
 	for _, c := range connectors {
@@ -176,7 +176,7 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 		fmt.Println("")
 	}
 
-	tel.EmitDataAccessConnectedSuccess()
+	tel.Emit(telemetry.ActionDataAccessSuccess)
 
 	return vars, nil
 }

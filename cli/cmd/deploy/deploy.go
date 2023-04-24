@@ -61,8 +61,8 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			tel := telemetry.NewTelemetry(cfg.Version)
-			tel.EmitDeployStart()
+			tel := telemetry.New(cfg.Version)
+			tel.Emit(telemetry.ActionDeployStart)
 			defer func() {
 				// give 5s for emitting events over the parent context.
 				// this will make sure if user cancelled the command events are still fired.
@@ -123,7 +123,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				tel.EmitLoginStart()
+				tel.Emit(telemetry.ActionLoginStart)
 				if err := auth.Login(ctx, cfg, redirectURL); err != nil {
 					if errors.Is(err, deviceauth.ErrAuthenticationTimedout) {
 						warn.Println("Rill login has timed out as the code was not confirmed in the browser.")
@@ -135,7 +135,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 					}
 					return fmt.Errorf("login failed: %w", err)
 				}
-				tel.EmitLoginSuccess()
+				tel.Emit(telemetry.ActionLoginSuccess)
 				fmt.Println("")
 			}
 
@@ -270,7 +270,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				_ = browser.Open(res.ProjectUrl)
 			}
 
-			tel.EmitDeploySuccess()
+			tel.Emit(telemetry.ActionDeploySuccess)
 			return nil
 		},
 	}
@@ -302,7 +302,7 @@ func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string, si
 
 	// If the user has not already granted access, open browser and poll for access
 	if !res.HasAccess {
-		tel.EmitGithubConnectedStart()
+		tel.Emit(telemetry.ActionGithubConnectedStart)
 
 		// Print instructions to grant access
 		if !silent {
@@ -340,7 +340,7 @@ func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string, si
 
 			if pollRes.HasAccess {
 				// Success
-				tel.EmitGithubConnectedSuccess()
+				tel.Emit(telemetry.ActionGithubConnectedSuccess)
 				_, ghRepo, _ := gitutil.SplitGithubURL(githubURL)
 				color.New(color.Bold).Add(color.FgGreen).Printf("You have connected to the %q project in Github.\n", ghRepo)
 				return pollRes, nil
