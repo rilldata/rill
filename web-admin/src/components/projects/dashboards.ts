@@ -5,7 +5,7 @@ export async function getDashboardsForProject(
   projectData: V1GetProjectResponse
 ) {
   // Hack: in development, the runtime host is actually on port 8081
-  const runtimeHost = projectData.productionDeployment.runtimeHost.replace(
+  const runtimeHost = projectData.prodDeployment.runtimeHost.replace(
     "localhost:9091",
     "localhost:8081"
   );
@@ -18,7 +18,7 @@ export async function getDashboardsForProject(
   });
 
   const { data } = await axios.get(
-    `/v1/instances/${projectData.productionDeployment.runtimeInstanceId}/catalog?type=OBJECT_TYPE_METRICS_VIEW`
+    `/v1/instances/${projectData.prodDeployment.runtimeInstanceId}/catalog?type=OBJECT_TYPE_METRICS_VIEW`
   );
 
   return data.entries;

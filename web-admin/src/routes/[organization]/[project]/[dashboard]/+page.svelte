@@ -1,11 +1,9 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import {
-    createAdminServiceGetProject,
-    V1DeploymentStatus,
-  } from "@rilldata/web-admin/client";
+  import { V1DeploymentStatus } from "@rilldata/web-admin/client";
   import { getDashboardsForProject } from "@rilldata/web-admin/components/projects/dashboards";
   import { invalidateProjectQueries } from "@rilldata/web-admin/components/projects/invalidations";
+  import { useProject } from "@rilldata/web-admin/components/projects/use-project";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import { StateSyncManager } from "@rilldata/web-common/features/dashboards/proto-state/StateSyncManager";
@@ -19,11 +17,7 @@
   $: proj = $page.params.project;
   $: dash = $page.params.dashboard;
   // Poll for project status
-  $: project = createAdminServiceGetProject(org, proj, {
-    query: {
-      refetchInterval: 1000,
-    },
-  });
+  $: project = useProject(org, proj);
 
   let isProjectBuilding: boolean;
   let isProjectErrored: boolean;

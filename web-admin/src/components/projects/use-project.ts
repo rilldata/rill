@@ -8,6 +8,7 @@ export function useProject(orgName: string, projName: string) {
   return createAdminServiceGetProject(orgName, projName, {
     query: {
       refetchInterval: (data) => {
+        console.log(data?.prodDeployment?.status);
         switch (data?.prodDeployment?.status) {
           case "DEPLOYMENT_STATUS_PENDING":
           case "DEPLOYMENT_STATUS_RECONCILING":
