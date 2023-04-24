@@ -5,10 +5,12 @@ type ProjectPermission int
 const (
 	ReadProject ProjectPermission = iota
 	ManageProject
-	ReadProdBranch
-	ManageProdBranch
-	ReadDevBranches
-	ManageDevBranches
+	ReadProd
+	ReadProdStatus
+	ManageProd
+	ReadDev
+	ReadDevStatus
+	ManageDev
 	ReadProjectMembers
 	ManageProjectMembers
 )

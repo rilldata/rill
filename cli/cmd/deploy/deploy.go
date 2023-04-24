@@ -224,17 +224,17 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			// Create the project (automatically deploys prod branch)
 			res, err := createProjectFlow(ctx, client, &adminv1.CreateProjectRequest{
-				OrganizationName:     cfg.Org,
-				Name:                 name,
-				Description:          description,
-				Region:               region,
-				ProductionOlapDriver: dbDriver,
-				ProductionOlapDsn:    dbDSN,
-				ProductionSlots:      int64(slots),
-				ProductionBranch:     prodBranch,
-				Public:               public,
-				GithubUrl:            githubURL,
-				Variables:            variables,
+				OrganizationName: cfg.Org,
+				Name:             name,
+				Description:      description,
+				Region:           region,
+				ProdOlapDriver:   dbDriver,
+				ProdOlapDsn:      dbDSN,
+				ProdSlots:        int64(slots),
+				ProdBranch:       prodBranch,
+				Public:           public,
+				GithubUrl:        githubURL,
+				Variables:        variables,
 			})
 			if err != nil {
 				if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
