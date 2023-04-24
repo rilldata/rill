@@ -54,7 +54,7 @@ func checkVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	err = dotrill.SetVersionUpdatedAt(time.Now().String())
+	err = dotrill.SetVersionUpdatedAt(time.Now().Format("2006-01-02 15:04"))
 	if err != nil {
 		return "", err
 	}
@@ -74,26 +74,37 @@ func LatestVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	cachedVersionUpdatedAt, err := dotrill.GetVersionUpdatedAt()
-	if err != nil {
-		return "", err
-	}
-
-	updatedAt, err := time.Parse("2006-01-02 15:04", cachedVersionUpdatedAt)
-	if err != nil {
-		return "", err
-	}
-
-	if time.Since(updatedAt).Hours() > 24 {
-		// Check with latest release on github
-		info, err := fetchLatestVersion(ctx)
+	if cachedVersion != "" {
+		cachedVersionUpdatedAt, err := dotrill.GetVersionUpdatedAt()
 		if err != nil {
 			return "", err
 		}
-		return info.Version, nil
+
+		updatedAt, err := time.Parse("2006-01-02 15:04", cachedVersionUpdatedAt)
+		if err != nil {
+			return "", err
+		}
+
+		if time.Since(updatedAt).Hours() > 24 {
+			// Check with latest release on github
+			info, err := fetchLatestVersion(ctx)
+			if err != nil {
+				return "", err
+			}
+
+			return info.Version, nil
+		}
+
+		return cachedVersion, nil
 	}
 
-	return cachedVersion, nil
+	// Check with latest release on github if cached version is not available
+	info, err := fetchLatestVersion(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return info.Version, nil
 }
 
 // ReleaseInfo stores information about a release
