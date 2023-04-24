@@ -1,30 +1,27 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
-  import { onMount } from "svelte";
-  import { ADMIN_URL } from "../../../../client/http-client";
+  import { goto } from "$app/navigation";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
+  import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
 
-  let user;
-  let userCode;
+  import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
+  import CtaButton from "@rilldata/web-admin/components/CTAButton.svelte";
+
   let actionTaken = false;
   let successMsg = "";
   let errorMsg = "";
-
-  async function fetchUserData() {
-    const urlParams = new URLSearchParams(window.location.search);
-    userCode = urlParams.get("user_code");
-
-    const response = await fetch(ADMIN_URL + "/v1/users/current", {
-      method: "GET",
-      credentials: "include",
-    });
-    let data = await response.json();
-    if (!data.user) {
-      window.location.href =
-        ADMIN_URL + "/auth/login?redirect=" + window.location.href;
-    } else {
-      user = data.user;
-    }
-  }
+  const urlParams = new URLSearchParams(window.location.search);
+  const redirectURL = urlParams.get("redirect");
+  const userCode = urlParams.get("user_code");
+  const user = createAdminServiceGetCurrentUser({
+    query: {
+      onSuccess: (data) => {
+        if (!data.user) {
+          let redirect = encodeURIComponent(window.location.href);
+          goto(`${ADMIN_URL}/auth/login?redirect=${redirect}`);
+        }
+      },
+    },
+  });
 
   function confirmUserCode() {
     fetch(
@@ -36,7 +33,11 @@
       }
     ).then((response) => {
       if (response.ok) {
-        successMsg = "User code confirmed, this page can be closed now";
+        if (redirectURL && redirectURL !== "") {
+          window.location.href = decodeURIComponent(redirectURL);
+        } else {
+          successMsg = "User code confirmed, this page can be closed now";
+        }
       } else {
         errorMsg = "User code confirmation failed";
         response.body
@@ -74,41 +75,51 @@
       }
     });
   }
-
-  onMount(fetchUserData);
 </script>
 
 <svelte:head>
   <meta name="description" content="User code confirmation" />
 </svelte:head>
 
-{#if user}
-  <div class="flex flex-col justify-center items-center h-3/5">
-    <h1 class="text-3xl font-medium text-gray-800 mb-4">
-      Hello, {user.displayName}!
-    </h1>
-    <p class="text-lg text-gray-700 mb-6">Your user code is: {userCode}</p>
-
-    <Button
-      type="primary"
-      on:click={() => {
-        actionTaken = true;
-        confirmUserCode();
-      }}
-      disabled={actionTaken}>Confirm</Button
+{#if $user.data && $user.data.user}
+  <div class="flex flex-col justify-center items-center h-4/5 gap-y-6">
+    <RillLogoSquareNegative size="84px" />
+    <h1 class="text-xl font-normal text-gray-800">Authorize Rill CLI</h1>
+    <p class="text-base text-gray-500 text-center">
+      You are authenticating into Rill as <span
+        class="font-medium text-gray-600">{$user.data.user.email}</span
+      >.<br />Please confirm this is the code displayed in the Rill CLI.
+    </p>
+    <div
+      class="px-2 py-1 rounded-sm text-4xl tracking-widest bg-gray-100 text-gray-700 mb-5 font-mono"
     >
-    <div class="mt-4" />
-    <Button
-      type="secondary"
-      on:click={() => {
-        actionTaken = true;
-        rejectUserCode();
-      }}
-      disabled={actionTaken}>Reject</Button
-    >
+      {userCode}
+    </div>
 
-    <div class="mt-4" />
-    <p class="text-md text-green-700 font-bold mb-6">{successMsg}</p>
-    <p class="text-md text-red-400 font-bold mb-6">{errorMsg}</p>
+    <div class="flex flex-col gap-y-4 w-[400px]">
+      <CtaButton
+        variant="primary"
+        on:click={() => {
+          actionTaken = true;
+          confirmUserCode();
+        }}
+        disabled={actionTaken}>Confirm code</CtaButton
+      >
+      <CtaButton
+        variant="secondary"
+        on:click={() => {
+          actionTaken = true;
+          rejectUserCode();
+        }}
+        disabled={actionTaken}>Cancel</CtaButton
+      >
+    </div>
+
+    {#if successMsg}
+      <p class="text-md text-green-700 font-bold mb-6">{successMsg}</p>
+    {/if}
+    {#if errorMsg}
+      <p class="text-md text-red-400 font-bold mb-6">{errorMsg}</p>
+    {/if}
   </div>
 {/if}

@@ -5,7 +5,7 @@
   export let project: string;
 
   $: proj = createAdminServiceGetProject(organization, project);
-  $: errors = parseLogs($proj.data?.productionDeployment?.logs);
+  $: errors = parseLogs($proj.data?.prodDeployment?.logs);
 
   interface Error {
     message: string;

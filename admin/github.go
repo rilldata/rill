@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/bradleyfalzon/ghinstallation"
+	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
@@ -127,14 +127,14 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 
 	// Iterate over all projects and trigger reconcile
 	for _, project := range projects {
-		if branch != project.ProductionBranch {
+		if branch != project.ProdBranch {
 			// Ignore if push was not to production branch
 			continue
 		}
 
 		// Trigger reconcile (runs in the background - err means the deployment wasn't found, which is unlikely)
-		if project.ProductionDeploymentID != nil {
-			err = s.TriggerReconcile(ctx, *project.ProductionDeploymentID)
+		if project.ProdDeploymentID != nil {
+			err = s.TriggerReconcile(ctx, *project.ProdDeploymentID)
 			if err != nil {
 				return err
 			}

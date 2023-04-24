@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/build"
 	"github.com/rilldata/rill/cli/cmd/deploy"
 	"github.com/rilldata/rill/cli/cmd/docs"
+	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/cmd/initialize"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/cmd/project"
@@ -104,6 +105,9 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		rootCmd.AddCommand(cmd)
 	}
 
+	// Set prompt for missing required parameters in config
+	rootCmd.PersistentFlags().BoolVar(&cfg.Interactive, "interactive", true, "Prompt for missing required parameters")
+
 	// Add sub-commands for admin
 	// (This allows us to add persistent flags that apply only to the admin-related commands.)
 	adminCmds := []*cobra.Command{
@@ -111,6 +115,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		project.ProjectCmd(cfg),
 		deploy.DeployCmd(cfg),
 		user.UserCmd(cfg),
+		env.EnvCmd(cfg),
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")

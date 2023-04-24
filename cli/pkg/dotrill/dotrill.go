@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/go-yaml/yaml"
 	"github.com/google/uuid"
+	"gopkg.in/yaml.v2"
 )
 
 // Constants for YAML files
