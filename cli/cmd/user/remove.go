@@ -50,7 +50,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			cmdutil.SuccessPrinter("Removed")
+			cmdutil.SuccessPrinter("Removed user")
 			return nil
 		},
 	}

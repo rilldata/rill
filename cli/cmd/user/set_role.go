@@ -53,7 +53,7 @@ func SetRoleCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			cmdutil.SuccessPrinter("Updated")
+			cmdutil.SuccessPrinter("Updated role")
 			return nil
 		},
 	}

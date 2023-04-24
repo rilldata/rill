@@ -21,10 +21,10 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 		Short: "Add",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if orgName == "" && projectName == "" {
-				return errors.New("either organization or project has to be specified")
+				return errors.New("either --org or --project has to be specified")
 			}
 			if orgName != "" && projectName != "" {
-				return errors.New("only one of organization or project has to be specified")
+				return errors.New("only one of --org or --project has to be specified")
 			}
 
 			client, err := cmdutil.Client(cfg)
@@ -33,12 +33,8 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if email == "" {
-				email = cmdutil.MandatoryInputPrompt("Please enter the email of the user.")
-			}
-			if role == "" {
-				role = cmdutil.MandatoryInputPrompt("Please enter the user's role.")
-			}
+			cmdutil.StringPromptIfEmpty(&email, "Please enter the email of the user.")
+			cmdutil.StringPromptIfEmpty(&role, "Please enter the user's role.")
 
 			var pendingSignup bool
 			if orgName != "" {

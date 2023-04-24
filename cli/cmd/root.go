@@ -94,17 +94,6 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(versioncmd.VersionCmd())
 
-	// Add auth specific sub-commands for admin
-	// Only api-url persistent flag needs to be added here.
-	authCmds := []*cobra.Command{
-		auth.LoginCmd(cfg),
-		auth.LogoutCmd(cfg),
-	}
-	for _, cmd := range authCmds {
-		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
-		rootCmd.AddCommand(cmd)
-	}
-
 	// Set prompt for missing required parameters in config
 	rootCmd.PersistentFlags().BoolVar(&cfg.Interactive, "interactive", true, "Prompt for missing required parameters")
 
@@ -116,6 +105,8 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		deploy.DeployCmd(cfg),
 		user.UserCmd(cfg),
 		env.EnvCmd(cfg),
+		auth.LoginCmd(cfg),
+		auth.LogoutCmd(cfg),
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
