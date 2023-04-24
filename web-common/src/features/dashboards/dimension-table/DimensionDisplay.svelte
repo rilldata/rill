@@ -1,12 +1,11 @@
 <script lang="ts">
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
-
   /**
    * DimensionDisplay.svelte
    * -------------------------
    * Create a table with the selected dimension and measures
    * to be displayed in explore
    */
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     getFilterForDimension,
     useMetaDimension,
@@ -37,7 +36,6 @@
   } from "../humanize-numbers";
   import {
     computeComparisonValues,
-    customSortMeasures,
     getComparisonProperties,
     getFilterForComparisonTable,
     updateFilterOnSearch,
@@ -271,20 +269,25 @@
     let columnsMeta = $topListQuery?.data?.meta || [];
     values = $topListQuery?.data?.data ?? [];
 
-    let columnNames = columnsMeta
+    let columnNames: Array<string> = columnsMeta
       .map((c) => c.name)
       .filter((name) => name !== dimension?.name);
 
     const selectedMeasure = allMeasures.find((m) => m.name === sortByColumn);
+    const sortByColumnIndex = columnNames.indexOf(sortByColumn);
     // Add comparison columns if available
     if (isComparisonRangeAvailable) {
-      columnNames.push(`${sortByColumn}_delta`);
+      columnNames.splice(sortByColumnIndex + 1, 0, `${sortByColumn}_delta`);
 
       // Only push percentage delta column if selected measure is not a percentage
-      if (selectedMeasure?.format != NicelyFormattedTypes.PERCENTAGE)
-        columnNames.push(`${sortByColumn}_delta_perc`);
+      if (selectedMeasure?.format != NicelyFormattedTypes.PERCENTAGE) {
+        columnNames.splice(
+          sortByColumnIndex + 2,
+          0,
+          `${sortByColumn}_delta_perc`
+        );
+      }
     }
-    columnNames = columnNames.sort(customSortMeasures);
 
     // Make dimension the first column
     columnNames.unshift(dimension?.name);
@@ -352,7 +355,12 @@
     values.length &&
     isComparisonRangeAvailable
   ) {
-    values = computeComparisonValues($comparisonTopListQuery?.data, values);
+    values = computeComparisonValues(
+      $comparisonTopListQuery?.data,
+      values,
+      dimensionName,
+      leaderboardMeasureName
+    );
   }
 
   $: if (values) {

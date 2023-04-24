@@ -77,7 +77,7 @@ func NewStatic(spec string, logger *zap.Logger, db database.DB, issuer *auth.Iss
 
 func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOptions) (*Instance, error) {
 	// Get slots currently used
-	stats, err := p.db.QueryRuntimeSlotsUsed(ctx)
+	stats, err := p.db.ResolveRuntimeSlotsUsed(ctx)
 	if err != nil {
 		return nil, err
 	}

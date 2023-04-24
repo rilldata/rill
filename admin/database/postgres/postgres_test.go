@@ -167,16 +167,16 @@ func testProjectsWithVariables(t *testing.T, db database.DB) {
 	require.Equal(t, "foo", org.Name)
 
 	opts := &database.InsertProjectOptions{
-		OrganizationID:      org.ID,
-		Name:                "bar",
-		Description:         "hello world",
-		ProductionVariables: map[string]string{"hello": "world"},
+		OrganizationID: org.ID,
+		Name:           "bar",
+		Description:    "hello world",
+		ProdVariables:  map[string]string{"hello": "world"},
 	}
 	proj, err := db.InsertProject(ctx, opts)
 	require.NoError(t, err)
-	require.Equal(t, database.Variables(opts.ProductionVariables), proj.ProductionVariables)
+	require.Equal(t, database.Variables(opts.ProdVariables), proj.ProdVariables)
 
 	proj, err = db.FindProjectByName(ctx, org.Name, proj.Name)
 	require.NoError(t, err)
-	require.Equal(t, database.Variables(opts.ProductionVariables), proj.ProductionVariables)
+	require.Equal(t, database.Variables(opts.ProdVariables), proj.ProdVariables)
 }

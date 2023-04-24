@@ -31,7 +31,7 @@ func (c *Codec) IsInit(ctx context.Context) bool {
 }
 
 func (c *Codec) InitEmpty(ctx context.Context, name, rillVersion string) error {
-	err := c.Repo.Put(ctx, c.InstanceID, "rill.yaml", strings.NewReader(fmt.Sprintf("compiler: %s\nrill_version: %s\n\nname: %s\n", Version, rillVersion, name)))
+	err := c.Repo.Put(ctx, c.InstanceID, "rill.yaml", strings.NewReader(fmt.Sprintf("compiler: %s\nrill_version: %s\n\ntitle: %s\n", Version, rillVersion, name)))
 	if err != nil {
 		return err
 	}
@@ -150,4 +150,9 @@ func ProjectName(dir string) (string, error) {
 	}
 
 	return c.SanitizedName(), nil
+}
+
+func HasRillProject(dir string) bool {
+	_, err := os.Open(filepath.Join(dir, "rill.yaml"))
+	return err == nil
 }

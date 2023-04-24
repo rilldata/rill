@@ -50,7 +50,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if !cmd.Flags().Changed("prod-branch") {
-				err := cmdutil.PromptIfUnset(&prodBranch, "Project Production Branch", proj.ProductionBranch)
+				err := cmdutil.PromptIfUnset(&prodBranch, "Project Production Branch", proj.ProdBranch)
 				if err != nil {
 					return err
 				}
@@ -75,7 +75,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				Name:             proj.Name,
 				Description:      description,
 				Public:           public,
-				ProductionBranch: prodBranch,
+				ProdBranch:       prodBranch,
 				GithubUrl:        proj.GithubUrl,
 			})
 			if err != nil {
