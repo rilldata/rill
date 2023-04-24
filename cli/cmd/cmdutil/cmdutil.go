@@ -143,6 +143,21 @@ func InputPrompt(msg, def string) string {
 	return result
 }
 
+func MandatoryInputPrompt(msg string) string {
+	prompt := []*survey.Question{{
+		Name:      "name",
+		Prompt:    &survey.Input{Message: msg},
+		Validate:  survey.Required,
+		Transform: survey.Title,
+	}}
+	result := ""
+	if err := survey.Ask(prompt, &result); err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
+	return result
+}
+
 func ProjectExists(ctx context.Context, c *client.Client, orgName, projectName string) (bool, error) {
 	_, err := c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: orgName, Name: projectName})
 	if err != nil {

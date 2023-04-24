@@ -33,6 +33,13 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
+			if email == "" {
+				email = cmdutil.MandatoryInputPrompt("Please enter the email of the user.")
+			}
+			if role == "" {
+				role = cmdutil.MandatoryInputPrompt("Please enter the user's role.")
+			}
+
 			var pendingSignup bool
 			if orgName != "" {
 				res, err := client.AddOrganizationMember(cmd.Context(), &adminv1.AddOrganizationMemberRequest{
