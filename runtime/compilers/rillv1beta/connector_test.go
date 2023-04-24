@@ -6,15 +6,16 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	_ "github.com/rilldata/rill/runtime/connectors/gcs"
-	_ "github.com/rilldata/rill/runtime/connectors/s3"
 	"github.com/rilldata/rill/runtime/drivers"
-	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
-	_ "github.com/rilldata/rill/runtime/drivers/file"
-	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	"github.com/rilldata/rill/runtime/services/catalog/testutils"
 	"github.com/stretchr/testify/require"
+
+	_ "github.com/rilldata/rill/runtime/connectors/gcs"
+	_ "github.com/rilldata/rill/runtime/connectors/s3"
+	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	_ "github.com/rilldata/rill/runtime/drivers/file"
+	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
 
 var AdBidsS3 = "s3://rill-developer.rilldata.io/AdBids.csv.gz"
