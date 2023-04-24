@@ -48,11 +48,9 @@ func NewSMTPSender(opts *SMTPOptions) (Sender, error) {
 }
 
 func (s *smtpSender) Send(toEmail, toName, subject, body string) error {
+	// Compose the email message
 	from := mail.Address{Name: s.opts.FromName, Address: s.opts.FromEmail}
 	to := mail.Address{Name: toName, Address: toEmail}
-	bcc := mail.Address{Name: "", Address: s.opts.BCC}
-
-	// Compose the email message
 	message := []byte("From: " + from.String() + "\r\n" +
 		"To: " + to.String() + "\r\n" +
 		"Subject: " + subject + "\r\n" +
@@ -62,9 +60,9 @@ func (s *smtpSender) Send(toEmail, toName, subject, body string) error {
 	)
 
 	// Build recipients list
-	recipients := []string{to.String()}
+	recipients := []string{toEmail}
 	if s.opts.BCC != "" {
-		recipients = append(recipients, bcc.String())
+		recipients = append(recipients, s.opts.BCC)
 	}
 
 	// Connect to the SMTP server
