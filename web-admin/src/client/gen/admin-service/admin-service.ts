@@ -28,18 +28,16 @@ import type {
   V1ListOrganizationMembersResponse,
   AdminServiceListOrganizationMembersParams,
   V1AddOrganizationMemberResponse,
-  AdminServiceAddOrganizationMemberBody,
+  AdminServiceAddOrganizationMemberBodyBody,
   V1RemoveOrganizationMemberResponse,
   V1SetOrganizationMemberRoleResponse,
-  AdminServiceSetOrganizationMemberRoleBody,
+  AdminServiceSetOrganizationMemberRoleBodyBody,
   V1LeaveOrganizationResponse,
   V1ListProjectMembersResponse,
   AdminServiceListProjectMembersParams,
   V1AddProjectMemberResponse,
-  AdminServiceAddProjectMemberBody,
   V1RemoveProjectMemberResponse,
   V1SetProjectMemberRoleResponse,
-  AdminServiceSetProjectMemberRoleBody,
   V1ListProjectsForOrganizationResponse,
   AdminServiceListProjectsForOrganizationParams,
   V1CreateProjectResponse,
@@ -55,6 +53,8 @@ import type {
   V1GetProjectVariablesResponse,
   V1UpdateProjectVariablesResponse,
   AdminServiceUpdateProjectVariablesBody,
+  V1ListProjectsForOrganizationAndGithubURLResponse,
+  AdminServiceListProjectsForOrganizationAndGithubURLParams,
   V1PingResponse,
   V1RevokeCurrentAuthTokenResponse,
   V1GetCurrentUserResponse,
@@ -465,13 +465,13 @@ export const createAdminServiceListOrganizationMembers = <
  */
 export const adminServiceAddOrganizationMember = (
   organization: string,
-  adminServiceAddOrganizationMemberBody: AdminServiceAddOrganizationMemberBody
+  adminServiceAddOrganizationMemberBodyBody: AdminServiceAddOrganizationMemberBodyBody
 ) => {
   return httpClient<V1AddOrganizationMemberResponse>({
     url: `/v1/organizations/${organization}/members`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceAddOrganizationMemberBody,
+    data: adminServiceAddOrganizationMemberBodyBody,
   });
 };
 
@@ -479,7 +479,7 @@ export type AdminServiceAddOrganizationMemberMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceAddOrganizationMember>>
 >;
 export type AdminServiceAddOrganizationMemberMutationBody =
-  AdminServiceAddOrganizationMemberBody;
+  AdminServiceAddOrganizationMemberBodyBody;
 export type AdminServiceAddOrganizationMemberMutationError = RpcStatus;
 
 export const createAdminServiceAddOrganizationMember = <
@@ -489,7 +489,7 @@ export const createAdminServiceAddOrganizationMember = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceAddOrganizationMember>>,
     TError,
-    { organization: string; data: AdminServiceAddOrganizationMemberBody },
+    { organization: string; data: AdminServiceAddOrganizationMemberBodyBody },
     TContext
   >;
 }) => {
@@ -497,7 +497,7 @@ export const createAdminServiceAddOrganizationMember = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceAddOrganizationMember>>,
-    { organization: string; data: AdminServiceAddOrganizationMemberBody }
+    { organization: string; data: AdminServiceAddOrganizationMemberBodyBody }
   > = (props) => {
     const { organization, data } = props ?? {};
 
@@ -507,7 +507,7 @@ export const createAdminServiceAddOrganizationMember = <
   return createMutation<
     Awaited<ReturnType<typeof adminServiceAddOrganizationMember>>,
     TError,
-    { organization: string; data: AdminServiceAddOrganizationMemberBody },
+    { organization: string; data: AdminServiceAddOrganizationMemberBodyBody },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -565,13 +565,13 @@ export const createAdminServiceRemoveOrganizationMember = <
 export const adminServiceSetOrganizationMemberRole = (
   organization: string,
   email: string,
-  adminServiceSetOrganizationMemberRoleBody: AdminServiceSetOrganizationMemberRoleBody
+  adminServiceSetOrganizationMemberRoleBodyBody: AdminServiceSetOrganizationMemberRoleBodyBody
 ) => {
   return httpClient<V1SetOrganizationMemberRoleResponse>({
     url: `/v1/organizations/${organization}/members/${email}`,
     method: "put",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceSetOrganizationMemberRoleBody,
+    data: adminServiceSetOrganizationMemberRoleBodyBody,
   });
 };
 
@@ -579,7 +579,7 @@ export type AdminServiceSetOrganizationMemberRoleMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceSetOrganizationMemberRole>>
 >;
 export type AdminServiceSetOrganizationMemberRoleMutationBody =
-  AdminServiceSetOrganizationMemberRoleBody;
+  AdminServiceSetOrganizationMemberRoleBodyBody;
 export type AdminServiceSetOrganizationMemberRoleMutationError = RpcStatus;
 
 export const createAdminServiceSetOrganizationMemberRole = <
@@ -592,7 +592,7 @@ export const createAdminServiceSetOrganizationMemberRole = <
     {
       organization: string;
       email: string;
-      data: AdminServiceSetOrganizationMemberRoleBody;
+      data: AdminServiceSetOrganizationMemberRoleBodyBody;
     },
     TContext
   >;
@@ -604,7 +604,7 @@ export const createAdminServiceSetOrganizationMemberRole = <
     {
       organization: string;
       email: string;
-      data: AdminServiceSetOrganizationMemberRoleBody;
+      data: AdminServiceSetOrganizationMemberRoleBodyBody;
     }
   > = (props) => {
     const { organization, email, data } = props ?? {};
@@ -618,7 +618,7 @@ export const createAdminServiceSetOrganizationMemberRole = <
     {
       organization: string;
       email: string;
-      data: AdminServiceSetOrganizationMemberRoleBody;
+      data: AdminServiceSetOrganizationMemberRoleBodyBody;
     },
     TContext
   >(mutationFn, mutationOptions);
@@ -748,13 +748,13 @@ export const createAdminServiceListProjectMembers = <
 export const adminServiceAddProjectMember = (
   organization: string,
   project: string,
-  adminServiceAddProjectMemberBody: AdminServiceAddProjectMemberBody
+  adminServiceAddOrganizationMemberBodyBody: AdminServiceAddOrganizationMemberBodyBody
 ) => {
   return httpClient<V1AddProjectMemberResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/members`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceAddProjectMemberBody,
+    data: adminServiceAddOrganizationMemberBodyBody,
   });
 };
 
@@ -762,7 +762,7 @@ export type AdminServiceAddProjectMemberMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceAddProjectMember>>
 >;
 export type AdminServiceAddProjectMemberMutationBody =
-  AdminServiceAddProjectMemberBody;
+  AdminServiceAddOrganizationMemberBodyBody;
 export type AdminServiceAddProjectMemberMutationError = RpcStatus;
 
 export const createAdminServiceAddProjectMember = <
@@ -775,7 +775,7 @@ export const createAdminServiceAddProjectMember = <
     {
       organization: string;
       project: string;
-      data: AdminServiceAddProjectMemberBody;
+      data: AdminServiceAddOrganizationMemberBodyBody;
     },
     TContext
   >;
@@ -787,7 +787,7 @@ export const createAdminServiceAddProjectMember = <
     {
       organization: string;
       project: string;
-      data: AdminServiceAddProjectMemberBody;
+      data: AdminServiceAddOrganizationMemberBodyBody;
     }
   > = (props) => {
     const { organization, project, data } = props ?? {};
@@ -801,7 +801,7 @@ export const createAdminServiceAddProjectMember = <
     {
       organization: string;
       project: string;
-      data: AdminServiceAddProjectMemberBody;
+      data: AdminServiceAddOrganizationMemberBodyBody;
     },
     TContext
   >(mutationFn, mutationOptions);
@@ -862,13 +862,13 @@ export const adminServiceSetProjectMemberRole = (
   organization: string,
   project: string,
   email: string,
-  adminServiceSetProjectMemberRoleBody: AdminServiceSetProjectMemberRoleBody
+  adminServiceSetOrganizationMemberRoleBodyBody: AdminServiceSetOrganizationMemberRoleBodyBody
 ) => {
   return httpClient<V1SetProjectMemberRoleResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/members/${email}`,
     method: "put",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceSetProjectMemberRoleBody,
+    data: adminServiceSetOrganizationMemberRoleBodyBody,
   });
 };
 
@@ -876,7 +876,7 @@ export type AdminServiceSetProjectMemberRoleMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceSetProjectMemberRole>>
 >;
 export type AdminServiceSetProjectMemberRoleMutationBody =
-  AdminServiceSetProjectMemberRoleBody;
+  AdminServiceSetOrganizationMemberRoleBodyBody;
 export type AdminServiceSetProjectMemberRoleMutationError = RpcStatus;
 
 export const createAdminServiceSetProjectMemberRole = <
@@ -890,7 +890,7 @@ export const createAdminServiceSetProjectMemberRole = <
       organization: string;
       project: string;
       email: string;
-      data: AdminServiceSetProjectMemberRoleBody;
+      data: AdminServiceSetOrganizationMemberRoleBodyBody;
     },
     TContext
   >;
@@ -903,7 +903,7 @@ export const createAdminServiceSetProjectMemberRole = <
       organization: string;
       project: string;
       email: string;
-      data: AdminServiceSetProjectMemberRoleBody;
+      data: AdminServiceSetOrganizationMemberRoleBodyBody;
     }
   > = (props) => {
     const { organization, project, email, data } = props ?? {};
@@ -918,7 +918,7 @@ export const createAdminServiceSetProjectMemberRole = <
       organization: string;
       project: string;
       email: string;
-      data: AdminServiceSetProjectMemberRoleBody;
+      data: AdminServiceSetOrganizationMemberRoleBodyBody;
     },
     TContext
   >(mutationFn, mutationOptions);
@@ -1548,6 +1548,96 @@ export const createAdminServiceUpdateProjectVariables = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary ListProjectsForOrganizationAndGithubURL lists all the project for org deployed from githubURL
+ */
+export const adminServiceListProjectsForOrganizationAndGithubURL = (
+  organizationName: string,
+  params?: AdminServiceListProjectsForOrganizationAndGithubURLParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1ListProjectsForOrganizationAndGithubURLResponse>({
+    url: `/v1/organizations/${organizationName}/projects_by_github_url`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceListProjectsForOrganizationAndGithubURLQueryKey = (
+  organizationName: string,
+  params?: AdminServiceListProjectsForOrganizationAndGithubURLParams
+) =>
+  [
+    `/v1/organizations/${organizationName}/projects_by_github_url`,
+    ...(params ? [params] : []),
+  ] as const;
+
+export type AdminServiceListProjectsForOrganizationAndGithubURLQueryResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
+    >
+  >;
+export type AdminServiceListProjectsForOrganizationAndGithubURLQueryError =
+  RpcStatus;
+
+export const createAdminServiceListProjectsForOrganizationAndGithubURL = <
+  TData = Awaited<
+    ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
+  >,
+  TError = RpcStatus
+>(
+  organizationName: string,
+  params?: AdminServiceListProjectsForOrganizationAndGithubURLParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<
+        ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
+      >,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListProjectsForOrganizationAndGithubURLQueryKey(
+      organizationName,
+      params
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<
+      ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
+    >
+  > = ({ signal }) =>
+    adminServiceListProjectsForOrganizationAndGithubURL(
+      organizationName,
+      params,
+      signal
+    );
+
+  const query = createQuery<
+    Awaited<
+      ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
+    >,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!organizationName,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary Ping returns information about the server
  */

@@ -46,7 +46,8 @@ type ExtractConfig struct {
 }
 
 type MetricsView struct {
-	Label             string `yaml:"display_name"`
+	Label             string `yaml:"title"`
+	DisplayName       string `yaml:"name,omitempty"` // for backwards compatibility
 	Description       string
 	Model             string
 	TimeDimension     string `yaml:"timeseries"`
@@ -58,6 +59,7 @@ type MetricsView struct {
 
 type Measure struct {
 	Label       string
+	Name        string
 	Expression  string
 	Description string
 	Format      string `yaml:"format_preset"`
@@ -274,6 +276,11 @@ func getBytes(size string) (uint64, error) {
 }
 
 func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.CatalogEntry, error) {
+	if metrics.DisplayName != "" && metrics.Label == "" {
+		// backwards compatibility
+		metrics.Label = metrics.DisplayName
+	}
+
 	// remove ignored measures and dimensions
 	var measures []*Measure
 	for _, measure := range metrics.Measures {
@@ -311,7 +318,9 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 
 	// this is needed since measure names are not given by the user
 	for i, measure := range apiMetrics.Measures {
-		measure.Name = fmt.Sprintf("measure_%d", i)
+		if measure.Name == "" {
+			measure.Name = fmt.Sprintf("measure_%d", i)
+		}
 	}
 
 	timeGrainEnum, err := getTimeGrainEnum(metrics.SmallestTimeGrain)

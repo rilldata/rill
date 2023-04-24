@@ -138,6 +138,8 @@ paths:
           schema:
             type: object
             properties:
+              id:
+                type: string
               description:
                 type: string
       tags:
@@ -198,7 +200,6 @@ paths:
                 type: string
               role:
                 type: string
-            title: Request message for AdminService.AddOrganizationMember
       tags:
         - AdminService
   /v1/organizations/{organization}/members/{email}:
@@ -254,7 +255,6 @@ paths:
             properties:
               role:
                 type: string
-            title: Request message for AdminService.SetOrganizationMemberRole
       tags:
         - AdminService
   /v1/organizations/{organization}/members/current:
@@ -341,7 +341,6 @@ paths:
                 type: string
               role:
                 type: string
-            title: Request message for AdminService.AddProjectMember
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/members/{email}:
@@ -405,7 +404,6 @@ paths:
             properties:
               role:
                 type: string
-            title: Request message for AdminService.SetProjectMemberRole
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects:
@@ -460,24 +458,24 @@ paths:
           schema:
             type: object
             properties:
-              description:
-                type: string
-              githubUrl:
-                type: string
               name:
                 type: string
-              productionBranch:
+              description:
                 type: string
-              productionOlapDriver:
-                type: string
-              productionOlapDsn:
-                type: string
-              productionSlots:
-                type: string
-                format: int64
               public:
                 type: boolean
               region:
+                type: string
+              prodOlapDriver:
+                type: string
+              prodOlapDsn:
+                type: string
+              prodSlots:
+                type: string
+                format: int64
+              prodBranch:
+                type: string
+              githubUrl:
                 type: string
               variables:
                 type: object
@@ -559,14 +557,16 @@ paths:
           schema:
             type: object
             properties:
+              id:
+                type: string
               description:
-                type: string
-              githubUrl:
-                type: string
-              productionBranch:
                 type: string
               public:
                 type: boolean
+              prodBranch:
+                type: string
+              githubUrl:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}/reconcile:
@@ -713,6 +713,39 @@ paths:
                   type: string
       tags:
         - AdminService
+  /v1/organizations/{organizationName}/projects_by_github_url:
+    get:
+      summary: ListProjectsForOrganizationAndGithubURL lists all the project for org deployed from githubURL
+      operationId: AdminService_ListProjectsForOrganizationAndGithubURL
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectsForOrganizationAndGithubURLResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: githubUrl
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/ping:
     get:
       summary: Ping returns information about the server
@@ -771,24 +804,29 @@ definitions:
       code:
         type: integer
         format: int32
+      message:
+        type: string
       details:
         type: array
         items:
+          type: object
           $ref: '#/definitions/protobufAny'
-      message:
-        type: string
   v1AddOrganizationMemberResponse:
     type: object
-    title: Response message for AdminService.AddOrganizationMember
+    properties:
+      pendingSignup:
+        type: boolean
   v1AddProjectMemberResponse:
     type: object
-    title: Response message for AdminService.AddProjectMember
+    properties:
+      pendingSignup:
+        type: boolean
   v1CreateOrganizationRequest:
     type: object
     properties:
-      description:
-        type: string
       name:
+        type: string
+      description:
         type: string
   v1CreateOrganizationResponse:
     type: object
@@ -809,26 +847,26 @@ definitions:
   v1Deployment:
     type: object
     properties:
-      branch:
-        type: string
-      createdOn:
-        type: string
-        format: date-time
       id:
         type: string
-      logs:
-        type: string
       projectId:
+        type: string
+      slots:
+        type: string
+        format: int64
+      branch:
         type: string
       runtimeHost:
         type: string
       runtimeInstanceId:
         type: string
-      slots:
-        type: string
-        format: int64
       status:
         $ref: '#/definitions/v1DeploymentStatus'
+      logs:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
       updatedOn:
         type: string
         format: date-time
@@ -849,12 +887,12 @@ definitions:
   v1GetGithubRepoStatusResponse:
     type: object
     properties:
-      defaultBranch:
-        type: string
-      grantAccessUrl:
-        type: string
       hasAccess:
         type: boolean
+      grantAccessUrl:
+        type: string
+      defaultBranch:
+        type: string
   v1GetOrganizationResponse:
     type: object
     properties:
@@ -865,12 +903,12 @@ definitions:
   v1GetProjectResponse:
     type: object
     properties:
-      jwt:
-        type: string
-      productionDeployment:
-        $ref: '#/definitions/v1Deployment'
       project:
         $ref: '#/definitions/v1Project'
+      prodDeployment:
+        $ref: '#/definitions/v1Deployment'
+      jwt:
+        type: string
       projectPermissions:
         $ref: '#/definitions/v1ProjectPermissions'
   v1GetProjectVariablesResponse:
@@ -882,113 +920,127 @@ definitions:
           type: string
   v1LeaveOrganizationResponse:
     type: object
-    title: Response message for AdminService.LeaveOrganization
   v1ListOrganizationMembersResponse:
     type: object
     properties:
       members:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1Member'
+      invites:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1UserInvite'
       nextPageToken:
         type: string
-    title: Response message for AdminService.ListOrganizationMembers
   v1ListOrganizationsResponse:
     type: object
     properties:
-      nextPageToken:
-        type: string
       organizations:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1Organization'
+      nextPageToken:
+        type: string
   v1ListProjectMembersResponse:
     type: object
     properties:
       members:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1Member'
+      invites:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1UserInvite'
       nextPageToken:
         type: string
-    title: Response message for AdminService.ListProjectMembers
-  v1ListProjectsForOrganizationResponse:
+  v1ListProjectsForOrganizationAndGithubURLResponse:
     type: object
     properties:
-      nextPageToken:
-        type: string
       projects:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1Project'
+      nextPageToken:
+        type: string
+  v1ListProjectsForOrganizationResponse:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Project'
+      nextPageToken:
+        type: string
   v1Member:
     type: object
     properties:
-      createdOn:
-        type: string
-        format: date-time
-      roleName:
-        type: string
-      updatedOn:
-        type: string
-        format: date-time
-      userEmail:
-        type: string
       userId:
+        type: string
+      userEmail:
         type: string
       userName:
         type: string
-  v1Organization:
-    type: object
-    properties:
+      roleName:
+        type: string
       createdOn:
         type: string
         format: date-time
-      description:
+      updatedOn:
         type: string
+        format: date-time
+  v1Organization:
+    type: object
+    properties:
       id:
         type: string
       name:
         type: string
         title: Globally unique
+      description:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
       updatedOn:
         type: string
         format: date-time
   v1OrganizationPermissions:
     type: object
     properties:
-      createProjects:
+      readOrg:
         type: boolean
       manageOrg:
         type: boolean
-      manageOrgMembers:
+      readProjects:
+        type: boolean
+      createProjects:
         type: boolean
       manageProjects:
         type: boolean
-      readOrg:
-        type: boolean
       readOrgMembers:
         type: boolean
-      readProjects:
+      manageOrgMembers:
         type: boolean
   v1PingResponse:
     type: object
     properties:
+      version:
+        type: string
       time:
         type: string
         format: date-time
-      version:
-        type: string
   v1Project:
     type: object
     properties:
-      createdOn:
-        type: string
-        format: date-time
-      description:
-        type: string
-      githubUrl:
-        type: string
       id:
         type: string
       name:
@@ -998,49 +1050,58 @@ definitions:
         type: string
       orgName:
         type: string
-      productionBranch:
+      description:
         type: string
-      productionDeploymentId:
-        type: string
-      productionOlapDriver:
-        type: string
-      productionOlapDsn:
-        type: string
-      productionSlots:
-        type: string
-        format: int64
       public:
         type: boolean
       region:
         type: string
+      githubUrl:
+        type: string
+      prodBranch:
+        type: string
+      prodOlapDriver:
+        type: string
+      prodOlapDsn:
+        type: string
+      prodSlots:
+        type: string
+        format: int64
+      prodDeploymentId:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
       updatedOn:
         type: string
         format: date-time
   v1ProjectPermissions:
     type: object
     properties:
-      manageDevBranches:
-        type: boolean
-      manageProdBranch:
+      readProject:
         type: boolean
       manageProject:
         type: boolean
-      manageProjectMembers:
+      readProd:
         type: boolean
-      readDevBranches:
+      readProdStatus:
         type: boolean
-      readProdBranch:
+      manageProd:
         type: boolean
-      readProject:
+      readDev:
+        type: boolean
+      readDevStatus:
+        type: boolean
+      manageDev:
         type: boolean
       readProjectMembers:
         type: boolean
+      manageProjectMembers:
+        type: boolean
   v1RemoveOrganizationMemberResponse:
     type: object
-    title: Response message for AdminService.RemoveOrganizationMember
   v1RemoveProjectMemberResponse:
     type: object
-    title: Response message for AdminService.RemoveProjectMember
   v1RevokeCurrentAuthTokenResponse:
     type: object
     properties:
@@ -1048,10 +1109,8 @@ definitions:
         type: string
   v1SetOrganizationMemberRoleResponse:
     type: object
-    title: Response message for AdminService.SetOrganizationMemberRole
   v1SetProjectMemberRoleResponse:
     type: object
-    title: Response message for AdminService.SetProjectMemberRole
   v1TriggerReconcileResponse:
     type: object
     title: Should need to add any response here (i.e similar to ReconcileResponse in runtime.proto)
@@ -1079,17 +1138,26 @@ definitions:
   v1User:
     type: object
     properties:
-      createdOn:
-        type: string
-        format: date-time
-      displayName:
+      id:
         type: string
       email:
         type: string
-      id:
+      displayName:
         type: string
       photoUrl:
         type: string
+      createdOn:
+        type: string
+        format: date-time
       updatedOn:
         type: string
         format: date-time
+  v1UserInvite:
+    type: object
+    properties:
+      email:
+        type: string
+      role:
+        type: string
+      invitedBy:
+        type: string

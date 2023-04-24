@@ -11,15 +11,15 @@ import (
 	"github.com/rilldata/rill/admin/database"
 )
 
-const AuthCodeTTL = 10 * time.Minute
+const DeviceAuthCodeTTL = 10 * time.Minute
 
-func (s *Service) IssueAuthCode(ctx context.Context, clientID string) (*database.AuthCode, error) {
+func (s *Service) IssueDeviceAuthCode(ctx context.Context, clientID string) (*database.DeviceAuthCode, error) {
 	authCode, err := generateDeviceAndUserCode()
 	if err != nil {
 		return nil, err
 	}
 	authCode.ClientID = clientID
-	code, err := s.DB.InsertAuthCode(ctx, authCode.DeviceCode, authCode.UserCode, authCode.ClientID, authCode.Expiry)
+	code, err := s.DB.InsertDeviceAuthCode(ctx, authCode.DeviceCode, authCode.UserCode, authCode.ClientID, authCode.Expiry)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func (s *Service) IssueAuthCode(ctx context.Context, clientID string) (*database
 }
 
 // generateDeviceAndUserCode generates a random device code and user code.
-func generateDeviceAndUserCode() (*database.AuthCode, error) {
+func generateDeviceAndUserCode() (*database.DeviceAuthCode, error) {
 	// Generate a random 24-byte device code, after base64 encoding it will be 32 characters
 	deviceCodeBytes := make([]byte, 24)
 	_, err := rand.Read(deviceCodeBytes)
@@ -41,10 +41,10 @@ func generateDeviceAndUserCode() (*database.AuthCode, error) {
 		return nil, err
 	}
 
-	return &database.AuthCode{
+	return &database.DeviceAuthCode{
 		DeviceCode: deviceCode,
 		UserCode:   userCode,
-		Expiry:     time.Now().Add(AuthCodeTTL),
+		Expiry:     time.Now().Add(DeviceAuthCodeTTL),
 	}, nil
 }
 

@@ -33,8 +33,6 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 }
 
 func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizationRequest) (*adminv1.GetOrganizationResponse, error) {
-	claims := auth.GetClaims(ctx)
-
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -43,6 +41,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	claims := auth.GetClaims(ctx)
 	if !claims.CanOrganization(ctx, org.ID, auth.ReadOrg) {
 		// check if the org has any public projects, this works for anonymous users as well
 		hasPublicProject, err := s.admin.DB.CheckOrganizationHasPublicProjects(ctx, org.ID)
@@ -60,7 +59,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 		}
 		// check if the user is outside members of a project in the org
 		if claims.OwnerType() == auth.OwnerTypeUser {
-			exists, err := s.admin.DB.CheckOrganizationProjectsHasMemberUser(ctx, org.ID, claims.OwnerID())
+			exists, err := s.admin.DB.CheckOrganizationHasOutsideUser(ctx, org.ID, claims.OwnerID())
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
@@ -74,11 +73,9 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 		return nil, status.Error(codes.PermissionDenied, "not allowed to read org")
 	}
 
-	permissions := claims.OrganizationPermissions(ctx, org.ID)
-
 	return &adminv1.GetOrganizationResponse{
 		Organization: organizationToDTO(org),
-		Permissions:  permissions,
+		Permissions:  claims.OrganizationPermissions(ctx, org.ID),
 	}, nil
 }
 
@@ -100,8 +97,6 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 }
 
 func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrganizationRequest) (*adminv1.DeleteOrganizationResponse, error) {
-	claims := auth.GetClaims(ctx)
-
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -110,6 +105,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	claims := auth.GetClaims(ctx)
 	if !claims.CanOrganization(ctx, org.ID, auth.ManageOrg) {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to delete org")
 	}
@@ -123,9 +119,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 }
 
 func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrganizationRequest) (*adminv1.UpdateOrganizationResponse, error) {
-	claims := auth.GetClaims(ctx)
-
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
+	org, err := s.admin.DB.FindOrganization(ctx, req.Id)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "org not found")
@@ -133,11 +127,15 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	claims := auth.GetClaims(ctx)
 	if !claims.CanOrganization(ctx, org.ID, auth.ManageOrg) {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
 	}
 
-	org, err = s.admin.DB.UpdateOrganization(ctx, req.Name, req.Description)
+	org, err = s.admin.DB.UpdateOrganization(ctx, req.Id, &database.UpdateOrganizationOptions{
+		Name:        req.Name,
+		Description: req.Description,
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -148,8 +146,6 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 }
 
 func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListOrganizationMembersRequest) (*adminv1.ListOrganizationMembersResponse, error) {
-	claims := auth.GetClaims(ctx)
-
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -158,6 +154,7 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	claims := auth.GetClaims(ctx)
 	if !claims.CanOrganization(ctx, org.ID, auth.ReadOrgMembers) {
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
 	}
@@ -172,12 +169,23 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 		dtos[i] = memberToPB(user)
 	}
 
-	return &adminv1.ListOrganizationMembersResponse{Members: dtos}, nil
+	// get pending user invites for this org
+	userInvites, err := s.admin.DB.FindOrganizationInvites(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))
+	for i, invite := range userInvites {
+		invitesDtos[i] = inviteToPB(invite)
+	}
+
+	return &adminv1.ListOrganizationMembersResponse{
+		Members: dtos,
+		Invites: invitesDtos,
+	}, nil
 }
 
 func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrganizationMemberRequest) (*adminv1.AddOrganizationMemberResponse, error) {
-	claims := auth.GetClaims(ctx)
-
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -186,21 +194,9 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	claims := auth.GetClaims(ctx)
 	if !claims.CanOrganization(ctx, org.ID, auth.ManageOrgMembers) {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add org members")
-	}
-
-	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
-	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-		// Create phantom user
-		// TODO: Replace by an invite-based approach
-		user, err = s.admin.CreateOrUpdateUser(ctx, req.Email, "", "")
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
 	}
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
@@ -211,6 +207,26 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		// Invite user to join the organization
+		invitedBy := ""
+		if claims.OwnerType() == auth.OwnerTypeUser {
+			invitedBy = claims.OwnerID()
+		}
+		err = s.admin.InviteUserToOrganization(ctx, req.Email, invitedBy, org.ID, role.ID, org.Name, role.Name)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		return &adminv1.AddOrganizationMemberResponse{
+			PendingSignup: true,
+		}, nil
+	}
+
 	ctx, tx, err := s.admin.DB.NewTx(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -218,10 +234,13 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 	defer func() { _ = tx.Rollback() }()
 	err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
 	if err != nil {
+		if errors.Is(err, database.ErrNotUnique) {
+			return nil, status.Error(codes.InvalidArgument, "user already member of org")
+		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.admin.DB.InsertUserInUsergroup(ctx, user.ID, *org.AllUsergroupID)
+	err = s.admin.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -234,12 +253,12 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.AddOrganizationMemberResponse{}, nil
+	return &adminv1.AddOrganizationMemberResponse{
+		PendingSignup: false,
+	}, nil
 }
 
 func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.RemoveOrganizationMemberRequest) (*adminv1.RemoveOrganizationMemberResponse, error) {
-	claims := auth.GetClaims(ctx)
-
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -248,6 +267,7 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	claims := auth.GetClaims(ctx)
 	if !claims.CanOrganization(ctx, org.ID, auth.ManageOrgMembers) {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to remove org members")
 	}
@@ -255,12 +275,24 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "user not found")
+			// check if there is a pending invite
+			invite, err := s.admin.DB.FindOrganizationInvite(ctx, org.ID, req.Email)
+			if err != nil {
+				if errors.Is(err, database.ErrNotFound) {
+					return nil, status.Error(codes.InvalidArgument, "user not found")
+				}
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			err = s.admin.DB.DeleteOrganizationInvite(ctx, invite.ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			return &adminv1.RemoveOrganizationMemberResponse{}, nil
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationAdminRoleName)
+	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to find organization admin role"))
 	}
@@ -287,7 +319,7 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 	}
 
 	// delete from all user group
-	err = s.admin.DB.DeleteUserFromUsergroup(ctx, user.ID, *org.AllUsergroupID)
+	err = s.admin.DB.DeleteUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -300,8 +332,6 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 }
 
 func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.SetOrganizationMemberRoleRequest) (*adminv1.SetOrganizationMemberRoleResponse, error) {
-	claims := auth.GetClaims(ctx)
-
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -310,6 +340,7 @@ func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.Set
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	claims := auth.GetClaims(ctx)
 	if !claims.CanOrganization(ctx, org.ID, auth.ManageOrgMembers) {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to set org members role")
 	}
@@ -331,8 +362,8 @@ func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.Set
 	}
 
 	// Check if the user is the last owner
-	if role.Name != database.OrganizationAdminRoleName {
-		adminRole, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationAdminRoleName)
+	if role.Name != database.OrganizationRoleNameAdmin {
+		adminRole, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 		if err != nil {
 			panic(errors.Wrap(err, "failed to find organization admin role"))
 		}
@@ -374,7 +405,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 		return nil, status.Error(codes.PermissionDenied, "not allowed to remove org members")
 	}
 
-	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationAdminRoleName)
+	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to find organization admin role"))
 	}
@@ -402,7 +433,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 	}
 
 	// delete from all user group
-	err = s.admin.DB.DeleteUserFromUsergroup(ctx, claims.OwnerID(), *org.AllUsergroupID)
+	err = s.admin.DB.DeleteUsergroupMember(ctx, *org.AllUsergroupID, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

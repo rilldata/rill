@@ -8,38 +8,38 @@ export type RuntimeServiceReconcileBody = {
   /** Changed paths provides a way to "hint" what files have changed in the repo, enabling
 reconciliation to execute faster by not scanning all code artifacts for changes. */
   changedPaths?: string[];
-  dry?: boolean;
   /** Forced paths is used to force run reconcile on certain files.
 This is mainly used by UI to reconcile paths missing in catalog and get errors if any. */
   forcedPaths?: string[];
+  dry?: boolean;
   strict?: boolean;
 };
 
 export type QueryServiceQueryBody = {
-  args?: unknown[];
-  dryRun?: boolean;
-  priority?: number;
   sql?: string;
+  args?: unknown[];
+  priority?: number;
+  dryRun?: boolean;
 };
 
 /**
  * Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
  */
 export type QueryServiceColumnTopKBody = {
-  agg?: string;
   columnName?: string;
+  agg?: string;
   k?: number;
   priority?: number;
 };
 
 export type QueryServiceColumnTimeSeriesBody = {
-  filters?: V1MetricsViewFilter;
   measures?: ColumnTimeSeriesRequestBasicMeasure[];
-  pixels?: number;
-  priority?: number;
-  sampleSize?: number;
-  timeRange?: V1TimeSeriesTimeRange;
   timestampColumnName?: string;
+  timeRange?: V1TimeSeriesTimeRange;
+  filters?: V1MetricsViewFilter;
+  pixels?: number;
+  sampleSize?: number;
+  priority?: number;
 };
 
 export type QueryServiceColumnTimeRangeParams = {
@@ -93,32 +93,32 @@ export type QueryServiceColumnNullCountParams = {
 };
 
 export type QueryServiceMetricsViewTotalsBody = {
-  filter?: V1MetricsViewFilter;
   measureNames?: string[];
-  priority?: number;
-  timeEnd?: string;
   timeStart?: string;
+  timeEnd?: string;
+  filter?: V1MetricsViewFilter;
+  priority?: number;
 };
 
 export type QueryServiceMetricsViewToplistBody = {
   dimensionName?: string;
-  filter?: V1MetricsViewFilter;
-  limit?: string;
   measureNames?: string[];
-  offset?: string;
-  priority?: number;
-  sort?: V1MetricsViewSort[];
-  timeEnd?: string;
   timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  filter?: V1MetricsViewFilter;
+  priority?: number;
 };
 
 export type QueryServiceMetricsViewTimeSeriesBody = {
-  filter?: V1MetricsViewFilter;
   measureNames?: string[];
-  priority?: number;
+  timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
-  timeStart?: string;
+  filter?: V1MetricsViewFilter;
+  priority?: number;
 };
 
 export type QueryServiceColumnDescriptiveStatisticsParams = {
@@ -175,13 +175,13 @@ export type RuntimeServiceEditInstanceBodyVariables = { [key: string]: string };
 See message Instance for field descriptions.
  */
 export type RuntimeServiceEditInstanceBody = {
-  embedCatalog?: boolean;
-  ingestionLimitBytes?: string;
   olapDriver?: string;
   olapDsn?: string;
   repoDriver?: string;
   repoDsn?: string;
+  embedCatalog?: boolean;
   variables?: RuntimeServiceEditInstanceBodyVariables;
+  ingestionLimitBytes?: string;
 };
 
 export type RuntimeServiceDeleteInstanceBody = {
@@ -225,20 +225,20 @@ export const V1TypeCode = {
 } as const;
 
 export interface V1TriggerSyncResponse {
-  objectsAddedCount?: number;
   objectsCount?: number;
-  objectsRemovedCount?: number;
+  objectsAddedCount?: number;
   objectsUpdatedCount?: number;
+  objectsRemovedCount?: number;
 }
 
 export interface V1TriggerRefreshResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
   /** affected_paths lists all the file artifact paths that were considered while
 executing the reconciliation. If changed_paths was empty, this will include all
 code artifacts in the repo. */
   affectedPaths?: string[];
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
 }
 
 export interface V1TopK {
@@ -248,28 +248,28 @@ export interface V1TopK {
 export type V1TimeSeriesValueRecords = { [key: string]: any };
 
 export interface V1TimeSeriesValue {
+  ts?: string;
   bin?: number;
   records?: V1TimeSeriesValueRecords;
-  ts?: string;
 }
 
 export interface V1TimeSeriesTimeRange {
+  start?: string;
   end?: string;
   interval?: V1TimeGrain;
-  start?: string;
 }
 
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
-  sampleSize?: number;
   spark?: V1TimeSeriesValue[];
   timeRange?: V1TimeSeriesTimeRange;
+  sampleSize?: number;
 }
 
 export interface V1TimeRangeSummary {
-  interval?: TimeRangeSummaryInterval;
-  max?: string;
   min?: string;
+  max?: string;
+  interval?: TimeRangeSummaryInterval;
 }
 
 export type V1TimeGrain = typeof V1TimeGrain[keyof typeof V1TimeGrain];
@@ -311,21 +311,21 @@ scanning the database's information schema when the instance is created with exp
 have managed = false.
  */
 export interface V1Table {
+  name?: string;
+  schema?: V1StructType;
   /** Managed is true if the table was created through a runtime migration, false if it was discovered in by
 scanning the database's information schema. */
   managed?: boolean;
-  name?: string;
-  schema?: V1StructType;
 }
 
 export type V1SourceProperties = { [key: string]: any };
 
 export interface V1Source {
-  connector?: string;
   name?: string;
-  policy?: SourceExtractPolicy;
+  connector?: string;
   properties?: V1SourceProperties;
   schema?: V1StructType;
+  policy?: SourceExtractPolicy;
   timeoutSeconds?: number;
 }
 
@@ -334,29 +334,29 @@ export interface V1RenameFileResponse {
 }
 
 export interface V1RenameFileAndReconcileRequest {
+  instanceId?: string;
+  fromPath?: string;
+  toPath?: string;
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
-  fromPath?: string;
-  instanceId?: string;
   strict?: boolean;
-  toPath?: string;
 }
 
 export interface V1RefreshAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
   /** affected_paths lists all the file artifact paths that were considered while
 executing the reconciliation. If changed_paths was empty, this will include all
 code artifacts in the repo. */
   affectedPaths?: string[];
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
 }
 
 export interface V1RefreshAndReconcileRequest {
-  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
-  dry?: boolean;
   instanceId?: string;
   path?: string;
+  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
+  dry?: boolean;
   strict?: boolean;
 }
 
@@ -386,42 +386,42 @@ export const V1ReconcileErrorCode = {
  */
 export interface V1ReconcileError {
   code?: V1ReconcileErrorCode;
-  endLocation?: ReconcileErrorCharLocation;
-  filePath?: string;
   message?: string;
+  filePath?: string;
   /** Property path of the error in the code artifact (if any).
 It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
 It only applies to structured code artifacts (i.e. YAML).
 Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: ReconcileErrorCharLocation;
+  endLocation?: ReconcileErrorCharLocation;
 }
 
 export interface V1RenameFileAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
   /** affected_paths lists all the file artifact paths that were considered while
 executing the reconciliation. If changed_paths was empty, this will include all
 code artifacts in the repo. */
   affectedPaths?: string[];
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
 }
 
 export interface V1ReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
   /** affected_paths lists all the file artifact paths that were considered while
 executing the reconciliation. If changed_paths was empty, this will include all
 code artifacts in the repo. */
   affectedPaths?: string[];
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
 }
 
 export type V1QueryResponseDataItem = { [key: string]: any };
 
 export interface V1QueryResponse {
-  data?: V1QueryResponseDataItem[];
   meta?: V1StructType;
+  data?: V1QueryResponseDataItem[];
 }
 
 export interface V1PutFileResponse {
@@ -429,16 +429,18 @@ export interface V1PutFileResponse {
 }
 
 export interface V1PutFileAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
   /** affected_paths lists all the file artifact paths that were considered while
 executing the reconciliation. If changed_paths was empty, this will include all
 code artifacts in the repo. */
   affectedPaths?: string[];
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
 }
 
 export interface V1PutFileAndReconcileRequest {
+  instanceId?: string;
+  path?: string;
   blob?: string;
   create?: boolean;
   /** create_only will cause the operation to fail if a file already exists at path.
@@ -446,20 +448,18 @@ It should only be set when create = true. */
   createOnly?: boolean;
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
-  instanceId?: string;
-  path?: string;
   strict?: boolean;
 }
 
 export interface V1ProfileColumn {
-  largestStringLength?: number;
   name?: string;
   type?: string;
+  largestStringLength?: number;
 }
 
 export interface V1PingResponse {
-  time?: string;
   version?: string;
+  time?: string;
 }
 
 export type V1ObjectType = typeof V1ObjectType[keyof typeof V1ObjectType];
@@ -474,9 +474,9 @@ export const V1ObjectType = {
 } as const;
 
 export interface V1NumericStatistics {
+  min?: number;
   max?: number;
   mean?: number;
-  min?: number;
   q25?: number;
   q50?: number;
   q75?: number;
@@ -497,64 +497,64 @@ Message will have either numericHistogramBins, numericStatistics or numericOutli
  */
 export interface V1NumericSummary {
   numericHistogramBins?: V1NumericHistogramBins;
-  numericOutliers?: V1NumericOutliers;
   numericStatistics?: V1NumericStatistics;
+  numericOutliers?: V1NumericOutliers;
 }
 
 export interface V1Model {
-  dialect?: ModelDialect;
-  materialize?: boolean;
   name?: string;
-  schema?: V1StructType;
   sql?: string;
+  dialect?: ModelDialect;
+  schema?: V1StructType;
+  materialize?: boolean;
 }
 
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
-  data?: V1MetricsViewTotalsResponseData;
   meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewTotalsResponseData;
 }
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
 export interface V1MetricsViewToplistResponse {
-  data?: V1MetricsViewToplistResponseDataItem[];
   meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewToplistResponseDataItem[];
 }
 
 export interface V1MetricsViewTimeSeriesResponse {
-  data?: V1TimeSeriesValue[];
   meta?: V1MetricsViewColumn[];
+  data?: V1TimeSeriesValue[];
 }
 
 export interface V1MetricsViewSort {
-  ascending?: boolean;
   name?: string;
+  ascending?: boolean;
 }
 
 export interface V1MetricsViewFilter {
-  exclude?: MetricsViewFilterCond[];
   include?: MetricsViewFilterCond[];
+  exclude?: MetricsViewFilterCond[];
 }
 
 export interface V1MetricsViewColumn {
   name?: string;
-  nullable?: boolean;
   type?: string;
+  nullable?: boolean;
 }
 
 export interface V1MetricsView {
+  name?: string;
+  model?: string;
+  timeDimension?: string;
+  dimensions?: MetricsViewDimension[];
+  measures?: MetricsViewMeasure[];
+  label?: string;
+  description?: string;
+  smallestTimeGrain?: V1TimeGrain;
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
-  description?: string;
-  dimensions?: MetricsViewDimension[];
-  label?: string;
-  measures?: MetricsViewMeasure[];
-  model?: string;
-  name?: string;
-  smallestTimeGrain?: V1TimeGrain;
-  timeDimension?: string;
 }
 
 export interface V1MapType {
@@ -579,9 +579,9 @@ export interface V1ListCatalogEntriesResponse {
   entries?: V1CatalogEntry[];
 }
 
-export type V1InstanceVariables = { [key: string]: string };
-
 export type V1InstanceProjectVariables = { [key: string]: string };
+
+export type V1InstanceVariables = { [key: string]: string };
 
 /**
  * Instance represents a single data project, meaning one set of code artifacts,
@@ -592,19 +592,19 @@ projects, but also multiple tenants. On local, the runtime will usually have
 just a single instance.
  */
 export interface V1Instance {
-  /** If true, the runtime will store the instance's catalog in its OLAP store instead
-of in the runtime's metadata store. Currently only supported for the duckdb driver. */
-  embedCatalog?: boolean;
-  ingestionLimitBytes?: string;
   instanceId?: string;
   olapDriver?: string;
   olapDsn?: string;
-  projectVariables?: V1InstanceProjectVariables;
   /** Driver for reading/editing code artifacts (options: file, metastore, github).
 This enables virtualizing a file system in a cloud setting. */
   repoDriver?: string;
   repoDsn?: string;
+  /** If true, the runtime will store the instance's catalog in its OLAP store instead
+of in the runtime's metadata store. Currently only supported for the duckdb driver. */
+  embedCatalog?: boolean;
   variables?: V1InstanceVariables;
+  projectVariables?: V1InstanceProjectVariables;
+  ingestionLimitBytes?: string;
 }
 
 export type V1HistogramMethod =
@@ -643,20 +643,20 @@ export interface V1DeleteFileResponse {
 }
 
 export interface V1DeleteFileAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
   /** affected_paths lists all the file artifact paths that were considered while
 executing the reconciliation. If changed_paths was empty, this will include all
 code artifacts in the repo. */
   affectedPaths?: string[];
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
 }
 
 export interface V1DeleteFileAndReconcileRequest {
-  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
-  dry?: boolean;
   instanceId?: string;
   path?: string;
+  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
+  dry?: boolean;
   strict?: boolean;
 }
 
@@ -671,14 +671,14 @@ export type V1CreateInstanceRequestVariables = { [key: string]: string };
 See message Instance for field descriptions.
  */
 export interface V1CreateInstanceRequest {
-  embedCatalog?: boolean;
-  ingestionLimitBytes?: string;
   instanceId?: string;
   olapDriver?: string;
   olapDsn?: string;
   repoDriver?: string;
   repoDsn?: string;
+  embedCatalog?: boolean;
   variables?: V1CreateInstanceRequestVariables;
+  ingestionLimitBytes?: string;
 }
 
 /**
@@ -686,9 +686,9 @@ export interface V1CreateInstanceRequest {
 It should not be confused with a source.
  */
 export interface V1Connector {
-  description?: string;
-  displayName?: string;
   name?: string;
+  displayName?: string;
+  description?: string;
   properties?: ConnectorProperty[];
 }
 
@@ -713,9 +713,9 @@ export interface V1ColumnRugHistogramResponse {
 }
 
 export interface V1ColumnRollupIntervalResponse {
+  start?: string;
   end?: string;
   interval?: V1TimeGrain;
-  start?: string;
 }
 
 export interface V1ColumnNumericHistogramResponse {
@@ -734,8 +734,8 @@ export interface V1ColumnDescriptiveStatisticsResponse {
  * Response for QueryService.ColumnTopK and QueryService.ColumnCardinality. Message will have either topK or cardinality set.
  */
 export interface V1CategoricalSummary {
-  cardinality?: number;
   topK?: V1TopK;
+  cardinality?: number;
 }
 
 export interface V1ColumnCardinalityResponse {
@@ -743,33 +743,33 @@ export interface V1ColumnCardinalityResponse {
 }
 
 export interface V1CatalogEntry {
-  children?: string[];
-  createdOn?: string;
+  name?: string;
+  table?: V1Table;
+  source?: V1Source;
+  model?: V1Model;
+  metricsView?: V1MetricsView;
+  path?: string;
   /** Marks whether this entry is embedded or not. If yes then this will not have a corresponding artifact. */
   embedded?: boolean;
-  metricsView?: V1MetricsView;
-  model?: V1Model;
-  name?: string;
   parents?: string[];
-  path?: string;
-  refreshedOn?: string;
-  source?: V1Source;
-  table?: V1Table;
+  children?: string[];
+  createdOn?: string;
   updatedOn?: string;
+  refreshedOn?: string;
 }
 
 export interface Runtimev1Type {
-  arrayElementType?: Runtimev1Type;
   code?: V1TypeCode;
-  mapType?: V1MapType;
   nullable?: boolean;
+  arrayElementType?: Runtimev1Type;
   structType?: V1StructType;
+  mapType?: V1MapType;
 }
 
 export interface RpcStatus {
   code?: number;
-  details?: ProtobufAny[];
   message?: string;
+  details?: ProtobufAny[];
 }
 
 /**
@@ -794,14 +794,14 @@ export interface ProtobufAny {
 }
 
 export interface TopKEntry {
-  count?: number;
   value?: unknown;
+  count?: number;
 }
 
 export interface TimeRangeSummaryInterval {
+  months?: number;
   days?: number;
   micros?: string;
-  months?: number;
 }
 
 export interface StructTypeField {
@@ -810,31 +810,31 @@ export interface StructTypeField {
 }
 
 export interface SourceExtractPolicy {
-  filesLimit?: string;
-  filesStrategy?: ExtractPolicyStrategy;
-  rowsLimitBytes?: string;
   rowsStrategy?: ExtractPolicyStrategy;
+  rowsLimitBytes?: string;
+  filesStrategy?: ExtractPolicyStrategy;
+  filesLimit?: string;
 }
 
 export interface ReconcileErrorCharLocation {
-  column?: number;
   line?: number;
+  column?: number;
 }
 
 export interface NumericOutliersOutlier {
   bucket?: number;
-  count?: number;
-  high?: number;
   low?: number;
+  high?: number;
   present?: boolean;
+  count?: number;
 }
 
 export interface NumericHistogramBinsBin {
   bucket?: number;
-  count?: number;
-  high?: number;
   low?: number;
   midpoint?: number;
+  high?: number;
+  count?: number;
 }
 
 export type ModelDialect = typeof ModelDialect[keyof typeof ModelDialect];
@@ -846,23 +846,23 @@ export const ModelDialect = {
 } as const;
 
 export interface MetricsViewMeasure {
-  description?: string;
-  expression?: string;
-  format?: string;
-  label?: string;
   name?: string;
+  label?: string;
+  expression?: string;
+  description?: string;
+  format?: string;
 }
 
 export interface MetricsViewFilterCond {
+  name?: string;
   in?: unknown[];
   like?: string[];
-  name?: string;
 }
 
 export interface MetricsViewDimension {
-  description?: string;
-  label?: string;
   name?: string;
+  label?: string;
+  description?: string;
 }
 
 export type ExtractPolicyStrategy =
@@ -888,18 +888,18 @@ export const ConnectorPropertyType = {
 } as const;
 
 export interface ConnectorProperty {
-  description?: string;
-  displayName?: string;
-  hint?: string;
-  href?: string;
   key?: string;
-  nullable?: boolean;
+  displayName?: string;
+  description?: string;
   placeholder?: string;
   type?: ConnectorPropertyType;
+  nullable?: boolean;
+  hint?: string;
+  href?: string;
 }
 
 export interface ColumnTimeSeriesRequestBasicMeasure {
-  expression?: string;
   id?: string;
+  expression?: string;
   sqlName?: string;
 }

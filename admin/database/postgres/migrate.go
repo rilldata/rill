@@ -25,6 +25,9 @@ func (c *connection) FindMigrationVersion(ctx context.Context) (int, error) {
 	var version int
 	err := c.db.QueryRowxContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&version)
 	if err != nil {
+		if strings.Contains(err.Error(), "does not exist") {
+			return 0, nil
+		}
 		return 0, err
 	}
 	return version, nil

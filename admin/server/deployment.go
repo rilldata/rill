@@ -11,7 +11,7 @@ func (s *Server) TriggerReconcile(ctx context.Context, req *adminv1.TriggerRecon
 	if err != nil {
 		return nil, err
 	}
-	err = s.admin.TriggerReconcile(ctx, proj.ProductionDeployment.Id)
+	err = s.admin.TriggerReconcile(ctx, proj.ProdDeployment.Id)
 	if err != nil {
 		return nil, err
 	}

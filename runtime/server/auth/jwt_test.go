@@ -66,7 +66,7 @@ func newTestIssuerAndAudience(t *testing.T) (*Issuer, *Audience, func()) {
 	require.NoError(t, err)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/.well-known/jwks.json", iss.WellKnownHandleFunc)
+	mux.Handle("/.well-known/jwks.json", iss.WellKnownHandler())
 
 	srv := httptest.NewServer(mux)
 	iss.issuerURL = srv.URL

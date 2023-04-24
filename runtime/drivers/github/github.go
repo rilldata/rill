@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bradleyfalzon/ghinstallation"
+	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/eapache/go-resiliency/retrier"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"

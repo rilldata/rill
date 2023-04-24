@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -32,18 +34,20 @@ import (
 // Env var keys must be prefixed with RILL_RUNTIME_ and are converted from snake_case to CamelCase.
 // For example RILL_RUNTIME_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	HTTPPort            int           `default:"8080" split_words:"true"`
-	GRPCPort            int           `default:"9090" split_words:"true"`
-	LogLevel            zapcore.Level `default:"info" split_words:"true"`
-	MetastoreDriver     string        `default:"sqlite"`
-	MetastoreURL        string        `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
-	AllowedOrigins      []string      `default:"*" split_words:"true"`
-	AuthEnable          bool          `default:"false" split_words:"true"`
-	AuthIssuerURL       string        `default:"" split_words:"true"`
-	AuthAudienceURL     string        `default:"" split_words:"true"`
-	SafeSourceRefresh   bool          `default:"false" split_words:"true"`
-	ConnectionCacheSize int           `default:"100" split_words:"true"`
-	QueryCacheSize      int           `default:"10000" split_words:"true"`
+	HTTPPort            int                    `default:"8080" split_words:"true"`
+	GRPCPort            int                    `default:"9090" split_words:"true"`
+	LogLevel            zapcore.Level          `default:"info" split_words:"true"`
+	MetricsExporter     observability.Exporter `default:"prometheus" split_words:"true"`
+	TracesExporter      observability.Exporter `default:"" split_words:"true"`
+	MetastoreDriver     string                 `default:"sqlite"`
+	MetastoreURL        string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
+	AllowedOrigins      []string               `default:"*" split_words:"true"`
+	AuthEnable          bool                   `default:"false" split_words:"true"`
+	AuthIssuerURL       string                 `default:"" split_words:"true"`
+	AuthAudienceURL     string                 `default:"" split_words:"true"`
+	SafeSourceRefresh   bool                   `default:"false" split_words:"true"`
+	ConnectionCacheSize int                    `default:"100" split_words:"true"`
+	QueryCacheSize      int                    `default:"10000" split_words:"true"`
 	// AllowHostAccess controls whether instance can use host credentials and
 	// local_file sources can access directory outside repo
 	AllowHostAccess bool `default:"false" split_words:"true"`
@@ -75,6 +79,26 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				os.Exit(1)
 			}
 
+			// Init telemetry
+			shutdown, err := observability.Start(cmd.Context(), logger, &observability.Options{
+				MetricsExporter: conf.MetricsExporter,
+				TracesExporter:  conf.TracesExporter,
+				ServiceName:     "runtime-server",
+				ServiceVersion:  cliCfg.Version.String(),
+			})
+			if err != nil {
+				logger.Fatal("error starting telemetry", zap.Error(err))
+			}
+			defer func() {
+				// Allow 10 seconds to gracefully shutdown telemetry
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				err := shutdown(ctx)
+				if err != nil {
+					logger.Error("telemetry shutdown failed", zap.Error(err))
+				}
+			}()
+
 			// Init runtime
 			opts := &runtime.Options{
 				ConnectionCacheSize: conf.ConnectionCacheSize,
@@ -95,6 +119,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				HTTPPort:        conf.HTTPPort,
 				GRPCPort:        conf.GRPCPort,
 				AllowedOrigins:  conf.AllowedOrigins,
+				ServePrometheus: conf.MetricsExporter == observability.PrometheusExporter,
 				AuthEnable:      conf.AuthEnable,
 				AuthIssuerURL:   conf.AuthIssuerURL,
 				AuthAudienceURL: conf.AuthAudienceURL,

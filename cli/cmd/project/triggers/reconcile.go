@@ -31,7 +31,7 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Trigger reconcile (runs in the background - err means the deployment wasn't found, which is unlikely)
-			if project.GetProductionDeployment() != nil {
+			if project.GetProdDeployment() != nil {
 				_, err := client.TriggerReconcile(cmd.Context(), &adminv1.TriggerReconcileRequest{OrganizationName: cfg.Org, Name: args[0]})
 				if err != nil {
 					return err
