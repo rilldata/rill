@@ -112,7 +112,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 				if err := auth.Login(ctx, cfg, redirectURL); err != nil {
 					if errors.Is(err, deviceauth.ErrAuthenticationTimedout) {
-						warn.Println("Rill login timed out because you did not confirm the code in the browser.")
+						warn.Println("Rill login has timed out as the code was not confirmed in the browser.")
 						warn.Println("Run `rill deploy` again.")
 						return nil
 					} else if errors.Is(err, deviceauth.ErrCodeRejected) {
