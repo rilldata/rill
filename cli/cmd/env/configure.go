@@ -34,6 +34,10 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
+			tel := telemetry.NewTelemetry(cfg.Version)
+			// Force disabling for now. We can enable if we ever have to emit events here
+			tel.Enabled = false
+
 			// Verify that the projectPath contains a Rill project
 			if !rillv1beta.HasRillProject(projectPath) {
 				fullpath, err := filepath.Abs(projectPath)
@@ -125,9 +129,7 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 		return nil, fmt.Errorf("failed to extract connectors %w", err)
 	}
 
-	if tel != nil {
-		tel.EmitDataAccessConnectedStart()
-	}
+	tel.EmitDataAccessConnectedStart()
 
 	vars := make(map[string]string)
 	for _, c := range connectors {
@@ -178,9 +180,7 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 		fmt.Println("")
 	}
 
-	if tel != nil {
-		tel.EmitDataAccessConnectedSuccess()
-	}
+	tel.EmitDataAccessConnectedSuccess()
 
 	return vars, nil
 }
