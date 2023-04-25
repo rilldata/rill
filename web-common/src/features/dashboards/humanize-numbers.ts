@@ -8,7 +8,6 @@ import {
   NumberKind,
 } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 import { PerRangeFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/per-range";
-import type { LeaderboardValue } from "./dashboard-stores";
 
 const shortHandSymbols = ["Q", "T", "B", "M", "k", "none"] as const;
 export type ShortHandSymbols = typeof shortHandSymbols[number];
