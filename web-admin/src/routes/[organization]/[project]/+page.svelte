@@ -10,7 +10,7 @@
 </script>
 
 <svelte:head>
-  <title>Project</title>
+  <title>{project} overview - Rill</title>
 </svelte:head>
 
 <div class="flex flex-col items-center">

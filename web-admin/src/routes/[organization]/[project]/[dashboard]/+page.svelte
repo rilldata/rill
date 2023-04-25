@@ -61,7 +61,7 @@
 </script>
 
 <svelte:head>
-  <title>Rill | {dash}</title>
+  <title>{dash} - Rill</title>
 </svelte:head>
 
 {#if isProjectBuilding}
