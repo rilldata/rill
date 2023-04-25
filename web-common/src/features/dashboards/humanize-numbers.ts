@@ -60,11 +60,7 @@ export function humanizeGroupValues(
   if (!areAllNumbers) return values;
 
   numValues = (numValues as number[]).sort((a, b) => b - a);
-  const formattedValues = humanizeGroupValuesUtil2(
-    numValues as number[],
-    type,
-    options
-  );
+  const formattedValues = humanizeGroupValuesUtil2(numValues as number[], type);
 
   const formattedValueKey = "__formatted_" + valueKey;
   const humanizedValues = values.map((v) => {
@@ -151,8 +147,7 @@ export function humanizeDataType(
 /** This function is used primarily in the leaderboard and the detail tables. */
 function humanizeGroupValuesUtil2(
   values: number[],
-  type: NicelyFormattedTypes,
-  _options?: formatterOptions
+  type: NicelyFormattedTypes
 ) {
   if (!values.length) return values;
   if (type == NicelyFormattedTypes.NONE) return values;
