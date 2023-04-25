@@ -28,18 +28,9 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			if !cmd.Flags().Changed("org") {
-				resp, err := client.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
+				orgNames, err := cmdutil.OrgNames(ctx, client)
 				if err != nil {
 					return err
-				}
-
-				if len(resp.Organizations) == 0 {
-					return fmt.Errorf("You are not a member of any orgs")
-				}
-
-				var orgNames []string
-				for _, org := range resp.Organizations {
-					orgNames = append(orgNames, org.Name)
 				}
 
 				name = cmdutil.SelectPrompt("Select org to rename", orgNames, "")

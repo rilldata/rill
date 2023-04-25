@@ -19,8 +19,6 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 		Short: "Create",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -35,21 +33,16 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			exist, err := cmdutil.OrgExists(ctx, client, name)
-			if err != nil {
-				return err
-			}
-
-			if exist {
-				return fmt.Errorf("Org name %q already exists", name)
-			}
-
 			res, err := client.CreateOrganization(context.Background(), &adminv1.CreateOrganizationRequest{
 				Name:        name,
 				Description: description,
 			})
 			if err != nil {
-				return err
+				if !cmdutil.IsNameExistsErr(err) {
+					return err
+				}
+
+				return fmt.Errorf("Org name %q already exists", name)
 			}
 
 			// Switching to the created org

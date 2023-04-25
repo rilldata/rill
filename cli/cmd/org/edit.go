@@ -7,6 +7,8 @@ import (
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func EditCmd(cfg *config.Config) *cobra.Command {
@@ -26,11 +28,12 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			if !cmd.Flags().Changed("org") {
-				// Get the new org name from user if not provided in the flag
-				err := cmdutil.PromptIfUnset(&orgName, "Enter the org name", orgName)
+				orgNames, err := cmdutil.OrgNames(ctx, client)
 				if err != nil {
 					return err
 				}
+
+				orgName = cmdutil.SelectPrompt("Select org to edit", orgNames, "")
 			}
 
 			if !cmd.Flags().Changed("description") {
@@ -41,18 +44,15 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			exists, err := cmdutil.OrgExists(ctx, client, orgName)
-			if err != nil {
-				return err
-			}
-
-			if !exists {
-				return fmt.Errorf("Org name %q not exists, please run `rill org list` to list available orgs", orgName)
-			}
-
 			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: orgName})
 			if err != nil {
-				return err
+				if st, ok := status.FromError(err); ok {
+					if st.Code() != codes.NotFound {
+						return err
+					}
+				}
+
+				return fmt.Errorf("Org name %q not exists, please run `rill org list` to list available orgs", orgName)
 			}
 
 			org := resp.Organization
