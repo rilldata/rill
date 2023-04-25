@@ -3,11 +3,13 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/gorilla/securecookie"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -53,6 +55,18 @@ func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request) {
 	// Get auth cookie
 	sess, err := a.cookies.Get(r, cookieName)
 	if err != nil {
+		var cookieErr securecookie.Error
+		if errors.As(err, &cookieErr) && cookieErr.IsDecode() {
+			// clear cookie
+			sess.Options.MaxAge = -1
+			err = sess.Save(r, w)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("failed to clear session: %s", err), http.StatusInternalServerError)
+				return
+			}
+			http.Redirect(w, r, r.URL.RequestURI(), http.StatusTemporaryRedirect)
+			return
+		}
 		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
 		return
 	}

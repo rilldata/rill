@@ -25,7 +25,7 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 			ctx := cmd.Context()
 
 			if cfg.AdminTokenDefault != "" {
-				warn.Println("You are already logged in. To log in again, run `rill auth logout` first.")
+				warn.Println("You are already logged in. To log in again, run `rill logout` first.")
 				return nil
 			}
 
@@ -64,7 +64,7 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 
 				fmt.Printf("Set default organization to %q. Change using `rill org switch`.\n", defaultOrg)
 			} else {
-				warn.Println("You are not part of any org. Run `rill org create` or `rill deploy` to create one.")
+				warn.Println("You are not part of any org. Run `rill org create` to create one.")
 			}
 			return nil
 		},

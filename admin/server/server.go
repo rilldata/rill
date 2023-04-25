@@ -74,7 +74,7 @@ func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimea
 	}
 
 	cookies := sessions.NewCookieStore(opts.SessionKeyPairs...)
-	cookies.Options.MaxAge = 60 * 60 * 24 * 365 * 10 // 10 years
+	cookies.MaxAge(60 * 60 * 24 * 365 * 10) // 10 years
 	cookies.Options.Secure = externalURL.Scheme == "https"
 	cookies.Options.HttpOnly = true
 
