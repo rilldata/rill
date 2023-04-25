@@ -23,7 +23,7 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 	var variables []string
 
 	initCmd := &cobra.Command{
-		Use:   "init <path>",
+		Use:   "init [<path>]",
 		Short: "Initialize a new project",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

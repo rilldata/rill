@@ -41,9 +41,8 @@
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
-  $: timeDimension = $metaQuery.data?.timeDimension;
   $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
-  $: interval = $dashboardStore?.selectedTimeRange?.interval;
+  $: showComparison = $dashboardStore?.showComparison;
 
   let totalsQuery: CreateQueryResult<V1MetricsViewTotalsResponse, Error>;
 
@@ -67,6 +66,7 @@
   >;
 
   let isComparisonRangeAvailable = false;
+  let displayComparison = false;
 
   /** Generate the totals & big number comparison query */
   $: if (
@@ -84,6 +84,7 @@
       $dashboardStore?.selectedComparisonTimeRange?.start,
       $dashboardStore?.selectedComparisonTimeRange?.end
     );
+    displayComparison = showComparison && isComparisonRangeAvailable;
 
     const totalsQueryParams = {
       measureNames: selectedMeasureNames,
@@ -103,10 +104,10 @@
       metricViewName,
       {
         ...totalsQueryParams,
-        timeStart: isComparisonRangeAvailable
+        timeStart: displayComparison
           ? $dashboardStore?.selectedComparisonTimeRange?.start.toISOString()
           : undefined,
-        timeEnd: isComparisonRangeAvailable
+        timeEnd: displayComparison
           ? $dashboardStore?.selectedComparisonTimeRange?.end.toISOString()
           : undefined,
       }
@@ -144,7 +145,7 @@
         timeGranularity: $dashboardStore.selectedTimeRange?.interval,
       }
     );
-    if (isComparisonRangeAvailable) {
+    if (displayComparison) {
       timeSeriesComparisonQuery = createQueryServiceMetricsViewTimeSeries(
         instanceId,
         metricViewName,
@@ -230,7 +231,7 @@
     {#each $metaQuery.data?.measures as measure, index (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
       {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
-      {@const showComparison = isComparisonRangeAvailable}
+      {@const showComparison = displayComparison}
       {@const comparisonValue = totalsComparisons?.[measure.name]}
       {@const comparisonPercChange =
         comparisonValue && bigNum !== undefined && bigNum !== null

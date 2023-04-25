@@ -1,10 +1,7 @@
 <script lang="ts">
+  import { getDashboardsForProject } from "@rilldata/web-admin/components/projects/dashboards";
   import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
-  import Axios from "axios";
-  import {
-    createAdminServiceGetProject,
-    V1GetProjectResponse,
-  } from "../../client";
+  import { createAdminServiceGetProject } from "../../client";
 
   export let organization: string;
   export let project: string;
@@ -12,31 +9,12 @@
   let dashboards: V1CatalogEntry[];
 
   $: proj = createAdminServiceGetProject(organization, project);
-  $: if ($proj.isSuccess && $proj.data?.productionDeployment) {
-    getDashboardsForProject($proj.data);
+  $: if ($proj.isSuccess && $proj.data?.prodDeployment) {
+    updateDashboardsForProject();
   }
 
-  async function getDashboardsForProject(projectData: V1GetProjectResponse) {
-    // Hack: in development, the runtime host is actually on port 8081
-    const runtimeHost = projectData.productionDeployment.runtimeHost.replace(
-      "localhost:9091",
-      "localhost:8081"
-    );
-
-    const axios = Axios.create({
-      baseURL: runtimeHost,
-      headers: {
-        Authorization: `Bearer ${projectData.jwt}`,
-      },
-    });
-
-    const { data } = await axios.get(
-      `/v1/instances/${projectData.productionDeployment.runtimeInstanceId}/catalog?type=OBJECT_TYPE_METRICS_VIEW`
-    );
-
-    dashboards = data.entries;
-
-    return;
+  async function updateDashboardsForProject() {
+    dashboards = await getDashboardsForProject($proj.data);
   }
 </script>
 
@@ -49,7 +27,7 @@
         <a
           href="/{organization}/{project}/{dashboard.name}"
           class="text-gray-700 hover:underline text-xs font-medium leading-4"
-          >{dashboard.metricsView?.label ?? dashboard.name}</a
+          >{dashboard.metricsView?.label || dashboard.name}</a
         >
       </li>
     {/each}

@@ -20,7 +20,7 @@ import (
 func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
 	// TODO: Make this actually fault tolerant.
 
-	org, err := s.DB.FindOrganizationByID(ctx, opts.OrganizationID)
+	org, err := s.DB.FindOrganization(ctx, opts.OrganizationID)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 		return nil, err
 	}
 
-	adminRole, err := s.DB.FindProjectRole(txCtx, database.ProjectAdminRoleName)
+	adminRole, err := s.DB.FindProjectRole(txCtx, database.ProjectRoleNameAdmin)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to find project admin role"))
 	}
@@ -49,7 +49,7 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 	}
 
 	// add project viewer role to the all_user_group of the org
-	viewerRole, err := s.DB.FindProjectRole(txCtx, database.ProjectViewerRoleName)
+	viewerRole, err := s.DB.FindProjectRole(txCtx, database.ProjectRoleNameViewer)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to find project viewer role"))
 	}
@@ -69,14 +69,14 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 
 	// Provision it
 	provOpts := &provisioner.ProvisionOptions{
-		OLAPDriver:           proj.ProductionOLAPDriver,
-		OLAPDSN:              proj.ProductionOLAPDSN,
+		OLAPDriver:           proj.ProdOLAPDriver,
+		OLAPDSN:              proj.ProdOLAPDSN,
 		Region:               proj.Region,
-		Slots:                proj.ProductionSlots,
+		Slots:                proj.ProdSlots,
 		GithubURL:            *proj.GithubURL,
-		GitBranch:            proj.ProductionBranch,
+		GitBranch:            proj.ProdBranch,
 		GithubInstallationID: *proj.GithubInstallationID,
-		Variables:            proj.ProductionVariables,
+		Variables:            proj.ProdVariables,
 	}
 	// start using original context again since transaction in txCtx is done
 	inst, err := s.provisioner.Provision(ctx, provOpts)
@@ -89,8 +89,8 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 	// Store deployment
 	depl, err := s.DB.InsertDeployment(ctx, &database.InsertDeploymentOptions{
 		ProjectID:         proj.ID,
-		Branch:            proj.ProductionBranch,
-		Slots:             proj.ProductionSlots,
+		Branch:            proj.ProdBranch,
+		Slots:             proj.ProdSlots,
 		RuntimeHost:       inst.Host,
 		RuntimeInstanceID: inst.InstanceID,
 		RuntimeAudience:   inst.Audience,
@@ -98,25 +98,25 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 		Logs:              "",
 	})
 	if err != nil {
-		err2 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID, proj.ProductionOLAPDriver)
+		err2 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID, proj.ProdOLAPDriver)
 		err3 := s.DB.DeleteProject(ctx, proj.ID)
 		return nil, multierr.Combine(err, err2, err3)
 	}
 
 	// Update prod deployment on project
 	res, err := s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
-		Name:                   proj.Name,
-		Description:            proj.Description,
-		Public:                 proj.Public,
-		ProductionBranch:       proj.ProductionBranch,
-		ProductionVariables:    proj.ProductionVariables,
-		GithubURL:              proj.GithubURL,
-		GithubInstallationID:   proj.GithubInstallationID,
-		ProductionDeploymentID: &depl.ID,
+		Name:                 proj.Name,
+		Description:          proj.Description,
+		Public:               proj.Public,
+		ProdBranch:           proj.ProdBranch,
+		ProdVariables:        proj.ProdVariables,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		ProdDeploymentID:     &depl.ID,
 	})
 	if err != nil {
 		err2 := s.DB.DeleteDeployment(ctx, depl.ID)
-		err3 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID, proj.ProductionOLAPDriver)
+		err3 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID, proj.ProdOLAPDriver)
 		err4 := s.DB.DeleteProject(ctx, proj.ID)
 		return nil, multierr.Combine(err, err2, err3, err4)
 	}
@@ -140,7 +140,7 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 	}
 
 	for _, d := range ds {
-		err := s.provisioner.Teardown(ctx, d.RuntimeHost, d.RuntimeInstanceID, p.ProductionOLAPDriver)
+		err := s.provisioner.Teardown(ctx, d.RuntimeHost, d.RuntimeInstanceID, p.ProdOLAPDriver)
 		if err != nil {
 			return err
 		}
@@ -247,7 +247,7 @@ func (s *Service) TriggerReconcile(ctx context.Context, deploymentID string) err
 func (s *Service) UpdateProject(ctx context.Context, projID string, opts *database.UpdateProjectOptions) (*database.Project, error) {
 	// TODO: Make this actually fault tolerant.
 
-	// TODO: Handle if ProductionBranch or GithubURL was changed.
+	// TODO: Handle if ProdBranch or GithubURL was changed.
 
 	ds, err := s.DB.FindDeployments(ctx, projID)
 	if err != nil {
@@ -255,7 +255,7 @@ func (s *Service) UpdateProject(ctx context.Context, projID string, opts *databa
 	}
 
 	for _, d := range ds {
-		if err := s.editInstance(ctx, d, opts.ProductionVariables); err != nil {
+		if err := s.editInstance(ctx, d, opts.ProdVariables); err != nil {
 			return nil, err
 		}
 	}

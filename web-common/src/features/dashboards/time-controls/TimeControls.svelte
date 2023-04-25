@@ -111,6 +111,9 @@
       timeGrain.grain,
       {}
     );
+
+    /** enable comparisons by default */
+    metricsExplorerStore.toggleComparison(metricViewName, true);
   }
 
   function setTimeControlsFromUrl(allTimeRange: TimeRange) {
@@ -180,6 +183,7 @@
       start,
       end,
     });
+    metricsExplorerStore.toggleComparison(metricViewName, true);
   }
 
   function makeTimeSeriesTimeRangeAndUpdateAppState(
@@ -319,12 +323,15 @@
       on:select-comparison={(e) => {
         onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
       }}
+      on:disable-comparison={() =>
+        metricsExplorerStore.toggleComparison(metricViewName, false)}
       {minTimeGrain}
       currentStart={$dashboardStore?.selectedTimeRange?.start}
       currentEnd={$dashboardStore?.selectedTimeRange?.end}
       boundaryStart={allTimeRange.start}
       boundaryEnd={allTimeRange.end}
-      showComparison={isComparisonRangeAvailable}
+      {isComparisonRangeAvailable}
+      showComparison={$dashboardStore?.showComparison}
       selectedComparison={$dashboardStore?.selectedComparisonTimeRange}
       comparisonOptions={availableComparisons}
     />

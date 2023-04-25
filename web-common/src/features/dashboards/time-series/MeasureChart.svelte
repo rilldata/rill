@@ -52,8 +52,9 @@
   /** if we are making a comparison, factor this into the extents calculation.*/
   $: if (showComparison) {
     comparisonExtents = extent(data, (d) => d[`comparison.${yAccessor}`]);
-    yExtentMin = Math.min(yExtentMin, comparisonExtents[0]);
-    yExtentMax = Math.max(yExtentMax, comparisonExtents[1]);
+
+    yExtentMin = Math.min(yExtentMin, comparisonExtents[0] || yExtentMin);
+    yExtentMax = Math.max(yExtentMax, comparisonExtents[1] || yExtentMax);
   }
 
   $: [internalYMin, internalYMax] = niceMeasureExtents(

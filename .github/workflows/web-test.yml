@@ -46,9 +46,6 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - name: Download librillsql
-        shell: bash
-        run: go generate ./runtime/sql
 
       - name: NPM Install
         run: npm install

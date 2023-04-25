@@ -17,9 +17,11 @@ import (
 	"github.com/rilldata/rill/cli/cmd/runtime"
 	"github.com/rilldata/rill/cli/cmd/source"
 	"github.com/rilldata/rill/cli/cmd/start"
+	"github.com/rilldata/rill/cli/cmd/user"
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/spf13/cobra"
 )
 
@@ -58,6 +60,11 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		Version: ver,
 	}
 
+	// Check version
+	err := update.CheckVersion(ctx, cfg.Version.Number)
+	if err != nil {
+		return err
+	}
 	// Load admin token from .rill (may later be overridden by flag --api-token)
 	token, err := dotrill.GetAccessToken()
 	if err != nil {
@@ -93,10 +100,6 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(versioncmd.VersionCmd())
 
-	cmd := auth.AuthCmd(cfg)
-	cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
-	rootCmd.AddCommand(cmd)
-
 	// Set prompt for missing required parameters in config
 	rootCmd.PersistentFlags().BoolVar(&cfg.Interactive, "interactive", true, "Prompt for missing required parameters")
 
@@ -106,7 +109,10 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		org.OrgCmd(cfg),
 		project.ProjectCmd(cfg),
 		deploy.DeployCmd(cfg),
+		user.UserCmd(cfg),
 		env.EnvCmd(cfg),
+		auth.LoginCmd(cfg),
+		auth.LogoutCmd(cfg),
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")

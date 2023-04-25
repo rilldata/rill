@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-logr/zapr"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -16,7 +17,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
-	"google.golang.org/grpc"
+	"go.uber.org/zap"
 )
 
 // Exporter lists available telemetry exporters
@@ -44,7 +45,13 @@ type ShutdownFunc func(context.Context) error
 // Use "go.opentelemetry.io/otel/metric/global.Meter" to access global meters.
 // If using OtelExporter (otel collector), make sure to set the OTEL_EXPORTER_OTLP_ENDPOINT env var.
 // For a full list of Otel env vars, see: https://github.com/open-telemetry/opentelemetry-go/tree/main/exporters/otlp/otlptrace.
-func Start(opts *Options) (ShutdownFunc, error) {
+func Start(ctx context.Context, logger *zap.Logger, opts *Options) (ShutdownFunc, error) {
+	// Log otel info and errors using Zap
+	otel.SetLogger(zapr.NewLogger(logger))
+	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
+		logger.Error("otel error", zap.Error(err))
+	}))
+
 	// Create resource representing the currently running service
 	res, err := resource.Merge(
 		resource.Default(),
@@ -68,7 +75,7 @@ func Start(opts *Options) (ShutdownFunc, error) {
 		}
 		meterProvider = metric.NewMeterProvider(metric.WithResource(res), metric.WithReader(exp))
 	case OtelExporter:
-		exp, err := otlpmetricgrpc.New(context.Background())
+		exp, err := otlpmetricgrpc.New(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -89,8 +96,8 @@ func Start(opts *Options) (ShutdownFunc, error) {
 	var tracerProvider *trace.TracerProvider
 	switch opts.TracesExporter {
 	case OtelExporter:
-		client := otlptracegrpc.NewClient(otlptracegrpc.WithDialOption(grpc.WithBlock()))
-		exp, err := otlptrace.New(context.Background(), client)
+		client := otlptracegrpc.NewClient()
+		exp, err := otlptrace.New(ctx, client)
 		if err != nil {
 			return nil, err
 		}

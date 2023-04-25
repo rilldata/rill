@@ -9,7 +9,6 @@ require (
 	github.com/MicahParks/keyfunc v1.9.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/XSAM/otelsql v0.20.0
-	github.com/alecthomas/participle/v2 v2.0.0-beta.5
 	github.com/apache/arrow/go/v11 v11.0.0
 	github.com/apache/calcite-avatica-go/v5 v5.1.0
 	github.com/aws/aws-sdk-go v1.44.118
@@ -23,6 +22,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.9.1
 	github.com/fatih/color v1.13.0
 	github.com/go-git/go-git/v5 v5.5.2
+	github.com/go-logr/zapr v1.2.3
 	github.com/go-playground/validator/v10 v10.12.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-github/v50 v50.2.0

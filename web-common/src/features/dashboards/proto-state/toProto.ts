@@ -48,6 +48,7 @@ export function getProtoFromDashboardState(
       metrics.selectedComparisonTimeRange
     );
   }
+  state.showComparison = metrics.showComparison;
 
   if (metrics.leaderboardMeasureName) {
     state.leaderboardMeasure = metrics.leaderboardMeasureName;
