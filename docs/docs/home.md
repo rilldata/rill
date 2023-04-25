@@ -19,6 +19,7 @@ You can get started in less than 2 minutes with our install script (Mac, Linux).
 
 ```
 curl -s https://cdn.rilldata.com/install.sh | bash
+rill start
 ```
 
 After installation, launch the application by running `rill start` or try an example project:
