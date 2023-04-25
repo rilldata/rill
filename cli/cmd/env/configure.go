@@ -7,7 +7,6 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
-	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
@@ -62,7 +61,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				// fetch project names for github url
-				names, err := projectNames(ctx, client, cfg.Org, githubURL)
+				names, err := cmdutil.ProjectNames(ctx, client, cfg.Org, githubURL)
 				if err != nil {
 					return err
 				}
@@ -179,24 +178,4 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 	tel.Emit(telemetry.ActionDataAccessSuccess)
 
 	return vars, nil
-}
-
-func projectNames(ctx context.Context, c *client.Client, orgName, githubURL string) ([]string, error) {
-	resp, err := c.ListProjectsForOrganizationAndGithubURL(ctx, &adminv1.ListProjectsForOrganizationAndGithubURLRequest{
-		OrganizationName: orgName,
-		GithubUrl:        githubURL,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if len(resp.Projects) == 0 {
-		return nil, fmt.Errorf("No project with githubURL %q exist in org %q", githubURL, orgName)
-	}
-
-	names := make([]string, len(resp.Projects))
-	for i, p := range resp.Projects {
-		names[i] = p.Name
-	}
-	return names, nil
 }

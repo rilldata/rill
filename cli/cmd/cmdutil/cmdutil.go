@@ -130,7 +130,7 @@ func ConfirmPrompt(msg, help string, def bool) bool {
 	return result
 }
 
-func InputPrompt(msg, def string) string {
+func InputPrompt(msg, def string) (string, error) {
 	prompt := &survey.Input{
 		Message: msg,
 		Default: def,
@@ -138,9 +138,9 @@ func InputPrompt(msg, def string) string {
 	result := def
 	if err := survey.AskOne(prompt, &result); err != nil {
 		fmt.Printf("Prompt failed %v\n", err)
-		os.Exit(1)
+		return "", err
 	}
-	return result
+	return result, nil
 }
 
 func StringPromptIfEmpty(input *string, msg string) {
@@ -275,4 +275,51 @@ func contains(vals []string, key string) bool {
 		}
 	}
 	return false
+}
+
+// ProjectNames returns names of all the projects in org deployed from githubURL
+func ProjectNames(ctx context.Context, c *client.Client, org, githubURL string) ([]string, error) {
+	resp, err := c.ListProjectsForOrganizationAndGithubURL(ctx, &adminv1.ListProjectsForOrganizationAndGithubURLRequest{
+		OrganizationName: org,
+		GithubUrl:        githubURL,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.Projects) == 0 {
+		return nil, fmt.Errorf("No project with githubURL %q exist in org %q", githubURL, org)
+	}
+
+	names := make([]string, len(resp.Projects))
+	for i, p := range resp.Projects {
+		names[i] = p.Name
+	}
+	return names, nil
+}
+
+func IsNameExistsErr(err error) bool {
+	if st, ok := status.FromError(err); ok && st != nil {
+		exists := strings.Contains(st.Message(), "violates unique constraint")
+		return exists
+	}
+	return false
+}
+
+func OrgNames(ctx context.Context, c *client.Client) ([]string, error) {
+	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.Organizations) == 0 {
+		return nil, fmt.Errorf("You are not a member of any orgs")
+	}
+
+	var orgNames []string
+	for _, org := range resp.Organizations {
+		orgNames = append(orgNames, org.Name)
+	}
+
+	return orgNames, nil
 }
