@@ -14,7 +14,7 @@
     <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
   </div>
   <h1 class="text-xl font-normal text-gray-800">
-    Hang tight! Your dashboard is building...
+    Hang tight! We're building your dashboard...
   </h1>
   <button
     class="border border-blue-300 text-blue-600 w-full h-10 hover:bg-slate-100 hover:border-gray-100"

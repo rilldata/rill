@@ -15,7 +15,10 @@ This component needs to do the following:
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
-  import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
+  import {
+    NO_COMPARISON_LABEL,
+    TIME_COMPARISON,
+  } from "@rilldata/web-common/lib/time/config";
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
@@ -33,6 +36,7 @@ This component needs to do the following:
   export let minTimeGrain: V1TimeGrain;
 
   export let showComparison = true;
+  export let isComparisonRangeAvailable = true;
   export let selectedComparison;
   export let comparisonOptions: TimeComparisonOption[];
 
@@ -89,7 +93,6 @@ This component needs to do the following:
 
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
-  let intermediateSelection = undefined;
 
   function onClickOutside(closeMenu: () => void) {
     if (!isCalendarRecentlyClosed) {
@@ -104,25 +107,31 @@ This component needs to do the following:
     }, 300);
   }
 
-  $: label = TIME_COMPARISON[comparisonOption]?.label;
-  $: intermediateSelection = comparisonOption;
+  $: label = showComparison
+    ? TIME_COMPARISON[comparisonOption]?.label
+    : NO_COMPARISON_LABEL;
+
+  $: intermediateSelection = showComparison
+    ? comparisonOption
+    : NO_COMPARISON_LABEL;
 </script>
 
 <Tooltip distance={8}>
   <WithTogglableFloatingElement let:toggleFloatingElement let:active>
     <SelectorButton
       {active}
-      disabled={!showComparison}
+      disabled={!isComparisonRangeAvailable}
       on:click={() => {
-        if (showComparison) toggleFloatingElement();
+        if (isComparisonRangeAvailable) toggleFloatingElement();
       }}
     >
       <span class="font-normal">
-        {#if !showComparison}
+        {#if !isComparisonRangeAvailable}
           <span class="italic text-gray-500">Time comparison not available</span
           >
         {:else}
-          Comparing to <span class="font-bold">{label}</span>
+          {showComparison ? "Comparing to" : ""}
+          <span class="font-bold">{label}</span>
         {/if}
       </span>
     </SelectorButton>
@@ -131,32 +140,41 @@ This component needs to do the following:
       on:escape={toggleFloatingElement}
       on:click-outside={() => onClickOutside(toggleFloatingElement)}
     >
-      {#if showComparison}
-        {#each options as option}
-          {@const preset = TIME_COMPARISON[option.name]}
-          <MenuItem
-            selected={option.name === intermediateSelection}
-            on:before-select={() => {
-              intermediateSelection = option.name;
-            }}
-            on:select={() => {
-              onCompareRangeSelect(option.name);
-              toggleFloatingElement();
-            }}
-          >
-            <span class:font-bold={intermediateSelection === option.name}>
-              {preset?.label || option.name}
-            </span>
-          </MenuItem>
-          {#if option.name === TimeComparisonOption.CONTIGUOUS && options.length > 2}
-            <Divider />
-          {/if}
-        {/each}
-      {:else}
-        <MenuItem selected={comparisonOption !== TimeComparisonOption.CUSTOM}
-          >No comparison</MenuItem
+      <MenuItem
+        selected={!showComparison}
+        on:before-select={() => {
+          intermediateSelection = NO_COMPARISON_LABEL;
+        }}
+        on:select={() => {
+          dispatch("disable-comparison");
+          toggleFloatingElement();
+        }}
+      >
+        <span class:font-bold={intermediateSelection === NO_COMPARISON_LABEL}>
+          {NO_COMPARISON_LABEL}
+        </span>
+      </MenuItem>
+      <Divider />
+      {#each options as option}
+        {@const preset = TIME_COMPARISON[option.name]}
+        <MenuItem
+          selected={option.name === intermediateSelection}
+          on:before-select={() => {
+            intermediateSelection = option.name;
+          }}
+          on:select={() => {
+            onCompareRangeSelect(option.name);
+            toggleFloatingElement();
+          }}
         >
-      {/if}
+          <span class:font-bold={intermediateSelection === option.name}>
+            {preset?.label || option.name}
+          </span>
+        </MenuItem>
+        {#if option.name === TimeComparisonOption.CONTIGUOUS && options.length > 2}
+          <Divider />
+        {/if}
+      {/each}
       {#if options.length >= 1}
         <Divider />
       {/if}
@@ -188,7 +206,7 @@ This component needs to do the following:
     </Menu>
   </WithTogglableFloatingElement>
   <TooltipContent slot="tooltip-content" maxWidth="220px">
-    {#if showComparison}
+    {#if isComparisonRangeAvailable}
       Select a time range to compare to the selected time range
     {:else}
       Select a shorter or more recent time range to enable comparisons.

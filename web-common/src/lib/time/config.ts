@@ -436,3 +436,5 @@ export const TIME_COMPARISON = {
     comparisonType: TimeComparisonOption.YEAR,
   },
 };
+
+export const NO_COMPARISON_LABEL = "no comparison";

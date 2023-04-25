@@ -7,10 +7,10 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
-	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
+	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -61,7 +61,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				// fetch project names for github url
-				names, err := projectNames(ctx, client, cfg.Org, githubURL)
+				names, err := cmdutil.ProjectNames(ctx, client, cfg.Org, githubURL)
 				if err != nil {
 					return err
 				}
@@ -74,7 +74,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			variables, err := VariablesFlow(ctx, projectPath)
+			variables, err := VariablesFlow(ctx, projectPath, nil)
 			if err != nil {
 				return fmt.Errorf("failed to get variables %w", err)
 			}
@@ -118,11 +118,13 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 	return configureCommand
 }
 
-func VariablesFlow(ctx context.Context, projectPath string) (map[string]string, error) {
+func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telemetry) (map[string]string, error) {
 	connectors, err := rillv1beta.ExtractConnectors(ctx, projectPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract connectors %w", err)
 	}
+
+	tel.Emit(telemetry.ActionDataAccessStart)
 
 	vars := make(map[string]string)
 	for _, c := range connectors {
@@ -173,25 +175,7 @@ func VariablesFlow(ctx context.Context, projectPath string) (map[string]string, 
 		fmt.Println("")
 	}
 
+	tel.Emit(telemetry.ActionDataAccessSuccess)
+
 	return vars, nil
-}
-
-func projectNames(ctx context.Context, c *client.Client, orgName, githubURL string) ([]string, error) {
-	resp, err := c.ListProjectsForOrganizationAndGithubURL(ctx, &adminv1.ListProjectsForOrganizationAndGithubURLRequest{
-		OrganizationName: orgName,
-		GithubUrl:        githubURL,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if len(resp.Projects) == 0 {
-		return nil, fmt.Errorf("No project with githubURL %q exist in org %q", githubURL, orgName)
-	}
-
-	names := make([]string, len(resp.Projects))
-	for i, p := range resp.Projects {
-		names[i] = p.Name
-	}
-	return names, nil
 }

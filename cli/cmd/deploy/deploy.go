@@ -22,6 +22,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
+	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -59,6 +60,18 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 			}
+
+			tel := telemetry.New(cfg.Version)
+			tel.Emit(telemetry.ActionDeployStart)
+			defer func() {
+				// give 5s for emitting events over the parent context.
+				// this will make sure if user cancelled the command events are still fired.
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+
+				// telemetry errors shouldn't fail deploy command
+				_ = tel.Flush(ctx)
+			}()
 
 			// Verify that the projectPath contains a Rill project
 			if !rillv1beta.HasRillProject(projectPath) {
@@ -110,6 +123,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
+				tel.Emit(telemetry.ActionLoginStart)
 				if err := auth.Login(ctx, cfg, redirectURL); err != nil {
 					if errors.Is(err, deviceauth.ErrAuthenticationTimedout) {
 						warn.Println("Rill login has timed out as the code was not confirmed in the browser.")
@@ -121,6 +135,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 					}
 					return fmt.Errorf("login failed: %w", err)
 				}
+				tel.Emit(telemetry.ActionLoginSuccess)
 				fmt.Println("")
 			}
 
@@ -130,7 +145,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Run flow for access to the Github remote (if necessary)
-			ghRes, err := githubFlow(ctx, client, githubURL, silentGitFlow)
+			ghRes, err := githubFlow(ctx, client, githubURL, silentGitFlow, tel)
 			if err != nil {
 				return fmt.Errorf("failed Github flow: %w", err)
 			}
@@ -217,7 +232,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Run flow to get connector credentials and other variables
-			variables, err := env.VariablesFlow(ctx, projectPath)
+			variables, err := env.VariablesFlow(ctx, projectPath, tel)
 			if err != nil {
 				return err
 			}
@@ -255,6 +270,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				_ = browser.Open(res.ProjectUrl)
 			}
 
+			tel.Emit(telemetry.ActionDeploySuccess)
 			return nil
 		},
 	}
@@ -275,7 +291,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	return deployCmd
 }
 
-func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string, silent bool) (*adminv1.GetGithubRepoStatusResponse, error) {
+func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string, silent bool, tel *telemetry.Telemetry) (*adminv1.GetGithubRepoStatusResponse, error) {
 	// Check for access to the Github repo
 	res, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
 		GithubUrl: githubURL,
@@ -286,6 +302,8 @@ func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string, si
 
 	// If the user has not already granted access, open browser and poll for access
 	if !res.HasAccess {
+		tel.Emit(telemetry.ActionGithubConnectedStart)
+
 		// Print instructions to grant access
 		if !silent {
 			fmt.Printf("Rill projects deploy continuously when you push changes to Github.\n")
@@ -322,6 +340,7 @@ func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string, si
 
 			if pollRes.HasAccess {
 				// Success
+				tel.Emit(telemetry.ActionGithubConnectedSuccess)
 				_, ghRepo, _ := gitutil.SplitGithubURL(githubURL)
 				color.New(color.Bold).Add(color.FgGreen).Printf("You have connected to the %q project in Github.\n", ghRepo)
 				return pollRes, nil
