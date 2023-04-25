@@ -1,14 +1,18 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
-  import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
   import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
+  import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
+  import Github from "@rilldata/web-common/components/icons/Github.svelte";
+  import CtaButton from "../../../../components/calls-to-action/CTAButton.svelte";
+  import CtaContentContainer from "../../../../components/calls-to-action/CTAContentContainer.svelte";
+  import CtaLayoutContainer from "../../../../components/calls-to-action/CTALayoutContainer.svelte";
 
   const urlParams = new URLSearchParams(window.location.search);
   const redirectURL = urlParams.get("redirect");
   const remote = new URL(decodeURIComponent(redirectURL)).searchParams.get(
     "remote"
   );
+  const prettyGithubRepo = remote.split("github.com/")[1];
   const user = createAdminServiceGetCurrentUser({
     query: {
       onSuccess: (data) => {
@@ -29,16 +33,21 @@
 </svelte:head>
 
 {#if $user.data && $user.data.user}
-  <div class="flex flex-col justify-center items-center h-3/5">
-    <h1 class="text-3xl font-medium text-gray-800 mb-4">Connect to Github</h1>
-    <p class="text-lg text-gray-700 mb-6">
-      Authentication successful. Rill projects deploy continuously when you push
-      changes to Github. <br />
-      You need to grant Rill read only access to your repository `{@html remote}`
-      on Github.
-    </p>
-    <div class="mt-4">
-      <Button type="primary" on:click={handleGoToGithub}>Go to Github</Button>
-    </div>
-  </div>
+  <CtaLayoutContainer>
+    <CtaContentContainer>
+      <Github className="w-10 h-10 text-gray-900" />
+      <h1 class="text-xl font-normal text-gray-800">Connect to Github</h1>
+      <p class="text-base text-gray-500 text-center">
+        Please grant read-only access to your repository <span
+          class="font-semibold font-mono text-gray-800 text-[16px] leading-5"
+          >{prettyGithubRepo}</span
+        >
+      </p>
+      <div class="mt-4 w-full">
+        <CtaButton variant="primary" on:click={handleGoToGithub}
+          >Connect to Github</CtaButton
+        >
+      </div>
+    </CtaContentContainer>
+  </CtaLayoutContainer>
 {/if}
