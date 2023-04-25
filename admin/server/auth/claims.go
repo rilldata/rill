@@ -62,9 +62,12 @@ func (c anonClaims) OrganizationPermissions(ctx context.Context, orgID string) *
 	return &adminv1.OrganizationPermissions{}
 }
 
-func (c anonClaims) ProjectPermissions(ctx context.Context, projectID string) *adminv1.ProjectPermissions {
+func (c anonClaims) ProjectPermissions(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
 	return &adminv1.ProjectPermissions{}
 }
+
+// ensure anonClaims implements Claims
+var _ Claims = anonClaims{}
 
 // authTokenClaims represents claims for an admin.AuthToken.
 type authTokenClaims struct {
@@ -180,6 +183,9 @@ func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, project
 	c.projectPermissionsCache[projectID] = composite
 	return composite
 }
+
+// ensure *authTokenClaims implements Claims
+var _ Claims = &authTokenClaims{}
 
 func unionOrgRoles(a *adminv1.OrganizationPermissions, b *database.OrganizationRole) *adminv1.OrganizationPermissions {
 	return &adminv1.OrganizationPermissions{
