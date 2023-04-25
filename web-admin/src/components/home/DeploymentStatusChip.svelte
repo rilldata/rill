@@ -16,7 +16,7 @@
   export let iconOnly = false;
 
   $: proj = createAdminServiceGetProject(organization, project);
-  $: deploymentStatus = $proj.data?.productionDeployment?.status;
+  $: deploymentStatus = $proj.data?.prodDeployment?.status;
   $: currentStatus = !!deploymentStatus && statusMap.get(deploymentStatus);
 
   type StatusDisplay = {

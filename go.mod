@@ -9,13 +9,11 @@ require (
 	github.com/MicahParks/keyfunc v1.9.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/XSAM/otelsql v0.20.0
-	github.com/alecthomas/participle/v2 v2.0.0-beta.5
 	github.com/apache/arrow/go/v11 v11.0.0
 	github.com/apache/calcite-avatica-go/v5 v5.1.0
 	github.com/aws/aws-sdk-go v1.44.118
 	github.com/benbjohnson/clock v1.1.0
 	github.com/bmatcuk/doublestar/v4 v4.4.0
-	github.com/bradleyfalzon/ghinstallation v1.1.1
 	github.com/bradleyfalzon/ghinstallation/v2 v2.3.0
 	github.com/briandowns/spinner v1.22.0
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
@@ -24,6 +22,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.9.1
 	github.com/fatih/color v1.13.0
 	github.com/go-git/go-git/v5 v5.5.2
+	github.com/go-logr/zapr v1.2.3
 	github.com/go-playground/validator/v10 v10.12.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-github/v50 v50.2.0
@@ -116,7 +115,6 @@ require (
 	github.com/containerd/cgroups v1.0.3 // indirect
 	github.com/containerd/containerd v1.6.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.17+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
@@ -137,7 +135,6 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/flatbuffers v2.0.8+incompatible // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/go-github/v29 v29.0.2 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/wire v0.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect

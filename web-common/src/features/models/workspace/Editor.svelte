@@ -98,6 +98,7 @@
     "&.cm-editor": {
       overflowX: "hidden",
       width: "100%",
+      fontSize: "13px",
       height: "100%",
       "&.cm-focused": {
         outline: "none",
@@ -113,6 +114,10 @@
 
     ".cm-activeLineGutter": {
       backgroundColor: highlightBackground,
+    },
+    ".cm-gutters": {
+      backgroundColor: "white",
+      borderRight: "none",
     },
     ".cm-lineNumbers .cm-gutterElement": {
       paddingLeft: "5px",

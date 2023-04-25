@@ -7,22 +7,21 @@ managed:
       - buf.build/googleapis/googleapis
       - buf.build/envoyproxy/protoc-gen-validate
 plugins:
-  - plugin: buf.build/bufbuild/validate-go
+  - plugin: buf.build/protocolbuffers/go
     out: gen
     opt:
       - paths=source_relative
-  - remote: buf.build/protocolbuffers/plugins/go:v1.28.1-1
+  - plugin: buf.build/grpc/go
     out: gen
     opt:
       - paths=source_relative
-  - remote: buf.build/grpc/plugins/go:v1.2.0-1
-    out: gen
-    opt:
-      - paths=source_relative
-  - remote: buf.build/grpc-ecosystem/plugins/grpc-gateway:v2.13.0-1
+  - plugin: buf.build/grpc-ecosystem/gateway
     out: gen
     opt:
       - paths=source_relative
       - logtostderr=true
       - generate_unbound_methods=true
-
+  - plugin: buf.build/bufbuild/validate-go
+    out: gen
+    opt:
+      - paths=source_relative
