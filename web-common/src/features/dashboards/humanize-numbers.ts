@@ -72,37 +72,6 @@ function getScaleForValue(value: number): ShortHandSymbols {
     : "none";
 }
 
-function determineScaleForValues(values: number[]): ShortHandSymbols {
-  let numberValues = values;
-  const nullIndex = values.indexOf(null);
-  if (nullIndex !== -1) {
-    numberValues = values.slice(0, nullIndex);
-  }
-
-  // Convert negative numbers to absolute
-  numberValues = numberValues.map((v) => Math.abs(v)).sort((a, b) => b - a);
-
-  const half = Math.floor(numberValues.length / 2);
-  let median: number;
-  if (numberValues.length % 2) median = numberValues[half];
-  else median = (numberValues[half - 1] + numberValues[half]) / 2.0;
-
-  let scaleForMax = getScaleForValue(numberValues[0]);
-  while (scaleForMax != shortHandSymbols[shortHandSymbols.length - 1]) {
-    const medianShorthand = (
-      Math.abs(median) / shortHandMap[scaleForMax]
-    ).toFixed(1);
-
-    const numDigitsInMedian = medianShorthand.toString().split(".")[0].length;
-    if (numDigitsInMedian >= 1) {
-      return scaleForMax;
-    } else {
-      scaleForMax = shortHandSymbols[shortHandSymbols.indexOf(scaleForMax) + 1];
-    }
-  }
-  return scaleForMax;
-}
-
 export function humanizeGroupValues(
   values: Array<Record<string, number | string>>,
   type: NicelyFormattedTypes,
