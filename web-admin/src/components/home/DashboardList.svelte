@@ -27,7 +27,7 @@
         <a
           href="/{organization}/{project}/{dashboard.name}"
           class="text-gray-700 hover:underline text-xs font-medium leading-4"
-          >{dashboard.metricsView?.label ?? dashboard.name}</a
+          >{dashboard.metricsView?.label || dashboard.name}</a
         >
       </li>
     {/each}
