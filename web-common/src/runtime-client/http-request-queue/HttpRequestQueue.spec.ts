@@ -186,7 +186,7 @@ async function mockedQuery(url: string, _entry: RequestQueueEntry) {
   await respLock.wait(key);
 
   return {
-    ok: true,
+    ready: true,
     json: () => url,
   };
 }
