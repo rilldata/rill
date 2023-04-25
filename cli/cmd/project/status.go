@@ -1,7 +1,6 @@
 package project
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -34,7 +33,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			proj, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{
+			proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
 				OrganizationName: cfg.Org,
 				Name:             name,
 			})

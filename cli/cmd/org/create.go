@@ -42,7 +42,8 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				return fmt.Errorf("Org name %q already exists", name)
+				fmt.Printf("Org name %q already exists\n", name)
+				return nil
 			}
 
 			// Switching to the created org

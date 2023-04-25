@@ -33,7 +33,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				orgName = cmdutil.SelectPrompt("Select org to edit", orgNames, "")
+				orgName = cmdutil.SelectPrompt("Select org to edit", orgNames, cfg.Org)
 			}
 
 			if !cmd.Flags().Changed("description") {
@@ -52,7 +52,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 					}
 				}
 
-				return fmt.Errorf("Org name %q not exists, please run `rill org list` to list available orgs", orgName)
+				return fmt.Errorf("Org name %q doesn't exist, please run `rill org list` to list available orgs", orgName)
 			}
 
 			org := resp.Organization
