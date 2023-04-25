@@ -25,7 +25,7 @@ func ProjectCmd(cfg *config.Config) *cobra.Command {
 	projectCmd.AddCommand(EditCmd(cfg))
 	projectCmd.AddCommand(DeleteCmd(cfg))
 	projectCmd.AddCommand(ListCmd(cfg))
-	projectCmd.AddCommand(TriggerCmd(cfg))
+	projectCmd.AddCommand(ReconcileCmd(cfg))
 	projectCmd.AddCommand(JwtCmd(cfg))
 	projectCmd.AddCommand(RenameCmd(cfg))
 	return projectCmd
