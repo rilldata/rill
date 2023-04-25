@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"errors"
 
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -18,11 +17,8 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 		Use:   "list",
 		Short: "List",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if orgName == "" && projectName == "" {
-				return errors.New("either organization or project has to be specified")
-			}
-			if orgName != "" && projectName != "" {
-				return errors.New("only one of organization or project has to be specified")
+			if orgName == "" {
+				orgName = cfg.Org
 			}
 
 			client, err := cmdutil.Client(cfg)
@@ -31,9 +27,10 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if orgName != "" {
-				res, err := client.ListOrganizationMembers(context.Background(), &adminv1.ListOrganizationMembersRequest{
+			if projectName != "" {
+				res, err := client.ListProjectMembers(context.Background(), &adminv1.ListProjectMembersRequest{
 					Organization: orgName,
+					Project:      projectName,
 				})
 				if err != nil {
 					return err
@@ -41,10 +38,10 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 
 				cmdutil.PrintMembers(res.Members)
 				cmdutil.PrintInvites(res.Invites)
+				// TODO: user groups
 			} else {
-				res, err := client.ListProjectMembers(context.Background(), &adminv1.ListProjectMembersRequest{
-					Organization: cfg.Org,
-					Project:      projectName,
+				res, err := client.ListOrganizationMembers(context.Background(), &adminv1.ListOrganizationMembersRequest{
+					Organization: orgName,
 				})
 				if err != nil {
 					return err

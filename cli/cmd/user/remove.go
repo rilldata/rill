@@ -1,7 +1,7 @@
 package user
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -18,11 +18,8 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 		Use:   "remove",
 		Short: "Remove",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if orgName == "" && projectName == "" {
-				return errors.New("either organization or project has to be specified")
-			}
-			if orgName != "" && projectName != "" {
-				return errors.New("only one of organization or project has to be specified")
+			if orgName == "" {
+				orgName = cfg.Org
 			}
 
 			client, err := cmdutil.Client(cfg)
@@ -31,7 +28,20 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if orgName != "" {
+			cmdutil.StringPromptIfEmpty(&email, "Please enter the email of the user.")
+
+			if projectName != "" {
+				_, err = client.RemoveProjectMember(cmd.Context(), &adminv1.RemoveProjectMemberRequest{
+					Organization: orgName,
+					Project:      projectName,
+					Email:        email,
+				})
+				if err != nil {
+					return err
+				}
+
+				cmdutil.SuccessPrinter(fmt.Sprintf("Removed user %q from project %q under organization %q", email, projectName, orgName))
+			} else {
 				_, err = client.RemoveOrganizationMember(cmd.Context(), &adminv1.RemoveOrganizationMemberRequest{
 					Organization: orgName,
 					Email:        email,
@@ -39,18 +49,9 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 				if err != nil {
 					return err
 				}
-			} else {
-				_, err = client.RemoveProjectMember(cmd.Context(), &adminv1.RemoveProjectMemberRequest{
-					Organization: cfg.Org,
-					Project:      projectName,
-					Email:        email,
-				})
-				if err != nil {
-					return err
-				}
+				cmdutil.SuccessPrinter(fmt.Sprintf("Removed user %q from organization %q", email, orgName))
 			}
 
-			cmdutil.SuccessPrinter("Removed user")
 			return nil
 		},
 	}

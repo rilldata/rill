@@ -1,7 +1,7 @@
 package user
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -19,11 +19,8 @@ func SetRoleCmd(cfg *config.Config) *cobra.Command {
 		Use:   "set-role",
 		Short: "Set Role",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if orgName == "" && projectName == "" {
-				return errors.New("either organization or project has to be specified")
-			}
-			if orgName != "" && projectName != "" {
-				return errors.New("only one of organization or project has to be specified")
+			if orgName == "" {
+				orgName = cfg.Org
 			}
 
 			client, err := cmdutil.Client(cfg)
@@ -32,16 +29,10 @@ func SetRoleCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if orgName != "" {
-				_, err = client.SetOrganizationMemberRole(cmd.Context(), &adminv1.SetOrganizationMemberRoleRequest{
-					Organization: orgName,
-					Email:        email,
-					Role:         role,
-				})
-				if err != nil {
-					return err
-				}
-			} else {
+			cmdutil.SelectPromptIfEmpty(&role, "Please enter the user's role.", []string{"admin", "viewer"}, "")
+			cmdutil.StringPromptIfEmpty(&email, "Please enter the email of the user.")
+
+			if projectName != "" {
 				_, err = client.SetProjectMemberRole(cmd.Context(), &adminv1.SetProjectMemberRoleRequest{
 					Organization: cfg.Org,
 					Project:      projectName,
@@ -51,9 +42,19 @@ func SetRoleCmd(cfg *config.Config) *cobra.Command {
 				if err != nil {
 					return err
 				}
+				cmdutil.SuccessPrinter(fmt.Sprintf("Updated role of user %q to %q in the project %q under organization %q", email, role, projectName, orgName))
+			} else {
+				_, err = client.SetOrganizationMemberRole(cmd.Context(), &adminv1.SetOrganizationMemberRoleRequest{
+					Organization: orgName,
+					Email:        email,
+					Role:         role,
+				})
+				if err != nil {
+					return err
+				}
+				cmdutil.SuccessPrinter(fmt.Sprintf("Updated role of user %q to %q in the organization %q", email, role, orgName))
 			}
 
-			cmdutil.SuccessPrinter("Updated role")
 			return nil
 		},
 	}

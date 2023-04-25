@@ -158,6 +158,13 @@ func StringPromptIfEmpty(input *string, msg string) {
 	}
 }
 
+func SelectPromptIfEmpty(input *string, msg string, options []string, def string) {
+	if *input != "" {
+		return
+	}
+	*input = SelectPrompt(msg, options, def)
+}
+
 func ProjectExists(ctx context.Context, c *client.Client, orgName, projectName string) (bool, error) {
 	_, err := c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: orgName, Name: projectName})
 	if err != nil {

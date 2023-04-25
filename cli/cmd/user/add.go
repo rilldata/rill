@@ -1,7 +1,6 @@
 package user
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
@@ -20,11 +19,8 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 		Use:   "add",
 		Short: "Add",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if orgName == "" && projectName == "" {
-				return errors.New("either --org or --project has to be specified")
-			}
-			if orgName != "" && projectName != "" {
-				return errors.New("only one of --org or --project has to be specified")
+			if orgName == "" {
+				orgName = cfg.Org
 			}
 
 			client, err := cmdutil.Client(cfg)
@@ -33,11 +29,26 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
+			cmdutil.SelectPromptIfEmpty(&role, "Please enter the user's role.", []string{"admin", "viewer"}, "")
 			cmdutil.StringPromptIfEmpty(&email, "Please enter the email of the user.")
-			cmdutil.StringPromptIfEmpty(&role, "Please enter the user's role.")
 
-			var pendingSignup bool
-			if orgName != "" {
+			if projectName != "" {
+				res, err := client.AddProjectMember(cmd.Context(), &adminv1.AddProjectMemberRequest{
+					Organization: orgName,
+					Project:      projectName,
+					Email:        email,
+					Role:         role,
+				})
+				if err != nil {
+					return err
+				}
+
+				if res.PendingSignup {
+					cmdutil.SuccessPrinter(fmt.Sprintf("Invitation sent to %q to join project %q under organization %q as %q", email, projectName, orgName, role))
+				} else {
+					cmdutil.SuccessPrinter(fmt.Sprintf("User %q added to the project %q under organization %q as %q", email, projectName, orgName, role))
+				}
+			} else {
 				res, err := client.AddOrganizationMember(cmd.Context(), &adminv1.AddOrganizationMemberRequest{
 					Organization: orgName,
 					Email:        email,
@@ -46,25 +57,14 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				pendingSignup = res.PendingSignup
-			} else {
-				res, err := client.AddProjectMember(cmd.Context(), &adminv1.AddProjectMemberRequest{
-					Organization: cfg.Org,
-					Project:      projectName,
-					Email:        email,
-					Role:         role,
-				})
-				if err != nil {
-					return err
+
+				if res.PendingSignup {
+					cmdutil.SuccessPrinter(fmt.Sprintf("Invitation sent to %q to join organization %q as %q", email, orgName, role))
+				} else {
+					cmdutil.SuccessPrinter(fmt.Sprintf("User %q added to the organization %q as %q", email, orgName, role))
 				}
-				pendingSignup = res.PendingSignup
 			}
 
-			if pendingSignup {
-				cmdutil.SuccessPrinter(fmt.Sprintf("Invitation sent to %q to join project %q as %q", email, projectName, role))
-				return nil
-			}
-			cmdutil.SuccessPrinter(fmt.Sprintf("User %q added to the project %q as %q", email, projectName, role))
 			return nil
 		},
 	}
