@@ -28,7 +28,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	var exampleName string
 
 	startCmd := &cobra.Command{
-		Use:   "start",
+		Use:   "start [<path>]",
 		Short: "Build project and start web app",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
