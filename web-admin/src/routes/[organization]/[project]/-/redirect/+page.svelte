@@ -17,7 +17,3 @@
     }
   }
 </script>
-
-<svelte:head>
-  <title>Project redirect</title>
-</svelte:head>
