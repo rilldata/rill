@@ -802,6 +802,56 @@ func (c *connection) DeleteProjectInvite(ctx context.Context, id string) error {
 	return nil
 }
 
+func (c *connection) CountOrganizationProjects(ctx context.Context, orgID string) (int, error) {
+	var count int
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM projects WHERE org_id = $1", orgID).Scan(&count)
+	if err != nil {
+		return 0, parseErr(err)
+	}
+	return count, nil
+}
+
+func (c *connection) CountOrganizationDeploymentsAndSlots(ctx context.Context, orgID string) (*database.OrganizationDeploymentsAndSlots, error) {
+	res := &database.OrganizationDeploymentsAndSlots{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT COUNT(*) as deployments, SUM(slots) as slots FROM deployments WHERE project_id IN (SELECT id FROM projects WHERE org_id = $1)`, orgID).StructScan(res)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) CountOrganizationOutstandingInvitations(ctx context.Context, orgID string) (int, error) {
+	var count int
+	// count outstanding org invites as well as project invites for this org
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT SUM(total_count) as total_count FROM (
+  			SELECT COUNT(*) as total_count FROM org_invites WHERE org_id = $1
+  			UNION ALL
+  			SELECT COUNT(*) as total_count FROM project_invites WHERE project_id IN (SELECT id FROM projects WHERE org_id = $1)
+		) as subquery
+		`, orgID).Scan(&count)
+	if err != nil {
+		return 0, parseErr(err)
+	}
+	return count, nil
+}
+
+func (c *connection) CountSingleUserOrganizationForUser(ctx context.Context, userID string) (int, error) {
+	var count int
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+	SELECT SUM(total_count) as total_count FROM (
+	    SELECT CASE WHEN COUNT(*) = 1 THEN 1 ELSE 0 END as total_count FROM users_orgs_roles GROUP BY org_id HAVING org_id IN (
+	        SELECT org_id FROM users_orgs_roles WHERE user_id = $1
+	    )
+	) as subquery
+	`, userID).Scan(&count)
+	if err != nil {
+		return 0, parseErr(err)
+	}
+	return count, nil
+}
+
 func parseErr(err error) error {
 	if err == nil {
 		return nil

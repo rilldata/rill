@@ -129,6 +129,11 @@ type DB interface {
 	FindProjectInvite(ctx context.Context, projectID, userEmail string) (*ProjectInvite, error)
 	InsertProjectInvite(ctx context.Context, email, projectID, roleID, invitedByID string) error
 	DeleteProjectInvite(ctx context.Context, id string) error
+
+	CountOrganizationProjects(ctx context.Context, orgID string) (int, error)
+	CountOrganizationDeploymentsAndSlots(ctx context.Context, orgID string) (*OrganizationDeploymentsAndSlots, error)
+	CountOrganizationOutstandingInvitations(ctx context.Context, orgID string) (int, error)
+	CountSingleUserOrganizationForUser(ctx context.Context, userID string) (int, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -150,12 +155,17 @@ var ErrNotUnique = errors.New("database: violates unique constraint")
 
 // Organization represents a tenant.
 type Organization struct {
-	ID             string
-	Name           string
-	Description    string
-	AllUsergroupID *string   `db:"all_usergroup_id"`
-	CreatedOn      time.Time `db:"created_on"`
-	UpdatedOn      time.Time `db:"updated_on"`
+	ID                          string
+	Name                        string
+	Description                 string
+	AllUsergroupID              *string   `db:"all_usergroup_id"`
+	CreatedOn                   time.Time `db:"created_on"`
+	UpdatedOn                   time.Time `db:"updated_on"`
+	QuotaProjects               int       `db:"quota_projects"`
+	QuotaDeployments            int       `db:"quota_deployments"`
+	QuotaSlotsTotal             int       `db:"quota_slots_total"`
+	QuotaSlotsPerDeployment     int       `db:"quota_slots_per_deployment"`
+	QuotaOutstandingInvitations int       `db:"quota_outstanding_invitations"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
@@ -279,13 +289,14 @@ type RuntimeSlotsUsed struct {
 // User is a person registered in Rill.
 // Users may belong to multiple organizations and projects.
 type User struct {
-	ID             string
-	Email          string
-	DisplayName    string    `db:"display_name"`
-	PhotoURL       string    `db:"photo_url"`
-	GithubUsername string    `db:"github_username"`
-	CreatedOn      time.Time `db:"created_on"`
-	UpdatedOn      time.Time `db:"updated_on"`
+	ID                  string
+	Email               string
+	DisplayName         string    `db:"display_name"`
+	PhotoURL            string    `db:"photo_url"`
+	GithubUsername      string    `db:"github_username"`
+	CreatedOn           time.Time `db:"created_on"`
+	UpdatedOn           time.Time `db:"updated_on"`
+	QuotaSingleuserOrgs int       `db:"quota_singleuser_orgs"`
 }
 
 // InsertUserOptions defines options for inserting a new user
@@ -445,4 +456,9 @@ type Invite struct {
 	Email     string
 	Role      string
 	InvitedBy string `db:"invited_by"`
+}
+
+type OrganizationDeploymentsAndSlots struct {
+	Deployments int
+	Slots       int
 }

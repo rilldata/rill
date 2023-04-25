@@ -207,8 +207,34 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	// Enforce per org project limit
+	count, err := s.admin.DB.CountOrganizationProjects(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if count >= org.QuotaProjects {
+		return nil, status.Errorf(codes.ResourceExhausted, "quota exceeded: org %q is limited to %d projects", org.Name, org.QuotaProjects)
+	}
+
 	if !claims.OrganizationPermissions(ctx, org.ID).CreateProjects {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
+	}
+
+	// check per deployment slots limit
+	if int(req.ProdSlots) > org.QuotaSlotsPerDeployment {
+		return nil, status.Errorf(codes.ResourceExhausted, "quota exceeded: org %q is limited to %d slots per deployment", org.Name, org.QuotaSlotsPerDeployment)
+	}
+
+	// check per project deployments and slots limit
+	deploymentsSlots, err := s.admin.DB.CountOrganizationDeploymentsAndSlots(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if deploymentsSlots.Deployments >= org.QuotaDeployments {
+		return nil, status.Errorf(codes.ResourceExhausted, "quota exceeded: org %q is limited to limited to %d deployments", org.Name, org.QuotaDeployments)
+	}
+	if deploymentsSlots.Slots+int(req.ProdSlots) > org.QuotaSlotsTotal {
+		return nil, status.Errorf(codes.ResourceExhausted, "quota exceeded: org %q is limited to %d total slots", org.Name, org.QuotaSlotsTotal)
 	}
 
 	// check github app is installed and caller has access on the repo
@@ -375,6 +401,19 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 	claims := auth.GetClaims(ctx)
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add project members")
+	}
+
+	count, err := s.admin.DB.CountOrganizationOutstandingInvitations(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	// TODO can be optimized by fetching org level quotas in FindProjectByName
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if count >= org.QuotaOutstandingInvitations {
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot invite more users, org %q already %d outstanding invitations", org.Name, org.QuotaOutstandingInvitations)
 	}
 
 	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
