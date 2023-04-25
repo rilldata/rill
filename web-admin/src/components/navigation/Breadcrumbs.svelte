@@ -77,12 +77,17 @@
     {#if currentDashboard}
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
-        label={currentDashboard.metricsView?.label ?? currentDashboard.name}
+        label={currentDashboard.metricsView?.label !== ""
+          ? currentDashboard.metricsView.label
+          : currentDashboard.name}
         isCurrentPage={isDashboardPage}
         menuOptions={$dashboards.data?.entries?.length > 1 &&
           $dashboards.data.entries.map((dash) => ({
             key: dash.name,
-            main: dash.metricsView?.label ?? dash.name,
+            main:
+              dash.metricsView?.label !== ""
+                ? dash.metricsView.label
+                : dash.name,
             callback: () => goto(`/${organization}/${project}/${dash.name}`),
           }))}
         onSelectMenuOption={(dashboard) =>
