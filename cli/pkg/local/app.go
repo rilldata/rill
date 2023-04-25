@@ -356,7 +356,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 				mux.Handle("/", web.StaticHandler())
 			}
 			mux.Handle("/local/config", a.infoHandler(inf))
-			mux.Handle("/local/version", a.versionHandler(gctx))
+			mux.Handle("/local/version", a.versionHandler())
 			mux.Handle("/local/track", a.trackingHandler(inf))
 		})
 	})
@@ -437,19 +437,19 @@ func (a *App) infoHandler(info *localInfo) http.Handler {
 }
 
 // versionHandler servers the version struct.
-func (a *App) versionHandler(ctx context.Context) http.Handler {
-	// Get the latest version available
-	latestVersion, err := update.LatestVersion(ctx)
-	if err != nil {
-		a.Logger.Warnf("error finding latest version: %v", err)
-	}
-
-	inf := &versionInfo{
-		CurrentVersion: a.Version.Number,
-		LatestVersion:  latestVersion,
-	}
-
+func (a *App) versionHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get the latest version available
+		latestVersion, err := update.LatestVersion(r.Context())
+		if err != nil {
+			a.Logger.Warnf("error finding latest version: %v", err)
+		}
+
+		inf := &versionInfo{
+			CurrentVersion: a.Version.Number,
+			LatestVersion:  latestVersion,
+		}
+
 		data, err := json.Marshal(inf)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)

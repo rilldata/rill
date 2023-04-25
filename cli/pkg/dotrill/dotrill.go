@@ -124,20 +124,20 @@ func SetAccessToken(token string) error {
 	return Set(CredentialsFilename, AccessTokenCredentialsKey, token)
 }
 
-func GetVersion() (string, error) {
-	return Get(StateFilename, VersionKey)
+func SetVersion(version string) error {
+	return Set(StateFilename, VersionKey, version)
 }
 
-func GetVersionUpdatedAt() (string, error) {
-	return Get(StateFilename, VersionUpdatedAtKey)
+func GetVersion() (string, error) {
+	return Get(StateFilename, VersionKey)
 }
 
 func SetVersionUpdatedAt(updatedAt string) error {
 	return Set(StateFilename, VersionUpdatedAtKey, updatedAt)
 }
 
-func SetVersion(version string) error {
-	return Set(StateFilename, VersionKey, version)
+func GetVersionUpdatedAt() (string, error) {
+	return Get(StateFilename, VersionUpdatedAtKey)
 }
 
 // AnalyticsInfo returns analytics info.

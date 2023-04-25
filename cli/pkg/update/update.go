@@ -14,7 +14,10 @@ import (
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 )
 
-const addr = "https://api.github.com/repos/rilldata/rill-developer/releases/latest"
+const (
+	addr            = "https://api.github.com/repos/rilldata/rill-developer/releases/latest"
+	versionCheckTTL = 24 * time.Hour
+)
 
 func CheckVersion(ctx context.Context, currentVersion string) error {
 	// Check if build from source
@@ -22,7 +25,7 @@ func CheckVersion(ctx context.Context, currentVersion string) error {
 		return nil
 	}
 
-	latestVersion, err := checkVersion(ctx)
+	latestVersion, err := LatestVersion(ctx)
 	if err != nil {
 		return err
 	}
@@ -48,25 +51,6 @@ func CheckVersion(ctx context.Context, currentVersion string) error {
 	return nil
 }
 
-func checkVersion(ctx context.Context) (string, error) {
-	latestVersion, err := LatestVersion(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	err = dotrill.SetVersionUpdatedAt(time.Now().Format("2006-01-02 15:04"))
-	if err != nil {
-		return "", err
-	}
-
-	err = dotrill.SetVersion(latestVersion)
-	if err != nil {
-		return "", err
-	}
-
-	return latestVersion, nil
-}
-
 // This will return the latest version available in cache or fetch it from github if its older than 24h
 func LatestVersion(ctx context.Context) (string, error) {
 	cachedVersion, err := dotrill.GetVersion()
@@ -85,21 +69,23 @@ func LatestVersion(ctx context.Context) (string, error) {
 			return "", err
 		}
 
-		if time.Since(updatedAt).Hours() > 24 {
-			// Check with latest release on github
-			info, err := fetchLatestVersion(ctx)
-			if err != nil {
-				return "", err
-			}
-
-			return info.Version, nil
+		if time.Since(updatedAt).Hours() < versionCheckTTL.Hours() {
+			return cachedVersion, nil
 		}
-
-		return cachedVersion, nil
 	}
 
 	// Check with latest release on github if cached version is not available
 	info, err := fetchLatestVersion(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	err = dotrill.SetVersionUpdatedAt(time.Now().Format("2006-01-02 15:04"))
+	if err != nil {
+		return "", err
+	}
+
+	err = dotrill.SetVersion(info.Version)
 	if err != nil {
 		return "", err
 	}
