@@ -38,7 +38,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 
 			if !cmd.Flags().Changed("description") {
 				// Get the new org description from user if not provided in the flag
-				err := cmdutil.PromptIfUnset(&description, "Enter the org description", description)
+				description, err = cmdutil.InputPrompt("Enter the org description", description)
 				if err != nil {
 					return err
 				}

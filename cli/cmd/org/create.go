@@ -27,7 +27,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 
 			if !cmd.Flags().Changed("name") {
 				// Get the new org name from user if not provided in the flag
-				err := cmdutil.PromptIfUnset(&name, "Enter the org name", "")
+				name, err = cmdutil.InputPrompt("Enter the org name", "")
 				if err != nil {
 					return err
 				}

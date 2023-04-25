@@ -130,7 +130,7 @@ func ConfirmPrompt(msg, help string, def bool) bool {
 	return result
 }
 
-func InputPrompt(msg, def string) string {
+func InputPrompt(msg, def string) (string, error) {
 	prompt := &survey.Input{
 		Message: msg,
 		Default: def,
@@ -138,9 +138,9 @@ func InputPrompt(msg, def string) string {
 	result := def
 	if err := survey.AskOne(prompt, &result); err != nil {
 		fmt.Printf("Prompt failed %v\n", err)
-		os.Exit(1)
+		return "", err
 	}
-	return result
+	return result, nil
 }
 
 func ProjectExists(ctx context.Context, c *client.Client, orgName, projectName string) (bool, error) {
@@ -154,28 +154,6 @@ func ProjectExists(ctx context.Context, c *client.Client, orgName, projectName s
 		return false, err
 	}
 	return true, nil
-}
-
-func PromptIfUnset(flag *string, msg, def string) error {
-	questions := []*survey.Question{
-		{
-			Name: "flag",
-			Prompt: &survey.Input{
-				Message: msg,
-				Default: def,
-			},
-			Validate: func(any interface{}) error {
-				flag := any.(string)
-				if flag == "" {
-					return fmt.Errorf("empty value")
-				}
-
-				return nil
-			},
-		},
-	}
-
-	return survey.Ask(questions, flag)
 }
 
 func OrgExists(ctx context.Context, c *client.Client, name string) (bool, error) {

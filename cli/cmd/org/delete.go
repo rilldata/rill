@@ -46,7 +46,11 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			if !force {
 				fmt.Printf("Warn: Deleting the org %q will remove all metadata associated with the org\n", args[0])
 				msg := fmt.Sprintf("Enter %q to confirm deletion", args[0])
-				org := cmdutil.InputPrompt(msg, "")
+				org, err := cmdutil.InputPrompt(msg, "")
+				if err != nil {
+					return err
+				}
+
 				if org != args[0] {
 					return fmt.Errorf("Entered incorrect name : %s", org)
 				}

@@ -43,14 +43,14 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			proj := resp.Project
 
 			if !cmd.Flags().Changed("description") {
-				err := cmdutil.PromptIfUnset(&description, "Enter the project description", proj.Description)
+				description, err = cmdutil.InputPrompt("Enter the project description", proj.Description)
 				if err != nil {
 					return err
 				}
 			}
 
 			if !cmd.Flags().Changed("prod-branch") {
-				err := cmdutil.PromptIfUnset(&prodBranch, "Enter the production branch", proj.ProdBranch)
+				prodBranch, err = cmdutil.InputPrompt("Enter the production branch", proj.ProdBranch)
 				if err != nil {
 					return err
 				}

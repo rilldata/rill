@@ -38,7 +38,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 
 			if !cmd.Flags().Changed("new_name") {
 				// Get the new org name from user if not provided in the flag, passing current name as default
-				err := cmdutil.PromptIfUnset(&newName, "Rename to", name)
+				newName, err = cmdutil.InputPrompt("Rename to", "")
 				if err != nil {
 					return err
 				}

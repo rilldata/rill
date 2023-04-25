@@ -27,14 +27,6 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			// Get the new org name from user if not provided in the flag, Set Default org as default
-			if !cmd.Flags().Changed("org") {
-				err := cmdutil.PromptIfUnset(&cfg.Org, "Enter the org name", cfg.Org)
-				if err != nil {
-					return err
-				}
-			}
-
 			if !cmd.Flags().Changed("project") {
 				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
 				if err != nil {
