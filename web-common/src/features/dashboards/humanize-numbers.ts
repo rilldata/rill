@@ -145,27 +145,6 @@ export function humanizeGroupByColumns(
   }, values);
 }
 
-export function getScaleForLeaderboard(
-  leaderboard: Map<string, Array<LeaderboardValue>>
-) {
-  if (!leaderboard) return "none";
-
-  const numValues = [...leaderboard.values()]
-    // use the first five dimensions as the sample
-    .slice(0, 5)
-    // Take only first 7 values which are shown as input
-    .map((values) => values.slice(0, 7))
-    .flat()
-    .map((values) => values.value);
-
-  const areAllNumbers = numValues.every((e) => typeof e === "number");
-  if (!areAllNumbers) return "none";
-
-  const sortedValues = numValues.sort((a, b) => b - a);
-
-  return determineScaleForValues(sortedValues);
-}
-
 // NOTE: the following are adapters that I think fit the API
 // used by the existing humanizer, but I'm not sure of the
 // exact details, nor am I totally confident about the options
