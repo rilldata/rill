@@ -43,9 +43,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 
 					projectPath = repoName
 				}
-			} else if rillv1beta.HasRillProject("") {
-				projectPath = ""
-			} else {
+			} else if !rillv1beta.HasRillProject("") {
 				if !cfg.Interactive {
 					return fmt.Errorf("required arg <path> missing")
 				}
