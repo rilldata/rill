@@ -58,20 +58,6 @@ export const nicelyFormattedTypesSelectorOptions = [
   },
 ];
 
-function getScaleForValue(value: number): ShortHandSymbols {
-  return Math.abs(value) >= 1.0e15
-    ? "Q"
-    : Math.abs(value) >= 1.0e12
-    ? "T"
-    : Math.abs(value) >= 1.0e9
-    ? "B"
-    : Math.abs(value) >= 1.0e6
-    ? "M"
-    : Math.abs(value) >= 1.0e3
-    ? "k"
-    : "none";
-}
-
 export function humanizeGroupValues(
   values: Array<Record<string, number | string>>,
   type: NicelyFormattedTypes,
