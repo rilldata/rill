@@ -10,9 +10,11 @@ import (
 )
 
 func ShowCmd(cfg *config.Config) *cobra.Command {
+	var name, path string
+
 	showCmd := &cobra.Command{
 		Use:   "show <project-name>",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.NoArgs,
 		Short: "Show",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
@@ -21,9 +23,16 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
+			if !cmd.Flags().Changed("project") {
+				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
+				if err != nil {
+					return err
+				}
+			}
+
 			proj, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{
 				OrganizationName: cfg.Org,
-				Name:             args[0],
+				Name:             name,
 			})
 			if err != nil {
 				return err
@@ -34,6 +43,10 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 			return nil
 		},
 	}
+
+	showCmd.Flags().SortFlags = false
+	showCmd.Flags().StringVar(&name, "project", "", "Name")
+	showCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 
 	return showCmd
 }
