@@ -189,9 +189,16 @@ func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID stri
 	return res, nil
 }
 
-func (c *connection) FindProjectsForOrgAndOutsideUser(ctx context.Context, orgID, userID string) ([]*database.Project, error) {
+func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string) ([]*database.Project, error) {
 	var res []*database.Project
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p JOIN users_projects_roles upr ON p.id = upr.project_id WHERE p.org_id = $1 AND upr.user_id = $2", orgID, userID)
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT p.* FROM projects p
+		WHERE p.org_id = $1 AND p.id IN (
+			SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $2
+			UNION
+			SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $2
+		)
+	`, orgID, userID)
 	if err != nil {
 		return nil, parseErr(err)
 	}

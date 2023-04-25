@@ -33,7 +33,7 @@ export interface MetricsExplorerEntity {
   // user selected time range
   selectedTimeRange?: DashboardTimeControls;
   selectedComparisonTimeRange?: DashboardTimeControls;
-  // flag to show/hide comparison based on time range
+  // flag to show/hide comparison based on user preference
   showComparison?: boolean;
   // user selected dimension
   selectedDimensionName?: string;
@@ -176,6 +176,12 @@ const metricViewReducers = {
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
+    });
+  },
+
+  toggleComparison(name: string, showComparison: boolean) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.showComparison = showComparison;
     });
   },
 

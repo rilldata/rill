@@ -27,48 +27,60 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// add public projects
-	orgProjects := map[string]*database.Project{}
-	publicProjects, err := s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	for _, proj := range publicProjects {
-		orgProjects[proj.Name] = proj
-	}
-
+	// If user has ManageProjects, return all projects
 	claims := auth.GetClaims(ctx)
-	if !claims.CanOrganization(ctx, org.ID, auth.ReadProjects) {
-		// check if the user is an outside member of a project in the org
-		if claims.OwnerType() == auth.OwnerTypeUser {
-			projs, err := s.admin.DB.FindProjectsForOrgAndOutsideUser(ctx, org.ID, claims.OwnerID())
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			for _, proj := range projs {
-				orgProjects[proj.Name] = proj
-			}
-		}
-		if len(orgProjects) == 0 {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to read projects")
-		}
-	} else {
+	if claims.OrganizationPermissions(ctx, org.ID).ManageProjects {
 		projs, err := s.admin.DB.FindProjectsForOrganization(ctx, org.ID)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		for _, proj := range projs {
-			orgProjects[proj.Name] = proj
+
+		dtos := make([]*adminv1.Project, len(projs))
+		for i, p := range projs {
+			dtos[i] = projToDTO(p, org.Name)
+		}
+
+		return &adminv1.ListProjectsForOrganizationResponse{
+			Projects: dtos,
+		}, nil
+	}
+
+	// Get public projects
+	projsMap := map[string]*database.Project{}
+	projs, err := s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	for _, p := range projs {
+		projsMap[p.Name] = p
+	}
+
+	// Get projects the user is a (direct or group) member of (note: the user can be a member of a project in the org, without being a member of org - we call this an "outside member")
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		projs, err := s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID())
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		for _, p := range projs {
+			projsMap[p.Name] = p
 		}
 	}
 
-	dtos := make([]*adminv1.Project, len(orgProjects))
+	// If no projects are public, and user is not an outside member of any projects, the projsMap is empty.
+	// If additionally, the user is not an org member, return permission denied (instead of an empty slice).
+	if len(projsMap) == 0 && !claims.OrganizationPermissions(ctx, org.ID).ReadProjects {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read projects")
+	}
+
+	// Convert map to slice
 	i := 0
-	for _, proj := range orgProjects {
-		dtos[i] = projToDTO(proj, org.Name)
+	dtos := make([]*adminv1.Project, len(projsMap))
+	for _, p := range projsMap {
+		dtos[i] = projToDTO(p, org.Name)
 		i++
 	}
-	// sort dtos by name
+
+	// Sort output by project name
 	sort.Slice(dtos, func(i, j int) bool { return dtos[i].Name < dtos[j].Name })
 
 	return &adminv1.ListProjectsForOrganizationResponse{Projects: dtos}, nil
@@ -84,7 +96,7 @@ func (s *Server) ListProjectsForOrganizationAndGithubURL(ctx context.Context, re
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.CanOrganization(ctx, org.ID, auth.ReadProjects) {
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadProjects {
 		return nil, status.Errorf(codes.PermissionDenied, "does not have permission to read projects in org %s", req.OrganizationName)
 	}
 
@@ -98,7 +110,7 @@ func (s *Server) ListProjectsForOrganizationAndGithubURL(ctx context.Context, re
 
 	accessibleProjects := make([]*adminv1.Project, 0)
 	for _, p := range projects {
-		if claims.CanProject(ctx, p.ID, auth.ReadProject) {
+		if claims.ProjectPermissions(ctx, p.OrganizationID, p.ID).ReadProject {
 			accessibleProjects = append(accessibleProjects, projToDTO(p, org.Name))
 		}
 	}
@@ -124,14 +136,20 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.Can(ctx, proj.OrganizationID, auth.ReadProjects, proj.ID, auth.ReadProject) {
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if proj.Public {
+		permissions.ReadProject = true
+		permissions.ReadProd = true
+	}
+
+	if !permissions.ReadProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
-	if proj.ProdDeploymentID == nil {
+	if proj.ProdDeploymentID == nil || !permissions.ReadProd {
 		return &adminv1.GetProjectResponse{
 			Project:            projToDTO(proj, org.Name),
-			ProjectPermissions: claims.ProjectPermissions(ctx, proj.ID),
+			ProjectPermissions: permissions,
 		}, nil
 	}
 
@@ -143,7 +161,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if !claims.CanProject(ctx, proj.ID, auth.ReadProdStatus) {
+	if !permissions.ReadProdStatus {
 		depl.Logs = ""
 	}
 
@@ -153,10 +171,8 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		TTL:         time.Hour,
 		InstancePermissions: map[string][]runtimeauth.Permission{
 			depl.RuntimeInstanceID: {
-				// TODO: These are too wide. It needs just ReadObjects and ReadMetrics.
-				runtimeauth.ReadInstance,
+				// TODO: Remove ReadProfiling and ReadRepo (may require frontend changes)
 				runtimeauth.ReadObjects,
-				runtimeauth.ReadOLAP,
 				runtimeauth.ReadMetrics,
 				runtimeauth.ReadProfiling,
 				runtimeauth.ReadRepo,
@@ -171,7 +187,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		Project:            projToDTO(proj, org.Name),
 		ProdDeployment:     deploymentToDTO(depl),
 		Jwt:                jwt,
-		ProjectPermissions: claims.ProjectPermissions(ctx, proj.ID),
+		ProjectPermissions: permissions,
 	}, nil
 }
 
@@ -191,7 +207,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if !claims.CanOrganization(ctx, org.ID, auth.CreateProjects) {
+	if !claims.OrganizationPermissions(ctx, org.ID).CreateProjects {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
 	}
 
@@ -248,7 +264,7 @@ func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRe
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.Can(ctx, proj.OrganizationID, auth.ManageProjects, proj.ID, auth.ManageProject) {
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
 
@@ -271,7 +287,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.Can(ctx, proj.OrganizationID, auth.ManageProjects, proj.ID, auth.ManageProject) {
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
 
@@ -317,7 +333,7 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.Can(ctx, proj.OrganizationID, auth.ReadOrgMembers, proj.ID, auth.ReadProjectMembers) {
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProjectMembers {
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read project members")
 	}
 
@@ -357,7 +373,7 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.Can(ctx, proj.OrganizationID, auth.ManageOrgMembers, proj.ID, auth.ManageProjectMembers) {
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add project members")
 	}
 
@@ -412,7 +428,7 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.Can(ctx, proj.OrganizationID, auth.ManageOrgMembers, proj.ID, auth.ManageProjectMembers) {
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to remove project members")
 	}
 
@@ -454,7 +470,7 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.Can(ctx, proj.OrganizationID, auth.ManageOrgMembers, proj.ID, auth.ManageProjectMembers) {
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to set project member roles")
 	}
 
@@ -492,7 +508,7 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.CanProject(ctx, proj.ID, auth.ManageProject) {
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project variables")
 	}
 
@@ -509,7 +525,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.CanProject(ctx, proj.ID, auth.ManageProject) {
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
 	}
 

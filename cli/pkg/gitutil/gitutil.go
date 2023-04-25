@@ -134,11 +134,19 @@ func SplitGithubURL(githubURL string) (account, repo string, ok bool) {
 	return account, repo, true
 }
 
-func ExtractGitRemote(projectPath string) (*Remote, string, error) {
+func ExtractGitRemote(projectPath, remoteName string) (*Remote, string, error) {
 	remotes, err := ExtractRemotes(projectPath)
 	if err != nil {
 		return nil, "", err
 	}
+	if remoteName != "" {
+		for _, remote := range remotes {
+			if remote.Name == remoteName {
+				return RemotesToGithubURL([]Remote{remote})
+			}
+		}
+	}
+
 	// Parse into a https://github.com/account/repo (no .git) format
 	return RemotesToGithubURL(remotes)
 }

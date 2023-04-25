@@ -28,7 +28,8 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 				warn.Println("You are already logged in. To log in again, run `rill auth logout` first.")
 				return nil
 			}
-			// login user
+
+			// Login user
 			if err := Login(ctx, cfg, ""); err != nil {
 				return err
 			}
@@ -111,6 +112,6 @@ func Login(ctx context.Context, cfg *config.Config, redirectURL string) error {
 	}
 	// set the default token to the one we just got
 	cfg.AdminTokenDefault = res1.AccessToken
-	bold.Print("Successfully logged in.\n")
+	bold.Print("Successfully logged in. Welcome to Rill!\n")
 	return nil
 }

@@ -1,10 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
+  import {
+    useMetaQuery,
+    useModelHasTimeSeries,
+  } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { createRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import { metricsExplorerStore } from "../dashboard-stores";
@@ -27,15 +29,7 @@
 
   $: switchToMetrics(metricViewName);
 
-  $: metricsViewQuery = createRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    metricViewName,
-    {
-      query: {
-        select: (data) => data?.entry?.metricsView,
-      },
-    }
-  );
+  $: metricsViewQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
   $: if ($metricsViewQuery.data) {
     if (!$featureFlags.readOnly && !$metricsViewQuery.data?.measures?.length) {
@@ -61,7 +55,7 @@
 </script>
 
 <DashboardContainer bind:exploreContainerWidth bind:width {leftMargin}>
-  <DashboardHeader {metricViewName} {hasTitle} slot="header" />
+  <DashboardHeader {hasTitle} {metricViewName} slot="header" />
 
   <svelte:fragment let:width slot="metrics">
     {#key metricViewName}

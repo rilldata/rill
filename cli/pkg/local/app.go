@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/examples"
+	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/rilldata/rill/cli/pkg/variable"
 	"github.com/rilldata/rill/cli/pkg/web"
 	"github.com/rilldata/rill/runtime"
@@ -355,6 +356,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 				mux.Handle("/", web.StaticHandler())
 			}
 			mux.Handle("/local/config", a.infoHandler(inf))
+			mux.Handle("/local/version", a.versionHandler())
 			mux.Handle("/local/track", a.trackingHandler(inf))
 		})
 	})
@@ -432,6 +434,39 @@ func (a *App) infoHandler(info *localInfo) http.Handler {
 			return
 		}
 	})
+}
+
+// versionHandler servers the version struct.
+func (a *App) versionHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get the latest version available
+		latestVersion, err := update.LatestVersion(r.Context())
+		if err != nil {
+			a.Logger.Warnf("error finding latest version: %v", err)
+		}
+
+		inf := &versionInfo{
+			CurrentVersion: a.Version.Number,
+			LatestVersion:  latestVersion,
+		}
+
+		data, err := json.Marshal(inf)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		w.Header().Add("Content-Type", "application/json")
+		_, err = w.Write(data)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to write response data: %s", err), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+type versionInfo struct {
+	CurrentVersion string `json:"current_version"`
+	LatestVersion  string `json:"latest_version"`
 }
 
 // trackingHandler proxies events to intake.rilldata.io.

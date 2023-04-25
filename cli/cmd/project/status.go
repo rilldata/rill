@@ -1,7 +1,6 @@
 package project
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -14,9 +13,11 @@ import (
 )
 
 func StatusCmd(cfg *config.Config) *cobra.Command {
+	var name, path string
+
 	statusCmd := &cobra.Command{
-		Use:   "status <project-name>",
-		Args:  cobra.ExactArgs(1),
+		Use:   "status",
+		Args:  cobra.NoArgs,
 		Short: "Status",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
@@ -25,9 +26,16 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			proj, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{
+			if !cmd.Flags().Changed("project") {
+				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
+				if err != nil {
+					return err
+				}
+			}
+
+			proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
 				OrganizationName: cfg.Org,
-				Name:             args[0],
+				Name:             name,
 			})
 			if err != nil {
 				return err
@@ -57,6 +65,9 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			return nil
 		},
 	}
+
+	statusCmd.Flags().StringVar(&name, "project", "", "Name")
+	statusCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 
 	return statusCmd
 }
