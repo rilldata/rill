@@ -21,15 +21,6 @@ interface HumanizeOptions {
 
 type formatterOptions = Intl.NumberFormatOptions & HumanizeOptions;
 
-const shortHandMap = {
-  Q: 1.0e15,
-  T: 1.0e12,
-  B: 1.0e9,
-  M: 1.0e6,
-  k: 1.0e3,
-  none: 1,
-};
-
 export enum NicelyFormattedTypes {
   HUMANIZE = "humanize",
   NONE = "none",
