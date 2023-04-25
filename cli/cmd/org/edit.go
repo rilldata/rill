@@ -52,7 +52,8 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 					}
 				}
 
-				return fmt.Errorf("Org name %q doesn't exist, please run `rill org list` to list available orgs", orgName)
+				fmt.Printf("Org name %q doesn't exist, please run `rill org list` to list available orgs\n", orgName)
+				return nil
 			}
 
 			org := resp.Organization
@@ -73,7 +74,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	}
 	editCmd.Flags().SortFlags = false
 	editCmd.Flags().StringVar(&orgName, "org", cfg.Org, "Organization name")
-	editCmd.Flags().StringVar(&description, "description", "Unknown", "Description")
+	editCmd.Flags().StringVar(&description, "description", "", "Description")
 
 	return editCmd
 }

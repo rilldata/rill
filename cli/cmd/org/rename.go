@@ -78,7 +78,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 	}
 	renameCmd.Flags().SortFlags = false
 	renameCmd.Flags().StringVar(&name, "org", cfg.Org, "Current Org Name")
-	renameCmd.Flags().StringVar(&newName, "new_name", cfg.Org, "New Org Name")
+	renameCmd.Flags().StringVar(&newName, "new_name", "", "New Org Name")
 
 	return renameCmd
 }
