@@ -18,7 +18,7 @@
   <button
     class="border border-blue-300 text-blue-600 w-full h-10 hover:bg-slate-100 hover:border-gray-100 max-w-[400px]"
     on:click={() => {
-      window.location.href = `/${organization}/${project}/-/deployment`;
+      window.location.href = `/${organization}/${project}`;
     }}
     >View project status
   </button>
