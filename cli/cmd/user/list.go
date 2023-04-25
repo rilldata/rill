@@ -17,10 +17,6 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 		Use:   "list",
 		Short: "List",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if orgName == "" {
-				orgName = cfg.Org
-			}
-
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -56,7 +52,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	listCmd.Flags().StringVar(&orgName, "org", "", "Organization")
+	listCmd.Flags().StringVar(&orgName, "org", cfg.Org, "Organization")
 	listCmd.Flags().StringVar(&projectName, "project", "", "Project")
 
 	return listCmd

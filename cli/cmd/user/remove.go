@@ -18,17 +18,13 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 		Use:   "remove",
 		Short: "Remove",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if orgName == "" {
-				orgName = cfg.Org
-			}
+			cmdutil.StringPromptIfEmpty(&email, "Enter email")
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
-
-			cmdutil.StringPromptIfEmpty(&email, "Please enter the email of the user.")
 
 			if projectName != "" {
 				_, err = client.RemoveProjectMember(cmd.Context(), &adminv1.RemoveProjectMemberRequest{
@@ -40,7 +36,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				cmdutil.SuccessPrinter(fmt.Sprintf("Removed user %q from project %q under organization %q", email, projectName, orgName))
+				cmdutil.SuccessPrinter(fmt.Sprintf("Removed user %q from project \"%s/%s\"", email, orgName, projectName))
 			} else {
 				_, err = client.RemoveOrganizationMember(cmd.Context(), &adminv1.RemoveOrganizationMemberRequest{
 					Organization: orgName,
@@ -56,7 +52,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	removeCmd.Flags().StringVar(&orgName, "org", "", "Organization")
+	removeCmd.Flags().StringVar(&orgName, "org", cfg.Org, "Organization")
 	removeCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	removeCmd.Flags().StringVar(&email, "email", "", "Email of the user")
 
