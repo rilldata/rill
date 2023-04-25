@@ -13,11 +13,11 @@
         select: (data) => {
           return {
             // Hack: in development, the runtime host is actually on port 8081
-            host: data.productionDeployment.runtimeHost.replace(
+            host: data.prodDeployment.runtimeHost.replace(
               "localhost:9091",
               "localhost:8081"
             ),
-            instanceId: data.productionDeployment.runtimeInstanceId,
+            instanceId: data.prodDeployment.runtimeInstanceId,
             jwt: data?.jwt,
           };
         },

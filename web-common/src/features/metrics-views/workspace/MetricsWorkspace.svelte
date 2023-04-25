@@ -91,16 +91,24 @@
     callReconcileAndUpdateYaml(yaml);
   });
 
-  function updateInternalRep() {
+  async function updateInternalRep() {
+    const isDifferent =
+      $metricsInternalRep && yaml !== $metricsInternalRep.internalYAML;
+
     metricsInternalRep = createInternalRepresentation(
       yaml,
       callReconcileAndUpdateYaml
     );
+
+    if (isDifferent) {
+      $metricsInternalRep.regenerateInternalYAML(true);
+    }
+
     if (errors) $metricsInternalRep.updateErrors(errors);
   }
 
   // reset internal representation in case of deviation from runtime YAML
-  $: if (yaml !== $metricsInternalRep.internalYAML) {
+  $: if (yaml) {
     updateInternalRep();
   }
 

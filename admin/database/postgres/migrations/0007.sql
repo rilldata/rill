@@ -1,1 +1,0 @@
-ALTER TABLE projects ADD COLUMN region TEXT NOT NULL DEFAULT '';

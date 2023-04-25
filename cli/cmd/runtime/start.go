@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
@@ -79,7 +80,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}
 
 			// Init telemetry
-			shutdown, err := observability.Start(&observability.Options{
+			shutdown, err := observability.Start(cmd.Context(), logger, &observability.Options{
 				MetricsExporter: conf.MetricsExporter,
 				TracesExporter:  conf.TracesExporter,
 				ServiceName:     "runtime-server",
@@ -89,7 +90,10 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				logger.Fatal("error starting telemetry", zap.Error(err))
 			}
 			defer func() {
-				err := shutdown(context.Background())
+				// Allow 10 seconds to gracefully shutdown telemetry
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				err := shutdown(ctx)
 				if err != nil {
 					logger.Error("telemetry shutdown failed", zap.Error(err))
 				}

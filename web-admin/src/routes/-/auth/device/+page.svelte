@@ -33,7 +33,7 @@
       }
     ).then((response) => {
       if (response.ok) {
-        if (redirectURL !== "") {
+        if (redirectURL && redirectURL !== "") {
           window.location.href = decodeURIComponent(redirectURL);
         } else {
           successMsg = "User code confirmed, this page can be closed now";

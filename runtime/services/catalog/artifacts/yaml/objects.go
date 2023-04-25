@@ -47,7 +47,7 @@ type ExtractConfig struct {
 
 type MetricsView struct {
 	Label             string `yaml:"title"`
-	DisplayName       string `yaml:"name,omitempty"` // for backwards compatibility
+	DisplayName       string `yaml:"display_name,omitempty"` // for backwards compatibility
 	Description       string
 	Model             string
 	TimeDimension     string `yaml:"timeseries"`
