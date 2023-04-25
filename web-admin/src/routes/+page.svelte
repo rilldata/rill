@@ -6,6 +6,10 @@
   const user = createAdminServiceGetCurrentUser();
 </script>
 
+<svelte:head>
+  <title>Home - Rill</title>
+</svelte:head>
+
 <AuthRedirect>
   <section class="flex flex-col justify-center w-4/5 mx-auto h-2/5">
     <h1 class="text-4xl leading-10 font-light mb-2">
