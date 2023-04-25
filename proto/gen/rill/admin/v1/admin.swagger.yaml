@@ -625,6 +625,9 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              sourceName:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}/reset:

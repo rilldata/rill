@@ -18,6 +18,10 @@ export type AdminServiceUpdateProjectVariablesBody = {
   variables?: AdminServiceUpdateProjectVariablesBodyVariables;
 };
 
+export type AdminServiceTriggerRefreshSourceBody = {
+  sourceName?: string;
+};
+
 export type AdminServiceUpdateProjectBody = {
   id?: string;
   description?: string;

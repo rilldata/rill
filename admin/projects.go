@@ -219,7 +219,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, orgName, name string) err
 }
 
 // New method for refresh source
-func (s *Service) TriggerRefreshSource(ctx context.Context, orgName, name string) error {
+func (s *Service) TriggerRefreshSource(ctx context.Context, orgName, name, sourceName string) error {
 	// Run it all in the background
 	go func() {
 		// Use s.closeCtx to cancel if the service is stopped
@@ -273,8 +273,8 @@ func (s *Service) TriggerRefreshSource(ctx context.Context, orgName, name string
 			return
 		}
 
-		// Call refresh source
-		res, err := rt.TriggerRefresh(ctx, &runtimev1.TriggerRefreshRequest{InstanceId: depl.RuntimeInstanceID, Name: name})
+		// Call refresh source with source name
+		res, err := rt.TriggerRefresh(ctx, &runtimev1.TriggerRefreshRequest{InstanceId: depl.RuntimeInstanceID, Name: sourceName})
 		if err != nil {
 			s.logger.Error("refresh source: rpc error", zap.String("deployment_id", deploymentID), zap.Error(err))
 			_, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusError, err.Error())
@@ -495,6 +495,7 @@ func (s *Service) triggerDeployment(ctx context.Context, proj *database.Project)
 
 	// Update prod deployment on project
 	_, err = s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
 		ProdBranch:           proj.ProdBranch,

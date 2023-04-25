@@ -49,6 +49,7 @@ import type {
   V1TriggerReconcileResponse,
   AdminServiceTriggerReconcileBodyBody,
   V1TriggerRefreshSourceResponse,
+  AdminServiceTriggerRefreshSourceBody,
   V1TriggerRedeployResponse,
   V1GetProjectVariablesResponse,
   V1UpdateProjectVariablesResponse,
@@ -1295,13 +1296,13 @@ export const createAdminServiceTriggerReconcile = <
 export const adminServiceTriggerRefreshSource = (
   organizationName: string,
   name: string,
-  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody
+  adminServiceTriggerRefreshSourceBody: AdminServiceTriggerRefreshSourceBody
 ) => {
   return httpClient<V1TriggerRefreshSourceResponse>({
     url: `/v1/organizations/${organizationName}/projects/${name}/refresh`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBodyBody,
+    data: adminServiceTriggerRefreshSourceBody,
   });
 };
 
@@ -1309,7 +1310,7 @@ export type AdminServiceTriggerRefreshSourceMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceTriggerRefreshSource>>
 >;
 export type AdminServiceTriggerRefreshSourceMutationBody =
-  AdminServiceTriggerReconcileBodyBody;
+  AdminServiceTriggerRefreshSourceBody;
 export type AdminServiceTriggerRefreshSourceMutationError = RpcStatus;
 
 export const createAdminServiceTriggerRefreshSource = <
@@ -1322,7 +1323,7 @@ export const createAdminServiceTriggerRefreshSource = <
     {
       organizationName: string;
       name: string;
-      data: AdminServiceTriggerReconcileBodyBody;
+      data: AdminServiceTriggerRefreshSourceBody;
     },
     TContext
   >;
@@ -1334,7 +1335,7 @@ export const createAdminServiceTriggerRefreshSource = <
     {
       organizationName: string;
       name: string;
-      data: AdminServiceTriggerReconcileBodyBody;
+      data: AdminServiceTriggerRefreshSourceBody;
     }
   > = (props) => {
     const { organizationName, name, data } = props ?? {};
@@ -1348,7 +1349,7 @@ export const createAdminServiceTriggerRefreshSource = <
     {
       organizationName: string;
       name: string;
-      data: AdminServiceTriggerReconcileBodyBody;
+      data: AdminServiceTriggerRefreshSourceBody;
     },
     TContext
   >(mutationFn, mutationOptions);

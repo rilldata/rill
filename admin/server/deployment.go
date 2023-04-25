@@ -20,7 +20,7 @@ func (s *Server) TriggerReconcile(ctx context.Context, req *adminv1.TriggerRecon
 }
 
 func (s *Server) TriggerRefreshSource(ctx context.Context, req *adminv1.TriggerRefreshSourceRequest) (*adminv1.TriggerRefreshSourceResponse, error) {
-	err := s.admin.TriggerRefreshSource(ctx, req.OrganizationName, req.Name)
+	err := s.admin.TriggerRefreshSource(ctx, req.OrganizationName, req.Name, req.SourceName)
 	if err != nil {
 		return nil, err
 	}

@@ -6937,6 +6937,8 @@ func (m *TriggerRefreshSourceRequest) validate(all bool) error {
 
 	// no validation rules for Name
 
+	// no validation rules for SourceName
+
 	if len(errors) > 0 {
 		return TriggerRefreshSourceRequestMultiError(errors)
 	}

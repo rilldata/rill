@@ -10,7 +10,7 @@ import (
 )
 
 func ReconcileCmd(cfg *config.Config) *cobra.Command {
-	var name, path string
+	var name, path, source string
 	var refresh, reset bool
 
 	reconcileCmd := &cobra.Command{
@@ -44,17 +44,25 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 
 			// Trigger reconcile, refresh, reset (runs in the background - err means the deployment wasn't found, which is unlikely)
 			if resp.GetProdDeployment() != nil {
-				if cmd.Flags().Changed("refresh") {
-					_, err := client.TriggerRefreshSource(ctx, &adminv1.TriggerRefreshSourceRequest{OrganizationName: cfg.Org, Name: name})
-					if err != nil {
-						return err
-					}
+				if refresh {
+					fmt.Println("refresh triggered")
+					if source != "" {
+						_, err := client.TriggerRefreshSource(ctx, &adminv1.TriggerRefreshSourceRequest{OrganizationName: cfg.Org, Name: name, SourceName: source})
+						if err != nil {
+							return err
+						}
 
-					fmt.Printf("Refresh source is triggered for project %s, please run 'rill project status` to know the status \n", name)
-					return nil
+						fmt.Printf("Refresh source is triggered for project %s, please run 'rill project status` to know the status \n", name)
+						return nil
+					}
+					return fmt.Errorf("No source name provided")
 				}
 
-				if cmd.Flags().Changed("reset") {
+				if source != "" {
+					return fmt.Errorf("`source` flag can only be set with refresh")
+				}
+
+				if reset {
 					_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{OrganizationName: cfg.Org, Name: name})
 					if err != nil {
 						return err
@@ -81,6 +89,7 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 	reconcileCmd.Flags().BoolVar(&refresh, "refresh", false, "Refresh")
 	reconcileCmd.Flags().BoolVar(&reset, "reset", false, "Reset")
 	reconcileCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	reconcileCmd.Flags().StringVar(&source, "source", "", "Source Name")
 
 	return reconcileCmd
 }
