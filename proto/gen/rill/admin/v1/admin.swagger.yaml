@@ -224,6 +224,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: removeFromProjects
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     put:

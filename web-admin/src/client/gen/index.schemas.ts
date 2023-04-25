@@ -51,6 +51,10 @@ export type AdminServiceListProjectMembersParams = {
   pageToken?: string;
 };
 
+export type AdminServiceRemoveOrganizationMemberParams = {
+  removeFromProjects?: boolean;
+};
+
 export type AdminServiceListOrganizationMembersParams = {
   pageSize?: number;
   pageToken?: string;

@@ -13,6 +13,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 	var orgName string
 	var projectName string
 	var email string
+	var removeFromProjects bool
 
 	removeCmd := &cobra.Command{
 		Use:   "remove",
@@ -39,8 +40,9 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 				cmdutil.SuccessPrinter(fmt.Sprintf("Removed user %q from project \"%s/%s\"", email, orgName, projectName))
 			} else {
 				_, err = client.RemoveOrganizationMember(cmd.Context(), &adminv1.RemoveOrganizationMemberRequest{
-					Organization: orgName,
-					Email:        email,
+					Organization:       orgName,
+					Email:              email,
+					RemoveFromProjects: removeFromProjects,
 				})
 				if err != nil {
 					return err
@@ -55,6 +57,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 	removeCmd.Flags().StringVar(&orgName, "org", cfg.Org, "Organization")
 	removeCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	removeCmd.Flags().StringVar(&email, "email", "", "Email of the user")
+	removeCmd.Flags().BoolVar(&removeFromProjects, "remove-from-projects", false, "Remove user from projects")
 
 	return removeCmd
 }

@@ -328,6 +328,24 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	// delete from projects if RemoveFromProjects flag is set
+	if req.RemoveFromProjects {
+		projects, err := s.admin.DB.FindProjectsForOrgAndUser(ctx, req.Organization, user.ID)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				return nil, status.Error(codes.InvalidArgument, "projects not found")
+			}
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		for _, proj := range projects {
+			err = s.admin.DB.DeleteProjectMemberUser(ctx, proj.ID, user.ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		}
+	}
+
 	return &adminv1.RemoveOrganizationMemberResponse{}, nil
 }
 
