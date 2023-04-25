@@ -5,7 +5,9 @@
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import CtaButton from "../../../../components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "../../../../components/calls-to-action/CTAContentContainer.svelte";
+  import CtaHeader from "../../../../components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "../../../../components/calls-to-action/CTALayoutContainer.svelte";
+  import CtaMessage from "../../../../components/calls-to-action/CTAMessage.svelte";
 
   const urlParams = new URLSearchParams(window.location.search);
   const redirectURL = urlParams.get("redirect");
@@ -36,13 +38,13 @@
   <CtaLayoutContainer>
     <CtaContentContainer>
       <Github className="w-10 h-10 text-gray-900" />
-      <h1 class="text-xl font-normal text-gray-800">Connect to Github</h1>
-      <p class="text-base text-gray-500 text-center">
+      <CtaHeader>Connect to Github</CtaHeader>
+      <CtaMessage>
         Please grant read-only access to your repository <span
           class="font-semibold font-mono text-gray-800 text-[16px] leading-5"
           >{prettyGithubRepo}</span
         >
-      </p>
+      </CtaMessage>
       <div class="mt-4 w-full">
         <CtaButton variant="primary" on:click={handleGoToGithub}
           >Connect to Github</CtaButton
