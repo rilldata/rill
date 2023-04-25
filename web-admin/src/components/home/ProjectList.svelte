@@ -18,7 +18,7 @@
           class="flex max-w-fit items-center gap-x-1 mb-1 hover:underline hover:text-gray-700"
           href="{organization}/{proj.name}/-/deployment"
         >
-          <DeploymentStatusChip {organization} project={proj.name} />
+          <DeploymentStatusChip {organization} project={proj.name} iconOnly />
           <h3 class="text-gray-500 font-semibold" style="font-size: 10px;">
             {proj.name.toUpperCase()}
           </h3>
