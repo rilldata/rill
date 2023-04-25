@@ -9,9 +9,9 @@
   import Footer from "./Footer.svelte";
   import { Writable } from "svelte/store";
 
+  export let excludeStore: Writable<boolean>;
   export let selectedValues: string[];
   export let searchedValues: string[] = [];
-  export let excludeStore: Writable<boolean>;
 
   let searchText = "";
 

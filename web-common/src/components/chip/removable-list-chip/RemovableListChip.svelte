@@ -69,7 +69,6 @@ are details left to the consumer of the component; this component should remain 
       </svelte:fragment>
       <!-- body -->
       <RemovableListBody
-        {excludeMode}
         slot="body"
         label={name}
         values={selectedValues}
@@ -90,8 +89,8 @@ are details left to the consumer of the component; this component should remain 
     </div>
   </Tooltip>
   <RemovableListMenu
-    slot="floating-element"
     {excludeStore}
+    slot="floating-element"
     on:escape={toggleFloatingElement}
     on:click-outside={toggleFloatingElement}
     on:apply
