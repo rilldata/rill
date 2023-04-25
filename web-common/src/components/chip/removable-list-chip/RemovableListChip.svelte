@@ -22,6 +22,7 @@ are details left to the consumer of the component; this component should remain 
   import { Chip } from "../index";
   import RemovableListBody from "./RemovableListBody.svelte";
   import RemovableListMenu from "./RemovableListMenu.svelte";
+  import TestPropsReciever from "./TestPropsReciever.svelte";
 
   export let name: string;
   export let selectedValues: string[];
@@ -29,7 +30,7 @@ are details left to the consumer of the component; this component should remain 
 
   /** an optional type label that will appear in the tooltip */
   export let typeLabel: string;
-  export let excludeMode = false;
+  export let excludeMode;
   export let colors: ChipColors = defaultChipColors;
 
   $: console.log("RemovableListChip -- update excludeMode to:", excludeMode);
@@ -89,6 +90,7 @@ are details left to the consumer of the component; this component should remain 
   </Tooltip>
   <svelte:fragment slot="floating-element">
     <!-- {#key excludeMode} -->
+    <TestPropsReciever {excludeMode} />
     <RemovableListMenu
       {excludeMode}
       on:escape={toggleFloatingElement}
