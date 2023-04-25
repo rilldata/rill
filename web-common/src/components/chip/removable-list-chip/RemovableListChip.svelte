@@ -22,7 +22,7 @@ are details left to the consumer of the component; this component should remain 
   import { Chip } from "../index";
   import RemovableListBody from "./RemovableListBody.svelte";
   import RemovableListMenu from "./RemovableListMenu.svelte";
-  import TestPropsReciever from "./TestPropsReciever.svelte";
+  import { writable, Writable } from "svelte/store";
 
   export let name: string;
   export let selectedValues: string[];
@@ -33,11 +33,12 @@ are details left to the consumer of the component; this component should remain 
   export let excludeMode;
   export let colors: ChipColors = defaultChipColors;
 
-  $: console.log("RemovableListChip -- update excludeMode to:", excludeMode);
-
   const dispatch = createEventDispatcher();
 
   let active = false;
+
+  const excludeStore: Writable<boolean> = writable(excludeMode);
+  $: excludeStore.set(excludeMode);
 </script>
 
 <WithTogglableFloatingElement
@@ -88,19 +89,15 @@ are details left to the consumer of the component; this component should remain 
       </TooltipContent>
     </div>
   </Tooltip>
-  <svelte:fragment slot="floating-element">
-    <!-- {#key excludeMode} -->
-    <TestPropsReciever {excludeMode} />
-    <RemovableListMenu
-      {excludeMode}
-      on:escape={toggleFloatingElement}
-      on:click-outside={toggleFloatingElement}
-      on:apply
-      on:search
-      on:toggle
-      {selectedValues}
-      {searchedValues}
-    />
-    <!-- {/key} -->
-  </svelte:fragment>
+  <RemovableListMenu
+    slot="floating-element"
+    {excludeStore}
+    on:escape={toggleFloatingElement}
+    on:click-outside={toggleFloatingElement}
+    on:apply
+    on:search
+    on:toggle
+    {selectedValues}
+    {searchedValues}
+  />
 </WithTogglableFloatingElement>

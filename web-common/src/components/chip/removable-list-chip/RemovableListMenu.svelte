@@ -7,16 +7,11 @@
   import { Menu, MenuItem } from "../../menu";
   import { Search } from "../../search";
   import Footer from "./Footer.svelte";
+  import { Writable } from "svelte/store";
 
   export let selectedValues: string[];
   export let searchedValues: string[] = [];
-  export let excludeMode;
-
-  $: console.log(
-    "RemovableListMenu-- update excludeMode to:",
-    excludeMode,
-    "SHOULD LOG EVERYTIME excludeMode CHANGES IN PARENT"
-  );
+  export let excludeStore: Writable<boolean>;
 
   let searchText = "";
 
@@ -82,9 +77,9 @@
           }}
         >
           <svelte:fragment slot="icon">
-            {#if selectedValues.includes(value) && !excludeMode}
+            {#if selectedValues.includes(value) && !$excludeStore}
               <Check size="20px" color="#15141A" />
-            {:else if selectedValues.includes(value) && excludeMode}
+            {:else if selectedValues.includes(value) && $excludeStore}
               <Cancel size="20px" color="#15141A" />
             {:else}
               <Spacer size="20px" />
@@ -92,7 +87,7 @@
           </svelte:fragment>
           <span
             class:ui-copy-disabled={selectedValues.includes(value) &&
-              excludeMode}
+              $excludeStore}
           >
             {#if value?.length > 240}
               {value.slice(0, 240)}...
@@ -108,7 +103,7 @@
   </div>
   <Footer>
     <span class="ui-copy">
-      <Switch on:click={() => onToggleHandler()} checked={excludeMode}>
+      <Switch on:click={() => onToggleHandler()} checked={$excludeStore}>
         Exclude
       </Switch>
     </span>
