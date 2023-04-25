@@ -143,6 +143,28 @@ func InputPrompt(msg, def string) string {
 	return result
 }
 
+func StringPromptIfEmpty(input *string, msg string) {
+	if *input != "" {
+		return
+	}
+
+	prompt := []*survey.Question{{
+		Prompt:   &survey.Input{Message: msg},
+		Validate: survey.Required,
+	}}
+	if err := survey.Ask(prompt, input); err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func SelectPromptIfEmpty(input *string, msg string, options []string, def string) {
+	if *input != "" {
+		return
+	}
+	*input = SelectPrompt(msg, options, def)
+}
+
 func ProjectExists(ctx context.Context, c *client.Client, orgName, projectName string) (bool, error) {
 	_, err := c.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: orgName, Name: projectName})
 	if err != nil {
