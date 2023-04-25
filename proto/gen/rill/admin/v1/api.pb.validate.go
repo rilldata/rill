@@ -2232,6 +2232,8 @@ func (m *GetProjectResponse) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for ProjectUrl
+
 	if len(errors) > 0 {
 		return GetProjectResponseMultiError(errors)
 	}

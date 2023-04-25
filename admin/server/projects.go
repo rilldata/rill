@@ -146,10 +146,16 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
+	projectURL, err := url.JoinPath(s.opts.FrontendURL, org.Name, proj.Name)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("project url generation failed with error %s", err.Error()))
+	}
+
 	if proj.ProdDeploymentID == nil || !permissions.ReadProd {
 		return &adminv1.GetProjectResponse{
 			Project:            projToDTO(proj, org.Name),
 			ProjectPermissions: permissions,
+			ProjectUrl:         projectURL,
 		}, nil
 	}
 
@@ -188,6 +194,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		ProdDeployment:     deploymentToDTO(depl),
 		Jwt:                jwt,
 		ProjectPermissions: permissions,
+		ProjectUrl:         projectURL,
 	}, nil
 }
 

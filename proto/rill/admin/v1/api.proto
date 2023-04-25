@@ -252,6 +252,7 @@ message GetProjectResponse {
   Deployment prod_deployment = 2;
   string jwt = 3;
   ProjectPermissions project_permissions = 4;
+  string project_url = 5;
 }
 
 message GetProjectVariablesRequest {

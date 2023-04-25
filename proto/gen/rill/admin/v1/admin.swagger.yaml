@@ -824,6 +824,8 @@ definitions:
         type: string
       projectPermissions:
         $ref: '#/definitions/v1ProjectPermissions'
+      projectUrl:
+        type: string
   v1GetProjectVariablesResponse:
     type: object
     properties:

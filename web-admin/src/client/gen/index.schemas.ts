@@ -235,6 +235,7 @@ export interface V1GetProjectResponse {
   prodDeployment?: V1Deployment;
   jwt?: string;
   projectPermissions?: V1ProjectPermissions;
+  projectUrl?: string;
 }
 
 export interface V1GetOrganizationResponse {

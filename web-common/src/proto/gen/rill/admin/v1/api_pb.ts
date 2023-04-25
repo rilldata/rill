@@ -775,6 +775,11 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
    */
   projectPermissions?: ProjectPermissions;
 
+  /**
+   * @generated from field: string project_url = 5;
+   */
+  projectUrl = "";
+
   constructor(data?: PartialMessage<GetProjectResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -787,6 +792,7 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
     { no: 2, name: "prod_deployment", kind: "message", T: Deployment },
     { no: 3, name: "jwt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "project_permissions", kind: "message", T: ProjectPermissions },
+    { no: 5, name: "project_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectResponse {
