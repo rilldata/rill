@@ -8,13 +8,13 @@
   import CtaHeader from "../../../../components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "../../../../components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "../../../../components/calls-to-action/CTAMessage.svelte";
+  import GithubRepoInline from "../../../../components/projects/GithubRepoInline.svelte";
 
   const urlParams = new URLSearchParams(window.location.search);
   const redirectURL = urlParams.get("redirect");
   const remote = new URL(decodeURIComponent(redirectURL)).searchParams.get(
     "remote"
   );
-  const prettyGithubRepo = remote.split("github.com/")[1];
   const user = createAdminServiceGetCurrentUser({
     query: {
       onSuccess: (data) => {
@@ -40,10 +40,9 @@
       <Github className="w-10 h-10 text-gray-900" />
       <CtaHeader>Connect to Github</CtaHeader>
       <CtaMessage>
-        Please grant read-only access to your repository <span
-          class="font-semibold font-mono text-gray-800 text-[16px] leading-5"
-          >{prettyGithubRepo}</span
-        >
+        Please grant read-only access to your repository <GithubRepoInline
+          githubUrl={remote}
+        />
       </CtaMessage>
       <div class="mt-4 w-full">
         <CtaButton variant="primary" on:click={handleGoToGithub}
