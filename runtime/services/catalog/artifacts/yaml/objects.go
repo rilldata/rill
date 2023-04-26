@@ -146,7 +146,7 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		props["region"] = source.Region
 	}
 	if source.CsvDelimiter != "" {
-		props["csv.delim"] = source.CsvDelimiter
+		props["csv.delimiter"] = source.CsvDelimiter
 	}
 	if source.GlobMaxTotalSize != 0 {
 		props["glob.max_total_size"] = source.GlobMaxTotalSize
