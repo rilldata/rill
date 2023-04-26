@@ -376,28 +376,32 @@
 </script>
 
 {#if topListQuery}
-  <div style:height="calc(100vh - 130px)" style:min-width="365px">
-    <DimensionHeader
-      {metricViewName}
-      {dimensionName}
-      {excludeMode}
-      isFetching={$topListQuery?.isFetching}
-      on:search={(event) => {
-        searchText = event.detail;
-      }}
-    />
+  <div class="h-full flex flex-col" style:min-width="365px">
+    <div class="flex-none" style:height="50px">
+      <DimensionHeader
+        {metricViewName}
+        {dimensionName}
+        {excludeMode}
+        isFetching={$topListQuery?.isFetching}
+        on:search={(event) => {
+          searchText = event.detail;
+        }}
+      />
+    </div>
 
     {#if values && columns.length}
-      <DimensionTable
-        on:select-item={(event) => onSelectItem(event)}
-        on:sort={(event) => onSortByColumn(event)}
-        dimensionName={dimension?.name}
-        {columns}
-        {selectedValues}
-        rows={values}
-        {sortByColumn}
-        {excludeMode}
-      />
+      <div class="grow" style="overflow-y: hidden;">
+        <DimensionTable
+          on:select-item={(event) => onSelectItem(event)}
+          on:sort={(event) => onSortByColumn(event)}
+          dimensionName={dimension?.name}
+          {columns}
+          {selectedValues}
+          rows={values}
+          {sortByColumn}
+          {excludeMode}
+        />
+      </div>
     {/if}
   </div>
 {/if}

@@ -214,7 +214,7 @@ TableCells – the cell contents.
   }
 </script>
 
-<div bind:clientWidth={containerWidth} style:height="calc(100vh - 130px)">
+<div bind:clientWidth={containerWidth} style="height: 100%;">
   <div
     bind:this={container}
     on:scroll={() => {
