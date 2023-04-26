@@ -98,50 +98,50 @@
     : `calc(${$navigationPaddingTween * 24}px + 1.25rem)`;
 </script>
 
-<section use:dashboardContainerNodeWatcher class="grid items-stretch surface">
+<section use:dashboardContainerNodeWatcher class="flex flex-col gap-y-1">
   <div
     use:headerContainerNodeWatcher
     class="explore-header border-b mb-3"
     style:padding-left={leftSide}
-    style:width={exploreContainerWidth + "px"}
+    style:width={"100%"}
   >
     <slot name="header" />
   </div>
   <div
-    use:measuresContainerNodeWatcher
-    class="explore-metrics mb-8"
+    class="explore-content flex flex-row gap-x-1"
     style:padding-left={leftSide}
   >
-    <slot name="metrics" width={exploreContainerWidth} />
-  </div>
-  <div
-    class="explore-leaderboards px-4"
-    style={`height:${targetLeaderboardContainerHeight}px; width:${targetLeaderboardContainerWidth}px`}
-  >
-    <slot name="leaderboards" />
+    <div
+      use:measuresContainerNodeWatcher
+      class="explore-metrics mb-8 flex-none"
+    >
+      <slot name="metrics" />
+    </div>
+    <div class="explore-leaderboards px-4 grow">
+      <slot name="leaderboards" />
+    </div>
   </div>
 </section>
 
 <style>
   section {
-    grid-template-rows: auto auto 1fr;
-    grid-template-columns: min-content 1fr;
     height: 100vh;
     overflow-x: auto;
     overflow-y: hidden;
-    grid-template-areas:
-      "header header"
-      "metrics leaderboards";
   }
 
   .explore-header {
     grid-area: header;
   }
-  .explore-metrics {
-    grid-area: metrics;
-    overflow-y: auto;
+  .explore-content {
+    height: 100%;
+    overflow: hidden;
   }
+  .explore-metrics {
+    overflow-y: scroll;
+  }
+
   .explore-leaderboards {
-    grid-area: leaderboards;
+    overflow-y: hidden;
   }
 </style>
