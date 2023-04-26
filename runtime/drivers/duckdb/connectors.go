@@ -122,38 +122,6 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 	return c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
 }
 
-func sourceReader(paths []string, properties map[string]interface{}) (string, error) {
-	format, ok := properties["format"].(string)
-	if !ok {
-		format = fileutil.FullExt(paths[0])
-	} else {
-		format = fmt.Sprintf(".%s", format)
-	}
-	ingestionPropPrefix := "duckdb."
-	ingestionProps := make(map[string]interface{})
-	for key, value := range properties {
-		if strings.HasPrefix(key, ingestionPropPrefix) {
-			ingestionProps[strings.TrimPrefix(key, ingestionPropPrefix)] = value
-		}
-	}
-	pathsStr := strings.Join(paths, "','")
-	if containsAny(format, []string{".csv", ".tsv", ".txt"}) {
-		// auto_detect is true by default
-		return fmt.Sprintf("read_csv_auto(['%s']%s)", pathsStr, convertToFunctionParamsStr(ingestionProps)), nil
-	} else if strings.Contains(format, ".parquet") {
-		return fmt.Sprintf("read_parquet(['%s']%s)", pathsStr, convertToFunctionParamsStr(ingestionProps)), nil
-	} else if containsAny(format, []string{".json", ".ndjson"}) {
-		// auto_detect is false by default so setting it to true simplifies the ingestion
-		// if columns are defined then DuckDB turns the auto-detection off so no need to check this case here
-		if _, autoDetectDefined := ingestionProps["auto_detect"]; !autoDetectDefined {
-			ingestionProps["auto_detect"] = true
-		}
-		return fmt.Sprintf("read_json(['%s']%s)", pathsStr, convertToFunctionParamsStr(ingestionProps)), nil
-	} else {
-		return "", fmt.Errorf("file type not supported : %s", format)
-	}
-}
-
 func fileSize(paths []string) int64 {
 	var size int64
 	for _, path := range paths {
@@ -183,6 +151,29 @@ func resolveLocalPath(env *connectors.Env, path, sourceName string) (string, err
 	return finalPath, nil
 }
 
+func sourceReader(paths []string, properties map[string]interface{}) (string, error) {
+	format, formatDefined := properties["format"].(string)
+	if formatDefined {
+		format = fmt.Sprintf(".%s", format)
+	} else {
+		format = fileutil.FullExt(paths[0])
+	}
+
+	// Generate a "read" statement
+	if containsAny(format, []string{".csv", ".tsv", ".txt"}) {
+		return generateReadCsvStatement(paths, properties)
+
+	} else if strings.Contains(format, ".parquet") {
+		return generateReadParquetStatement(paths, properties)
+
+	} else if containsAny(format, []string{".json", ".ndjson"}) {
+		return generateReadJsonStatement(paths, properties)
+
+	} else {
+		return "", fmt.Errorf("file type not supported : %s", format)
+	}
+}
+
 func containsAny(s string, targets []string) bool {
 	source := strings.ToLower(s)
 	for _, target := range targets {
@@ -193,14 +184,59 @@ func containsAny(s string, targets []string) bool {
 	return false
 }
 
-func convertToFunctionParamsStr(ingestionProperties map[string]interface{}) string {
-	ingestionParamsStr := make([]string, 0, len(ingestionProperties))
-	for key, value := range ingestionProperties {
+func generateReadCsvStatement(paths []string, properties map[string]interface{}) (string, error) {
+	ingestionProps := collectDuckDBIngestionProperties(properties)
+
+	// backward compatibility: csv.delimiter might be passed separately from duckdb.delim and has a priority
+	if csvDelimiter, csvDelimiterDefined := properties["csv.delimiter"]; csvDelimiterDefined {
+		ingestionProps["delim"] = fmt.Sprintf("'%v'", csvDelimiter)
+	}
+	// auto_detect (enables auto-detection of parameters) is true by default, it takes care of params/schema
+	return fmt.Sprintf("read_csv_auto(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
+}
+
+func generateReadParquetStatement(paths []string, properties map[string]interface{}) (string, error) {
+	ingestionProps := collectDuckDBIngestionProperties(properties)
+	// set hive_partitioning to true by default
+	if _, hivePartitioningDefined := ingestionProps["hive_partitioning"]; !hivePartitioningDefined {
+		ingestionProps["hive_partitioning"] = true
+	}
+	// backward compatibility: hive_partitioning might be passed separately from duckdb.hive_partitioning
+	if hivePartitioning, hpDefinedSeparately := properties["hive_partitioning"]; hpDefinedSeparately {
+		ingestionProps["hive_partitioning"] = hivePartitioning
+	}
+	return fmt.Sprintf("read_parquet(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
+}
+
+func generateReadJsonStatement(paths []string, properties map[string]interface{}) (string, error) {
+	ingestionProps := collectDuckDBIngestionProperties(properties)
+	// auto_detect is false by default so setting it to true simplifies the ingestion
+	// if columns are defined then DuckDB turns the auto-detection off so no need to check this case here
+	if _, autoDetectDefined := ingestionProps["auto_detect"]; !autoDetectDefined {
+		ingestionProps["auto_detect"] = true
+	}
+	return fmt.Sprintf("read_json(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
+}
+
+func collectDuckDBIngestionProperties(properties map[string]interface{}) map[string]interface{} {
+	// collect duckdb.* properties and trim the prefix "duckdb."
+	// these properties are passed as parameters of DuckDB ingestion functions
+	ingestionPropPrefix := "duckdb."
+	ingestionProps := make(map[string]interface{})
+	for key, value := range properties {
+		if strings.HasPrefix(key, ingestionPropPrefix) {
+			ingestionProps[strings.TrimPrefix(key, ingestionPropPrefix)] = value
+		}
+	}
+	return ingestionProps
+}
+
+func convertToStatementParamsStr(paths []string, properties map[string]interface{}) string {
+	ingestionParamsStr := make([]string, 0, len(properties) + 1)
+	// The first parameter is a source path
+	ingestionParamsStr = append(ingestionParamsStr, fmt.Sprintf("['%s']", strings.Join(paths, "','")))
+	for key, value := range properties {
 		ingestionParamsStr = append(ingestionParamsStr, fmt.Sprintf("%s=%v", key, value))
 	}
-	paramsJoined := strings.Join(ingestionParamsStr, ",")
-	if paramsJoined != "" {
-		paramsJoined = "," + paramsJoined
-	}
-	return paramsJoined
+	return strings.Join(ingestionParamsStr, ",")
 }

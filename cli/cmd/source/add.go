@@ -21,6 +21,7 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 	var olapDSN string
 	var projectPath string
 	var sourceName string
+	var delimiter string
 	var force bool
 	var verbose bool
 
@@ -54,6 +55,10 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			props := map[string]any{"path": dataPath}
+			if delimiter != "" {
+				props["csv.delimiter"] = delimiter
+			}
+
 			propsPB, err := structpb.NewStruct(props)
 			if err != nil {
 				return fmt.Errorf("can't serialize artifact: %w", err)
@@ -94,6 +99,7 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 	addCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
 	addCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	addCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
+	addCmd.Flags().StringVar(&delimiter, "delimiter", "", "CSV delimiter override (defaults to autodetect)")
 	addCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 
 	return addCmd

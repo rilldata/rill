@@ -32,12 +32,22 @@ var spec = connectors.Spec{
 			Description: "Either CSV or Parquet. Inferred if not set.",
 			Placeholder: "csv",
 		},
+		{
+			Key:         "csv.delimiter",
+			Type:        connectors.StringPropertyType,
+			Required:    false,
+			DisplayName: "CSV Delimiter",
+			Description: "Force delimiter for a CSV file.",
+			Placeholder: ",",
+		},
 	},
 }
 
 type Config struct {
-	Path   string `mapstructure:"path"`
-	Format string `mapstructure:"format"` // TODO delete
+	Path          string `mapstructure:"path"`
+	Format        string `mapstructure:"format"`
+	CSVDelimiter  string `mapstructure:"csv.delimiter"`
+	HivePartition *bool  `mapstructure:"hive_partitioning"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {

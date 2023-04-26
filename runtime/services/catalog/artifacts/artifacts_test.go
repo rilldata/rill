@@ -40,13 +40,15 @@ func TestSourceReadWrite(t *testing.T) {
 					Name:      "Source",
 					Connector: "local_file",
 					Properties: toProtoStruct(map[string]any{
-						"path":   "data/source.csv",
-						"format": "csv",
+						"path":          "data/source.csv",
+						"csv.delimiter": "|",
+						"format":        "csv",
 					}),
 				},
 			},
 			`type: local_file
 path: data/source.csv
+csv.delimiter: '|'
 format: csv
 `,
 		},
@@ -302,6 +304,7 @@ func TestReadWithEnvVariables(t *testing.T) {
 			filePath: "sources/Source.yaml",
 			content: `type: s3
 uri: "s3://bucket/file"
+csv.delimiter: '{{.env.delimitter}}'
 format: csv
 region: {{.env.region}}
 `,
@@ -313,9 +316,10 @@ region: {{.env.region}}
 					Name:      "Source",
 					Connector: "s3",
 					Properties: toProtoStruct(map[string]any{
-						"path":   "s3://bucket/file",
-						"format": "csv",
-						"region": "us-east-2",
+						"path":          "s3://bucket/file",
+						"csv.delimiter": "|",
+						"format":        "csv",
+						"region":        "us-east-2",
 					}),
 				},
 			},
@@ -326,6 +330,7 @@ region: {{.env.region}}
 			filePath: "sources/Source.yaml",
 			content: `type: s3
 uri: "s3://bucket/file"
+csv.delimiter: {{.env.delimitter}}
 format: {{.env.format}}
 region: {{.env.region}}
 `,
@@ -397,7 +402,7 @@ func registryStore(t *testing.T) drivers.RegistryStore {
 	store.Migrate(ctx)
 	registry, _ := store.RegistryStore()
 
-	env := map[string]string{"region": "us-east-2", "limit": "limit 10"}
+	env := map[string]string{"delimitter": "|", "region": "us-east-2", "limit": "limit 10"}
 	err = registry.CreateInstance(ctx, &drivers.Instance{ID: "test", Variables: env})
 	require.NoError(t, err)
 

@@ -8,10 +8,11 @@ import (
 var alphaNumericRegex = regexp.MustCompile("[^A-Za-z0-9]+")
 
 type Source struct {
-	Type   string
-	URI    string `yaml:"uri,omitempty"`
-	Path   string `yaml:"path,omitempty"`
-	Region string `yaml:"region,omitempty"`
+	Type         string
+	URI          string `yaml:"uri,omitempty"`
+	Path         string `yaml:"path,omitempty"`
+	Region       string `yaml:"region,omitempty"`
+	CSVDelimiter string `yaml:"csv.delimiter,omitempty"`
 }
 
 type ProjectConfig struct {

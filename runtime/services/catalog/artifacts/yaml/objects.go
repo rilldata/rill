@@ -21,6 +21,7 @@ import (
 type Source struct {
 	Type                  string
 	Path                  string         `yaml:"path,omitempty"`
+	CsvDelimiter          string         `yaml:"csv.delimiter,omitempty" mapstructure:"csv.delimiter,omitempty"`
 	URI                   string         `yaml:"uri,omitempty"`
 	Region                string         `yaml:"region,omitempty" mapstructure:"region,omitempty"`
 	S3Endpoint            string         `yaml:"endpoint,omitempty" mapstructure:"endpoint,omitempty"`
@@ -28,6 +29,7 @@ type Source struct {
 	GlobMaxObjectsMatched int            `yaml:"glob.max_objects_matched,omitempty" mapstructure:"glob.max_objects_matched,omitempty"`
 	GlobMaxObjectsListed  int64          `yaml:"glob.max_objects_listed,omitempty" mapstructure:"glob.max_objects_listed,omitempty"`
 	GlobPageSize          int            `yaml:"glob.page_size,omitempty" mapstructure:"glob.page_size,omitempty"`
+	HivePartition         *bool          `yaml:"hive_partitioning,omitempty" mapstructure:"hive_partitioning,omitempty"`
 	Timeout               int32          `yaml:"timeout,omitempty"`
 	ExtractPolicy         *ExtractPolicy `yaml:"extract,omitempty"`
 	Format                string         `yaml:"format,omitempty" mapstructure:"format,omitempty"`
@@ -143,6 +145,9 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	if source.Region != "" {
 		props["region"] = source.Region
 	}
+	if source.CsvDelimiter != "" {
+		props["csv.delim"] = source.CsvDelimiter
+	}
 	if source.GlobMaxTotalSize != 0 {
 		props["glob.max_total_size"] = source.GlobMaxTotalSize
 	}
@@ -161,6 +166,10 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 
 	if source.S3Endpoint != "" {
 		props["endpoint"] = source.S3Endpoint
+	}
+
+	if source.HivePartition != nil {
+		props["hive_partitioning"] = *source.HivePartition
 	}
 
 	if source.Format != "" {

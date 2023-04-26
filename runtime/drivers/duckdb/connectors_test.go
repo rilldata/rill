@@ -28,7 +28,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		{"local_file", filepath.Join(testdataPathRel, "AdBids.csv"), nil},
 		{"local_file", filepath.Join(testdataPathRel, "AdBids.csv"), map[string]any{"csv.delimiter": ","}},
 		{"local_file", filepath.Join(testdataPathRel, "AdBids.csv.gz"), nil},
-		{"local_file", filepath.Join(testdataPathRel, "AdBids.parquet"), nil},
+		{"local_file", filepath.Join(testdataPathRel, "AdBids.parquet"), map[string]any{"hive_partitioning": true}},
 		{"local_file", filepath.Join(testdataPathAbs, "AdBids.parquet"), nil},
 		{"local_file", filepath.Join(testdataPathAbs, "AdBids.txt"), nil},
 		{"local_file", "../../../runtime/testruntime/testdata/ad_bids/data/AdBids.csv.gz", nil},
@@ -179,8 +179,8 @@ func TestCSVDelimiter(t *testing.T) {
 		Name:      "foo",
 		Connector: "local_file",
 		Properties: map[string]any{
-			"path":         testDelimiterCsvPath,
-			"duckdb.delim": "'+'",
+			"path":          testDelimiterCsvPath,
+			"csv.delimiter": "+",
 		},
 	})
 	require.NoError(t, err)
@@ -211,9 +211,9 @@ func TestFileFormatAndDelimiter(t *testing.T) {
 		Name:      "foo",
 		Connector: "local_file",
 		Properties: map[string]any{
-			"path":         testDelimiterCsvPath,
-			"format":       "csv",
-			"duckdb.delim": "' '",
+			"path":          testDelimiterCsvPath,
+			"format":        "csv",
+			"csv.delimiter": " ",
 		},
 	})
 	require.NoError(t, err)
