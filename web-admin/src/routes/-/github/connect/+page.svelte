@@ -40,6 +40,9 @@
       <Github className="w-10 h-10 text-gray-900" />
       <CtaHeader>Connect to Github</CtaHeader>
       <CtaMessage>
+        Rill projects deploy continuously when you push changes to Github.
+      </CtaMessage>
+      <CtaMessage>
         Please grant read-only access to your repository<br /><GithubRepoInline
           githubUrl={remote}
         />

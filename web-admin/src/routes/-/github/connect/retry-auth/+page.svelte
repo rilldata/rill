@@ -42,11 +42,11 @@
       <Github className="w-10 h-10 text-gray-900" />
       <CtaHeader>Connect to Github</CtaHeader>
       <CtaMessage>
-        Your authorised github user <GithubUserInline {githubUsername} />
-        is not a collaborator to repo <GithubRepoInline githubUrl={remote} />.
+        Your authorised Github account <GithubUserInline {githubUsername} />
+        does not have access to <GithubRepoInline githubUrl={remote} />.
       </CtaMessage>
       <CtaMessage>
-        Click the button below to re-authorise/authorise another account.
+        Click the button below to re-authorize/authorize another account.
       </CtaMessage>
       <CtaButton variant="primary" on:click={handleGoToGithub}>
         Connect to Github

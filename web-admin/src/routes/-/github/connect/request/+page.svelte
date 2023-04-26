@@ -37,10 +37,9 @@
         close this page now.
       </CtaMessage>
       <CtaMessage>
-        The CLI will keep polling until access has been granted by admin. You
-        can stop polling by pressing <KeyboardKey label="Control" /> + <KeyboardKey
-          label="C"
-        /> and run <CodeBlockInline code="rill deploy" />
+        The CLI will keep polling until Github access has been granted by an
+        admin. You can stop polling by pressing <KeyboardKey label="Control" /> +
+        <KeyboardKey label="C" /> and run <CodeBlockInline code="rill deploy" />
         again once access has been granted.
       </CtaMessage>
     </CtaContentContainer>
