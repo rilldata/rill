@@ -23,7 +23,7 @@ func NewCookieStore(logger *zap.Logger, keyPairs ...[]byte) *CookieStore {
 	}
 }
 
-// getCookie returns a session for the given name.
+// Get returns a session for the given name.
 // It returns a new session if the cookie could not be decoded and validated.
 func (c *CookieStore) Get(r *http.Request, name string) *sessions.Session {
 	sess, err := c.CookieStore.Get(r, name)
