@@ -33,6 +33,7 @@ type Source struct {
 	Timeout               int32          `yaml:"timeout,omitempty"`
 	ExtractPolicy         *ExtractPolicy `yaml:"extract,omitempty"`
 	Format                string         `yaml:"format,omitempty" mapstructure:"format,omitempty"`
+	DuckDBProps           map[string]any `yaml:"duckdb,omitempty" mapstructure:"duckdb,omitempty"`
 }
 
 type ExtractPolicy struct {
@@ -174,6 +175,10 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 
 	if source.Format != "" {
 		props["format"] = source.Format
+	}
+
+	if source.DuckDBProps != nil {
+		props["duckdb"] = source.DuckDBProps
 	}
 
 	propsPB, err := structpb.NewStruct(props)

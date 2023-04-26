@@ -184,7 +184,7 @@ func containsAny(s string, targets []string) bool {
 }
 
 func generateReadCsvStatement(paths []string, properties map[string]interface{}) (string, error) {
-	ingestionProps := collectDuckDBIngestionProperties(properties)
+	ingestionProps := collectDuckDBIngestionProperties("duckdb.csv.", properties)
 	// backward compatibility: csv.delimiter might be passed separately from duckdb.delim and has a priority
 	if csvDelimiter, csvDelimiterDefined := properties["csv.delimiter"]; csvDelimiterDefined {
 		ingestionProps["delim"] = fmt.Sprintf("'%v'", csvDelimiter)
@@ -194,7 +194,7 @@ func generateReadCsvStatement(paths []string, properties map[string]interface{})
 }
 
 func generateReadParquetStatement(paths []string, properties map[string]interface{}) (string, error) {
-	ingestionProps := collectDuckDBIngestionProperties(properties)
+	ingestionProps := collectDuckDBIngestionProperties("duckdb.parquet.", properties)
 	// set hive_partitioning to true by default
 	if _, hivePartitioningDefined := ingestionProps["hive_partitioning"]; !hivePartitioningDefined {
 		ingestionProps["hive_partitioning"] = true
@@ -207,7 +207,7 @@ func generateReadParquetStatement(paths []string, properties map[string]interfac
 }
 
 func generateReadJSONStatement(paths []string, properties map[string]interface{}) (string, error) {
-	ingestionProps := collectDuckDBIngestionProperties(properties)
+	ingestionProps := collectDuckDBIngestionProperties("duckdb.json.", properties)
 	// auto_detect is false by default so setting it to true simplifies the ingestion
 	// if columns are defined then DuckDB turns the auto-detection off so no need to check this case here
 	if _, autoDetectDefined := ingestionProps["auto_detect"]; !autoDetectDefined {
@@ -216,17 +216,37 @@ func generateReadJSONStatement(paths []string, properties map[string]interface{}
 	return fmt.Sprintf("read_json(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
 }
 
-func collectDuckDBIngestionProperties(properties map[string]interface{}) map[string]interface{} {
-	// collect duckdb.* properties and trim the prefix "duckdb."
-	// these properties are passed as parameters of DuckDB ingestion functions
-	ingestionPropPrefix := "duckdb."
+func collectDuckDBIngestionProperties(prefix string, properties map[string]interface{}) map[string]interface{} {
+	// collects properties if their names start with a prefix, and does trim the prefix
 	ingestionProps := make(map[string]interface{})
-	for key, value := range properties {
-		if strings.HasPrefix(key, ingestionPropPrefix) {
-			ingestionProps[strings.TrimPrefix(key, ingestionPropPrefix)] = value
+	// flatten (concatenate keys with a dot) properties in case it is a multilayer map
+	for key, value := range flattenMap(properties) {
+		if strings.HasPrefix(key, prefix) {
+			ingestionProps[strings.TrimPrefix(key, prefix)] = value
 		}
 	}
 	return ingestionProps
+}
+
+// Takes a nested map with string keys and any value (including nested maps) and returns a new single-layer map
+// where the keys from the nested maps are concatenated using a dot as the separator. The input map must have the type
+// map[string]interface{} for the nested maps, and the function assumes that the only nested structures are of this type.
+func flattenMap(nestedMap map[string]interface{}) map[string]interface{} {
+	flattenedMap := make(map[string]interface{})
+
+	var iterate func(prefix string, nestedMap map[string]interface{})
+	iterate = func(prefix string, nestedMap map[string]interface{}) {
+		for k, v := range nestedMap {
+			if subMap, ok := v.(map[string]interface{}); ok {
+				iterate(prefix+k+".", subMap)
+			} else {
+				flattenedMap[prefix+k] = v
+			}
+		}
+	}
+
+	iterate("", nestedMap)
+	return flattenedMap
 }
 
 func convertToStatementParamsStr(paths []string, properties map[string]interface{}) string {
