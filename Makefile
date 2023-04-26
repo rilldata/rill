@@ -1,6 +1,7 @@
 .PHONY: docs
 docs: cli
-	rill docs generate docs/docs/references/cmd/
+	rm -fr docs/docs/references/CLI/rill*
+	./rill docs generate docs/docs/references/CLI/
 
 .PHONY: cli
 cli: cli.prepare

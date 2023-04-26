@@ -77,6 +77,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 
 	startCmd.Flags().SortFlags = false
 	startCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
+	_ = startCmd.Flags().MarkHidden("project")
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
 	startCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	startCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")

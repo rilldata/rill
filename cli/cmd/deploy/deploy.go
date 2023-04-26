@@ -195,16 +195,18 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	deployCmd.Flags().SortFlags = false
-	deployCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
-	deployCmd.Flags().IntVar(&slots, "prod-slots", 2, "Slots to allocate for production deployments")
-	deployCmd.Flags().StringVar(&description, "description", "", "Project description")
-	deployCmd.Flags().StringVar(&region, "region", "", "Deployment region")
-	deployCmd.Flags().StringVar(&dbDriver, "prod-db-driver", "duckdb", "Database driver")
-	deployCmd.Flags().StringVar(&dbDSN, "prod-db-dsn", "", "Database driver configuration")
-	deployCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
-	deployCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
-	deployCmd.Flags().StringVar(&name, "name", "", "Project name (default: Git repo name)")
+	flags := deployCmd.Flags()
+	flags.SortFlags = false
+	flags.StringVar(&projectPath, "project", ".", "Project directory")
+	_ = flags.MarkHidden("project")
+	flags.IntVar(&slots, "prod-slots", 2, "Slots to allocate for production deployments")
+	flags.StringVar(&description, "description", "", "Project description")
+	flags.StringVar(&region, "region", "", "Deployment region")
+	flags.StringVar(&dbDriver, "prod-db-driver", "duckdb", "Database driver")
+	flags.StringVar(&dbDSN, "prod-db-dsn", "", "Database driver configuration")
+	flags.BoolVar(&public, "public", false, "Make dashboards publicly accessible")
+	flags.StringVar(&prodBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
+	flags.StringVar(&name, "name", "", "Project name (default: Git repo name)")
 
 	return deployCmd
 }

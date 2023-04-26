@@ -6,13 +6,13 @@ import (
 )
 
 func DocsCmd(cfg *config.Config, rootCmd *cobra.Command) *cobra.Command {
-	orgCmd := &cobra.Command{
+	docsCmd := &cobra.Command{
 		Use:    "docs",
 		Hidden: !cfg.IsDev(),
 		Short:  "Manage documentation",
 	}
-	orgCmd.AddCommand(OpenCmd())
-	orgCmd.AddCommand(GenerateCmd(rootCmd))
+	docsCmd.AddCommand(OpenCmd())
+	docsCmd.AddCommand(GenerateCmd(rootCmd))
 
-	return orgCmd
+	return docsCmd
 }
