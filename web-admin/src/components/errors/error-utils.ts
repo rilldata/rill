@@ -24,10 +24,17 @@ export function globalErrorCallback(error: AxiosError): void {
 function createErrorStoreStateFromAxiosError(
   error: AxiosError
 ): ErrorStoreState {
+  const status = error.response.status;
   const msg = (error.response.data as RpcStatus).message;
 
   // Specifically handle some errors
-  if (msg === "org not found") {
+  if (status === 403) {
+    return {
+      statusCode: error.response.status,
+      header: "Access denied",
+      body: "You don't have access to this page. Please check that you have the correct permissions.",
+    };
+  } else if (msg === "org not found") {
     return {
       statusCode: error.response.status,
       header: "Organization not found",
