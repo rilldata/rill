@@ -10,8 +10,9 @@ import (
 )
 
 func ReconcileCmd(cfg *config.Config) *cobra.Command {
-	var name, path, source string
+	var project, path string
 	var refresh, reset bool
+	var refreshSources []string
 
 	reconcileCmd := &cobra.Command{
 		Use:               "reconcile",
@@ -21,6 +22,7 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -28,7 +30,8 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			if !cmd.Flags().Changed("project") {
-				name, err = inferProjectName(ctx, client, cfg.Org, path)
+				var err error
+				project, err = inferProjectName(ctx, client, cfg.Org, path)
 				if err != nil {
 					return err
 				}
@@ -36,60 +39,56 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 
 			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
 				OrganizationName: cfg.Org,
-				Name:             name,
+				Name:             project,
 			})
 			if err != nil {
 				return err
 			}
+			if resp.ProdDeployment == nil {
+				cmdutil.WarnPrinter("Project does not have production deployment")
+				return nil
+			}
 
-			// Trigger reconcile, refresh, reset (runs in the background - err means the deployment wasn't found, which is unlikely)
-			if resp.GetProdDeployment() != nil {
-				if refresh {
-					fmt.Println("refresh triggered")
-					if source != "" {
-						_, err := client.TriggerRefreshSource(ctx, &adminv1.TriggerRefreshSourceRequest{OrganizationName: cfg.Org, Name: name, SourceName: source})
-						if err != nil {
-							return err
-						}
-
-						fmt.Printf("Refresh source is triggered for project %s, please run 'rill project status` to know the status \n", name)
-						return nil
-					}
-					return fmt.Errorf("No source name provided")
-				}
-
-				if source != "" {
-					return fmt.Errorf("`source` flag can only be set with refresh")
-				}
-
-				if reset {
-					_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{OrganizationName: cfg.Org, Name: name})
-					if err != nil {
-						return err
-					}
-
-					fmt.Printf("Reset project is triggered for project %s, please run 'rill project status` to know the status \n", name)
-					return nil
-				}
-
-				_, err := client.TriggerReconcile(ctx, &adminv1.TriggerReconcileRequest{OrganizationName: cfg.Org, Name: name})
+			if reset {
+				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{DeploymentId: resp.ProdDeployment.Id})
 				if err != nil {
 					return err
 				}
 
-				fmt.Printf("Reconcile is triggered for project %s, please run 'rill project status` to know the status \n", name)
+				fmt.Printf(`Triggered project reset. To see status, run "rill project status --project %s".`, project)
+				return nil
 			}
 
+			if refresh || len(refreshSources) > 0 {
+				_, err := client.TriggerRefreshSources(ctx, &adminv1.TriggerRefreshSourcesRequest{DeploymentId: resp.ProdDeployment.Id, Sources: refreshSources})
+				if err != nil {
+					return err
+				}
+
+				fmt.Printf(`Triggered refresh. To see status, run "rill project status --project %s".`, project)
+				return nil
+			}
+
+			// When neither --reset nor --refresh/--refresh-source is specified, trigger reconcile.
+			_, err = client.TriggerReconcile(ctx, &adminv1.TriggerReconcileRequest{DeploymentId: resp.ProdDeployment.Id})
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf(`Triggered reconcile. To see status, run "rill project status --project %s".`, project)
 			return nil
 		},
 	}
 
 	reconcileCmd.Flags().SortFlags = false
-	reconcileCmd.Flags().StringVar(&name, "project", "", "Name")
-	reconcileCmd.Flags().BoolVar(&refresh, "refresh", false, "Refresh")
-	reconcileCmd.Flags().BoolVar(&reset, "reset", false, "Reset")
+	reconcileCmd.Flags().StringVar(&project, "project", "", "Project name")
 	reconcileCmd.Flags().StringVar(&path, "path", ".", "Project directory")
-	reconcileCmd.Flags().StringVar(&source, "source", "", "Source Name")
+	reconcileCmd.Flags().BoolVar(&refresh, "refresh", false, "Refresh all sources")
+	reconcileCmd.Flags().StringSliceVar(&refreshSources, "refresh-source", nil, "Refresh specific source(s)")
+	reconcileCmd.Flags().BoolVar(&reset, "reset", false, "Reset and redeploy the project from scratch")
+
+	reconcileCmd.MarkFlagsMutuallyExclusive("reset", "refresh")
+	reconcileCmd.MarkFlagsMutuallyExclusive("reset", "refresh-source")
 
 	return reconcileCmd
 }

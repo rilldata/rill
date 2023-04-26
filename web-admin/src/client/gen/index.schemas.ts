@@ -18,10 +18,6 @@ export type AdminServiceUpdateProjectVariablesBody = {
   variables?: AdminServiceUpdateProjectVariablesBodyVariables;
 };
 
-export type AdminServiceTriggerRefreshSourceBody = {
-  sourceName?: string;
-};
-
 export type AdminServiceUpdateProjectBody = {
   id?: string;
   description?: string;
@@ -74,6 +70,10 @@ export type AdminServiceGetGithubRepoStatusParams = {
   githubUrl?: string;
 };
 
+export type AdminServiceTriggerRefreshSourcesBody = {
+  sources?: string[];
+};
+
 export type AdminServiceAddOrganizationMemberBodyBody = {
   email?: string;
   role?: string;
@@ -116,7 +116,7 @@ export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
 }
 
-export interface V1TriggerRefreshSourceResponse {
+export interface V1TriggerRefreshSourcesResponse {
   [key: string]: any;
 }
 

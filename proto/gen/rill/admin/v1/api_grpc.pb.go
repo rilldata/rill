@@ -32,13 +32,10 @@ const (
 	AdminService_CreateProject_FullMethodName                           = "/rill.admin.v1.AdminService/CreateProject"
 	AdminService_DeleteProject_FullMethodName                           = "/rill.admin.v1.AdminService/DeleteProject"
 	AdminService_UpdateProject_FullMethodName                           = "/rill.admin.v1.AdminService/UpdateProject"
-	AdminService_TriggerReconcile_FullMethodName                        = "/rill.admin.v1.AdminService/TriggerReconcile"
 	AdminService_UpdateProjectVariables_FullMethodName                  = "/rill.admin.v1.AdminService/UpdateProjectVariables"
-	AdminService_TriggerRefreshSource_FullMethodName                    = "/rill.admin.v1.AdminService/TriggerRefreshSource"
+	AdminService_TriggerReconcile_FullMethodName                        = "/rill.admin.v1.AdminService/TriggerReconcile"
+	AdminService_TriggerRefreshSources_FullMethodName                   = "/rill.admin.v1.AdminService/TriggerRefreshSources"
 	AdminService_TriggerRedeploy_FullMethodName                         = "/rill.admin.v1.AdminService/TriggerRedeploy"
-	AdminService_GetCurrentUser_FullMethodName                          = "/rill.admin.v1.AdminService/GetCurrentUser"
-	AdminService_RevokeCurrentAuthToken_FullMethodName                  = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
-	AdminService_GetGithubRepoStatus_FullMethodName                     = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
 	AdminService_ListOrganizationMembers_FullMethodName                 = "/rill.admin.v1.AdminService/ListOrganizationMembers"
 	AdminService_AddOrganizationMember_FullMethodName                   = "/rill.admin.v1.AdminService/AddOrganizationMember"
 	AdminService_RemoveOrganizationMember_FullMethodName                = "/rill.admin.v1.AdminService/RemoveOrganizationMember"
@@ -48,6 +45,9 @@ const (
 	AdminService_AddProjectMember_FullMethodName                        = "/rill.admin.v1.AdminService/AddProjectMember"
 	AdminService_RemoveProjectMember_FullMethodName                     = "/rill.admin.v1.AdminService/RemoveProjectMember"
 	AdminService_SetProjectMemberRole_FullMethodName                    = "/rill.admin.v1.AdminService/SetProjectMemberRole"
+	AdminService_GetCurrentUser_FullMethodName                          = "/rill.admin.v1.AdminService/GetCurrentUser"
+	AdminService_RevokeCurrentAuthToken_FullMethodName                  = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
+	AdminService_GetGithubRepoStatus_FullMethodName                     = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -80,21 +80,14 @@ type AdminServiceClient interface {
 	DeleteProject(ctx context.Context, in *DeleteProjectRequest, opts ...grpc.CallOption) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error)
-	// TriggerReconcile triggers the reconcile for production deployment
-	TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error)
 	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
 	UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error)
-	// TriggerRefreshSource refresh the source for production deployment
-	TriggerRefreshSource(ctx context.Context, in *TriggerRefreshSourceRequest, opts ...grpc.CallOption) (*TriggerRefreshSourceResponse, error)
+	// TriggerReconcile triggers reconcile for the project's prod deployment
+	TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error)
+	// TriggerRefreshSources refresh the source for production deployment
+	TriggerRefreshSources(ctx context.Context, in *TriggerRefreshSourcesRequest, opts ...grpc.CallOption) (*TriggerRefreshSourcesResponse, error)
 	// TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
 	TriggerRedeploy(ctx context.Context, in *TriggerRedeployRequest, opts ...grpc.CallOption) (*TriggerRedeployResponse, error)
-	// GetCurrentUser returns the currently authenticated user (if any)
-	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
-	// RevokeCurrentAuthToken revoke the current auth token
-	RevokeCurrentAuthToken(ctx context.Context, in *RevokeCurrentAuthTokenRequest, opts ...grpc.CallOption) (*RevokeCurrentAuthTokenResponse, error)
-	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
-	// If the caller has not granted access to the repository, instructions for granting access are returned.
-	GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error)
 	// ListOrganizationMembers lists all the org members
 	ListOrganizationMembers(ctx context.Context, in *ListOrganizationMembersRequest, opts ...grpc.CallOption) (*ListOrganizationMembersResponse, error)
 	// AddOrganizationMember lists all the org members
@@ -113,6 +106,13 @@ type AdminServiceClient interface {
 	RemoveProjectMember(ctx context.Context, in *RemoveProjectMemberRequest, opts ...grpc.CallOption) (*RemoveProjectMemberResponse, error)
 	// SetProjectMemberRole sets the role for the member
 	SetProjectMemberRole(ctx context.Context, in *SetProjectMemberRoleRequest, opts ...grpc.CallOption) (*SetProjectMemberRoleResponse, error)
+	// GetCurrentUser returns the currently authenticated user (if any)
+	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
+	// RevokeCurrentAuthToken revoke the current auth token
+	RevokeCurrentAuthToken(ctx context.Context, in *RevokeCurrentAuthTokenRequest, opts ...grpc.CallOption) (*RevokeCurrentAuthTokenResponse, error)
+	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
+	// If the caller has not granted access to the repository, instructions for granting access are returned.
+	GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error)
 }
 
 type adminServiceClient struct {
@@ -240,15 +240,6 @@ func (c *adminServiceClient) UpdateProject(ctx context.Context, in *UpdateProjec
 	return out, nil
 }
 
-func (c *adminServiceClient) TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error) {
-	out := new(TriggerReconcileResponse)
-	err := c.cc.Invoke(ctx, AdminService_TriggerReconcile_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *adminServiceClient) UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error) {
 	out := new(UpdateProjectVariablesResponse)
 	err := c.cc.Invoke(ctx, AdminService_UpdateProjectVariables_FullMethodName, in, out, opts...)
@@ -258,9 +249,18 @@ func (c *adminServiceClient) UpdateProjectVariables(ctx context.Context, in *Upd
 	return out, nil
 }
 
-func (c *adminServiceClient) TriggerRefreshSource(ctx context.Context, in *TriggerRefreshSourceRequest, opts ...grpc.CallOption) (*TriggerRefreshSourceResponse, error) {
-	out := new(TriggerRefreshSourceResponse)
-	err := c.cc.Invoke(ctx, AdminService_TriggerRefreshSource_FullMethodName, in, out, opts...)
+func (c *adminServiceClient) TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error) {
+	out := new(TriggerReconcileResponse)
+	err := c.cc.Invoke(ctx, AdminService_TriggerReconcile_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) TriggerRefreshSources(ctx context.Context, in *TriggerRefreshSourcesRequest, opts ...grpc.CallOption) (*TriggerRefreshSourcesResponse, error) {
+	out := new(TriggerRefreshSourcesResponse)
+	err := c.cc.Invoke(ctx, AdminService_TriggerRefreshSources_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -270,33 +270,6 @@ func (c *adminServiceClient) TriggerRefreshSource(ctx context.Context, in *Trigg
 func (c *adminServiceClient) TriggerRedeploy(ctx context.Context, in *TriggerRedeployRequest, opts ...grpc.CallOption) (*TriggerRedeployResponse, error) {
 	out := new(TriggerRedeployResponse)
 	err := c.cc.Invoke(ctx, AdminService_TriggerRedeploy_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error) {
-	out := new(GetCurrentUserResponse)
-	err := c.cc.Invoke(ctx, AdminService_GetCurrentUser_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) RevokeCurrentAuthToken(ctx context.Context, in *RevokeCurrentAuthTokenRequest, opts ...grpc.CallOption) (*RevokeCurrentAuthTokenResponse, error) {
-	out := new(RevokeCurrentAuthTokenResponse)
-	err := c.cc.Invoke(ctx, AdminService_RevokeCurrentAuthToken_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error) {
-	out := new(GetGithubRepoStatusResponse)
-	err := c.cc.Invoke(ctx, AdminService_GetGithubRepoStatus_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -384,6 +357,33 @@ func (c *adminServiceClient) SetProjectMemberRole(ctx context.Context, in *SetPr
 	return out, nil
 }
 
+func (c *adminServiceClient) GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error) {
+	out := new(GetCurrentUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetCurrentUser_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RevokeCurrentAuthToken(ctx context.Context, in *RevokeCurrentAuthTokenRequest, opts ...grpc.CallOption) (*RevokeCurrentAuthTokenResponse, error) {
+	out := new(RevokeCurrentAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_RevokeCurrentAuthToken_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error) {
+	out := new(GetGithubRepoStatusResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetGithubRepoStatus_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility
@@ -414,21 +414,14 @@ type AdminServiceServer interface {
 	DeleteProject(context.Context, *DeleteProjectRequest) (*DeleteProjectResponse, error)
 	// UpdateProject updates a project
 	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
-	// TriggerReconcile triggers the reconcile for production deployment
-	TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error)
 	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
 	UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error)
-	// TriggerRefreshSource refresh the source for production deployment
-	TriggerRefreshSource(context.Context, *TriggerRefreshSourceRequest) (*TriggerRefreshSourceResponse, error)
+	// TriggerReconcile triggers reconcile for the project's prod deployment
+	TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error)
+	// TriggerRefreshSources refresh the source for production deployment
+	TriggerRefreshSources(context.Context, *TriggerRefreshSourcesRequest) (*TriggerRefreshSourcesResponse, error)
 	// TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
 	TriggerRedeploy(context.Context, *TriggerRedeployRequest) (*TriggerRedeployResponse, error)
-	// GetCurrentUser returns the currently authenticated user (if any)
-	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
-	// RevokeCurrentAuthToken revoke the current auth token
-	RevokeCurrentAuthToken(context.Context, *RevokeCurrentAuthTokenRequest) (*RevokeCurrentAuthTokenResponse, error)
-	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
-	// If the caller has not granted access to the repository, instructions for granting access are returned.
-	GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error)
 	// ListOrganizationMembers lists all the org members
 	ListOrganizationMembers(context.Context, *ListOrganizationMembersRequest) (*ListOrganizationMembersResponse, error)
 	// AddOrganizationMember lists all the org members
@@ -447,6 +440,13 @@ type AdminServiceServer interface {
 	RemoveProjectMember(context.Context, *RemoveProjectMemberRequest) (*RemoveProjectMemberResponse, error)
 	// SetProjectMemberRole sets the role for the member
 	SetProjectMemberRole(context.Context, *SetProjectMemberRoleRequest) (*SetProjectMemberRoleResponse, error)
+	// GetCurrentUser returns the currently authenticated user (if any)
+	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
+	// RevokeCurrentAuthToken revoke the current auth token
+	RevokeCurrentAuthToken(context.Context, *RevokeCurrentAuthTokenRequest) (*RevokeCurrentAuthTokenResponse, error)
+	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
+	// If the caller has not granted access to the repository, instructions for granting access are returned.
+	GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -493,26 +493,17 @@ func (UnimplementedAdminServiceServer) DeleteProject(context.Context, *DeletePro
 func (UnimplementedAdminServiceServer) UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateProject not implemented")
 }
-func (UnimplementedAdminServiceServer) TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method TriggerReconcile not implemented")
-}
 func (UnimplementedAdminServiceServer) UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateProjectVariables not implemented")
 }
-func (UnimplementedAdminServiceServer) TriggerRefreshSource(context.Context, *TriggerRefreshSourceRequest) (*TriggerRefreshSourceResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method TriggerRefreshSource not implemented")
+func (UnimplementedAdminServiceServer) TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerReconcile not implemented")
+}
+func (UnimplementedAdminServiceServer) TriggerRefreshSources(context.Context, *TriggerRefreshSourcesRequest) (*TriggerRefreshSourcesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerRefreshSources not implemented")
 }
 func (UnimplementedAdminServiceServer) TriggerRedeploy(context.Context, *TriggerRedeployRequest) (*TriggerRedeployResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerRedeploy not implemented")
-}
-func (UnimplementedAdminServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
-}
-func (UnimplementedAdminServiceServer) RevokeCurrentAuthToken(context.Context, *RevokeCurrentAuthTokenRequest) (*RevokeCurrentAuthTokenResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RevokeCurrentAuthToken not implemented")
-}
-func (UnimplementedAdminServiceServer) GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetGithubRepoStatus not implemented")
 }
 func (UnimplementedAdminServiceServer) ListOrganizationMembers(context.Context, *ListOrganizationMembersRequest) (*ListOrganizationMembersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationMembers not implemented")
@@ -540,6 +531,15 @@ func (UnimplementedAdminServiceServer) RemoveProjectMember(context.Context, *Rem
 }
 func (UnimplementedAdminServiceServer) SetProjectMemberRole(context.Context, *SetProjectMemberRoleRequest) (*SetProjectMemberRoleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetProjectMemberRole not implemented")
+}
+func (UnimplementedAdminServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
+}
+func (UnimplementedAdminServiceServer) RevokeCurrentAuthToken(context.Context, *RevokeCurrentAuthTokenRequest) (*RevokeCurrentAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RevokeCurrentAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGithubRepoStatus not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -788,24 +788,6 @@ func _AdminService_UpdateProject_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_TriggerReconcile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TriggerReconcileRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).TriggerReconcile(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_TriggerReconcile_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).TriggerReconcile(ctx, req.(*TriggerReconcileRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _AdminService_UpdateProjectVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateProjectVariablesRequest)
 	if err := dec(in); err != nil {
@@ -824,20 +806,38 @@ func _AdminService_UpdateProjectVariables_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_TriggerRefreshSource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TriggerRefreshSourceRequest)
+func _AdminService_TriggerReconcile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerReconcileRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).TriggerRefreshSource(ctx, in)
+		return srv.(AdminServiceServer).TriggerReconcile(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_TriggerRefreshSource_FullMethodName,
+		FullMethod: AdminService_TriggerReconcile_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).TriggerRefreshSource(ctx, req.(*TriggerRefreshSourceRequest))
+		return srv.(AdminServiceServer).TriggerReconcile(ctx, req.(*TriggerReconcileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_TriggerRefreshSources_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerRefreshSourcesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).TriggerRefreshSources(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_TriggerRefreshSources_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).TriggerRefreshSources(ctx, req.(*TriggerRefreshSourcesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -856,60 +856,6 @@ func _AdminService_TriggerRedeploy_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).TriggerRedeploy(ctx, req.(*TriggerRedeployRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_GetCurrentUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetCurrentUserRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).GetCurrentUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_GetCurrentUser_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetCurrentUser(ctx, req.(*GetCurrentUserRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_RevokeCurrentAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RevokeCurrentAuthTokenRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).RevokeCurrentAuthToken(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_RevokeCurrentAuthToken_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).RevokeCurrentAuthToken(ctx, req.(*RevokeCurrentAuthTokenRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_GetGithubRepoStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetGithubRepoStatusRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).GetGithubRepoStatus(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_GetGithubRepoStatus_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetGithubRepoStatus(ctx, req.(*GetGithubRepoStatusRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1076,6 +1022,60 @@ func _AdminService_SetProjectMemberRole_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetCurrentUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCurrentUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetCurrentUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetCurrentUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetCurrentUser(ctx, req.(*GetCurrentUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RevokeCurrentAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeCurrentAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RevokeCurrentAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RevokeCurrentAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RevokeCurrentAuthToken(ctx, req.(*RevokeCurrentAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetGithubRepoStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGithubRepoStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetGithubRepoStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetGithubRepoStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetGithubRepoStatus(ctx, req.(*GetGithubRepoStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1136,32 +1136,20 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_UpdateProject_Handler,
 		},
 		{
-			MethodName: "TriggerReconcile",
-			Handler:    _AdminService_TriggerReconcile_Handler,
-		},
-		{
 			MethodName: "UpdateProjectVariables",
 			Handler:    _AdminService_UpdateProjectVariables_Handler,
 		},
 		{
-			MethodName: "TriggerRefreshSource",
-			Handler:    _AdminService_TriggerRefreshSource_Handler,
+			MethodName: "TriggerReconcile",
+			Handler:    _AdminService_TriggerReconcile_Handler,
+		},
+		{
+			MethodName: "TriggerRefreshSources",
+			Handler:    _AdminService_TriggerRefreshSources_Handler,
 		},
 		{
 			MethodName: "TriggerRedeploy",
 			Handler:    _AdminService_TriggerRedeploy_Handler,
-		},
-		{
-			MethodName: "GetCurrentUser",
-			Handler:    _AdminService_GetCurrentUser_Handler,
-		},
-		{
-			MethodName: "RevokeCurrentAuthToken",
-			Handler:    _AdminService_RevokeCurrentAuthToken_Handler,
-		},
-		{
-			MethodName: "GetGithubRepoStatus",
-			Handler:    _AdminService_GetGithubRepoStatus_Handler,
 		},
 		{
 			MethodName: "ListOrganizationMembers",
@@ -1198,6 +1186,18 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetProjectMemberRole",
 			Handler:    _AdminService_SetProjectMemberRole_Handler,
+		},
+		{
+			MethodName: "GetCurrentUser",
+			Handler:    _AdminService_GetCurrentUser_Handler,
+		},
+		{
+			MethodName: "RevokeCurrentAuthToken",
+			Handler:    _AdminService_RevokeCurrentAuthToken_Handler,
+		},
+		{
+			MethodName: "GetGithubRepoStatus",
+			Handler:    _AdminService_GetGithubRepoStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

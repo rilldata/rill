@@ -9,6 +9,86 @@ consumes:
 produces:
   - application/json
 paths:
+  /v1/deployments/{deploymentId}/reconcile:
+    post:
+      summary: TriggerReconcile triggers reconcile for the project's prod deployment
+      operationId: AdminService_TriggerReconcile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TriggerReconcileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
+  /v1/deployments/{deploymentId}/refresh:
+    post:
+      summary: TriggerRefreshSources refresh the source for production deployment
+      operationId: AdminService_TriggerRefreshSources
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TriggerRefreshSourcesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              sources:
+                type: array
+                items:
+                  type: string
+      tags:
+        - AdminService
+  /v1/deployments/{deploymentId}/reset:
+    post:
+      summary: TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+      operationId: AdminService_TriggerRedeploy
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TriggerRedeployResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
   /v1/github/repositories:
     get:
       summary: |-
@@ -569,96 +649,6 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organizationName}/projects/{name}/reconcile:
-    post:
-      summary: TriggerReconcile triggers the reconcile for production deployment
-      operationId: AdminService_TriggerReconcile
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1TriggerReconcileResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-      tags:
-        - AdminService
-  /v1/organizations/{organizationName}/projects/{name}/refresh:
-    post:
-      summary: TriggerRefreshSource refresh the source for production deployment
-      operationId: AdminService_TriggerRefreshSource
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1TriggerRefreshSourceResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              sourceName:
-                type: string
-      tags:
-        - AdminService
-  /v1/organizations/{organizationName}/projects/{name}/reset:
-    post:
-      summary: TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
-      operationId: AdminService_TriggerRedeploy
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1TriggerRedeployResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-      tags:
-        - AdminService
   /v1/organizations/{organizationName}/projects/{name}/variables:
     get:
       summary: 'GetProjectVariables returns project variables. NOTE: Get project API doesn''t return variables.'
@@ -1116,10 +1106,9 @@ definitions:
     type: object
   v1TriggerReconcileResponse:
     type: object
-    title: Should need to add any response here (i.e similar to ReconcileResponse in runtime.proto)
   v1TriggerRedeployResponse:
     type: object
-  v1TriggerRefreshSourceResponse:
+  v1TriggerRefreshSourcesResponse:
     type: object
   v1UpdateOrganizationResponse:
     type: object

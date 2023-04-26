@@ -57,7 +57,7 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}"};
   }
 
-// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
+  // GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
   rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}/variables"};
   }
@@ -83,14 +83,6 @@ service AdminService {
     };
   }
 
-  // TriggerReconcile triggers the reconcile for production deployment
-  rpc TriggerReconcile(TriggerReconcileRequest) returns (TriggerReconcileResponse) {
-    option (google.api.http) = {
-      post: "/v1/organizations/{organization_name}/projects/{name}/reconcile",
-        body: "*"
-    };
-  }
-
   // UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
   rpc UpdateProjectVariables(UpdateProjectVariablesRequest) returns (UpdateProjectVariablesResponse) {
     option (google.api.http) = {
@@ -99,39 +91,28 @@ service AdminService {
     };
   }
 
-  // TriggerRefreshSource refresh the source for production deployment
-  rpc TriggerRefreshSource(TriggerRefreshSourceRequest) returns (TriggerRefreshSourceResponse) {
+  // TriggerReconcile triggers reconcile for the project's prod deployment
+  rpc TriggerReconcile(TriggerReconcileRequest) returns (TriggerReconcileResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization_name}/projects/{name}/refresh",
+      post: "/v1/deployments/{deployment_id}/reconcile",
       body: "*"
     };
   }
 
-    // TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+  // TriggerRefreshSources refresh the source for production deployment
+  rpc TriggerRefreshSources(TriggerRefreshSourcesRequest) returns (TriggerRefreshSourcesResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/{deployment_id}/refresh",
+      body: "*"
+    };
+  }
+
+  // TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
   rpc TriggerRedeploy(TriggerRedeployRequest) returns (TriggerRedeployResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization_name}/projects/{name}/reset",
+      post: "/v1/deployments/{deployment_id}/reset",
       body: "*"
     };
-  }
-
-
-  // GetCurrentUser returns the currently authenticated user (if any)
-  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {
-    option (google.api.http) = {
-      get: "/v1/users/current"
-    };
-  }
-
-  // RevokeCurrentAuthToken revoke the current auth token
-  rpc RevokeCurrentAuthToken(RevokeCurrentAuthTokenRequest) returns (RevokeCurrentAuthTokenResponse) {
-    option (google.api.http) = {delete: "/v1/tokens/current"};
-  }
-
-  // GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
-  // If the caller has not granted access to the repository, instructions for granting access are returned.
-  rpc GetGithubRepoStatus(GetGithubRepoStatusRequest) returns (GetGithubRepoStatusResponse) {
-    option (google.api.http) = {get: "/v1/github/repositories"};
   }
 
   // ListOrganizationMembers lists all the org members
@@ -189,6 +170,24 @@ service AdminService {
       put: "/v1/organizations/{organization}/projects/{project}/members/{email}",
       body: "*"
     };
+  }
+
+  // GetCurrentUser returns the currently authenticated user (if any)
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {
+    option (google.api.http) = {
+      get: "/v1/users/current"
+    };
+  }
+
+  // RevokeCurrentAuthToken revoke the current auth token
+  rpc RevokeCurrentAuthToken(RevokeCurrentAuthTokenRequest) returns (RevokeCurrentAuthTokenResponse) {
+    option (google.api.http) = {delete: "/v1/tokens/current"};
+  }
+
+  // GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
+  // If the caller has not granted access to the repository, instructions for granting access are returned.
+  rpc GetGithubRepoStatus(GetGithubRepoStatusRequest) returns (GetGithubRepoStatusResponse) {
+    option (google.api.http) = {get: "/v1/github/repositories"};
   }
 }
 
@@ -337,6 +336,25 @@ message UpdateProjectVariablesResponse {
   map<string, string> variables = 1;
 }
 
+message TriggerReconcileRequest {
+  string deployment_id = 1;
+}
+
+message TriggerReconcileResponse {}
+
+message TriggerRefreshSourcesRequest {
+  string deployment_id = 1;
+  repeated string sources = 2;
+}
+
+message TriggerRefreshSourcesResponse {}
+
+message TriggerRedeployRequest {
+  string deployment_id = 1;
+}
+
+message TriggerRedeployResponse {}
+
 message ListOrganizationMembersRequest {
   string organization = 1;
   uint32 page_size = 2;
@@ -442,30 +460,6 @@ message GetGithubRepoStatusResponse {
   string grant_access_url = 2;
   string default_branch = 3;
 }
-
-message TriggerReconcileRequest {
-  string organization_name = 1;
-  string name = 2;
-}
-
-//Should need to add any response here (i.e similar to ReconcileResponse in runtime.proto)
-message TriggerReconcileResponse {}
-
-message TriggerRefreshSourceRequest {
-  string organization_name = 1;
-  string name = 2;
-  string source_name = 3;
-}
-
-message TriggerRefreshSourceResponse {}
-
-message TriggerRedeployRequest {
-  string organization_name = 1;
-  string name = 2;
-}
-
-message TriggerRedeployResponse {}
-
 
 message User {
   string id = 1;
