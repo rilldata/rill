@@ -12,9 +12,9 @@ import (
 
 func JwtCmd(cfg *config.Config) *cobra.Command {
 	jwtCmd := &cobra.Command{
-		Use:    "jwt",
+		Use:    "jwt <project>",
 		Args:   cobra.ExactArgs(1),
-		Short:  "Jwt",
+		Short:  "Generate token for connecting directly to the deployment",
 		Hidden: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
@@ -23,18 +23,22 @@ func JwtCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			proj, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{
+			res, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{
 				OrganizationName: cfg.Org,
 				Name:             args[0],
 			})
 			if err != nil {
 				return err
 			}
+			if res.ProdDeployment == nil {
+				cmdutil.WarnPrinter("Project does not have production deployment")
+				return nil
+			}
 
 			cmdutil.SuccessPrinter("Runtime info\n")
-			fmt.Printf("  Host: %s\n", proj.ProdDeployment.RuntimeHost)
-			fmt.Printf("  Instance: %s\n", proj.ProdDeployment.RuntimeInstanceId)
-			fmt.Printf("  JWT: %s\n", proj.Jwt)
+			fmt.Printf("  Host: %s\n", res.ProdDeployment.RuntimeHost)
+			fmt.Printf("  Instance: %s\n", res.ProdDeployment.RuntimeInstanceId)
+			fmt.Printf("  JWT: %s\n", res.Jwt)
 
 			return nil
 		},

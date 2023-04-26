@@ -34,6 +34,31 @@ paths:
             type: object
       tags:
         - AdminService
+  /v1/deployments/{deploymentId}/redeploy:
+    post:
+      summary: TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+      operationId: AdminService_TriggerRedeploy
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TriggerRedeployResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
   /v1/deployments/{deploymentId}/refresh:
     post:
       summary: TriggerRefreshSources refresh the source for production deployment
@@ -62,31 +87,6 @@ paths:
                 type: array
                 items:
                   type: string
-      tags:
-        - AdminService
-  /v1/deployments/{deploymentId}/reset:
-    post:
-      summary: TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
-      operationId: AdminService_TriggerRedeploy
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1TriggerRedeployResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: deploymentId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
       tags:
         - AdminService
   /v1/github/repositories:

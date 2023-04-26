@@ -110,7 +110,7 @@ service AdminService {
   // TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
   rpc TriggerRedeploy(TriggerRedeployRequest) returns (TriggerRedeployResponse) {
     option (google.api.http) = {
-      post: "/v1/deployments/{deployment_id}/reset",
+      post: "/v1/deployments/{deployment_id}/redeploy",
       body: "*"
     };
   }
