@@ -9,8 +9,11 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
+	"github.com/rilldata/rill/admin/pkg/sessionutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -20,8 +23,9 @@ import (
 // Annotator is a gRPC-gateway annotator that moves access tokens in HTTP cookies to the "authorization" gRPC metadata.
 func (a *Authenticator) Annotator(ctx context.Context, r *http.Request) metadata.MD {
 	// Get auth cookie
-	sess, err := a.cookies.Get(r, cookieName)
+	sess, err := sessionutil.GetCookie(a.cookies, r, cookieName)
 	if err != nil {
+		a.logger.Error("failed to get cookie", zap.String("cookie_name", cookieName), zap.Error(err), observability.ZapCtx(r.Context()))
 		return metadata.Pairs()
 	}
 
@@ -85,8 +89,9 @@ func (a *Authenticator) HTTPMiddleware(next http.Handler) http.Handler {
 		}
 
 		// There was no authorization header. Try the cookie.
-		sess, err := a.cookies.Get(r, cookieName)
+		sess, err := sessionutil.GetCookie(a.cookies, r, cookieName)
 		if err != nil {
+			a.logger.Error("failed to get cookie", zap.String("cookie_name", cookieName), zap.Error(err), observability.ZapCtx(r.Context()))
 			http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
 			return
 		}

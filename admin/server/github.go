@@ -12,11 +12,13 @@ import (
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
+	"github.com/rilldata/rill/admin/pkg/sessionutil"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	githuboauth "golang.org/x/oauth2/github"
 	"google.golang.org/grpc/codes"
@@ -296,8 +298,9 @@ func (s *Server) githubAuthLogin(w http.ResponseWriter, r *http.Request) {
 	state := base64.StdEncoding.EncodeToString(b)
 
 	// Get auth cookie
-	sess, err := s.cookies.Get(r, githubcookieName)
+	sess, err := sessionutil.GetCookie(s.cookies, r, githubcookieName)
 	if err != nil {
+		s.logger.Error("failed to get cookie", zap.String("cookie_name", githubcookieName), zap.Error(err), observability.ZapCtx(r.Context()))
 		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
 		return
 	}
@@ -336,8 +339,9 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get auth cookie
-	sess, err := s.cookies.Get(r, githubcookieName)
+	sess, err := sessionutil.GetCookie(s.cookies, r, githubcookieName)
 	if err != nil {
+		s.logger.Error("failed to get cookie", zap.String("cookie_name", githubcookieName), zap.Error(err), observability.ZapCtx(r.Context()))
 		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
 		return
 	}
