@@ -117,7 +117,7 @@
     >
       <slot name="metrics" />
     </div>
-    <div class="explore-leaderboards px-4 grow">
+    <div class="explore-leaderboards px-4 mb-8 grow">
       <slot name="leaderboards" />
     </div>
   </div>
