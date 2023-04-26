@@ -61,7 +61,7 @@
       }
     ).then((response) => {
       if (response.ok) {
-        successMsg = "User code rejected, this page can be closed now";
+        errorMsg = "User code rejected, this page can be closed now";
       } else {
         errorMsg = "User code rejection failed";
         response.body
