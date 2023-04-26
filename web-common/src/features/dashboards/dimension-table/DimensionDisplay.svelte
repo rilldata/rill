@@ -40,7 +40,6 @@
     getFilterForComparisonTable,
     updateFilterOnSearch,
   } from "./dimension-table-utils";
-  import DimensionContainer from "./DimensionContainer.svelte";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
 
@@ -377,7 +376,10 @@
 </script>
 
 {#if topListQuery}
-  <DimensionContainer>
+  <div
+    style:height="calc(100vh - var(--header, 130px) - 4rem)"
+    style:min-width="365px"
+  >
     <DimensionHeader
       {metricViewName}
       {dimensionName}
@@ -400,5 +402,5 @@
         {excludeMode}
       />
     {/if}
-  </DimensionContainer>
+  </div>
 {/if}
