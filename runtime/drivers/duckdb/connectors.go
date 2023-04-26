@@ -158,17 +158,16 @@ func sourceReader(paths []string, properties map[string]interface{}) (string, er
 	} else {
 		format = fileutil.FullExt(paths[0])
 	}
-
 	// Generate a "read" statement
 	if containsAny(format, []string{".csv", ".tsv", ".txt"}) {
+		// CSV reader
 		return generateReadCsvStatement(paths, properties)
-
 	} else if strings.Contains(format, ".parquet") {
+		// Parquet reader
 		return generateReadParquetStatement(paths, properties)
-
 	} else if containsAny(format, []string{".json", ".ndjson"}) {
+		// JSON reader
 		return generateReadJsonStatement(paths, properties)
-
 	} else {
 		return "", fmt.Errorf("file type not supported : %s", format)
 	}
@@ -186,7 +185,6 @@ func containsAny(s string, targets []string) bool {
 
 func generateReadCsvStatement(paths []string, properties map[string]interface{}) (string, error) {
 	ingestionProps := collectDuckDBIngestionProperties(properties)
-
 	// backward compatibility: csv.delimiter might be passed separately from duckdb.delim and has a priority
 	if csvDelimiter, csvDelimiterDefined := properties["csv.delimiter"]; csvDelimiterDefined {
 		ingestionProps["delim"] = fmt.Sprintf("'%v'", csvDelimiter)
