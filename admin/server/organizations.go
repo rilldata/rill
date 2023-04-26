@@ -86,17 +86,17 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
+	// check single user org limit for this user
 	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	// check single user org limit for this user
-	count, err := s.admin.DB.CountSingleUserOrganizationForUser(ctx, user.ID)
+	count, err := s.admin.DB.CountSingleUserOrganizationsForMemberUser(ctx, user.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if count >= user.QuotaSingleuserOrgs {
-		return nil, status.Errorf(codes.InvalidArgument, "user has reached the limit of %d single user orgs", user.QuotaSingleuserOrgs)
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: you can only create %d single-user orgs", user.QuotaSingleuserOrgs)
 	}
 
 	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, req.Name, req.Description)
@@ -212,12 +212,12 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add org members")
 	}
 
-	count, err := s.admin.DB.CountOrganizationOutstandingInvitations(ctx, org.ID)
+	count, err := s.admin.DB.CountOrganizationOutstandingInvites(ctx, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	if count >= org.QuotaOutstandingInvitations {
-		return nil, status.Errorf(codes.FailedPrecondition, "cannot invite more users, org %q already %d outstanding invitations", org.Name, org.QuotaOutstandingInvitations)
+	if count >= org.QuotaOutstandingInvites {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can at most have %d outstanding invitations", org.QuotaOutstandingInvites)
 	}
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)

@@ -821,7 +821,7 @@ func (c *connection) CountOrganizationDeploymentsAndSlots(ctx context.Context, o
 	return res, nil
 }
 
-func (c *connection) CountOrganizationOutstandingInvitations(ctx context.Context, orgID string) (int, error) {
+func (c *connection) CountOrganizationOutstandingInvites(ctx context.Context, orgID string) (int, error) {
 	var count int
 	// count outstanding org invites as well as project invites for this org
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
@@ -837,13 +837,13 @@ func (c *connection) CountOrganizationOutstandingInvitations(ctx context.Context
 	return count, nil
 }
 
-func (c *connection) CountSingleUserOrganizationForUser(ctx context.Context, userID string) (int, error) {
+func (c *connection) CountSingleUserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error) {
 	var count int
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 	SELECT SUM(total_count) as total_count FROM (
-	    SELECT CASE WHEN COUNT(*) = 1 THEN 1 ELSE 0 END as total_count FROM users_orgs_roles GROUP BY org_id HAVING org_id IN (
+	    SELECT CASE WHEN COUNT(*) = 1 THEN 1 ELSE 0 END as total_count FROM users_orgs_roles WHERE org_id IN (
 	        SELECT org_id FROM users_orgs_roles WHERE user_id = $1
-	    )
+	    ) GROUP BY org_id
 	) as subquery
 	`, userID).Scan(&count)
 	if err != nil {

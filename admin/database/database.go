@@ -70,12 +70,14 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
+	CountOrganizationProjects(ctx context.Context, orgID string) (int, error)
 
 	FindDeployments(ctx context.Context, projectID string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, logs string) (*Deployment, error)
+	CountOrganizationDeploymentsAndSlots(ctx context.Context, orgID string) (*OrganizationDeploymentsAndSlots, error)
 
 	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
 
@@ -111,6 +113,7 @@ type DB interface {
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string) error
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
+	CountSingleUserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
 
 	FindProjectMemberUsers(ctx context.Context, projectID string) ([]*Member, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
@@ -123,17 +126,13 @@ type DB interface {
 	FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*OrganizationInvite, error)
 	InsertOrganizationInvite(ctx context.Context, email, orgID, roleID, invitedByID string) error
 	DeleteOrganizationInvite(ctx context.Context, id string) error
+	CountOrganizationOutstandingInvites(ctx context.Context, orgID string) (int, error)
 
 	FindProjectInvites(ctx context.Context, projectID string) ([]*Invite, error)
 	FindProjectInvitesByEmail(ctx context.Context, userEmail string) ([]*ProjectInvite, error)
 	FindProjectInvite(ctx context.Context, projectID, userEmail string) (*ProjectInvite, error)
 	InsertProjectInvite(ctx context.Context, email, projectID, roleID, invitedByID string) error
 	DeleteProjectInvite(ctx context.Context, id string) error
-
-	CountOrganizationProjects(ctx context.Context, orgID string) (int, error)
-	CountOrganizationDeploymentsAndSlots(ctx context.Context, orgID string) (*OrganizationDeploymentsAndSlots, error)
-	CountOrganizationOutstandingInvitations(ctx context.Context, orgID string) (int, error)
-	CountSingleUserOrganizationForUser(ctx context.Context, userID string) (int, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -155,17 +154,17 @@ var ErrNotUnique = errors.New("database: violates unique constraint")
 
 // Organization represents a tenant.
 type Organization struct {
-	ID                          string
-	Name                        string
-	Description                 string
-	AllUsergroupID              *string   `db:"all_usergroup_id"`
-	CreatedOn                   time.Time `db:"created_on"`
-	UpdatedOn                   time.Time `db:"updated_on"`
-	QuotaProjects               int       `db:"quota_projects"`
-	QuotaDeployments            int       `db:"quota_deployments"`
-	QuotaSlotsTotal             int       `db:"quota_slots_total"`
-	QuotaSlotsPerDeployment     int       `db:"quota_slots_per_deployment"`
-	QuotaOutstandingInvitations int       `db:"quota_outstanding_invitations"`
+	ID                      string
+	Name                    string
+	Description             string
+	AllUsergroupID          *string   `db:"all_usergroup_id"`
+	CreatedOn               time.Time `db:"created_on"`
+	UpdatedOn               time.Time `db:"updated_on"`
+	QuotaProjects           int       `db:"quota_projects"`
+	QuotaDeployments        int       `db:"quota_deployments"`
+	QuotaSlotsTotal         int       `db:"quota_slots_total"`
+	QuotaSlotsPerDeployment int       `db:"quota_slots_per_deployment"`
+	QuotaOutstandingInvites int       `db:"quota_outstanding_invites"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
