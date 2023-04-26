@@ -56,7 +56,15 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 
 	// handle org invites
 	for _, invite := range orgInvites {
+		org, err := s.DB.FindOrganization(ctx, invite.OrgID)
+		if err != nil {
+			return nil, err
+		}
 		err = s.DB.InsertOrganizationMemberUser(ctx, invite.OrgID, user.ID, invite.OrgRoleID)
+		if err != nil {
+			return nil, err
+		}
+		err = s.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
 			return nil, err
 		}
