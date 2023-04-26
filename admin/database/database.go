@@ -70,14 +70,14 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
-	CountOrganizationProjects(ctx context.Context, orgID string) (int, error)
+	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 
 	FindDeployments(ctx context.Context, projectID string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, logs string) (*Deployment, error)
-	CountOrganizationDeploymentsAndSlots(ctx context.Context, orgID string) (*OrganizationDeploymentsAndSlots, error)
+	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
 
 	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
 
@@ -113,7 +113,7 @@ type DB interface {
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string) error
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
-	CountSingleUserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
+	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
 
 	FindProjectMemberUsers(ctx context.Context, projectID string) ([]*Member, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
@@ -126,7 +126,7 @@ type DB interface {
 	FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*OrganizationInvite, error)
 	InsertOrganizationInvite(ctx context.Context, email, orgID, roleID, invitedByID string) error
 	DeleteOrganizationInvite(ctx context.Context, id string) error
-	CountOrganizationOutstandingInvites(ctx context.Context, orgID string) (int, error)
+	CountInvitesForOrganization(ctx context.Context, orgID string) (int, error)
 
 	FindProjectInvites(ctx context.Context, projectID string) ([]*Invite, error)
 	FindProjectInvitesByEmail(ctx context.Context, userEmail string) ([]*ProjectInvite, error)
@@ -457,7 +457,7 @@ type Invite struct {
 	InvitedBy string `db:"invited_by"`
 }
 
-type OrganizationDeploymentsAndSlots struct {
+type DeploymentsCount struct {
 	Deployments int
 	Slots       int
 }
