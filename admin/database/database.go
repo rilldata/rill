@@ -169,8 +169,13 @@ type Organization struct {
 
 // InsertOrganizationOptions defines options for inserting a new org
 type InsertOrganizationOptions struct {
-	Name        string `validate:"slug"`
-	Description string
+	Name                    string `validate:"slug"`
+	Description             string
+	QuotaProjects           int
+	QuotaDeployments        int
+	QuotaSlotsTotal         int
+	QuotaSlotsPerDeployment int
+	QuotaOutstandingInvites int
 }
 
 // UpdateOrganizationOptions defines options for updating an existing org
@@ -300,9 +305,10 @@ type User struct {
 
 // InsertUserOptions defines options for inserting a new user
 type InsertUserOptions struct {
-	Email       string `validate:"email"`
-	DisplayName string
-	PhotoURL    string
+	Email               string `validate:"email"`
+	DisplayName         string
+	PhotoURL            string
+	QuotaSingleuserOrgs int
 }
 
 // UpdateUserOptions defines options for updating an existing user
@@ -461,3 +467,12 @@ type DeploymentsCount struct {
 	Deployments int
 	Slots       int
 }
+
+const (
+	DefaultQuotaProjects           = 5
+	DefaultQuotaDeployments        = 10
+	DefaultQuotaSlotsTotal         = 20
+	DefaultQuotaSlotsPerDeployment = 5
+	DefaultQuotaOutstandingInvites = 200
+	DefaultQuotaSingleuserOrgs     = 3
+)
