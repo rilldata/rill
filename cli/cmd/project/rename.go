@@ -26,6 +26,8 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
+			fmt.Println("Warn: Renaming an project would invalidate dashboard URLs")
+
 			if !cmd.Flags().Changed("project") {
 				resp, err := client.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{OrganizationName: cfg.Org})
 				if err != nil {
@@ -44,15 +46,13 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				name = cmdutil.SelectPrompt("Select project to rename", projectNames, "")
 			}
 
-			if !cmd.Flags().Changed("new_name") {
+			if !cmd.Flags().Changed("new-name") {
 				// Get the new project name from user if not provided in the flag, passing current name as default
 				newName, err = cmdutil.InputPrompt("Rename to", name)
 				if err != nil {
 					return err
 				}
 			}
-
-			fmt.Println("Warn: Renaming an project would invalidate dashboard URLs")
 
 			msg := fmt.Sprintf("Do you want to rename project \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName))
 			if !cmdutil.ConfirmPrompt(msg, "", false) {
@@ -88,7 +88,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 
 	renameCmd.Flags().SortFlags = false
 	renameCmd.Flags().StringVar(&name, "project", "", "Current Project Name")
-	renameCmd.Flags().StringVar(&newName, "new_name", "", "New Project Name")
+	renameCmd.Flags().StringVar(&newName, "new-name", "", "New Project Name")
 
 	return renameCmd
 }
