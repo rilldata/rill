@@ -143,8 +143,10 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		StorageLimitInBytes:   env.StorageLimitInBytes,
 	}
 
-	it, err := rillblob.NewIterator(ctx, bucketObj, opts)
-	if err != nil {
+	var it connectors.FileIterator
+	var itErr error
+	it, itErr = rillblob.NewIterator(ctx, bucketObj, opts)
+	if itErr != nil {
 		// s3 throws error (possibly inconsistent) in case we are trying to access public buckets and passing some credentials
 		// go cdk wraps some s3's errors into gcerrors.Unknown
 		// we try again with anonymous credentials in case bucket is public
@@ -155,11 +157,18 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 			if err != nil {
 				return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
 			}
-			return rillblob.NewIterator(ctx, bucketObj, opts)
+			it, itErr = rillblob.NewIterator(ctx, bucketObj, opts)
+		}
+
+		// generate the error code again and check if still getting error
+		// returns gcerrors.OK if itErr is nil
+		errCode = gcerrors.Code(itErr)
+		if errCode == gcerrors.PermissionDenied || errCode == gcerrors.Unknown {
+			return nil, connectors.NewError(connectors.ErrorCodePermissionDenied, err, fmt.Sprintf("can't access remote source %q err: %v", source.Name, itErr))
 		}
 	}
 
-	return it, err
+	return it, itErr
 }
 
 func (c connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {

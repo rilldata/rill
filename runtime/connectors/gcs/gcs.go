@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/bmatcuk/doublestar/v4"
@@ -13,8 +14,10 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"gocloud.dev/blob/gcsblob"
+	"gocloud.dev/gcerrors"
 	"gocloud.dev/gcp"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/api/googleapi"
 )
 
 func init() {
@@ -151,7 +154,17 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		ExtractPolicy:         source.ExtractPolicy,
 		StorageLimitInBytes:   env.StorageLimitInBytes,
 	}
-	return rillblob.NewIterator(ctx, bucketObj, opts)
+
+	iter, err := rillblob.NewIterator(ctx, bucketObj, opts)
+	if err != nil {
+		fmt.Println(gcerrors.Code(err))
+		apiError := &googleapi.Error{}
+		if errors.As(err, &apiError) && apiError.Code == http.StatusUnauthorized {
+			return nil, connectors.NewError(connectors.ErrorCodePermissionDenied, err, fmt.Sprintf("can't access remote source %q err: %v", source.Name, err))
+		}
+	}
+
+	return iter, nil
 }
 
 func (c connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {

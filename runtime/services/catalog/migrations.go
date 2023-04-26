@@ -8,6 +8,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/dag"
@@ -303,8 +304,12 @@ func (s *Service) runMigrationItems(
 		}
 
 		if err != nil {
+			errCode := runtimev1.ReconcileError_CODE_OLAP
+			if connectors.Code(err) == connectors.ErrorCodePermissionDenied {
+				errCode = runtimev1.ReconcileError_CODE_SOURCE_PERMISSION_DENIED
+			}
 			result.Errors = append(result.Errors, &runtimev1.ReconcileError{
-				Code:     runtimev1.ReconcileError_CODE_OLAP,
+				Code:     errCode,
 				Message:  err.Error(),
 				FilePath: item.Path,
 			})
