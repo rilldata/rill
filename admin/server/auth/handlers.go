@@ -9,7 +9,6 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/pkg/sessionutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
@@ -52,12 +51,7 @@ func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request) {
 	state := base64.StdEncoding.EncodeToString(b)
 
 	// Get auth cookie
-	sess, err := sessionutil.GetCookie(a.cookies, r, cookieName)
-	if err != nil {
-		a.logger.Error("failed to get cookie", zap.String("cookie_name", cookieName), zap.Error(err), observability.ZapCtx(r.Context()))
-		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
-		return
-	}
+	sess := a.cookies.Get(r, cookieName)
 
 	// Set state in cookie
 	sess.Values[cookieFieldState] = state
@@ -84,13 +78,7 @@ func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request) {
 // Finally, it redirects the user to the location specified in the initial call to authLogin.
 func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request) {
 	// Get auth cookie
-	sess, err := sessionutil.GetCookie(a.cookies, r, cookieName)
-	if err != nil {
-		a.logger.Error("failed to get cookie", zap.String("cookie_name", cookieName), zap.Error(err), observability.ZapCtx(r.Context()))
-		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
-		return
-	}
-
+	sess := a.cookies.Get(r, cookieName)
 	// Check that random state matches (for CSRF protection)
 	if r.URL.Query().Get("state") != sess.Values[cookieFieldState] {
 		http.Error(w, "invalid state parameter", http.StatusBadRequest)
@@ -192,13 +180,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 // Once the logout has completed, the auth provider will redirect the user to authLogoutCallback.
 func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request) {
 	// Get auth cookie
-	sess, err := sessionutil.GetCookie(a.cookies, r, cookieName)
-	if err != nil {
-		a.logger.Error("failed to get cookie", zap.String("cookie_name", cookieName), zap.Error(err), observability.ZapCtx(r.Context()))
-		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
-		return
-	}
-
+	sess := a.cookies.Get(r, cookieName)
 	// Revoke access token and clear in cookie
 	authToken, ok := sess.Values[cookieFieldAccessToken].(string)
 	if ok && authToken != "" {
@@ -248,13 +230,7 @@ func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request) {
 // authLogoutCallback is called when a logout flow iniated by authLogout has completed.
 func (a *Authenticator) authLogoutCallback(w http.ResponseWriter, r *http.Request) {
 	// Get auth cookie
-	sess, err := sessionutil.GetCookie(a.cookies, r, cookieName)
-	if err != nil {
-		a.logger.Error("failed to get cookie", zap.String("cookie_name", cookieName), zap.Error(err), observability.ZapCtx(r.Context()))
-		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
-		return
-	}
-
+	sess := a.cookies.Get(r, cookieName)
 	// Get redirect destination
 	redirect, ok := sess.Values[cookieFieldRedirect].(string)
 	if !ok || redirect == "" {
