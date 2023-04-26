@@ -1,9 +1,16 @@
 <!-- This page is for cases when user authorised the github app on another github account which doesn't have access to the repo  -->
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { Button } from "@rilldata/web-common/components/button";
-  import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
+  import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
+  import Github from "@rilldata/web-common/components/icons/Github.svelte";
+  import CtaButton from "../../../../../components/calls-to-action/CTAButton.svelte";
+  import CtaContentContainer from "../../../../../components/calls-to-action/CTAContentContainer.svelte";
+  import CtaHeader from "../../../../../components/calls-to-action/CTAHeader.svelte";
+  import CtaLayoutContainer from "../../../../../components/calls-to-action/CTALayoutContainer.svelte";
+  import CtaMessage from "../../../../../components/calls-to-action/CTAMessage.svelte";
+  import GithubRepoInline from "../../../../../components/projects/GithubRepoInline.svelte";
+  import GithubUserInline from "../../../../../components/projects/GithubUserInline.svelte";
 
   const urlParams = new URLSearchParams(window.location.search);
   const remote = urlParams.get("remote");
@@ -30,15 +37,20 @@
 </svelte:head>
 
 {#if $user.data && $user.data.user}
-  <div class="flex flex-col justify-center items-center h-3/5">
-    <h1 class="text-3xl font-medium text-gray-800 mb-4">Connect to Github</h1>
-    <p class="text-lg text-gray-700 text-2xl mb-4">
-      Your authorised github user `{@html githubUsername}` is not a collaborator
-      to repo {@html remote}.<br />
-      Click the button below to re-authorise/authorise another account.
-    </p>
-    <div class="mt-4">
-      <Button type="primary" on:click={handleGoToGithub}>Go to Github</Button>
-    </div>
-  </div>
+  <CtaLayoutContainer>
+    <CtaContentContainer width="600px">
+      <Github className="w-10 h-10 text-gray-900" />
+      <CtaHeader>Connect to Github</CtaHeader>
+      <CtaMessage>
+        Your authorised github user <GithubUserInline {githubUsername} />
+        is not a collaborator to repo <GithubRepoInline githubUrl={remote} />.
+      </CtaMessage>
+      <CtaMessage>
+        Click the button below to re-authorise/authorise another account.
+      </CtaMessage>
+      <CtaButton variant="primary" on:click={handleGoToGithub}>
+        Connect to Github
+      </CtaButton>
+    </CtaContentContainer>
+  </CtaLayoutContainer>
 {/if}
