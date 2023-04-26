@@ -5,13 +5,16 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createAdminServiceGetProject } from "../../client";
+  import { getRepoNameFromGithubUrl } from "./github-utils";
 
   export let organization: string;
   export let project: string;
 
   $: proj = createAdminServiceGetProject(organization, project);
   $: isGithubConnected = !!$proj.data?.project?.githubUrl;
-  $: prettyGithubRepo = $proj.data?.project?.githubUrl?.split("github.com/")[1];
+  $: repoName =
+    $proj.data?.project?.githubUrl &&
+    getRepoNameFromGithubUrl($proj.data.project.githubUrl);
 </script>
 
 {#if $proj.data}
@@ -32,7 +35,7 @@
           >
             <Github className="inline-block w-4 h-4" />
             <span class="font-semibold text-[12px] leading-5 font-mono truncate"
-              >{prettyGithubRepo}</span
+              >{repoName}</span
             ></a
           >
         </div>
