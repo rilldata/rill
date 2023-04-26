@@ -814,7 +814,7 @@ func (c *connection) CountOrganizationProjects(ctx context.Context, orgID string
 func (c *connection) CountOrganizationDeploymentsAndSlots(ctx context.Context, orgID string) (*database.OrganizationDeploymentsAndSlots, error) {
 	res := &database.OrganizationDeploymentsAndSlots{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		SELECT COUNT(*) as deployments, SUM(slots) as slots FROM deployments WHERE project_id IN (SELECT id FROM projects WHERE org_id = $1)`, orgID).StructScan(res)
+		SELECT COUNT(*) as deployments, COALESCE(SUM(slots), 0) as slots FROM deployments WHERE project_id IN (SELECT id FROM projects WHERE org_id = $1)`, orgID).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -825,7 +825,7 @@ func (c *connection) CountOrganizationOutstandingInvites(ctx context.Context, or
 	var count int
 	// count outstanding org invites as well as project invites for this org
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		SELECT SUM(total_count) as total_count FROM (
+		SELECT COALESCE(SUM(total_count), 0) as total_count FROM (
   			SELECT COUNT(*) as total_count FROM org_invites WHERE org_id = $1
   			UNION ALL
   			SELECT COUNT(*) as total_count FROM project_invites WHERE project_id IN (SELECT id FROM projects WHERE org_id = $1)
@@ -840,7 +840,7 @@ func (c *connection) CountOrganizationOutstandingInvites(ctx context.Context, or
 func (c *connection) CountSingleUserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error) {
 	var count int
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-	SELECT SUM(total_count) as total_count FROM (
+	SELECT COALESCE(SUM(total_count), 0) as total_count FROM (
 	    SELECT CASE WHEN COUNT(*) = 1 THEN 1 ELSE 0 END as total_count FROM users_orgs_roles WHERE org_id IN (
 	        SELECT org_id FROM users_orgs_roles WHERE user_id = $1
 	    ) GROUP BY org_id
