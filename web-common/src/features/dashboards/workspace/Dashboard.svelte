@@ -43,8 +43,6 @@
 
   let exploreContainerWidth;
 
-  let width;
-
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
   $: selectedDimensionName = metricsExplorer?.selectedDimensionName;
   $: metricTimeSeries = useModelHasTimeSeries(
@@ -54,13 +52,16 @@
   $: hasTimeSeries = $metricTimeSeries.data;
 </script>
 
-<DashboardContainer bind:exploreContainerWidth bind:width {leftMargin}>
+<DashboardContainer bind:exploreContainerWidth {leftMargin}>
   <DashboardHeader {hasTitle} {metricViewName} slot="header" />
 
   <svelte:fragment let:width slot="metrics">
     {#key metricViewName}
       {#if hasTimeSeries}
-        <MetricsTimeSeriesCharts {metricViewName} workspaceWidth={width} />
+        <MetricsTimeSeriesCharts
+          {metricViewName}
+          workspaceWidth={exploreContainerWidth}
+        />
       {:else}
         <MeasuresContainer {exploreContainerWidth} {metricViewName} />
       {/if}

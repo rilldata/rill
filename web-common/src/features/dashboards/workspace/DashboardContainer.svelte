@@ -4,11 +4,13 @@
   import type { Tweened } from "svelte/motion";
 
   export let exploreContainerWidth;
-  export let width;
 
   export let leftMargin: string = undefined;
 
-  const navigationVisibilityTween = getContext(
+  // the navigationPaddingTween is a tweened value that is used
+  // to animate the extra padding that needs to be added to the
+  // dashboard container when the navigation pane is collapsed
+  const navigationPaddingTween = getContext(
     "rill:app:navigation-visibility-tween"
   ) as Tweened<number>;
 
@@ -27,21 +29,50 @@
     listenToNodeResize: headerContainerNodeWatcher,
   } = createResizeListenerActionFactory();
 
-  $: exploreContainerWidth = $dashboardContainerNode?.offsetWidth || 0;
+  /**
+   * Get the total size of an element, including margin
+   * @param element
+   */
+  function getEltSize(element: HTMLElement, direction: "x" | "y") {
+    if (!["x", "y"].includes(direction)) {
+      throw new Error("direction must be 'x' or 'y'");
+    }
+    if (!element) return 0;
+    // Get the computed style of the element
+    const style = window.getComputedStyle(element);
+    if (direction === "y") {
+      // Get the element's height (including padding and border)
+      const height = element.getBoundingClientRect().height;
+      // Get the margin values
+      const marginTop = parseFloat(style.marginTop);
+      const marginBottom = parseFloat(style.marginBottom);
+      // Calculate the total height including margin
+      return height + marginTop + marginBottom;
+    } else {
+      const width = element.getBoundingClientRect().width;
+      const marginLeft = parseFloat(style.marginLeft);
+      const marginRight = parseFloat(style.marginRight);
+      return width + marginLeft + marginRight;
+    }
+  }
+
+  $: exploreContainerWidth = getEltSize($dashboardContainerNode, "x");
+  $: exploreContainerHeight = getEltSize($dashboardContainerNode, "y");
   // $: console.log("exploreContainerWidth", exploreContainerWidth);
 
-  $: measureContainerWidth = $measuresContainerNode?.offsetWidth || 0;
+  $: measureContainerWidth = getEltSize($measuresContainerNode, "x");
+
+  // $measuresContainerNode?.offsetWidth || 0;
   // $: console.log("measureContainerWidth", measureContainerWidth);
 
-  $: width = $dashboardContainerNode?.getBoundingClientRect()?.width;
+  // $: width = $dashboardContainerNode?.getBoundingClientRect()?.width;
   // $: console.log("width", width);
-
+  $: headerHeight = getEltSize($headerContainerNode, "y");
+  $: console.log("headerHeight", headerHeight);
   $: targetLeaderboardContainerWidth =
     exploreContainerWidth - measureContainerWidth || 0;
 
-  $: targetLeaderboardContainerHeight =
-    $dashboardContainerNode?.getBoundingClientRect()?.height -
-      $headerContainerNode?.getBoundingClientRect()?.height || 0;
+  $: targetLeaderboardContainerHeight = exploreContainerHeight - headerHeight;
 
   $: console.log(
     "targetLeaderboardContainerHeight",
@@ -50,7 +81,7 @@
 
   $: leftSide = leftMargin
     ? leftMargin
-    : `calc(${$navigationVisibilityTween * 24}px + 1.25rem)`;
+    : `calc(${$navigationPaddingTween * 24}px + 1.25rem)`;
 </script>
 
 <section use:dashboardContainerNodeWatcher class="grid items-stretch surface">
@@ -58,7 +89,7 @@
     use:headerContainerNodeWatcher
     class="explore-header border-b mb-3"
     style:padding-left={leftSide}
-    style:width={width + "px"}
+    style:width={exploreContainerWidth + "px"}
   >
     <slot name="header" />
   </div>
@@ -67,10 +98,7 @@
     class="explore-metrics mb-8"
     style:padding-left={leftSide}
   >
-    <slot
-      name="metrics"
-      width={$dashboardContainerNode?.getBoundingClientRect()?.width}
-    />
+    <slot name="metrics" width={exploreContainerWidth} />
   </div>
   <div
     class="explore-leaderboards px-4"
