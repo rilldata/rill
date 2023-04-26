@@ -230,7 +230,7 @@ func collectDuckDBIngestionProperties(properties map[string]interface{}) map[str
 }
 
 func convertToStatementParamsStr(paths []string, properties map[string]interface{}) string {
-	ingestionParamsStr := make([]string, 0, len(properties) + 1)
+	ingestionParamsStr := make([]string, 0, len(properties)+1)
 	// The first parameter is a source path
 	ingestionParamsStr = append(ingestionParamsStr, fmt.Sprintf("['%s']", strings.Join(paths, "','")))
 	for key, value := range properties {
