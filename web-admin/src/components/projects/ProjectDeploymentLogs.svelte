@@ -34,10 +34,12 @@
     <ul class="w-full">
       {#each errors as error}
         <li
-          class="flex justify-between py-1 px-12 border-b border-gray-200 bg-red-50 font-mono"
+          class="flex gap-x-2 justify-between py-1 px-12 border-b border-gray-200 bg-red-50 font-mono"
         >
           <span class="text-red-600">{error.message}</span>
-          <span class="text-stone-500 font-semibold">{error.filePath}</span>
+          <span class="text-stone-500 font-semibold shrink-0">
+            {error.filePath}
+          </span>
         </li>
       {/each}
     </ul>
