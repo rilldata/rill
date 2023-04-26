@@ -376,10 +376,7 @@
 </script>
 
 {#if topListQuery}
-  <div
-    style:height="calc(100vh - var(--header, 130px) - 4rem)"
-    style:min-width="365px"
-  >
+  <div style:height="calc(100vh - 130px)" style:min-width="365px">
     <DimensionHeader
       {metricViewName}
       {dimensionName}
