@@ -248,7 +248,7 @@ func TestCSVIngestionWithColumns(t *testing.T) {
 		Name:      "csv_source",
 		Connector: "local_file",
 		Properties: map[string]any{
-			"path":                 filePath,
+			"path": filePath,
 			"duckdb": map[string]any{
 				"csv": map[string]any{
 					"auto_detect":   false,
@@ -366,7 +366,7 @@ func TestJsonIngestionWithLessColumns(t *testing.T) {
 		Name:      "json_source",
 		Connector: "local_file",
 		Properties: map[string]any{
-			"path":           filePath,
+			"path": filePath,
 			"duckdb": map[string]any{
 				"json": map[string]any{
 					"columns": "{id:'INTEGER',name:'VARCHAR',isActive:'BOOLEAN',createdDate:'VARCHAR',}",
@@ -405,7 +405,7 @@ func TestJsonIngestionWithVariousParams(t *testing.T) {
 		Name:      "json_source",
 		Connector: "local_file",
 		Properties: map[string]any{
-			"path":                       filePath,
+			"path": filePath,
 			"duckdb": map[string]any{
 				"json": map[string]any{
 					"maximum_object_size": "9999999",
@@ -453,7 +453,7 @@ func TestJsonIngestionWithInvalidParam(t *testing.T) {
 		Name:      "json_source",
 		Connector: "local_file",
 		Properties: map[string]any{
-			"path":                 filePath,
+			"path": filePath,
 			"duckdb": map[string]any{
 				"json": map[string]any{
 					"invalid_param": "auto",
