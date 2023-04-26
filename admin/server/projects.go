@@ -207,8 +207,34 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	// Enforce per org project limit
+	count, err := s.admin.DB.CountProjectsForOrganization(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if org.QuotaProjects >= 0 && count >= org.QuotaProjects {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d projects", org.Name, org.QuotaProjects)
+	}
+
 	if !claims.OrganizationPermissions(ctx, org.ID).CreateProjects {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
+	}
+
+	// check per deployment slots limit
+	if org.QuotaProjects >= 0 && int(req.ProdSlots) > org.QuotaProjects {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can't provision more than %d slots per deployment", org.QuotaSlotsPerDeployment)
+	}
+
+	// check per project deployments and slots limit
+	deploymentsSlots, err := s.admin.DB.CountDeploymentsForOrganization(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if org.QuotaDeployments >= 0 && deploymentsSlots.Deployments >= org.QuotaDeployments {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d deployments", org.Name, org.QuotaDeployments)
+	}
+	if org.QuotaSlotsTotal >= 0 && deploymentsSlots.Slots+int(req.ProdSlots) > org.QuotaSlotsTotal {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d total slots", org.Name, org.QuotaSlotsTotal)
 	}
 
 	// check github app is installed and caller has access on the repo
@@ -375,6 +401,19 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 	claims := auth.GetClaims(ctx)
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add project members")
+	}
+
+	// Check outstanding invites quota
+	count, err := s.admin.DB.CountInvitesForOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if org.QuotaOutstandingInvites >= 0 && count >= org.QuotaOutstandingInvites {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q can at most have %d outstanding invitations", org.Name, org.QuotaOutstandingInvites)
 	}
 
 	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
