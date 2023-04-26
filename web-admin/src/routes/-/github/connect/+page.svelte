@@ -40,7 +40,7 @@
       <Github className="w-10 h-10 text-gray-900" />
       <CtaHeader>Connect to Github</CtaHeader>
       <CtaMessage>
-        Please grant read-only access to your repository <GithubRepoInline
+        Please grant read-only access to your repository<br /><GithubRepoInline
           githubUrl={remote}
         />
       </CtaMessage>

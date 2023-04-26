@@ -29,7 +29,7 @@
 
 {#if $user.data && $user.data.user}
   <CtaLayoutContainer>
-    <CtaContentContainer width="600px">
+    <CtaContentContainer>
       <Github className="w-10 h-10 text-gray-900" />
       <CtaHeader>Connect to Github</CtaHeader>
       <CtaMessage>
