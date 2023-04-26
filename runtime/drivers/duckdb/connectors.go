@@ -185,7 +185,7 @@ func containsAny(s string, targets []string) bool {
 
 func generateReadCsvStatement(paths []string, properties map[string]interface{}) (string, error) {
 	ingestionProps := collectDuckDBIngestionProperties("duckdb.csv.", properties)
-	// backward compatibility: csv.delimiter might be passed separately from duckdb.delim and has a priority
+	// backward compatibility: csv.delimiter might be passed separately from duckdb.csv.delim and has a priority
 	if csvDelimiter, csvDelimiterDefined := properties["csv.delimiter"]; csvDelimiterDefined {
 		ingestionProps["delim"] = fmt.Sprintf("'%v'", csvDelimiter)
 	}
@@ -199,7 +199,7 @@ func generateReadParquetStatement(paths []string, properties map[string]interfac
 	if _, hivePartitioningDefined := ingestionProps["hive_partitioning"]; !hivePartitioningDefined {
 		ingestionProps["hive_partitioning"] = true
 	}
-	// backward compatibility: hive_partitioning might be passed separately from duckdb.hive_partitioning
+	// backward compatibility: hive_partitioning might be passed separately from duckdb.parquet.hive_partitioning
 	if hivePartitioning, hpDefinedSeparately := properties["hive_partitioning"]; hpDefinedSeparately {
 		ingestionProps["hive_partitioning"] = hivePartitioning
 	}

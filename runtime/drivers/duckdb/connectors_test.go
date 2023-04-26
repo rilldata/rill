@@ -249,10 +249,14 @@ func TestCSVIngestionWithColumns(t *testing.T) {
 		Connector: "local_file",
 		Properties: map[string]any{
 			"path":                 filePath,
-			"duckdb.auto_detect":   false,
-			"duckdb.header":        true,
-			"duckdb.ignore_errors": true,
-			"duckdb.columns":       "{id:'INTEGER',name:'VARCHAR',country:'VARCHAR',city:'VARCHAR'}",
+			"duckdb": map[string]any{
+				"csv": map[string]any{
+					"auto_detect":   false,
+					"header":        true,
+					"ignore_errors": true,
+					"columns":       "{id:'INTEGER',name:'VARCHAR',country:'VARCHAR',city:'VARCHAR'}",
+				},
+			},
 		},
 	})
 	require.NoError(t, err)
@@ -323,8 +327,12 @@ func TestJsonIngestionWithColumns(t *testing.T) {
 		Name:      "json_source",
 		Connector: "local_file",
 		Properties: map[string]any{
-			"path":           filePath,
-			"duckdb.columns": "{id:'INTEGER',name:'VARCHAR',isActive:'BOOLEAN',createdDate:'VARCHAR',address:'STRUCT(street VARCHAR, city VARCHAR, postalCode VARCHAR)',tags:'VARCHAR[]',projects:'STRUCT(projectId INTEGER, projectName VARCHAR, startDate VARCHAR, endDate VARCHAR)[]',scores:'INTEGER[]'}",
+			"path": filePath,
+			"duckdb": map[string]any{
+				"json": map[string]any{
+					"columns": "{id:'INTEGER', name:'VARCHAR', isActive:'BOOLEAN', createdDate:'VARCHAR', address:'STRUCT(street VARCHAR, city VARCHAR, postalCode VARCHAR)', tags:'VARCHAR[]', projects:'STRUCT(projectId INTEGER, projectName VARCHAR, startDate VARCHAR, endDate VARCHAR)[]', scores:'INTEGER[]'}",
+				},
+			},
 		},
 	})
 	require.NoError(t, err)
@@ -359,7 +367,11 @@ func TestJsonIngestionWithLessColumns(t *testing.T) {
 		Connector: "local_file",
 		Properties: map[string]any{
 			"path":           filePath,
-			"duckdb.columns": "{id:'INTEGER',name:'VARCHAR',isActive:'BOOLEAN',createdDate:'VARCHAR',}",
+			"duckdb": map[string]any{
+				"json": map[string]any{
+					"columns": "{id:'INTEGER',name:'VARCHAR',isActive:'BOOLEAN',createdDate:'VARCHAR',}",
+				},
+			},
 		},
 	})
 	require.NoError(t, err)
@@ -394,16 +406,20 @@ func TestJsonIngestionWithVariousParams(t *testing.T) {
 		Connector: "local_file",
 		Properties: map[string]any{
 			"path":                       filePath,
-			"duckdb.maximum_object_size": "9999999",
-			"duckdb.lines":               true,
-			"duckdb.ignore_errors":       true,
-			"duckdb.compression":         "auto",
-			"duckdb.columns":             "{id:'INTEGER',name:'VARCHAR',isActive:'BOOLEAN',createdDate:'VARCHAR',}",
-			"duckdb.json_format":         "records",
-			"duckdb.auto_detect":         false,
-			"duckdb.sample_size":         -1,
-			"duckdb.dateformat":          "iso",
-			"duckdb.timestampformat":     "iso",
+			"duckdb": map[string]any{
+				"json": map[string]any{
+					"maximum_object_size": "9999999",
+					"lines":               true,
+					"ignore_errors":       true,
+					"compression":         "auto",
+					"columns":             "{id:'INTEGER',name:'VARCHAR',isActive:'BOOLEAN',createdDate:'VARCHAR',}",
+					"json_format":         "records",
+					"auto_detect":         false,
+					"sample_size":         -1,
+					"dateformat":          "iso",
+					"timestampformat":     "iso",
+				},
+			},
 		},
 	})
 	require.NoError(t, err)
@@ -438,7 +454,11 @@ func TestJsonIngestionWithInvalidParam(t *testing.T) {
 		Connector: "local_file",
 		Properties: map[string]any{
 			"path":                 filePath,
-			"duckdb.invalid_param": "auto",
+			"duckdb": map[string]any{
+				"json": map[string]any{
+					"invalid_param": "auto",
+				},
+			},
 		},
 	})
 	require.Error(t, err, "Invalid named parameter \"invalid_param\" for function read_json")

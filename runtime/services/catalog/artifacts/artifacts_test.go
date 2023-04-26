@@ -137,23 +137,23 @@ timeseries: time
 smallest_time_grain: day
 default_time_range: P1D
 dimensions:
-- label: Dim0_L
-  property: dim0
-  description: Dim0_D
-- label: Dim1_L
-  property: dim1
-  description: Dim1_D
+    - label: Dim0_L
+      property: dim0
+      description: Dim0_D
+    - label: Dim1_L
+      property: dim1
+      description: Dim1_D
 measures:
-- label: Mea0_L
-  name: measure_0
-  expression: count(c0)
-  description: Mea0_D
-  format_preset: humanise
-- label: Mea1_L
-  name: avg_measure
-  expression: avg(c1)
-  description: Mea1_D
-  format_preset: humanise
+    - label: Mea0_L
+      name: measure_0
+      expression: count(c0)
+      description: Mea0_D
+      format_preset: humanise
+    - label: Mea1_L
+      name: avg_measure
+      expression: avg(c1)
+      description: Mea1_D
+      format_preset: humanise
 `,
 		},
 	}
