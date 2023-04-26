@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  RELEASE: ${{ contains('refs/tags', github.ref_name) }}
+  RELEASE: ${{ contains('refs/tags', github.ref) }}
 
 jobs:
   release:
@@ -35,7 +35,10 @@ jobs:
 
       - name: Build & Publish Rill docker image
         run: |-
-          git fetch --all --tags
+          if [ ${RELEASE} == "false" ]; then
+            echo "Fetch tags to get the last tagged version"
+            git fetch --all --tags;
+          fi
 
           go build -o rill -mod=readonly -ldflags="-s -w -X main.Version=$(git describe --tags `git rev-list --tags --max-count=1`)-headless -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
 

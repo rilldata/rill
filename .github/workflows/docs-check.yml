@@ -4,12 +4,11 @@ on:
     paths:
       - ".github/workflows/docs-check.yml"
       - "docs/**"
-      - "docs-enterprise/**"
 jobs:
   build:
     strategy:
       matrix:
-        name: ["docs", "docs-enterprise"]
+        name: ["docs"]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
