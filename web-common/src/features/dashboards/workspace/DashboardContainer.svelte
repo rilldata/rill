@@ -58,17 +58,25 @@
 
   $: exploreContainerWidth = getEltSize($dashboardContainerNode, "x");
   $: exploreContainerHeight = getEltSize($dashboardContainerNode, "y");
-  // $: console.log("exploreContainerWidth", exploreContainerWidth);
+  $: console.log("exploreContainerWidth", exploreContainerWidth);
+  $: console.log(
+    "$dashboardContainerNode?.offsetWidth",
+    $dashboardContainerNode?.offsetWidth
+  );
 
   $: measureContainerWidth = getEltSize($measuresContainerNode, "x");
 
   // $measuresContainerNode?.offsetWidth || 0;
-  // $: console.log("measureContainerWidth", measureContainerWidth);
+  $: console.log("measureContainerWidth", measureContainerWidth);
+  $: console.log(
+    "$measuresContainerNode?.offsetWidth",
+    $measuresContainerNode?.offsetWidth
+  );
 
   // $: width = $dashboardContainerNode?.getBoundingClientRect()?.width;
   // $: console.log("width", width);
   $: headerHeight = getEltSize($headerContainerNode, "y");
-  $: console.log("headerHeight", headerHeight);
+  // $: console.log("headerHeight", headerHeight);
   $: targetLeaderboardContainerWidth =
     exploreContainerWidth - measureContainerWidth || 0;
 
@@ -77,6 +85,12 @@
   $: console.log(
     "targetLeaderboardContainerHeight",
     targetLeaderboardContainerHeight
+  );
+
+  $: console.log("navigationPaddingTween", $navigationPaddingTween);
+  $: console.log(
+    "sum",
+    targetLeaderboardContainerWidth + measureContainerWidth
   );
 
   $: leftSide = leftMargin
