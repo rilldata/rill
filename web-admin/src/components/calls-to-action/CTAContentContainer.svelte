@@ -1,8 +1,10 @@
-<div class="flex flex-col justify-center items-center gap-y-6 w-[400px]">
+<script lang="ts">
+  export let width = "400px";
+</script>
+
+<div
+  class="flex flex-col justify-center items-center gap-y-6 w-full"
+  style="max-width: {width}"
+>
   <slot />
-  <!-- <slot name="image" />
-  <slot name="title" />
-  <slot name="message" />
-  <slot name="button" />
-  <slot name="footer" /> -->
 </div>
