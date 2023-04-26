@@ -167,7 +167,7 @@ func sourceReader(paths []string, properties map[string]interface{}) (string, er
 		return generateReadParquetStatement(paths, properties)
 	} else if containsAny(format, []string{".json", ".ndjson"}) {
 		// JSON reader
-		return generateReadJsonStatement(paths, properties)
+		return generateReadJSONStatement(paths, properties)
 	} else {
 		return "", fmt.Errorf("file type not supported : %s", format)
 	}
@@ -206,7 +206,7 @@ func generateReadParquetStatement(paths []string, properties map[string]interfac
 	return fmt.Sprintf("read_parquet(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
 }
 
-func generateReadJsonStatement(paths []string, properties map[string]interface{}) (string, error) {
+func generateReadJSONStatement(paths []string, properties map[string]interface{}) (string, error) {
 	ingestionProps := collectDuckDBIngestionProperties(properties)
 	// auto_detect is false by default so setting it to true simplifies the ingestion
 	// if columns are defined then DuckDB turns the auto-detection off so no need to check this case here
