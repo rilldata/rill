@@ -19,6 +19,12 @@
 
   $: width = $observedNode?.getBoundingClientRect()?.width;
 
+  $: console.log(
+    "DashboardContainer.svelte: exploreContainerWidth",
+    exploreContainerWidth
+  );
+  $: console.log("DashboardContainer.svelte: width", width);
+
   $: leftSide = leftMargin
     ? leftMargin
     : `calc(${$navigationVisibilityTween * 24}px + 1.25rem)`;

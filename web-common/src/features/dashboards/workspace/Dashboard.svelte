@@ -44,6 +44,11 @@
   let exploreContainerWidth;
 
   let width;
+  $: console.log(
+    "Dashboard.svelte: exploreContainerWidth",
+    exploreContainerWidth
+  );
+  $: console.log("Dashboard.svelte: width", width);
 
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
   $: selectedDimensionName = metricsExplorer?.selectedDimensionName;
