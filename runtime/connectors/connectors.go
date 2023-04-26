@@ -164,16 +164,5 @@ func ConsumeAsIterator(ctx context.Context, env *Env, source *Source) (FileItera
 }
 
 func (s *Source) PropertiesEquals(o *Source) bool {
-	if len(s.Properties) != len(o.Properties) {
-		return false
-	}
-
-	for k1, v1 := range s.Properties {
-		v2, ok := o.Properties[k1]
-		if !ok || !reflect.DeepEqual(v1, v2) {
-			return false
-		}
-	}
-
-	return true
+	return reflect.DeepEqual(s.Properties, o.Properties)
 }
