@@ -1473,23 +1473,6 @@ export class TriggerRefreshRequest extends Message<TriggerRefreshRequest> {
  * @generated from message rill.runtime.v1.TriggerRefreshResponse
  */
 export class TriggerRefreshResponse extends Message<TriggerRefreshResponse> {
-  /**
-   * Errors encountered during reconciliation. If strict = false, any path in
-   * affected_paths without an error can be assumed to have been reconciled succesfully.
-   *
-   * @generated from field: repeated rill.runtime.v1.ReconcileError errors = 1;
-   */
-  errors: ReconcileError[] = [];
-
-  /**
-   * affected_paths lists all the file artifact paths that were considered while
-   * executing the reconciliation. If changed_paths was empty, this will include all
-   * code artifacts in the repo.
-   *
-   * @generated from field: repeated string affected_paths = 2;
-   */
-  affectedPaths: string[] = [];
-
   constructor(data?: PartialMessage<TriggerRefreshResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1498,8 +1481,6 @@ export class TriggerRefreshResponse extends Message<TriggerRefreshResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.TriggerRefreshResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "errors", kind: "message", T: ReconcileError, repeated: true },
-    { no: 2, name: "affected_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TriggerRefreshResponse {

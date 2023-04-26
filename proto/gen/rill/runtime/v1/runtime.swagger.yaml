@@ -2377,23 +2377,6 @@ definitions:
           $ref: '#/definitions/TopKEntry'
   v1TriggerRefreshResponse:
     type: object
-    properties:
-      errors:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ReconcileError'
-        description: |-
-          Errors encountered during reconciliation. If strict = false, any path in
-          affected_paths without an error can be assumed to have been reconciled succesfully.
-      affectedPaths:
-        type: array
-        items:
-          type: string
-        description: |-
-          affected_paths lists all the file artifact paths that were considered while
-          executing the reconciliation. If changed_paths was empty, this will include all
-          code artifacts in the repo.
     title: Response message for RuntimeService.TriggerRefresh
   v1TriggerSyncResponse:
     type: object

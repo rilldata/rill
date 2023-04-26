@@ -232,13 +232,7 @@ export interface V1TriggerSyncResponse {
 }
 
 export interface V1TriggerRefreshResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
+  [key: string]: any;
 }
 
 export interface V1TopK {

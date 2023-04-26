@@ -77,6 +77,7 @@ type DB interface {
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, logs string) (*Deployment, error)
+	UpdateDeploymentBranch(ctx context.Context, id, branch string) (*Deployment, error)
 	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
 
 	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
@@ -220,7 +221,6 @@ func (e *Variables) Scan(value interface{}) error {
 type InsertProjectOptions struct {
 	OrganizationID       string `validate:"required"`
 	Name                 string `validate:"slug"`
-	UserID               string
 	Description          string
 	Public               bool
 	Region               string

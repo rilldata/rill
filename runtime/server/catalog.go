@@ -168,15 +168,12 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefre
 		return nil, ErrForbidden
 	}
 
-	res, err := s.runtime.RefreshSource(ctx, req.InstanceId, req.Name)
+	err := s.runtime.RefreshSource(ctx, req.InstanceId, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	return &runtimev1.TriggerRefreshResponse{
-		Errors:        res.Errors,
-		AffectedPaths: res.AffectedPaths,
-	}, nil
+	return &runtimev1.TriggerRefreshResponse{}, nil
 }
 
 // TriggerSync implements RuntimeService.

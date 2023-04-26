@@ -64,25 +64,25 @@ func (r *Runtime) Reconcile(ctx context.Context, instanceID string, changedPaths
 	return resp, nil
 }
 
-func (r *Runtime) RefreshSource(ctx context.Context, instanceID, name string) (*catalog.ReconcileResult, error) {
+func (r *Runtime) RefreshSource(ctx context.Context, instanceID, name string) error {
 	repo, err := r.Repo(ctx, instanceID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = repo.Sync(ctx, instanceID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	cat, err := r.NewCatalogService(ctx, instanceID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	path, ok := cat.Meta.NameToPath[name]
 	if !ok {
-		return nil, fmt.Errorf("artifact not found for source")
+		return fmt.Errorf("artifact not found for source")
 	}
 
 	resp, err := cat.Reconcile(ctx, catalog.ReconcileConfig{
@@ -92,13 +92,13 @@ func (r *Runtime) RefreshSource(ctx context.Context, instanceID, name string) (*
 		SafeSourceRefresh: r.opts.SafeSourceRefresh,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if len(resp.Errors) > 0 {
-		return nil, errors.New(resp.Errors[0].Message)
+		return errors.New(resp.Errors[0].Message)
 	}
 
-	return resp, nil
+	return nil
 }
 
 func (r *Runtime) SyncExistingTables(ctx context.Context, instanceID string) error {
