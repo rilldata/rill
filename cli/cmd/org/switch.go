@@ -14,7 +14,7 @@ import (
 func SwitchCmd(cfg *config.Config) *cobra.Command {
 	switchCmd := &cobra.Command{
 		Use:   "switch [<org-name>]",
-		Short: "Switch",
+		Short: "Switch to other organization",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)

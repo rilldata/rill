@@ -16,7 +16,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 
 	deleteCmd := &cobra.Command{
 		Use:   "delete <org-name>",
-		Short: "Delete",
+		Short: "Delete the organization",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)

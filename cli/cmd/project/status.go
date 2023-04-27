@@ -18,7 +18,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 	statusCmd := &cobra.Command{
 		Use:   "status",
 		Args:  cobra.NoArgs,
-		Short: "Status",
+		Short: "Project deployment status",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {

@@ -18,7 +18,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	editCmd := &cobra.Command{
 		Use:   "edit",
 		Args:  cobra.NoArgs,
-		Short: "Edit",
+		Short: "Edit the project details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
