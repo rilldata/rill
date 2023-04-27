@@ -30,6 +30,7 @@ proto/
 buf.lock
 go.mod
 go.sum
+_redirects
 
 log
 *.log

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import AccessControls from "@rilldata/web-admin/components/access-controls/AccessControls.svelte";
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizations,
