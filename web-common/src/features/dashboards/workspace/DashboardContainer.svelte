@@ -29,7 +29,8 @@
   >
     <slot name="header" />
   </div>
-  <div class="explore-metrics mb-8" style:padding-left={leftSide}>
+  <hr class="pb-3 pt-1 ui-divider -ml-12" />
+  <div class="explore-metrics" style:padding-left={leftSide}>
     <slot name="metrics" />
   </div>
   <div class="explore-leaderboards pr-4 pb-8">
