@@ -67,7 +67,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 	gh := github.NewClient(&http.Client{Transport: itr})
 
 	// Create provisioner
-	prov, err := provisioner.NewStatic(opts.ProvisionerSpec, logger, db, issuer)
+	prov, err := provisioner.NewStatic(opts.ProvisionerSpec, db)
 	if err != nil {
 		return nil, err
 	}
@@ -89,11 +89,6 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 }
 
 func (s *Service) Close() error {
-	err := s.provisioner.Close()
-	if err != nil {
-		return err
-	}
-
 	s.closeCtxCancel()
 	// TODO: Also wait for background items to finish (up to a timeout)
 
