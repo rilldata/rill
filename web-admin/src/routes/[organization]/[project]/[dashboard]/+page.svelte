@@ -49,15 +49,6 @@
       await getDashboardsForProject($project.data)
     );
   }
-
-  $: metricsExplorer = useDashboardStore(dash);
-  const stateSyncManager = new StateSyncManager(dash);
-  $: if ($metricsExplorer) {
-    stateSyncManager.handleStateChange($metricsExplorer);
-  }
-  $: if ($page) {
-    stateSyncManager.handleUrlChange();
-  }
 </script>
 
 <svelte:head>

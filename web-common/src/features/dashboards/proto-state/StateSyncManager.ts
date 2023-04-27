@@ -26,6 +26,7 @@ export class StateSyncManager {
   public handleUrlChange() {
     const pageUrl = get(page).url;
     const newUrlState = pageUrl.searchParams.get("state");
+    console.log(newUrlState);
     if (this.urlState === newUrlState) return;
     this.urlState = newUrlState;
 

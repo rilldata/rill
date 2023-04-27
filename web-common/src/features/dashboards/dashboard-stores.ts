@@ -53,6 +53,7 @@ const updateMetricsExplorerByName = (
   absenceCallback?: () => MetricsExplorerEntity
 ) => {
   update((state) => {
+    console.log(name, state.entities[name]);
     if (!state.entities[name]) {
       if (absenceCallback) {
         state.entities[name] = absenceCallback();
