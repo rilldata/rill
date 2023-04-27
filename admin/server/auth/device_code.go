@@ -145,21 +145,13 @@ func (a *Authenticator) handleUserCodeConfirmation(w http.ResponseWriter, r *htt
 	}
 	userID := claims.OwnerID()
 
-	authCode, err := a.admin.DB.FindDeviceAuthCodeByUserCode(r.Context(), userCode)
+	authCode, err := a.admin.DB.FindPendingDeviceAuthCodeByUserCode(r.Context(), userCode)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			http.Error(w, fmt.Sprintf("no such user code: %s found", userCode), http.StatusBadRequest)
 			return
 		}
 		internalServerError(w, fmt.Errorf("failed to get auth code for userCode: %s, %w", userCode, err))
-		return
-	}
-	if authCode.ApprovalState != database.DeviceAuthCodeStatePending {
-		http.Error(w, "device code already used", http.StatusBadRequest)
-		return
-	}
-	if authCode.Expiry.Before(time.Now()) {
-		http.Error(w, "device code expired", http.StatusBadRequest)
 		return
 	}
 
@@ -170,7 +162,7 @@ func (a *Authenticator) handleUserCodeConfirmation(w http.ResponseWriter, r *htt
 	} else {
 		authCode.ApprovalState = database.DeviceAuthCodeStateApproved
 	}
-	err = a.admin.DB.UpdateDeviceAuthCode(r.Context(), userCode, userID, authCode.ApprovalState)
+	err = a.admin.DB.UpdateDeviceAuthCode(r.Context(), authCode.ID, userID, authCode.ApprovalState)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to update auth code for userCode: %s, %w", userCode, err))
 	}

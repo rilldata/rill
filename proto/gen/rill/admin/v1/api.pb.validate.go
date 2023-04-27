@@ -3503,6 +3503,626 @@ var _ interface {
 	ErrorName() string
 } = UpdateProjectVariablesResponseValidationError{}
 
+// Validate checks the field values on TriggerReconcileRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *TriggerReconcileRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on TriggerReconcileRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// TriggerReconcileRequestMultiError, or nil if none found.
+func (m *TriggerReconcileRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *TriggerReconcileRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for DeploymentId
+
+	if len(errors) > 0 {
+		return TriggerReconcileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// TriggerReconcileRequestMultiError is an error wrapping multiple validation
+// errors returned by TriggerReconcileRequest.ValidateAll() if the designated
+// constraints aren't met.
+type TriggerReconcileRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m TriggerReconcileRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m TriggerReconcileRequestMultiError) AllErrors() []error { return m }
+
+// TriggerReconcileRequestValidationError is the validation error returned by
+// TriggerReconcileRequest.Validate if the designated constraints aren't met.
+type TriggerReconcileRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TriggerReconcileRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TriggerReconcileRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TriggerReconcileRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TriggerReconcileRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TriggerReconcileRequestValidationError) ErrorName() string {
+	return "TriggerReconcileRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e TriggerReconcileRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTriggerReconcileRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TriggerReconcileRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TriggerReconcileRequestValidationError{}
+
+// Validate checks the field values on TriggerReconcileResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *TriggerReconcileResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on TriggerReconcileResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// TriggerReconcileResponseMultiError, or nil if none found.
+func (m *TriggerReconcileResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *TriggerReconcileResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return TriggerReconcileResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// TriggerReconcileResponseMultiError is an error wrapping multiple validation
+// errors returned by TriggerReconcileResponse.ValidateAll() if the designated
+// constraints aren't met.
+type TriggerReconcileResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m TriggerReconcileResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m TriggerReconcileResponseMultiError) AllErrors() []error { return m }
+
+// TriggerReconcileResponseValidationError is the validation error returned by
+// TriggerReconcileResponse.Validate if the designated constraints aren't met.
+type TriggerReconcileResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TriggerReconcileResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TriggerReconcileResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TriggerReconcileResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TriggerReconcileResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TriggerReconcileResponseValidationError) ErrorName() string {
+	return "TriggerReconcileResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e TriggerReconcileResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTriggerReconcileResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TriggerReconcileResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TriggerReconcileResponseValidationError{}
+
+// Validate checks the field values on TriggerRefreshSourcesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *TriggerRefreshSourcesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on TriggerRefreshSourcesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// TriggerRefreshSourcesRequestMultiError, or nil if none found.
+func (m *TriggerRefreshSourcesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *TriggerRefreshSourcesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for DeploymentId
+
+	if len(errors) > 0 {
+		return TriggerRefreshSourcesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// TriggerRefreshSourcesRequestMultiError is an error wrapping multiple
+// validation errors returned by TriggerRefreshSourcesRequest.ValidateAll() if
+// the designated constraints aren't met.
+type TriggerRefreshSourcesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m TriggerRefreshSourcesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m TriggerRefreshSourcesRequestMultiError) AllErrors() []error { return m }
+
+// TriggerRefreshSourcesRequestValidationError is the validation error returned
+// by TriggerRefreshSourcesRequest.Validate if the designated constraints
+// aren't met.
+type TriggerRefreshSourcesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TriggerRefreshSourcesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TriggerRefreshSourcesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TriggerRefreshSourcesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TriggerRefreshSourcesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TriggerRefreshSourcesRequestValidationError) ErrorName() string {
+	return "TriggerRefreshSourcesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e TriggerRefreshSourcesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTriggerRefreshSourcesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TriggerRefreshSourcesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TriggerRefreshSourcesRequestValidationError{}
+
+// Validate checks the field values on TriggerRefreshSourcesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *TriggerRefreshSourcesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on TriggerRefreshSourcesResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// TriggerRefreshSourcesResponseMultiError, or nil if none found.
+func (m *TriggerRefreshSourcesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *TriggerRefreshSourcesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return TriggerRefreshSourcesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// TriggerRefreshSourcesResponseMultiError is an error wrapping multiple
+// validation errors returned by TriggerRefreshSourcesResponse.ValidateAll()
+// if the designated constraints aren't met.
+type TriggerRefreshSourcesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m TriggerRefreshSourcesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m TriggerRefreshSourcesResponseMultiError) AllErrors() []error { return m }
+
+// TriggerRefreshSourcesResponseValidationError is the validation error
+// returned by TriggerRefreshSourcesResponse.Validate if the designated
+// constraints aren't met.
+type TriggerRefreshSourcesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TriggerRefreshSourcesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TriggerRefreshSourcesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TriggerRefreshSourcesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TriggerRefreshSourcesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TriggerRefreshSourcesResponseValidationError) ErrorName() string {
+	return "TriggerRefreshSourcesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e TriggerRefreshSourcesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTriggerRefreshSourcesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TriggerRefreshSourcesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TriggerRefreshSourcesResponseValidationError{}
+
+// Validate checks the field values on TriggerRedeployRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *TriggerRedeployRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on TriggerRedeployRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// TriggerRedeployRequestMultiError, or nil if none found.
+func (m *TriggerRedeployRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *TriggerRedeployRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for DeploymentId
+
+	if len(errors) > 0 {
+		return TriggerRedeployRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// TriggerRedeployRequestMultiError is an error wrapping multiple validation
+// errors returned by TriggerRedeployRequest.ValidateAll() if the designated
+// constraints aren't met.
+type TriggerRedeployRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m TriggerRedeployRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m TriggerRedeployRequestMultiError) AllErrors() []error { return m }
+
+// TriggerRedeployRequestValidationError is the validation error returned by
+// TriggerRedeployRequest.Validate if the designated constraints aren't met.
+type TriggerRedeployRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TriggerRedeployRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TriggerRedeployRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TriggerRedeployRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TriggerRedeployRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TriggerRedeployRequestValidationError) ErrorName() string {
+	return "TriggerRedeployRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e TriggerRedeployRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTriggerRedeployRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TriggerRedeployRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TriggerRedeployRequestValidationError{}
+
+// Validate checks the field values on TriggerRedeployResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *TriggerRedeployResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on TriggerRedeployResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// TriggerRedeployResponseMultiError, or nil if none found.
+func (m *TriggerRedeployResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *TriggerRedeployResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return TriggerRedeployResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// TriggerRedeployResponseMultiError is an error wrapping multiple validation
+// errors returned by TriggerRedeployResponse.ValidateAll() if the designated
+// constraints aren't met.
+type TriggerRedeployResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m TriggerRedeployResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m TriggerRedeployResponseMultiError) AllErrors() []error { return m }
+
+// TriggerRedeployResponseValidationError is the validation error returned by
+// TriggerRedeployResponse.Validate if the designated constraints aren't met.
+type TriggerRedeployResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TriggerRedeployResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TriggerRedeployResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TriggerRedeployResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TriggerRedeployResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TriggerRedeployResponseValidationError) ErrorName() string {
+	return "TriggerRedeployResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e TriggerRedeployResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTriggerRedeployResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TriggerRedeployResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TriggerRedeployResponseValidationError{}
+
 // Validate checks the field values on ListOrganizationMembersRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

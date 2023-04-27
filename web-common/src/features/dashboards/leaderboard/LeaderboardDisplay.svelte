@@ -2,6 +2,7 @@
   import VirtualizedGrid from "@rilldata/web-common/components/VirtualizedGrid.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
+    selectDimensionKeys,
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
@@ -133,6 +134,15 @@
   onDestroy(() => {
     observer?.disconnect();
   });
+
+  $: availableDimensionKeys = selectDimensionKeys($metaQuery);
+  $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
+  $: visibleDimensionsBitmask = availableDimensionKeys.map((k) =>
+    visibleDimensionKeys.has(k)
+  );
+
+  $: dimensionsShown =
+    dimensions?.filter((_, i) => visibleDimensionsBitmask[i]) ?? [];
 </script>
 
 <svelte:window on:resize={onResize} />
@@ -143,12 +153,12 @@
   style:min-width="365px"
 >
   <div
-    class="grid grid-auto-cols justify-start grid-flow-col items-end p-1 pb-3"
+    class="grid grid-auto-cols justify-between grid-flow-col items-center pl-1 pb-3"
   >
     <LeaderboardMeasureSelector {metricViewName} />
   </div>
   {#if metricsExplorer}
-    <VirtualizedGrid {columns} height="100%" items={dimensions ?? []} let:item>
+    <VirtualizedGrid {columns} height="100%" items={dimensionsShown} let:item>
       <!-- the single virtual element -->
       <Leaderboard
         {formatPreset}

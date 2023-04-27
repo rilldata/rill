@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
-  import CtaButton from "@rilldata/web-admin/components/CTAButton.svelte";
+  import CtaButton from "@rilldata/web-admin/components/calls-to-action/CTAButton.svelte";
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
 
   let actionTaken = false;
