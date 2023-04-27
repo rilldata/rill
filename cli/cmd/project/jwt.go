@@ -31,7 +31,7 @@ func JwtCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			if res.ProdDeployment == nil {
-				cmdutil.WarnPrinter("Project does not have production deployment")
+				cmdutil.WarnPrinter("Project does not have a production deployment")
 				return nil
 			}
 

@@ -19,7 +19,7 @@ import (
 )
 
 func (s *Service) createDeployment(ctx context.Context, proj *database.Project) (*database.Deployment, error) {
-	// We require Github info on project for deployments
+	// We require Github info on project to create a deployment
 	if proj.GithubURL == nil || proj.GithubInstallationID == nil || proj.ProdBranch == "" {
 		return nil, fmt.Errorf("cannot create project without github info")
 	}
@@ -29,7 +29,7 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 	}
 
 	// Get a runtime with capacity for the deployment
-	res, err := s.provisioner.Provision(ctx, &provisioner.ProvisionOptions{
+	alloc, err := s.provisioner.Provision(ctx, &provisioner.ProvisionOptions{
 		OLAPDriver: proj.ProdOLAPDriver,
 		Slots:      proj.ProdSlots,
 		Region:     proj.Region,
@@ -53,13 +53,13 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 		}
 
 		embedCatalog = true
-		ingestionLimit = res.StorageBytes
+		ingestionLimit = alloc.StorageBytes
 
-		olapDSN = fmt.Sprintf("%s.db?rill_pool_size=%d&threads=%d&max_memory=%dGB", path.Join(res.DataDir, instanceID), res.CPU, res.CPU, res.MemoryGB)
+		olapDSN = fmt.Sprintf("%s.db?rill_pool_size=%d&threads=%d&max_memory=%dGB", path.Join(alloc.DataDir, instanceID), alloc.CPU, alloc.CPU, alloc.MemoryGB)
 	}
 
 	// Open a runtime client
-	rt, err := s.openRuntimeClient(res.Host, res.Audience)
+	rt, err := s.openRuntimeClient(alloc.Host, alloc.Audience)
 	if err != nil {
 		return nil, err
 	}
@@ -85,9 +85,9 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 		ProjectID:         proj.ID,
 		Branch:            proj.ProdBranch,
 		Slots:             proj.ProdSlots,
-		RuntimeHost:       res.Host,
+		RuntimeHost:       alloc.Host,
 		RuntimeInstanceID: instanceID,
-		RuntimeAudience:   res.Audience,
+		RuntimeAudience:   alloc.Audience,
 		Status:            database.DeploymentStatusPending,
 		Logs:              "",
 	})
@@ -124,16 +124,14 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 	}
 	defer rt.Close()
 
-	resp, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{
-		InstanceId: depl.RuntimeInstanceID,
-	})
+	res, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{InstanceId: depl.RuntimeInstanceID})
 	if err != nil {
 		return err
 	}
-	inst := resp.Instance
+	inst := res.Instance
 
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
-		InstanceId:          depl.RuntimeInstanceID,
+		InstanceId:          inst.InstanceId,
 		OlapDriver:          inst.OlapDriver,
 		OlapDsn:             inst.OlapDsn,
 		RepoDriver:          repoDriver,
@@ -142,18 +140,22 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 		Variables:           opts.Variables,
 		IngestionLimitBytes: inst.IngestionLimitBytes,
 	})
+	if err != nil {
+		return err
+	}
 
-	if depl.Branch != opts.Branch {
+	// Branch is the only property that's persisted on the Deployment
+	if opts.Branch != depl.Branch {
 		newDepl, err := s.DB.UpdateDeploymentBranch(ctx, depl.ID, opts.Branch)
 		if err != nil {
-			// TODO: Handle possible inconsistent state
+			// TODO: Handle inconsistent state (instance updated successfully, but deployment did not update)
 			return err
 		}
 		depl.Branch = opts.Branch
 		depl.UpdatedOn = newDepl.UpdatedOn
 	}
 
-	return err
+	return nil
 }
 
 func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project, depl *database.Deployment) error {

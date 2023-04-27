@@ -19,6 +19,11 @@ import (
 
 // CreateProject creates a new project and provisions and reconciles a prod deployment for it.
 func (s *Service) CreateProject(ctx context.Context, org *database.Organization, userID string, opts *database.InsertProjectOptions) (*database.Project, error) {
+	// Check Github info is set (presently required to make a deployment)
+	if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == "" {
+		return nil, fmt.Errorf("cannot create project without github info")
+	}
+
 	// Get roles for initial setup
 	adminRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameAdmin)
 	if err != nil {
@@ -63,7 +68,6 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	// Start using original context again since transaction in txCtx is done.
 	depl, err := s.createDeployment(ctx, proj)
 	if err != nil {
-		err = fmt.Errorf("provisioner: %w", err)
 		err2 := s.DB.DeleteProject(ctx, proj.ID)
 		return nil, multierr.Combine(err, err2)
 	}
@@ -120,17 +124,17 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 // UpdateProject updates a project and any impacted deployments.
 // It does not run a reconcile, even if deployment parameters (like branch or variables) have been changed.
 func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
-	ds, err := s.DB.FindDeployments(ctx, proj.ID)
-	if err != nil {
-		return nil, err
-	}
-
 	impactsDeployments := (proj.ProdBranch != opts.ProdBranch ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
 		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables))
 
 	if impactsDeployments {
+		ds, err := s.DB.FindDeployments(ctx, proj.ID)
+		if err != nil {
+			return nil, err
+		}
+
 		// NOTE: This assumes every deployment (almost always, there's just one) deploys the prod branch.
 		// It needs to be refactored when implementing preview deploys.
 		for _, d := range ds {
@@ -147,7 +151,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		}
 	}
 
-	proj, err = s.DB.UpdateProject(ctx, proj.ID, opts)
+	proj, err := s.DB.UpdateProject(ctx, proj.ID, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -293,39 +297,46 @@ func (s *Service) startReconcile(ctx context.Context, depl *database.Deployment)
 		return fmt.Errorf("skipping because it is already running")
 	}
 
-	depl, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusReconciling, "")
+	updatedDepl, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusReconciling, "")
 	if err != nil {
 		return fmt.Errorf("could not update status: %w", err)
 	}
+	depl.Status = updatedDepl.Status
+	depl.Logs = updatedDepl.Logs
 
 	return nil
 }
 
 func (s *Service) endReconcile(ctx context.Context, depl *database.Deployment, res *runtimev1.ReconcileResponse, err error) error {
 	if err != nil {
-		_, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
+		updatedDepl, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
 		if err2 != nil {
-			err = multierr.Combine(err, fmt.Errorf("could not update logs: %w", err2))
+			return multierr.Combine(err, fmt.Errorf("could not update logs: %w", err2))
 		}
+		depl.Status = updatedDepl.Status
+		depl.Logs = updatedDepl.Logs
 		return err
 	}
 
-	if len(res.Errors) > 0 {
+	var updatedDepl *database.Deployment
+	if res != nil && len(res.Errors) > 0 {
 		json, err := protojson.Marshal(res)
 		if err != nil {
 			return fmt.Errorf("could not marshal logs: %w", err)
 		}
 
-		_, err = s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, string(json))
+		updatedDepl, err = s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, string(json))
 		if err != nil {
 			return fmt.Errorf("could not update logs: %w", err)
 		}
 	} else {
-		_, err = s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusOK, "")
+		updatedDepl, err = s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusOK, "")
 		if err != nil {
 			return fmt.Errorf("could not clear logs: %w", err)
 		}
 	}
 
+	depl.Status = updatedDepl.Status
+	depl.Logs = updatedDepl.Logs
 	return nil
 }
