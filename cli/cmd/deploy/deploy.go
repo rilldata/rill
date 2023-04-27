@@ -277,7 +277,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 	deployCmd.Flags().SortFlags = false
 	deployCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
-	deployCmd.Flags().StringVar(&orgName, "org", "", "Org to deploy project (default: default org)")
+	deployCmd.Flags().StringVar(&orgName, "org", cfg.Org, "Org to deploy project")
 	deployCmd.Flags().IntVar(&slots, "prod-slots", 2, "Slots to allocate for production deployments")
 	deployCmd.Flags().StringVar(&description, "description", "", "Project description")
 	deployCmd.Flags().StringVar(&region, "region", "", "Deployment region")

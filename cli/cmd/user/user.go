@@ -1,15 +1,17 @@
 package user
 
 import (
+	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
 func UserCmd(cfg *config.Config) *cobra.Command {
 	userCmd := &cobra.Command{
-		Use:    "user",
-		Hidden: !cfg.IsDev(),
-		Short:  "Manage users",
+		Use:               "user",
+		Hidden:            !cfg.IsDev(),
+		Short:             "Manage users",
+		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 	}
 
 	userCmd.AddCommand(ListCmd(cfg))
