@@ -3,7 +3,6 @@ package admin
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/rilldata/rill/admin/database"
@@ -59,9 +58,6 @@ func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToke
 	case authtoken.TypeUser:
 		uat, err := s.DB.FindUserAuthToken(ctx, parsed.ID.String())
 		if err != nil {
-			if errors.Is(err, database.ErrNotFound) {
-				return nil, fmt.Errorf("auth token not found")
-			}
 			return nil, err
 		}
 

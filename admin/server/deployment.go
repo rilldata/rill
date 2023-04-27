@@ -2,9 +2,7 @@ package server
 
 import (
 	"context"
-	"errors"
 
-	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"google.golang.org/grpc/codes"
@@ -14,9 +12,6 @@ import (
 func (s *Server) TriggerReconcile(ctx context.Context, req *adminv1.TriggerReconcileRequest) (*adminv1.TriggerReconcileResponse, error) {
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "deployment not found")
-		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -41,9 +36,6 @@ func (s *Server) TriggerReconcile(ctx context.Context, req *adminv1.TriggerRecon
 func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.TriggerRefreshSourcesRequest) (*adminv1.TriggerRefreshSourcesResponse, error) {
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "deployment not found")
-		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -68,9 +60,6 @@ func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.Trigger
 func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedeployRequest) (*adminv1.TriggerRedeployResponse, error) {
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "deployment not found")
-		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
