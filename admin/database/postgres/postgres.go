@@ -96,7 +96,7 @@ func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*
 func (c *connection) CheckOrganizationHasOutsideUser(ctx context.Context, orgID, userID string) (bool, error) {
 	var res bool
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		"SELECT EXISTS (SELECT 1 FROM projects p JOIN users_projects_roles upr ON p.id = upr.project_id WHERE p.org_id = $1 AND upr.user_id = $2 limit 1)", orgID, userID).StructScan(&res)
+		"SELECT EXISTS (SELECT 1 FROM projects p JOIN users_projects_roles upr ON p.id = upr.project_id WHERE p.org_id = $1 AND upr.user_id = $2 limit 1)", orgID, userID).Scan(&res)
 	if err != nil {
 		return false, parseErr(err)
 	}
@@ -106,7 +106,7 @@ func (c *connection) CheckOrganizationHasOutsideUser(ctx context.Context, orgID,
 func (c *connection) CheckOrganizationHasPublicProjects(ctx context.Context, orgID string) (bool, error) {
 	var res bool
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		"SELECT EXISTS (SELECT 1 FROM projects p WHERE p.org_id = $1 AND p.public = true limit 1)", orgID).StructScan(&res)
+		"SELECT EXISTS (SELECT 1 FROM projects p WHERE p.org_id = $1 AND p.public = true limit 1)", orgID).Scan(&res)
 	if err != nil {
 		return false, parseErr(err)
 	}
