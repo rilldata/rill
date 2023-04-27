@@ -99,10 +99,10 @@ type DB interface {
 	DeleteUserAuthToken(ctx context.Context, id string) error
 
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
-	FindDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
+	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
 	InsertDeviceAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*DeviceAuthCode, error)
 	DeleteDeviceAuthCode(ctx context.Context, deviceCode string) error
-	UpdateDeviceAuthCode(ctx context.Context, userCode, userID string, state DeviceAuthCodeState) error
+	UpdateDeviceAuthCode(ctx context.Context, id, userID string, state DeviceAuthCodeState) error
 
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
