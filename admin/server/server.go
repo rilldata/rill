@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gorilla/sessions"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
@@ -18,6 +17,7 @@ import (
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/admin/server/auth"
+	"github.com/rilldata/rill/admin/server/cookies"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -55,7 +55,7 @@ type Server struct {
 	logger        *zap.Logger
 	admin         *admin.Service
 	opts          *Options
-	cookies       *sessions.CookieStore
+	cookies       *cookies.Store
 	authenticator *auth.Authenticator
 	issuer        *runtimeauth.Issuer
 	urls          *externalURLs
@@ -73,12 +73,12 @@ func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimea
 		return nil, fmt.Errorf("provided SessionKeyPairs is empty")
 	}
 
-	cookies := sessions.NewCookieStore(opts.SessionKeyPairs...)
-	cookies.Options.MaxAge = 60 * 60 * 24 * 365 * 10 // 10 years
-	cookies.Options.Secure = externalURL.Scheme == "https"
-	cookies.Options.HttpOnly = true
+	cookieStore := cookies.New(logger, opts.SessionKeyPairs...)
+	cookieStore.MaxAge(60 * 60 * 24 * 365 * 10) // 10 years
+	cookieStore.Options.Secure = externalURL.Scheme == "https"
+	cookieStore.Options.HttpOnly = true
 
-	authenticator, err := auth.NewAuthenticator(logger, adm, cookies, &auth.AuthenticatorOptions{
+	authenticator, err := auth.NewAuthenticator(logger, adm, cookieStore, &auth.AuthenticatorOptions{
 		AuthDomain:       opts.AuthDomain,
 		AuthClientID:     opts.AuthClientID,
 		AuthClientSecret: opts.AuthClientSecret,
@@ -93,7 +93,7 @@ func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimea
 		logger:        logger,
 		admin:         adm,
 		opts:          opts,
-		cookies:       cookies,
+		cookies:       cookieStore,
 		authenticator: authenticator,
 		issuer:        issuer,
 		urls:          newURLRegistry(opts),

@@ -296,12 +296,7 @@ func (s *Server) githubAuthLogin(w http.ResponseWriter, r *http.Request) {
 	state := base64.StdEncoding.EncodeToString(b)
 
 	// Get auth cookie
-	sess, err := s.cookies.Get(r, githubcookieName)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
-		return
-	}
-
+	sess := s.cookies.Get(r, githubcookieName)
 	// Set state in cookie
 	sess.Values[githubcookieFieldState] = state
 	remote := r.URL.Query().Get("remote")
@@ -336,12 +331,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get auth cookie
-	sess, err := s.cookies.Get(r, githubcookieName)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
-		return
-	}
-
+	sess := s.cookies.Get(r, githubcookieName)
 	// Check that random state matches (for CSRF protection)
 	qry := r.URL.Query()
 	if qry.Get("state") != sess.Values[githubcookieFieldState] {
