@@ -5,10 +5,7 @@
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import {
-    calendlyModalStore,
-    projectShareStore,
-  } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { projectShareStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
@@ -45,18 +42,6 @@
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
   $: displayName = $metaQuery.data?.label;
   $: isEditableDashboard = $featureFlags.readOnly === false;
-
-  function openCalendly() {
-    calendlyModalStore.set(metricViewName);
-    behaviourEvent.firePublishEvent(
-      metricViewName,
-      BehaviourEventMedium.Button,
-      MetricsEventSpace.Workspace,
-      MetricsEventScreenName.Dashboard,
-      MetricsEventScreenName.Dashboard,
-      true
-    );
-  }
 
   function deployModal() {
     projectShareStore.set(true);
