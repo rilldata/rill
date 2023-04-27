@@ -5,7 +5,10 @@
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { calendlyModalStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import {
+    calendlyModalStore,
+    projectShareStore,
+  } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
@@ -54,6 +57,10 @@
       true
     );
   }
+
+  function deployModal() {
+    projectShareStore.set(true);
+  }
 </script>
 
 <section class="w-full flex flex-col" id="header">
@@ -88,7 +95,7 @@
             </TooltipContent>
           </Tooltip>
           <Tooltip distance={8}>
-            <Button on:click={openCalendly} type="primary">Publish</Button>
+            <Button on:click={deployModal} type="primary">Deploy</Button>
             <TooltipContent slot="tooltip-content">
               Schedule time to chat with Rill about early access to hosted
               dashboards.
