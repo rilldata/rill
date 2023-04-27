@@ -349,6 +349,15 @@ func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, stat
 	return res, nil
 }
 
+func (c *connection) UpdateDeploymentBranch(ctx context.Context, id, branch string) (*database.Deployment, error) {
+	res := &database.Deployment{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET branch=$1, updated_on=now() WHERE id=$2 RETURNING *", branch, id).StructScan(res)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
 func (c *connection) CountDeploymentsForOrganization(ctx context.Context, orgID string) (*database.DeploymentsCount, error) {
 	res := &database.DeploymentsCount{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
