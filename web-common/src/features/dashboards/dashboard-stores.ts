@@ -6,7 +6,7 @@ import type {
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
-import { derived, Readable, Writable, writable } from "svelte/store";
+import { Readable, Writable, derived, writable } from "svelte/store";
 
 export interface LeaderboardValue {
   value: number;
