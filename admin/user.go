@@ -149,6 +149,21 @@ func (s *Service) InviteUserToOrganization(ctx context.Context, email, inviterID
 	return nil
 }
 
+func (s *Service) NotifyUserAdditionToOrganization(ctx context.Context, email, orgName, roleName string) error {
+	// Validate email address
+	_, err := mail.ParseAddress(email)
+	if err != nil {
+		return fmt.Errorf("invalid user email address %q", email)
+	}
+
+	err = s.email.SendOrganizationAdditionNotification(email, "", orgName, roleName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Service) InviteUserToProject(ctx context.Context, email, inviterID, projectID, roleID, projectName, roleName string) error {
 	// Validate email address
 	_, err := mail.ParseAddress(email)
@@ -164,6 +179,21 @@ func (s *Service) InviteUserToProject(ctx context.Context, email, inviterID, pro
 
 	// Send invitation email
 	err = s.email.SendProjectInvite(email, "", projectName, roleName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) NotifyUserAdditionToProject(ctx context.Context, email, projectName, roleName string) error {
+	// Validate email address
+	_, err := mail.ParseAddress(email)
+	if err != nil {
+		return fmt.Errorf("invalid user email address %q", email)
+	}
+
+	err = s.email.SendProjectAdditionNotification(email, "", projectName, roleName)
 	if err != nil {
 		return err
 	}

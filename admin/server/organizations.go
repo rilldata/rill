@@ -274,6 +274,11 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	err = s.admin.NotifyUserAdditionToOrganization(ctx, req.Email, org.Name, role.Name)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	return &adminv1.AddOrganizationMemberResponse{
 		PendingSignup: false,
 	}, nil
