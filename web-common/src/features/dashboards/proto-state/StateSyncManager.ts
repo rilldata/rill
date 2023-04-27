@@ -1,7 +1,7 @@
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { get } from "svelte/store";
 
 export class StateSyncManager {
@@ -26,7 +26,6 @@ export class StateSyncManager {
   public handleUrlChange() {
     const pageUrl = get(page).url;
     const newUrlState = pageUrl.searchParams.get("state");
-    console.log(newUrlState);
     if (this.urlState === newUrlState) return;
     this.urlState = newUrlState;
 
