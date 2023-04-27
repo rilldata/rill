@@ -6,28 +6,28 @@ import (
 	"fmt"
 )
 
-// An ErrorCode describes the error's category.
+// ErrorCode describes the error's category.
 type ErrorCode int
 
 const (
-	// OK is returned by the Code function on a nil error. It is not a valid
+	// ErrorCodeOK is returned by the Code function on a nil error. It is not a valid
 	// code for an error.
 	ErrorCodeOK ErrorCode = iota
 
-	// Unknown means that the error could not be categorized.
+	// ErrorCodeUnknown means that the error could not be categorized.
 	ErrorCodeUnknown
 
-	// Internal means that something unexpected happened. Internal errors always indicate
+	// ErrorCodeInternal means that something unexpected happened. Internal errors always indicate
 	// bugs in the code (or possibly the underlying service).
 	ErrorCodeInternal
 
-	// PermissionDenied means that the caller does not have permission to execute the specified operation.
+	// ErrorCodePermissionDenied means that the caller does not have permission to execute the specified operation.
 	ErrorCodePermissionDenied
 
-	// Canceled means that the operation was canceled.
+	// ErrorCodeCanceled means that the operation was canceled.
 	ErrorCodeCanceled
 
-	// DeadlinedExceeded means that the operation timed out.
+	// ErrorCodeDeadlineExceeded means that the operation timed out.
 	ErrorCodeDeadlineExceeded
 )
 

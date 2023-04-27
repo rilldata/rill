@@ -167,7 +167,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 			return nil, connectors.NewError(connectors.ErrorCodePermissionDenied, err, fmt.Sprintf("can't access remote source %q err: %v", source.Name, failureErr))
 		}
 	}
-	
+
 	return it, err
 }
 
