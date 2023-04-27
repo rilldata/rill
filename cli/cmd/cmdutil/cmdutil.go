@@ -19,6 +19,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const formatLayout = "2006-01-02 15:04:05"
+
 type PreRunCheck func(cmd *cobra.Command, args []string) error
 
 func CheckChain(chain ...PreRunCheck) PreRunCheck {
@@ -231,8 +233,8 @@ func toMemberRow(m *adminv1.Member) *member {
 		Name:      m.UserName,
 		Email:     m.UserEmail,
 		RoleName:  m.RoleName,
-		CreatedOn: m.CreatedOn.AsTime().String(),
-		UpdatedOn: m.UpdatedOn.AsTime().String(),
+		CreatedOn: m.CreatedOn.AsTime().Format(formatLayout),
+		UpdatedOn: m.UpdatedOn.AsTime().Format(formatLayout),
 	}
 }
 
