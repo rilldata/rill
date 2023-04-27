@@ -175,6 +175,7 @@ export interface V1Project {
   prodOlapDsn?: string;
   prodSlots?: string;
   prodDeploymentId?: string;
+  frontendUrl?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -253,7 +254,6 @@ export interface V1GetProjectResponse {
   prodDeployment?: V1Deployment;
   jwt?: string;
   projectPermissions?: V1ProjectPermissions;
-  projectUrl?: string;
 }
 
 export interface V1GetOrganizationResponse {
@@ -306,7 +306,6 @@ export interface V1DeleteOrganizationResponse {
 
 export interface V1CreateProjectResponse {
   project?: V1Project;
-  projectUrl?: string;
 }
 
 export interface V1CreateOrganizationResponse {

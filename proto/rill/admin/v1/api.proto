@@ -275,7 +275,6 @@ message GetProjectResponse {
   Deployment prod_deployment = 2;
   string jwt = 3;
   ProjectPermissions project_permissions = 4;
-  string project_url = 5;
 }
 
 message GetProjectVariablesRequest {
@@ -303,7 +302,6 @@ message CreateProjectRequest {
 
 message CreateProjectResponse {
   Project project = 1;
-  string project_url = 2;
 }
 
 message DeleteProjectRequest {
@@ -493,6 +491,7 @@ message Project {
   string prod_olap_dsn = 11;
   int64 prod_slots = 12;
   string prod_deployment_id = 13;
+  string frontend_url = 16;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
 }

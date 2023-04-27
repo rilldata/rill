@@ -2232,8 +2232,6 @@ func (m *GetProjectResponse) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for ProjectUrl
-
 	if len(errors) > 0 {
 		return GetProjectResponseMultiError(errors)
 	}
@@ -2717,8 +2715,6 @@ func (m *CreateProjectResponse) validate(all bool) error {
 			}
 		}
 	}
-
-	// no validation rules for ProjectUrl
 
 	if len(errors) > 0 {
 		return CreateProjectResponseMultiError(errors)
@@ -7698,6 +7694,8 @@ func (m *Project) validate(all bool) error {
 	// no validation rules for ProdSlots
 
 	// no validation rules for ProdDeploymentId
+
+	// no validation rules for FrontendUrl
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

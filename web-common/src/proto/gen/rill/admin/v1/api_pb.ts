@@ -775,11 +775,6 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
    */
   projectPermissions?: ProjectPermissions;
 
-  /**
-   * @generated from field: string project_url = 5;
-   */
-  projectUrl = "";
-
   constructor(data?: PartialMessage<GetProjectResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -792,7 +787,6 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
     { no: 2, name: "prod_deployment", kind: "message", T: Deployment },
     { no: 3, name: "jwt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "project_permissions", kind: "message", T: ProjectPermissions },
-    { no: 5, name: "project_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectResponse {
@@ -998,11 +992,6 @@ export class CreateProjectResponse extends Message<CreateProjectResponse> {
    */
   project?: Project;
 
-  /**
-   * @generated from field: string project_url = 2;
-   */
-  projectUrl = "";
-
   constructor(data?: PartialMessage<CreateProjectResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1012,7 +1001,6 @@ export class CreateProjectResponse extends Message<CreateProjectResponse> {
   static readonly typeName = "rill.admin.v1.CreateProjectResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project", kind: "message", T: Project },
-    { no: 2, name: "project_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateProjectResponse {
@@ -2704,6 +2692,11 @@ export class Project extends Message<Project> {
   prodDeploymentId = "";
 
   /**
+   * @generated from field: string frontend_url = 16;
+   */
+  frontendUrl = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 14;
    */
   createdOn?: Timestamp;
@@ -2734,6 +2727,7 @@ export class Project extends Message<Project> {
     { no: 11, name: "prod_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 13, name: "prod_deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "created_on", kind: "message", T: Timestamp },
     { no: 15, name: "updated_on", kind: "message", T: Timestamp },
   ]);
