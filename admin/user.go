@@ -128,14 +128,8 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 }
 
 func (s *Service) InviteUserToOrganization(ctx context.Context, email, inviterID, orgID, roleID, orgName, roleName string) error {
-	// Validate email address
-	_, err := mail.ParseAddress(email)
-	if err != nil {
-		return fmt.Errorf("invalid user email address %q", email)
-	}
-
 	// Create invite
-	err = s.DB.InsertOrganizationInvite(ctx, email, orgID, roleID, inviterID)
+	err := s.DB.InsertOrganizationInvite(ctx, email, orgID, roleID, inviterID)
 	if err != nil {
 		return err
 	}
@@ -150,29 +144,16 @@ func (s *Service) InviteUserToOrganization(ctx context.Context, email, inviterID
 }
 
 func (s *Service) NotifyUserAdditionToOrganization(ctx context.Context, email, orgName, roleName string) error {
-	// Validate email address
-	_, err := mail.ParseAddress(email)
-	if err != nil {
-		return fmt.Errorf("invalid user email address %q", email)
-	}
-
-	err = s.email.SendOrganizationAdditionNotification(email, "", orgName, roleName)
+	err := s.email.SendOrganizationAdditionNotification(email, "", orgName, roleName)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
 func (s *Service) InviteUserToProject(ctx context.Context, email, inviterID, projectID, roleID, projectName, roleName string) error {
-	// Validate email address
-	_, err := mail.ParseAddress(email)
-	if err != nil {
-		return fmt.Errorf("invalid user email address %q", email)
-	}
-
 	// Create invite
-	err = s.DB.InsertProjectInvite(ctx, email, projectID, roleID, inviterID)
+	err := s.DB.InsertProjectInvite(ctx, email, projectID, roleID, inviterID)
 	if err != nil {
 		return err
 	}
@@ -187,13 +168,7 @@ func (s *Service) InviteUserToProject(ctx context.Context, email, inviterID, pro
 }
 
 func (s *Service) NotifyUserAdditionToProject(ctx context.Context, email, projectName, roleName string) error {
-	// Validate email address
-	_, err := mail.ParseAddress(email)
-	if err != nil {
-		return fmt.Errorf("invalid user email address %q", email)
-	}
-
-	err = s.email.SendProjectAdditionNotification(email, "", projectName, roleName)
+	err := s.email.SendProjectAdditionNotification(email, "", projectName, roleName)
 	if err != nil {
 		return err
 	}

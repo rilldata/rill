@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/mail"
 	"net/url"
 	"sort"
 	"time"
@@ -401,6 +402,12 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 	claims := auth.GetClaims(ctx)
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add project members")
+	}
+
+	// Validate email address
+	_, err = mail.ParseAddress(req.Email)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email address: %q", req.Email)
 	}
 
 	// Check outstanding invites quota
