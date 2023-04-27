@@ -1,5 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
+  import { StateSyncManager } from "@rilldata/web-common/features/dashboards/proto-state/StateSyncManager";
   import {
     useMetaQuery,
     useModelHasTimeSeries,
@@ -9,7 +11,7 @@
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
-  import { metricsExplorerStore } from "../dashboard-stores";
+  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
@@ -43,7 +45,16 @@
 
   let exploreContainerWidth;
 
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: metricsExplorer = useDashboardStore(metricViewName);
+
+  $: stateSyncManager = new StateSyncManager(metricViewName);
+  $: if ($metricsExplorer) {
+    stateSyncManager.handleStateChange($metricsExplorer);
+  }
+  $: if ($page) {
+    stateSyncManager.handleUrlChange();
+  }
+
   $: selectedDimensionName = metricsExplorer?.selectedDimensionName;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,

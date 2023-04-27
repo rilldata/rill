@@ -41,6 +41,7 @@ README.md
 docs
 *.json
 *.cjs
+_redirects
 
 # Java SQL lib
 sql/
