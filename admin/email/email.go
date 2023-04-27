@@ -30,8 +30,8 @@ func (c *Client) SendOrganizationAdditionNotification(toEmail, toName, orgName, 
 	err := c.sender.Send(
 		toEmail,
 		toName,
-		"Addition to an organization",
-		fmt.Sprintf("You've been added to organization <b>%s</b> as <b>%s</b>. Follow this <a href=\"%s\">link</a> to visit it.", orgName, roleName, c.frontendURL),
+		fmt.Sprintf("You've been added to %q", orgName),
+		fmt.Sprintf("You've been added to the organization <b>%s</b> as <b>%s</b>. Follow this <a href=\"%s\">link</a> to visit it.", orgName, roleName, c.frontendURL),
 	)
 	return err
 }
@@ -50,8 +50,8 @@ func (c *Client) SendProjectAdditionNotification(toEmail, toName, projectName, r
 	err := c.sender.Send(
 		toEmail,
 		toName,
-		"Addition to a project",
-		fmt.Sprintf("You've been added to project <b>%s</b> as <b>%s</b>. Follow this <a href=\"%s\">link</a> to visit it.", projectName, roleName, c.frontendURL),
+		fmt.Sprintf("You've been added to %q", projectName),
+		fmt.Sprintf("You've been added to the project <b>%s</b> as <b>%s</b>. Follow this <a href=\"%s\">link</a> to visit it.", projectName, roleName, c.frontendURL),
 	)
 	return err
 }

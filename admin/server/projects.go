@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/mail"
 	"net/url"
 	"sort"
 	"time"
@@ -404,12 +403,6 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add project members")
 	}
 
-	// Validate email address
-	_, err = mail.ParseAddress(req.Email)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid email address: %q", req.Email)
-	}
-
 	// Check outstanding invites quota
 	count, err := s.admin.DB.CountInvitesForOrganization(ctx, proj.OrganizationID)
 	if err != nil {
@@ -459,7 +452,7 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.admin.NotifyUserAdditionToProject(ctx, req.Email, proj.Name, role.Name)
+	err = s.admin.Email.SendProjectAdditionNotification(req.Email, "", proj.Name, role.Name)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

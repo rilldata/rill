@@ -135,19 +135,11 @@ func (s *Service) InviteUserToOrganization(ctx context.Context, email, inviterID
 	}
 
 	// Send invitation email
-	err = s.email.SendOrganizationInvite(email, "", orgName, roleName)
+	err = s.Email.SendOrganizationInvite(email, "", orgName, roleName)
 	if err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func (s *Service) NotifyUserAdditionToOrganization(ctx context.Context, email, orgName, roleName string) error {
-	err := s.email.SendOrganizationAdditionNotification(email, "", orgName, roleName)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -159,16 +151,7 @@ func (s *Service) InviteUserToProject(ctx context.Context, email, inviterID, pro
 	}
 
 	// Send invitation email
-	err = s.email.SendProjectInvite(email, "", projectName, roleName)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *Service) NotifyUserAdditionToProject(ctx context.Context, email, projectName, roleName string) error {
-	err := s.email.SendProjectAdditionNotification(email, "", projectName, roleName)
+	err = s.Email.SendProjectInvite(email, "", projectName, roleName)
 	if err != nil {
 		return err
 	}

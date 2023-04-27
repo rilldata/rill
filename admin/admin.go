@@ -30,7 +30,7 @@ type Service struct {
 	issuer         *auth.Issuer
 	closeCtx       context.Context
 	closeCtxCancel context.CancelFunc
-	email          *email.Client
+	Email          *email.Client
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client) (*Service, error) {
@@ -84,7 +84,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		issuer:         issuer,
 		closeCtx:       ctx,
 		closeCtxCancel: cancel,
-		email:          emailClient,
+		Email:          emailClient,
 	}, nil
 }
 

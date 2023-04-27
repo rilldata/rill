@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"net/mail"
 
 	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
@@ -213,12 +212,6 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add org members")
 	}
 
-	// Validate email address
-	_, err = mail.ParseAddress(req.Email)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid email address: %q", req.Email)
-	}
-
 	count, err := s.admin.DB.CountInvitesForOrganization(ctx, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -281,7 +274,7 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.admin.NotifyUserAdditionToOrganization(ctx, req.Email, org.Name, role.Name)
+	err = s.admin.Email.SendOrganizationAdditionNotification(req.Email, "", org.Name, role.Name)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
