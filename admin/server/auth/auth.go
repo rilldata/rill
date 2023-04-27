@@ -6,7 +6,7 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/rilldata/rill/admin"
-	admincookie "github.com/rilldata/rill/admin/server/cookies"
+	"github.com/rilldata/rill/admin/server/cookies"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 )
@@ -26,14 +26,14 @@ type AuthenticatorOptions struct {
 type Authenticator struct {
 	logger  *zap.Logger
 	admin   *admin.Service
-	cookies *admincookie.CookieStore
+	cookies *cookies.Store
 	opts    *AuthenticatorOptions
 	oidc    *oidc.Provider
 	oauth2  oauth2.Config
 }
 
 // NewAuthenticator creates an Authenticator.
-func NewAuthenticator(logger *zap.Logger, adm *admin.Service, cookies *admincookie.CookieStore, opts *AuthenticatorOptions) (*Authenticator, error) {
+func NewAuthenticator(logger *zap.Logger, adm *admin.Service, cookieStore *cookies.Store, opts *AuthenticatorOptions) (*Authenticator, error) {
 	oidcProvider, err := oidc.NewProvider(context.Background(), "https://"+opts.AuthDomain+"/")
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func NewAuthenticator(logger *zap.Logger, adm *admin.Service, cookies *admincook
 	a := &Authenticator{
 		logger:  logger,
 		admin:   adm,
-		cookies: cookies,
+		cookies: cookieStore,
 		opts:    opts,
 		oidc:    oidcProvider,
 		oauth2:  oauth2Config,
