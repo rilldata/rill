@@ -8,10 +8,10 @@
 
   export let leftMargin: string = undefined;
 
-  // the navigationPaddingTween is a tweened value that is used
+  // the navigationVisibilityTween is a tweened value that is used
   // to animate the extra padding that needs to be added to the
   // dashboard container when the navigation pane is collapsed
-  const navigationPaddingTween = getContext(
+  const navigationVisibilityTween = getContext(
     "rill:app:navigation-visibility-tween"
   ) as Tweened<number>;
 
@@ -24,7 +24,7 @@
 
   $: leftSide = leftMargin
     ? leftMargin
-    : `calc(${$navigationPaddingTween * 24}px + 1.25rem)`;
+    : `calc(${$navigationVisibilityTween * 24}px + 1.25rem)`;
 </script>
 
 <section use:dashboardContainerNodeWatcher class="flex flex-col gap-y-1">
