@@ -36,7 +36,9 @@
         <li
           class="flex gap-x-5 justify-between py-1 px-12 border-b border-gray-200 bg-red-50 font-mono"
         >
-          <span class="text-red-600">{error.message}</span>
+          <span class="text-red-600 break-all">
+            {error.message}
+          </span>
           <span class="text-stone-500 font-semibold shrink-0">
             {error.filePath}
           </span>
