@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -143,32 +145,30 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		StorageLimitInBytes:   env.StorageLimitInBytes,
 	}
 
-	var it connectors.FileIterator
-	var itErr error
-	it, itErr = rillblob.NewIterator(ctx, bucketObj, opts)
-	if itErr != nil {
+	it, err := rillblob.NewIterator(ctx, bucketObj, opts)
+	if err != nil {
 		// s3 throws error (possibly inconsistent) in case we are trying to access public buckets and passing some credentials
 		// go cdk wraps some s3's errors into gcerrors.Unknown
 		// we try again with anonymous credentials in case bucket is public
 		errCode := gcerrors.Code(err)
 		if (errCode == gcerrors.PermissionDenied || errCode == gcerrors.Unknown) && creds != credentials.AnonymousCredentials {
 			creds = credentials.AnonymousCredentials
-			bucketObj, err := openBucket(ctx, conf, conf.url.Host, creds)
-			if err != nil {
-				return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
+			bucketObj, bucketErr := openBucket(ctx, conf, conf.url.Host, creds)
+			if bucketErr != nil {
+				return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, bucketErr)
 			}
-			it, itErr = rillblob.NewIterator(ctx, bucketObj, opts)
+			it, err = rillblob.NewIterator(ctx, bucketObj, opts)
 		}
 
-		// generate the error code again and check if still getting error
-		// returns gcerrors.OK if itErr is nil
-		errCode = gcerrors.Code(itErr)
-		if errCode == gcerrors.PermissionDenied || errCode == gcerrors.Unknown {
-			return nil, connectors.NewError(connectors.ErrorCodePermissionDenied, err, fmt.Sprintf("can't access remote source %q err: %v", source.Name, itErr))
+		// aws returns StatusForbidden in cases like no creds passed, wrong creds passed and incorrect bucket
+		// r2 returns StatusBadRequest in all cases above
+		var failureErr awserr.RequestFailure
+		if errors.As(err, &failureErr) && (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) {
+			return nil, connectors.NewError(connectors.ErrorCodePermissionDenied, err, fmt.Sprintf("can't access remote source %q err: %v", source.Name, failureErr))
 		}
 	}
-
-	return it, itErr
+	
+	return it, err
 }
 
 func (c connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {

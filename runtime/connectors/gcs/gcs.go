@@ -14,8 +14,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"gocloud.dev/blob/gcsblob"
-	"gocloud.dev/gcerrors"
 	"gocloud.dev/gcp"
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/googleapi"
 )
@@ -157,14 +157,21 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 
 	iter, err := rillblob.NewIterator(ctx, bucketObj, opts)
 	if err != nil {
-		fmt.Println(gcerrors.Code(err))
 		apiError := &googleapi.Error{}
+		// in cases when no creds are passed
 		if errors.As(err, &apiError) && apiError.Code == http.StatusUnauthorized {
-			return nil, connectors.NewError(connectors.ErrorCodePermissionDenied, err, fmt.Sprintf("can't access remote source %q err: %v", source.Name, err))
+			return nil, connectors.NewError(connectors.ErrorCodePermissionDenied, err, fmt.Sprintf("can't access remote source %q err: %v", source.Name, apiError.Error()))
+		}
+
+		// StatusUnauthorized when incorrect key is passsed
+		// StatusBadRequest when key doesn't have a valid credentials file
+		retrieveError := &oauth2.RetrieveError{}
+		if errors.As(err, &retrieveError) && (retrieveError.Response.StatusCode == http.StatusUnauthorized || retrieveError.Response.StatusCode == http.StatusBadRequest) {
+			return nil, connectors.NewError(connectors.ErrorCodePermissionDenied, err, fmt.Sprintf("can't access remote source %q err: %v", source.Name, retrieveError.Error()))
 		}
 	}
 
-	return iter, nil
+	return iter, err
 }
 
 func (c connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {
