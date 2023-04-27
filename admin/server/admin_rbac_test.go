@@ -56,22 +56,25 @@ func TestAdmin_RBAC(t *testing.T) {
 
 	// create admin and viewer users
 	adminUser, err := db.InsertUser(ctx, &database.InsertUserOptions{
-		Email:       "admin@test.io",
-		DisplayName: "admin",
+		Email:               "admin@test.io",
+		DisplayName:         "admin",
+		QuotaSingleuserOrgs: 3,
 	})
 	require.NoError(t, err)
 	require.NotNil(t, adminUser)
 
 	viewerUser, err := db.InsertUser(ctx, &database.InsertUserOptions{
-		Email:       "viewer@test.io",
-		DisplayName: "viewer",
+		Email:               "viewer@test.io",
+		DisplayName:         "viewer",
+		QuotaSingleuserOrgs: 3,
 	})
 	require.NoError(t, err)
 	require.NotNil(t, viewerUser)
 
 	testUser, err := db.InsertUser(ctx, &database.InsertUserOptions{
-		Email:       "test@test.io",
-		DisplayName: "test",
+		Email:               "test@test.io",
+		DisplayName:         "test",
+		QuotaSingleuserOrgs: 3,
 	})
 	require.NoError(t, err)
 	require.NotNil(t, testUser)

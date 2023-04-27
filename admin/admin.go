@@ -102,6 +102,6 @@ func NewMock(db database.DB, githubClient *github.Client, prov provisioner.Provi
 		github:      githubClient,
 		provisioner: prov,
 		issuer:      issuer,
-		email:       emailClient,
+		Email:       emailClient,
 	}
 }
