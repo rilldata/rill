@@ -17,7 +17,7 @@
   <div class="flex space-x-10 border-b border-gray-200 w-full px-12 py-5">
     <ProjectDeploymentStatus {organization} {project} />
     <ProjectGithubConnection {organization} {project} />
-    <ShareProjectCta />
+    <ShareProjectCta {organization} {project} />
   </div>
   <ProjectDeploymentLogs {organization} {project} />
 </div>
