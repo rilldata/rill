@@ -69,6 +69,13 @@ func TestAdmin_RBAC(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, viewerUser)
 
+	testUser, err := db.InsertUser(ctx, &database.InsertUserOptions{
+		Email:       "test@test.io",
+		DisplayName: "test",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, testUser)
+
 	sender, err := email.NewConsoleSender(zap.NewNop(), "rill-test@rilldata.io", "")
 	require.NoError(t, err)
 
@@ -84,6 +91,11 @@ func TestAdmin_RBAC(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, viewerAuthToken)
 	viewerToken := viewerAuthToken.Token().String()
+
+	testAuthToken, err := service.IssueUserAuthToken(ctx, testUser.ID, "12345678-0000-0000-0000-000000000001", "test")
+	require.NoError(t, err)
+	require.NotNil(t, testAuthToken)
+	testToken := testAuthToken.Token().String()
 
 	// create a server instance
 	server := Server{
@@ -126,6 +138,13 @@ func TestAdmin_RBAC(t *testing.T) {
 	require.NoError(t, err)
 	defer viwerConn.Close()
 	viewerClient := adminv1.NewAdminServiceClient(viwerConn)
+
+	testConn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+		return lis.Dial()
+	}), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithPerRPCCredentials(newBearerTokenCredential(testToken)))
+	require.NoError(t, err)
+	defer testConn.Close()
+	testClient := adminv1.NewAdminServiceClient(testConn)
 
 	// make a CreateOrganization request
 	adminOrg, err := adminClient.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{
@@ -237,7 +256,7 @@ func TestAdmin_RBAC(t *testing.T) {
 			viewerClient,
 			false,
 			codes.OK,
-			2,
+			1,
 		},
 	}
 
@@ -376,10 +395,9 @@ func TestAdmin_RBAC(t *testing.T) {
 	})
 
 	t.Run("test quota single-user orgs", func(t *testing.T) {
-		i := 0
-		for ; i < 4; i++ {
+		for i := 0; i < 4; i++ {
 			orgName := "org" + strconv.Itoa(i)
-			org, err := viewerClient.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{
+			org, err := testClient.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{
 				Name: orgName,
 			})
 			if err != nil {
@@ -390,7 +408,9 @@ func TestAdmin_RBAC(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, org.Organization.Name, orgName)
 		}
-		require.Equal(t, 3, i)
+		resp, err := testClient.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
+		require.NoError(t, err)
+		require.Equal(t, 3, len(resp.Organizations))
 	})
 
 }
