@@ -119,7 +119,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO orgs(name, description) VALUES ($1, $2) RETURNING *", opts.Name, opts.Description).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, description, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+		opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -401,7 +403,7 @@ func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOp
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url) VALUES ($1, $2, $3) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url, quota_singleuser_orgs) VALUES ($1, $2, $3, $4) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL, opts.QuotaSingleuserOrgs).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
