@@ -45,8 +45,6 @@
 
   let exploreContainerWidth;
 
-  let width;
-
   $: metricsExplorer = useDashboardStore(metricViewName);
 
   $: stateSyncManager = new StateSyncManager(metricViewName);
@@ -65,13 +63,16 @@
   $: hasTimeSeries = $metricTimeSeries.data;
 </script>
 
-<DashboardContainer bind:exploreContainerWidth bind:width {leftMargin}>
+<DashboardContainer bind:exploreContainerWidth {leftMargin}>
   <DashboardHeader {hasTitle} {metricViewName} slot="header" />
 
-  <svelte:fragment let:width slot="metrics">
+  <svelte:fragment slot="metrics">
     {#key metricViewName}
       {#if hasTimeSeries}
-        <MetricsTimeSeriesCharts {metricViewName} workspaceWidth={width} />
+        <MetricsTimeSeriesCharts
+          {metricViewName}
+          workspaceWidth={exploreContainerWidth}
+        />
       {:else}
         <MeasuresContainer {exploreContainerWidth} {metricViewName} />
       {/if}

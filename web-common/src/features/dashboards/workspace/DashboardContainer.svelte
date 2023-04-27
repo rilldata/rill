@@ -4,7 +4,6 @@
   import type { Tweened } from "svelte/motion";
 
   export let exploreContainerWidth;
-  export let width;
 
   export let leftMargin: string = undefined;
 
@@ -15,9 +14,7 @@
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
 
-  $: exploreContainerWidth = $observedNode?.offsetWidth || 0;
-
-  $: width = $observedNode?.getBoundingClientRect()?.width;
+  $: exploreContainerWidth = $observedNode?.getBoundingClientRect()?.width || 0;
 
   $: leftSide = leftMargin
     ? leftMargin
@@ -28,15 +25,12 @@
   <div
     class="explore-header border-b mb-3"
     style:padding-left={leftSide}
-    style:width={width + "px"}
+    style:width={exploreContainerWidth + "px"}
   >
     <slot name="header" />
   </div>
   <div class="explore-metrics mb-8" style:padding-left={leftSide}>
-    <slot
-      name="metrics"
-      width={$observedNode?.getBoundingClientRect()?.width}
-    />
+    <slot name="metrics" />
   </div>
   <div class="explore-leaderboards pr-4 pb-8">
     <slot name="leaderboards" />
