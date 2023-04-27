@@ -521,9 +521,9 @@ func (c *connection) FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceC
 	return authCode, nil
 }
 
-func (c *connection) FindDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*database.DeviceAuthCode, error) {
+func (c *connection) FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*database.DeviceAuthCode, error) {
 	authCode := &database.DeviceAuthCode{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_auth_codes WHERE user_code = $1", userCode).StructScan(authCode)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_auth_codes WHERE user_code = $1 AND expires_on > now() AND approval_state = 0", userCode).StructScan(authCode)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -559,9 +559,8 @@ func (c *connection) DeleteDeviceAuthCode(ctx context.Context, deviceCode string
 	return nil
 }
 
-func (c *connection) UpdateDeviceAuthCode(ctx context.Context, userCode, userID string, approvalState database.DeviceAuthCodeState) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, "UPDATE device_auth_codes SET approval_state=$1, user_id=$2, updated_on=now() WHERE user_code=$3",
-		approvalState, userID, userCode)
+func (c *connection) UpdateDeviceAuthCode(ctx context.Context, id, userID string, approvalState database.DeviceAuthCodeState) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "UPDATE device_auth_codes SET approval_state=$1, user_id=$2, updated_on=now() WHERE id=$3", approvalState, userID, id)
 	if err != nil {
 		return parseErr(err)
 	}
