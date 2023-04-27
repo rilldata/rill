@@ -46,9 +46,10 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 
 	// User does not exist. Creating a new user.
 	user, err = s.DB.InsertUser(ctx, &database.InsertUserOptions{
-		Email:       email,
-		DisplayName: name,
-		PhotoURL:    photoURL,
+		Email:               email,
+		DisplayName:         name,
+		PhotoURL:            photoURL,
+		QuotaSingleuserOrgs: database.DefaultQuotaSingleuserOrgs,
 	})
 	if err != nil {
 		return nil, err
@@ -56,7 +57,15 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 
 	// handle org invites
 	for _, invite := range orgInvites {
+		org, err := s.DB.FindOrganization(ctx, invite.OrgID)
+		if err != nil {
+			return nil, err
+		}
 		err = s.DB.InsertOrganizationMemberUser(ctx, invite.OrgID, user.ID, invite.OrgRoleID)
+		if err != nil {
+			return nil, err
+		}
+		err = s.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -94,8 +103,13 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 	defer func() { _ = tx.Rollback() }()
 
 	org, err := s.DB.InsertOrganization(ctx, &database.InsertOrganizationOptions{
-		Name:        orgName,
-		Description: description,
+		Name:                    orgName,
+		Description:             description,
+		QuotaProjects:           database.DefaultQuotaProjects,
+		QuotaDeployments:        database.DefaultQuotaDeployments,
+		QuotaSlotsTotal:         database.DefaultQuotaSlotsTotal,
+		QuotaSlotsPerDeployment: database.DefaultQuotaSlotsPerDeployment,
+		QuotaOutstandingInvites: database.DefaultQuotaOutstandingInvites,
 	})
 	if err != nil {
 		return nil, err

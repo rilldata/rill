@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  RELEASE: ${{ contains('refs/tags', github.ref) }}
+  RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
 jobs:
   release:

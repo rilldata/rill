@@ -81,7 +81,7 @@ func (s *Service) getMigrationItems(
 		}
 	}
 
-	if item.Type == MigrationNoChange && item.HasChanged {
+	if item.Type == MigrationNoChange && (item.HasChanged || !hasStoreObject) {
 		if hasStoreObject {
 			item.Type = MigrationUpdate
 		} else {
@@ -91,7 +91,7 @@ func (s *Service) getMigrationItems(
 
 	if !hasFileObject && !hasStoreObject {
 		// invalid file created/updated
-		// do not run any migration on this, changed are already saved to the file
+		// do not run any migration on this, changes are already saved to the file
 		item.Type = MigrationNoChange
 		if errors.Is(err, artifacts.ErrFileRead) {
 			// the item is possibly for a file that doesn't exist but was passed in ChangedPaths
@@ -202,6 +202,12 @@ func (s *Service) resolveDependencies(
 	prevEmbeddedEntries := make(map[string]bool)
 	prevDependencies := s.Meta.dag.GetParents(item.NormalizedName)
 	for _, prevDependency := range prevDependencies {
+		if _, ok := storeObjectsMap[prevDependency]; !ok {
+			// embedded entries not created because ingestion failed
+			// it gets added to DAG but not to the catalog store
+			// treat it as a new dependency in this case
+			continue
+		}
 		prevEmbeddedEntries[prevDependency] = true
 	}
 

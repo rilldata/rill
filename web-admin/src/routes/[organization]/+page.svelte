@@ -13,7 +13,9 @@
   );
 
   $: if ($projs.data && $projs.data.projects?.length > 0) {
-    goto(`/${$page.params.organization}/${$projs.data.projects[0].name}`);
+    goto(
+      `/${$page.params.organization}/${$projs.data.projects[0].name}/-/redirect`
+    );
   }
 
   function openDocs() {
@@ -22,7 +24,7 @@
 </script>
 
 <svelte:head>
-  <title>Organization</title>
+  <title>{$page.params.organization} overview - Rill</title>
 </svelte:head>
 
 <section class="flex flex-col justify-center items-center h-3/5">

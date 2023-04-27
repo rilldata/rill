@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/metric/instrument"
+	"go.uber.org/zap"
 )
 
 // Create instruments
@@ -167,6 +168,17 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 
 func (c *connection) DropDB() error {
 	// ignoring close error
-	c.Close()
-	return os.Remove(c.config.DBFilePath)
+	err := c.Close()
+	if err != nil {
+		c.logger.Error("duckdb: drop db: failed to close", zap.Error(err))
+	}
+	if c.config.DBFilePath != "" {
+		err = os.Remove(c.config.DBFilePath)
+		if err != nil {
+			return err
+		}
+		// Hacky approach to remove the wal file
+		_ = os.Remove(c.config.DBFilePath + ".wal")
+	}
+	return nil
 }

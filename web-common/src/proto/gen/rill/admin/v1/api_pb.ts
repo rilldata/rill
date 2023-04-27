@@ -1303,6 +1303,216 @@ export class UpdateProjectVariablesResponse extends Message<UpdateProjectVariabl
 }
 
 /**
+ * @generated from message rill.admin.v1.TriggerReconcileRequest
+ */
+export class TriggerReconcileRequest extends Message<TriggerReconcileRequest> {
+  /**
+   * @generated from field: string deployment_id = 1;
+   */
+  deploymentId = "";
+
+  constructor(data?: PartialMessage<TriggerReconcileRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.TriggerReconcileRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TriggerReconcileRequest {
+    return new TriggerReconcileRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TriggerReconcileRequest {
+    return new TriggerReconcileRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TriggerReconcileRequest {
+    return new TriggerReconcileRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TriggerReconcileRequest | PlainMessage<TriggerReconcileRequest> | undefined, b: TriggerReconcileRequest | PlainMessage<TriggerReconcileRequest> | undefined): boolean {
+    return proto3.util.equals(TriggerReconcileRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.TriggerReconcileResponse
+ */
+export class TriggerReconcileResponse extends Message<TriggerReconcileResponse> {
+  constructor(data?: PartialMessage<TriggerReconcileResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.TriggerReconcileResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TriggerReconcileResponse {
+    return new TriggerReconcileResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TriggerReconcileResponse {
+    return new TriggerReconcileResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TriggerReconcileResponse {
+    return new TriggerReconcileResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TriggerReconcileResponse | PlainMessage<TriggerReconcileResponse> | undefined, b: TriggerReconcileResponse | PlainMessage<TriggerReconcileResponse> | undefined): boolean {
+    return proto3.util.equals(TriggerReconcileResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.TriggerRefreshSourcesRequest
+ */
+export class TriggerRefreshSourcesRequest extends Message<TriggerRefreshSourcesRequest> {
+  /**
+   * @generated from field: string deployment_id = 1;
+   */
+  deploymentId = "";
+
+  /**
+   * @generated from field: repeated string sources = 2;
+   */
+  sources: string[] = [];
+
+  constructor(data?: PartialMessage<TriggerRefreshSourcesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.TriggerRefreshSourcesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "sources", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TriggerRefreshSourcesRequest {
+    return new TriggerRefreshSourcesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TriggerRefreshSourcesRequest {
+    return new TriggerRefreshSourcesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TriggerRefreshSourcesRequest {
+    return new TriggerRefreshSourcesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TriggerRefreshSourcesRequest | PlainMessage<TriggerRefreshSourcesRequest> | undefined, b: TriggerRefreshSourcesRequest | PlainMessage<TriggerRefreshSourcesRequest> | undefined): boolean {
+    return proto3.util.equals(TriggerRefreshSourcesRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.TriggerRefreshSourcesResponse
+ */
+export class TriggerRefreshSourcesResponse extends Message<TriggerRefreshSourcesResponse> {
+  constructor(data?: PartialMessage<TriggerRefreshSourcesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.TriggerRefreshSourcesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TriggerRefreshSourcesResponse {
+    return new TriggerRefreshSourcesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TriggerRefreshSourcesResponse {
+    return new TriggerRefreshSourcesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TriggerRefreshSourcesResponse {
+    return new TriggerRefreshSourcesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TriggerRefreshSourcesResponse | PlainMessage<TriggerRefreshSourcesResponse> | undefined, b: TriggerRefreshSourcesResponse | PlainMessage<TriggerRefreshSourcesResponse> | undefined): boolean {
+    return proto3.util.equals(TriggerRefreshSourcesResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.TriggerRedeployRequest
+ */
+export class TriggerRedeployRequest extends Message<TriggerRedeployRequest> {
+  /**
+   * @generated from field: string deployment_id = 1;
+   */
+  deploymentId = "";
+
+  constructor(data?: PartialMessage<TriggerRedeployRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.TriggerRedeployRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TriggerRedeployRequest {
+    return new TriggerRedeployRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TriggerRedeployRequest {
+    return new TriggerRedeployRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TriggerRedeployRequest {
+    return new TriggerRedeployRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TriggerRedeployRequest | PlainMessage<TriggerRedeployRequest> | undefined, b: TriggerRedeployRequest | PlainMessage<TriggerRedeployRequest> | undefined): boolean {
+    return proto3.util.equals(TriggerRedeployRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.TriggerRedeployResponse
+ */
+export class TriggerRedeployResponse extends Message<TriggerRedeployResponse> {
+  constructor(data?: PartialMessage<TriggerRedeployResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.TriggerRedeployResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TriggerRedeployResponse {
+    return new TriggerRedeployResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TriggerRedeployResponse {
+    return new TriggerRedeployResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TriggerRedeployResponse {
+    return new TriggerRedeployResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TriggerRedeployResponse | PlainMessage<TriggerRedeployResponse> | undefined, b: TriggerRedeployResponse | PlainMessage<TriggerRedeployResponse> | undefined): boolean {
+    return proto3.util.equals(TriggerRedeployResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListOrganizationMembersRequest
  */
 export class ListOrganizationMembersRequest extends Message<ListOrganizationMembersRequest> {
