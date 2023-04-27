@@ -96,12 +96,12 @@ func (s *Service) Close() error {
 }
 
 // NewMock for testing
-func NewMock(DB database.DB, github *github.Client, provisioner provisioner.Provisioner, issuer *auth.Issuer, email *email.Client) *Service {
+func NewMock(db database.DB, githubClient *github.Client, prov provisioner.Provisioner, issuer *auth.Issuer, emailClient *email.Client) *Service {
 	return &Service{
-		DB:          DB,
-		github:      github,
-		provisioner: provisioner,
+		DB:          db,
+		github:      githubClient,
+		provisioner: prov,
 		issuer:      issuer,
-		email:       email,
+		email:       emailClient,
 	}
 }
