@@ -15,19 +15,17 @@
     "rill:app:navigation-visibility-tween"
   ) as Tweened<number>;
 
-  const {
-    observedNode: dashboardContainerNode,
-    listenToNodeResize: dashboardContainerNodeWatcher,
-  } = createResizeListenerActionFactory();
+  const { observedNode, listenToNodeResize } =
+    createResizeListenerActionFactory();
 
-  $: exploreContainerWidth = getEltSize($dashboardContainerNode, "x");
+  $: exploreContainerWidth = getEltSize($observedNode, "x");
 
   $: leftSide = leftMargin
     ? leftMargin
     : `calc(${$navigationVisibilityTween * 24}px + 1.25rem)`;
 </script>
 
-<section use:dashboardContainerNodeWatcher class="flex flex-col gap-y-1">
+<section use:listenToNodeResize class="flex flex-col gap-y-1">
   <div
     class="explore-header border-b mb-3"
     style:padding-left={leftSide}

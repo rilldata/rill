@@ -2,7 +2,7 @@
  * Get the total size of an element, including margins
  * @param element
  */
-function getEltSize(element: HTMLElement, direction: "x" | "y") {
+export function getEltSize(element: HTMLElement, direction: "x" | "y") {
   if (!["x", "y"].includes(direction)) {
     throw new Error("direction must be 'x' or 'y'");
   }
