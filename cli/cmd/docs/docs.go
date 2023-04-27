@@ -7,19 +7,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var docsURL = "https://docs.rilldata.com"
-
-// docsCmd represents the docs command.
-func DocsCmd() *cobra.Command {
+func DocsCmd(cfg *config.Config, rootCmd *cobra.Command) *cobra.Command {
 	docsCmd := &cobra.Command{
-		Use:   "docs",
-		Short: "Open docs.rilldata.com",
-		Run: func(cmd *cobra.Command, args []string) {
-			err := browser.Open(docsURL)
-			if err != nil {
-				fmt.Printf("Could not open browser. Copy this URL into your browser: %s\n", docsURL)
-			}
-		},
+		Use:    "docs",
+		Hidden: !cfg.IsDev(),
+		Short:  "Manage documentation",
 	}
+	docsCmd.AddCommand(OpenCmd())
+	docsCmd.AddCommand(GenerateCmd(rootCmd))
+
 	return docsCmd
 }

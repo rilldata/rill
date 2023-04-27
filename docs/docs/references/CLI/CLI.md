@@ -43,7 +43,7 @@ to initialize an empty project.
 
 ## Initializing an example project
 
-We recommend following our [quick start](../quick-start.md) to experience how well Rill ties together with Git. However, Rill also bundles some built-in examples to help you get started quickly. To initialize the default example, run:
+We recommend following our [quick start](../../quick-start.md) to experience how well Rill ties together with Git. However, Rill also bundles some built-in examples to help you get started quickly. To initialize the default example, run:
 
 ```
 rill init --example
@@ -79,7 +79,7 @@ You can create a local file source by running:
 rill source add /path/to/data.parquet
 ```
 
-See [Import data](../using-rill/import-data.md) for more details.
+See [Import data](../../using-rill/import-data.md) for more details.
 
 ### Override the source name
 
