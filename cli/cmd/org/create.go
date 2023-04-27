@@ -52,7 +52,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Created organization \n")
+			cmdutil.SuccessPrinter("Created organization")
 			cmdutil.TablePrinter(toRow(res.Organization))
 			return nil
 		},

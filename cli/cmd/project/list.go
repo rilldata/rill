@@ -27,7 +27,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Projects list \n")
+			cmdutil.SuccessPrinter("Projects list")
 			cmdutil.TablePrinter(toTable(proj.Projects))
 			return nil
 		},

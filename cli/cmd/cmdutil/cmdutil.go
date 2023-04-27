@@ -204,7 +204,7 @@ func PrintMembers(members []*adminv1.Member) {
 		return
 	}
 
-	SuccessPrinter("Members list \n")
+	SuccessPrinter("Members list")
 	TablePrinter(toMemberTable(members))
 }
 
@@ -213,7 +213,7 @@ func PrintInvites(invites []*adminv1.UserInvite) {
 		return
 	}
 
-	SuccessPrinter("Pending user invites \n")
+	SuccessPrinter("Pending user invites")
 	TablePrinter(toInvitesTable(invites))
 }
 

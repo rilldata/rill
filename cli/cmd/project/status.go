@@ -41,7 +41,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Found project\n")
+			cmdutil.SuccessPrinter("Found project")
 			cmdutil.TablePrinter(toRow(proj.Project))
 
 			depl := proj.ProdDeployment
@@ -51,7 +51,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 					logs = fmt.Sprintf("  Logs: %s\n\n", depl.Logs)
 				}
 
-				cmdutil.SuccessPrinter("Deployment info\n")
+				cmdutil.SuccessPrinter("Deployment info")
 				fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
 				fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)
 				fmt.Printf("  Slots: %d\n", depl.Slots)

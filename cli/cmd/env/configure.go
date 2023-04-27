@@ -106,7 +106,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				return fmt.Errorf("failed to update variables %w", err)
 			}
 
-			cmdutil.SuccessPrinter("Updated project variables\n")
+			cmdutil.SuccessPrinter("Updated project variables")
 			return nil
 		},
 	}
