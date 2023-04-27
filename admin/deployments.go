@@ -192,7 +192,7 @@ func (s *Service) openRuntimeClient(host, audience string) (*client.Client, erro
 	jwt, err := s.issuer.NewToken(auth.TokenOptions{
 		AudienceURL:       audience,
 		TTL:               time.Hour,
-		SystemPermissions: []auth.Permission{auth.ManageInstances, auth.ReadInstance, auth.EditInstance},
+		SystemPermissions: []auth.Permission{auth.ManageInstances, auth.ReadInstance, auth.EditInstance, auth.ReadObjects},
 	})
 	if err != nil {
 		return nil, err

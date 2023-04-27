@@ -260,7 +260,7 @@ func (s *Service) triggerRefreshSources(ctx context.Context, depl *database.Depl
 	// Get paths of sources
 	res1, err := rt.ListCatalogEntries(ctx, &runtimev1.ListCatalogEntriesRequest{InstanceId: depl.RuntimeInstanceID, Type: runtimev1.ObjectType_OBJECT_TYPE_SOURCE})
 	if err != nil {
-		return err
+		return s.endReconcile(ctx, depl, nil, err)
 	}
 	var paths []string
 	for _, entry := range res1.Entries {
