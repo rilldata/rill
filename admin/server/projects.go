@@ -489,10 +489,7 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 
 	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
 	if err != nil {
-		if errors.Is(err, database.ErrNotUnique) {
-			return nil, status.Error(codes.InvalidArgument, "user already member of org")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &adminv1.AddProjectMemberResponse{

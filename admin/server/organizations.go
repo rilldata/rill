@@ -255,10 +255,7 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 	defer func() { _ = tx.Rollback() }()
 	err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
 	if err != nil {
-		if errors.Is(err, database.ErrNotUnique) {
-			return nil, status.Error(codes.InvalidArgument, "user already member of org")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	err = s.admin.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)

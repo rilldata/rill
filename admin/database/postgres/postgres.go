@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/XSAM/otelsql"
+	"github.com/jackc/pgconn"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/admin/database"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
@@ -127,8 +127,8 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 }
 
 func (c *connection) DeleteOrganization(ctx context.Context, name string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM orgs WHERE lower(name)=lower($1)", name)
-	return parseErr(err)
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM orgs WHERE lower(name)=lower($1)", name)
+	return checkDeleteRow(res, err)
 }
 
 func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *database.UpdateOrganizationOptions) (*database.Organization, error) {
@@ -270,8 +270,8 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 }
 
 func (c *connection) DeleteProject(ctx context.Context, id string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM projects WHERE id=$1", id)
-	return parseErr(err)
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM projects WHERE id=$1", id)
+	return checkDeleteRow(res, err)
 }
 
 func (c *connection) UpdateProject(ctx context.Context, id string, opts *database.UpdateProjectOptions) (*database.Project, error) {
@@ -336,8 +336,8 @@ func (c *connection) InsertDeployment(ctx context.Context, opts *database.Insert
 }
 
 func (c *connection) DeleteDeployment(ctx context.Context, id string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM deployments WHERE id=$1", id)
-	return parseErr(err)
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM deployments WHERE id=$1", id)
+	return checkDeleteRow(res, err)
 }
 
 func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, logs string) (*database.Deployment, error) {
@@ -418,8 +418,8 @@ func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOp
 }
 
 func (c *connection) DeleteUser(ctx context.Context, id string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM users WHERE id=$1", id)
-	return parseErr(err)
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM users WHERE id=$1", id)
+	return checkDeleteRow(res, err)
 }
 
 func (c *connection) UpdateUser(ctx context.Context, id string, opts *database.UpdateUserOptions) (*database.User, error) {
@@ -463,11 +463,8 @@ func (c *connection) InsertUsergroupMember(ctx context.Context, groupID, userID 
 }
 
 func (c *connection) DeleteUsergroupMember(ctx context.Context, groupID, userID string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups_users WHERE user_id = $1 AND usergroup_id = $2", userID, groupID)
-	if err != nil {
-		return parseErr(err)
-	}
-	return nil
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups_users WHERE user_id = $1 AND usergroup_id = $2", userID, groupID)
+	return checkDeleteRow(res, err)
 }
 
 func (c *connection) FindUserAuthTokens(ctx context.Context, userID string) ([]*database.UserAuthToken, error) {
@@ -506,8 +503,8 @@ func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.Ins
 }
 
 func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE id=$1", id)
-	return parseErr(err)
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE id=$1", id)
+	return checkDeleteRow(res, err)
 }
 
 func (c *connection) FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.DeviceAuthCode, error) {
@@ -541,20 +538,7 @@ func (c *connection) InsertDeviceAuthCode(ctx context.Context, deviceCode, userC
 
 func (c *connection) DeleteDeviceAuthCode(ctx context.Context, deviceCode string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM device_auth_codes WHERE device_code=$1", deviceCode)
-	if err != nil {
-		return parseErr(err)
-	}
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rows == 0 {
-		return database.ErrNotFound
-	}
-	if rows != 1 {
-		return fmt.Errorf("problem in deleting auth code, expected 1 row to be affected, got %d", rows)
-	}
-	return nil
+	return checkDeleteRow(res, err)
 }
 
 func (c *connection) UpdateDeviceAuthCode(ctx context.Context, userCode, userID string, approvalState database.DeviceAuthCodeState) error {
@@ -666,17 +650,7 @@ func (c *connection) InsertOrganizationMemberUser(ctx context.Context, orgID, us
 
 func (c *connection) DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM users_orgs_roles WHERE user_id = $1 AND org_id = $2", userID, orgID)
-	if err != nil {
-		return parseErr(err)
-	}
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rows == 0 {
-		return fmt.Errorf("no rows affected when removing user from organization")
-	}
-	return nil
+	return checkDeleteRow(res, err)
 }
 
 func (c *connection) UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error {
@@ -736,17 +710,7 @@ func (c *connection) InsertProjectMemberUsergroup(ctx context.Context, groupID, 
 
 func (c *connection) DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM users_projects_roles WHERE user_id = $1 AND project_id = $2", userID, projectID)
-	if err != nil {
-		return parseErr(err)
-	}
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rows == 0 {
-		return fmt.Errorf("no rows affected when removing user from project")
-	}
-	return nil
+	return checkDeleteRow(res, err)
 }
 
 func (c *connection) UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error {
@@ -793,11 +757,8 @@ func (c *connection) InsertOrganizationInvite(ctx context.Context, email, orgID,
 }
 
 func (c *connection) DeleteOrganizationInvite(ctx context.Context, id string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM org_invites WHERE id = $1", id)
-	if err != nil {
-		return parseErr(err)
-	}
-	return nil
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM org_invites WHERE id = $1", id)
+	return checkDeleteRow(res, err)
 }
 
 func (c *connection) CountInvitesForOrganization(ctx context.Context, orgID string) (int, error) {
@@ -854,11 +815,8 @@ func (c *connection) InsertProjectInvite(ctx context.Context, email, projectID, 
 }
 
 func (c *connection) DeleteProjectInvite(ctx context.Context, id string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM project_invites WHERE id = $1", id)
-	if err != nil {
-		return parseErr(err)
-	}
-	return nil
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM project_invites WHERE id = $1", id)
+	return checkDeleteRow(res, err)
 }
 
 func parseErr(err error) error {
@@ -868,8 +826,73 @@ func parseErr(err error) error {
 	if errors.Is(err, sql.ErrNoRows) {
 		return database.ErrNotFound
 	}
-	if strings.Contains(strings.ToLower(err.Error()), "violates unique constraint") {
-		return database.ErrNotUnique
+	var pgerr *pgconn.PgError
+	if !errors.As(err, &pgerr) {
+		return err
+	}
+	if pgerr.Code == "23505" { // unique_violation
+		switch pgerr.ConstraintName {
+		case "orgs_name_idx":
+			return newAlreadyExistsErr("an org with that name already exists")
+		case "projects_name_idx":
+			return newAlreadyExistsErr("a project with that name already exists in the org")
+		case "users_email_idx":
+			return newAlreadyExistsErr("a user with that email already exists")
+		case "usergroups_name_idx":
+			return newAlreadyExistsErr("a usergroup with that name already exists in the org")
+		case "usergroups_users_pkey":
+			return newAlreadyExistsErr("user is already a member of the usergroup")
+		case "users_orgs_roles_pkey":
+			return newAlreadyExistsErr("user is already a member of the org")
+		case "users_projects_roles_pkey":
+			return newAlreadyExistsErr("user is already a member of the project")
+		case "usergroups_orgs_roles_pkey":
+			return newAlreadyExistsErr("usergroup is already a member of the org")
+		case "usergroups_projects_roles_pkey":
+			return newAlreadyExistsErr("usergroup is already a member of the project")
+		case "org_invites_email_org_idx":
+			return newAlreadyExistsErr("email has already been invited to the org")
+		case "project_invites_email_project_idx":
+			return newAlreadyExistsErr("email has already been invited to the project")
+		default:
+			return database.ErrNotUnique
+		}
 	}
 	return err
+}
+
+func newAlreadyExistsErr(msg string) error {
+	// wrap database.ErrNotUnique so checks with errors.Is(...) still work
+	return &wrappedError{msg: msg, err: database.ErrNotUnique}
+}
+
+type wrappedError struct {
+	msg string
+	err error
+}
+
+func (e *wrappedError) Error() string {
+	return e.msg
+}
+
+func (e *wrappedError) Unwrap() error {
+	return e.err
+}
+
+func checkDeleteRow(res sql.Result, err error) error {
+	if err != nil {
+		return parseErr(err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return parseErr(err)
+	}
+	if n == 0 {
+		return parseErr(sql.ErrNoRows)
+	}
+	if n > 1 {
+		// This should never happen
+		panic(fmt.Errorf("expected to delete 1 row, but deleted %d", n))
+	}
+	return nil
 }
