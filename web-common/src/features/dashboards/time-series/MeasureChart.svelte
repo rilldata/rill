@@ -132,7 +132,7 @@
   xMaxTweenProps={tweenProps}
   xMinTweenProps={tweenProps}
 >
-  <Axis side="right" format={mouseoverFormat} {numberKind} />
+  <Axis side="right" {numberKind} />
   <Grid />
   <Body>
     <!-- key on the time range itself to prevent weird tweening animations.
@@ -154,7 +154,6 @@
             {data}
             {xAccessor}
             yAccessor="comparison.{yAccessor}"
-            key={$timeRangeKey}
           />
         </g>
       {/if}
@@ -164,7 +163,6 @@
         {data}
         {xAccessor}
         {yAccessor}
-        key={$timeRangeKey}
       />
     {/key}
     <line

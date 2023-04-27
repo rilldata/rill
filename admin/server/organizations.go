@@ -86,7 +86,20 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
-	org, err := s.admin.CreateOrganizationForUser(ctx, claims.OwnerID(), req.Name, req.Description)
+	// check single user org limit for this user
+	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	count, err := s.admin.DB.CountSingleuserOrganizationsForMemberUser(ctx, user.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if user.QuotaSingleuserOrgs >= 0 && count >= user.QuotaSingleuserOrgs {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: you can only create %d single-user orgs", user.QuotaSingleuserOrgs)
+	}
+
+	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, req.Name, req.Description)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -199,6 +212,14 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add org members")
 	}
 
+	count, err := s.admin.DB.CountInvitesForOrganization(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if org.QuotaOutstandingInvites >= 0 && count >= org.QuotaOutstandingInvites {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can at most have %d outstanding invitations", org.QuotaOutstandingInvites)
+	}
+
 	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -249,6 +270,11 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 	}
 
 	err = tx.Commit()
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	err = s.admin.Email.SendOrganizationAdditionNotification(req.Email, "", org.Name, role.Name)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

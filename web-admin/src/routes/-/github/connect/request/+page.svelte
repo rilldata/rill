@@ -1,7 +1,15 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
+  import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
+  import Github from "@rilldata/web-common/components/icons/Github.svelte";
+  import CodeBlockInline from "../../../../../components/calls-to-action/CodeBlockInline.svelte";
+  import CtaContentContainer from "../../../../../components/calls-to-action/CTAContentContainer.svelte";
+  import CtaHeader from "../../../../../components/calls-to-action/CTAHeader.svelte";
+  import CtaLayoutContainer from "../../../../../components/calls-to-action/CTALayoutContainer.svelte";
+  import CtaMessage from "../../../../../components/calls-to-action/CTAMessage.svelte";
+  import KeyboardKey from "../../../../../components/calls-to-action/KeyboardKey.svelte";
+  import GithubRepoInline from "../../../../../components/projects/GithubRepoInline.svelte";
 
   const remote = new URLSearchParams(window.location.search).get("remote");
   const user = createAdminServiceGetCurrentUser({
@@ -20,13 +28,20 @@
 </svelte:head>
 
 {#if $user.data && $user.data.user}
-  <div class="flex flex-col justify-center items-center h-3/5">
-    <h1 class="text-3xl font-medium text-gray-800 mb-4">Connect to Github</h1>
-    <p class="text-lg text-gray-700 mb-6">
-      You requested access to {@html remote}. You can close this page now.<br />
-      CLI will keep polling until access has been granted by admin.<br />
-      You can stop polling by pressing `ctrl+c` and run `rill deploy` again once
-      access has been granted.
-    </p>
-  </div>
+  <CtaLayoutContainer>
+    <CtaContentContainer>
+      <Github className="w-10 h-10 text-gray-900" />
+      <CtaHeader>Connect to Github</CtaHeader>
+      <CtaMessage>
+        You requested access to <GithubRepoInline githubUrl={remote} />. You can
+        close this page now.
+      </CtaMessage>
+      <CtaMessage>
+        The CLI will keep polling until Github access has been granted by an
+        admin. You can stop polling by pressing <KeyboardKey label="Control" /> +
+        <KeyboardKey label="C" /> and run <CodeBlockInline code="rill deploy" />
+        again once access has been granted.
+      </CtaMessage>
+    </CtaContentContainer>
+  </CtaLayoutContainer>
 {/if}

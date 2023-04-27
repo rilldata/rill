@@ -25,7 +25,7 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 			ctx := cmd.Context()
 
 			if cfg.AdminTokenDefault != "" {
-				warn.Println("You are already logged in. To log in again, run `rill auth logout` first.")
+				warn.Println("You are already logged in. To log in again, run `rill logout` first.")
 				return nil
 			}
 

@@ -96,7 +96,7 @@ func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*
 func (c *connection) CheckOrganizationHasOutsideUser(ctx context.Context, orgID, userID string) (bool, error) {
 	var res bool
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		"SELECT EXISTS (SELECT 1 FROM projects p JOIN users_projects_roles upr ON p.id = upr.project_id WHERE p.org_id = $1 AND upr.user_id = $2 limit 1)", orgID, userID).StructScan(&res)
+		"SELECT EXISTS (SELECT 1 FROM projects p JOIN users_projects_roles upr ON p.id = upr.project_id WHERE p.org_id = $1 AND upr.user_id = $2 limit 1)", orgID, userID).Scan(&res)
 	if err != nil {
 		return false, parseErr(err)
 	}
@@ -106,7 +106,7 @@ func (c *connection) CheckOrganizationHasOutsideUser(ctx context.Context, orgID,
 func (c *connection) CheckOrganizationHasPublicProjects(ctx context.Context, orgID string) (bool, error) {
 	var res bool
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		"SELECT EXISTS (SELECT 1 FROM projects p WHERE p.org_id = $1 AND p.public = true limit 1)", orgID).StructScan(&res)
+		"SELECT EXISTS (SELECT 1 FROM projects p WHERE p.org_id = $1 AND p.public = true limit 1)", orgID).Scan(&res)
 	if err != nil {
 		return false, parseErr(err)
 	}
@@ -119,7 +119,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO orgs(name, description) VALUES ($1, $2) RETURNING *", opts.Name, opts.Description).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, description, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+		opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -291,6 +293,15 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	return res, nil
 }
 
+func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
+	var count int
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM projects WHERE org_id = $1", orgID).Scan(&count)
+	if err != nil {
+		return 0, parseErr(err)
+	}
+	return count, nil
+}
+
 func (c *connection) FindDeployments(ctx context.Context, projectID string) ([]*database.Deployment, error) {
 	var res []*database.Deployment
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM deployments d WHERE d.project_id=$1", projectID)
@@ -340,6 +351,25 @@ func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, stat
 	return res, nil
 }
 
+func (c *connection) UpdateDeploymentBranch(ctx context.Context, id, branch string) (*database.Deployment, error) {
+	res := &database.Deployment{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET branch=$1, updated_on=now() WHERE id=$2 RETURNING *", branch, id).StructScan(res)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
+func (c *connection) CountDeploymentsForOrganization(ctx context.Context, orgID string) (*database.DeploymentsCount, error) {
+	res := &database.DeploymentsCount{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT COUNT(*) as deployments, COALESCE(SUM(slots), 0) as slots FROM deployments WHERE project_id IN (SELECT id FROM projects WHERE org_id = $1)`, orgID).StructScan(res)
+	if err != nil {
+		return nil, parseErr(err)
+	}
+	return res, nil
+}
+
 func (c *connection) ResolveRuntimeSlotsUsed(ctx context.Context) ([]*database.RuntimeSlotsUsed, error) {
 	var res []*database.RuntimeSlotsUsed
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT d.runtime_host, SUM(d.slots) AS slots_used FROM deployments d GROUP BY d.runtime_host")
@@ -382,7 +412,7 @@ func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOp
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url) VALUES ($1, $2, $3) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url, quota_singleuser_orgs) VALUES ($1, $2, $3, $4) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL, opts.QuotaSingleuserOrgs).StructScan(res)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -491,9 +521,9 @@ func (c *connection) FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceC
 	return authCode, nil
 }
 
-func (c *connection) FindDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*database.DeviceAuthCode, error) {
+func (c *connection) FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*database.DeviceAuthCode, error) {
 	authCode := &database.DeviceAuthCode{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_auth_codes WHERE user_code = $1", userCode).StructScan(authCode)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_auth_codes WHERE user_code = $1 AND expires_on > now() AND approval_state = 0", userCode).StructScan(authCode)
 	if err != nil {
 		return nil, parseErr(err)
 	}
@@ -529,9 +559,8 @@ func (c *connection) DeleteDeviceAuthCode(ctx context.Context, deviceCode string
 	return nil
 }
 
-func (c *connection) UpdateDeviceAuthCode(ctx context.Context, userCode, userID string, approvalState database.DeviceAuthCodeState) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, "UPDATE device_auth_codes SET approval_state=$1, user_id=$2, updated_on=now() WHERE user_code=$3",
-		approvalState, userID, userCode)
+func (c *connection) UpdateDeviceAuthCode(ctx context.Context, id, userID string, approvalState database.DeviceAuthCodeState) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "UPDATE device_auth_codes SET approval_state=$1, user_id=$2, updated_on=now() WHERE id=$3", approvalState, userID, id)
 	if err != nil {
 		return parseErr(err)
 	}
@@ -657,6 +686,21 @@ func (c *connection) UpdateOrganizationMemberUserRole(ctx context.Context, orgID
 	return parseErr(err)
 }
 
+func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error) {
+	var count int
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+	SELECT COALESCE(SUM(total_count), 0) as total_count FROM (
+	    SELECT CASE WHEN COUNT(*) = 1 THEN 1 ELSE 0 END as total_count FROM users_orgs_roles WHERE org_id IN (
+	        SELECT org_id FROM users_orgs_roles WHERE user_id = $1
+	    ) GROUP BY org_id
+	) as subquery
+	`, userID).Scan(&count)
+	if err != nil {
+		return 0, parseErr(err)
+	}
+	return count, nil
+}
+
 func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID string) ([]*database.Member, error) {
 	var res []*database.Member
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u 
@@ -755,6 +799,22 @@ func (c *connection) DeleteOrganizationInvite(ctx context.Context, id string) er
 		return parseErr(err)
 	}
 	return nil
+}
+
+func (c *connection) CountInvitesForOrganization(ctx context.Context, orgID string) (int, error) {
+	var count int
+	// count outstanding org invites as well as project invites for this org
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT COALESCE(SUM(total_count), 0) as total_count FROM (
+  			SELECT COUNT(*) as total_count FROM org_invites WHERE org_id = $1
+  			UNION ALL
+  			SELECT COUNT(*) as total_count FROM project_invites WHERE project_id IN (SELECT id FROM projects WHERE org_id = $1)
+		) as subquery
+		`, orgID).Scan(&count)
+	if err != nil {
+		return 0, parseErr(err)
+	}
+	return count, nil
 }
 
 func (c *connection) FindProjectInvites(ctx context.Context, projectID string) ([]*database.Invite, error) {
