@@ -5,7 +5,6 @@
   const orgs = createAdminServiceListOrganizations();
   $: firstOrg = $orgs.data?.organizations?.[0];
 
-  let addUserCommand: string;
   $: addUserCommand = `rill user add --org ${
     firstOrg ? firstOrg.name : "organizationName"
   } --role viewer`;

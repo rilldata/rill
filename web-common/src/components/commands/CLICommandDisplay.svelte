@@ -12,15 +12,14 @@
     copied = true;
     setTimeout(() => (copied = false), 2500);
   }
-  $: console.log(copied);
 </script>
 
-<div class="flex flex-row text-gray-400">
-  <div class="p-0.5 border bg-gray-50 command-text">
+<div class="flex flex-row text-gray-800 my-1">
+  <div class="p-0.5 border border-gray-200 rounded-sm bg-gray-50 command-text">
     {command}
   </div>
   <div
-    class="p-1 border bg-gray-50"
+    class="p-1 border border-gray-200 rounded-sm bg-gray-50"
     on:click={copyCommand}
     on:keydown={copyCommand}
   >

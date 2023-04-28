@@ -9,23 +9,22 @@
   $: addUserCommand = `rill user add --org ${organization} --project ${project} --role viewer`;
 </script>
 
-<AccessControls {organization} {project}>
-  <svelte:fragment slot="manage-project">
-    <span class="uppercase text-gray-500 font-semibold text-[10px] leading-4"
-      >Share</span
-    >
-    <div>
-      Run this command in the Rill CLI to invite a teammate to view this
-      project.
-    </div>
-    <CLICommandDisplay command={addUserCommand} />
-  </svelte:fragment>
-  <svelte:fragment slot="read-project">
-    <span class="uppercase text-gray-500 font-semibold text-[10px] leading-4"
-      >Share</span
-    >
-    <div>
-      Ask your organization’s admin to invite viewers using the Rill CLI.
-    </div>
-  </svelte:fragment>
-</AccessControls>
+<div>
+  <span class="uppercase text-gray-500 font-semibold text-[10px] leading-4"
+    >Share</span
+  >
+  <AccessControls {organization} {project}>
+    <svelte:fragment slot="manage-project">
+      <div>
+        Run this command in the Rill CLI to invite a teammate to view this
+        project.
+      </div>
+      <CLICommandDisplay command={addUserCommand} />
+    </svelte:fragment>
+    <svelte:fragment slot="read-project">
+      <div>
+        Ask your organization’s admin to invite viewers using the Rill CLI.
+      </div>
+    </svelte:fragment>
+  </AccessControls>
+</div>

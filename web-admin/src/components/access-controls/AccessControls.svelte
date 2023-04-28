@@ -18,12 +18,8 @@
 
 {#if $projectPermissions?.data}
   {#if $projectPermissions.data.manageProject}
-    <div>
-      <slot name="manage-project" />
-    </div>
+    <slot name="manage-project" />
   {:else if $projectPermissions.data.readProject}
-    <div>
-      <slot name="read-project" />
-    </div>
+    <slot name="read-project" />
   {/if}
 {/if}
