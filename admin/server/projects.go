@@ -495,6 +495,11 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	err = s.admin.Email.SendProjectAdditionNotification(req.Email, "", proj.Name, role.Name)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	return &adminv1.AddProjectMemberResponse{
 		PendingSignup: false,
 	}, nil
