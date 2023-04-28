@@ -1,5 +1,6 @@
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
+  RpcStatus,
   createQueryServiceColumnTimeRange,
   createRuntimeServiceGetCatalogEntry,
   createRuntimeServiceListCatalogEntries,
@@ -7,6 +8,7 @@ import {
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
 
 export function useDashboardNames(instanceId: string) {
   return createRuntimeServiceListFiles(
@@ -45,6 +47,88 @@ export const useMetaQuery = <T = V1MetricsView>(
           : data?.entry?.metricsView,
     },
   });
+};
+
+/**
+ * This selector returns the best available string for each measure,
+ * using the "label" if available but falling back to the expression
+ * if needed.
+ *
+ * @param metaQuery: QueryObserverResult<V1MetricsView, RpcStatus>
+ * @returns string[]
+ */
+export const selectBestMeasureStrings = (
+  metaQuery: QueryObserverResult<V1MetricsView, RpcStatus>
+): string[] => {
+  if (metaQuery && metaQuery.isSuccess && !metaQuery.isRefetching) {
+    return metaQuery.data?.measures?.map((m) => m.label || m.expression) ?? [];
+  }
+  return [];
+};
+
+/**
+ * This selector returns the measure key, which can be used to
+ * lookup measures across sessions, for example in stateful URLs
+ * 
+ * FIXME:
+ * For now we are using the user supplied `expression` for measure
+ * keys because that is the only field that must exist for the
+ *  measure to appear in the dashboard.
+ * This may lead to problems if there are ever duplicate
+ * expressions so Hamilton has started discussions with Benjamin about
+ * adding unique IDS that could be used to replace these temporary keys. 
+ * Once those become available the fields below should be updated.
+
+ * @param metaQuery: QueryObserverResult<V1MetricsView, RpcStatus>
+ * @returns string[]
+ */
+export const selectMeasureKeys = (
+  metaQuery: QueryObserverResult<V1MetricsView, RpcStatus>
+): string[] => {
+  if (metaQuery && metaQuery.isSuccess && !metaQuery.isRefetching) {
+    return metaQuery.data?.measures?.map((m) => m.expression) ?? [];
+  }
+  return [];
+};
+
+/**
+ * This selector returns the best available string for each dimension,
+ * using the "label" if available but falling back to the name of
+ * the categorical column (which must be present) if needed
+ * @param metaQuery: QueryObserverResult<V1MetricsView, RpcStatus>
+ * @returns string[]
+ */
+export const selectBestDimensionStrings = (
+  metaQuery: QueryObserverResult<V1MetricsView, RpcStatus>
+): string[] => {
+  if (metaQuery && metaQuery.isSuccess && !metaQuery.isRefetching)
+    return metaQuery.data?.dimensions?.map((d) => d.label || d.name) ?? [];
+};
+
+/**
+ * This selector returns the dimension key, which can be used to
+ * lookup dimensions across sessions, for example in stateful URLs
+ * 
+ * FIXME:
+ * For now we are using the user supplied `name` for dimension
+ * keys because that is the only field that must exist for the
+ * dimension to appear in the dashboard
+
+ * This may lead to problems if there are ever duplicates `names`,
+ * so Hamilton has started discussions with Benjamin about
+ * adding unique IDS that could be used to replace these temporary keys. 
+ * Once those become available the fields below should be updated.
+
+ * @param metaQuery: QueryObserverResult<V1MetricsView, RpcStatus>
+ * @returns string[]
+ */
+export const selectDimensionKeys = (
+  metaQuery: QueryObserverResult<V1MetricsView, RpcStatus>
+): string[] => {
+  if (metaQuery && metaQuery.isSuccess && !metaQuery.isRefetching) {
+    return metaQuery.data?.dimensions?.map((d) => d.name) ?? [];
+  }
+  return [];
 };
 
 export const useModelHasTimeSeries = (

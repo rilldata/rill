@@ -34,7 +34,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 
 		dtos := make([]*adminv1.Project, len(projs))
 		for i, p := range projs {
-			dtos[i] = projToDTO(p, org.Name)
+			dtos[i] = s.projToDTO(p, org.Name)
 		}
 
 		return &adminv1.ListProjectsForOrganizationResponse{
@@ -73,7 +73,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	i := 0
 	dtos := make([]*adminv1.Project, len(projsMap))
 	for _, p := range projsMap {
-		dtos[i] = projToDTO(p, org.Name)
+		dtos[i] = s.projToDTO(p, org.Name)
 		i++
 	}
 
@@ -108,7 +108,7 @@ func (s *Server) ListProjectsForOrganizationAndGithubURL(ctx context.Context, re
 	accessibleProjects := make([]*adminv1.Project, 0)
 	for _, p := range projects {
 		if claims.ProjectPermissions(ctx, p.OrganizationID, p.ID).ReadProject {
-			accessibleProjects = append(accessibleProjects, projToDTO(p, org.Name))
+			accessibleProjects = append(accessibleProjects, s.projToDTO(p, org.Name))
 		}
 	}
 
@@ -142,7 +142,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 	if proj.ProdDeploymentID == nil || !permissions.ReadProd {
 		return &adminv1.GetProjectResponse{
-			Project:            projToDTO(proj, org.Name),
+			Project:            s.projToDTO(proj, org.Name),
 			ProjectPermissions: permissions,
 		}, nil
 	}
@@ -175,7 +175,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	}
 
 	return &adminv1.GetProjectResponse{
-		Project:            projToDTO(proj, org.Name),
+		Project:            s.projToDTO(proj, org.Name),
 		ProdDeployment:     deploymentToDTO(depl),
 		Jwt:                jwt,
 		ProjectPermissions: permissions,
@@ -251,15 +251,8 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Make project URL
-	projectURL, err := url.JoinPath(s.opts.FrontendURL, org.Name, proj.Name)
-	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("project url generation failed with error %s", err.Error()))
-	}
-
 	return &adminv1.CreateProjectResponse{
-		Project:    projToDTO(proj, org.Name),
-		ProjectUrl: projectURL,
+		Project: s.projToDTO(proj, org.Name),
 	}, nil
 }
 
@@ -322,7 +315,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 
 	return &adminv1.UpdateProjectResponse{
-		Project: projToDTO(proj, req.OrganizationName),
+		Project: s.projToDTO(proj, req.OrganizationName),
 	}, nil
 }
 
@@ -459,6 +452,11 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	err = s.admin.Email.SendProjectAdditionNotification(req.Email, "", proj.Name, role.Name)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	return &adminv1.AddProjectMemberResponse{
 		PendingSignup: false,
 	}, nil
@@ -514,14 +512,29 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 		return nil, status.Error(codes.PermissionDenied, "not allowed to set project member roles")
 	}
 
-	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		// Check if there is a pending invite for this user
+		invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				return nil, status.Error(codes.InvalidArgument, "user not found")
+			}
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		err = s.admin.DB.UpdateProjectInviteRole(ctx, invite.ID, role.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		return &adminv1.SetProjectMemberRoleResponse{}, nil
 	}
 
 	err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID)
@@ -569,7 +582,9 @@ func (s *Server) getAndCheckGithubInstallationID(ctx context.Context, githubURL,
 	return installationID, nil
 }
 
-func projToDTO(p *database.Project, orgName string) *adminv1.Project {
+func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project {
+	frontendURL, _ := url.JoinPath(s.opts.FrontendURL, orgName, p.Name)
+
 	return &adminv1.Project{
 		Id:               p.ID,
 		Name:             p.Name,
@@ -584,6 +599,7 @@ func projToDTO(p *database.Project, orgName string) *adminv1.Project {
 		ProdBranch:       p.ProdBranch,
 		GithubUrl:        safeStr(p.GithubURL),
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
+		FrontendUrl:      frontendURL,
 		CreatedOn:        timestamppb.New(p.CreatedOn),
 		UpdatedOn:        timestamppb.New(p.UpdatedOn),
 	}

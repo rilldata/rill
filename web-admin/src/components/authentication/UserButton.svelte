@@ -6,7 +6,7 @@
   const user = createAdminServiceGetCurrentUser();
 
   function handleLogOut() {
-    window.location.href = `${ADMIN_URL}/auth/logout?redirect=${window.origin}`;
+    window.location.href = `${ADMIN_URL}/auth/logout?redirect=${window.location.origin}${window.location.pathname}`;
   }
 
   const isDev = process.env.NODE_ENV === "development";

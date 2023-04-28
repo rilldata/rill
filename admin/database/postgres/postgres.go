@@ -96,7 +96,7 @@ func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*
 func (c *connection) CheckOrganizationHasOutsideUser(ctx context.Context, orgID, userID string) (bool, error) {
 	var res bool
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		"SELECT EXISTS (SELECT 1 FROM projects p JOIN users_projects_roles upr ON p.id = upr.project_id WHERE p.org_id = $1 AND upr.user_id = $2 limit 1)", orgID, userID).StructScan(&res)
+		"SELECT EXISTS (SELECT 1 FROM projects p JOIN users_projects_roles upr ON p.id = upr.project_id WHERE p.org_id = $1 AND upr.user_id = $2 limit 1)", orgID, userID).Scan(&res)
 	if err != nil {
 		return false, parseErr("check", err)
 	}
@@ -106,7 +106,7 @@ func (c *connection) CheckOrganizationHasOutsideUser(ctx context.Context, orgID,
 func (c *connection) CheckOrganizationHasPublicProjects(ctx context.Context, orgID string) (bool, error) {
 	var res bool
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		"SELECT EXISTS (SELECT 1 FROM projects p WHERE p.org_id = $1 AND p.public = true limit 1)", orgID).StructScan(&res)
+		"SELECT EXISTS (SELECT 1 FROM projects p WHERE p.org_id = $1 AND p.public = true limit 1)", orgID).Scan(&res)
 	if err != nil {
 		return false, parseErr("check", err)
 	}
@@ -119,7 +119,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO orgs(name, description) VALUES ($1, $2) RETURNING *", opts.Name, opts.Description).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, description, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+		opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -406,7 +408,7 @@ func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOp
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url) VALUES ($1, $2, $3) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url, quota_singleuser_orgs) VALUES ($1, $2, $3, $4) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL, opts.QuotaSingleuserOrgs).StructScan(res)
 	if err != nil {
 		return nil, parseErr("user", err)
 	}
@@ -512,9 +514,9 @@ func (c *connection) FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceC
 	return authCode, nil
 }
 
-func (c *connection) FindDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*database.DeviceAuthCode, error) {
+func (c *connection) FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*database.DeviceAuthCode, error) {
 	authCode := &database.DeviceAuthCode{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_auth_codes WHERE user_code = $1", userCode).StructScan(authCode)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_auth_codes WHERE user_code = $1 AND expires_on > now() AND approval_state = 0", userCode).StructScan(authCode)
 	if err != nil {
 		return nil, parseErr("device auth code", err)
 	}
@@ -537,8 +539,8 @@ func (c *connection) DeleteDeviceAuthCode(ctx context.Context, deviceCode string
 	return checkDeleteRow("device auth code", res, err)
 }
 
-func (c *connection) UpdateDeviceAuthCode(ctx context.Context, userCode, userID string, approvalState database.DeviceAuthCodeState) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, "UPDATE device_auth_codes SET approval_state=$1, user_id=$2, updated_on=now() WHERE user_code=$3", approvalState, userID, userCode)
+func (c *connection) UpdateDeviceAuthCode(ctx context.Context, id, userID string, approvalState database.DeviceAuthCodeState) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "UPDATE device_auth_codes SET approval_state=$1, user_id=$2, updated_on=now() WHERE id=$3", approvalState, userID, id)
 	return checkUpdateRow("device auth code", res, err)
 }
 
@@ -757,6 +759,11 @@ func (c *connection) CountInvitesForOrganization(ctx context.Context, orgID stri
 	return count, nil
 }
 
+func (c *connection) UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE org_invites SET org_role_id = $1 WHERE id = $2`, roleID, id)
+	return checkUpdateRow("org invite", res, err)
+}
+
 func (c *connection) FindProjectInvites(ctx context.Context, projectID string) ([]*database.Invite, error) {
 	var res []*database.Invite
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -797,6 +804,11 @@ func (c *connection) InsertProjectInvite(ctx context.Context, email, projectID, 
 func (c *connection) DeleteProjectInvite(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM project_invites WHERE id = $1", id)
 	return checkDeleteRow("project invite", res, err)
+}
+
+func (c *connection) UpdateProjectInviteRole(ctx context.Context, id, roleID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE project_invites SET project_role_id = $1 WHERE id = $2`, roleID, id)
+	return checkUpdateRow("project invite", res, err)
 }
 
 func checkUpdateRow(target string, res sql.Result, err error) error {
