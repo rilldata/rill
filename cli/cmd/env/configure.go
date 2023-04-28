@@ -19,6 +19,7 @@ import (
 
 func ConfigureCmd(cfg *config.Config) *cobra.Command {
 	var projectPath, projectName string
+	var triggerReconcile bool
 
 	configureCommand := &cobra.Command{
 		Use:   "configure",
@@ -105,8 +106,26 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to update variables %w", err)
 			}
+			cmdutil.SuccessPrinter("Updated project variables")
 
-			cmdutil.SuccessPrinter("Updated project variables\n")
+			if !cmd.Flags().Changed("reconcile") {
+				triggerReconcile = cmdutil.ConfirmPrompt("Do you want to reconcile deployment", "", triggerReconcile)
+			}
+
+			if triggerReconcile {
+				project, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: projectName})
+				if err != nil {
+					return err
+				}
+
+				_, err = client.TriggerReconcile(ctx, &adminv1.TriggerReconcileRequest{DeploymentId: project.ProdDeployment.Id})
+				if err != nil {
+					warn.Printf("Reconcile failed. Trigger reconcile again with `rill project reconcile` if required.")
+				} else {
+					cmdutil.SuccessPrinter("Triggered reconcile successfully.")
+				}
+			}
+
 			return nil
 		},
 	}
@@ -114,6 +133,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 	configureCommand.Flags().SortFlags = false
 	configureCommand.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	configureCommand.Flags().StringVar(&projectName, "project", "", "")
+	configureCommand.Flags().BoolVar(&triggerReconcile, "reconcile", true, "Reconcile deployment")
 
 	return configureCommand
 }
