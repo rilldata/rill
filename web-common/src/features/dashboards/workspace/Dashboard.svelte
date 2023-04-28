@@ -55,7 +55,7 @@
     stateSyncManager.handleUrlChange();
   }
 
-  $: selectedDimensionName = metricsExplorer?.selectedDimensionName;
+  $: selectedDimensionName = $metricsExplorer?.selectedDimensionName;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
     metricViewName

@@ -817,6 +817,11 @@ func (c *connection) CountInvitesForOrganization(ctx context.Context, orgID stri
 	return count, nil
 }
 
+func (c *connection) UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `UPDATE org_invites SET org_role_id = $1 WHERE id = $2`, roleID, id)
+	return parseErr(err)
+}
+
 func (c *connection) FindProjectInvites(ctx context.Context, projectID string) ([]*database.Invite, error) {
 	var res []*database.Invite
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -860,6 +865,11 @@ func (c *connection) DeleteProjectInvite(ctx context.Context, id string) error {
 		return parseErr(err)
 	}
 	return nil
+}
+
+func (c *connection) UpdateProjectInviteRole(ctx context.Context, id, roleID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `UPDATE project_invites SET project_role_id = $1 WHERE id = $2`, roleID, id)
+	return parseErr(err)
 }
 
 func parseErr(err error) error {

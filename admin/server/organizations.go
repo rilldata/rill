@@ -382,7 +382,19 @@ func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.Set
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "user not found")
+			// check if there is a pending invite for this user
+			invite, err := s.admin.DB.FindOrganizationInvite(ctx, org.ID, req.Email)
+			if err != nil {
+				if errors.Is(err, database.ErrNotFound) {
+					return nil, status.Error(codes.InvalidArgument, "user not found")
+				}
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			err = s.admin.DB.UpdateOrganizationInviteRole(ctx, invite.ID, role.ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			return &adminv1.SetOrganizationMemberRoleResponse{}, nil
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}

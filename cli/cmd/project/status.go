@@ -3,6 +3,7 @@ package project
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -52,10 +53,12 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				cmdutil.SuccessPrinter("Deployment info\n")
+				fmt.Printf("  Web: %s\n", proj.Project.FrontendUrl)
 				fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
 				fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)
 				fmt.Printf("  Slots: %d\n", depl.Slots)
 				fmt.Printf("  Branch: %s\n", depl.Branch)
+				fmt.Printf("  Updated: %s\n", depl.UpdatedOn.AsTime().Local().Format(time.RFC3339))
 				fmt.Printf("  Status: %s\n", depl.Status.String())
 				if proj.ProjectPermissions.ReadProdStatus {
 					fmt.Println(logs)
