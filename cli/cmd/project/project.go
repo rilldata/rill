@@ -58,7 +58,7 @@ func inferProjectName(ctx context.Context, client *adminClient.Client, org, path
 	}
 
 	// fetch project names for github url
-	names, err := cmdutil.ProjectNames(ctx, client, org, githubURL)
+	names, err := cmdutil.ProjectNamesByGithubURL(ctx, client, org, githubURL)
 	if err != nil {
 		return "", err
 	}

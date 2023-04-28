@@ -29,10 +29,13 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			if !cmd.Flags().Changed("project") {
-				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
+				names, err := cmdutil.ProjectNamesByOrg(ctx, client, cfg.Org)
 				if err != nil {
 					return err
 				}
+
+				// prompt for name from user
+				name = cmdutil.SelectPrompt("Select project", names, "")
 			}
 
 			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: name})

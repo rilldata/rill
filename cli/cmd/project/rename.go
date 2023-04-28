@@ -29,18 +29,9 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			fmt.Println("Warn: Renaming an project would invalidate dashboard URLs")
 
 			if !cmd.Flags().Changed("project") {
-				resp, err := client.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{OrganizationName: cfg.Org})
+				projectNames, err := cmdutil.ProjectNamesByOrg(ctx, client, cfg.Org)
 				if err != nil {
 					return err
-				}
-
-				if len(resp.Projects) == 0 {
-					return fmt.Errorf("No projects found for org %q", cfg.Org)
-				}
-
-				var projectNames []string
-				for _, proj := range resp.Projects {
-					projectNames = append(projectNames, proj.Name)
 				}
 
 				name = cmdutil.SelectPrompt("Select project to rename", projectNames, "")

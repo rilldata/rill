@@ -280,7 +280,7 @@ func contains(vals []string, key string) bool {
 }
 
 // ProjectNames returns names of all the projects in org deployed from githubURL
-func ProjectNames(ctx context.Context, c *client.Client, org, githubURL string) ([]string, error) {
+func ProjectNamesByGithubURL(ctx context.Context, c *client.Client, org, githubURL string) ([]string, error) {
 	resp, err := c.ListProjectsForOrganizationAndGithubURL(ctx, &adminv1.ListProjectsForOrganizationAndGithubURLRequest{
 		OrganizationName: org,
 		GithubUrl:        githubURL,
@@ -324,4 +324,22 @@ func OrgNames(ctx context.Context, c *client.Client) ([]string, error) {
 	}
 
 	return orgNames, nil
+}
+
+func ProjectNamesByOrg(ctx context.Context, c *client.Client, orgName string) ([]string, error) {
+	resp, err := c.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{OrganizationName: orgName})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.Projects) == 0 {
+		return nil, fmt.Errorf("No projects found for org %q", orgName)
+	}
+
+	var projNames []string
+	for _, proj := range resp.Projects {
+		projNames = append(projNames, proj.Name)
+	}
+
+	return projNames, nil
 }
