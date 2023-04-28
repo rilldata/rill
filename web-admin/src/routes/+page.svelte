@@ -21,8 +21,8 @@
 </svelte:head>
 
 <AuthRedirect>
-  <section class="flex flex-col justify-center w-4/5 mx-auto h-2/5">
-    <h1 class="text-4xl leading-10 font-light mb-2">
+  <section class="flex flex-col w-4/5 mx-auto h-2/5">
+    <h1 class="text-4xl leading-10 font-light mb-2 my-auto">
       Hi {$user.data.user.displayName}!
     </h1>
     {#if $orgs.isSuccess}
