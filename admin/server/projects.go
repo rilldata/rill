@@ -300,7 +300,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		githubURL = &req.GithubUrl
 	}
 
-	proj, err = s.admin.UpdateProject(ctx, proj, &database.UpdateProjectOptions{
+	opts := &database.UpdateProjectOptions{
 		Name:                 req.Name,
 		Description:          req.Description,
 		Public:               req.Public,
@@ -309,8 +309,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		GithubURL:            githubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdDeploymentID:     proj.ProdDeploymentID,
-		ReconcileDeployments: true,
-	})
+	}
+	proj, err = s.admin.UpdateProject(ctx, proj, opts, true)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -345,7 +345,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
 	}
 
-	proj, err = s.admin.UpdateProject(ctx, proj, &database.UpdateProjectOptions{
+	opts := &database.UpdateProjectOptions{
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
@@ -354,8 +354,8 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdVariables:        req.Variables,
-		ReconcileDeployments: false,
-	})
+	}
+	proj, err = s.admin.UpdateProject(ctx, proj, opts, false)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "variables updated failed with error %s", err.Error())
 	}

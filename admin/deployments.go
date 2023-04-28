@@ -14,8 +14,10 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/client"
 	"github.com/rilldata/rill/runtime/drivers/github"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 )
 
 func (s *Service) createDeployment(ctx context.Context, proj *database.Project) (*database.Deployment, error) {
@@ -107,6 +109,7 @@ type updateDeploymentOptions struct {
 	GithubInstallationID *int64
 	Branch               string
 	Variables            map[string]string
+	Reconcile            bool
 }
 
 func (s *Service) updateDeployment(ctx context.Context, depl *database.Deployment, opts *updateDeploymentOptions) error {
@@ -153,6 +156,13 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 		}
 		depl.Branch = opts.Branch
 		depl.UpdatedOn = newDepl.UpdatedOn
+	}
+
+	if opts.Reconcile {
+		if err := s.triggerReconcile(ctx, depl); err != nil {
+			s.logger.Error("failed to trigger reconcile", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+			return err
+		}
 	}
 
 	return nil

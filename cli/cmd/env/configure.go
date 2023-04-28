@@ -19,7 +19,7 @@ import (
 
 func ConfigureCmd(cfg *config.Config) *cobra.Command {
 	var projectPath, projectName string
-	var triggerReconcile bool
+	var redploy bool
 
 	configureCommand := &cobra.Command{
 		Use:   "configure",
@@ -108,22 +108,22 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 			}
 			cmdutil.SuccessPrinter("Updated project variables")
 
-			if !cmd.Flags().Changed("reconcile") {
-				triggerReconcile = cmdutil.ConfirmPrompt("Do you want to reconcile deployment", "", triggerReconcile)
+			if !cmd.Flags().Changed("redeploy") {
+				redploy = cmdutil.ConfirmPrompt("Do you want to redeploy project", "", redploy)
 			}
 
-			if triggerReconcile {
+			if redploy {
 				project, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: projectName})
 				if err != nil {
 					return err
 				}
 
-				_, err = client.TriggerReconcile(ctx, &adminv1.TriggerReconcileRequest{DeploymentId: project.ProdDeployment.Id})
+				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{DeploymentId: project.ProdDeployment.Id})
 				if err != nil {
-					warn.Printf("Reconcile failed. Trigger reconcile again with `rill project reconcile` if required.")
+					warn.Printf("Redeploy trigger failed. Trigger redeploy again with `rill project reconcile --reset=true` if required.")
 					return err
 				}
-				cmdutil.SuccessPrinter("Triggered reconcile successfully.")
+				cmdutil.SuccessPrinter("Redeploy triggered successfully.")
 			}
 			return nil
 		},
@@ -132,7 +132,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 	configureCommand.Flags().SortFlags = false
 	configureCommand.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	configureCommand.Flags().StringVar(&projectName, "project", "", "")
-	configureCommand.Flags().BoolVar(&triggerReconcile, "reconcile", true, "Reconcile deployment")
+	configureCommand.Flags().BoolVar(&redploy, "redeploy", false, "Redeploy project")
 
 	return configureCommand
 }

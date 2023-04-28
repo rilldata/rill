@@ -245,7 +245,6 @@ type UpdateProjectOptions struct {
 	ProdBranch           string
 	ProdVariables        map[string]string
 	ProdDeploymentID     *string
-	ReconcileDeployments bool
 }
 
 // DeploymentStatus is an enum representing the state of a deployment
