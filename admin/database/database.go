@@ -62,7 +62,6 @@ type DB interface {
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID string) ([]*Project, error)
 	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string) ([]*Project, error)
-	FindProjectsForOrgAndUserWithDirectRole(ctx context.Context, orgID, userID string) ([]*Project, error)
 	FindPublicProjectsInOrganization(ctx context.Context, orgID string) ([]*Project, error)
 	FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*Project, error)
 	FindProjectsByOrgAndGithubURL(ctx context.Context, orgID string, githubURL string) ([]*Project, error)
@@ -121,6 +120,7 @@ type DB interface {
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
 	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
+	DeleteAllProjectMemberUserForOrg(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
 
 	FindOrganizationInvites(ctx context.Context, orgID string) ([]*Invite, error)

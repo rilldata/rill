@@ -52,7 +52,7 @@ export type AdminServiceListProjectMembersParams = {
 };
 
 export type AdminServiceRemoveOrganizationMemberParams = {
-  removeFromProjects?: boolean;
+  keepProjectRoles?: boolean;
 };
 
 export type AdminServiceListOrganizationMembersParams = {

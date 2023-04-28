@@ -155,15 +155,6 @@ func (c *connection) UpdateOrganizationAllUsergroup(ctx context.Context, orgID, 
 	return res, nil
 }
 
-func (c *connection) FindProjectsForOrgAndUserWithDirectRole(ctx context.Context, orgName, userID string) ([]*database.Project, error) {
-	var res []*database.Project
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.org_id = $1 AND p.id IN (SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $2)", orgName, userID)
-	if err != nil {
-		return nil, parseErr("projects", err)
-	}
-	return res, nil
-}
-
 func (c *connection) FindProjects(ctx context.Context, orgName string) ([]*database.Project, error) {
 	var res []*database.Project
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p JOIN orgs o ON p.org_id = o.id WHERE lower(o.name)=lower($1) ORDER BY lower(p.name)", orgName)
@@ -702,6 +693,11 @@ func (c *connection) InsertProjectMemberUsergroup(ctx context.Context, groupID, 
 
 func (c *connection) DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM users_projects_roles WHERE user_id = $1 AND project_id = $2", userID, projectID)
+	return checkDeleteRow("project member", res, err)
+}
+
+func (c *connection) DeleteAllProjectMemberUserForOrg(ctx context.Context, orgID, userID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM users_projects_roles upr WHERE upr.user_id = $1 AND upr.project_id IN (SELECT p.id FROM projects p WHERE p.org_id = $2)", userID, orgID)
 	return checkDeleteRow("project member", res, err)
 }
 

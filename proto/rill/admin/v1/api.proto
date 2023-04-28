@@ -379,7 +379,7 @@ message AddOrganizationMemberResponse {
 message RemoveOrganizationMemberRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string email = 2 [(validate.rules).string.email = true];
-  bool remove_from_projects = 3;
+  bool keep_project_roles = 3;
 }
 
 message RemoveOrganizationMemberResponse {}

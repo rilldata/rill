@@ -328,38 +328,18 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	// delete from projects if RemoveFromProjects flag is set
+	if req.KeepProjectRoles {
+		err = s.admin.DB.DeleteAllProjectMemberUserForOrg(ctx, req.Organization, user.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	// delete from projects if RemoveFromProjects flag is set
-	if req.RemoveFromProjects {
-		projects, err := s.admin.DB.FindProjectsForOrgAndUserWithDirectRole(ctx, req.Organization, user.ID)
-		if err != nil {
-			if errors.Is(err, database.ErrNotFound) {
-				return nil, status.Error(codes.InvalidArgument, "projects not found")
-			}
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-
-		ctx, tx, err := s.admin.DB.NewTx(ctx)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-		defer func() { _ = tx.Rollback() }()
-
-		for _, proj := range projects {
-			err = s.admin.DB.DeleteProjectMemberUser(ctx, proj.ID, user.ID)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-		}
-
-		err = tx.Commit()
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
 	}
 
 	return &adminv1.RemoveOrganizationMemberResponse{}, nil
