@@ -24,8 +24,9 @@ func init() {
 }
 
 var spec = connectors.Spec{
-	DisplayName: "Amazon S3",
-	Description: "Connect to AWS S3 Storage.",
+	DisplayName:        "Amazon S3",
+	Description:        "Connect to AWS S3 Storage.",
+	ServiceAccountDocs: "https://docs.rilldata.com/connectors/s3",
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "path",
