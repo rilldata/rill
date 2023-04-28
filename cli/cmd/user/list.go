@@ -10,7 +10,6 @@ import (
 )
 
 func ListCmd(cfg *config.Config) *cobra.Command {
-	var orgName string
 	var projectName string
 
 	listCmd := &cobra.Command{
@@ -25,7 +24,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 
 			if projectName != "" {
 				res, err := client.ListProjectMembers(context.Background(), &adminv1.ListProjectMembersRequest{
-					Organization: orgName,
+					Organization: cfg.Org,
 					Project:      projectName,
 				})
 				if err != nil {
@@ -37,7 +36,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 				// TODO: user groups
 			} else {
 				res, err := client.ListOrganizationMembers(context.Background(), &adminv1.ListOrganizationMembersRequest{
-					Organization: orgName,
+					Organization: cfg.Org,
 				})
 				if err != nil {
 					return err
@@ -52,7 +51,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	listCmd.Flags().StringVar(&orgName, "org", cfg.Org, "Organization")
+	listCmd.Flags().StringVar(&cfg.Org, "org", cfg.Org, "Organization")
 	listCmd.Flags().StringVar(&projectName, "project", "", "Project")
 
 	return listCmd

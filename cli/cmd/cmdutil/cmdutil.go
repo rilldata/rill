@@ -42,7 +42,7 @@ func CheckAuth(cfg *config.Config) PreRunCheck {
 			return nil
 		}
 
-		return fmt.Errorf("not authenticated, please run 'rill auth login'")
+		return fmt.Errorf("not authenticated, please run 'rill login'")
 	}
 }
 
