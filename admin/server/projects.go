@@ -21,9 +21,6 @@ import (
 func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.ListProjectsForOrganizationRequest) (*adminv1.ListProjectsForOrganizationResponse, error) {
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "org not found")
-		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -103,7 +100,7 @@ func (s *Server) ListProjectsForOrganizationAndGithubURL(ctx context.Context, re
 	projects, err := s.admin.DB.FindProjectsByOrgAndGithubURL(ctx, org.ID, req.GithubUrl)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Errorf(codes.NotFound, "project with github url %s not found in org %s", req.GithubUrl, req.OrganizationName)
+			return nil, status.Errorf(codes.NotFound, "project with github URL %q not found in org %q", req.GithubUrl, req.OrganizationName)
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -121,16 +118,13 @@ func (s *Server) ListProjectsForOrganizationAndGithubURL(ctx context.Context, re
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "org not found")
-		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "proj not found")
+			return nil, status.Error(codes.NotFound, "project not found")
 		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -155,10 +149,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "project does not have a production deployment")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	if !permissions.ReadProdStatus {
@@ -201,10 +192,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	// Find parent org
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "org not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// Check permissions
@@ -271,10 +259,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRequest) (*adminv1.DeleteProjectResponse, error) {
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "proj not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -294,10 +279,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	// Find project
 	proj, err := s.admin.DB.FindProject(ctx, req.Id)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "proj not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -340,9 +322,6 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjectVariablesRequest) (*adminv1.GetProjectVariablesResponse, error) {
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "proj not found")
-		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -357,9 +336,6 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.UpdateProjectVariablesRequest) (*adminv1.UpdateProjectVariablesResponse, error) {
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "proj not found")
-		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -388,10 +364,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjectMembersRequest) (*adminv1.ListProjectMembersResponse, error) {
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "project not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -428,10 +401,7 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMemberRequest) (*adminv1.AddProjectMemberResponse, error) {
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "proj not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -454,10 +424,7 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 
 	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "role not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
@@ -482,10 +449,7 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 
 	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
 	if err != nil {
-		if errors.Is(err, database.ErrNotUnique) {
-			return nil, status.Error(codes.InvalidArgument, "user already member of org")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	err = s.admin.Email.SendProjectAdditionNotification(req.Email, "", proj.Name, role.Name)
@@ -501,10 +465,7 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemoveProjectMemberRequest) (*adminv1.RemoveProjectMemberResponse, error) {
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "proj not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -514,22 +475,22 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			// check if there is a pending invite
-			invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
-			if err != nil {
-				if errors.Is(err, database.ErrNotFound) {
-					return nil, status.Error(codes.InvalidArgument, "user not found")
-				}
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			err = s.admin.DB.DeleteProjectInvite(ctx, invite.ID)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			return &adminv1.RemoveProjectMemberResponse{}, nil
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
 		}
-		return nil, status.Error(codes.Internal, err.Error())
+		// check if there is a pending invite
+		invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				return nil, status.Error(codes.InvalidArgument, "user not found")
+			}
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		err = s.admin.DB.DeleteProjectInvite(ctx, invite.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		return &adminv1.RemoveProjectMemberResponse{}, nil
 	}
 
 	err = s.admin.DB.DeleteProjectMemberUser(ctx, proj.ID, user.ID)
@@ -543,10 +504,7 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProjectMemberRoleRequest) (*adminv1.SetProjectMemberRoleResponse, error) {
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "proj not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -556,30 +514,27 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 
 	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "role not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			// check if there is a pending invite for this user
-			invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
-			if err != nil {
-				if errors.Is(err, database.ErrNotFound) {
-					return nil, status.Error(codes.InvalidArgument, "user not found")
-				}
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			err = s.admin.DB.UpdateProjectInviteRole(ctx, invite.ID, role.ID)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			return &adminv1.SetProjectMemberRoleResponse{}, nil
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
 		}
-		return nil, status.Error(codes.Internal, err.Error())
+		// Check if there is a pending invite for this user
+		invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				return nil, status.Error(codes.InvalidArgument, "user not found")
+			}
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		err = s.admin.DB.UpdateProjectInviteRole(ctx, invite.ID, role.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		return &adminv1.SetProjectMemberRoleResponse{}, nil
 	}
 
 	err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID)
