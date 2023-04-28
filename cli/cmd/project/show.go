@@ -15,7 +15,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 	showCmd := &cobra.Command{
 		Use:   "show <project-name>",
 		Args:  cobra.NoArgs,
-		Short: "Show",
+		Short: "Show project details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -38,7 +38,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Found project \n")
+			cmdutil.SuccessPrinter("Found project")
 			cmdutil.TablePrinter(toRow(proj.Project))
 			return nil
 		},

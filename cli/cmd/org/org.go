@@ -12,8 +12,7 @@ import (
 func OrgCmd(cfg *config.Config) *cobra.Command {
 	orgCmd := &cobra.Command{
 		Use:               "org",
-		Hidden:            !cfg.IsDev(),
-		Short:             "Manage organizations",
+		Short:             "Manage organisations",
 		PersistentPreRunE: cmdutil.CheckAuth(cfg),
 	}
 	orgCmd.AddCommand(CreateCmd(cfg))
@@ -41,14 +40,12 @@ func toTable(organizations []*adminv1.Organization, defaultOrg string) []*organi
 
 func toRow(o *adminv1.Organization) *organization {
 	return &organization{
-		Name:        o.Name,
-		Description: o.Description,
-		CreatedAt:   o.CreatedOn.AsTime().String(),
+		Name:      o.Name,
+		CreatedAt: o.CreatedOn.AsTime().Format(cmdutil.TSFormatLayout),
 	}
 }
 
 type organization struct {
-	Name        string `header:"name" json:"name"`
-	Description string `header:"description" json:"description"`
-	CreatedAt   string `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
+	Name      string `header:"name" json:"name"`
+	CreatedAt string `header:"created_at,timestamp(ms|utc|human)" json:"created_at"`
 }

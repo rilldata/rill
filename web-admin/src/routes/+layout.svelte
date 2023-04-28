@@ -35,15 +35,15 @@
 </script>
 
 <svelte:head>
-  <meta name="description" content="Rill Cloud" />
+  <meta content="Rill Cloud" name="description" />
 </svelte:head>
 
 <RillTheme>
   <QueryClientProvider client={queryClient}>
     <div class="flex flex-col h-screen">
-      <main class="flex-grow flex flex-col">
+      <main class="flex-grow flex flex-col h-full">
         <TopNavigationBar />
-        <div class="flex-grow overflow-auto">
+        <div class="flex-grow overflow-auto h-full">
           <ErrorBoundary>
             <slot />
           </ErrorBoundary>

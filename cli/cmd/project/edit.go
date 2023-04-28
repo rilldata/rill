@@ -18,7 +18,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	editCmd := &cobra.Command{
 		Use:   "edit",
 		Args:  cobra.NoArgs,
-		Short: "Edit",
+		Short: "Edit the project details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -29,10 +29,13 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			if !cmd.Flags().Changed("project") {
-				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
+				names, err := cmdutil.ProjectNamesByOrg(ctx, client, cfg.Org)
 				if err != nil {
 					return err
 				}
+
+				// prompt for name from user
+				name = cmdutil.SelectPrompt("Select project", names, "")
 			}
 
 			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: name})
@@ -82,7 +85,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Updated project \n")
+			cmdutil.SuccessPrinter("Updated project")
 			cmdutil.TablePrinter(toRow(updatedProj.Project))
 			return nil
 		},

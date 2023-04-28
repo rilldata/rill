@@ -62,7 +62,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				// fetch project names for github url
-				names, err := cmdutil.ProjectNames(ctx, client, cfg.Org, githubURL)
+				names, err := cmdutil.ProjectNamesByGithubURL(ctx, client, cfg.Org, githubURL)
 				if err != nil {
 					return err
 				}
@@ -125,7 +125,6 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 				cmdutil.SuccessPrinter("Triggered reconcile successfully.")
 			}
-
 			return nil
 		},
 	}

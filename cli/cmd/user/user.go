@@ -9,7 +9,6 @@ import (
 func UserCmd(cfg *config.Config) *cobra.Command {
 	userCmd := &cobra.Command{
 		Use:               "user",
-		Hidden:            !cfg.IsDev(),
 		Short:             "Manage users",
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 	}
