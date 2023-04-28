@@ -7,9 +7,8 @@ import (
 
 func UserCmd(cfg *config.Config) *cobra.Command {
 	userCmd := &cobra.Command{
-		Use:    "user",
-		Hidden: !cfg.IsDev(),
-		Short:  "Manage users",
+		Use:   "user",
+		Short: "Manage users",
 	}
 
 	userCmd.AddCommand(ListCmd(cfg))
