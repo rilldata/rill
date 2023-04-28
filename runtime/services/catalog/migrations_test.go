@@ -450,7 +450,7 @@ bid_price from AdBids;
 		"select id, timestamp, publisher, domain, bid_price AdBids", AdBidsSourceModelRepoPath)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsSourceModelRepoPath})
+	testutils.AssertMigration(t, result, 3, 0, 0, 0, []string{AdBidsModelRepoPath, AdBidsDashboardRepoPath, AdBidsSourceModelRepoPath})
 	testutils.AssertTableAbsence(t, s, "AdBids_source_model")
 }
 

@@ -87,7 +87,7 @@ func NewConsoleSender(logger *zap.Logger, fromEmail, fromName string) (Sender, e
 		return nil, fmt.Errorf("invalid sender email address %q", fromEmail)
 	}
 
-	return &consoleSender{fromEmail: fromEmail, fromName: fromName}, nil
+	return &consoleSender{logger: logger, fromEmail: fromEmail, fromName: fromName}, nil
 }
 
 func (s *consoleSender) Send(toEmail, toName, subject, body string) error {

@@ -77,6 +77,7 @@ type DB interface {
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, logs string) (*Deployment, error)
+	UpdateDeploymentBranch(ctx context.Context, id, branch string) (*Deployment, error)
 	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
 
 	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
@@ -98,10 +99,10 @@ type DB interface {
 	DeleteUserAuthToken(ctx context.Context, id string) error
 
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
-	FindDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
+	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
 	InsertDeviceAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*DeviceAuthCode, error)
 	DeleteDeviceAuthCode(ctx context.Context, deviceCode string) error
-	UpdateDeviceAuthCode(ctx context.Context, userCode, userID string, state DeviceAuthCodeState) error
+	UpdateDeviceAuthCode(ctx context.Context, id, userID string, state DeviceAuthCodeState) error
 
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
@@ -220,7 +221,6 @@ func (e *Variables) Scan(value interface{}) error {
 type InsertProjectOptions struct {
 	OrganizationID       string `validate:"required"`
 	Name                 string `validate:"slug"`
-	UserID               string
 	Description          string
 	Public               bool
 	Region               string

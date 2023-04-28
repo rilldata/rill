@@ -11,6 +11,8 @@ import (
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -132,9 +134,15 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 			continue
 		}
 
-		// Trigger reconcile (runs in the background - err means the deployment wasn't found, which is unlikely)
+		// Trigger reconcile (runs in the background)
 		if project.ProdDeploymentID != nil {
-			err = s.TriggerReconcile(ctx, *project.ProdDeploymentID)
+			depl, err := s.DB.FindDeployment(ctx, *project.ProdDeploymentID)
+			if err != nil {
+				s.logger.Error("process github event: could not find deployment", zap.String("project_id", project.ID), zap.Error(err), observability.ZapCtx(ctx))
+				continue
+			}
+
+			err = s.TriggerReconcile(ctx, depl)
 			if err != nil {
 				return err
 			}

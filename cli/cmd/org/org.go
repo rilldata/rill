@@ -13,7 +13,7 @@ func OrgCmd(cfg *config.Config) *cobra.Command {
 	orgCmd := &cobra.Command{
 		Use:               "org",
 		Hidden:            !cfg.IsDev(),
-		Short:             "Manage organisations",
+		Short:             "Manage organizations",
 		PersistentPreRunE: cmdutil.CheckAuth(cfg),
 	}
 	orgCmd.AddCommand(CreateCmd(cfg))

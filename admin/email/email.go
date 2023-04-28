@@ -26,12 +26,32 @@ func (c *Client) SendOrganizationInvite(toEmail, toName, orgName, roleName strin
 	return err
 }
 
+func (c *Client) SendOrganizationAdditionNotification(toEmail, toName, orgName, roleName string) error {
+	err := c.sender.Send(
+		toEmail,
+		toName,
+		fmt.Sprintf("You've been added to %q", orgName),
+		fmt.Sprintf("You've been added to the organization <b>%s</b> as <b>%s</b>. Follow this <a href=\"%s\">link</a> to visit it.", orgName, roleName, c.frontendURL),
+	)
+	return err
+}
+
 func (c *Client) SendProjectInvite(toEmail, toName, projectName, roleName string) error {
 	err := c.sender.Send(
 		toEmail,
 		toName,
 		"Invitation to join Rill",
 		fmt.Sprintf("You have been invited to project <b>%s</b> as <b>%s</b>. Please sign into Rill <a href=\"%s\">here</a> to accept invitation.", projectName, roleName, c.frontendURL),
+	)
+	return err
+}
+
+func (c *Client) SendProjectAdditionNotification(toEmail, toName, projectName, roleName string) error {
+	err := c.sender.Send(
+		toEmail,
+		toName,
+		fmt.Sprintf("You've been added to %q", projectName),
+		fmt.Sprintf("You've been added to the project <b>%s</b> as <b>%s</b>. Follow this <a href=\"%s\">link</a> to visit it.", projectName, roleName, c.frontendURL),
 	)
 	return err
 }

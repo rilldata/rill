@@ -33,6 +33,9 @@ const (
 	AdminService_DeleteProject_FullMethodName                           = "/rill.admin.v1.AdminService/DeleteProject"
 	AdminService_UpdateProject_FullMethodName                           = "/rill.admin.v1.AdminService/UpdateProject"
 	AdminService_UpdateProjectVariables_FullMethodName                  = "/rill.admin.v1.AdminService/UpdateProjectVariables"
+	AdminService_TriggerReconcile_FullMethodName                        = "/rill.admin.v1.AdminService/TriggerReconcile"
+	AdminService_TriggerRefreshSources_FullMethodName                   = "/rill.admin.v1.AdminService/TriggerRefreshSources"
+	AdminService_TriggerRedeploy_FullMethodName                         = "/rill.admin.v1.AdminService/TriggerRedeploy"
 	AdminService_ListOrganizationMembers_FullMethodName                 = "/rill.admin.v1.AdminService/ListOrganizationMembers"
 	AdminService_AddOrganizationMember_FullMethodName                   = "/rill.admin.v1.AdminService/AddOrganizationMember"
 	AdminService_RemoveOrganizationMember_FullMethodName                = "/rill.admin.v1.AdminService/RemoveOrganizationMember"
@@ -79,6 +82,12 @@ type AdminServiceClient interface {
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error)
 	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
 	UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error)
+	// TriggerReconcile triggers reconcile for the project's prod deployment
+	TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error)
+	// TriggerRefreshSources refresh the source for production deployment
+	TriggerRefreshSources(ctx context.Context, in *TriggerRefreshSourcesRequest, opts ...grpc.CallOption) (*TriggerRefreshSourcesResponse, error)
+	// TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+	TriggerRedeploy(ctx context.Context, in *TriggerRedeployRequest, opts ...grpc.CallOption) (*TriggerRedeployResponse, error)
 	// ListOrganizationMembers lists all the org members
 	ListOrganizationMembers(ctx context.Context, in *ListOrganizationMembersRequest, opts ...grpc.CallOption) (*ListOrganizationMembersResponse, error)
 	// AddOrganizationMember lists all the org members
@@ -240,6 +249,33 @@ func (c *adminServiceClient) UpdateProjectVariables(ctx context.Context, in *Upd
 	return out, nil
 }
 
+func (c *adminServiceClient) TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error) {
+	out := new(TriggerReconcileResponse)
+	err := c.cc.Invoke(ctx, AdminService_TriggerReconcile_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) TriggerRefreshSources(ctx context.Context, in *TriggerRefreshSourcesRequest, opts ...grpc.CallOption) (*TriggerRefreshSourcesResponse, error) {
+	out := new(TriggerRefreshSourcesResponse)
+	err := c.cc.Invoke(ctx, AdminService_TriggerRefreshSources_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) TriggerRedeploy(ctx context.Context, in *TriggerRedeployRequest, opts ...grpc.CallOption) (*TriggerRedeployResponse, error) {
+	out := new(TriggerRedeployResponse)
+	err := c.cc.Invoke(ctx, AdminService_TriggerRedeploy_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) ListOrganizationMembers(ctx context.Context, in *ListOrganizationMembersRequest, opts ...grpc.CallOption) (*ListOrganizationMembersResponse, error) {
 	out := new(ListOrganizationMembersResponse)
 	err := c.cc.Invoke(ctx, AdminService_ListOrganizationMembers_FullMethodName, in, out, opts...)
@@ -380,6 +416,12 @@ type AdminServiceServer interface {
 	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
 	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
 	UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error)
+	// TriggerReconcile triggers reconcile for the project's prod deployment
+	TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error)
+	// TriggerRefreshSources refresh the source for production deployment
+	TriggerRefreshSources(context.Context, *TriggerRefreshSourcesRequest) (*TriggerRefreshSourcesResponse, error)
+	// TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+	TriggerRedeploy(context.Context, *TriggerRedeployRequest) (*TriggerRedeployResponse, error)
 	// ListOrganizationMembers lists all the org members
 	ListOrganizationMembers(context.Context, *ListOrganizationMembersRequest) (*ListOrganizationMembersResponse, error)
 	// AddOrganizationMember lists all the org members
@@ -453,6 +495,15 @@ func (UnimplementedAdminServiceServer) UpdateProject(context.Context, *UpdatePro
 }
 func (UnimplementedAdminServiceServer) UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateProjectVariables not implemented")
+}
+func (UnimplementedAdminServiceServer) TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerReconcile not implemented")
+}
+func (UnimplementedAdminServiceServer) TriggerRefreshSources(context.Context, *TriggerRefreshSourcesRequest) (*TriggerRefreshSourcesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerRefreshSources not implemented")
+}
+func (UnimplementedAdminServiceServer) TriggerRedeploy(context.Context, *TriggerRedeployRequest) (*TriggerRedeployResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerRedeploy not implemented")
 }
 func (UnimplementedAdminServiceServer) ListOrganizationMembers(context.Context, *ListOrganizationMembersRequest) (*ListOrganizationMembersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationMembers not implemented")
@@ -755,6 +806,60 @@ func _AdminService_UpdateProjectVariables_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_TriggerReconcile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerReconcileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).TriggerReconcile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_TriggerReconcile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).TriggerReconcile(ctx, req.(*TriggerReconcileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_TriggerRefreshSources_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerRefreshSourcesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).TriggerRefreshSources(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_TriggerRefreshSources_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).TriggerRefreshSources(ctx, req.(*TriggerRefreshSourcesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_TriggerRedeploy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerRedeployRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).TriggerRedeploy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_TriggerRedeploy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).TriggerRedeploy(ctx, req.(*TriggerRedeployRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_ListOrganizationMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListOrganizationMembersRequest)
 	if err := dec(in); err != nil {
@@ -1033,6 +1138,18 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateProjectVariables",
 			Handler:    _AdminService_UpdateProjectVariables_Handler,
+		},
+		{
+			MethodName: "TriggerReconcile",
+			Handler:    _AdminService_TriggerReconcile_Handler,
+		},
+		{
+			MethodName: "TriggerRefreshSources",
+			Handler:    _AdminService_TriggerRefreshSources_Handler,
+		},
+		{
+			MethodName: "TriggerRedeploy",
+			Handler:    _AdminService_TriggerRedeploy_Handler,
 		},
 		{
 			MethodName: "ListOrganizationMembers",
