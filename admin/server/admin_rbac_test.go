@@ -391,7 +391,7 @@ func TestAdmin_RBAC(t *testing.T) {
 
 		require.Error(t, err)
 		require.Equal(t, codes.InvalidArgument, status.Code(err))
-		require.ErrorContains(t, err, "already member of the org")
+		require.ErrorContains(t, err, "user is already a member of the org")
 	})
 
 	// remove user tests
