@@ -18,7 +18,11 @@ export class StateSyncManager {
 
     // if state didn't change do not call goto. this avoids adding unnecessary urls to history stack
     if (this.protoState !== this.urlState) {
-      goto(`${pageUrl.pathname}?state=${this.protoState}`);
+      if (this.protoState === metricsExplorer.defaultProto) {
+        goto(`${pageUrl.pathname}`);
+      } else {
+        goto(`${pageUrl.pathname}?state=${this.protoState}`);
+      }
       this.updating = true;
     }
   }
