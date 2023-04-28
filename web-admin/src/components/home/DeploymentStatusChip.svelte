@@ -36,10 +36,9 @@
   }
 
   async function getDashboardsAndInvalidate() {
-    return invalidateProjectQueries(
-      queryClient,
-      await getDashboardsForProject($proj.data)
-    );
+    const dashboardListItems = await getDashboardsForProject($proj.data);
+    const dashboardNames = dashboardListItems.map((listing) => listing.name);
+    return invalidateProjectQueries(queryClient, dashboardNames);
   }
 
   type StatusDisplay = {
