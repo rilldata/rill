@@ -134,7 +134,11 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 		}
 		connectorVariables := c.Spec.ConnectorVariables
 		if len(connectorVariables) != 0 {
-			fmt.Printf("\nConnector %s requires credentials\n\n", c.Type)
+			fmt.Printf("\nConnector %q requires credentials.\n", c.Type)
+			if c.Spec.ServiceAccountDocs != "" {
+				fmt.Printf("For instructions on how to create a service account, see: %s\n", c.Spec.ServiceAccountDocs)
+			}
+			fmt.Printf("\n")
 		}
 		if c.Spec.Help != "" {
 			fmt.Println(c.Spec.Help)

@@ -39,6 +39,7 @@ type Connector interface {
 type Spec struct {
 	DisplayName        string
 	Description        string
+	ServiceAccountDocs string
 	Properties         []PropertySchema
 	ConnectorVariables []VariableSchema
 	Help               string
