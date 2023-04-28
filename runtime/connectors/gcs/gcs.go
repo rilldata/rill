@@ -160,14 +160,14 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		apiError := &googleapi.Error{}
 		// in cases when no creds are passed
 		if errors.As(err, &apiError) && apiError.Code == http.StatusUnauthorized {
-			return nil, connectors.NewError(connectors.ErrorCodePermissionDenied, err, fmt.Sprintf("can't access remote source %q err: %v", source.Name, apiError.Error()))
+			return nil, connectors.NewPermissionDeniedError(fmt.Sprintf("can't access remote source %q err: %v", source.Name, apiError))
 		}
 
 		// StatusUnauthorized when incorrect key is passsed
 		// StatusBadRequest when key doesn't have a valid credentials file
 		retrieveError := &oauth2.RetrieveError{}
 		if errors.As(err, &retrieveError) && (retrieveError.Response.StatusCode == http.StatusUnauthorized || retrieveError.Response.StatusCode == http.StatusBadRequest) {
-			return nil, connectors.NewError(connectors.ErrorCodePermissionDenied, err, fmt.Sprintf("can't access remote source %q err: %v", source.Name, retrieveError.Error()))
+			return nil, connectors.NewPermissionDeniedError(fmt.Sprintf("can't access remote source %q err: %v", source.Name, retrieveError))
 		}
 	}
 

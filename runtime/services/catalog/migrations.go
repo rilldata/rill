@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -305,7 +306,8 @@ func (s *Service) runMigrationItems(
 
 		if err != nil {
 			errCode := runtimev1.ReconcileError_CODE_OLAP
-			if connectors.Code(err) == connectors.ErrorCodePermissionDenied {
+			var connectorErr *connectors.PermissionDeniedError
+			if errors.As(err, &connectorErr) {
 				errCode = runtimev1.ReconcileError_CODE_SOURCE_PERMISSION_DENIED
 			}
 			result.Errors = append(result.Errors, &runtimev1.ReconcileError{

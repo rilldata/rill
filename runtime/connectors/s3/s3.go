@@ -164,7 +164,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		// r2 returns StatusBadRequest in all cases above
 		var failureErr awserr.RequestFailure
 		if errors.As(err, &failureErr) && (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) {
-			return nil, connectors.NewError(connectors.ErrorCodePermissionDenied, err, fmt.Sprintf("can't access remote source %q err: %v", source.Name, failureErr))
+			return nil, connectors.NewPermissionDeniedError(fmt.Sprintf("can't access remote source %q err: %v", source.Name, failureErr))
 		}
 	}
 
