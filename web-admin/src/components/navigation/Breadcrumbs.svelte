@@ -7,14 +7,21 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
+    createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizations,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
   import OrganizationAvatar from "./OrganizationAvatar.svelte";
 
+  const user = createAdminServiceGetCurrentUser();
+
   $: organization = $page.params.organization;
-  $: organizations = createAdminServiceListOrganizations();
+  $: organizations = createAdminServiceListOrganizations(undefined, {
+    query: {
+      enabled: !!$user.data.user,
+    },
+  });
   $: isOrganizationPage = $page.route.id === "/[organization]";
 
   $: project = $page.params.project;
