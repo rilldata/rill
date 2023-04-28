@@ -9,6 +9,7 @@
   import { globalErrorCallback } from "../components/errors/error-utils";
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../components/navigation/TopNavigationBar.svelte";
+  import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
 
   const queryClient = new QueryClient({
     queryCache: new QueryCache({
@@ -51,4 +52,6 @@
       </main>
     </div>
   </QueryClientProvider>
+
+  <NotificationCenter />
 </RillTheme>
