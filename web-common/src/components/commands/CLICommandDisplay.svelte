@@ -1,0 +1,41 @@
+<script lang="ts">
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
+
+  export let command: string;
+
+  let copied = false;
+
+  function copyCommand() {
+    copyToClipboard(command);
+    copied = true;
+    setTimeout(() => (copied = false), 2500);
+  }
+  $: console.log(copied);
+</script>
+
+<div class="flex flex-row text-gray-400">
+  <div class="p-0.5 border bg-gray-50 command-text">
+    {command}
+  </div>
+  <div
+    class="p-1 border bg-gray-50"
+    on:click={copyCommand}
+    on:keydown={copyCommand}
+  >
+    {#if copied}
+      <Check size="16px" />
+    {:else}
+      <CopyIcon color="gray-400" size="14px" />
+    {/if}
+  </div>
+</div>
+
+<style>
+  .command-text {
+    padding-left: 7px;
+    padding-right: 7px;
+    border-right: 0;
+  }
+</style>

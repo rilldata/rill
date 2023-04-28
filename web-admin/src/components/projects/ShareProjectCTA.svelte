@@ -1,5 +1,6 @@
 <script lang="ts">
   import AccessControls from "@rilldata/web-admin/components/access-controls/AccessControls.svelte";
+  import CLICommandDisplay from "@rilldata/web-common/components/commands/CLICommandDisplay.svelte";
 
   export let organization: string;
   export let project: string;
@@ -17,11 +18,7 @@
       Run this command in the Rill CLI to invite a teammate to view this
       project.
     </div>
-    <div class="border bg-gray-50 p-0.5 h-6 text-gray-400">
-      <section class="">
-        {addUserCommand}
-      </section>
-    </div>
+    <CLICommandDisplay command={addUserCommand} />
   </svelte:fragment>
   <svelte:fragment slot="read-project">
     <span class="uppercase text-gray-500 font-semibold text-[10px] leading-4"

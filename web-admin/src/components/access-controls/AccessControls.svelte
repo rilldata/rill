@@ -11,13 +11,9 @@
   let projectPermissions: CreateQueryResult<V1ProjectPermissions>;
   $: projectPermissions = createAdminServiceGetProject(organization, project, {
     query: {
-      select: (data) => {
-        console.log(data);
-        return data.projectPermissions;
-      },
+      select: (data) => data.projectPermissions,
     },
   });
-  $: console.log($projectPermissions.data);
 </script>
 
 {#if $projectPermissions?.data}
