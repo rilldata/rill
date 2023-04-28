@@ -122,7 +122,7 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 }
 
 // UpdateProject updates a project and any impacted deployments.
-// It runs a reconcile if deployment parameters (like branch or variables) have been changed and ReconcileDeployments option is set.
+// It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
 func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions, reconcileDeployment bool) (*database.Project, error) {
 	impactsDeployments := (proj.ProdBranch != opts.ProdBranch ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
