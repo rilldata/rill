@@ -1,12 +1,14 @@
 <script lang="ts">
-  import { getDashboardsForProject } from "@rilldata/web-admin/components/projects/dashboards";
-  import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
+  import {
+    DashboardListItem,
+    getDashboardsForProject,
+  } from "@rilldata/web-admin/components/projects/dashboards";
   import { createAdminServiceGetProject } from "../../client";
 
   export let organization: string;
   export let project: string;
 
-  let dashboards: V1CatalogEntry[];
+  let dashboardListItems: DashboardListItem[];
 
   $: proj = createAdminServiceGetProject(organization, project);
   $: if ($proj.isSuccess && $proj.data?.prodDeployment) {
@@ -14,20 +16,20 @@
   }
 
   async function updateDashboardsForProject() {
-    dashboards = await getDashboardsForProject($proj.data);
+    dashboardListItems = await getDashboardsForProject($proj.data);
   }
 </script>
 
-{#if dashboards?.length === 0}
+{#if dashboardListItems?.length === 0}
   <p class="text-gray-500 text-xs">This project has no dashboards yet.</p>
-{:else if dashboards?.length > 0}
+{:else if dashboardListItems?.length > 0}
   <ol>
-    {#each dashboards as dashboard}
+    {#each dashboardListItems as dashboardListItem}
       <li class="mb-1">
         <a
-          href="/{organization}/{project}/{dashboard.name}"
-          class="text-gray-700 hover:underline text-xs font-medium leading-4"
-          >{dashboard.metricsView?.label || dashboard.name}</a
+          href="/{organization}/{project}/{dashboardListItem.name}"
+          class="text-gray-700 hover:underline text-xs font-medium leading-4 {!dashboardListItem.isValid &&
+            'italic'}">{dashboardListItem?.title || dashboardListItem.name}</a
         >
       </li>
     {/each}
