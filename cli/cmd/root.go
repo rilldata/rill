@@ -23,7 +23,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
@@ -47,20 +46,21 @@ func Execute(ctx context.Context, ver config.Version) {
 	err := runCmd(ctx, ver)
 	if err != nil {
 		if s, ok := status.FromError(err); ok {
-			switch s.Code() {
-			case codes.Unauthenticated:
+			// try to see if it is a known message
+			switch s.Message() {
+			case "org not found":
+				// handle various cases like passed via flag, taken from default etc to print better error messages ??
+				fmt.Println("Org not found. Run `rill org list` to see the orgs. Run `rill org switch` to default org.")
+			case "proj not found":
+				fmt.Println("Project not found. Run `rill project list` to check the list of projects.")
+			case "auth token not found":
 				fmt.Println("Auth token is invalid/expired. Run `rill logout` and login again with `rill login`.")
+			case "not authenticated as a user":
+				fmt.Println("Please log in or sign up for Rill with `rill login`.")
 			default:
-				// try to see if it is a well known message
-				switch s.Message() {
-				case "org not found":
-					// todo :: handle various cases like passed via flag, taken from default etc to print better error messages
-					fmt.Println("Org not found.")
-				default:
-					// no well known code, no well known message
-					// todo :: add trace id as well
-					fmt.Printf("Error: %s (%v)\n", s.Message(), s.Code())
-				}
+				// no known message
+				// todo :: add trace id as well
+				fmt.Printf("Error: %s (%v)\n", s.Message(), s.Code())
 			}
 		} else {
 			fmt.Printf("Error: %s\n", err.Error())

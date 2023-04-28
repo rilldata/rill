@@ -22,7 +22,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, errOrgNotFound
+			return nil, status.Error(codes.InvalidArgument, "org not found")
 		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -90,7 +90,7 @@ func (s *Server) ListProjectsForOrganizationAndGithubURL(ctx context.Context, re
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, errOrgNotFound
+			return nil, status.Error(codes.NotFound, "org not found")
 		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -122,7 +122,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, errOrgNotFound
+			return nil, status.Error(codes.InvalidArgument, "org not found")
 		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -202,7 +202,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, errOrgNotFound
+			return nil, status.Error(codes.InvalidArgument, "org not found")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}

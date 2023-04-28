@@ -12,8 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var errOrgNotFound = status.Error(codes.NotFound, "org not found")
-
 func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganizationsRequest) (*adminv1.ListOrganizationsResponse, error) {
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
@@ -23,7 +21,6 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 
 	orgs, err := s.admin.DB.FindOrganizationsForUser(ctx, claims.OwnerID())
 	if err != nil {
-		// TODO :: is this an internal error ??
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -39,7 +36,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, errOrgNotFound
+			return nil, status.Error(codes.NotFound, "org not found")
 		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -104,7 +101,6 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 
 	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, req.Name, req.Description)
 	if err != nil {
-		// todo :: handle invalid constraint error
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -117,7 +113,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, errOrgNotFound
+			return nil, status.Error(codes.InvalidArgument, "org not found")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -139,7 +135,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	org, err := s.admin.DB.FindOrganization(ctx, req.Id)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, errOrgNotFound
+			return nil, status.Error(codes.InvalidArgument, "org not found")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -166,7 +162,7 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, errOrgNotFound
+			return nil, status.Error(codes.InvalidArgument, "org not found")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -206,7 +202,7 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, errOrgNotFound
+			return nil, status.Error(codes.InvalidArgument, "org not found")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -292,7 +288,7 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, errOrgNotFound
+			return nil, status.Error(codes.InvalidArgument, "org not found")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -365,7 +361,7 @@ func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.Set
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, errOrgNotFound
+			return nil, status.Error(codes.InvalidArgument, "org not found")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -426,7 +422,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, errOrgNotFound
+			return nil, status.Error(codes.InvalidArgument, "org not found")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
