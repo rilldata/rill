@@ -62,6 +62,7 @@ type DB interface {
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID string) ([]*Project, error)
 	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string) ([]*Project, error)
+	FindProjectsForOrgAndUserWithDirectRole(ctx context.Context, orgID, userID string) ([]*Project, error)
 	FindPublicProjectsInOrganization(ctx context.Context, orgID string) ([]*Project, error)
 	FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*Project, error)
 	FindProjectsByOrgAndGithubURL(ctx context.Context, orgID string, githubURL string) ([]*Project, error)
