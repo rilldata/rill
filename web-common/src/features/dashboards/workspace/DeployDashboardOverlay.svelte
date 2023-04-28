@@ -7,9 +7,9 @@
   }
 </script>
 
-<Dialog on:cancel={close} size="md" yFixed={true}>
+<Dialog on:cancel={close} size="md">
   <div class="" slot="body">
-    <div class="text-center text-2xl">
+    <div class="text-center text-2xl p-6">
       Please use the CLI to deploy your project by running `rill deploy`
     </div>
   </div>
