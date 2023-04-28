@@ -5,6 +5,8 @@
   export let project: string;
 
   $: proj = createAdminServiceGetProject(organization, project);
+  $: hasAdminAccess = $proj.data?.projectPermissions?.manageProject;
+
   $: errors = parseLogs($proj.data?.prodDeployment?.logs);
 
   interface Error {
@@ -23,7 +25,11 @@
 
 {#if $proj.isSuccess && errors}
   <ul class="w-full">
-    {#if errors.length === 0}
+    {#if !hasAdminAccess}
+      <li class="px-12 py-2 font-semibold text-gray-500 border-b">
+        You don't have permission to view project logs
+      </li>
+    {:else if errors.length === 0}
       <li class="px-12 py-2 font-semibold text-gray-500 border-b">
         No logs present
       </li>
