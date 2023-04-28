@@ -31,7 +31,7 @@ func SetRoleCmd(cfg *config.Config) *cobra.Command {
 
 			if projectName != "" {
 				_, err = client.SetProjectMemberRole(cmd.Context(), &adminv1.SetProjectMemberRoleRequest{
-					Organization: cfg.Org,
+					Organization: orgName,
 					Project:      projectName,
 					Email:        email,
 					Role:         role,
