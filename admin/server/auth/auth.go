@@ -32,12 +32,6 @@ type Authenticator struct {
 	oauth2  oauth2.Config
 }
 
-func NewMockAuthenticator(adm *admin.Service) *Authenticator {
-	return &Authenticator{
-		admin: adm,
-	}
-}
-
 // NewAuthenticator creates an Authenticator.
 func NewAuthenticator(logger *zap.Logger, adm *admin.Service, cookieStore *cookies.Store, opts *AuthenticatorOptions) (*Authenticator, error) {
 	oidcProvider, err := oidc.NewProvider(context.Background(), "https://"+opts.AuthDomain+"/")
@@ -69,4 +63,10 @@ func NewAuthenticator(logger *zap.Logger, adm *admin.Service, cookieStore *cooki
 	}
 
 	return a, nil
+}
+
+func NewMockAuthenticator(adminService *admin.Service) *Authenticator {
+	return &Authenticator{
+		admin: adminService,
+	}
 }

@@ -174,13 +174,13 @@ func TestAdmin_RBAC(t *testing.T) {
 		errCode codes.Code
 	}{
 		{
-			"test admin get org",
+			"test get org - admin",
 			adminClient,
 			false,
 			codes.OK,
 		},
 		{
-			"test viewer get org",
+			"test get org - viewer",
 			viewerClient,
 			false,
 			codes.OK,
@@ -210,13 +210,13 @@ func TestAdmin_RBAC(t *testing.T) {
 		errCode codes.Code
 	}{
 		{
-			"test admin get members org",
+			"test get org members - admin",
 			adminClient,
 			false,
 			codes.OK,
 		},
 		{
-			"test viewer get members org",
+			"test get org members - viewer",
 			viewerClient,
 			true,
 			codes.PermissionDenied,
@@ -248,14 +248,14 @@ func TestAdmin_RBAC(t *testing.T) {
 		numOrgs int
 	}{
 		{
-			"test admin get orgs",
+			"test list orgs - admin",
 			adminClient,
 			false,
 			codes.OK,
 			1,
 		},
 		{
-			"test viewer get orgs",
+			"test list orgs - viewer",
 			viewerClient,
 			false,
 			codes.OK,
@@ -278,6 +278,44 @@ func TestAdmin_RBAC(t *testing.T) {
 		})
 	}
 
+	// list user tests
+	listOrgMemberTests := []struct {
+		name    string
+		client  adminv1.AdminServiceClient
+		wantErr bool
+		errCode codes.Code
+	}{
+		{
+			"test list member - admin",
+			adminClient,
+			false,
+			codes.OK,
+		},
+		{
+			"test list member - viewer",
+			viewerClient,
+			true,
+			codes.PermissionDenied,
+		},
+	}
+
+	for _, tt := range listOrgMemberTests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+				Organization: adminOrg.Organization.Name,
+			})
+
+			if tt.wantErr {
+				require.Error(t, err)
+				require.Equal(t, tt.errCode, status.Code(err))
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, resp)
+
+		})
+	}
+
 	addOrgMemberTests := []struct {
 		name    string
 		client  adminv1.AdminServiceClient
@@ -285,13 +323,13 @@ func TestAdmin_RBAC(t *testing.T) {
 		errCode codes.Code
 	}{
 		{
-			"test add member by admin",
+			"test add org member - admin",
 			adminClient,
 			false,
 			codes.OK,
 		},
 		{
-			"test add member by viewer",
+			"test add org member - viewer",
 			viewerClient,
 			true,
 			codes.PermissionDenied,
@@ -300,10 +338,12 @@ func TestAdmin_RBAC(t *testing.T) {
 
 	for i, tt := range addOrgMemberTests {
 		t.Run(tt.name, func(t *testing.T) {
+			e := strconv.Itoa(i) + "@test.io"
+			r := "viewer"
 			resp, err := tt.client.AddOrganizationMember(ctx, &adminv1.AddOrganizationMemberRequest{
 				Organization: adminOrg.Organization.Name,
-				Email:        strconv.Itoa(i) + "@test.io",
-				Role:         "viewer",
+				Email:        e,
+				Role:         r,
 			})
 
 			if tt.wantErr {
@@ -314,6 +354,16 @@ func TestAdmin_RBAC(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, resp)
 			require.Equal(t, true, resp.PendingSignup)
+
+			// check pending invite
+			membersResp, err := tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+				Organization: adminOrg.Organization.Name,
+			})
+			require.NoError(t, err)
+			require.Equal(t, 1, len(membersResp.Invites))
+			require.Equal(t, e, membersResp.Invites[0].Email)
+			require.Equal(t, r, membersResp.Invites[0].Role)
+			require.Equal(t, adminUser.Email, membersResp.Invites[0].InvitedBy)
 		})
 	}
 
@@ -338,13 +388,13 @@ func TestAdmin_RBAC(t *testing.T) {
 		errCode codes.Code
 	}{
 		{
-			"test remove member admin",
+			"test remove member - admin",
 			adminClient,
 			false,
 			codes.OK,
 		},
 		{
-			"test remove member viewer",
+			"test remove member - viewer",
 			viewerClient,
 			true,
 			codes.PermissionDenied,
@@ -373,6 +423,43 @@ func TestAdmin_RBAC(t *testing.T) {
 				Role:         "viewer",
 			})
 			require.NoError(t, err)
+
+			// check deleting pending invite
+			e := "1@test.io"
+			r := "viewer"
+			addResp, err := tt.client.AddOrganizationMember(ctx, &adminv1.AddOrganizationMemberRequest{
+				Organization: adminOrg.Organization.Name,
+				Email:        e,
+				Role:         r,
+			})
+
+			require.NoError(t, err)
+			require.NotNil(t, addResp)
+			require.Equal(t, true, addResp.PendingSignup)
+
+			// check pending invite
+			membersResp, err := tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+				Organization: adminOrg.Organization.Name,
+			})
+			require.NoError(t, err)
+			require.Equal(t, 1, len(membersResp.Invites))
+			require.Equal(t, e, membersResp.Invites[0].Email)
+			require.Equal(t, r, membersResp.Invites[0].Role)
+			require.Equal(t, adminUser.Email, membersResp.Invites[0].InvitedBy)
+
+			// delete the invite
+			_, err = tt.client.RemoveOrganizationMember(ctx, &adminv1.RemoveOrganizationMemberRequest{
+				Organization: adminOrg.Organization.Name,
+				Email:        e,
+			})
+			require.NoError(t, err)
+
+			// check pending invite
+			membersResp, err = tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+				Organization: adminOrg.Organization.Name,
+			})
+			require.NoError(t, err)
+			require.Equal(t, 0, len(membersResp.Invites))
 		})
 	}
 
@@ -396,6 +483,133 @@ func TestAdmin_RBAC(t *testing.T) {
 		require.Equal(t, codes.InvalidArgument, status.Code(err))
 		require.ErrorContains(t, err, "cannot remove the last owner")
 	})
+
+	// test change roles
+	setRoleMemberTests := []struct {
+		name    string
+		client  adminv1.AdminServiceClient
+		wantErr bool
+		errCode codes.Code
+	}{
+		{
+			"set member role - admin",
+			adminClient,
+			false,
+			codes.OK,
+		},
+		{
+			"set member role - viewer",
+			viewerClient,
+			true,
+			codes.PermissionDenied,
+		},
+	}
+
+	for _, tt := range setRoleMemberTests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := tt.client.SetOrganizationMemberRole(ctx, &adminv1.SetOrganizationMemberRoleRequest{
+				Organization: adminOrg.Organization.Name,
+				Email:        viewerUser.Email,
+				Role:         "admin",
+			})
+
+			if tt.wantErr {
+				require.Error(t, err)
+				require.Equal(t, tt.errCode, status.Code(err))
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, resp)
+
+			// check role
+			membersResp, err := tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+				Organization: adminOrg.Organization.Name,
+			})
+			require.NoError(t, err)
+			require.Equal(t, 2, len(membersResp.Members))
+			require.Equal(t, "admin", membersResp.Members[0].RoleName)
+			require.Equal(t, "admin", membersResp.Members[1].RoleName)
+
+			// change the role back to viewer
+			resp, err = tt.client.SetOrganizationMemberRole(ctx, &adminv1.SetOrganizationMemberRoleRequest{
+				Organization: adminOrg.Organization.Name,
+				Email:        viewerUser.Email,
+				Role:         "viewer",
+			})
+
+			if tt.wantErr {
+				require.Error(t, err)
+				require.Equal(t, tt.errCode, status.Code(err))
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, resp)
+
+			// check role
+			membersResp, err = tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+				Organization: adminOrg.Organization.Name,
+			})
+			require.NoError(t, err)
+			require.Equal(t, 2, len(membersResp.Members))
+			for _, m := range membersResp.Members {
+				if m.UserEmail == viewerUser.Email {
+					require.Equal(t, "viewer", m.RoleName)
+				}
+			}
+
+			// check changing role of last admin
+			_, err = tt.client.SetOrganizationMemberRole(ctx, &adminv1.SetOrganizationMemberRoleRequest{
+				Organization: adminOrg.Organization.Name,
+				Email:        adminUser.Email,
+				Role:         "viewer",
+			})
+			require.Error(t, err)
+			require.Equal(t, codes.InvalidArgument, status.Code(err))
+			require.ErrorContains(t, err, "cannot change role of the last owner")
+
+			// check changing role of invited user
+			e := "1@test.io"
+			r := "viewer"
+			addResp, err := tt.client.AddOrganizationMember(ctx, &adminv1.AddOrganizationMemberRequest{
+				Organization: adminOrg.Organization.Name,
+				Email:        e,
+				Role:         r,
+			})
+
+			require.NoError(t, err)
+			require.NotNil(t, addResp)
+			require.Equal(t, true, addResp.PendingSignup)
+
+			// check pending invite
+			membersResp, err = tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+				Organization: adminOrg.Organization.Name,
+			})
+			require.NoError(t, err)
+			require.Equal(t, 1, len(membersResp.Invites))
+			require.Equal(t, e, membersResp.Invites[0].Email)
+			require.Equal(t, r, membersResp.Invites[0].Role)
+			require.Equal(t, adminUser.Email, membersResp.Invites[0].InvitedBy)
+
+			r = "admin"
+			// change the role of the invited user
+			_, err = tt.client.SetOrganizationMemberRole(ctx, &adminv1.SetOrganizationMemberRoleRequest{
+				Organization: adminOrg.Organization.Name,
+				Email:        e,
+				Role:         r,
+			})
+			require.NoError(t, err)
+
+			// check pending invite
+			membersResp, err = tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+				Organization: adminOrg.Organization.Name,
+			})
+			require.NoError(t, err)
+			require.Equal(t, 1, len(membersResp.Invites))
+			require.Equal(t, e, membersResp.Invites[0].Email)
+			require.Equal(t, r, membersResp.Invites[0].Role)
+			require.Equal(t, adminUser.Email, membersResp.Invites[0].InvitedBy)
+		})
+	}
 
 	t.Run("test quota single-user orgs", func(t *testing.T) {
 		for i := 0; i < 4; i++ {
