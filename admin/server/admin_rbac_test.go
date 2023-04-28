@@ -417,26 +417,34 @@ func TestAdmin_RBAC(t *testing.T) {
 
 	for _, tt := range removeOrgMemberTests {
 		t.Run(tt.name, func(t *testing.T) {
+			// add random user using admin client
+			randomEmail := "random@test.io"
+			_, err := adminClient.AddOrganizationMember(ctx, &adminv1.AddOrganizationMemberRequest{
+				Organization: adminOrg.Organization.Name,
+				Email:        randomEmail,
+				Role:         "viewer",
+			})
+			require.NoError(t, err)
+
+			// remove the user using the client under test
 			resp, err := tt.client.RemoveOrganizationMember(ctx, &adminv1.RemoveOrganizationMemberRequest{
 				Organization: adminOrg.Organization.Name,
-				Email:        viewerUser.Email,
+				Email:        randomEmail,
 			})
 
 			if tt.wantErr {
 				require.Error(t, err)
 				require.Equal(t, tt.errCode, status.Code(err))
+				// clean up
+				_, err = adminClient.RemoveOrganizationMember(ctx, &adminv1.RemoveOrganizationMemberRequest{
+					Organization: adminOrg.Organization.Name,
+					Email:        randomEmail,
+				})
+				require.NoError(t, err)
 				return
 			}
 			require.NoError(t, err)
 			require.NotNil(t, resp)
-
-			// add the user back
-			_, err = adminClient.AddOrganizationMember(ctx, &adminv1.AddOrganizationMemberRequest{
-				Organization: adminOrg.Organization.Name,
-				Email:        viewerUser.Email,
-				Role:         "viewer",
-			})
-			require.NoError(t, err)
 		})
 	}
 
