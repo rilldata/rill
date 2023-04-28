@@ -561,18 +561,30 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 		return nil, status.Error(codes.PermissionDenied, "not allowed to set project member roles")
 	}
 
-	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "user not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
 	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "role not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			// check if there is a pending invite for this user
+			invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
+			if err != nil {
+				if errors.Is(err, database.ErrNotFound) {
+					return nil, status.Error(codes.InvalidArgument, "user not found")
+				}
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			err = s.admin.DB.UpdateProjectInviteRole(ctx, invite.ID, role.ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			return &adminv1.SetProjectMemberRoleResponse{}, nil
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}

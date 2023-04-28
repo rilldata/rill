@@ -128,12 +128,14 @@ type DB interface {
 	InsertOrganizationInvite(ctx context.Context, email, orgID, roleID, invitedByID string) error
 	DeleteOrganizationInvite(ctx context.Context, id string) error
 	CountInvitesForOrganization(ctx context.Context, orgID string) (int, error)
+	UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error
 
 	FindProjectInvites(ctx context.Context, projectID string) ([]*Invite, error)
 	FindProjectInvitesByEmail(ctx context.Context, userEmail string) ([]*ProjectInvite, error)
 	FindProjectInvite(ctx context.Context, projectID, userEmail string) (*ProjectInvite, error)
 	InsertProjectInvite(ctx context.Context, email, projectID, roleID, invitedByID string) error
 	DeleteProjectInvite(ctx context.Context, id string) error
+	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
