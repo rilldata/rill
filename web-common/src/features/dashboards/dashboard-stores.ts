@@ -394,4 +394,4 @@ export function useDashboardStore(
   });
 }
 
-export const calendlyModalStore: Writable<string> = writable("");
+export const projectShareStore: Writable<boolean> = writable(false);
