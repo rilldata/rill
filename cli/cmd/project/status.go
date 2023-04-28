@@ -19,7 +19,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 	statusCmd := &cobra.Command{
 		Use:   "status",
 		Args:  cobra.NoArgs,
-		Short: "Status",
+		Short: "Project deployment status",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -42,7 +42,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Found project\n")
+			cmdutil.SuccessPrinter("Found project")
 			cmdutil.TablePrinter(toRow(proj.Project))
 
 			depl := proj.ProdDeployment
