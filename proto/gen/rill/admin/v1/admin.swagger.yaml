@@ -9,6 +9,86 @@ consumes:
 produces:
   - application/json
 paths:
+  /v1/deployments/{deploymentId}/reconcile:
+    post:
+      summary: TriggerReconcile triggers reconcile for the project's prod deployment
+      operationId: AdminService_TriggerReconcile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TriggerReconcileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
+  /v1/deployments/{deploymentId}/redeploy:
+    post:
+      summary: TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+      operationId: AdminService_TriggerRedeploy
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TriggerRedeployResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
+  /v1/deployments/{deploymentId}/refresh:
+    post:
+      summary: TriggerRefreshSources refresh the source for production deployment
+      operationId: AdminService_TriggerRefreshSources
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TriggerRefreshSourcesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              sources:
+                type: array
+                items:
+                  type: string
+      tags:
+        - AdminService
   /v1/github/repositories:
     get:
       summary: |-
@@ -755,8 +835,6 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
-      projectUrl:
-        type: string
   v1DeleteOrganizationResponse:
     type: object
   v1DeleteProjectResponse:
@@ -986,6 +1064,8 @@ definitions:
         format: int64
       prodDeploymentId:
         type: string
+      frontendUrl:
+        type: string
       createdOn:
         type: string
         format: date-time
@@ -1027,6 +1107,12 @@ definitions:
   v1SetOrganizationMemberRoleResponse:
     type: object
   v1SetProjectMemberRoleResponse:
+    type: object
+  v1TriggerReconcileResponse:
+    type: object
+  v1TriggerRedeployResponse:
+    type: object
+  v1TriggerRefreshSourcesResponse:
     type: object
   v1UpdateOrganizationResponse:
     type: object

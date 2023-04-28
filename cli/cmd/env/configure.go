@@ -61,7 +61,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				// fetch project names for github url
-				names, err := cmdutil.ProjectNames(ctx, client, cfg.Org, githubURL)
+				names, err := cmdutil.ProjectNamesByGithubURL(ctx, client, cfg.Org, githubURL)
 				if err != nil {
 					return err
 				}
@@ -106,7 +106,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				return fmt.Errorf("failed to update variables %w", err)
 			}
 
-			cmdutil.SuccessPrinter("Updated project variables\n")
+			cmdutil.SuccessPrinter("Updated project variables")
 			return nil
 		},
 	}

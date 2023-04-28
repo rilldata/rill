@@ -20,11 +20,7 @@ import (
 // Annotator is a gRPC-gateway annotator that moves access tokens in HTTP cookies to the "authorization" gRPC metadata.
 func (a *Authenticator) Annotator(ctx context.Context, r *http.Request) metadata.MD {
 	// Get auth cookie
-	sess, err := a.cookies.Get(r, cookieName)
-	if err != nil {
-		return metadata.Pairs()
-	}
-
+	sess := a.cookies.Get(r, cookieName)
 	// Get access token from cookie and pretend it's a bearer token
 	token, ok := sess.Values[cookieFieldAccessToken].(string)
 	if ok && token != "" {
@@ -85,12 +81,7 @@ func (a *Authenticator) HTTPMiddleware(next http.Handler) http.Handler {
 		}
 
 		// There was no authorization header. Try the cookie.
-		sess, err := a.cookies.Get(r, cookieName)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
-			return
-		}
-
+		sess := a.cookies.Get(r, cookieName)
 		// Read access token from cookie
 		authToken, ok := sess.Values[cookieFieldAccessToken].(string)
 		if ok && authToken != "" {

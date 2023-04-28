@@ -2,9 +2,8 @@
   import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
-
+  import CtaButton from "@rilldata/web-admin/components/calls-to-action/CTAButton.svelte";
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
-  import CtaButton from "@rilldata/web-admin/components/CTAButton.svelte";
 
   let actionTaken = false;
   let successMsg = "";
@@ -62,7 +61,7 @@
       }
     ).then((response) => {
       if (response.ok) {
-        successMsg = "User code rejected, this page can be closed now";
+        errorMsg = "User code rejected, this page can be closed now";
       } else {
         errorMsg = "User code rejection failed";
         response.body

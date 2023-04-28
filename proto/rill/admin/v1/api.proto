@@ -57,7 +57,7 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}"};
   }
 
-// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
+  // GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
   rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}/variables"};
   }
@@ -87,6 +87,30 @@ service AdminService {
   rpc UpdateProjectVariables(UpdateProjectVariablesRequest) returns (UpdateProjectVariablesResponse) {
     option (google.api.http) = {
       put: "/v1/organizations/{organization_name}/projects/{name}/variables",
+      body: "*"
+    };
+  }
+
+  // TriggerReconcile triggers reconcile for the project's prod deployment
+  rpc TriggerReconcile(TriggerReconcileRequest) returns (TriggerReconcileResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/{deployment_id}/reconcile",
+      body: "*"
+    };
+  }
+
+  // TriggerRefreshSources refresh the source for production deployment
+  rpc TriggerRefreshSources(TriggerRefreshSourcesRequest) returns (TriggerRefreshSourcesResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/{deployment_id}/refresh",
+      body: "*"
+    };
+  }
+
+  // TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+  rpc TriggerRedeploy(TriggerRedeployRequest) returns (TriggerRedeployResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/{deployment_id}/redeploy",
       body: "*"
     };
   }
@@ -165,7 +189,6 @@ service AdminService {
   rpc GetGithubRepoStatus(GetGithubRepoStatusRequest) returns (GetGithubRepoStatusResponse) {
     option (google.api.http) = {get: "/v1/github/repositories"};
   }
-
 }
 
 message PingRequest {}
@@ -279,7 +302,6 @@ message CreateProjectRequest {
 
 message CreateProjectResponse {
   Project project = 1;
-  string project_url = 2;
 }
 
 message DeleteProjectRequest {
@@ -312,6 +334,25 @@ message UpdateProjectVariablesRequest {
 message UpdateProjectVariablesResponse {
   map<string, string> variables = 1;
 }
+
+message TriggerReconcileRequest {
+  string deployment_id = 1;
+}
+
+message TriggerReconcileResponse {}
+
+message TriggerRefreshSourcesRequest {
+  string deployment_id = 1;
+  repeated string sources = 2;
+}
+
+message TriggerRefreshSourcesResponse {}
+
+message TriggerRedeployRequest {
+  string deployment_id = 1;
+}
+
+message TriggerRedeployResponse {}
 
 message ListOrganizationMembersRequest {
   string organization = 1;
@@ -451,6 +492,7 @@ message Project {
   string prod_olap_dsn = 11;
   int64 prod_slots = 12;
   string prod_deployment_id = 13;
+  string frontend_url = 16;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
 }

@@ -23,6 +23,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/status"
 )
 
 func init() {
@@ -30,7 +31,7 @@ func init() {
 }
 
 // defaultAdminURL is the default admin server URL.
-// Users can override it with the "--api-url" flag or by setting "api_url" in ~/.rill/config.yaml.
+// Users can override it with the "--api-url" flag or by setting "api-url" in ~/.rill/config.yaml.
 const defaultAdminURL = "https://admin.rilldata.io"
 
 // rootCmd represents the base command when called without any subcommands.
@@ -44,7 +45,26 @@ var rootCmd = &cobra.Command{
 func Execute(ctx context.Context, ver config.Version) {
 	err := runCmd(ctx, ver)
 	if err != nil {
-		fmt.Printf("Error: %s\n", err.Error())
+		if s, ok := status.FromError(err); ok {
+			// try to see if it is a known message
+			switch s.Message() {
+			case "org not found":
+				// handle various cases like passed via flag, taken from default etc to print better error messages ??
+				fmt.Println("Org not found. Run `rill org list` to see the orgs. Run `rill org switch` to default org.")
+			case "proj not found":
+				fmt.Println("Project not found. Run `rill project list` to check the list of projects.")
+			case "auth token not found":
+				fmt.Println("Auth token is invalid/expired. Run `rill logout` and login again with `rill login`.")
+			case "not authenticated as a user":
+				fmt.Println("Please log in or sign up for Rill with `rill login`.")
+			default:
+				// no known message
+				// todo :: add trace id as well
+				fmt.Printf("Error: %s (%v)\n", s.Message(), s.Code())
+			}
+		} else {
+			fmt.Printf("Error: %s\n", err.Error())
+		}
 		os.Exit(1)
 	}
 }
@@ -52,6 +72,10 @@ func Execute(ctx context.Context, ver config.Version) {
 func runCmd(ctx context.Context, ver config.Version) error {
 	// Cobra config
 	rootCmd.Version = ver.String()
+	// silence usage, usage string will only show up if missing arguments/flags
+	rootCmd.SilenceUsage = true
+	// we want to override some error messages
+	rootCmd.SilenceErrors = true
 	rootCmd.PersistentFlags().BoolP("help", "h", false, "Print usage") // Overrides message for help
 	rootCmd.Flags().BoolP("version", "v", false, "Show rill version")  // Adds option to get version by passing --version or -v
 
@@ -116,9 +140,13 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
+		if !cfg.IsDev() {
+			if err := cmd.PersistentFlags().MarkHidden("api-url"); err != nil {
+				panic(err)
+			}
+		}
 		cmd.PersistentFlags().StringVar(&cfg.AdminTokenOverride, "api-token", "", "Token for authenticating with the admin API")
 		rootCmd.AddCommand(cmd)
 	}
-
 	return rootCmd.ExecuteContext(ctx)
 }

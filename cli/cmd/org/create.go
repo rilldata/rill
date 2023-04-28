@@ -16,7 +16,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 
 	createCmd := &cobra.Command{
 		Use:   "create",
-		Short: "Create",
+		Short: "Create organization",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
@@ -52,7 +52,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Created organization \n")
+			cmdutil.SuccessPrinter("Created organization")
 			cmdutil.TablePrinter(toRow(res.Organization))
 			return nil
 		},

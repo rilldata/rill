@@ -17,7 +17,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 	renameCmd := &cobra.Command{
 		Use:   "rename",
 		Args:  cobra.NoArgs,
-		Short: "Rename",
+		Short: "Rename organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -26,6 +26,8 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			defer client.Close()
+
+			fmt.Println("Warn: Renaming an org would invalidate dashboard URLs")
 
 			if !cmd.Flags().Changed("org") {
 				orgNames, err := cmdutil.OrgNames(ctx, client)
@@ -36,15 +38,13 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				name = cmdutil.SelectPrompt("Select org to rename", orgNames, "")
 			}
 
-			if !cmd.Flags().Changed("new_name") {
+			if !cmd.Flags().Changed("new-name") {
 				// Get the new org name from user if not provided in the flag, passing current name as default
 				newName, err = cmdutil.InputPrompt("Rename to", "")
 				if err != nil {
 					return err
 				}
 			}
-
-			fmt.Println("Warn: Renaming an org would invalidate dashboard URLs")
 
 			msg := fmt.Sprintf("Do you want to rename org \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName))
 			if !cmdutil.ConfirmPrompt(msg, "", false) {
@@ -71,14 +71,14 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Renamed organization\n")
+			cmdutil.SuccessPrinter("Renamed organization")
 			cmdutil.TablePrinter(toRow(updatedOrg.Organization))
 			return nil
 		},
 	}
 	renameCmd.Flags().SortFlags = false
 	renameCmd.Flags().StringVar(&name, "org", cfg.Org, "Current Org Name")
-	renameCmd.Flags().StringVar(&newName, "new_name", "", "New Org Name")
+	renameCmd.Flags().StringVar(&newName, "new-name", "", "New Org Name")
 
 	return renameCmd
 }

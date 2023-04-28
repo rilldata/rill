@@ -5,8 +5,6 @@
   import { invalidateProjectQueries } from "@rilldata/web-admin/components/projects/invalidations";
   import { useProject } from "@rilldata/web-admin/components/projects/use-project";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
-  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-  import { StateSyncManager } from "@rilldata/web-common/features/dashboards/proto-state/StateSyncManager";
   import { useQueryClient } from "@tanstack/svelte-query";
   import ProjectBuilding from "../../../../components/projects/ProjectBuilding.svelte";
   import ProjectErrored from "../../../../components/projects/ProjectErrored.svelte";
@@ -48,15 +46,6 @@
       queryClient,
       await getDashboardsForProject($project.data)
     );
-  }
-
-  $: metricsExplorer = useDashboardStore(dash);
-  const stateSyncManager = new StateSyncManager(dash);
-  $: if ($metricsExplorer) {
-    stateSyncManager.handleStateChange($metricsExplorer);
-  }
-  $: if ($page) {
-    stateSyncManager.handleUrlChange();
   }
 </script>
 

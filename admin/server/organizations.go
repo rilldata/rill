@@ -86,7 +86,20 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
-	org, err := s.admin.CreateOrganizationForUser(ctx, claims.OwnerID(), req.Name, req.Description)
+	// check single user org limit for this user
+	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	count, err := s.admin.DB.CountSingleuserOrganizationsForMemberUser(ctx, user.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if user.QuotaSingleuserOrgs >= 0 && count >= user.QuotaSingleuserOrgs {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: you can only create %d single-user orgs", user.QuotaSingleuserOrgs)
+	}
+
+	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, req.Name, req.Description)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -99,10 +112,7 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrganizationRequest) (*adminv1.DeleteOrganizationResponse, error) {
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "org not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -121,10 +131,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrganizationRequest) (*adminv1.UpdateOrganizationResponse, error) {
 	org, err := s.admin.DB.FindOrganization(ctx, req.Id)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "org not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -148,10 +155,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListOrganizationMembersRequest) (*adminv1.ListOrganizationMembersResponse, error) {
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "org not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -188,10 +192,7 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrganizationMemberRequest) (*adminv1.AddOrganizationMemberResponse, error) {
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "org not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -199,12 +200,17 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.PermissionDenied, "not allowed to add org members")
 	}
 
+	count, err := s.admin.DB.CountInvitesForOrganization(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if org.QuotaOutstandingInvites >= 0 && count >= org.QuotaOutstandingInvites {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can at most have %d outstanding invitations", org.QuotaOutstandingInvites)
+	}
+
 	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "role not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
@@ -234,10 +240,7 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 	defer func() { _ = tx.Rollback() }()
 	err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
 	if err != nil {
-		if errors.Is(err, database.ErrNotUnique) {
-			return nil, status.Error(codes.InvalidArgument, "user already member of org")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	err = s.admin.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
@@ -253,6 +256,11 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	err = s.admin.Email.SendOrganizationAdditionNotification(req.Email, "", org.Name, role.Name)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	return &adminv1.AddOrganizationMemberResponse{
 		PendingSignup: false,
 	}, nil
@@ -261,10 +269,7 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.RemoveOrganizationMemberRequest) (*adminv1.RemoveOrganizationMemberResponse, error) {
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "org not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -274,22 +279,22 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			// check if there is a pending invite
-			invite, err := s.admin.DB.FindOrganizationInvite(ctx, org.ID, req.Email)
-			if err != nil {
-				if errors.Is(err, database.ErrNotFound) {
-					return nil, status.Error(codes.InvalidArgument, "user not found")
-				}
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			err = s.admin.DB.DeleteOrganizationInvite(ctx, invite.ID)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			return &adminv1.RemoveOrganizationMemberResponse{}, nil
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
 		}
-		return nil, status.Error(codes.Internal, err.Error())
+		// check if there is a pending invite
+		invite, err := s.admin.DB.FindOrganizationInvite(ctx, org.ID, req.Email)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				return nil, status.Error(codes.InvalidArgument, "user not found")
+			}
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		err = s.admin.DB.DeleteOrganizationInvite(ctx, invite.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		return &adminv1.RemoveOrganizationMemberResponse{}, nil
 	}
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
@@ -352,10 +357,7 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.SetOrganizationMemberRoleRequest) (*adminv1.SetOrganizationMemberRoleResponse, error) {
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "org not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -365,18 +367,27 @@ func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.Set
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "role not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "user not found")
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		return nil, status.Error(codes.Internal, err.Error())
+		// Check if there is a pending invite for this user
+		invite, err := s.admin.DB.FindOrganizationInvite(ctx, org.ID, req.Email)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				return nil, status.Error(codes.InvalidArgument, "user not found")
+			}
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		err = s.admin.DB.UpdateOrganizationInviteRole(ctx, invite.ID, role.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		return &adminv1.SetOrganizationMemberRoleResponse{}, nil
 	}
 
 	// Check if the user is the last owner
@@ -413,10 +424,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "org not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {

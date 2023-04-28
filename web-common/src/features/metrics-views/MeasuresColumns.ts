@@ -53,21 +53,4 @@ export const initMeasuresColumns = (
         nicelyFormattedTypesSelectorOptions
       ),
     },
-    // FIXME: will be needed later for API
-    // {
-    //   name: "sqlName",
-    //   label: "identifier",
-    //   headerTooltip: "a unique SQL identifier for this measure",
-    //   cellRenderer: TableCellInput,
-    //   onchange: inputChangeHandler,
-    //   validation: (row: MeasureDefinitionEntity) => row.sqlNameIsValid,
-    // },
-
-    // FIXME: will be needed later for sparkline summary
-    // {
-    //   name: "id",
-    //   label: "preview",
-    //   tooltip: "a preview of this measure over the selected time dimension",
-    //   cellRenderer: TableCellSparkline,
-    // },
   ];

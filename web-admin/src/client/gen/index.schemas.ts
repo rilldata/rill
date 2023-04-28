@@ -74,6 +74,10 @@ export type AdminServiceGetGithubRepoStatusParams = {
   githubUrl?: string;
 };
 
+export type AdminServiceTriggerRefreshSourcesBody = {
+  sources?: string[];
+};
+
 export type AdminServiceAddOrganizationMemberBodyBody = {
   email?: string;
   role?: string;
@@ -82,6 +86,8 @@ export type AdminServiceAddOrganizationMemberBodyBody = {
 export type AdminServiceSetOrganizationMemberRoleBodyBody = {
   role?: string;
 };
+
+export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
 
 export interface V1UserInvite {
   email?: string;
@@ -112,6 +118,18 @@ export interface V1UpdateProjectResponse {
 
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
+}
+
+export interface V1TriggerRefreshSourcesResponse {
+  [key: string]: any;
+}
+
+export interface V1TriggerRedeployResponse {
+  [key: string]: any;
+}
+
+export interface V1TriggerReconcileResponse {
+  [key: string]: any;
 }
 
 export interface V1SetProjectMemberRoleResponse {
@@ -161,6 +179,7 @@ export interface V1Project {
   prodOlapDsn?: string;
   prodSlots?: string;
   prodDeploymentId?: string;
+  frontendUrl?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -291,7 +310,6 @@ export interface V1DeleteOrganizationResponse {
 
 export interface V1CreateProjectResponse {
   project?: V1Project;
-  projectUrl?: string;
 }
 
 export interface V1CreateOrganizationResponse {

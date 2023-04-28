@@ -3,6 +3,7 @@ package project
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -18,7 +19,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 	statusCmd := &cobra.Command{
 		Use:   "status",
 		Args:  cobra.NoArgs,
-		Short: "Status",
+		Short: "Project deployment status",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -41,7 +42,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Found project\n")
+			cmdutil.SuccessPrinter("Found project")
 			cmdutil.TablePrinter(toRow(proj.Project))
 
 			depl := proj.ProdDeployment
@@ -52,10 +53,12 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				cmdutil.SuccessPrinter("Deployment info\n")
+				fmt.Printf("  Web: %s\n", proj.Project.FrontendUrl)
 				fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
 				fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)
 				fmt.Printf("  Slots: %d\n", depl.Slots)
 				fmt.Printf("  Branch: %s\n", depl.Branch)
+				fmt.Printf("  Updated: %s\n", depl.UpdatedOn.AsTime().Local().Format(time.RFC3339))
 				fmt.Printf("  Status: %s\n", depl.Status.String())
 				if proj.ProjectPermissions.ReadProdStatus {
 					fmt.Println(logs)

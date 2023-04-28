@@ -11,7 +11,6 @@ import (
 )
 
 func SetRoleCmd(cfg *config.Config) *cobra.Command {
-	var orgName string
 	var projectName string
 	var email string
 	var role string
@@ -39,24 +38,24 @@ func SetRoleCmd(cfg *config.Config) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				cmdutil.SuccessPrinter(fmt.Sprintf("Updated role of user %q to %q in the project \"%s/%s\"", email, role, orgName, projectName))
+				cmdutil.SuccessPrinter(fmt.Sprintf("Updated role of user %q to %q in the project \"%s/%s\"", email, role, cfg.Org, projectName))
 			} else {
 				_, err = client.SetOrganizationMemberRole(cmd.Context(), &adminv1.SetOrganizationMemberRoleRequest{
-					Organization: orgName,
+					Organization: cfg.Org,
 					Email:        email,
 					Role:         role,
 				})
 				if err != nil {
 					return err
 				}
-				cmdutil.SuccessPrinter(fmt.Sprintf("Updated role of user %q to %q in the organization %q", email, role, orgName))
+				cmdutil.SuccessPrinter(fmt.Sprintf("Updated role of user %q to %q in the organization %q", email, role, cfg.Org))
 			}
 
 			return nil
 		},
 	}
 
-	setRoleCmd.Flags().StringVar(&orgName, "org", cfg.Org, "Organization")
+	setRoleCmd.Flags().StringVar(&cfg.Org, "org", cfg.Org, "Organization")
 	setRoleCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	setRoleCmd.Flags().StringVar(&email, "email", "", "Email of the user")
 	setRoleCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user [%v]", strings.Join(userRoles, ", ")))
