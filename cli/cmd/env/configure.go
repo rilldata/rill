@@ -121,9 +121,9 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				_, err = client.TriggerReconcile(ctx, &adminv1.TriggerReconcileRequest{DeploymentId: project.ProdDeployment.Id})
 				if err != nil {
 					warn.Printf("Reconcile failed. Trigger reconcile again with `rill project reconcile` if required.")
-				} else {
-					cmdutil.SuccessPrinter("Triggered reconcile successfully.")
+					return err
 				}
+				cmdutil.SuccessPrinter("Triggered reconcile successfully.")
 			}
 
 			return nil
