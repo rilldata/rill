@@ -58,7 +58,7 @@ func (c *connection) FindOrganizations(ctx context.Context) ([]*database.Organiz
 func (c *connection) FindOrganizationsForUser(ctx context.Context, userID string) ([]*database.Organization, error) {
 	var res []*database.Organization
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT o.* FROM orgs o JOIN users_orgs_roles uor ON o.id = uor.org_id
+		SELECT u.* FROM (SELECT o.* FROM orgs o JOIN users_orgs_roles uor ON o.id = uor.org_id
 		WHERE uor.user_id = $1
 		UNION
 		SELECT o.* FROM orgs o JOIN usergroups_orgs_roles ugor ON o.id = ugor.org_id
@@ -67,7 +67,7 @@ func (c *connection) FindOrganizationsForUser(ctx context.Context, userID string
 		UNION
 		SELECT o.* FROM orgs o JOIN projects p ON o.id = p.org_id
 		JOIN users_projects_roles upr ON p.id = upr.project_id
-		WHERE upr.user_id = $1
+		WHERE upr.user_id = $1) u order by u.name
 	`, userID)
 	if err != nil {
 		return nil, parseErr(err)

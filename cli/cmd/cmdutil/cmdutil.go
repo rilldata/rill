@@ -19,7 +19,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const formatLayout = "2006-01-02 15:04:05"
+const TsFormatLayout = "2006-01-02 15:04:05"
 
 type PreRunCheck func(cmd *cobra.Command, args []string) error
 
@@ -233,8 +233,8 @@ func toMemberRow(m *adminv1.Member) *member {
 		Name:      m.UserName,
 		Email:     m.UserEmail,
 		RoleName:  m.RoleName,
-		CreatedOn: m.CreatedOn.AsTime().Format(formatLayout),
-		UpdatedOn: m.UpdatedOn.AsTime().Format(formatLayout),
+		CreatedOn: m.CreatedOn.AsTime().Format(TsFormatLayout),
+		UpdatedOn: m.UpdatedOn.AsTime().Format(TsFormatLayout),
 	}
 }
 

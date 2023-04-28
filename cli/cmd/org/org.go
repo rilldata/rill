@@ -42,7 +42,7 @@ func toTable(organizations []*adminv1.Organization, defaultOrg string) []*organi
 func toRow(o *adminv1.Organization) *organization {
 	return &organization{
 		Name:      o.Name,
-		CreatedAt: o.CreatedOn.AsTime().String(),
+		CreatedAt: o.CreatedOn.AsTime().Format(cmdutil.TsFormatLayout),
 	}
 }
 
