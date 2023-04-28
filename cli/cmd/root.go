@@ -87,7 +87,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	// Check version
 	err := update.CheckVersion(ctx, cfg.Version.Number)
 	if err != nil {
-		return err
+		fmt.Printf("check version failed, Error: %v\n", err)
 	}
 	// Load admin token from .rill (may later be overridden by flag --api-token)
 	token, err := dotrill.GetAccessToken()
