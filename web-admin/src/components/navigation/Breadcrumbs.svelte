@@ -3,13 +3,14 @@
   import { page } from "$app/stores";
   import {
     createRuntimeServiceListCatalogEntries,
-    V1CatalogEntry,
+    createRuntimeServiceListFiles,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceListOrganizations,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
+  import { getDashboardListItemsFromFilesAndCatalogEntries } from "../projects/dashboards";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
   import OrganizationAvatar from "./OrganizationAvatar.svelte";
 
@@ -21,23 +22,37 @@
   $: projects = createAdminServiceListProjectsForOrganization(organization);
   $: isProjectPage = $page.route.id === "/[organization]/[project]";
 
-  let currentDashboard: V1CatalogEntry;
-  $: dashboards = createRuntimeServiceListCatalogEntries(
+  // Here, we compose the dashboard list via two separate runtime queries.
+  // We should create a custom hook to hide this complexity.
+  $: dashboardFiles = createRuntimeServiceListFiles(
+    $runtime?.instanceId,
+    {
+      glob: "dashboards/*.yaml",
+    },
+    {
+      query: {
+        enabled: !!project && !!$runtime?.instanceId,
+      },
+    }
+  );
+  $: dashboardCatalogEntries = createRuntimeServiceListCatalogEntries(
     $runtime?.instanceId,
     {
       type: "OBJECT_TYPE_METRICS_VIEW",
     },
     {
       query: {
+        placeholderData: undefined,
         enabled: !!project && !!$runtime?.instanceId,
-        select: (data) => {
-          currentDashboard = data?.entries?.find(
-            (entry) => entry.name === $page.params.dashboard
-          );
-          return data;
-        },
       },
     }
+  );
+  $: dashboardListItems = getDashboardListItemsFromFilesAndCatalogEntries(
+    $dashboardFiles.data?.paths,
+    $dashboardCatalogEntries.data?.entries
+  );
+  $: currentDashboard = dashboardListItems?.find(
+    (listing) => listing.name === $page.params.dashboard
   );
   $: isDashboardPage =
     $page.route.id === "/[organization]/[project]/[dashboard]";
@@ -55,6 +70,7 @@
             main: org.name,
             callback: () => goto(`/${org.name}`),
           }))}
+        menuKey={organization}
         onSelectMenuOption={(organization) => goto(`/${organization}`)}
       >
         <OrganizationAvatar {organization} slot="icon" />
@@ -71,20 +87,25 @@
             main: proj.name,
             callback: () => goto(`/${organization}/${proj.name}`),
           }))}
+        menuKey={project}
         onSelectMenuOption={(project) => goto(`/${organization}/${project}`)}
       />
     {/if}
     {#if currentDashboard}
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
-        label={currentDashboard.metricsView?.label || currentDashboard.name}
+        label={currentDashboard?.title || currentDashboard.name}
         isCurrentPage={isDashboardPage}
-        menuOptions={$dashboards.data?.entries?.length > 1 &&
-          $dashboards.data.entries.map((dash) => ({
-            key: dash.name,
-            main: dash.metricsView?.label || dash.name,
-            callback: () => goto(`/${organization}/${project}/${dash.name}`),
-          }))}
+        menuOptions={dashboardListItems?.length > 1 &&
+          dashboardListItems.map((listing) => {
+            return {
+              key: listing.name,
+              main: listing?.title || listing.name,
+              callback: () =>
+                goto(`/${organization}/${project}/${listing.name}`),
+            };
+          })}
+        menuKey={currentDashboard.name}
         onSelectMenuOption={(dashboard) =>
           goto(`/${organization}/${project}/${dashboard}`)}
       />
