@@ -1,9 +1,7 @@
 package docs
 
 import (
-	"fmt"
-
-	"github.com/rilldata/rill/cli/pkg/browser"
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
