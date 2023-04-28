@@ -17,7 +17,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 	renameCmd := &cobra.Command{
 		Use:   "rename",
 		Args:  cobra.NoArgs,
-		Short: "Rename an organization",
+		Short: "Rename organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
