@@ -364,6 +364,20 @@ func TestAdmin_RBAC(t *testing.T) {
 			require.Equal(t, e, membersResp.Invites[0].Email)
 			require.Equal(t, r, membersResp.Invites[0].Role)
 			require.Equal(t, adminUser.Email, membersResp.Invites[0].InvitedBy)
+
+			// clean up invite
+			_, err = tt.client.RemoveOrganizationMember(ctx, &adminv1.RemoveOrganizationMemberRequest{
+				Organization: adminOrg.Organization.Name,
+				Email:        e,
+			})
+			require.NoError(t, err)
+
+			// check pending invite again
+			membersResp, err = tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+				Organization: adminOrg.Organization.Name,
+			})
+			require.NoError(t, err)
+			require.Equal(t, 0, len(membersResp.Invites))
 		})
 	}
 
@@ -423,43 +437,6 @@ func TestAdmin_RBAC(t *testing.T) {
 				Role:         "viewer",
 			})
 			require.NoError(t, err)
-
-			// check deleting pending invite
-			e := "1@test.io"
-			r := "viewer"
-			addResp, err := tt.client.AddOrganizationMember(ctx, &adminv1.AddOrganizationMemberRequest{
-				Organization: adminOrg.Organization.Name,
-				Email:        e,
-				Role:         r,
-			})
-
-			require.NoError(t, err)
-			require.NotNil(t, addResp)
-			require.Equal(t, true, addResp.PendingSignup)
-
-			// check pending invite
-			membersResp, err := tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
-				Organization: adminOrg.Organization.Name,
-			})
-			require.NoError(t, err)
-			require.Equal(t, 1, len(membersResp.Invites))
-			require.Equal(t, e, membersResp.Invites[0].Email)
-			require.Equal(t, r, membersResp.Invites[0].Role)
-			require.Equal(t, adminUser.Email, membersResp.Invites[0].InvitedBy)
-
-			// delete the invite
-			_, err = tt.client.RemoveOrganizationMember(ctx, &adminv1.RemoveOrganizationMemberRequest{
-				Organization: adminOrg.Organization.Name,
-				Email:        e,
-			})
-			require.NoError(t, err)
-
-			// check pending invite
-			membersResp, err = tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
-				Organization: adminOrg.Organization.Name,
-			})
-			require.NoError(t, err)
-			require.Equal(t, 0, len(membersResp.Invites))
 		})
 	}
 
