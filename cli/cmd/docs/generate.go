@@ -18,14 +18,11 @@ func GenerateCmd(rootCmd *cobra.Command) *cobra.Command {
 	docsCmd := &cobra.Command{
 		Use:   "generate",
 		Short: "Generate CLI documentation",
-		Args:  cobra.MaximumNArgs(1),
+		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			dir := "docs/docs/references/CLI/"
-			if len(args) > 0 {
-				dir = args[0]
-			}
+			dir := args[0]
 			rootCmd.DisableAutoGenTag = true
-			err := GenMarkdownTree(rootCmd, dir)
+			err := genMarkdownTree(rootCmd, dir)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -34,7 +31,7 @@ func GenerateCmd(rootCmd *cobra.Command) *cobra.Command {
 	return docsCmd
 }
 
-func GenMarkdownTree(cmd *cobra.Command, dir string) error {
+func genMarkdownTree(cmd *cobra.Command, dir string) error {
 	identity := func(s string) string {
 		parts := strings.Split(s, "_")
 		last := &parts[len(parts)-1]
@@ -42,12 +39,10 @@ func GenMarkdownTree(cmd *cobra.Command, dir string) error {
 		return filepath.Join(parts...)
 	}
 	emptyStr := func(s string) string { return "" }
-	return GenMarkdownTreeCustom(cmd, dir, emptyStr, identity)
+	return genMarkdownTreeCustom(cmd, dir, emptyStr, identity)
 }
 
-// GenMarkdownTreeCustom is the the same as GenMarkdownTree, but
-// with custom filePrepender and linkHandler.
-func GenMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error {
+func genMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHandler func(string) string) error {
 	if cmd.Hidden {
 		return nil
 	}
@@ -62,7 +57,7 @@ func GenMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHa
 				return err
 			}
 		}
-		if err := GenMarkdownTreeCustom(c, sd, filePrepender, linkHandler); err != nil {
+		if err := genMarkdownTreeCustom(c, sd, filePrepender, linkHandler); err != nil {
 			return err
 		}
 	}
@@ -84,48 +79,10 @@ func GenMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHa
 		return err
 	}
 
-	return GenMarkdownCustom(cmd, f, linkHandler)
+	return genMarkdownCustom(cmd, f, linkHandler)
 }
 
-func hasSeeAlso(cmd *cobra.Command) bool {
-	if cmd.HasParent() {
-		return true
-	}
-	for _, c := range cmd.Commands() {
-		if !c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand() {
-			continue
-		}
-		return true
-	}
-	return false
-}
-
-func printOptions(buf *bytes.Buffer, cmd *cobra.Command, name string) error {
-	flags := cmd.NonInheritedFlags()
-	flags.SetOutput(buf)
-	if flags.HasAvailableFlags() {
-		buf.WriteString("### Flags\n\n```\n")
-		flags.PrintDefaults()
-		buf.WriteString("```\n\n")
-	}
-
-	parentFlags := cmd.InheritedFlags()
-	parentFlags.SetOutput(buf)
-	if parentFlags.HasAvailableFlags() {
-		buf.WriteString("### Global flags\n\n```\n")
-		parentFlags.PrintDefaults()
-		buf.WriteString("```\n\n")
-	}
-	return nil
-}
-
-type byName []*cobra.Command
-
-func (s byName) Len() int           { return len(s) }
-func (s byName) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s byName) Less(i, j int) bool { return s[i].Name() < s[j].Name() }
-
-func GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {
+func genMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {
 	cmd.InitDefaultHelpCmd()
 	cmd.InitDefaultHelpFlag()
 
@@ -191,3 +148,41 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 	_, err := buf.WriteTo(w)
 	return err
 }
+
+func hasSeeAlso(cmd *cobra.Command) bool {
+	if cmd.HasParent() {
+		return true
+	}
+	for _, c := range cmd.Commands() {
+		if !c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand() {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+func printOptions(buf *bytes.Buffer, cmd *cobra.Command, name string) error {
+	flags := cmd.NonInheritedFlags()
+	flags.SetOutput(buf)
+	if flags.HasAvailableFlags() {
+		buf.WriteString("### Flags\n\n```\n")
+		flags.PrintDefaults()
+		buf.WriteString("```\n\n")
+	}
+
+	parentFlags := cmd.InheritedFlags()
+	parentFlags.SetOutput(buf)
+	if parentFlags.HasAvailableFlags() {
+		buf.WriteString("### Global flags\n\n```\n")
+		parentFlags.PrintDefaults()
+		buf.WriteString("```\n\n")
+	}
+	return nil
+}
+
+type byName []*cobra.Command
+
+func (s byName) Len() int           { return len(s) }
+func (s byName) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s byName) Less(i, j int) bool { return s[i].Name() < s[j].Name() }
