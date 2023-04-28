@@ -42,7 +42,7 @@ func CheckAuth(cfg *config.Config) PreRunCheck {
 			return nil
 		}
 
-		return fmt.Errorf("not authenticated, please run 'rill auth login'")
+		return fmt.Errorf("not authenticated, please run 'rill login'")
 	}
 }
 
@@ -229,7 +229,6 @@ func toMemberTable(members []*adminv1.Member) []*member {
 
 func toMemberRow(m *adminv1.Member) *member {
 	return &member{
-		ID:        m.UserId,
 		Name:      m.UserName,
 		Email:     m.UserEmail,
 		RoleName:  m.RoleName,
@@ -239,7 +238,6 @@ func toMemberRow(m *adminv1.Member) *member {
 }
 
 type member struct {
-	ID        string `header:"id" json:"id"`
 	Name      string `header:"name" json:"display_name"`
 	Email     string `header:"email" json:"email"`
 	RoleName  string `header:"role_name" json:"role_name"`

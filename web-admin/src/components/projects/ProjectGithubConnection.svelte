@@ -18,7 +18,7 @@
 </script>
 
 {#if $proj.data}
-  <div class="flex flex-col gap-y-1 max-w-[340px]">
+  <div class="flex flex-col gap-y-1">
     <span class="uppercase text-gray-500 font-semibold text-[10px] leading-4"
       >Github</span
     >
@@ -26,7 +26,6 @@
       {#if isGithubConnected}
         <div class="flex items-center gap-x-1">
           <CheckCircle className="text-blue-500" size={"16px"} />
-          <span>Connected to </span>
           <a
             href={$proj.data?.project?.githubUrl}
             class="flex items-center gap-x-1 text-gray-800 flex-1 truncate"

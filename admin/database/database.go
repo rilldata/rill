@@ -99,10 +99,10 @@ type DB interface {
 	DeleteUserAuthToken(ctx context.Context, id string) error
 
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
-	FindDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
+	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
 	InsertDeviceAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*DeviceAuthCode, error)
 	DeleteDeviceAuthCode(ctx context.Context, deviceCode string) error
-	UpdateDeviceAuthCode(ctx context.Context, userCode, userID string, state DeviceAuthCodeState) error
+	UpdateDeviceAuthCode(ctx context.Context, id, userID string, state DeviceAuthCodeState) error
 
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
@@ -128,12 +128,14 @@ type DB interface {
 	InsertOrganizationInvite(ctx context.Context, email, orgID, roleID, invitedByID string) error
 	DeleteOrganizationInvite(ctx context.Context, id string) error
 	CountInvitesForOrganization(ctx context.Context, orgID string) (int, error)
+	UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error
 
 	FindProjectInvites(ctx context.Context, projectID string) ([]*Invite, error)
 	FindProjectInvitesByEmail(ctx context.Context, userEmail string) ([]*ProjectInvite, error)
 	FindProjectInvite(ctx context.Context, projectID, userEmail string) (*ProjectInvite, error)
 	InsertProjectInvite(ctx context.Context, email, projectID, roleID, invitedByID string) error
 	DeleteProjectInvite(ctx context.Context, id string) error
+	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.

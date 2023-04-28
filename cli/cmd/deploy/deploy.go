@@ -262,12 +262,12 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			// Success!
 			success.Printf("Created project \"%s/%s\". Use \"rill project rename\" to change name if required.\n\n", cfg.Org, res.Project.Name)
 			success.Printf("Rill projects deploy continuously when you push changes to Github.\n")
-			if res.ProjectUrl != "" {
-				success.Printf("Your project can be accessed at: %s\n", res.ProjectUrl)
+			if res.Project.FrontendUrl != "" {
+				success.Printf("Your project can be accessed at: %s\n", res.Project.FrontendUrl)
 				// TODO :: add a doc link here
 				success.Printf("Opening project in browser...\n")
 				time.Sleep(3 * time.Second)
-				_ = browser.Open(res.ProjectUrl)
+				_ = browser.Open(res.Project.FrontendUrl)
 			}
 
 			tel.Emit(telemetry.ActionDeploySuccess)
@@ -277,7 +277,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 	deployCmd.Flags().SortFlags = false
 	deployCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
-	deployCmd.Flags().StringVar(&orgName, "org", "", "Org to deploy project (default: default org)")
+	deployCmd.Flags().StringVar(&orgName, "org", cfg.Org, "Org to deploy project")
 	deployCmd.Flags().IntVar(&slots, "prod-slots", 2, "Slots to allocate for production deployments")
 	deployCmd.Flags().StringVar(&description, "description", "", "Project description")
 	deployCmd.Flags().StringVar(&region, "region", "", "Deployment region")

@@ -28,6 +28,8 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		return nil, err
 	}
 
+	// User does not exist. Creating a new user.
+
 	// Get user invites if exists
 	orgInvites, err := s.DB.FindOrganizationInvitesByEmail(ctx, email)
 	if err != nil {
@@ -44,7 +46,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	// User does not exist. Creating a new user.
+	// Create user
 	user, err = s.DB.InsertUser(ctx, &database.InsertUserOptions{
 		Email:               email,
 		DisplayName:         name,
@@ -128,20 +130,14 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 }
 
 func (s *Service) InviteUserToOrganization(ctx context.Context, email, inviterID, orgID, roleID, orgName, roleName string) error {
-	// Validate email address
-	_, err := mail.ParseAddress(email)
-	if err != nil {
-		return fmt.Errorf("invalid user email address %q", email)
-	}
-
 	// Create invite
-	err = s.DB.InsertOrganizationInvite(ctx, email, orgID, roleID, inviterID)
+	err := s.DB.InsertOrganizationInvite(ctx, email, orgID, roleID, inviterID)
 	if err != nil {
 		return err
 	}
 
 	// Send invitation email
-	err = s.email.SendOrganizationInvite(email, "", orgName, roleName)
+	err = s.Email.SendOrganizationInvite(email, "", orgName, roleName)
 	if err != nil {
 		return err
 	}
@@ -150,20 +146,14 @@ func (s *Service) InviteUserToOrganization(ctx context.Context, email, inviterID
 }
 
 func (s *Service) InviteUserToProject(ctx context.Context, email, inviterID, projectID, roleID, projectName, roleName string) error {
-	// Validate email address
-	_, err := mail.ParseAddress(email)
-	if err != nil {
-		return fmt.Errorf("invalid user email address %q", email)
-	}
-
 	// Create invite
-	err = s.DB.InsertProjectInvite(ctx, email, projectID, roleID, inviterID)
+	err := s.DB.InsertProjectInvite(ctx, email, projectID, roleID, inviterID)
 	if err != nil {
 		return err
 	}
 
 	// Send invitation email
-	err = s.email.SendProjectInvite(email, "", projectName, roleName)
+	err = s.Email.SendProjectInvite(email, "", projectName, roleName)
 	if err != nil {
 		return err
 	}
