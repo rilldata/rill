@@ -96,7 +96,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.AddCommand(source.SourceCmd(cfg))
 	rootCmd.AddCommand(admin.AdminCmd(cfg))
 	rootCmd.AddCommand(runtime.RuntimeCmd(cfg))
-	rootCmd.AddCommand(docs.DocsCmd())
+	rootCmd.AddCommand(docs.DocsCmd(cfg, rootCmd))
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(versioncmd.VersionCmd())
 
