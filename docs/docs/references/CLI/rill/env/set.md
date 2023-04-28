@@ -1,9 +1,15 @@
-## rill project members list
+## rill env set
 
-List Members
+Set variable
 
 ```
-rill project members list <project-name> [flags]
+rill env set <key> <value> [flags]
+```
+
+### Flags
+
+```
+      --project string   
 ```
 
 ### Global flags
@@ -12,10 +18,10 @@ rill project members list <project-name> [flags]
       --api-token string   Token for authenticating with the admin API
       --api-url string     Base URL for the admin API (default "https://admin.rilldata.io")
   -h, --help               Print usage
-      --org string         Organization Name
+      --interactive        Prompt for missing required parameters (default true)
 ```
 
 ### SEE ALSO
 
-* [rill project members](members.md)	 - Members
+* [rill env](env.md)	 - Manage variables for a project
 

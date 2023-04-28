@@ -1,9 +1,18 @@
-## rill project list
+## rill user set-role
 
-List
+Set Role
 
 ```
-rill project list [flags]
+rill user set-role [flags]
+```
+
+### Flags
+
+```
+      --email string     Email of the user
+      --org string       Organization (default "another")
+      --project string   Project
+      --role string      Role of the user [admin, viewer]
 ```
 
 ### Global flags
@@ -13,10 +22,9 @@ rill project list [flags]
       --api-url string     Base URL for the admin API (default "https://admin.rilldata.io")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
-      --org string         Organization Name (default "another")
 ```
 
 ### SEE ALSO
 
-* [rill project](project.md)	 - Manage projects
+* [rill user](user.md)	 - Manage users
 

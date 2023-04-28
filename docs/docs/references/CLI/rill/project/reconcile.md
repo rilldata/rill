@@ -1,9 +1,19 @@
-## rill project list
+## rill project reconcile
 
-List
+Send trigger to deployment
 
 ```
-rill project list [flags]
+rill project reconcile [flags]
+```
+
+### Flags
+
+```
+      --project string           Project name
+      --path string              Project directory (default ".")
+      --refresh                  Refresh all sources
+      --refresh-source strings   Refresh specific source(s)
+      --reset                    Reset and redeploy the project from scratch
 ```
 
 ### Global flags

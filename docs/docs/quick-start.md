@@ -54,7 +54,7 @@ When you run `rill start`, it parses your project and ingests any missing data s
 
 ## Editing and sharing a project
 
-You can now use the Rill web app to add or edit data sources, data models, and dashboards. All changes you make in the UI and [CLI](./references/CLI/CLI.md) are versionable because they are reflected as [Rill project files](./references/project-files.md) stored on disk. You can share your Rill project files with others by pushing to a shared repository, and they'll be able to completely recreate your project just by running `rill start`.
+You can now use the Rill web app to add or edit data sources, data models, and dashboards. All changes you make in the UI and [CLI](./references/cli/cli.md) are versionable because they are reflected as [Rill project files](./references/project-files.md) stored on disk. You can share your Rill project files with others by pushing to a shared repository, and they'll be able to completely recreate your project just by running `rill start`.
 
 Have fun exploring Rill!
 

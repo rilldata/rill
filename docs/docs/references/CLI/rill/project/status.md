@@ -3,7 +3,14 @@
 Status
 
 ```
-rill project status <project-name> [flags]
+rill project status [flags]
+```
+
+### Flags
+
+```
+      --path string      Project directory (default ".")
+      --project string   Name
 ```
 
 ### Global flags
@@ -12,7 +19,8 @@ rill project status <project-name> [flags]
       --api-token string   Token for authenticating with the admin API
       --api-url string     Base URL for the admin API (default "https://admin.rilldata.io")
   -h, --help               Print usage
-      --org string         Organization Name
+      --interactive        Prompt for missing required parameters (default true)
+      --org string         Organization Name (default "another")
 ```
 
 ### SEE ALSO

@@ -3,7 +3,14 @@
 Rename
 
 ```
-rill org rename <from-org-name> <to-org-name> [flags]
+rill org rename [flags]
+```
+
+### Flags
+
+```
+      --org string        Current Org Name (default "another")
+      --new-name string   New Org Name
 ```
 
 ### Global flags
@@ -12,6 +19,7 @@ rill org rename <from-org-name> <to-org-name> [flags]
       --api-token string   Token for authenticating with the admin API
       --api-url string     Base URL for the admin API (default "https://admin.rilldata.io")
   -h, --help               Print usage
+      --interactive        Prompt for missing required parameters (default true)
 ```
 
 ### SEE ALSO

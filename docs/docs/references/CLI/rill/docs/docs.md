@@ -1,16 +1,20 @@
 ## rill docs
 
-Manage documentation
+Open docs.rilldata.com
+
+```
+rill docs [flags]
+```
 
 ### Global flags
 
 ```
-  -h, --help   Print usage
+  -h, --help          Print usage
+      --interactive   Prompt for missing required parameters (default true)
 ```
 
 ### SEE ALSO
 
 * [rill](../rill.md)	 - Rill CLI
 * [rill docs generate](generate.md)	 - Generate CLI documentation
-* [rill docs open](open.md)	 - Open docs.rilldata.com
 

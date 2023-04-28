@@ -1,9 +1,16 @@
-## rill project list
+## rill env configure
 
-List
+Configures connector variables for all sources
 
 ```
-rill project list [flags]
+rill env configure [flags]
+```
+
+### Flags
+
+```
+      --path string      Project directory (default ".")
+      --project string   
 ```
 
 ### Global flags
@@ -13,10 +20,9 @@ rill project list [flags]
       --api-url string     Base URL for the admin API (default "https://admin.rilldata.io")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
-      --org string         Organization Name (default "another")
 ```
 
 ### SEE ALSO
 
-* [rill project](project.md)	 - Manage projects
+* [rill env](env.md)	 - Manage variables for a project
 

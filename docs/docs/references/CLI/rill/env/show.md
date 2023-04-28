@@ -1,9 +1,15 @@
-## rill project list
+## rill env show
 
-List
+Show credentials and other variables
 
 ```
-rill project list [flags]
+rill env show [flags]
+```
+
+### Flags
+
+```
+      --project string   
 ```
 
 ### Global flags
@@ -13,10 +19,9 @@ rill project list [flags]
       --api-url string     Base URL for the admin API (default "https://admin.rilldata.io")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
-      --org string         Organization Name (default "another")
 ```
 
 ### SEE ALSO
 
-* [rill project](project.md)	 - Manage projects
+* [rill env](env.md)	 - Manage variables for a project
 

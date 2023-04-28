@@ -1,6 +1,10 @@
-## rill org
+## rill logout
 
-Manage organisations
+Logout of the Rill API
+
+```
+rill logout [flags]
+```
 
 ### Flags
 
@@ -18,11 +22,5 @@ Manage organisations
 
 ### SEE ALSO
 
-* [rill](../rill.md)	 - Rill CLI
-* [rill org create](create.md)	 - Create
-* [rill org delete](delete.md)	 - Delete
-* [rill org edit](edit.md)	 - Edit
-* [rill org list](list.md)	 - List
-* [rill org rename](rename.md)	 - Rename
-* [rill org switch](switch.md)	 - Switch
+* [rill](rill.md)	 - Rill CLI
 

@@ -1,6 +1,6 @@
-## rill org
+## rill user
 
-Manage organisations
+Manage users
 
 ### Flags
 
@@ -19,10 +19,8 @@ Manage organisations
 ### SEE ALSO
 
 * [rill](../rill.md)	 - Rill CLI
-* [rill org create](create.md)	 - Create
-* [rill org delete](delete.md)	 - Delete
-* [rill org edit](edit.md)	 - Edit
-* [rill org list](list.md)	 - List
-* [rill org rename](rename.md)	 - Rename
-* [rill org switch](switch.md)	 - Switch
+* [rill user add](add.md)	 - Add
+* [rill user list](list.md)	 - List
+* [rill user remove](remove.md)	 - Remove
+* [rill user set-role](set-role.md)	 - Set Role
 

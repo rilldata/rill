@@ -1,9 +1,16 @@
-## rill project list
+## rill user list
 
 List
 
 ```
-rill project list [flags]
+rill user list [flags]
+```
+
+### Flags
+
+```
+      --org string       Organization (default "another")
+      --project string   Project
 ```
 
 ### Global flags
@@ -13,10 +20,9 @@ rill project list [flags]
       --api-url string     Base URL for the admin API (default "https://admin.rilldata.io")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
-      --org string         Organization Name (default "another")
 ```
 
 ### SEE ALSO
 
-* [rill project](project.md)	 - Manage projects
+* [rill user](user.md)	 - Manage users
 

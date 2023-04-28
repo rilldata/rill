@@ -1,6 +1,6 @@
-## rill org
+## rill env
 
-Manage organisations
+Manage variables for a project
 
 ### Flags
 
@@ -19,10 +19,8 @@ Manage organisations
 ### SEE ALSO
 
 * [rill](../rill.md)	 - Rill CLI
-* [rill org create](create.md)	 - Create
-* [rill org delete](delete.md)	 - Delete
-* [rill org edit](edit.md)	 - Edit
-* [rill org list](list.md)	 - List
-* [rill org rename](rename.md)	 - Rename
-* [rill org switch](switch.md)	 - Switch
+* [rill env configure](configure.md)	 - Configures connector variables for all sources
+* [rill env rm](rm.md)	 - Remove variable
+* [rill env set](set.md)	 - Set variable
+* [rill env show](show.md)	 - Show credentials and other variables
 

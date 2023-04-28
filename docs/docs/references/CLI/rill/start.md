@@ -3,7 +3,7 @@
 Build project and start web app
 
 ```
-rill start [flags]
+rill start [<path>] [flags]
 ```
 
 ### Flags
@@ -20,12 +20,14 @@ rill start [flags]
       --strict              Exit if project has build errors
       --log-format string   Log format (options: "console", "json") (default "console")
   -e, --env strings         Set project variables
+      --example string      Name of example project (default "default")
 ```
 
 ### Global flags
 
 ```
-  -h, --help   Print usage
+  -h, --help          Print usage
+      --interactive   Prompt for missing required parameters (default true)
 ```
 
 ### SEE ALSO

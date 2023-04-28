@@ -3,7 +3,7 @@
 Initialize a new project
 
 ```
-rill init [flags]
+rill init [<path>] [flags]
 ```
 
 ### Flags
@@ -20,7 +20,8 @@ rill init [flags]
 ### Global flags
 
 ```
-  -h, --help   Print usage
+  -h, --help          Print usage
+      --interactive   Prompt for missing required parameters (default true)
 ```
 
 ### SEE ALSO

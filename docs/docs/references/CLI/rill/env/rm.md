@@ -1,9 +1,15 @@
-## rill org show
+## rill env rm
 
-Show
+Remove variable
 
 ```
-rill org show [<org-name>] [flags]
+rill env rm <key> [flags]
+```
+
+### Flags
+
+```
+      --project string   
 ```
 
 ### Global flags
@@ -12,9 +18,10 @@ rill org show [<org-name>] [flags]
       --api-token string   Token for authenticating with the admin API
       --api-url string     Base URL for the admin API (default "https://admin.rilldata.io")
   -h, --help               Print usage
+      --interactive        Prompt for missing required parameters (default true)
 ```
 
 ### SEE ALSO
 
-* [rill org](org.md)	 - Manage organisations
+* [rill env](env.md)	 - Manage variables for a project
 

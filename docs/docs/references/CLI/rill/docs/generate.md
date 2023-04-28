@@ -9,10 +9,11 @@ rill docs generate [flags]
 ### Global flags
 
 ```
-  -h, --help   Print usage
+  -h, --help          Print usage
+      --interactive   Prompt for missing required parameters (default true)
 ```
 
 ### SEE ALSO
 
-* [rill docs](docs.md)	 - Manage documentation
+* [rill docs](docs.md)	 - Open docs.rilldata.com
 

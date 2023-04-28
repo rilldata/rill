@@ -13,7 +13,8 @@ rill version [flags]
 ### Global flags
 
 ```
-  -h, --help   Print usage
+  -h, --help          Print usage
+      --interactive   Prompt for missing required parameters (default true)
 ```
 
 ### SEE ALSO
