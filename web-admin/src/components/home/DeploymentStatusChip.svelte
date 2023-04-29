@@ -1,7 +1,7 @@
 <script lang="ts">
   import { V1DeploymentStatus } from "@rilldata/web-admin/client";
   import { getDashboardsForProject } from "@rilldata/web-admin/components/projects/dashboards";
-  import { invalidateProjectQueries } from "@rilldata/web-admin/components/projects/invalidations";
+  import { invalidateDashboardsQueries } from "@rilldata/web-admin/components/projects/invalidations";
   import { useProject } from "@rilldata/web-admin/components/projects/use-project";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
@@ -38,7 +38,7 @@
   async function getDashboardsAndInvalidate() {
     const dashboardListItems = await getDashboardsForProject($proj.data);
     const dashboardNames = dashboardListItems.map((listing) => listing.name);
-    return invalidateProjectQueries(queryClient, dashboardNames);
+    return invalidateDashboardsQueries(queryClient, dashboardNames);
   }
 
   type StatusDisplay = {

@@ -5,7 +5,7 @@
     getDashboardListItemsFromFilesAndCatalogEntries,
     getDashboardsForProject,
   } from "@rilldata/web-admin/components/projects/dashboards";
-  import { invalidateProjectQueries } from "@rilldata/web-admin/components/projects/invalidations";
+  import { invalidateDashboardsQueries } from "@rilldata/web-admin/components/projects/invalidations";
   import { useProject } from "@rilldata/web-admin/components/projects/use-project";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import {
@@ -49,7 +49,7 @@
   async function getDashboardsAndInvalidate() {
     const dashboardListings = await getDashboardsForProject($project.data);
     const dashboardNames = dashboardListings.map((listing) => listing.name);
-    return invalidateProjectQueries(queryClient, dashboardNames);
+    return invalidateDashboardsQueries(queryClient, dashboardNames);
   }
 
   // Here we check to see if a dashboard is valid by looking at `DashboardListItem.isValid`
