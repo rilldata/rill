@@ -13,7 +13,7 @@
 {:else if $projs.data && $projs.data.projects?.length > 0}
   <ol>
     {#each $projs.data.projects as proj}
-      <li class="ml-2">
+      <li class="ml-2 mb-2">
         <a
           class="flex max-w-fit items-center gap-x-1 mb-1 hover:underline hover:text-gray-700"
           href="{organization}/{proj.name}"

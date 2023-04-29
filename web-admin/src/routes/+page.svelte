@@ -22,12 +22,12 @@
 </svelte:head>
 
 <AuthRedirect>
-  <section class="flex flex-col w-4/5 mx-auto h-2/5">
-    <h1 class="text-4xl leading-10 font-light mb-2 my-auto">
+  <section class="flex flex-col w-4/5 mx-auto h-5/6 my-36">
+    <h1 class="text-4xl leading-10 font-light mb-2">
       Hi {$user.data.user.displayName}!
     </h1>
     <div class="flex flex-row">
-      <div class="w-2/3">
+      <div class="w-1/2">
         {#if $orgs.isSuccess}
           {#if $orgs.data.organizations.length === 0}
             <WelcomeMessage />
@@ -39,9 +39,7 @@
           {/if}
         {/if}
       </div>
-      <div class="w-1/3">
-        <HomeShareCTA />
-      </div>
+      <HomeShareCTA />
     </div>
   </section>
 </AuthRedirect>

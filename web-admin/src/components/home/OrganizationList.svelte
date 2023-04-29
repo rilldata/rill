@@ -15,9 +15,3 @@
     {/each}
   </ol>
 {/if}
-
-<style>
-  ol:last-child {
-    margin-bottom: auto;
-  }
-</style>
