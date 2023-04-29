@@ -11,6 +11,8 @@
   import {
     createRuntimeServiceListCatalogEntries,
     createRuntimeServiceListFiles,
+    getRuntimeServiceListCatalogEntriesQueryKey,
+    getRuntimeServiceListFilesQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -43,6 +45,18 @@
 
     if (projectWasNotOk && isProjectOK) {
       getDashboardsAndInvalidate();
+
+      // Invalidate the queries used to assess dashboard validity
+      queryClient.invalidateQueries(
+        getRuntimeServiceListFilesQueryKey($runtime?.instanceId, {
+          glob: "dashboards/*.yaml",
+        })
+      );
+      queryClient.invalidateQueries(
+        getRuntimeServiceListCatalogEntriesQueryKey($runtime?.instanceId, {
+          type: "OBJECT_TYPE_METRICS_VIEW",
+        })
+      );
     }
   }
 

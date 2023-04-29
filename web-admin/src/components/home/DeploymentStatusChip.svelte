@@ -8,6 +8,11 @@
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import {
+    getRuntimeServiceListCatalogEntriesQueryKey,
+    getRuntimeServiceListFilesQueryKey,
+  } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { SvelteComponent } from "svelte";
 
@@ -32,6 +37,18 @@
       deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_OK
     ) {
       getDashboardsAndInvalidate();
+
+      // Invalidate the queries used to compose the dashboard list in the breadcrumbs
+      queryClient.invalidateQueries(
+        getRuntimeServiceListFilesQueryKey($runtime?.instanceId, {
+          glob: "dashboards/*.yaml",
+        })
+      );
+      queryClient.invalidateQueries(
+        getRuntimeServiceListCatalogEntriesQueryKey($runtime?.instanceId, {
+          type: "OBJECT_TYPE_METRICS_VIEW",
+        })
+      );
     }
   }
 
