@@ -25,12 +25,19 @@
 {:else if dashboardListItems?.length > 0}
   <ol>
     {#each dashboardListItems as dashboardListItem}
-      <li class="mb-1">
-        <a
-          href="/{organization}/{project}/{dashboardListItem.name}"
-          class="text-gray-700 hover:underline text-xs font-medium leading-4 {!dashboardListItem.isValid &&
-            'italic'}">{dashboardListItem?.title || dashboardListItem.name}</a
-        >
+      <li class="mb-1 text-xs font-medium leading-4">
+        {#if dashboardListItem.isValid}
+          <a
+            href="/{organization}/{project}/{dashboardListItem.name}"
+            class="text-gray-700 hover:underline"
+          >
+            {dashboardListItem?.title || dashboardListItem.name}
+          </a>
+        {:else}
+          <span class="text-gray-400"
+            >{dashboardListItem?.title || dashboardListItem.name}
+          </span>
+        {/if}
       </li>
     {/each}
   </ol>
