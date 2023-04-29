@@ -1,13 +1,18 @@
 <script lang="ts">
   import { V1DeploymentStatus } from "@rilldata/web-admin/client";
   import { getDashboardsForProject } from "@rilldata/web-admin/components/projects/dashboards";
-  import { invalidateProjectQueries } from "@rilldata/web-admin/components/projects/invalidations";
+  import { invalidateDashboardsQueries } from "@rilldata/web-admin/components/projects/invalidations";
   import { useProject } from "@rilldata/web-admin/components/projects/use-project";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import {
+    getRuntimeServiceListCatalogEntriesQueryKey,
+    getRuntimeServiceListFilesQueryKey,
+  } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { SvelteComponent } from "svelte";
 
@@ -32,14 +37,25 @@
       deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_OK
     ) {
       getDashboardsAndInvalidate();
+
+      // Invalidate the queries used to compose the dashboard list in the breadcrumbs
+      queryClient.invalidateQueries(
+        getRuntimeServiceListFilesQueryKey($runtime?.instanceId, {
+          glob: "dashboards/*.yaml",
+        })
+      );
+      queryClient.invalidateQueries(
+        getRuntimeServiceListCatalogEntriesQueryKey($runtime?.instanceId, {
+          type: "OBJECT_TYPE_METRICS_VIEW",
+        })
+      );
     }
   }
 
   async function getDashboardsAndInvalidate() {
-    return invalidateProjectQueries(
-      queryClient,
-      await getDashboardsForProject($proj.data)
-    );
+    const dashboardListItems = await getDashboardsForProject($proj.data);
+    const dashboardNames = dashboardListItems.map((listing) => listing.name);
+    return invalidateDashboardsQueries(queryClient, dashboardNames);
   }
 
   type StatusDisplay = {
