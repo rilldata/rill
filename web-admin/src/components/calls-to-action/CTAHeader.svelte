@@ -1,8 +1,16 @@
 <script lang="ts">
-  export let fontSizeClass = "text-xl";
-  export let fontWeightClass = "font-normal";
+  export let variant: "standard" | "bold" = "standard";
+
+  function getVariantClass(variant: string) {
+    switch (variant) {
+      case "standard":
+        return "text-xl font-normal";
+      case "bold":
+        return "text-lg font-semibold";
+    }
+  }
 </script>
 
-<h1 class="{fontSizeClass} {fontWeightClass} text-gray-800">
+<h1 class="{getVariantClass(variant)} text-gray-800">
   <slot />
 </h1>
