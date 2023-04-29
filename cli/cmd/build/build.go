@@ -16,8 +16,9 @@ func BuildCmd(cfg *config.Config) *cobra.Command {
 	var variables []string
 
 	buildCmd := &cobra.Command{
-		Use:   "build",
-		Short: "Build project without starting web app",
+		Use:    "build",
+		Short:  "Build project without starting web app",
+		Hidden: !cfg.IsDev(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, local.LogFormatConsole, variables)
 			if err != nil {
@@ -40,7 +41,6 @@ func BuildCmd(cfg *config.Config) *cobra.Command {
 	flags := buildCmd.Flags()
 	flags.SortFlags = false
 	flags.StringVar(&projectPath, "project", ".", "Project directory")
-	_ = flags.MarkHidden("project")
 	flags.StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	flags.StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
 	flags.BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
