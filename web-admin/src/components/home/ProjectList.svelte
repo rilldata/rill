@@ -11,15 +11,15 @@
 {#if $projs.data && $projs.data.projects?.length === 0}
   <p class="text-gray-500 text-xs">This organization has no projects yet.</p>
 {:else if $projs.data && $projs.data.projects?.length > 0}
-  <ol>
+  <ol class="space-y-3 px-3 border-l border-gray-300">
     {#each $projs.data.projects as proj}
-      <li class="ml-2 mb-2">
+      <li>
         <a
           class="flex max-w-fit items-center gap-x-1 mb-1 hover:underline hover:text-gray-700"
           href="{organization}/{proj.name}"
         >
           <DeploymentStatusChip {organization} project={proj.name} iconOnly />
-          <h3 class="text-gray-500 font-semibold" style="font-size: 10px;">
+          <h3 class="text-gray-500 font-semibold text-[10px]">
             {proj.name.toUpperCase()}
           </h3>
         </a>

@@ -32,7 +32,7 @@
           {#if $orgs.data.organizations.length === 0}
             <WelcomeMessage />
           {:else}
-            <h3 class="text-base leading-6 font-normal text-gray-500 mb-2">
+            <h3 class="text-base leading-6 font-normal text-gray-500 mb-3">
               Check out your dashboards below.
             </h3>
             <OrganizationList />
