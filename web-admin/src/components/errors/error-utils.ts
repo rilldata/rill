@@ -36,7 +36,7 @@ function createErrorStoreStateFromAxiosError(
       header: "Organization not found",
       body: "The organization you requested could not be found. Please check that you have provided a valid organization name.",
     };
-  } else if (msg === "proj not found") {
+  } else if (msg === "project not found") {
     return {
       statusCode: error.response.status,
       header: "Project not found",
