@@ -121,6 +121,18 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   priority?: number;
 };
 
+export type QueryServiceMetricsViewComparisonToplistBody = {
+  dimensionName?: string;
+  measureNames?: string[];
+  baseTimeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  sort?: V1MetricsViewComparisonSort[];
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+};
+
 export type QueryServiceColumnDescriptiveStatisticsParams = {
   columnName?: string;
   priority?: number;
@@ -247,12 +259,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -264,6 +270,11 @@ export interface V1TimeRangeSummary {
   min?: string;
   max?: string;
   interval?: TimeRangeSummaryInterval;
+}
+
+export interface V1TimeRange {
+  start?: string;
+  end?: string;
 }
 
 export type V1TimeGrain = typeof V1TimeGrain[keyof typeof V1TimeGrain];
@@ -280,6 +291,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_MONTH: "TIME_GRAIN_MONTH",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -512,16 +529,6 @@ export interface V1MetricsViewTotalsResponse {
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
-export interface V1MetricsViewToplistResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewToplistResponseDataItem[];
-}
-
-export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1TimeSeriesValue[];
-}
-
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
@@ -532,10 +539,44 @@ export interface V1MetricsViewFilter {
   exclude?: MetricsViewFilterCond[];
 }
 
+export interface V1MetricsViewComparisonValue {
+  measureName?: string;
+  baseValue?: unknown;
+  comparisonValue?: unknown;
+  deltaAbs?: number;
+  deltaRel?: number;
+}
+
+export interface V1MetricsViewComparisonSort {
+  measureName?: string;
+  ascending?: boolean;
+  type?: V1ComparisonSortType;
+}
+
+export interface V1MetricsViewComparisonRow {
+  dimensionName?: string;
+  dimensionValue?: unknown;
+  measureValues?: V1MetricsViewComparisonValue[];
+}
+
+export interface V1MetricsViewCompareToplistResponse {
+  data?: V1MetricsViewComparisonRow[];
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
+}
+
+export interface V1MetricsViewToplistResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewToplistResponseDataItem[];
+}
+
+export interface V1MetricsViewTimeSeriesResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1TimeSeriesValue[];
 }
 
 export interface V1MetricsView {
@@ -685,6 +726,18 @@ export interface V1Connector {
   description?: string;
   properties?: ConnectorProperty[];
 }
+
+export type V1ComparisonSortType =
+  typeof V1ComparisonSortType[keyof typeof V1ComparisonSortType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ComparisonSortType = {
+  COMPARISON_SORT_TYPE_UNSPECIFIED: "COMPARISON_SORT_TYPE_UNSPECIFIED",
+  COMPARISON_SORT_TYPE_COMPARISON_VALUE:
+    "COMPARISON_SORT_TYPE_COMPARISON_VALUE",
+  COMPARISON_SORT_TYPE_BASE_VALUE: "COMPARISON_SORT_TYPE_BASE_VALUE",
+  COMPARISON_SORT_TYPE_DELTA: "COMPARISON_SORT_TYPE_DELTA",
+} as const;
 
 export interface V1ColumnTopKResponse {
   categoricalSummary?: V1CategoricalSummary;

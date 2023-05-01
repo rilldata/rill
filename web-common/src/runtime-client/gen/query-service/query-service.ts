@@ -21,6 +21,8 @@ import type {
   QueryServiceTableColumnsParams,
   V1ColumnDescriptiveStatisticsResponse,
   QueryServiceColumnDescriptiveStatisticsParams,
+  V1MetricsViewCompareToplistResponse,
+  QueryServiceMetricsViewComparisonToplistBody,
   V1MetricsViewTimeSeriesResponse,
   QueryServiceMetricsViewTimeSeriesBody,
   V1MetricsViewToplistResponse,
@@ -280,6 +282,72 @@ export const createQueryServiceColumnDescriptiveStatistics = <
   return query;
 };
 
+export const queryServiceMetricsViewComparisonToplist = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewComparisonToplistBody: QueryServiceMetricsViewComparisonToplistBody
+) => {
+  return httpClient<V1MetricsViewCompareToplistResponse>({
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/compare-toplist`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceMetricsViewComparisonToplistBody,
+  });
+};
+
+export type QueryServiceMetricsViewComparisonToplistMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>
+  >;
+export type QueryServiceMetricsViewComparisonToplistMutationBody =
+  QueryServiceMetricsViewComparisonToplistBody;
+export type QueryServiceMetricsViewComparisonToplistMutationError = RpcStatus;
+
+export const createQueryServiceMetricsViewComparisonToplist = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>,
+    TError,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewComparisonToplistBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewComparisonToplistBody;
+    }
+  > = (props) => {
+    const { instanceId, metricsViewName, data } = props ?? {};
+
+    return queryServiceMetricsViewComparisonToplist(
+      instanceId,
+      metricsViewName,
+      data
+    );
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>,
+    TError,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewComparisonToplistBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary MetricsViewTimeSeries returns time series for the measures in the metrics view.
 It's a convenience API for querying a metrics view.

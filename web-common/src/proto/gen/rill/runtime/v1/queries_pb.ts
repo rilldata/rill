@@ -9,6 +9,38 @@ import { StructType } from "./schema_pb.js";
 import { TimeGrain } from "./catalog_pb.js";
 
 /**
+ * @generated from enum rill.runtime.v1.ComparisonSortType
+ */
+export enum ComparisonSortType {
+  /**
+   * @generated from enum value: COMPARISON_SORT_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: COMPARISON_SORT_TYPE_COMPARISON_VALUE = 1;
+   */
+  COMPARISON_VALUE = 1,
+
+  /**
+   * @generated from enum value: COMPARISON_SORT_TYPE_BASE_VALUE = 2;
+   */
+  BASE_VALUE = 2,
+
+  /**
+   * @generated from enum value: COMPARISON_SORT_TYPE_DELTA = 3;
+   */
+  DELTA = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(ComparisonSortType)
+proto3.util.setEnumType(ComparisonSortType, "rill.runtime.v1.ComparisonSortType", [
+  { no: 0, name: "COMPARISON_SORT_TYPE_UNSPECIFIED" },
+  { no: 1, name: "COMPARISON_SORT_TYPE_COMPARISON_VALUE" },
+  { no: 2, name: "COMPARISON_SORT_TYPE_BASE_VALUE" },
+  { no: 3, name: "COMPARISON_SORT_TYPE_DELTA" },
+]);
+
+/**
  * @generated from enum rill.runtime.v1.HistogramMethod
  */
 export enum HistogramMethod {
@@ -297,6 +329,342 @@ export class MetricsViewToplistResponse extends Message<MetricsViewToplistRespon
 
   static equals(a: MetricsViewToplistResponse | PlainMessage<MetricsViewToplistResponse> | undefined, b: MetricsViewToplistResponse | PlainMessage<MetricsViewToplistResponse> | undefined): boolean {
     return proto3.util.equals(MetricsViewToplistResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewCompareToplistRequest
+ */
+export class MetricsViewCompareToplistRequest extends Message<MetricsViewCompareToplistRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string metrics_view_name = 2;
+   */
+  metricsViewName = "";
+
+  /**
+   * @generated from field: string dimension_name = 3;
+   */
+  dimensionName = "";
+
+  /**
+   * @generated from field: repeated string measure_names = 4;
+   */
+  measureNames: string[] = [];
+
+  /**
+   * @generated from field: rill.runtime.v1.TimeRange base_time_range = 5;
+   */
+  baseTimeRange?: TimeRange;
+
+  /**
+   * @generated from field: rill.runtime.v1.TimeRange comparison_time_range = 6;
+   */
+  comparisonTimeRange?: TimeRange;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonSort sort = 7;
+   */
+  sort: MetricsViewComparisonSort[] = [];
+
+  /**
+   * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 8;
+   */
+  filter?: MetricsViewFilter;
+
+  /**
+   * @generated from field: int64 limit = 9;
+   */
+  limit = protoInt64.zero;
+
+  /**
+   * @generated from field: int64 offset = 10;
+   */
+  offset = protoInt64.zero;
+
+  /**
+   * @generated from field: int32 priority = 11;
+   */
+  priority = 0;
+
+  constructor(data?: PartialMessage<MetricsViewCompareToplistRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewCompareToplistRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "dimension_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "base_time_range", kind: "message", T: TimeRange },
+    { no: 6, name: "comparison_time_range", kind: "message", T: TimeRange },
+    { no: 7, name: "sort", kind: "message", T: MetricsViewComparisonSort, repeated: true },
+    { no: 8, name: "filter", kind: "message", T: MetricsViewFilter },
+    { no: 9, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 10, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewCompareToplistRequest {
+    return new MetricsViewCompareToplistRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewCompareToplistRequest {
+    return new MetricsViewCompareToplistRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewCompareToplistRequest {
+    return new MetricsViewCompareToplistRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewCompareToplistRequest | PlainMessage<MetricsViewCompareToplistRequest> | undefined, b: MetricsViewCompareToplistRequest | PlainMessage<MetricsViewCompareToplistRequest> | undefined): boolean {
+    return proto3.util.equals(MetricsViewCompareToplistRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewCompareToplistResponse
+ */
+export class MetricsViewCompareToplistResponse extends Message<MetricsViewCompareToplistResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonRow data = 1;
+   */
+  data: MetricsViewComparisonRow[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewCompareToplistResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewCompareToplistResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "data", kind: "message", T: MetricsViewComparisonRow, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewCompareToplistResponse {
+    return new MetricsViewCompareToplistResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewCompareToplistResponse {
+    return new MetricsViewCompareToplistResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewCompareToplistResponse {
+    return new MetricsViewCompareToplistResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewCompareToplistResponse | PlainMessage<MetricsViewCompareToplistResponse> | undefined, b: MetricsViewCompareToplistResponse | PlainMessage<MetricsViewCompareToplistResponse> | undefined): boolean {
+    return proto3.util.equals(MetricsViewCompareToplistResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.TimeRange
+ */
+export class TimeRange extends Message<TimeRange> {
+  /**
+   * @generated from field: google.protobuf.Timestamp start = 1;
+   */
+  start?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp end = 2;
+   */
+  end?: Timestamp;
+
+  constructor(data?: PartialMessage<TimeRange>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.TimeRange";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "start", kind: "message", T: Timestamp },
+    { no: 2, name: "end", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TimeRange {
+    return new TimeRange().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TimeRange {
+    return new TimeRange().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TimeRange {
+    return new TimeRange().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TimeRange | PlainMessage<TimeRange> | undefined, b: TimeRange | PlainMessage<TimeRange> | undefined): boolean {
+    return proto3.util.equals(TimeRange, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewComparisonSort
+ */
+export class MetricsViewComparisonSort extends Message<MetricsViewComparisonSort> {
+  /**
+   * @generated from field: string measure_name = 1;
+   */
+  measureName = "";
+
+  /**
+   * @generated from field: bool ascending = 2;
+   */
+  ascending = false;
+
+  /**
+   * @generated from field: rill.runtime.v1.ComparisonSortType type = 3;
+   */
+  type = ComparisonSortType.UNSPECIFIED;
+
+  constructor(data?: PartialMessage<MetricsViewComparisonSort>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewComparisonSort";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "measure_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "ascending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "type", kind: "enum", T: proto3.getEnumType(ComparisonSortType) },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonSort {
+    return new MetricsViewComparisonSort().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewComparisonSort {
+    return new MetricsViewComparisonSort().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewComparisonSort {
+    return new MetricsViewComparisonSort().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewComparisonSort | PlainMessage<MetricsViewComparisonSort> | undefined, b: MetricsViewComparisonSort | PlainMessage<MetricsViewComparisonSort> | undefined): boolean {
+    return proto3.util.equals(MetricsViewComparisonSort, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewComparisonRow
+ */
+export class MetricsViewComparisonRow extends Message<MetricsViewComparisonRow> {
+  /**
+   * @generated from field: string dimension_name = 1;
+   */
+  dimensionName = "";
+
+  /**
+   * @generated from field: google.protobuf.Value dimension_value = 2;
+   */
+  dimensionValue?: Value;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonValue measure_values = 3;
+   */
+  measureValues: MetricsViewComparisonValue[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewComparisonRow>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewComparisonRow";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "dimension_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "dimension_value", kind: "message", T: Value },
+    { no: 3, name: "measure_values", kind: "message", T: MetricsViewComparisonValue, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonRow {
+    return new MetricsViewComparisonRow().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewComparisonRow {
+    return new MetricsViewComparisonRow().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewComparisonRow {
+    return new MetricsViewComparisonRow().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewComparisonRow | PlainMessage<MetricsViewComparisonRow> | undefined, b: MetricsViewComparisonRow | PlainMessage<MetricsViewComparisonRow> | undefined): boolean {
+    return proto3.util.equals(MetricsViewComparisonRow, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewComparisonValue
+ */
+export class MetricsViewComparisonValue extends Message<MetricsViewComparisonValue> {
+  /**
+   * @generated from field: string measure_name = 1;
+   */
+  measureName = "";
+
+  /**
+   * @generated from field: google.protobuf.Value base_value = 2;
+   */
+  baseValue?: Value;
+
+  /**
+   * @generated from field: google.protobuf.Value comparison_value = 3;
+   */
+  comparisonValue?: Value;
+
+  /**
+   * @generated from field: double delta_abs = 4;
+   */
+  deltaAbs = 0;
+
+  /**
+   * @generated from field: double delta_rel = 5;
+   */
+  deltaRel = 0;
+
+  constructor(data?: PartialMessage<MetricsViewComparisonValue>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewComparisonValue";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "measure_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "base_value", kind: "message", T: Value },
+    { no: 3, name: "comparison_value", kind: "message", T: Value },
+    { no: 4, name: "delta_abs", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 5, name: "delta_rel", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonValue {
+    return new MetricsViewComparisonValue().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewComparisonValue {
+    return new MetricsViewComparisonValue().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewComparisonValue {
+    return new MetricsViewComparisonValue().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewComparisonValue | PlainMessage<MetricsViewComparisonValue> | undefined, b: MetricsViewComparisonValue | PlainMessage<MetricsViewComparisonValue> | undefined): boolean {
+    return proto3.util.equals(MetricsViewComparisonValue, a, b);
   }
 }
 
