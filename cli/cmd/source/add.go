@@ -96,8 +96,7 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 	addCmd.Flags().SortFlags = false
 	addCmd.Flags().StringVar(&sourceName, "name", "", "Source name (defaults to file name)")
 	addCmd.Flags().BoolVarP(&force, "force", "f", false, "Overwrite the source if it already exists")
-	addCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
-	_ = addCmd.Flags().MarkHidden("project")
+	addCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	addCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	addCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
 	addCmd.Flags().StringVar(&delimiter, "delimiter", "", "CSV delimiter override (defaults to autodetect)")
