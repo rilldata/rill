@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument"
 	"go.uber.org/zap"
 )
 
@@ -23,9 +22,9 @@ import (
 var (
 	meter                 = global.Meter("runtime/drivers/duckdb")
 	queriesCounter        = observability.Must(meter.Int64Counter("queries"))
-	queueLatencyHistogram = observability.Must(meter.Int64Histogram("queue_latency", instrument.WithUnit("ms")))
-	queryLatencyHistogram = observability.Must(meter.Int64Histogram("query_latency", instrument.WithUnit("ms")))
-	totalLatencyHistogram = observability.Must(meter.Int64Histogram("total_latency", instrument.WithUnit("ms")))
+	queueLatencyHistogram = observability.Must(meter.Int64Histogram("queue_latency", metric.WithUnit("ms")))
+	queryLatencyHistogram = observability.Must(meter.Int64Histogram("query_latency", metric.WithUnit("ms")))
+	totalLatencyHistogram = observability.Must(meter.Int64Histogram("total_latency", metric.WithUnit("ms")))
 )
 
 func (c *connection) Dialect() drivers.Dialect {

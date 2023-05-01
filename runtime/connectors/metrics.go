@@ -8,14 +8,13 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument"
 )
 
 var (
 	meter                 = global.Meter("runtime/connectors")
-	downloadTimeHistogram = observability.Must(meter.Float64Histogram("download.time", instrument.WithUnit("s")))
-	downloadSizeCounter   = observability.Must(meter.Int64UpDownCounter("download.size", instrument.WithUnit("bytes")))
-	downloadSpeedCounter  = observability.Must(meter.Float64UpDownCounter("download.speed", instrument.WithUnit("bytes/s")))
+	downloadTimeHistogram = observability.Must(meter.Float64Histogram("download.time", metric.WithUnit("s")))
+	downloadSizeCounter   = observability.Must(meter.Int64UpDownCounter("download.size", metric.WithUnit("bytes")))
+	downloadSpeedCounter  = observability.Must(meter.Float64UpDownCounter("download.speed", metric.WithUnit("bytes/s")))
 )
 
 type DownloadMetrics struct {
