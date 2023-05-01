@@ -60,8 +60,9 @@ func Execute(ctx context.Context, ver config.Version) {
 				fmt.Println("Please log in or sign up for Rill with `rill login`.")
 			default:
 				// no known message
+				// printing the full error message so that wrapped context is not lost
 				// todo :: add trace id as well
-				fmt.Printf("Error: %s (%v)\n", s.Message(), s.Code())
+				fmt.Printf("Error: %s (%v)\n", err, s.Code())
 			}
 		} else {
 			fmt.Printf("Error: %s\n", err.Error())
