@@ -77,24 +77,21 @@ func LoggingStreamServerInterceptor(logger *zap.Logger) grpc.StreamServerInterce
 func zapInterceptorLogger(l *zap.Logger) logging.Logger {
 	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
 		f := make([]zap.Field, 0, len(fields)/2)
-		for i := 0; i < len(fields); i += 2 {
-			i := logging.Fields(fields).Iterator()
-			if i.Next() {
-				k, v := i.At()
-				f = append(f, zap.Any(k, v))
-			}
+		i := logging.Fields(fields).Iterator()
+		for i.Next() {
+			k, v := i.At()
+			f = append(f, zap.Any(k, v))
 		}
-		l = l.WithOptions(zap.AddCallerSkip(1)).With(f...)
 
 		switch lvl {
 		case logging.LevelDebug:
-			l.Debug(msg)
+			l.Debug(msg, f...)
 		case logging.LevelInfo:
-			l.Info(msg)
+			l.Info(msg, f...)
 		case logging.LevelWarn:
-			l.Warn(msg)
+			l.Warn(msg, f...)
 		case logging.LevelError:
-			l.Error(msg)
+			l.Error(msg, f...)
 		default:
 			panic(fmt.Sprintf("unknown level %v", lvl))
 		}
@@ -107,10 +104,7 @@ func tracingFieldsFromCtx(ctx context.Context) logging.Fields {
 	if !sctx.IsValid() {
 		return nil
 	}
-	return []any{
-		"trace_id", sctx.TraceID().String(),
-		"span_id", sctx.SpanID().String(),
-	}
+	return []any{"trace_id", sctx.TraceID().String()}
 }
 
 // errorToCode maps an error to a gRPC code for logging. It wraps the default behavior and adds handling of context errors.
