@@ -149,7 +149,7 @@
 <!-- container for the metrics leaderboard components and controls -->
 <div
   bind:this={leaderboardContainer}
-  style:height="calc(100vh - var(--header, 130px) - 4rem)"
+  style:height="calc(100vh - 130px - 4rem)"
   style:min-width="365px"
 >
   <div
