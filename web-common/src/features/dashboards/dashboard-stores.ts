@@ -63,7 +63,13 @@ export interface MetricsExplorerEntity {
   showComparison?: boolean;
   // user selected dimension
   selectedDimensionName?: string;
+
   proto?: string;
+  // proto for the default set of selections
+  defaultProto?: string;
+  // marks that defaults have been selected
+  // TODO: move default selection to a common place and avoid this
+  defaultsSelected?: boolean;
 }
 
 export interface MetricsExplorerStoreType {
@@ -72,6 +78,13 @@ export interface MetricsExplorerStoreType {
 const { update, subscribe } = writable({
   entities: {},
 } as MetricsExplorerStoreType);
+
+function updateMetricsExplorerProto(metricsExplorer: MetricsExplorerEntity) {
+  metricsExplorer.proto = getProtoFromDashboardState(metricsExplorer);
+  if (!metricsExplorer.defaultsSelected) {
+    metricsExplorer.defaultProto = metricsExplorer.proto;
+  }
+}
 
 const updateMetricsExplorerByName = (
   name: string,
@@ -84,18 +97,14 @@ const updateMetricsExplorerByName = (
         state.entities[name] = absenceCallback();
       }
       if (state.entities[name]) {
-        state.entities[name].proto = getProtoFromDashboardState(
-          state.entities[name]
-        );
+        updateMetricsExplorerProto(state.entities[name]);
       }
       return state;
     }
 
     callback(state.entities[name]);
     // every change triggers a proto update
-    state.entities[name].proto = getProtoFromDashboardState(
-      state.entities[name]
-    );
+    updateMetricsExplorerProto(state.entities[name]);
     return state;
   });
 };
@@ -121,6 +130,7 @@ const metricViewReducers = {
         }
         metricsExplorer.dimensionFilterExcludeMode =
           includeExcludeModeFromFilters(partial.filters);
+        metricsExplorer.defaultsSelected = true;
       },
       () => ({
         name,
@@ -132,6 +142,7 @@ const metricViewReducers = {
         dimensionFilterExcludeMode: includeExcludeModeFromFilters(
           partial.filters
         ),
+        defaultsSelected: true,
         ...partial,
       })
     );
@@ -376,6 +387,12 @@ const metricViewReducers = {
         otherFilterEntryIndex,
         1
       );
+    });
+  },
+
+  allDefaultsSelected(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.defaultsSelected = true;
     });
   },
 };
