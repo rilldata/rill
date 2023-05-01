@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -45,7 +46,7 @@ var rootCmd = &cobra.Command{
 func Execute(ctx context.Context, ver config.Version) {
 	err := runCmd(ctx, ver)
 	if err != nil {
-		if s, ok := status.FromError(err); ok {
+		if s, ok := rpcStatus(err); ok {
 			// try to see if it is a known message
 			switch s.Message() {
 			case "org not found":
@@ -149,4 +150,18 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		rootCmd.AddCommand(cmd)
 	}
 	return rootCmd.ExecuteContext(ctx)
+}
+
+func rpcStatus(err error) (*status.Status, bool) {
+	for {
+		st, ok := status.FromError(err)
+		if st == nil {
+			// returns nil when err is nil
+			return nil, false
+		}
+		if ok {
+			return st, true
+		}
+		err = errors.Unwrap(err)
+	}
 }
