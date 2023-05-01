@@ -9,6 +9,7 @@
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceGetOrganization,
+    createAdminServiceGetProject,
     createAdminServiceListOrganizations,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
@@ -28,6 +29,7 @@
   $: isOrganizationPage = $page.route.id === "/[organization]";
 
   $: projectName = $page.params.project;
+  $: project = createAdminServiceGetProject(orgName, projectName);
   $: projects = createAdminServiceListProjectsForOrganization(
     orgName,
     undefined,
@@ -93,7 +95,7 @@
         <OrganizationAvatar organization={orgName} slot="icon" />
       </BreadcrumbItem>
     {/if}
-    {#if projectName}
+    {#if $project.data.project}
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
         label={projectName}
