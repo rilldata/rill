@@ -14,7 +14,6 @@ import (
 func ProjectCmd(cfg *config.Config) *cobra.Command {
 	projectCmd := &cobra.Command{
 		Use:               "project",
-		Hidden:            !cfg.IsDev(),
 		Short:             "Manage projects",
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 	}
@@ -58,7 +57,7 @@ func inferProjectName(ctx context.Context, client *adminClient.Client, org, path
 	}
 
 	// fetch project names for github url
-	names, err := cmdutil.ProjectNames(ctx, client, org, githubURL)
+	names, err := cmdutil.ProjectNamesByGithubURL(ctx, client, org, githubURL)
 	if err != nil {
 		return "", err
 	}

@@ -12,7 +12,7 @@ import (
 func ListCmd(cfg *config.Config) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
-		Short: "List",
+		Short: "List all organizations",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -25,7 +25,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Organizations list \n")
+			cmdutil.SuccessPrinter("Organizations list")
 			cmdutil.TablePrinter(toTable(res.Organizations, cfg.Org))
 			return nil
 		},

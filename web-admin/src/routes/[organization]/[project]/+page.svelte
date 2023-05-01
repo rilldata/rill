@@ -26,7 +26,7 @@
       <ProjectDashboards {organization} {project} />
     </div>
     <div class="flex">
-      <ShareProjectCta />
+      <ShareProjectCta {organization} {project} />
     </div>
   </div>
   <ProjectDeploymentLogs {organization} {project} />

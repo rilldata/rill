@@ -41,6 +41,13 @@ func LogoutCmd(cfg *config.Config) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			// Clear the state during logout
+			err = dotrill.SetDefaultOrg("")
+			if err != nil {
+				return err
+			}
+
 			color.New(color.FgGreen).Println("Successfully logged out.")
 			return nil
 		},

@@ -28,6 +28,8 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		return nil, err
 	}
 
+	// User does not exist. Creating a new user.
+
 	// Get user invites if exists
 	orgInvites, err := s.DB.FindOrganizationInvitesByEmail(ctx, email)
 	if err != nil {
@@ -44,7 +46,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	// User does not exist. Creating a new user.
+	// Create user
 	user, err = s.DB.InsertUser(ctx, &database.InsertUserOptions{
 		Email:               email,
 		DisplayName:         name,
