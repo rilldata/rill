@@ -6,6 +6,7 @@ import (
 
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/metric/instrument"
 )
@@ -26,17 +27,17 @@ type DownloadMetrics struct {
 }
 
 func RecordDownloadMetrics(ctx context.Context, m *DownloadMetrics) {
-	attrs := []attribute.KeyValue{
+	attrs := attribute.NewSet(
 		attribute.String("connector", m.Connector),
 		attribute.String("ext", m.Ext),
 		attribute.Bool("partial", m.Partial),
-	}
+	)
 
-	downloadTimeHistogram.Record(ctx, m.Duration.Seconds(), attrs...)
-	downloadSizeCounter.Add(ctx, m.Size, attrs...)
+	downloadTimeHistogram.Record(ctx, m.Duration.Seconds(), metric.WithAttributeSet(attrs))
+	downloadSizeCounter.Add(ctx, m.Size, metric.WithAttributeSet(attrs))
 
 	secs := m.Duration.Seconds()
 	if secs != 0 {
-		downloadSpeedCounter.Add(ctx, float64(m.Size)/secs, attrs...)
+		downloadSpeedCounter.Add(ctx, float64(m.Size)/secs, metric.WithAttributeSet(attrs))
 	}
 }

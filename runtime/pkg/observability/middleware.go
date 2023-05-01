@@ -3,15 +3,16 @@ package observability
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"time"
 
-	grpczap "github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -52,8 +53,9 @@ func RecovererStreamServerInterceptor() grpc.StreamServerInterceptor {
 // LoggingUnaryServerInterceptor is a gRPC unary interceptor that logs requests.
 func LoggingUnaryServerInterceptor(logger *zap.Logger) grpc.UnaryServerInterceptor {
 	return logging.UnaryServerInterceptor(
-		grpczap.InterceptorLogger(logger),
-		logging.WithDecider(logFinishDecider),
+		zapInterceptorLogger(logger),
+		logging.WithLogOnEvents(logging.StartCall, logging.FinishCall),
+		logging.WithFieldsFromContext(tracingFieldsFromCtx),
 		logging.WithCodes(errorToCode),
 		logging.WithLevels(grpcCodeToLevel),
 	)
@@ -62,16 +64,53 @@ func LoggingUnaryServerInterceptor(logger *zap.Logger) grpc.UnaryServerIntercept
 // LoggingStreamServerInterceptor is the streaming equivalent of LoggingUnaryServerInterceptor
 func LoggingStreamServerInterceptor(logger *zap.Logger) grpc.StreamServerInterceptor {
 	return logging.StreamServerInterceptor(
-		grpczap.InterceptorLogger(logger),
-		logging.WithDecider(logFinishDecider),
+		zapInterceptorLogger(logger),
+		logging.WithLogOnEvents(logging.StartCall, logging.FinishCall),
+		logging.WithFieldsFromContext(tracingFieldsFromCtx),
 		logging.WithCodes(errorToCode),
 		logging.WithLevels(grpcCodeToLevel),
 	)
 }
 
-// logFinishDecider filters which calls to log. It logs all calls (start and finish).
-func logFinishDecider(fullMethodName string, err error) logging.Decision {
-	return logging.LogStartAndFinishCall
+// zapInterceptorLogger adapts zap logger to a gRPC interceptor logger.
+// Source: https://github.com/grpc-ecosystem/go-grpc-middleware/blob/main/interceptors/logging/examples/zap/example_test.go
+func zapInterceptorLogger(l *zap.Logger) logging.Logger {
+	return logging.LoggerFunc(func(ctx context.Context, lvl logging.Level, msg string, fields ...any) {
+		f := make([]zap.Field, 0, len(fields)/2)
+		for i := 0; i < len(fields); i += 2 {
+			i := logging.Fields(fields).Iterator()
+			if i.Next() {
+				k, v := i.At()
+				f = append(f, zap.Any(k, v))
+			}
+		}
+		l = l.WithOptions(zap.AddCallerSkip(1)).With(f...)
+
+		switch lvl {
+		case logging.LevelDebug:
+			l.Debug(msg)
+		case logging.LevelInfo:
+			l.Info(msg)
+		case logging.LevelWarn:
+			l.Warn(msg)
+		case logging.LevelError:
+			l.Error(msg)
+		default:
+			panic(fmt.Sprintf("unknown level %v", lvl))
+		}
+	})
+}
+
+// tracingFieldsFromCtx picks tracing-related fields from the ctx for use in the gRPC logging interceptor.
+func tracingFieldsFromCtx(ctx context.Context) logging.Fields {
+	sctx := trace.SpanFromContext(ctx).SpanContext()
+	if !sctx.IsValid() {
+		return nil
+	}
+	return []any{
+		"trace_id", sctx.TraceID().String(),
+		"span_id", sctx.SpanID().String(),
+	}
 }
 
 // errorToCode maps an error to a gRPC code for logging. It wraps the default behavior and adds handling of context errors.
@@ -91,13 +130,13 @@ func grpcCodeToLevel(code codes.Code) logging.Level {
 	switch code {
 	case codes.OK, codes.NotFound, codes.Canceled, codes.AlreadyExists, codes.InvalidArgument, codes.Unauthenticated,
 		codes.Unknown, codes.PermissionDenied, codes.ResourceExhausted, codes.FailedPrecondition, codes.OutOfRange:
-		return logging.INFO
+		return logging.LevelInfo
 	case codes.Unimplemented, codes.DeadlineExceeded, codes.Aborted, codes.Unavailable:
-		return logging.WARNING
+		return logging.LevelWarn
 	case codes.Internal, codes.DataLoss:
-		return logging.ERROR
+		return logging.LevelError
 	default:
-		return logging.ERROR
+		return logging.LevelError
 	}
 }
 
