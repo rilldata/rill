@@ -8,6 +8,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceGetCurrentUser,
+    createAdminServiceGetOrganization,
     createAdminServiceListOrganizations,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
@@ -17,7 +18,8 @@
 
   const user = createAdminServiceGetCurrentUser();
 
-  $: organization = $page.params.organization;
+  $: orgName = $page.params.organization;
+  $: organization = createAdminServiceGetOrganization(orgName);
   $: organizations = createAdminServiceListOrganizations(undefined, {
     query: {
       enabled: !!$user.data.user,
@@ -25,8 +27,16 @@
   });
   $: isOrganizationPage = $page.route.id === "/[organization]";
 
-  $: project = $page.params.project;
-  $: projects = createAdminServiceListProjectsForOrganization(organization);
+  $: projectName = $page.params.project;
+  $: projects = createAdminServiceListProjectsForOrganization(
+    orgName,
+    undefined,
+    {
+      query: {
+        enabled: !!$organization.data.organization,
+      },
+    }
+  );
   $: isProjectPage = $page.route.id === "/[organization]/[project]";
 
   // Here, we compose the dashboard list via two separate runtime queries.
@@ -38,7 +48,7 @@
     },
     {
       query: {
-        enabled: !!project && !!$runtime?.instanceId,
+        enabled: !!projectName && !!$runtime?.instanceId,
       },
     }
   );
@@ -50,7 +60,7 @@
     {
       query: {
         placeholderData: undefined,
-        enabled: !!project && !!$runtime?.instanceId,
+        enabled: !!projectName && !!$runtime?.instanceId,
       },
     }
   );
@@ -67,9 +77,9 @@
 
 <nav>
   <ol class="flex flex-row items-center">
-    {#if organization}
+    {#if $organization.data.organization}
       <BreadcrumbItem
-        label={organization}
+        label={orgName}
         isCurrentPage={isOrganizationPage}
         menuOptions={$organizations.data?.organizations?.length > 1 &&
           $organizations.data.organizations.map((org) => ({
@@ -77,25 +87,25 @@
             main: org.name,
             callback: () => goto(`/${org.name}`),
           }))}
-        menuKey={organization}
+        menuKey={orgName}
         onSelectMenuOption={(organization) => goto(`/${organization}`)}
       >
-        <OrganizationAvatar {organization} slot="icon" />
+        <OrganizationAvatar organization={orgName} slot="icon" />
       </BreadcrumbItem>
     {/if}
-    {#if project}
+    {#if projectName}
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
-        label={project}
+        label={projectName}
         isCurrentPage={isProjectPage}
         menuOptions={$projects.data?.projects?.length > 1 &&
           $projects.data.projects.map((proj) => ({
             key: proj.name,
             main: proj.name,
-            callback: () => goto(`/${organization}/${proj.name}`),
+            callback: () => goto(`/${orgName}/${proj.name}`),
           }))}
-        menuKey={project}
-        onSelectMenuOption={(project) => goto(`/${organization}/${project}`)}
+        menuKey={projectName}
+        onSelectMenuOption={(project) => goto(`/${orgName}/${project}`)}
       />
     {/if}
     {#if currentDashboard}
@@ -109,12 +119,12 @@
               key: listing.name,
               main: listing?.title || listing.name,
               callback: () =>
-                goto(`/${organization}/${project}/${listing.name}`),
+                goto(`/${orgName}/${projectName}/${listing.name}`),
             };
           })}
         menuKey={currentDashboard.name}
         onSelectMenuOption={(dashboard) =>
-          goto(`/${organization}/${project}/${dashboard}`)}
+          goto(`/${orgName}/${projectName}/${dashboard}`)}
       />
     {/if}
   </ol>
