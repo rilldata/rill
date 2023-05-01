@@ -56,6 +56,8 @@ func Test_ExtractConnectors(t *testing.T) {
 
 	require.Equal(t, "gcs", gcs.Name)
 	require.Equal(t, false, gcs.AnonymousAccess)
+	require.Equal(t, "gs://scratch.rilldata.com/rill-developer/AdBids.csv.gz", gcs.URI[0])
 	require.Equal(t, "s3", s3.Name)
 	require.Equal(t, false, s3.AnonymousAccess)
+	require.Equal(t, "s3://rill-developer.rilldata.io/AdBids.csv.gz", s3.URI[0])
 }
