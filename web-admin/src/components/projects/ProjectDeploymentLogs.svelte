@@ -5,7 +5,7 @@
   export let project: string;
 
   $: proj = createAdminServiceGetProject(organization, project);
-  $: hasAdminAccess = $proj.data?.projectPermissions?.manageProject;
+  $: hasReadAccess = $proj.data?.projectPermissions?.readProdStatus;
 
   $: errors = parseLogs($proj.data?.prodDeployment?.logs);
 
@@ -25,7 +25,7 @@
 
 {#if $proj.isSuccess && errors}
   <ul class="w-full">
-    {#if !hasAdminAccess}
+    {#if !hasReadAccess}
       <li class="px-12 py-2 font-semibold text-gray-500 border-b">
         You don't have permission to view project logs
       </li>
