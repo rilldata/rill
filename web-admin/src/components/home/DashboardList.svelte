@@ -16,6 +16,13 @@
   }
 
   async function updateDashboardsForProject() {
+    const status = $proj.data?.prodDeployment.status;
+    if (
+      status === "DEPLOYMENT_STATUS_PENDING" ||
+      status === "DEPLOYMENT_STATUS_RECONCILING"
+    )
+      return;
+
     dashboardListItems = await getDashboardsForProject($proj.data);
   }
 </script>

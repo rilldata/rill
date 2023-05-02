@@ -2,15 +2,13 @@
   import { page } from "$app/stores";
   import { V1DeploymentStatus } from "@rilldata/web-admin/client";
   import {
-    getDashboardListItemsFromFilesAndCatalogEntries,
     getDashboardsForProject,
+    useDashboardListItems,
   } from "@rilldata/web-admin/components/projects/dashboards";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/components/projects/invalidations";
   import { useProject } from "@rilldata/web-admin/components/projects/use-project";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import {
-    createRuntimeServiceListCatalogEntries,
-    createRuntimeServiceListFiles,
     getRuntimeServiceListCatalogEntriesQueryKey,
     getRuntimeServiceListFilesQueryKey,
   } from "@rilldata/web-common/runtime-client";
@@ -70,35 +68,8 @@
   // As is the case in `Breadcrumbs.svelte`, there are two queries we compose to get the dashboard list items,
   // and we should hide this complexity in a custom hook.
   // We avoid calling `GetCatalogEntry` to check for dashboard validity because that would trigger a 404 page.
-  $: dashboardFiles = createRuntimeServiceListFiles(
-    $runtime?.instanceId,
-    {
-      glob: "dashboards/*.yaml",
-    },
-    {
-      query: {
-        placeholderData: undefined,
-        enabled: !!project && !!$runtime?.instanceId,
-      },
-    }
-  );
-  $: dashboardCatalogEntries = createRuntimeServiceListCatalogEntries(
-    $runtime?.instanceId,
-    {
-      type: "OBJECT_TYPE_METRICS_VIEW",
-    },
-    {
-      query: {
-        placeholderData: undefined,
-        enabled: !!project && !!$runtime?.instanceId,
-      },
-    }
-  );
-  $: dashboardListItems = getDashboardListItemsFromFilesAndCatalogEntries(
-    $dashboardFiles.data?.paths,
-    $dashboardCatalogEntries.data?.entries
-  );
-  $: currentDashboard = dashboardListItems?.find(
+  $: dashboardListItems = useDashboardListItems($runtime?.instanceId, project);
+  $: currentDashboard = $dashboardListItems?.find(
     (listing) => listing.name === $page.params.dashboard
   );
 </script>

@@ -1,6 +1,12 @@
 import type { V1GetProjectResponse } from "@rilldata/web-admin/client";
+import {
+  createRuntimeServiceListCatalogEntries,
+  createRuntimeServiceListFiles,
+} from "@rilldata/web-common/runtime-client";
 import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
 import Axios from "axios";
+import { derived, get, writable } from "svelte/store";
 
 export interface DashboardListItem {
   name: string;
@@ -71,4 +77,55 @@ export function getDashboardListItemsFromFilesAndCatalogEntries(
   });
 
   return dashboardListings;
+}
+
+export function useDashboardListItems(
+  instanceId: string,
+  project: CreateQueryResult<V1GetProjectResponse>
+) {
+  let isProfiling = false;
+  if (project) {
+    const status = get(project)?.data?.prodDeployment?.status;
+    if (
+      status === "DEPLOYMENT_STATUS_PENDING" ||
+      status === "DEPLOYMENT_STATUS_RECONCILING"
+    ) {
+      isProfiling = true;
+    }
+  }
+
+  return derived(
+    [
+      createRuntimeServiceListFiles(
+        instanceId,
+        {
+          glob: "dashboards/*.yaml",
+        },
+        {
+          query: {
+            placeholderData: undefined,
+            enabled: !isProfiling && !!project && !!instanceId,
+          },
+        }
+      ),
+      createRuntimeServiceListCatalogEntries(
+        instanceId,
+        {
+          type: "OBJECT_TYPE_METRICS_VIEW",
+        },
+        {
+          query: {
+            placeholderData: undefined,
+            enabled: !isProfiling && !!project && !!instanceId,
+          },
+        }
+      ),
+    ],
+    ([dashboardFiles, dashboardCatalogEntries]) => {
+      return getDashboardListItemsFromFilesAndCatalogEntries(
+        dashboardFiles?.data?.paths ?? [],
+        dashboardCatalogEntries?.data?.entries ?? []
+      );
+    }
+  );
 }
