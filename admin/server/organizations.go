@@ -331,7 +331,7 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 
 	// delete from projects if KeepProjectRoles flag is set
 	if !req.KeepProjectRoles {
-		err = s.admin.DB.DeleteAllProjectMemberUserForOrganization(ctx, req.Organization, user.ID)
+		err = s.admin.DB.DeleteAllProjectMemberUserForOrganization(ctx, org.ID, user.ID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
