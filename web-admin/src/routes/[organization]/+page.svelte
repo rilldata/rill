@@ -9,7 +9,9 @@
 
   $: org = createAdminServiceGetOrganization($page.params.organization);
   $: projs = createAdminServiceListProjectsForOrganization(
-    $page.params.organization
+    $page.params.organization,
+    undefined,
+    { query: { enabled: !!$org.data.organization } }
   );
 
   $: if ($projs.data && $projs.data.projects?.length > 0) {
