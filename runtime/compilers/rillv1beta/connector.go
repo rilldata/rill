@@ -24,7 +24,7 @@ type Variables struct {
 type Connector struct {
 	Name            string
 	Type            string
-	URI             []string
+	Sources         []*connectors.Source
 	Spec            connectors.Spec
 	AnonymousAccess bool
 }
@@ -62,7 +62,7 @@ func ExtractConnectors(ctx context.Context, projectPath string) ([]*Connector, e
 	}
 
 	// keeping a map to dedup connectors
-	connectorMap := make(map[key][]string)
+	connectorMap := make(map[key][]*connectors.Source)
 	for _, src := range allSources {
 		connector, ok := connectors.Connectors[src.Connector]
 		if !ok {
@@ -73,12 +73,12 @@ func ExtractConnectors(ctx context.Context, projectPath string) ([]*Connector, e
 		// this can fail under cases such as full or host/bucket of URI is a variable
 		access, _ := connector.HasAnonymousAccess(ctx, &connectors.Env{}, src)
 		c := key{Name: src.Connector, Type: src.Connector, AnonymousAccess: access}
-		uris, ok := connectorMap[c]
+		srcs, ok := connectorMap[c]
 		if !ok {
-			uris = make([]string, 0)
+			srcs = make([]*connectors.Source, 0)
 		}
-		uris = append(uris, src.Properties["path"].(string))
-		connectorMap[c] = uris
+		srcs = append(srcs, src)
+		connectorMap[c] = srcs
 	}
 
 	result := make([]*Connector, 0)
@@ -89,7 +89,7 @@ func ExtractConnectors(ctx context.Context, projectPath string) ([]*Connector, e
 			Type:            k.Type,
 			Spec:            connector.Spec(),
 			AnonymousAccess: k.AnonymousAccess,
-			URI:             v,
+			Sources:         v,
 		})
 	}
 	return result, nil
