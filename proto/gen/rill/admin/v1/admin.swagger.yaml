@@ -304,6 +304,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: keepProjectRoles
+          in: query
+          required: false
+          type: boolean
       tags:
         - AdminService
     put:

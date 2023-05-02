@@ -120,6 +120,7 @@ type DB interface {
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
 	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
+	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
 
 	FindOrganizationInvites(ctx context.Context, orgID string) ([]*Invite, error)

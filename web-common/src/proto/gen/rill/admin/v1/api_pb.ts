@@ -1698,6 +1698,11 @@ export class RemoveOrganizationMemberRequest extends Message<RemoveOrganizationM
    */
   email = "";
 
+  /**
+   * @generated from field: bool keep_project_roles = 3;
+   */
+  keepProjectRoles = false;
+
   constructor(data?: PartialMessage<RemoveOrganizationMemberRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1708,6 +1713,7 @@ export class RemoveOrganizationMemberRequest extends Message<RemoveOrganizationM
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "keep_project_roles", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveOrganizationMemberRequest {
