@@ -73,10 +73,10 @@ func ExtractConnectors(ctx context.Context, projectPath string) ([]*Connector, e
 		// this can fail under cases such as full or host/bucket of URI is a variable
 		access, _ := connector.HasAnonymousAccess(ctx, &connectors.Env{}, src)
 		c := key{Name: src.Connector, Type: src.Connector, AnonymousAccess: access}
-		if _, ok := connectorMap[c]; !ok {
-			connectorMap[c] = make([]string, 0)
+		uris, ok := connectorMap[c]
+		if !ok {
+			uris = make([]string, 0)
 		}
-		uris := connectorMap[c]
 		uris = append(uris, src.Properties["path"].(string))
 		connectorMap[c] = uris
 	}
