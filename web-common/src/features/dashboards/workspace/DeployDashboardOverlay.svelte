@@ -14,7 +14,7 @@
   <svelte:fragment slot="title">Deploy your project</svelte:fragment>
   <div class="flex flex-col items-center gap-y-4" slot="body">
     <div class="text-left text-sm text-gray-500 w-full">
-      Run this command in the Rill CLI to deploy this project. <a
+      Run this command in the Rill CLI to deploy this project to Rill Cloud. <a
         href="https://docs.rilldata.com"
         target="_blank"
         rel="noreferrer">See docs</a
