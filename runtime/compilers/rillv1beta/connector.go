@@ -84,7 +84,13 @@ func ExtractConnectors(ctx context.Context, projectPath string) ([]*Connector, e
 	result := make([]*Connector, 0)
 	for k, v := range connectorMap {
 		connector := connectors.Connectors[k.Type]
-		result = append(result, &Connector{Name: k.Name, Type: k.Type, Spec: connector.Spec(), AnonymousAccess: k.AnonymousAccess, URI: v})
+		result = append(result, &Connector{
+			Name:            k.Name,
+			Type:            k.Type,
+			Spec:            connector.Spec(),
+			AnonymousAccess: k.AnonymousAccess,
+			URI:             v,
+		})
 	}
 	return result, nil
 }

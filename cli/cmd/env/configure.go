@@ -144,22 +144,20 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 	}
 
 	// collect all source uris
-	srcURIs := make([]string, 0)
-	accessRequired := false
+	srcNames := make([]string, 0)
 	for _, c := range connectors {
 		if !c.AnonymousAccess {
-			accessRequired = true
-			srcURIs = append(srcURIs, c.URI...)
+			srcNames = append(srcNames, c.URI...)
 		}
 	}
-	if !accessRequired {
+	if len(srcNames) == 0 {
 		return nil, nil
 	}
 
 	tel.Emit(telemetry.ActionDataAccessStart)
-	fmt.Println("Finish deploying your project by providing access to the data store. Rill does not have access to the following data sources:")
-	for _, uri := range srcURIs {
-		fmt.Println(uri)
+	fmt.Printf("Finish deploying your project by providing access to the data store. Rill does not have access to the following data sources:\n\n")
+	for _, uri := range srcNames {
+		fmt.Printf(" - %s\n", uri)
 	}
 
 	variables := make(map[string]string)
