@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/examples"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
@@ -48,7 +49,7 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 						Name: "name",
 						Prompt: &survey.Input{
 							Message: "Enter project name",
-							Default: "rill-untitled",
+							Default: cmdutil.DefaultProjectName(),
 						},
 						Validate: func(any interface{}) error {
 							name := any.(string)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -19,7 +20,10 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const TSFormatLayout = "2006-01-02 15:04:05"
+const (
+	TSFormatLayout     = "2006-01-02 15:04:05"
+	defaultProjectName = "rill-untitled"
+)
 
 type PreRunCheck func(cmd *cobra.Command, args []string) error
 
@@ -340,4 +344,30 @@ func ProjectNamesByOrg(ctx context.Context, c *client.Client, orgName string) ([
 	}
 
 	return projNames, nil
+}
+
+func DefaultProjectName() string {
+	// Get full path to project
+	absPath, err := filepath.Abs(defaultProjectName)
+	if err != nil {
+		return ""
+	}
+
+	_, err = os.Stat(absPath)
+	if os.IsNotExist(err) {
+		return defaultProjectName
+	}
+
+	num := 1
+	for err == nil {
+		absPath := fmt.Sprint(absPath, num)
+
+		_, err = os.Stat(absPath)
+		if os.IsNotExist(err) {
+			return fmt.Sprint(defaultProjectName, num)
+		}
+		num++
+	}
+
+	return ""
 }
