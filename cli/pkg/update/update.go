@@ -11,7 +11,6 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/hashicorp/go-version"
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 )
 
@@ -65,12 +64,12 @@ func LatestVersion(ctx context.Context) (string, error) {
 			return "", err
 		}
 
-		updatedAt, err := time.Parse(cmdutil.TSFormatLayout, cachedVersionUpdatedAt)
+		updatedAt, err := time.Parse(time.RFC3339, cachedVersionUpdatedAt)
 		if err != nil {
 			return "", err
 		}
 
-		if time.Since(updatedAt.UTC()).Hours() < versionCheckTTL.Hours() {
+		if time.Since(updatedAt) < versionCheckTTL {
 			return cachedVersion, nil
 		}
 	}
@@ -81,7 +80,7 @@ func LatestVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	err = dotrill.SetVersionUpdatedAt(time.Now().UTC().Format(cmdutil.TSFormatLayout))
+	err = dotrill.SetVersionUpdatedAt(time.Now().Format(time.RFC3339))
 	if err != nil {
 		return "", err
 	}
