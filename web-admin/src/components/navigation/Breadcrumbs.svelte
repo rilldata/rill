@@ -20,7 +20,7 @@
   $: organization = $page.params.organization;
   $: organizations = createAdminServiceListOrganizations(undefined, {
     query: {
-      enabled: !!$user.data.user,
+      enabled: !!$user.data?.user,
     },
   });
   $: isOrganizationPage = $page.route.id === "/[organization]";
