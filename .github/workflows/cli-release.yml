@@ -12,7 +12,6 @@ on:
     # Trigger a full release on new Git tag
     tags:
       - "**"
-    branches: [ "2301-meta-upgrade-to-go-v120" ]
   # Trigger a nightly release at midnight
   schedule:
     - cron: '0 0 * * *'
