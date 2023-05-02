@@ -64,12 +64,12 @@ func LatestVersion(ctx context.Context) (string, error) {
 			return "", err
 		}
 
-		updatedAt, err := time.Parse("2006-01-02 15:04", cachedVersionUpdatedAt)
+		updatedAt, err := time.Parse(time.RFC3339, cachedVersionUpdatedAt)
 		if err != nil {
 			return "", err
 		}
 
-		if time.Since(updatedAt).Hours() < versionCheckTTL.Hours() {
+		if time.Since(updatedAt) < versionCheckTTL {
 			return cachedVersion, nil
 		}
 	}
@@ -80,7 +80,7 @@ func LatestVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	err = dotrill.SetVersionUpdatedAt(time.Now().Format("2006-01-02 15:04"))
+	err = dotrill.SetVersionUpdatedAt(time.Now().Format(time.RFC3339))
 	if err != nil {
 		return "", err
 	}
