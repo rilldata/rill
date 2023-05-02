@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"go.uber.org/zap"
 
 	_ "github.com/rilldata/rill/admin/database/postgres"
 )
@@ -149,9 +148,8 @@ func Test_staticProvisioner_Provision(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &staticProvisioner{
-				spec:   tt.spec,
-				db:     db,
-				logger: zap.NewNop(),
+				spec: tt.spec,
+				db:   db,
 			}
 			got, err := p.Provision(ctx, tt.opts)
 			if (err != nil) != tt.wantErr {

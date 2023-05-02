@@ -8,7 +8,6 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/admin/database"
-	"go.uber.org/zap"
 )
 
 type Allocation struct {
@@ -43,12 +42,11 @@ type staticRuntime struct {
 }
 
 type staticProvisioner struct {
-	spec   *staticSpec
-	db     database.DB
-	logger *zap.Logger
+	spec *staticSpec
+	db   database.DB
 }
 
-func NewStatic(spec string, db database.DB, logger *zap.Logger) (Provisioner, error) {
+func NewStatic(spec string, db database.DB) (Provisioner, error) {
 	sps := &staticSpec{}
 	err := json.Unmarshal([]byte(spec), sps)
 	if err != nil {
@@ -56,9 +54,8 @@ func NewStatic(spec string, db database.DB, logger *zap.Logger) (Provisioner, er
 	}
 
 	return &staticProvisioner{
-		spec:   sps,
-		db:     db,
-		logger: logger,
+		spec: sps,
+		db:   db,
 	}, nil
 }
 
