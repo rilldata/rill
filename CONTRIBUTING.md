@@ -8,7 +8,7 @@ This is a full list of development dependencies:
 
 - [Docker](https://www.docker.com)
 - [Node.js 18](https://nodejs.org/en/) (we recommend installing it with [nvm](https://github.com/nvm-sh/nvm))
-- [Go 1.19](https://go.dev) (on macOS, install with `brew install go`)
+- [Go 1.20](https://go.dev) (on macOS, install with `brew install go`)
 - [GraalVM](https://www.graalvm.org) and [Maven](https://maven.apache.org) for Java (we recommend installing both through [sdkman](https://sdkman.io))
 - [Buf](https://buf.build) (Protocol Buffers) (on macOS, install with `brew install bufbuild/buf/buf`)
 
