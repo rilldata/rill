@@ -2,14 +2,12 @@ package provisioner
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"math/big"
+	"math/rand"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
 
@@ -92,13 +90,8 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 		return nil, fmt.Errorf("no runtimes found with sufficient available slots")
 	}
 
-	nBig, err := rand.Int(rand.Reader, big.NewInt(int64(len(targets))))
-	if err != nil {
-		p.logger.Error("failed to generate random number", zap.Error(err), observability.ZapCtx(ctx))
-		return nil, err
-	}
-
-	target := targets[int(nBig.Int64())]
+	// nolint:gosec // We don't need cryptographically secure random numbers
+	target := targets[rand.Intn(len(targets))]
 	return &Allocation{
 		Host:         target.Host,
 		Audience:     target.Audience,
