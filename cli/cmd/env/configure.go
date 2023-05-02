@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
+	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 )
@@ -138,15 +139,35 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 }
 
 func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telemetry) (map[string]string, error) {
-	connectors, err := rillv1beta.ExtractConnectors(ctx, projectPath)
+	connectorList, err := rillv1beta.ExtractConnectors(ctx, projectPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract connectors %w", err)
 	}
 
-	tel.Emit(telemetry.ActionDataAccessStart)
+	// collect all sources
+	srcs := make([]*connectors.Source, 0)
+	for _, c := range connectorList {
+		if !c.AnonymousAccess {
+			srcs = append(srcs, c.Sources...)
+		}
+	}
+	if len(srcs) == 0 {
+		return nil, nil
+	}
 
-	vars := make(map[string]string)
-	for _, c := range connectors {
+	tel.Emit(telemetry.ActionDataAccessStart)
+	fmt.Printf("Finish deploying your project by providing access to the data store. Rill does not have access to the following data sources:\n\n")
+	for _, src := range srcs {
+		if _, ok := src.Properties["path"]; ok {
+			// print URL wherever applicable
+			fmt.Printf(" - %s\n", src.Properties["path"])
+		} else {
+			fmt.Printf(" - %s\n", src.Name)
+		}
+	}
+
+	variables := make(map[string]string)
+	for _, c := range connectorList {
 		if c.AnonymousAccess {
 			// ignore asking for credentials if external source can be access anonymously
 			continue
@@ -189,16 +210,16 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 			}
 
 			if answer != "" {
-				vars[prop.Key] = answer
+				variables[prop.Key] = answer
 			}
 		}
 	}
 
-	if len(connectors) > 0 {
+	if len(connectorList) > 0 {
 		fmt.Println("")
 	}
 
 	tel.Emit(telemetry.ActionDataAccessSuccess)
 
-	return vars, nil
+	return variables, nil
 }
