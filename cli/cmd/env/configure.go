@@ -144,7 +144,7 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 		return nil, fmt.Errorf("failed to extract connectors %w", err)
 	}
 
-	// collect all source uris
+	// collect all sources
 	srcs := make([]*connectors.Source, 0)
 	for _, c := range connectorList {
 		if !c.AnonymousAccess {
@@ -159,7 +159,7 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 	fmt.Printf("Finish deploying your project by providing access to the data store. Rill does not have access to the following data sources:\n\n")
 	for _, src := range srcs {
 		if _, ok := src.Properties["path"]; ok {
-			// print URI wherever applicable
+			// print URL wherever applicable
 			fmt.Printf(" - %s\n", src.Properties["path"])
 		} else {
 			fmt.Printf(" - %s\n", src.Name)
