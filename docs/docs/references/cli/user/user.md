@@ -1,13 +1,9 @@
 ---
-title: rill login
+title: rill user
 ---
-## rill login
+## rill user
 
-Authenticate with the Rill API
-
-```
-rill login [flags]
-```
+Manage users
 
 ### Flags
 
@@ -24,5 +20,9 @@ rill login [flags]
 
 ### SEE ALSO
 
-* [rill](cli.md)	 - Rill CLI
+* [rill](../cli.md)	 - Rill CLI
+* [rill user add](add.md)	 - Add
+* [rill user list](list.md)	 - List
+* [rill user remove](remove.md)	 - Remove
+* [rill user set-role](set-role.md)	 - Set Role
 
