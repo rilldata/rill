@@ -68,15 +68,6 @@ func Execute(ctx context.Context, ver config.Version) {
 }
 
 func runCmd(ctx context.Context, ver config.Version) error {
-	// Cobra config
-	rootCmd.Version = ver.String()
-	// silence usage, usage string will only show up if missing arguments/flags
-	rootCmd.SilenceUsage = true
-	// we want to override some error messages
-	rootCmd.SilenceErrors = true
-	rootCmd.PersistentFlags().BoolP("help", "h", false, "Print usage") // Overrides message for help
-	rootCmd.Flags().BoolP("version", "v", false, "Show rill version")  // Adds option to get version by passing --version or -v
-
 	// Build CLI config
 	cfg := &config.Config{
 		Version: ver,
@@ -87,6 +78,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	if err != nil {
 		fmt.Printf("Warning: version check failed: %v\n", err)
 	}
+
 	// Load admin token from .rill (may later be overridden by flag --api-token)
 	token, err := dotrill.GetAccessToken()
 	if err != nil {
@@ -111,6 +103,16 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	}
 	cfg.AdminURL = url
 
+	// Cobra config
+	rootCmd.Version = ver.String()
+	// silence usage, usage string will only show up if missing arguments/flags
+	rootCmd.SilenceUsage = true
+	// we want to override some error messages
+	rootCmd.SilenceErrors = true
+	rootCmd.PersistentFlags().BoolP("help", "h", false, "Print usage") // Overrides message for help
+	rootCmd.PersistentFlags().BoolVar(&cfg.Interactive, "interactive", true, "Prompt for missing required parameters")
+	rootCmd.Flags().BoolP("version", "v", false, "Show rill version") // Adds option to get version by passing --version or -v
+
 	// Add sub-commands
 	rootCmd.AddCommand(initialize.InitCmd(cfg))
 	rootCmd.AddCommand(start.StartCmd(cfg))
@@ -120,9 +122,6 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.AddCommand(docs.DocsCmd(cfg, rootCmd))
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(versioncmd.VersionCmd())
-
-	// Set prompt for missing required parameters in config
-	rootCmd.PersistentFlags().BoolVar(&cfg.Interactive, "interactive", true, "Prompt for missing required parameters")
 
 	// Add sub-commands for admin
 	// (This allows us to add persistent flags that apply only to the admin-related commands.)
