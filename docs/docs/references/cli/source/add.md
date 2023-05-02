@@ -15,6 +15,7 @@ rill source add <file> [flags]
 ```
       --name string        Source name (defaults to file name)
   -f, --force              Overwrite the source if it already exists
+      --path string        Project directory (default ".")
       --db string          Database DSN (default "stage.db")
       --db-driver string   Database driver (default "duckdb")
       --delimiter string   CSV delimiter override (defaults to autodetect)

@@ -51,12 +51,18 @@ func genMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHa
 		if !c.IsAvailableCommand() || c.IsAdditionalHelpTopicCommand() {
 			continue
 		}
-		sd := filepath.Join(dir, cmd.Name())
+
+		sd := dir
+		if cmd.Parent() != nil {
+			sd = filepath.Join(dir, cmd.Name())
+		}
+
 		if _, err := os.Stat(sd); os.IsNotExist(err) {
 			if err := os.Mkdir(sd, fs.ModePerm); err != nil {
 				return err
 			}
 		}
+
 		if err := genMarkdownTreeCustom(c, sd, filePrepender, linkHandler); err != nil {
 			return err
 		}
@@ -64,7 +70,7 @@ func genMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHa
 
 	nm := cmd.Name()
 	filename := filepath.Join(dir, nm+".md")
-	if len(cmd.Commands()) > 0 {
+	if len(cmd.Commands()) > 0 && cmd.Parent() != nil {
 		filename = filepath.Join(dir, cmd.Name(), nm+".md")
 	}
 

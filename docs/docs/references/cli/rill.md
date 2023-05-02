@@ -13,7 +13,6 @@ Rill CLI
 ### SEE ALSO
 
 * [rill admin](admin/admin.md)	 - Manage an admin server
-* [rill build](build.md)	 - Build project without starting web app
 * [rill deploy](deploy.md)	 - Deploy project to Rill Cloud
 * [rill docs](docs/docs.md)	 - Open docs.rilldata.com
 * [rill env](env/env.md)	 - Manage variables for a project

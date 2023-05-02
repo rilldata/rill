@@ -8,6 +8,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var docsURL = "https://docs.rilldata.com"
+
 func DocsCmd(cfg *config.Config, rootCmd *cobra.Command) *cobra.Command {
 	docsCmd := &cobra.Command{
 		Use:   "docs",
