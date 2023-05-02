@@ -426,11 +426,16 @@ func (c *connection) UpdateUser(ctx context.Context, id string, opts *database.U
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, updated_on=now() WHERE id=$1 RETURNING *",
-		id,
-		opts.DisplayName,
-		opts.PhotoURL,
-		opts.GithubUsername).StructScan(res)
+	var err error
+	if opts.UpdatedOnOnly {
+		err = c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET updated_on=now() WHERE id=$1 RETURNING *", id).StructScan(res)
+	} else {
+		err = c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, updated_on=now() WHERE id=$1 RETURNING *",
+			id,
+			opts.DisplayName,
+			opts.PhotoURL,
+			opts.GithubUsername).StructScan(res)
+	}
 	if err != nil {
 		return nil, parseErr("user", err)
 	}

@@ -319,6 +319,7 @@ type UpdateUserOptions struct {
 	DisplayName    string
 	PhotoURL       string
 	GithubUsername string
+	UpdatedOnOnly  bool // if true, only update UpdatedOn, useful when user metadata is updated in other table like role change
 }
 
 // Usergroup represents a group of org members

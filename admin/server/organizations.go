@@ -398,9 +398,24 @@ func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.Set
 		}
 	}
 
+	ctx, tx, err := s.admin.DB.NewTx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
 	err = s.admin.DB.UpdateOrganizationMemberUserRole(ctx, org.ID, user.ID, role.ID)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	_, err = s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{UpdatedOnOnly: true})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	err = tx.Commit()
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &adminv1.SetOrganizationMemberRoleResponse{}, nil
