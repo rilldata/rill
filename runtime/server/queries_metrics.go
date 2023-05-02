@@ -36,6 +36,33 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 	return q.Result, nil
 }
 
+// MetricsViewComparisonToplist implements QueryService.
+func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev1.MetricsViewCompareToplistRequest) (*runtimev1.MetricsViewCompareToplistResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
+	q := &queries.MetricsViewComparisonToplist{
+		MetricsViewName:     req.MetricsViewName,
+		DimensionName:       req.DimensionName,
+		MeasureNames:        req.MeasureNames,
+		BaseTimeStart:       req.BaseTimeRange.Start,
+		BaseTimeEnd:         req.BaseTimeRange.End,
+		ComparisonTimeStart: req.ComparisonTimeRange.Start,
+		ComparisonTimeEnd:   req.ComparisonTimeRange.End,
+		Limit:               req.Limit,
+		Offset:              req.Offset,
+		Sort:                req.Sort,
+		Filter:              req.Filter,
+	}
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	if err != nil {
+		return nil, err
+	}
+
+	return q.Result, nil
+}
+
 // MetricsViewTimeSeries implements QueryService.
 func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.MetricsViewTimeSeriesRequest) (*runtimev1.MetricsViewTimeSeriesResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {

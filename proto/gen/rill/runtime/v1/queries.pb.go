@@ -815,8 +815,8 @@ type MetricsViewComparisonValue struct {
 	MeasureName     string          `protobuf:"bytes,1,opt,name=measure_name,json=measureName,proto3" json:"measure_name,omitempty"`
 	BaseValue       *structpb.Value `protobuf:"bytes,2,opt,name=base_value,json=baseValue,proto3" json:"base_value,omitempty"`
 	ComparisonValue *structpb.Value `protobuf:"bytes,3,opt,name=comparison_value,json=comparisonValue,proto3" json:"comparison_value,omitempty"`
-	DeltaAbs        float64         `protobuf:"fixed64,4,opt,name=delta_abs,json=deltaAbs,proto3" json:"delta_abs,omitempty"`
-	DeltaRel        float64         `protobuf:"fixed64,5,opt,name=delta_rel,json=deltaRel,proto3" json:"delta_rel,omitempty"`
+	DeltaAbs        *structpb.Value `protobuf:"bytes,4,opt,name=delta_abs,json=deltaAbs,proto3" json:"delta_abs,omitempty"`
+	DeltaRel        *structpb.Value `protobuf:"bytes,5,opt,name=delta_rel,json=deltaRel,proto3" json:"delta_rel,omitempty"`
 }
 
 func (x *MetricsViewComparisonValue) Reset() {
@@ -872,18 +872,18 @@ func (x *MetricsViewComparisonValue) GetComparisonValue() *structpb.Value {
 	return nil
 }
 
-func (x *MetricsViewComparisonValue) GetDeltaAbs() float64 {
+func (x *MetricsViewComparisonValue) GetDeltaAbs() *structpb.Value {
 	if x != nil {
 		return x.DeltaAbs
 	}
-	return 0
+	return nil
 }
 
-func (x *MetricsViewComparisonValue) GetDeltaRel() float64 {
+func (x *MetricsViewComparisonValue) GetDeltaRel() *structpb.Value {
 	if x != nil {
 		return x.DeltaRel
 	}
-	return 0
+	return nil
 }
 
 // Request message for QueryService.MetricsViewTimeSeries
@@ -4270,7 +4270,7 @@ var file_rill_runtime_v1_queries_proto_rawDesc = []byte{
 	0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69,
 	0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x43, 0x6f, 0x6d, 0x70, 0x61, 0x72, 0x69, 0x73, 0x6f, 0x6e,
 	0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x0d, 0x6d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x56, 0x61,
-	0x6c, 0x75, 0x65, 0x73, 0x22, 0xf3, 0x01, 0x0a, 0x1a, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73,
+	0x6c, 0x75, 0x65, 0x73, 0x22, 0xa3, 0x02, 0x0a, 0x1a, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73,
 	0x56, 0x69, 0x65, 0x77, 0x43, 0x6f, 0x6d, 0x70, 0x61, 0x72, 0x69, 0x73, 0x6f, 0x6e, 0x56, 0x61,
 	0x6c, 0x75, 0x65, 0x12, 0x21, 0x0a, 0x0c, 0x6d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x5f, 0x6e,
 	0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x6d, 0x65, 0x61, 0x73, 0x75,
@@ -4282,9 +4282,12 @@ var file_rill_runtime_v1_queries_proto_rawDesc = []byte{
 	0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
 	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52,
 	0x0f, 0x63, 0x6f, 0x6d, 0x70, 0x61, 0x72, 0x69, 0x73, 0x6f, 0x6e, 0x56, 0x61, 0x6c, 0x75, 0x65,
-	0x12, 0x1b, 0x0a, 0x09, 0x64, 0x65, 0x6c, 0x74, 0x61, 0x5f, 0x61, 0x62, 0x73, 0x18, 0x04, 0x20,
-	0x01, 0x28, 0x01, 0x52, 0x08, 0x64, 0x65, 0x6c, 0x74, 0x61, 0x41, 0x62, 0x73, 0x12, 0x1b, 0x0a,
-	0x09, 0x64, 0x65, 0x6c, 0x74, 0x61, 0x5f, 0x72, 0x65, 0x6c, 0x18, 0x05, 0x20, 0x01, 0x28, 0x01,
+	0x12, 0x33, 0x0a, 0x09, 0x64, 0x65, 0x6c, 0x74, 0x61, 0x5f, 0x61, 0x62, 0x73, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x08, 0x64, 0x65, 0x6c,
+	0x74, 0x61, 0x41, 0x62, 0x73, 0x12, 0x33, 0x0a, 0x09, 0x64, 0x65, 0x6c, 0x74, 0x61, 0x5f, 0x72,
+	0x65, 0x6c, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c,
+	0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x56, 0x61, 0x6c, 0x75, 0x65,
 	0x52, 0x08, 0x64, 0x65, 0x6c, 0x74, 0x61, 0x52, 0x65, 0x6c, 0x22, 0xa1, 0x03, 0x0a, 0x1c, 0x4d,
 	0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x54, 0x69, 0x6d, 0x65, 0x53, 0x65,
 	0x72, 0x69, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x69,
@@ -5085,97 +5088,99 @@ var file_rill_runtime_v1_queries_proto_depIdxs = []int32{
 	11, // 18: rill.runtime.v1.MetricsViewComparisonRow.measure_values:type_name -> rill.runtime.v1.MetricsViewComparisonValue
 	62, // 19: rill.runtime.v1.MetricsViewComparisonValue.base_value:type_name -> google.protobuf.Value
 	62, // 20: rill.runtime.v1.MetricsViewComparisonValue.comparison_value:type_name -> google.protobuf.Value
-	65, // 21: rill.runtime.v1.MetricsViewTimeSeriesRequest.time_start:type_name -> google.protobuf.Timestamp
-	65, // 22: rill.runtime.v1.MetricsViewTimeSeriesRequest.time_end:type_name -> google.protobuf.Timestamp
-	66, // 23: rill.runtime.v1.MetricsViewTimeSeriesRequest.time_granularity:type_name -> rill.runtime.v1.TimeGrain
-	17, // 24: rill.runtime.v1.MetricsViewTimeSeriesRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
-	18, // 25: rill.runtime.v1.MetricsViewTimeSeriesResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
-	48, // 26: rill.runtime.v1.MetricsViewTimeSeriesResponse.data:type_name -> rill.runtime.v1.TimeSeriesValue
-	65, // 27: rill.runtime.v1.MetricsViewTotalsRequest.time_start:type_name -> google.protobuf.Timestamp
-	65, // 28: rill.runtime.v1.MetricsViewTotalsRequest.time_end:type_name -> google.protobuf.Timestamp
-	17, // 29: rill.runtime.v1.MetricsViewTotalsRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
-	18, // 30: rill.runtime.v1.MetricsViewTotalsResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
-	64, // 31: rill.runtime.v1.MetricsViewTotalsResponse.data:type_name -> google.protobuf.Struct
-	56, // 32: rill.runtime.v1.MetricsViewFilter.include:type_name -> rill.runtime.v1.MetricsViewFilter.Cond
-	56, // 33: rill.runtime.v1.MetricsViewFilter.exclude:type_name -> rill.runtime.v1.MetricsViewFilter.Cond
-	65, // 34: rill.runtime.v1.ColumnRollupIntervalResponse.start:type_name -> google.protobuf.Timestamp
-	65, // 35: rill.runtime.v1.ColumnRollupIntervalResponse.end:type_name -> google.protobuf.Timestamp
-	66, // 36: rill.runtime.v1.ColumnRollupIntervalResponse.interval:type_name -> rill.runtime.v1.TimeGrain
-	23, // 37: rill.runtime.v1.ColumnTopKResponse.categorical_summary:type_name -> rill.runtime.v1.CategoricalSummary
-	24, // 38: rill.runtime.v1.CategoricalSummary.top_k:type_name -> rill.runtime.v1.TopK
-	57, // 39: rill.runtime.v1.TopK.entries:type_name -> rill.runtime.v1.TopK.Entry
-	29, // 40: rill.runtime.v1.ColumnDescriptiveStatisticsResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
-	30, // 41: rill.runtime.v1.NumericSummary.numeric_histogram_bins:type_name -> rill.runtime.v1.NumericHistogramBins
-	31, // 42: rill.runtime.v1.NumericSummary.numeric_statistics:type_name -> rill.runtime.v1.NumericStatistics
-	32, // 43: rill.runtime.v1.NumericSummary.numeric_outliers:type_name -> rill.runtime.v1.NumericOutliers
-	58, // 44: rill.runtime.v1.NumericHistogramBins.bins:type_name -> rill.runtime.v1.NumericHistogramBins.Bin
-	59, // 45: rill.runtime.v1.NumericOutliers.outliers:type_name -> rill.runtime.v1.NumericOutliers.Outlier
-	66, // 46: rill.runtime.v1.ColumnTimeGrainResponse.time_grain:type_name -> rill.runtime.v1.TimeGrain
-	1,  // 47: rill.runtime.v1.ColumnNumericHistogramRequest.histogram_method:type_name -> rill.runtime.v1.HistogramMethod
-	29, // 48: rill.runtime.v1.ColumnNumericHistogramResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
-	29, // 49: rill.runtime.v1.ColumnRugHistogramResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
-	41, // 50: rill.runtime.v1.ColumnTimeRangeResponse.time_range_summary:type_name -> rill.runtime.v1.TimeRangeSummary
-	65, // 51: rill.runtime.v1.TimeRangeSummary.min:type_name -> google.protobuf.Timestamp
-	65, // 52: rill.runtime.v1.TimeRangeSummary.max:type_name -> google.protobuf.Timestamp
-	60, // 53: rill.runtime.v1.TimeRangeSummary.interval:type_name -> rill.runtime.v1.TimeRangeSummary.Interval
-	23, // 54: rill.runtime.v1.ColumnCardinalityResponse.categorical_summary:type_name -> rill.runtime.v1.CategoricalSummary
-	61, // 55: rill.runtime.v1.ColumnTimeSeriesRequest.measures:type_name -> rill.runtime.v1.ColumnTimeSeriesRequest.BasicMeasure
-	46, // 56: rill.runtime.v1.ColumnTimeSeriesRequest.time_range:type_name -> rill.runtime.v1.TimeSeriesTimeRange
-	17, // 57: rill.runtime.v1.ColumnTimeSeriesRequest.filters:type_name -> rill.runtime.v1.MetricsViewFilter
-	47, // 58: rill.runtime.v1.ColumnTimeSeriesResponse.rollup:type_name -> rill.runtime.v1.TimeSeriesResponse
-	65, // 59: rill.runtime.v1.TimeSeriesTimeRange.start:type_name -> google.protobuf.Timestamp
-	65, // 60: rill.runtime.v1.TimeSeriesTimeRange.end:type_name -> google.protobuf.Timestamp
-	66, // 61: rill.runtime.v1.TimeSeriesTimeRange.interval:type_name -> rill.runtime.v1.TimeGrain
-	48, // 62: rill.runtime.v1.TimeSeriesResponse.results:type_name -> rill.runtime.v1.TimeSeriesValue
-	48, // 63: rill.runtime.v1.TimeSeriesResponse.spark:type_name -> rill.runtime.v1.TimeSeriesValue
-	46, // 64: rill.runtime.v1.TimeSeriesResponse.time_range:type_name -> rill.runtime.v1.TimeSeriesTimeRange
-	65, // 65: rill.runtime.v1.TimeSeriesValue.ts:type_name -> google.protobuf.Timestamp
-	64, // 66: rill.runtime.v1.TimeSeriesValue.records:type_name -> google.protobuf.Struct
-	53, // 67: rill.runtime.v1.TableColumnsResponse.profile_columns:type_name -> rill.runtime.v1.ProfileColumn
-	64, // 68: rill.runtime.v1.TableRowsResponse.data:type_name -> google.protobuf.Struct
-	62, // 69: rill.runtime.v1.MetricsViewFilter.Cond.in:type_name -> google.protobuf.Value
-	62, // 70: rill.runtime.v1.TopK.Entry.value:type_name -> google.protobuf.Value
-	2,  // 71: rill.runtime.v1.QueryService.Query:input_type -> rill.runtime.v1.QueryRequest
-	4,  // 72: rill.runtime.v1.QueryService.MetricsViewToplist:input_type -> rill.runtime.v1.MetricsViewToplistRequest
-	6,  // 73: rill.runtime.v1.QueryService.MetricsViewComparisonToplist:input_type -> rill.runtime.v1.MetricsViewCompareToplistRequest
-	12, // 74: rill.runtime.v1.QueryService.MetricsViewTimeSeries:input_type -> rill.runtime.v1.MetricsViewTimeSeriesRequest
-	14, // 75: rill.runtime.v1.QueryService.MetricsViewTotals:input_type -> rill.runtime.v1.MetricsViewTotalsRequest
-	19, // 76: rill.runtime.v1.QueryService.ColumnRollupInterval:input_type -> rill.runtime.v1.ColumnRollupIntervalRequest
-	21, // 77: rill.runtime.v1.QueryService.ColumnTopK:input_type -> rill.runtime.v1.ColumnTopKRequest
-	25, // 78: rill.runtime.v1.QueryService.ColumnNullCount:input_type -> rill.runtime.v1.ColumnNullCountRequest
-	27, // 79: rill.runtime.v1.QueryService.ColumnDescriptiveStatistics:input_type -> rill.runtime.v1.ColumnDescriptiveStatisticsRequest
-	33, // 80: rill.runtime.v1.QueryService.ColumnTimeGrain:input_type -> rill.runtime.v1.ColumnTimeGrainRequest
-	35, // 81: rill.runtime.v1.QueryService.ColumnNumericHistogram:input_type -> rill.runtime.v1.ColumnNumericHistogramRequest
-	37, // 82: rill.runtime.v1.QueryService.ColumnRugHistogram:input_type -> rill.runtime.v1.ColumnRugHistogramRequest
-	39, // 83: rill.runtime.v1.QueryService.ColumnTimeRange:input_type -> rill.runtime.v1.ColumnTimeRangeRequest
-	42, // 84: rill.runtime.v1.QueryService.ColumnCardinality:input_type -> rill.runtime.v1.ColumnCardinalityRequest
-	44, // 85: rill.runtime.v1.QueryService.ColumnTimeSeries:input_type -> rill.runtime.v1.ColumnTimeSeriesRequest
-	49, // 86: rill.runtime.v1.QueryService.TableCardinality:input_type -> rill.runtime.v1.TableCardinalityRequest
-	51, // 87: rill.runtime.v1.QueryService.TableColumns:input_type -> rill.runtime.v1.TableColumnsRequest
-	54, // 88: rill.runtime.v1.QueryService.TableRows:input_type -> rill.runtime.v1.TableRowsRequest
-	3,  // 89: rill.runtime.v1.QueryService.Query:output_type -> rill.runtime.v1.QueryResponse
-	5,  // 90: rill.runtime.v1.QueryService.MetricsViewToplist:output_type -> rill.runtime.v1.MetricsViewToplistResponse
-	7,  // 91: rill.runtime.v1.QueryService.MetricsViewComparisonToplist:output_type -> rill.runtime.v1.MetricsViewCompareToplistResponse
-	13, // 92: rill.runtime.v1.QueryService.MetricsViewTimeSeries:output_type -> rill.runtime.v1.MetricsViewTimeSeriesResponse
-	15, // 93: rill.runtime.v1.QueryService.MetricsViewTotals:output_type -> rill.runtime.v1.MetricsViewTotalsResponse
-	20, // 94: rill.runtime.v1.QueryService.ColumnRollupInterval:output_type -> rill.runtime.v1.ColumnRollupIntervalResponse
-	22, // 95: rill.runtime.v1.QueryService.ColumnTopK:output_type -> rill.runtime.v1.ColumnTopKResponse
-	26, // 96: rill.runtime.v1.QueryService.ColumnNullCount:output_type -> rill.runtime.v1.ColumnNullCountResponse
-	28, // 97: rill.runtime.v1.QueryService.ColumnDescriptiveStatistics:output_type -> rill.runtime.v1.ColumnDescriptiveStatisticsResponse
-	34, // 98: rill.runtime.v1.QueryService.ColumnTimeGrain:output_type -> rill.runtime.v1.ColumnTimeGrainResponse
-	36, // 99: rill.runtime.v1.QueryService.ColumnNumericHistogram:output_type -> rill.runtime.v1.ColumnNumericHistogramResponse
-	38, // 100: rill.runtime.v1.QueryService.ColumnRugHistogram:output_type -> rill.runtime.v1.ColumnRugHistogramResponse
-	40, // 101: rill.runtime.v1.QueryService.ColumnTimeRange:output_type -> rill.runtime.v1.ColumnTimeRangeResponse
-	43, // 102: rill.runtime.v1.QueryService.ColumnCardinality:output_type -> rill.runtime.v1.ColumnCardinalityResponse
-	45, // 103: rill.runtime.v1.QueryService.ColumnTimeSeries:output_type -> rill.runtime.v1.ColumnTimeSeriesResponse
-	50, // 104: rill.runtime.v1.QueryService.TableCardinality:output_type -> rill.runtime.v1.TableCardinalityResponse
-	52, // 105: rill.runtime.v1.QueryService.TableColumns:output_type -> rill.runtime.v1.TableColumnsResponse
-	55, // 106: rill.runtime.v1.QueryService.TableRows:output_type -> rill.runtime.v1.TableRowsResponse
-	89, // [89:107] is the sub-list for method output_type
-	71, // [71:89] is the sub-list for method input_type
-	71, // [71:71] is the sub-list for extension type_name
-	71, // [71:71] is the sub-list for extension extendee
-	0,  // [0:71] is the sub-list for field type_name
+	62, // 21: rill.runtime.v1.MetricsViewComparisonValue.delta_abs:type_name -> google.protobuf.Value
+	62, // 22: rill.runtime.v1.MetricsViewComparisonValue.delta_rel:type_name -> google.protobuf.Value
+	65, // 23: rill.runtime.v1.MetricsViewTimeSeriesRequest.time_start:type_name -> google.protobuf.Timestamp
+	65, // 24: rill.runtime.v1.MetricsViewTimeSeriesRequest.time_end:type_name -> google.protobuf.Timestamp
+	66, // 25: rill.runtime.v1.MetricsViewTimeSeriesRequest.time_granularity:type_name -> rill.runtime.v1.TimeGrain
+	17, // 26: rill.runtime.v1.MetricsViewTimeSeriesRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
+	18, // 27: rill.runtime.v1.MetricsViewTimeSeriesResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
+	48, // 28: rill.runtime.v1.MetricsViewTimeSeriesResponse.data:type_name -> rill.runtime.v1.TimeSeriesValue
+	65, // 29: rill.runtime.v1.MetricsViewTotalsRequest.time_start:type_name -> google.protobuf.Timestamp
+	65, // 30: rill.runtime.v1.MetricsViewTotalsRequest.time_end:type_name -> google.protobuf.Timestamp
+	17, // 31: rill.runtime.v1.MetricsViewTotalsRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
+	18, // 32: rill.runtime.v1.MetricsViewTotalsResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
+	64, // 33: rill.runtime.v1.MetricsViewTotalsResponse.data:type_name -> google.protobuf.Struct
+	56, // 34: rill.runtime.v1.MetricsViewFilter.include:type_name -> rill.runtime.v1.MetricsViewFilter.Cond
+	56, // 35: rill.runtime.v1.MetricsViewFilter.exclude:type_name -> rill.runtime.v1.MetricsViewFilter.Cond
+	65, // 36: rill.runtime.v1.ColumnRollupIntervalResponse.start:type_name -> google.protobuf.Timestamp
+	65, // 37: rill.runtime.v1.ColumnRollupIntervalResponse.end:type_name -> google.protobuf.Timestamp
+	66, // 38: rill.runtime.v1.ColumnRollupIntervalResponse.interval:type_name -> rill.runtime.v1.TimeGrain
+	23, // 39: rill.runtime.v1.ColumnTopKResponse.categorical_summary:type_name -> rill.runtime.v1.CategoricalSummary
+	24, // 40: rill.runtime.v1.CategoricalSummary.top_k:type_name -> rill.runtime.v1.TopK
+	57, // 41: rill.runtime.v1.TopK.entries:type_name -> rill.runtime.v1.TopK.Entry
+	29, // 42: rill.runtime.v1.ColumnDescriptiveStatisticsResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
+	30, // 43: rill.runtime.v1.NumericSummary.numeric_histogram_bins:type_name -> rill.runtime.v1.NumericHistogramBins
+	31, // 44: rill.runtime.v1.NumericSummary.numeric_statistics:type_name -> rill.runtime.v1.NumericStatistics
+	32, // 45: rill.runtime.v1.NumericSummary.numeric_outliers:type_name -> rill.runtime.v1.NumericOutliers
+	58, // 46: rill.runtime.v1.NumericHistogramBins.bins:type_name -> rill.runtime.v1.NumericHistogramBins.Bin
+	59, // 47: rill.runtime.v1.NumericOutliers.outliers:type_name -> rill.runtime.v1.NumericOutliers.Outlier
+	66, // 48: rill.runtime.v1.ColumnTimeGrainResponse.time_grain:type_name -> rill.runtime.v1.TimeGrain
+	1,  // 49: rill.runtime.v1.ColumnNumericHistogramRequest.histogram_method:type_name -> rill.runtime.v1.HistogramMethod
+	29, // 50: rill.runtime.v1.ColumnNumericHistogramResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
+	29, // 51: rill.runtime.v1.ColumnRugHistogramResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
+	41, // 52: rill.runtime.v1.ColumnTimeRangeResponse.time_range_summary:type_name -> rill.runtime.v1.TimeRangeSummary
+	65, // 53: rill.runtime.v1.TimeRangeSummary.min:type_name -> google.protobuf.Timestamp
+	65, // 54: rill.runtime.v1.TimeRangeSummary.max:type_name -> google.protobuf.Timestamp
+	60, // 55: rill.runtime.v1.TimeRangeSummary.interval:type_name -> rill.runtime.v1.TimeRangeSummary.Interval
+	23, // 56: rill.runtime.v1.ColumnCardinalityResponse.categorical_summary:type_name -> rill.runtime.v1.CategoricalSummary
+	61, // 57: rill.runtime.v1.ColumnTimeSeriesRequest.measures:type_name -> rill.runtime.v1.ColumnTimeSeriesRequest.BasicMeasure
+	46, // 58: rill.runtime.v1.ColumnTimeSeriesRequest.time_range:type_name -> rill.runtime.v1.TimeSeriesTimeRange
+	17, // 59: rill.runtime.v1.ColumnTimeSeriesRequest.filters:type_name -> rill.runtime.v1.MetricsViewFilter
+	47, // 60: rill.runtime.v1.ColumnTimeSeriesResponse.rollup:type_name -> rill.runtime.v1.TimeSeriesResponse
+	65, // 61: rill.runtime.v1.TimeSeriesTimeRange.start:type_name -> google.protobuf.Timestamp
+	65, // 62: rill.runtime.v1.TimeSeriesTimeRange.end:type_name -> google.protobuf.Timestamp
+	66, // 63: rill.runtime.v1.TimeSeriesTimeRange.interval:type_name -> rill.runtime.v1.TimeGrain
+	48, // 64: rill.runtime.v1.TimeSeriesResponse.results:type_name -> rill.runtime.v1.TimeSeriesValue
+	48, // 65: rill.runtime.v1.TimeSeriesResponse.spark:type_name -> rill.runtime.v1.TimeSeriesValue
+	46, // 66: rill.runtime.v1.TimeSeriesResponse.time_range:type_name -> rill.runtime.v1.TimeSeriesTimeRange
+	65, // 67: rill.runtime.v1.TimeSeriesValue.ts:type_name -> google.protobuf.Timestamp
+	64, // 68: rill.runtime.v1.TimeSeriesValue.records:type_name -> google.protobuf.Struct
+	53, // 69: rill.runtime.v1.TableColumnsResponse.profile_columns:type_name -> rill.runtime.v1.ProfileColumn
+	64, // 70: rill.runtime.v1.TableRowsResponse.data:type_name -> google.protobuf.Struct
+	62, // 71: rill.runtime.v1.MetricsViewFilter.Cond.in:type_name -> google.protobuf.Value
+	62, // 72: rill.runtime.v1.TopK.Entry.value:type_name -> google.protobuf.Value
+	2,  // 73: rill.runtime.v1.QueryService.Query:input_type -> rill.runtime.v1.QueryRequest
+	4,  // 74: rill.runtime.v1.QueryService.MetricsViewToplist:input_type -> rill.runtime.v1.MetricsViewToplistRequest
+	6,  // 75: rill.runtime.v1.QueryService.MetricsViewComparisonToplist:input_type -> rill.runtime.v1.MetricsViewCompareToplistRequest
+	12, // 76: rill.runtime.v1.QueryService.MetricsViewTimeSeries:input_type -> rill.runtime.v1.MetricsViewTimeSeriesRequest
+	14, // 77: rill.runtime.v1.QueryService.MetricsViewTotals:input_type -> rill.runtime.v1.MetricsViewTotalsRequest
+	19, // 78: rill.runtime.v1.QueryService.ColumnRollupInterval:input_type -> rill.runtime.v1.ColumnRollupIntervalRequest
+	21, // 79: rill.runtime.v1.QueryService.ColumnTopK:input_type -> rill.runtime.v1.ColumnTopKRequest
+	25, // 80: rill.runtime.v1.QueryService.ColumnNullCount:input_type -> rill.runtime.v1.ColumnNullCountRequest
+	27, // 81: rill.runtime.v1.QueryService.ColumnDescriptiveStatistics:input_type -> rill.runtime.v1.ColumnDescriptiveStatisticsRequest
+	33, // 82: rill.runtime.v1.QueryService.ColumnTimeGrain:input_type -> rill.runtime.v1.ColumnTimeGrainRequest
+	35, // 83: rill.runtime.v1.QueryService.ColumnNumericHistogram:input_type -> rill.runtime.v1.ColumnNumericHistogramRequest
+	37, // 84: rill.runtime.v1.QueryService.ColumnRugHistogram:input_type -> rill.runtime.v1.ColumnRugHistogramRequest
+	39, // 85: rill.runtime.v1.QueryService.ColumnTimeRange:input_type -> rill.runtime.v1.ColumnTimeRangeRequest
+	42, // 86: rill.runtime.v1.QueryService.ColumnCardinality:input_type -> rill.runtime.v1.ColumnCardinalityRequest
+	44, // 87: rill.runtime.v1.QueryService.ColumnTimeSeries:input_type -> rill.runtime.v1.ColumnTimeSeriesRequest
+	49, // 88: rill.runtime.v1.QueryService.TableCardinality:input_type -> rill.runtime.v1.TableCardinalityRequest
+	51, // 89: rill.runtime.v1.QueryService.TableColumns:input_type -> rill.runtime.v1.TableColumnsRequest
+	54, // 90: rill.runtime.v1.QueryService.TableRows:input_type -> rill.runtime.v1.TableRowsRequest
+	3,  // 91: rill.runtime.v1.QueryService.Query:output_type -> rill.runtime.v1.QueryResponse
+	5,  // 92: rill.runtime.v1.QueryService.MetricsViewToplist:output_type -> rill.runtime.v1.MetricsViewToplistResponse
+	7,  // 93: rill.runtime.v1.QueryService.MetricsViewComparisonToplist:output_type -> rill.runtime.v1.MetricsViewCompareToplistResponse
+	13, // 94: rill.runtime.v1.QueryService.MetricsViewTimeSeries:output_type -> rill.runtime.v1.MetricsViewTimeSeriesResponse
+	15, // 95: rill.runtime.v1.QueryService.MetricsViewTotals:output_type -> rill.runtime.v1.MetricsViewTotalsResponse
+	20, // 96: rill.runtime.v1.QueryService.ColumnRollupInterval:output_type -> rill.runtime.v1.ColumnRollupIntervalResponse
+	22, // 97: rill.runtime.v1.QueryService.ColumnTopK:output_type -> rill.runtime.v1.ColumnTopKResponse
+	26, // 98: rill.runtime.v1.QueryService.ColumnNullCount:output_type -> rill.runtime.v1.ColumnNullCountResponse
+	28, // 99: rill.runtime.v1.QueryService.ColumnDescriptiveStatistics:output_type -> rill.runtime.v1.ColumnDescriptiveStatisticsResponse
+	34, // 100: rill.runtime.v1.QueryService.ColumnTimeGrain:output_type -> rill.runtime.v1.ColumnTimeGrainResponse
+	36, // 101: rill.runtime.v1.QueryService.ColumnNumericHistogram:output_type -> rill.runtime.v1.ColumnNumericHistogramResponse
+	38, // 102: rill.runtime.v1.QueryService.ColumnRugHistogram:output_type -> rill.runtime.v1.ColumnRugHistogramResponse
+	40, // 103: rill.runtime.v1.QueryService.ColumnTimeRange:output_type -> rill.runtime.v1.ColumnTimeRangeResponse
+	43, // 104: rill.runtime.v1.QueryService.ColumnCardinality:output_type -> rill.runtime.v1.ColumnCardinalityResponse
+	45, // 105: rill.runtime.v1.QueryService.ColumnTimeSeries:output_type -> rill.runtime.v1.ColumnTimeSeriesResponse
+	50, // 106: rill.runtime.v1.QueryService.TableCardinality:output_type -> rill.runtime.v1.TableCardinalityResponse
+	52, // 107: rill.runtime.v1.QueryService.TableColumns:output_type -> rill.runtime.v1.TableColumnsResponse
+	55, // 108: rill.runtime.v1.QueryService.TableRows:output_type -> rill.runtime.v1.TableRowsResponse
+	91, // [91:109] is the sub-list for method output_type
+	73, // [73:91] is the sub-list for method input_type
+	73, // [73:73] is the sub-list for extension type_name
+	73, // [73:73] is the sub-list for extension extendee
+	0,  // [0:73] is the sub-list for field type_name
 }
 
 func init() { file_rill_runtime_v1_queries_proto_init() }

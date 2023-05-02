@@ -1646,9 +1646,63 @@ func (m *MetricsViewComparisonValue) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for DeltaAbs
+	if all {
+		switch v := interface{}(m.GetDeltaAbs()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewComparisonValueValidationError{
+					field:  "DeltaAbs",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewComparisonValueValidationError{
+					field:  "DeltaAbs",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDeltaAbs()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewComparisonValueValidationError{
+				field:  "DeltaAbs",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
-	// no validation rules for DeltaRel
+	if all {
+		switch v := interface{}(m.GetDeltaRel()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewComparisonValueValidationError{
+					field:  "DeltaRel",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewComparisonValueValidationError{
+					field:  "DeltaRel",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDeltaRel()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewComparisonValueValidationError{
+				field:  "DeltaRel",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return MetricsViewComparisonValueMultiError(errors)

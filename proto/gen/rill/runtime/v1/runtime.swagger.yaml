@@ -1950,12 +1950,8 @@ definitions:
         type: string
       baseValue: {}
       comparisonValue: {}
-      deltaAbs:
-        type: number
-        format: double
-      deltaRel:
-        type: number
-        format: double
+      deltaAbs: {}
+      deltaRel: {}
   v1MetricsViewFilter:
     type: object
     properties:

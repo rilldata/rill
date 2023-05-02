@@ -571,6 +571,75 @@ func TestServer_MetricsViewTotals_1dim_include_and_exclude_in_and_like(t *testin
 	require.Equal(t, 0.0, tr.Data.Fields["measure_0"].GetNumberValue())
 }
 
+/*
+|id |timestamp               |publisher|domain   |bid_price|volume|impressions|ad words|clicks|device|
+|---|------------------------|---------|---------|---------|------|-----------|--------|------|------|
+|0  |2022-01-01T14:49:50.459Z|         |msn.com  |2        |4     |2          |cars    |      |iphone|
+|1  |2022-01-02T11:58:12.475Z|Yahoo    |yahoo.com|2        |4     |1          |cars    |1     |      |
+
+dimensions:
+  - label: Publisher
+    property: publisher
+    description: ""
+  - label: Domain
+    property: domain
+    description: ""
+  - label: Id
+    property: id
+  - label: Numeric Dim
+    property: numeric_dim
+  - label: Device
+    property: device
+
+measures:
+  - label: "Number of bids"
+    expression: count(*)
+    description: ""
+    format_preset: ""
+  - label: "Total volume"
+    expression: sum(volume)
+    description: ""
+    format_preset: ""
+  - label: "Total impressions"
+    expression: sum(impressions)
+  - label: "Total clicks"
+    expression: sum(clicks)
+*/
+func TestServer_MetricsViewComparisonToplist(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewCompareToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "ad words",
+		MeasureNames:    []string{"measure_2"},
+		BaseTimeRange: &runtimev1.TimeRange{
+			Start: parseTime(t, "2022-01-01T00:00:00Z"),
+			End:   parseTime(t, "2022-01-01T23:59:00Z"),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: parseTime(t, "2022-01-02T00:00:00Z"),
+			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_2",
+				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Ascending:   true,
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data))
+	require.Equal(t, "cars", tr.Data[0].DimensionValue)
+	// require.Equal(t, 2, len(tr.Data[1].DimensionName))
+
+	require.Equal(t, 2.0, tr.Data[0].MeasureValues[0].BaseValue)
+	require.Equal(t, 1.0, tr.Data[0].MeasureValues[0].ComparisonValue)
+	require.Equal(t, 1.0, tr.Data[0].MeasureValues[0].DeltaAbs)
+	require.Equal(t, 1.0, tr.Data[0].MeasureValues[0].DeltaRel)
+}
+
 func TestServer_MetricsViewToplist(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 

@@ -543,8 +543,8 @@ export interface V1MetricsViewComparisonValue {
   measureName?: string;
   baseValue?: unknown;
   comparisonValue?: unknown;
-  deltaAbs?: number;
-  deltaRel?: number;
+  deltaAbs?: unknown;
+  deltaRel?: unknown;
 }
 
 export interface V1MetricsViewComparisonSort {

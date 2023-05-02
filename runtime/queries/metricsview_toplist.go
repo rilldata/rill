@@ -92,17 +92,15 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	return nil
 }
 
-func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, []string, error) {
+func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
 	dimName := safeName(q.DimensionName)
 	selectCols := []string{dimName}
-	measureNames := []string{}
 	for _, n := range q.MeasureNames {
 		found := false
 		for _, m := range mv.Measures {
 			if m.Name == n {
 				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
 				selectCols = append(selectCols, expr)
-				measureNames = append(measureNames, m.Name)
 				found = true
 				break
 			}

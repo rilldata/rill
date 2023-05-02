@@ -627,14 +627,14 @@ export class MetricsViewComparisonValue extends Message<MetricsViewComparisonVal
   comparisonValue?: Value;
 
   /**
-   * @generated from field: double delta_abs = 4;
+   * @generated from field: google.protobuf.Value delta_abs = 4;
    */
-  deltaAbs = 0;
+  deltaAbs?: Value;
 
   /**
-   * @generated from field: double delta_rel = 5;
+   * @generated from field: google.protobuf.Value delta_rel = 5;
    */
-  deltaRel = 0;
+  deltaRel?: Value;
 
   constructor(data?: PartialMessage<MetricsViewComparisonValue>) {
     super();
@@ -647,8 +647,8 @@ export class MetricsViewComparisonValue extends Message<MetricsViewComparisonVal
     { no: 1, name: "measure_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "base_value", kind: "message", T: Value },
     { no: 3, name: "comparison_value", kind: "message", T: Value },
-    { no: 4, name: "delta_abs", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
-    { no: 5, name: "delta_rel", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 4, name: "delta_abs", kind: "message", T: Value },
+    { no: 5, name: "delta_rel", kind: "message", T: Value },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonValue {

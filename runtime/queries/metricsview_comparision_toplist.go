@@ -14,43 +14,43 @@ import (
 )
 
 type MetricsViewComparisonToplist struct {
-	MetricsViewName     string                       `json:"metrics_view_name,omitempty"`
-	DimensionName       string                       `json:"dimension_name,omitempty"`
-	MeasureNames        []string                     `json:"measure_names,omitempty"`
-	BaseTimeStart       *timestamppb.Timestamp       `json:"base_time_start,omitempty"`
-	BaseTimeEnd         *timestamppb.Timestamp       `json:"base_time_end,omitempty"`
-	ComparisonTimeStart *timestamppb.Timestamp       `json:"compared_time_start,omitempty"`
-	ComparisonTimeEnd   *timestamppb.Timestamp       `json:"compared_time_end,omitempty"`
-	Limit               int64                        `json:"limit,omitempty"`
-	Offset              int64                        `json:"offset,omitempty"`
-	Sort                []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
-	Filter              *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
+	MetricsViewName     string                                 `json:"metrics_view_name,omitempty"`
+	DimensionName       string                                 `json:"dimension_name,omitempty"`
+	MeasureNames        []string                               `json:"measure_names,omitempty"`
+	BaseTimeStart       *timestamppb.Timestamp                 `json:"base_time_start,omitempty"`
+	BaseTimeEnd         *timestamppb.Timestamp                 `json:"base_time_end,omitempty"`
+	ComparisonTimeStart *timestamppb.Timestamp                 `json:"comparison_time_start,omitempty"`
+	ComparisonTimeEnd   *timestamppb.Timestamp                 `json:"comparison_time_end,omitempty"`
+	Limit               int64                                  `json:"limit,omitempty"`
+	Offset              int64                                  `json:"offset,omitempty"`
+	Sort                []*runtimev1.MetricsViewComparisonSort `json:"sort,omitempty"`
+	Filter              *runtimev1.MetricsViewFilter           `json:"filter,omitempty"`
 
 	Result *runtimev1.MetricsViewCompareToplistResponse `json:"-"`
 }
 
-var _ runtime.Query = &MetricsViewToplist{}
+var _ runtime.Query = &MetricsViewComparisonToplist{}
 
 func (q *MetricsViewComparisonToplist) Key() string {
 	r, err := json.Marshal(q)
 	if err != nil {
 		panic(err)
 	}
-	return fmt.Sprintf("MetricsViewToplist:%s", string(r))
+	return fmt.Sprintf("MetricsViewCompareToplist:%s", string(r))
 }
 
-func (q *MetricsViewToplist) Deps() []string {
+func (q *MetricsViewComparisonToplist) Deps() []string {
 	return []string{q.MetricsViewName}
 }
 
-func (q *MetricsViewToplist) MarshalResult() any {
+func (q *MetricsViewComparisonToplist) MarshalResult() any {
 	return q.Result
 }
 
-func (q *MetricsViewToplist) UnmarshalResult(v any) error {
-	res, ok := v.(*runtimev1.MetricsViewToplistResponse)
+func (q *MetricsViewComparisonToplist) UnmarshalResult(v any) error {
+	res, ok := v.(*runtimev1.MetricsViewCompareToplistResponse)
 	if !ok {
-		return fmt.Errorf("MetricsViewToplist: mismatched unmarshal input")
+		return fmt.Errorf("MetricsViewComparisonToplist: mismatched unmarshal input")
 	}
 	q.Result = res
 	return nil
@@ -71,11 +71,13 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 		return err
 	}
 
-	if mv.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+	if mv.TimeDimension == "" {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
+	if q.BaseTimeStart == nil || q.BaseTimeEnd == nil || q.ComparisonTimeStart == nil || q.ComparisonTimeEnd == nil {
+		return fmt.Errorf("undefined time range for comparison on '%s' metrics view ", q.MetricsViewName)
+	}
 
-	// Build query
 	sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect())
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
@@ -87,18 +89,17 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 		Priority: priority,
 	})
 	if err != nil {
-		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		return err
 	}
 	defer rows.Close()
 
-	// rowMap := make(map[string]any)
 	var data []*runtimev1.MetricsViewComparisonRow
 	for rows.Next() {
 		values, err := rows.SliceScan()
 		if err != nil {
-			return status.Error(codes.Internal, err.Error())
+			return err
 		}
-		measureValues := []*runtimev1.MetricsViewComparisonValue
+		measureValues := []*runtimev1.MetricsViewComparisonValue{}
 
 		for i, name := range q.MeasureNames {
 			bv, err := pbutil.ToValue(values[1+i*4])
@@ -137,12 +138,6 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 			MeasureValues:  measureValues,
 		})
 	}
-	// // // Execute
-	// meta, data, err := metricsQuery(ctx, olap, priority, sql, args)
-
-	// if err != nil {
-	// 	return err
-	// }
 
 	q.Result = &runtimev1.MetricsViewCompareToplistResponse{
 		Data: data,
@@ -161,14 +156,6 @@ func timeRangeClause(start *timestamppb.Timestamp, end *timestamppb.Timestamp, t
 
 	return clause
 }
-
-// func prefixColumns(prefix string, cols []string) string {
-// 	var clause string
-// 	for {
-// 		clause += prefix + col
-// 	}
-// 	return clause
-// }
 
 func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
 	dimName := safeName(q.DimensionName)
@@ -205,9 +192,6 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 	if mv.TimeDimension == "" {
 		return "", nil, fmt.Errorf("Metrics view '%s' doesn't have time dimension", mv.Name)
 	}
-	if q.BaseTimeStart == nil || q.BaseTimeEnd == nil || q.ComparisonTimeStart == nil || q.ComparisonTimeEnd == nil {
-		return "", nil, fmt.Errorf("Undefined time range for comparison on '%s' metrics view ", mv.Name)
-	}
 
 	td := safeName(mv.TimeDimension)
 
@@ -234,9 +218,21 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 	}
 
 	orderClause := "true"
-	for _, s := range q.Sort {
+	for i, s := range q.Sort {
 		orderClause += ", "
-		orderClause += safeName(s.Name)
+		var pos int
+		switch s.Type {
+		case runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_BASE_VALUE:
+			pos = 1 + i*4
+		case runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_COMPARISON_VALUE:
+			pos = 2 + i*4
+
+		case runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_DELTA:
+			pos = 3 + i*4
+		default:
+			return "", nil, fmt.Errorf("undefined sort type for measure %s", s.MeasureName)
+		}
+		orderClause += fmt.Sprint(pos)
 		if !s.Ascending {
 			orderClause += " DESC"
 		}
@@ -272,6 +268,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 		q.Limit,               // 7
 		finalSelectClause,     // 8
 	)
+	fmt.Println("sql " + sql)
 
-	return sql, args, measureNames, nil
+	return sql, args, nil
 }
