@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/rilldata/rill/cli/cmd/admin"
 	"github.com/rilldata/rill/cli/cmd/auth"
@@ -45,25 +46,23 @@ var rootCmd = &cobra.Command{
 func Execute(ctx context.Context, ver config.Version) {
 	err := runCmd(ctx, ver)
 	if err != nil {
-		if s, ok := status.FromError(err); ok {
-			// try to see if it is a known message
-			switch s.Message() {
-			case "org not found":
-				// handle various cases like passed via flag, taken from default etc to print better error messages ??
-				fmt.Println("Org not found. Run `rill org list` to see the orgs. Run `rill org switch` to default org.")
-			case "proj not found":
-				fmt.Println("Project not found. Run `rill project list` to check the list of projects.")
-			case "auth token not found":
-				fmt.Println("Auth token is invalid/expired. Run `rill logout` and login again with `rill login`.")
-			case "not authenticated as a user":
-				fmt.Println("Please log in or sign up for Rill with `rill login`.")
-			default:
-				// no known message
-				// todo :: add trace id as well
-				fmt.Printf("Error: %s (%v)\n", s.Message(), s.Code())
-			}
+		errMsg := err.Error()
+		// check for known messages
+		if strings.Contains(errMsg, "org not found") {
+			fmt.Println("Org not found. Run `rill org list` to see the orgs. Run `rill org switch` to default org.")
+		} else if strings.Contains(errMsg, "project not found") {
+			fmt.Println("Project not found. Run `rill project list` to check the list of projects.")
+		} else if strings.Contains(errMsg, "auth token not found") {
+			fmt.Println("Auth token is invalid/expired. Run `rill logout` and login again with `rill login`.")
+		} else if strings.Contains(errMsg, "not authenticated as a user") {
+			fmt.Println("Please log in or sign up for Rill with `rill login`.")
 		} else {
-			fmt.Printf("Error: %s\n", err.Error())
+			if s, ok := status.FromError(err); ok {
+				// rpc error
+				fmt.Printf("Error: %s (%v)\n", s.Message(), s.Code())
+			} else {
+				fmt.Printf("Error: %s\n", err.Error())
+			}
 		}
 		os.Exit(1)
 	}
