@@ -223,12 +223,11 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 		var pos int
 		switch s.Type {
 		case runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_BASE_VALUE:
-			pos = 1 + i*4
-		case runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_COMPARISON_VALUE:
 			pos = 2 + i*4
-
-		case runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_DELTA:
+		case runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_COMPARISON_VALUE:
 			pos = 3 + i*4
+		case runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_DELTA:
+			pos = 4 + i*4
 		default:
 			return "", nil, fmt.Errorf("undefined sort type for measure %s", s.MeasureName)
 		}
@@ -244,7 +243,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 	}
 
 	sql := fmt.Sprintf(`
-		SELECT %[8]s FROM 
+		SELECT COALESCE(base.%[2]s, comparison.%[2]s), %[8]s FROM 
 			(
 				SELECT %[1]s, %[2]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s
 			) base
