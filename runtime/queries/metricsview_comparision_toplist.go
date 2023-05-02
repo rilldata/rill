@@ -161,7 +161,9 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 	dimName := safeName(q.DimensionName)
 	selectCols := []string{dimName}
 	finalSelectCols := []string{}
-	for _, n := range q.MeasureNames {
+	measureMap := make(map[string]int)
+	for i, n := range q.MeasureNames {
+		measureMap[n] = i
 		found := false
 		for _, m := range mv.Measures {
 			if m.Name == n {
@@ -218,7 +220,8 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 	}
 
 	orderClause := "true"
-	for i, s := range q.Sort {
+	for _, s := range q.Sort {
+		i := measureMap[s.MeasureName]
 		orderClause += ", "
 		var pos int
 		switch s.Type {
