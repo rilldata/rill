@@ -1,3 +1,6 @@
+---
+title: rill env configure
+---
 ## rill env configure
 
 Configures connector variables for all sources

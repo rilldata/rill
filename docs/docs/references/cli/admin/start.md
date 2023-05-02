@@ -1,3 +1,6 @@
+---
+title: rill admin start
+---
 ## rill admin start
 
 Start admin server

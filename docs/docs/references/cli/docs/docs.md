@@ -1,3 +1,6 @@
+---
+title: rill docs
+---
 ## rill docs
 
 Open docs.rilldata.com
@@ -15,6 +18,6 @@ rill docs [flags]
 
 ### SEE ALSO
 
-* [rill](../rill.md)	 - Rill CLI
+* [rill](../cli.md)	 - Rill CLI
 * [rill docs generate](generate.md)	 - Generate CLI documentation
 

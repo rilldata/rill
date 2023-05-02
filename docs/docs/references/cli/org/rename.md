@@ -1,3 +1,6 @@
+---
+title: rill org rename
+---
 ## rill org rename
 
 Rename

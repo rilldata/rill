@@ -1,3 +1,6 @@
+---
+title: rill runtime
+---
 ## rill runtime
 
 Manage stand-alone runtimes
@@ -11,7 +14,7 @@ Manage stand-alone runtimes
 
 ### SEE ALSO
 
-* [rill](../rill.md)	 - Rill CLI
+* [rill](../cli.md)	 - Rill CLI
 * [rill runtime ping](ping.md)	 - Ping
 * [rill runtime start](start.md)	 - Start stand-alone runtime server
 

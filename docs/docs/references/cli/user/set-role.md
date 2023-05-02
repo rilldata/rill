@@ -1,3 +1,6 @@
+---
+title: rill user set-role
+---
 ## rill user set-role
 
 Set Role

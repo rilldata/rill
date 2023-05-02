@@ -1,3 +1,6 @@
+---
+title: rill env
+---
 ## rill env
 
 Manage variables for a project
@@ -18,7 +21,7 @@ Manage variables for a project
 
 ### SEE ALSO
 
-* [rill](../rill.md)	 - Rill CLI
+* [rill](../cli.md)	 - Rill CLI
 * [rill env configure](configure.md)	 - Configures connector variables for all sources
 * [rill env rm](rm.md)	 - Remove variable
 * [rill env set](set.md)	 - Set variable

@@ -1,3 +1,6 @@
+---
+title: rill org
+---
 ## rill org
 
 Manage organisations
@@ -18,7 +21,7 @@ Manage organisations
 
 ### SEE ALSO
 
-* [rill](../rill.md)	 - Rill CLI
+* [rill](../cli.md)	 - Rill CLI
 * [rill org create](create.md)	 - Create
 * [rill org delete](delete.md)	 - Delete
 * [rill org edit](edit.md)	 - Edit

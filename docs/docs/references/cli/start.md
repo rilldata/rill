@@ -1,3 +1,6 @@
+---
+title: rill start
+---
 ## rill start
 
 Build project and start web app
@@ -32,5 +35,5 @@ rill start [<path>] [flags]
 
 ### SEE ALSO
 
-* [rill](rill.md)	 - Rill CLI
+* [rill](cli.md)	 - Rill CLI
 

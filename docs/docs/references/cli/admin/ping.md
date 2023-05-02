@@ -1,3 +1,6 @@
+---
+title: rill admin ping
+---
 ## rill admin ping
 
 Ping

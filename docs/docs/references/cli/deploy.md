@@ -1,3 +1,6 @@
+---
+title: rill deploy
+---
 ## rill deploy
 
 Deploy project to Rill Cloud
@@ -33,5 +36,5 @@ rill deploy [flags]
 
 ### SEE ALSO
 
-* [rill](rill.md)	 - Rill CLI
+* [rill](cli.md)	 - Rill CLI
 

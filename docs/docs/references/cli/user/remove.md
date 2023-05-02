@@ -1,3 +1,6 @@
+---
+title: rill user remove
+---
 ## rill user remove
 
 Remove

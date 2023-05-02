@@ -1,3 +1,6 @@
+---
+title: rill version
+---
 ## rill version
 
 Show rill version
@@ -19,5 +22,5 @@ rill version [flags]
 
 ### SEE ALSO
 
-* [rill](rill.md)	 - Rill CLI
+* [rill](cli.md)	 - Rill CLI
 

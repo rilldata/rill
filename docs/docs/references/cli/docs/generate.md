@@ -1,3 +1,6 @@
+---
+title: rill docs generate
+---
 ## rill docs generate
 
 Generate CLI documentation

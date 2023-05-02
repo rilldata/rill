@@ -1,3 +1,6 @@
+---
+title: rill login
+---
 ## rill login
 
 Authenticate with the Rill API
@@ -22,5 +25,5 @@ rill login [flags]
 
 ### SEE ALSO
 
-* [rill](rill.md)	 - Rill CLI
+* [rill](cli.md)	 - Rill CLI
 

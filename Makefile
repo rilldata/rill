@@ -1,6 +1,5 @@
 .PHONY: docs.generate
 docs.generate:
-	#rm -fr docs/docs/references/cli/!("cli.md")
 	find docs/docs/references/cli -type f -not -name 'cli.md' -delete
 	find docs/docs/references/cli/* -not -name 'cli.md' -delete
 	./rill docs generate docs/docs/references/cli/

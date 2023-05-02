@@ -1,3 +1,6 @@
+---
+title: rill user
+---
 ## rill user
 
 Manage users
@@ -18,7 +21,7 @@ Manage users
 
 ### SEE ALSO
 
-* [rill](../rill.md)	 - Rill CLI
+* [rill](../cli.md)	 - Rill CLI
 * [rill user add](add.md)	 - Add
 * [rill user list](list.md)	 - List
 * [rill user remove](remove.md)	 - Remove

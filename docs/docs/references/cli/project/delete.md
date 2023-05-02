@@ -1,3 +1,6 @@
+---
+title: rill project delete
+---
 ## rill project delete
 
 Delete

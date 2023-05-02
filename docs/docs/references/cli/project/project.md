@@ -1,3 +1,6 @@
+---
+title: rill project
+---
 ## rill project
 
 Manage projects
@@ -19,7 +22,7 @@ Manage projects
 
 ### SEE ALSO
 
-* [rill](../rill.md)	 - Rill CLI
+* [rill](../cli.md)	 - Rill CLI
 * [rill project delete](delete.md)	 - Delete
 * [rill project edit](edit.md)	 - Edit
 * [rill project list](list.md)	 - List

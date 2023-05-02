@@ -1,3 +1,6 @@
+---
+title: rill source add
+---
 ## rill source add
 
 Add a local file source

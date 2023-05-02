@@ -1,3 +1,6 @@
+---
+title: rill env show
+---
 ## rill env show
 
 Show credentials and other variables

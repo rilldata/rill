@@ -1,3 +1,6 @@
+---
+title: rill env set
+---
 ## rill env set
 
 Set variable

@@ -1,3 +1,6 @@
+---
+title: rill env rm
+---
 ## rill env rm
 
 Remove variable

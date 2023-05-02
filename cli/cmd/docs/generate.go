@@ -69,6 +69,9 @@ func genMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHa
 	}
 
 	nm := cmd.Name()
+	if cmd.Parent() == nil {
+		nm = "cli"
+	}
 	filename := filepath.Join(dir, nm+".md")
 	if len(cmd.Commands()) > 0 && cmd.Parent() != nil {
 		filename = filepath.Join(dir, cmd.Name(), nm+".md")
@@ -95,6 +98,21 @@ func genMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 	buf := new(bytes.Buffer)
 	name := cmd.CommandPath()
 
+	/*
+		---
+		title: CLI cheat sheet
+		sidebar_position: 40
+		---
+	*/
+	buf.WriteString("---\n")
+	if cmd.Parent() == nil {
+		buf.WriteString("title: CLI usage\n")
+		buf.WriteString("sidebar_position: 40\n")
+	} else {
+		buf.WriteString("title: " + name + "\n")
+	}
+	buf.WriteString("---\n")
+
 	buf.WriteString("## " + name + "\n\n")
 	buf.WriteString(cmd.Short + "\n\n")
 	if len(cmd.Long) > 0 {
@@ -119,7 +137,13 @@ func genMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 		if cmd.HasParent() {
 			parent := cmd.Parent()
 			pname := parent.CommandPath()
-			link := parent.Name() + ".md"
+			var link string
+			if parent.Parent() == nil {
+				link = "cli.md"
+			} else {
+				link = parent.Name() + ".md"
+			}
+
 			if len(cmd.Commands()) > 0 {
 				link = filepath.Join("..", link)
 			}

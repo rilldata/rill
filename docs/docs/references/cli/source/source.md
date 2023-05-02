@@ -1,3 +1,6 @@
+---
+title: rill source
+---
 ## rill source
 
 Create or drop a source
@@ -11,7 +14,7 @@ Create or drop a source
 
 ### SEE ALSO
 
-* [rill](../rill.md)	 - Rill CLI
+* [rill](../cli.md)	 - Rill CLI
 * [rill source add](add.md)	 - Add a local file source
 * [rill source drop](drop.md)	 - Drop a source
 

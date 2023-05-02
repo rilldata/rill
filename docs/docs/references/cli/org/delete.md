@@ -1,3 +1,6 @@
+---
+title: rill org delete
+---
 ## rill org delete
 
 Delete

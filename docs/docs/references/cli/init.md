@@ -1,3 +1,6 @@
+---
+title: rill init
+---
 ## rill init
 
 Initialize a new project
@@ -26,5 +29,5 @@ rill init [<path>] [flags]
 
 ### SEE ALSO
 
-* [rill](rill.md)	 - Rill CLI
+* [rill](cli.md)	 - Rill CLI
 

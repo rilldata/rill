@@ -1,3 +1,6 @@
+---
+title: rill logout
+---
 ## rill logout
 
 Logout of the Rill API
@@ -22,5 +25,5 @@ rill logout [flags]
 
 ### SEE ALSO
 
-* [rill](rill.md)	 - Rill CLI
+* [rill](cli.md)	 - Rill CLI
 
