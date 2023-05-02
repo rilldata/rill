@@ -16,7 +16,7 @@
     <DeploymentStatusChip {organization} {project} />
   </div>
   {#if $proj && $proj.data && $proj.data.prodDeployment}
-    <span class="pl-5 text-gray-500 text-[11px] leading-4">
+    <span class="text-gray-500 text-[11px] leading-4">
       Synced {new Date($proj.data.prodDeployment.updatedOn).toLocaleString(
         undefined,
         {
