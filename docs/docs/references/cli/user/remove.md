@@ -13,7 +13,7 @@ rill user remove [flags]
 
 ```
       --email string     Email of the user
-      --org string       Organization (default "another")
+      --org string       Organization
       --project string   Project
 ```
 

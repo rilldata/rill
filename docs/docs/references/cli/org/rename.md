@@ -12,7 +12,7 @@ rill org rename [flags]
 ### Flags
 
 ```
-      --org string        Current Org Name (default "another")
+      --org string        Current Org Name
       --new-name string   New Org Name
 ```
 

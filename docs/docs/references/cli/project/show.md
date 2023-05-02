@@ -23,7 +23,7 @@ rill project show <project-name> [flags]
       --api-url string     Base URL for the admin API (default "https://admin.rilldata.io")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
-      --org string         Organization Name (default "another")
+      --org string         Organization Name
 ```
 
 ### SEE ALSO

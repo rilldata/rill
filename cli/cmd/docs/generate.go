@@ -121,12 +121,12 @@ func genMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 	}
 
 	if cmd.Runnable() {
-		buf.WriteString(fmt.Sprintf("```\n%s\n```\n\n", cmd.UseLine()))
+		fmt.Fprintf(buf, "```\n%s\n```\n\n", cmd.UseLine())
 	}
 
 	if len(cmd.Example) > 0 {
 		buf.WriteString("### Examples\n\n")
-		buf.WriteString(fmt.Sprintf("```\n%s\n```\n\n", cmd.Example))
+		fmt.Fprintf(buf, "```\n%s\n```\n\n", cmd.Example)
 	}
 
 	if err := printOptions(buf, cmd, name); err != nil {
@@ -148,7 +148,7 @@ func genMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 				link = filepath.Join("..", link)
 			}
 
-			buf.WriteString(fmt.Sprintf("* [%s](%s)\t - %s\n", pname, link, parent.Short))
+			fmt.Fprintf(buf, "* [%s](%s)\t - %s\n", pname, link, parent.Short)
 			cmd.VisitParents(func(c *cobra.Command) {
 				if c.DisableAutoGenTag {
 					cmd.DisableAutoGenTag = c.DisableAutoGenTag
@@ -170,7 +170,7 @@ func genMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 				link = filepath.Join(child.Name(), link)
 			}
 
-			buf.WriteString(fmt.Sprintf("* [%s](%s)\t - %s\n", cname, link, child.Short))
+			fmt.Fprintf(buf, "* [%s](%s)\t - %s\n", cname, link, child.Short)
 		}
 		buf.WriteString("\n")
 	}

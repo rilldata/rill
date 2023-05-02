@@ -13,7 +13,7 @@ rill user add [flags]
 
 ```
       --email string     Email of the user
-      --org string       Organization (default "another")
+      --org string       Organization
       --project string   Project
       --role string      Role of the user [admin, viewer]
 ```

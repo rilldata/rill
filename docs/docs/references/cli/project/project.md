@@ -10,7 +10,7 @@ Manage projects
 ```
       --api-token string   Token for authenticating with the admin API
       --api-url string     Base URL for the admin API (default "https://admin.rilldata.io")
-      --org string         Organization Name (default "another")
+      --org string         Organization Name
 ```
 
 ### Global flags

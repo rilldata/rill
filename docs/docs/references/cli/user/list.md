@@ -12,7 +12,7 @@ rill user list [flags]
 ### Flags
 
 ```
-      --org string       Organization (default "another")
+      --org string       Organization
       --project string   Project
 ```
 

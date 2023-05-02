@@ -12,7 +12,7 @@ rill org edit [flags]
 ### Flags
 
 ```
-      --org string           Organization name (default "another")
+      --org string           Organization name
       --description string   Description
 ```
 
