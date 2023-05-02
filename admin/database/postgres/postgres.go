@@ -696,6 +696,14 @@ func (c *connection) DeleteProjectMemberUser(ctx context.Context, projectID, use
 	return checkDeleteRow("project member", res, err)
 }
 
+func (c *connection) DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM users_projects_roles upr WHERE upr.user_id = $1 AND upr.project_id IN (SELECT p.id FROM projects p WHERE p.org_id = $2)", userID, orgID)
+	if err != nil {
+		return parseErr("project member", err)
+	}
+	return nil
+}
+
 func (c *connection) UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE users_projects_roles SET project_role_id = $1 WHERE user_id = $2 AND project_id = $3`, roleID, userID, projectID)
 	return checkUpdateRow("project member", res, err)

@@ -4731,6 +4731,8 @@ func (m *RemoveOrganizationMemberRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for KeepProjectRoles
+
 	if len(errors) > 0 {
 		return RemoveOrganizationMemberRequestMultiError(errors)
 	}
