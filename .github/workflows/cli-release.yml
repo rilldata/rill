@@ -12,6 +12,7 @@ on:
     # Trigger a full release on new Git tag
     tags:
       - "**"
+    branches: [ "2301-meta-upgrade-to-go-v120" ]
   # Trigger a nightly release at midnight
   schedule:
     - cron: '0 0 * * *'
@@ -42,7 +43,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.2
+          go-version: 1.20.3
 
       - name: Set up NodeJS
         uses: actions/setup-node@v3
@@ -77,7 +78,7 @@ jobs:
               -v `pwd`/sysroot:/sysroot \
               -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
               -w /go/src/rilldata/rill-developer \
-              goreleaser/goreleaser-cross:v1.19.2 \
+              goreleaser/goreleaser-cross:v1.20.3 \
               release ${NIGHTLY}
 
       - name: Authenticate GCS
