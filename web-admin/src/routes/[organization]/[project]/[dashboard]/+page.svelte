@@ -77,7 +77,6 @@
     },
     {
       query: {
-        placeholderData: undefined,
         enabled: !!project && !!$runtime?.instanceId,
       },
     }
@@ -89,7 +88,6 @@
     },
     {
       query: {
-        placeholderData: undefined,
         enabled: !!project && !!$runtime?.instanceId,
       },
     }

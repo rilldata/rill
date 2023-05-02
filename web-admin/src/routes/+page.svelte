@@ -9,12 +9,7 @@
   import WelcomeMessage from "../components/home/WelcomeMessage.svelte";
 
   const user = createAdminServiceGetCurrentUser();
-
-  const orgs = createAdminServiceListOrganizations(undefined, {
-    query: {
-      placeholderData: undefined,
-    },
-  });
+  const orgs = createAdminServiceListOrganizations();
 </script>
 
 <svelte:head>

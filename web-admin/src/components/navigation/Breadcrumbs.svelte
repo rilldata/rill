@@ -49,7 +49,6 @@
     },
     {
       query: {
-        placeholderData: undefined,
         enabled: !!project && !!$runtime?.instanceId,
       },
     }
