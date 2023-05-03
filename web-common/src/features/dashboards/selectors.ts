@@ -1,14 +1,17 @@
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   RpcStatus,
+  V1MetricsView,
+  V1MetricsViewFilter,
   createQueryServiceColumnTimeRange,
   createRuntimeServiceGetCatalogEntry,
   createRuntimeServiceListCatalogEntries,
   createRuntimeServiceListFiles,
-  V1MetricsView,
-  V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
-import type { QueryObserverResult } from "@tanstack/svelte-query";
+import type {
+  CreateQueryOptions,
+  QueryObserverResult,
+} from "@tanstack/svelte-query";
 
 export function useDashboardNames(instanceId: string) {
   return createRuntimeServiceListFiles(
@@ -139,8 +142,13 @@ export const useModelHasTimeSeries = (
 export function useModelAllTimeRange(
   instanceId: string,
   modelName: string,
-  timeDimension: string
+  timeDimension: string,
+  options?: {
+    query?: CreateQueryOptions;
+  }
 ) {
+  const { query: queryOptions } = options ?? {};
+
   return createQueryServiceColumnTimeRange(
     instanceId,
     modelName,
@@ -158,6 +166,7 @@ export function useModelAllTimeRange(
             end: new Date(data.timeRangeSummary.max),
           };
         },
+        ...queryOptions,
       },
     }
   );

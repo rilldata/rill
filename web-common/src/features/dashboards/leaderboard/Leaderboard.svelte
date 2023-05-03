@@ -59,7 +59,12 @@
   $: allTimeRangeQuery = useModelAllTimeRange(
     $runtime.instanceId,
     $metaQuery.data.model,
-    $metaQuery.data.timeDimension
+    $metaQuery.data.timeDimension,
+    {
+      query: {
+        enabled: !!$metaQuery.data.timeDimension,
+      },
+    }
   );
   $: allTimeRange = $allTimeRangeQuery?.data;
 
