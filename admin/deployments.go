@@ -117,6 +117,7 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 	if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.Branch == "" {
 		return fmt.Errorf("cannot update deployment without github info")
 	}
+
 	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*opts.GithubURL, *opts.GithubInstallationID, opts.Branch, opts.SubPath)
 	if err != nil {
 		return err
