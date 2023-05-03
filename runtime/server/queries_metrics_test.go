@@ -685,9 +685,9 @@ model:
 |id |timestamp               |publisher|domain   |bid_price|volume|impressions|ad words|clicks|device|
 |---|------------------------|---------|---------|---------|------|-----------|--------|------|------|
 |0  |2022-01-01T14:49:50.459Z|         |msn.com  |2        |4     |2          |cars    |      |iphone|
-|2  |2022-01-03T14:49:50.459Z|         |msn.com  |2.5      |4.5   |1        |cars    |      |iphone|
+|2  |2022-01-03T14:49:50.459Z|         |msn.com  |2.5      |4.5   |1          |cars    |      |iphone|
 |1  |2022-01-02T11:58:12.475Z|Yahoo    |yahoo.com|2        |4     |1          |cars    |1     |      |
-|3  |2022-01-04T11:58:12.475Z|Yahoo    |yahoo.com|2.5      |4.5   |2        |cars    |1.5   |      |
+|3  |2022-01-04T11:58:12.475Z|Yahoo    |yahoo.com|2.5      |4.5   |2          |cars    |1.5   |      |
 
 the result should be:
 
@@ -834,14 +834,134 @@ func TestServer_MetricsViewComparisonToplist_sort_by_delta(t *testing.T) {
 }
 
 /*
+the result should be:
+
+|domain                  |base |comparison|delta|rel    |
+|------------------------|-----|----------|-----|-------|
+|yahoo.com               |1    |2         |1    |1      |
+*/
+
+func TestServer_MetricsViewComparisonToplist_sort_by_delta_limit_1(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewCompareToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_mini_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_2"},
+		BaseTimeRange: &runtimev1.TimeRange{
+			Start: parseTime(t, "2022-01-01T00:00:00Z"),
+			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: parseTime(t, "2022-01-03T00:00:00Z"),
+			End:   parseTime(t, "2022-01-04T23:59:00Z"),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_2",
+				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_DELTA,
+				Ascending:   false,
+			},
+		},
+		Limit: 1,
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data))
+
+	require.Equal(t, "yahoo.com", tr.Data[0].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Data[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, 2.0, tr.Data[0].MeasureValues[0].ComparisonValue.GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[0].MeasureValues[0].DeltaAbs.GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[0].MeasureValues[0].DeltaRel.GetNumberValue())
+}
+
+func TestServer_MetricsViewComparisonToplist_sort_by_base_limit_1(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewCompareToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_mini_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_2"},
+		BaseTimeRange: &runtimev1.TimeRange{
+			Start: parseTime(t, "2022-01-01T00:00:00Z"),
+			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: parseTime(t, "2022-01-03T00:00:00Z"),
+			End:   parseTime(t, "2022-01-04T23:59:00Z"),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_2",
+				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Ascending:   false,
+			},
+		},
+		Limit: 1,
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data))
+
+	require.Equal(t, "msn.com", tr.Data[0].DimensionValue.GetStringValue())
+	require.Equal(t, 2.0, tr.Data[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[0].MeasureValues[0].ComparisonValue.GetNumberValue())
+	require.Equal(t, -1.0, tr.Data[0].MeasureValues[0].DeltaAbs.GetNumberValue())
+	require.Equal(t, -0.5, tr.Data[0].MeasureValues[0].DeltaRel.GetNumberValue())
+}
+
+func TestServer_MetricsViewComparisonToplist_sort_by_base_filter(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewCompareToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_mini_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_2"},
+		BaseTimeRange: &runtimev1.TimeRange{
+			Start: parseTime(t, "2022-01-01T00:00:00Z"),
+			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: parseTime(t, "2022-01-03T00:00:00Z"),
+			End:   parseTime(t, "2022-01-04T23:59:00Z"),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_2",
+				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Ascending:   false,
+			},
+		},
+		Filter: &runtimev1.MetricsViewFilter{
+			Exclude: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "domain",
+					In:   []*structpb.Value{structpb.NewStringValue("yahoo.com")},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data))
+
+	require.Equal(t, "msn.com", tr.Data[0].DimensionValue.GetStringValue())
+	require.Equal(t, 2.0, tr.Data[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[0].MeasureValues[0].ComparisonValue.GetNumberValue())
+	require.Equal(t, -1.0, tr.Data[0].MeasureValues[0].DeltaAbs.GetNumberValue())
+	require.Equal(t, -0.5, tr.Data[0].MeasureValues[0].DeltaRel.GetNumberValue())
+}
+
+/*
 Model:
 
 |id |timestamp               |publisher|domain   |bid_price|volume|impressions|ad words|clicks|device|
 |---|------------------------|---------|---------|---------|------|-----------|--------|------|------|
 |0  |2022-01-01T14:49:50.459Z|         |msn.com  |2        |4     |2          |cars    |      |iphone|
-|2  |2022-01-03T14:49:50.459Z|         |msn.com  |2.5      |4.5   |1        |cars    |      |iphone|
+|2  |2022-01-03T14:49:50.459Z|         |msn.com  |2.5      |4.5   |1          |cars    |      |iphone|
 |1  |2022-01-02T11:58:12.475Z|Yahoo    |yahoo.com|2        |4     |1          |cars    |1     |      |
-|3  |2022-01-04T11:58:12.475Z|Yahoo    |yahoo.com|2.5      |4.5   |2        |cars    |1.5   |      |
+|3  |2022-01-04T11:58:12.475Z|Yahoo    |yahoo.com|2.5      |4.5   |2          |cars    |1.5   |      |
 
 the result should be:
 
