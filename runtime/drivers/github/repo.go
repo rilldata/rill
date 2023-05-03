@@ -23,7 +23,7 @@ func (c *connection) Driver() string {
 
 // Root implements drivers.RepoStore.
 func (c *connection) Root() string {
-	return c.tempdir // + subPath
+	return c.tempdir
 }
 
 // ListRecursive implements drivers.RepoStore.

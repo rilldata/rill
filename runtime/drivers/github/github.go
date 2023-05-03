@@ -46,9 +46,6 @@ func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, err
 		return nil, err
 	}
 
-	fmt.Println("dsn 49 ", dsn)
-	fmt.Println("dsn 49 ", dsn.SubPath)
-
 	var c *connection
 
 	r := retrier.New(retrier.ExponentialBackoff(retryN, retryWait), nil)
@@ -65,18 +62,14 @@ func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, err
 
 		projectDir := tempdir
 		if dsn.SubPath != "" {
-			fmt.Println("github 65 ", projectDir)
 			projectDir = fmt.Sprintf("%s/%s", tempdir, dsn.SubPath)
 		}
-
-		fmt.Println("github 68 ", projectDir)
 
 		c = &connection{
 			dsnStr:     dsnStr,
 			dsn:        dsn,
 			tempdir:    tempdir,
 			projectdir: projectDir,
-			// add here
 		}
 
 		err = c.clone(context.Background())
@@ -107,7 +100,6 @@ type connection struct {
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
 	err := os.RemoveAll(c.tempdir)
-	// should be same
 	if err != nil {
 		return err
 	}
