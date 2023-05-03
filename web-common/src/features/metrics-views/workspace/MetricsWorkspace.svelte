@@ -151,9 +151,9 @@
   let validDimensionSelectorOption = [];
   $: if (model) {
     const selectedMetricsDefModelProfile = model?.schema?.fields ?? [];
-    validDimensionSelectorOption = selectedMetricsDefModelProfile
-      //.filter((column) => CATEGORICALS.has(column.type.code as string))
-      .map((column) => ({ label: column.name, value: column.name }));
+    validDimensionSelectorOption = selectedMetricsDefModelProfile.map(
+      (column) => ({ label: column.name, value: column.name })
+    );
   } else {
     validDimensionSelectorOption = [];
   }
