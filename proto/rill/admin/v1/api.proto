@@ -298,6 +298,7 @@ message CreateProjectRequest {
   string prod_branch = 9;
   string github_url = 10;
   map<string, string> variables = 11;
+  string sub_path = 12;
 }
 
 message CreateProjectResponse {

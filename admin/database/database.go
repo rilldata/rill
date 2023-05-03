@@ -205,6 +205,7 @@ type Project struct {
 	ProdOLAPDSN          string    `db:"prod_olap_dsn"`
 	ProdSlots            int       `db:"prod_slots"`
 	ProdDeploymentID     *string   `db:"prod_deployment_id"`
+	SubPath              string    `db:"sub_path"`
 	CreatedOn            time.Time `db:"created_on"`
 	UpdatedOn            time.Time `db:"updated_on"`
 }
@@ -234,6 +235,7 @@ type InsertProjectOptions struct {
 	ProdOLAPDriver       string
 	ProdOLAPDSN          string
 	ProdSlots            int
+	SubPath              string
 }
 
 // UpdateProjectOptions defines options for updating a Project.
@@ -246,6 +248,7 @@ type UpdateProjectOptions struct {
 	ProdBranch           string
 	ProdVariables        map[string]string
 	ProdDeploymentID     *string
+	SubPath              string
 }
 
 // DeploymentStatus is an enum representing the state of a deployment

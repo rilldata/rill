@@ -25,7 +25,7 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 	if proj.GithubURL == nil || proj.GithubInstallationID == nil || proj.ProdBranch == "" {
 		return nil, fmt.Errorf("cannot create project without github info")
 	}
-	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*proj.GithubURL, *proj.GithubInstallationID, proj.ProdBranch)
+	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*proj.GithubURL, *proj.GithubInstallationID, proj.ProdBranch, proj.SubPath)
 	if err != nil {
 		return nil, err
 	}
@@ -110,13 +110,14 @@ type updateDeploymentOptions struct {
 	Branch               string
 	Variables            map[string]string
 	Reconcile            bool
+	SubPath              string
 }
 
 func (s *Service) updateDeployment(ctx context.Context, depl *database.Deployment, opts *updateDeploymentOptions) error {
 	if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.Branch == "" {
 		return fmt.Errorf("cannot update deployment without github info")
 	}
-	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*opts.GithubURL, *opts.GithubInstallationID, opts.Branch)
+	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*opts.GithubURL, *opts.GithubInstallationID, opts.Branch, opts.SubPath)
 	if err != nil {
 		return err
 	}
@@ -216,11 +217,12 @@ func (s *Service) openRuntimeClient(host, audience string) (*client.Client, erro
 	return rt, nil
 }
 
-func githubRepoInfoForRuntime(githubURL string, installationID int64, branch string) (string, string, error) {
+func githubRepoInfoForRuntime(githubURL string, installationID int64, branch, subPath string) (string, string, error) {
 	dsn, err := json.Marshal(github.DSN{
 		GithubURL:      githubURL,
 		InstallationID: installationID,
 		Branch:         branch,
+		SubPath:        subPath,
 	})
 	if err != nil {
 		return "", "", err

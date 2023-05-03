@@ -39,6 +39,7 @@ export type AdminServiceCreateProjectBody = {
   prodBranch?: string;
   githubUrl?: string;
   variables?: AdminServiceCreateProjectBodyVariables;
+  subPath?: string;
 };
 
 export type AdminServiceListProjectsForOrganizationParams = {

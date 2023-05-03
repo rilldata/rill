@@ -565,6 +565,8 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
+              subPath:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}:

@@ -23,12 +23,12 @@ func (c *connection) Driver() string {
 
 // Root implements drivers.RepoStore.
 func (c *connection) Root() string {
-	return c.tempdir
+	return c.tempdir // + subPath
 }
 
 // ListRecursive implements drivers.RepoStore.
 func (c *connection) ListRecursive(ctx context.Context, instID, glob string) ([]string, error) {
-	fsRoot := os.DirFS(c.tempdir)
+	fsRoot := os.DirFS(c.projectdir)
 	glob = path.Clean(path.Join("./", glob))
 
 	var paths []string
@@ -58,7 +58,7 @@ func (c *connection) ListRecursive(ctx context.Context, instID, glob string) ([]
 
 // Get implements drivers.RepoStore.
 func (c *connection) Get(ctx context.Context, instID, filePath string) (string, error) {
-	filePath = filepath.Join(c.tempdir, filePath)
+	filePath = filepath.Join(c.projectdir, filePath)
 
 	b, err := os.ReadFile(filePath)
 	if err != nil {
@@ -70,7 +70,7 @@ func (c *connection) Get(ctx context.Context, instID, filePath string) (string, 
 
 // Stat implements drivers.RepoStore.
 func (c *connection) Stat(ctx context.Context, instID, filePath string) (*drivers.RepoObjectStat, error) {
-	filePath = filepath.Join(c.tempdir, filePath)
+	filePath = filepath.Join(c.projectdir, filePath)
 
 	info, err := os.Stat(filePath)
 	if err != nil {

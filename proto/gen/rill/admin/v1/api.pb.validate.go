@@ -2585,6 +2585,8 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for Variables
 
+	// no validation rules for SubPath
+
 	if len(errors) > 0 {
 		return CreateProjectRequestMultiError(errors)
 	}

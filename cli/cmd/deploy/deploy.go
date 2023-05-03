@@ -38,7 +38,7 @@ const (
 
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
 func DeployCmd(cfg *config.Config) *cobra.Command {
-	var description, projectPath, region, dbDriver, dbDSN, prodBranch, name, remote, orgName string
+	var description, projectPath, subPath, region, dbDriver, dbDSN, prodBranch, name, remote, orgName string
 	var slots int
 	var public bool
 
@@ -61,6 +61,11 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
+			fullProjectPath := projectPath
+			if subPath != "" {
+				fullProjectPath = fmt.Sprintf("%s/%s", projectPath, subPath)
+			}
+
 			tel := telemetry.New(cfg.Version)
 			tel.Emit(telemetry.ActionDeployStart)
 			defer func() {
@@ -74,8 +79,8 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}()
 
 			// Verify that the projectPath contains a Rill project
-			if !rillv1beta.HasRillProject(projectPath) {
-				fullpath, err := filepath.Abs(projectPath)
+			if !rillv1beta.HasRillProject(fullProjectPath) {
+				fullpath, err := filepath.Abs(fullProjectPath)
 				if err != nil {
 					return err
 				}
@@ -232,7 +237,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Run flow to get connector credentials and other variables
-			variables, err := env.VariablesFlow(ctx, projectPath, tel)
+			variables, err := env.VariablesFlow(ctx, fullProjectPath, tel)
 			if err != nil {
 				return err
 			}
@@ -250,6 +255,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				Public:           public,
 				GithubUrl:        githubURL,
 				Variables:        variables,
+				SubPath:          subPath,
 			})
 			if err != nil {
 				if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
@@ -277,6 +283,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 	deployCmd.Flags().SortFlags = false
 	deployCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
+	deployCmd.Flags().StringVar(&subPath, "sub-path", "", "Project sub directory")
 	deployCmd.Flags().StringVar(&orgName, "org", cfg.Org, "Org to deploy project")
 	deployCmd.Flags().IntVar(&slots, "prod-slots", 2, "Slots to allocate for production deployments")
 	deployCmd.Flags().StringVar(&description, "description", "", "Project description")

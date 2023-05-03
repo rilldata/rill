@@ -246,6 +246,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		GithubURL:            &req.GithubUrl,
 		GithubInstallationID: &installationID,
 		ProdVariables:        req.Variables,
+		SubPath:              req.SubPath,
 	})
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
