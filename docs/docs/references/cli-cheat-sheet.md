@@ -1,8 +1,8 @@
 ---
-title: CLI
+title: CLI cheat sheet
 description: Start and manage Rill using the command-line interface (CLI)
-sidebar_label: CLI
-sidebar_position: 40
+sidebar_label: CLI cheat sheet
+sidebar_position: 30
 ---
 
 ## Start a new project
