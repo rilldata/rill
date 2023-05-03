@@ -2,7 +2,6 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
     createRuntimeServiceGetCatalogEntry,
     createRuntimeServicePutFileAndReconcile,
@@ -153,7 +152,7 @@
   $: if (model) {
     const selectedMetricsDefModelProfile = model?.schema?.fields ?? [];
     validDimensionSelectorOption = selectedMetricsDefModelProfile
-      .filter((column) => CATEGORICALS.has(column.type.code as string))
+      //.filter((column) => CATEGORICALS.has(column.type.code as string))
       .map((column) => ({ label: column.name, value: column.name }));
   } else {
     validDimensionSelectorOption = [];
