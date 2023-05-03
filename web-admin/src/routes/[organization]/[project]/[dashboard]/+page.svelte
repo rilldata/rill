@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import { V1DeploymentStatus } from "@rilldata/web-admin/client";
   import {
+    DashboardListItem,
     getDashboardListItemsFromFilesAndCatalogEntries,
     getDashboardsForProject,
   } from "@rilldata/web-admin/components/projects/dashboards";
@@ -94,13 +95,18 @@
       },
     }
   );
-  $: dashboardListItems = getDashboardListItemsFromFilesAndCatalogEntries(
-    $dashboardFiles.data?.paths,
-    $dashboardCatalogEntries.data?.entries
-  );
-  $: currentDashboard = dashboardListItems?.find(
-    (listing) => listing.name === $page.params.dashboard
-  );
+  let dashboardListItems: DashboardListItem[];
+  let currentDashboard: DashboardListItem;
+  $: if ($dashboardFiles.isSuccess && $dashboardCatalogEntries.isSuccess) {
+    dashboardListItems = getDashboardListItemsFromFilesAndCatalogEntries(
+      $dashboardFiles.data?.paths,
+      $dashboardCatalogEntries.data?.entries
+    );
+
+    currentDashboard = dashboardListItems?.find(
+      (listing) => listing.name === $page.params.dashboard
+    );
+  }
 </script>
 
 <svelte:head>
@@ -109,7 +115,9 @@
 
 {#if isProjectBuilding}
   <ProjectBuilding organization={orgName} project={projectName} />
-{:else if !currentDashboard?.isValid}
+{:else if !currentDashboard}
+  <!-- show nothing -->
+{:else if currentDashboard && !currentDashboard.isValid}
   <ProjectErrored organization={orgName} project={projectName} />
 {:else}
   <Dashboard
