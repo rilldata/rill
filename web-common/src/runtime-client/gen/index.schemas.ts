@@ -559,7 +559,7 @@ export interface V1MetricsViewComparisonRow {
   measureValues?: V1MetricsViewComparisonValue[];
 }
 
-export interface V1MetricsViewCompareToplistResponse {
+export interface V1MetricsViewComparisonToplistResponse {
   data?: V1MetricsViewComparisonRow[];
 }
 

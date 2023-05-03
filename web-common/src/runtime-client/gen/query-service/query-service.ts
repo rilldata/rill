@@ -21,7 +21,7 @@ import type {
   QueryServiceTableColumnsParams,
   V1ColumnDescriptiveStatisticsResponse,
   QueryServiceColumnDescriptiveStatisticsParams,
-  V1MetricsViewCompareToplistResponse,
+  V1MetricsViewComparisonToplistResponse,
   QueryServiceMetricsViewComparisonToplistBody,
   V1MetricsViewTimeSeriesResponse,
   QueryServiceMetricsViewTimeSeriesBody,
@@ -287,7 +287,7 @@ export const queryServiceMetricsViewComparisonToplist = (
   metricsViewName: string,
   queryServiceMetricsViewComparisonToplistBody: QueryServiceMetricsViewComparisonToplistBody
 ) => {
-  return httpClient<V1MetricsViewCompareToplistResponse>({
+  return httpClient<V1MetricsViewComparisonToplistResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/compare-toplist`,
     method: "post",
     headers: { "Content-Type": "application/json" },

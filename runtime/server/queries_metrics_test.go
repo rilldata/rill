@@ -608,7 +608,7 @@ measures:
 func TestServer_MetricsViewComparisonToplist(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewCompareToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "ad words",
@@ -642,7 +642,7 @@ func TestServer_MetricsViewComparisonToplist(t *testing.T) {
 func TestServer_MetricsViewComparisonToplist_nulls(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewCompareToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
@@ -699,7 +699,7 @@ the result should be:
 func TestServer_MetricsViewComparisonToplist_sort_by_base(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewCompareToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
 		DimensionName:   "domain",
@@ -747,7 +747,7 @@ the result should be:
 func TestServer_MetricsViewComparisonToplist_sort_by_comparison(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewCompareToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
 		DimensionName:   "domain",
@@ -796,7 +796,7 @@ the result should be:
 func TestServer_MetricsViewComparisonToplist_sort_by_delta(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewCompareToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
 		DimensionName:   "domain",
@@ -844,7 +844,7 @@ the result should be:
 func TestServer_MetricsViewComparisonToplist_sort_by_delta_limit_1(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewCompareToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
 		DimensionName:   "domain",
@@ -879,7 +879,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_delta_limit_1(t *testing.T)
 func TestServer_MetricsViewComparisonToplist_sort_by_base_limit_1(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewCompareToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
 		DimensionName:   "domain",
@@ -914,7 +914,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base_limit_1(t *testing.T) 
 func TestServer_MetricsViewComparisonToplist_sort_by_base_filter(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewCompareToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
 		DimensionName:   "domain",
@@ -973,7 +973,7 @@ the result should be:
 func TestServer_MetricsViewComparisonToplist_2_measures(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewCompareToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
 		DimensionName:   "domain",

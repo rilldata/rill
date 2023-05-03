@@ -188,7 +188,7 @@ func local_request_QueryService_MetricsViewToplist_0(ctx context.Context, marsha
 }
 
 func request_QueryService_MetricsViewComparisonToplist_0(ctx context.Context, marshaler runtime.Marshaler, client QueryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq MetricsViewCompareToplistRequest
+	var protoReq MetricsViewComparisonToplistRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -232,7 +232,7 @@ func request_QueryService_MetricsViewComparisonToplist_0(ctx context.Context, ma
 }
 
 func local_request_QueryService_MetricsViewComparisonToplist_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq MetricsViewCompareToplistRequest
+	var protoReq MetricsViewComparisonToplistRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)

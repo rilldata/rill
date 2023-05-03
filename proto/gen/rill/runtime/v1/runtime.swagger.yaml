@@ -520,7 +520,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1MetricsViewCompareToplistResponse'
+            $ref: '#/definitions/v1MetricsViewComparisonToplistResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -566,6 +566,7 @@ paths:
               priority:
                 type: integer
                 format: int32
+            title: Request message for QueryService.MetricsViewComparisonToplist
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
@@ -1915,14 +1916,6 @@ definitions:
       nullable:
         type: boolean
     title: MetricsViewColumn represents a column in a metrics view
-  v1MetricsViewCompareToplistResponse:
-    type: object
-    properties:
-      data:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1MetricsViewComparisonRow'
   v1MetricsViewComparisonRow:
     type: object
     properties:
@@ -1943,6 +1936,15 @@ definitions:
         type: boolean
       type:
         $ref: '#/definitions/v1ComparisonSortType'
+  v1MetricsViewComparisonToplistResponse:
+    type: object
+    properties:
+      data:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewComparisonRow'
+    title: Response message for QueryService.MetricsViewComparisonToplist
   v1MetricsViewComparisonValue:
     type: object
     properties:

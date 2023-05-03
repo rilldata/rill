@@ -48,7 +48,7 @@ type QueryServiceClient interface {
 	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(ctx context.Context, in *MetricsViewToplistRequest, opts ...grpc.CallOption) (*MetricsViewToplistResponse, error)
-	MetricsViewComparisonToplist(ctx context.Context, in *MetricsViewCompareToplistRequest, opts ...grpc.CallOption) (*MetricsViewCompareToplistResponse, error)
+	MetricsViewComparisonToplist(ctx context.Context, in *MetricsViewComparisonToplistRequest, opts ...grpc.CallOption) (*MetricsViewComparisonToplistResponse, error)
 	// MetricsViewTimeSeries returns time series for the measures in the metrics view.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTimeSeries(ctx context.Context, in *MetricsViewTimeSeriesRequest, opts ...grpc.CallOption) (*MetricsViewTimeSeriesResponse, error)
@@ -110,8 +110,8 @@ func (c *queryServiceClient) MetricsViewToplist(ctx context.Context, in *Metrics
 	return out, nil
 }
 
-func (c *queryServiceClient) MetricsViewComparisonToplist(ctx context.Context, in *MetricsViewCompareToplistRequest, opts ...grpc.CallOption) (*MetricsViewCompareToplistResponse, error) {
-	out := new(MetricsViewCompareToplistResponse)
+func (c *queryServiceClient) MetricsViewComparisonToplist(ctx context.Context, in *MetricsViewComparisonToplistRequest, opts ...grpc.CallOption) (*MetricsViewComparisonToplistResponse, error) {
+	out := new(MetricsViewComparisonToplistResponse)
 	err := c.cc.Invoke(ctx, QueryService_MetricsViewComparisonToplist_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -263,7 +263,7 @@ type QueryServiceServer interface {
 	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(context.Context, *MetricsViewToplistRequest) (*MetricsViewToplistResponse, error)
-	MetricsViewComparisonToplist(context.Context, *MetricsViewCompareToplistRequest) (*MetricsViewCompareToplistResponse, error)
+	MetricsViewComparisonToplist(context.Context, *MetricsViewComparisonToplistRequest) (*MetricsViewComparisonToplistResponse, error)
 	// MetricsViewTimeSeries returns time series for the measures in the metrics view.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTimeSeries(context.Context, *MetricsViewTimeSeriesRequest) (*MetricsViewTimeSeriesResponse, error)
@@ -310,7 +310,7 @@ func (UnimplementedQueryServiceServer) Query(context.Context, *QueryRequest) (*Q
 func (UnimplementedQueryServiceServer) MetricsViewToplist(context.Context, *MetricsViewToplistRequest) (*MetricsViewToplistResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewToplist not implemented")
 }
-func (UnimplementedQueryServiceServer) MetricsViewComparisonToplist(context.Context, *MetricsViewCompareToplistRequest) (*MetricsViewCompareToplistResponse, error) {
+func (UnimplementedQueryServiceServer) MetricsViewComparisonToplist(context.Context, *MetricsViewComparisonToplistRequest) (*MetricsViewComparisonToplistResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewComparisonToplist not implemented")
 }
 func (UnimplementedQueryServiceServer) MetricsViewTimeSeries(context.Context, *MetricsViewTimeSeriesRequest) (*MetricsViewTimeSeriesResponse, error) {
@@ -408,7 +408,7 @@ func _QueryService_MetricsViewToplist_Handler(srv interface{}, ctx context.Conte
 }
 
 func _QueryService_MetricsViewComparisonToplist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MetricsViewCompareToplistRequest)
+	in := new(MetricsViewComparisonToplistRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -420,7 +420,7 @@ func _QueryService_MetricsViewComparisonToplist_Handler(srv interface{}, ctx con
 		FullMethod: QueryService_MetricsViewComparisonToplist_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServiceServer).MetricsViewComparisonToplist(ctx, req.(*MetricsViewCompareToplistRequest))
+		return srv.(QueryServiceServer).MetricsViewComparisonToplist(ctx, req.(*MetricsViewComparisonToplistRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

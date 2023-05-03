@@ -333,9 +333,11 @@ export class MetricsViewToplistResponse extends Message<MetricsViewToplistRespon
 }
 
 /**
- * @generated from message rill.runtime.v1.MetricsViewCompareToplistRequest
+ * Request message for QueryService.MetricsViewComparisonToplist
+ *
+ * @generated from message rill.runtime.v1.MetricsViewComparisonToplistRequest
  */
-export class MetricsViewCompareToplistRequest extends Message<MetricsViewCompareToplistRequest> {
+export class MetricsViewComparisonToplistRequest extends Message<MetricsViewComparisonToplistRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -391,13 +393,13 @@ export class MetricsViewCompareToplistRequest extends Message<MetricsViewCompare
    */
   priority = 0;
 
-  constructor(data?: PartialMessage<MetricsViewCompareToplistRequest>) {
+  constructor(data?: PartialMessage<MetricsViewComparisonToplistRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewCompareToplistRequest";
+  static readonly typeName = "rill.runtime.v1.MetricsViewComparisonToplistRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -412,57 +414,59 @@ export class MetricsViewCompareToplistRequest extends Message<MetricsViewCompare
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewCompareToplistRequest {
-    return new MetricsViewCompareToplistRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonToplistRequest {
+    return new MetricsViewComparisonToplistRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewCompareToplistRequest {
-    return new MetricsViewCompareToplistRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewComparisonToplistRequest {
+    return new MetricsViewComparisonToplistRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewCompareToplistRequest {
-    return new MetricsViewCompareToplistRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewComparisonToplistRequest {
+    return new MetricsViewComparisonToplistRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: MetricsViewCompareToplistRequest | PlainMessage<MetricsViewCompareToplistRequest> | undefined, b: MetricsViewCompareToplistRequest | PlainMessage<MetricsViewCompareToplistRequest> | undefined): boolean {
-    return proto3.util.equals(MetricsViewCompareToplistRequest, a, b);
+  static equals(a: MetricsViewComparisonToplistRequest | PlainMessage<MetricsViewComparisonToplistRequest> | undefined, b: MetricsViewComparisonToplistRequest | PlainMessage<MetricsViewComparisonToplistRequest> | undefined): boolean {
+    return proto3.util.equals(MetricsViewComparisonToplistRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.runtime.v1.MetricsViewCompareToplistResponse
+ * Response message for QueryService.MetricsViewComparisonToplist
+ *
+ * @generated from message rill.runtime.v1.MetricsViewComparisonToplistResponse
  */
-export class MetricsViewCompareToplistResponse extends Message<MetricsViewCompareToplistResponse> {
+export class MetricsViewComparisonToplistResponse extends Message<MetricsViewComparisonToplistResponse> {
   /**
    * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonRow data = 1;
    */
   data: MetricsViewComparisonRow[] = [];
 
-  constructor(data?: PartialMessage<MetricsViewCompareToplistResponse>) {
+  constructor(data?: PartialMessage<MetricsViewComparisonToplistResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewCompareToplistResponse";
+  static readonly typeName = "rill.runtime.v1.MetricsViewComparisonToplistResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "data", kind: "message", T: MetricsViewComparisonRow, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewCompareToplistResponse {
-    return new MetricsViewCompareToplistResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonToplistResponse {
+    return new MetricsViewComparisonToplistResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewCompareToplistResponse {
-    return new MetricsViewCompareToplistResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewComparisonToplistResponse {
+    return new MetricsViewComparisonToplistResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewCompareToplistResponse {
-    return new MetricsViewCompareToplistResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewComparisonToplistResponse {
+    return new MetricsViewComparisonToplistResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: MetricsViewCompareToplistResponse | PlainMessage<MetricsViewCompareToplistResponse> | undefined, b: MetricsViewCompareToplistResponse | PlainMessage<MetricsViewCompareToplistResponse> | undefined): boolean {
-    return proto3.util.equals(MetricsViewCompareToplistResponse, a, b);
+  static equals(a: MetricsViewComparisonToplistResponse | PlainMessage<MetricsViewComparisonToplistResponse> | undefined, b: MetricsViewComparisonToplistResponse | PlainMessage<MetricsViewComparisonToplistResponse> | undefined): boolean {
+    return proto3.util.equals(MetricsViewComparisonToplistResponse, a, b);
   }
 }
 
