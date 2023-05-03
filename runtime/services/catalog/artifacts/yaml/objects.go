@@ -164,7 +164,7 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		// backward compatibility: hive_partitioning
 		props["hive_partitioning"] = *source.HivePartition
 		if _, defined := props["duckdb"]; !defined {
-			props["duckdb"] = map[string]any{"hive_partitioning": *source.HivePartition}
+			props["duckdb"] = map[string]any{}
 		}
 		props["duckdb"].(map[string]any)["hive_partitioning"] = *source.HivePartition
 	}
