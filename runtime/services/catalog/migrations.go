@@ -403,9 +403,9 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 		if !errors.Is(err, drivers.ErrNotFound) {
 			return err
 		}
-		return s.Catalog.UpdateEntry(ctx, s.InstID, catalog)
+		return s.Catalog.CreateEntry(ctx, s.InstID, catalog)
 	}
-	return s.Catalog.CreateEntry(ctx, s.InstID, catalog)
+	return s.Catalog.UpdateEntry(ctx, s.InstID, catalog)
 }
 
 func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error {
