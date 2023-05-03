@@ -26,7 +26,7 @@ type MetricsViewComparisonToplist struct {
 	Sort                []*runtimev1.MetricsViewComparisonSort `json:"sort,omitempty"`
 	Filter              *runtimev1.MetricsViewFilter           `json:"filter,omitempty"`
 
-	Result *runtimev1.MetricsViewCompareToplistResponse `json:"-"`
+	Result *runtimev1.MetricsViewComparisonToplistResponse `json:"-"`
 }
 
 var _ runtime.Query = &MetricsViewComparisonToplist{}
@@ -48,7 +48,7 @@ func (q *MetricsViewComparisonToplist) MarshalResult() any {
 }
 
 func (q *MetricsViewComparisonToplist) UnmarshalResult(v any) error {
-	res, ok := v.(*runtimev1.MetricsViewCompareToplistResponse)
+	res, ok := v.(*runtimev1.MetricsViewComparisonToplistResponse)
 	if !ok {
 		return fmt.Errorf("MetricsViewComparisonToplist: mismatched unmarshal input")
 	}
@@ -144,7 +144,7 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 		})
 	}
 
-	q.Result = &runtimev1.MetricsViewCompareToplistResponse{
+	q.Result = &runtimev1.MetricsViewComparisonToplistResponse{
 		Data: data,
 	}
 
