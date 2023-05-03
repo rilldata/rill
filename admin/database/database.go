@@ -58,6 +58,12 @@ type DB interface {
 	UpdateOrganization(ctx context.Context, id string, opts *UpdateOrganizationOptions) (*Organization, error)
 	UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
 
+	InsertOrganizationAutoinviteDomain(ctx context.Context, opts *InsertOrganizationAutoinviteDomainOptions) (*OrganizationAutoinviteDomain, error)
+	DeleteOrganizationAutoinviteDomain(ctx context.Context, id string) error
+	FindOrganizationAutoinviteDomain(ctx context.Context, orgID string, domain string) (*OrganizationAutoinviteDomain, error)
+	FindOrganizationAutoinviteDomainsForOrganization(ctx context.Context, orgID string) ([]*OrganizationAutoinviteDomain, error)
+	FindOrganizationAutoinviteDomainsForDomain(ctx context.Context, domain string) ([]*OrganizationAutoinviteDomain, error)
+
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID string) ([]*Project, error)
@@ -304,6 +310,7 @@ type User struct {
 	CreatedOn           time.Time `db:"created_on"`
 	UpdatedOn           time.Time `db:"updated_on"`
 	QuotaSingleuserOrgs int       `db:"quota_singleuser_orgs"`
+	Superuser           bool      `db:"superuser"`
 }
 
 // InsertUserOptions defines options for inserting a new user
@@ -469,6 +476,21 @@ type Invite struct {
 type DeploymentsCount struct {
 	Deployments int
 	Slots       int
+}
+
+type OrganizationAutoinviteDomain struct {
+	ID        string
+	OrgID     string `db:"org_id"`
+	OrgRoleID string `db:"org_role_id"`
+	Domain    string
+	CreatedOn time.Time `db:"created_on"`
+	UpdatedOn time.Time `db:"updated_on"`
+}
+
+type InsertOrganizationAutoinviteDomainOptions struct {
+	OrgID     string `validate:"required"`
+	OrgRoleID string `validate:"required"`
+	Domain    string `validate:"domain"`
 }
 
 const (

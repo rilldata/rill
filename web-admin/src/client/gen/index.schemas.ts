@@ -60,6 +60,11 @@ export type AdminServiceListOrganizationMembersParams = {
   pageToken?: string;
 };
 
+export type AdminServiceCreateAutoinviteDomainBody = {
+  domain?: string;
+  role?: string;
+};
+
 export type AdminServiceUpdateOrganizationBody = {
   id?: string;
   description?: string;
@@ -149,6 +154,10 @@ export interface V1RemoveProjectMemberResponse {
 }
 
 export interface V1RemoveOrganizationMemberResponse {
+  [key: string]: any;
+}
+
+export interface V1RemoveAutoinviteDomainResponse {
   [key: string]: any;
 }
 
@@ -319,6 +328,10 @@ export interface V1CreateOrganizationResponse {
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
+}
+
+export interface V1CreateAutoinviteDomainResponse {
+  [key: string]: any;
 }
 
 export interface V1AddProjectMemberResponse {

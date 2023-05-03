@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/mail"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
@@ -74,6 +75,29 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		err = s.DB.DeleteOrganizationInvite(ctx, invite.ID)
 		if err != nil {
 			return nil, err
+		}
+	}
+
+	// check if users email domain is in autoinvite list
+	if len(orgInvites) == 0 {
+		domain := email[strings.Index(email, "@")+1:]
+		autoinvites, err := s.DB.FindOrganizationAutoinviteDomainsForDomain(ctx, domain)
+		if err != nil {
+			return nil, err
+		}
+		for _, autoinvite := range autoinvites {
+			org, err := s.DB.FindOrganization(ctx, autoinvite.OrgID)
+			if err != nil {
+				return nil, err
+			}
+			err = s.DB.InsertOrganizationMemberUser(ctx, autoinvite.OrgID, user.ID, autoinvite.OrgRoleID)
+			if err != nil {
+				return nil, err
+			}
+			err = s.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 

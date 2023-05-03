@@ -27,6 +27,7 @@ type Claims interface {
 	AuthTokenID() string
 	OrganizationPermissions(ctx context.Context, orgID string) *adminv1.OrganizationPermissions
 	ProjectPermissions(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions
+	Superuser(ctx context.Context) bool
 }
 
 // claimsContextKey is used to set and get Claims on a request context.
@@ -66,6 +67,10 @@ func (c anonClaims) ProjectPermissions(ctx context.Context, orgID, projectID str
 	return &adminv1.ProjectPermissions{}
 }
 
+func (c anonClaims) Superuser(ctx context.Context) bool {
+	return false
+}
+
 // ensure anonClaims implements Claims
 var _ Claims = anonClaims{}
 
@@ -76,6 +81,7 @@ type authTokenClaims struct {
 	admin                   *admin.Service
 	orgPermissionsCache     map[string]*adminv1.OrganizationPermissions
 	projectPermissionsCache map[string]*adminv1.ProjectPermissions
+	superuser               TriBool
 }
 
 func newAuthTokenClaims(token admin.AuthToken, adminService *admin.Service) Claims {
@@ -84,6 +90,7 @@ func newAuthTokenClaims(token admin.AuthToken, adminService *admin.Service) Clai
 		admin:                   adminService,
 		orgPermissionsCache:     make(map[string]*adminv1.OrganizationPermissions),
 		projectPermissionsCache: make(map[string]*adminv1.ProjectPermissions),
+		superuser:               Unknown,
 	}
 }
 
@@ -184,6 +191,37 @@ func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, project
 	return composite
 }
 
+func (c *authTokenClaims) Superuser(ctx context.Context) bool {
+	switch c.token.Token().Type {
+	case authtoken.TypeUser:
+		// continue
+	case authtoken.TypeService:
+		panic(errors.New("service account cannot be superuser"))
+	default:
+		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
+	}
+
+	c.Lock()
+	defer c.Unlock()
+
+	if c.superuser.isDefined() {
+		return c.superuser.boolValue()
+	}
+
+	user, err := c.admin.DB.FindUser(ctx, c.token.OwnerID())
+	if err != nil {
+		panic(fmt.Errorf("failed to get user info: %w", err))
+	}
+
+	if user.Superuser {
+		c.superuser = True
+	} else {
+		c.superuser = False
+	}
+
+	return user.Superuser
+}
+
 // ensure *authTokenClaims implements Claims
 var _ Claims = &authTokenClaims{}
 
@@ -212,4 +250,21 @@ func unionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *
 		ReadProjectMembers:   a.ReadProjectMembers || b.ReadProjectMembers,
 		ManageProjectMembers: a.ManageProjectMembers || b.ManageProjectMembers,
 	}
+}
+
+type TriBool int
+
+const (
+	Unknown TriBool = iota
+	True
+	False
+)
+
+func (b TriBool) isDefined() bool {
+	return b != Unknown
+}
+
+// call only if isDefined() == true
+func (b TriBool) boolValue() bool {
+	return b == True
 }

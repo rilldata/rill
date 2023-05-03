@@ -155,6 +155,51 @@ func (c *connection) UpdateOrganizationAllUsergroup(ctx context.Context, orgID, 
 	return res, nil
 }
 
+func (c *connection) InsertOrganizationAutoinviteDomain(ctx context.Context, opts *database.InsertOrganizationAutoinviteDomainOptions) (*database.OrganizationAutoinviteDomain, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.OrganizationAutoinviteDomain{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs_autoinvite_domains(org_id, org_role_id, domain) VALUES ($1, $2, $3) RETURNING *`, opts.OrgID, opts.OrgRoleID, opts.Domain).StructScan(res)
+	if err != nil {
+		return nil, parseErr("org autoinvite domain", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteOrganizationAutoinviteDomain(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM orgs_autoinvite_domains WHERE id=$1", id)
+	return checkDeleteRow("org autoinvite domain", res, err)
+}
+
+func (c *connection) FindOrganizationAutoinviteDomainsForOrganization(ctx context.Context, orgID string) ([]*database.OrganizationAutoinviteDomain, error) {
+	var res []*database.OrganizationAutoinviteDomain
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs_autoinvite_domains WHERE org_id=$1", orgID)
+	if err != nil {
+		return nil, parseErr("org autoinvite domains", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindOrganizationAutoinviteDomainsForDomain(ctx context.Context, domain string) ([]*database.OrganizationAutoinviteDomain, error) {
+	var res []*database.OrganizationAutoinviteDomain
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs_autoinvite_domains WHERE lower(domain)=lower($1)", domain)
+	if err != nil {
+		return nil, parseErr("org autoinvite domains", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindOrganizationAutoinviteDomain(ctx context.Context, orgID, domain string) (*database.OrganizationAutoinviteDomain, error) {
+	res := &database.OrganizationAutoinviteDomain{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM orgs_autoinvite_domains WHERE org_id=$1 AND lower(domain)=lower($2)", orgID, domain).StructScan(res)
+	if err != nil {
+		return nil, parseErr("org autoinvite domain", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindProjects(ctx context.Context, orgName string) ([]*database.Project, error) {
 	var res []*database.Project
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p JOIN orgs o ON p.org_id = o.id WHERE lower(o.name)=lower($1) ORDER BY lower(p.name)", orgName)
@@ -897,6 +942,8 @@ func parseErr(target string, err error) error {
 			return newAlreadyExistsErr("email has already been invited to the org")
 		case "project_invites_email_project_idx":
 			return newAlreadyExistsErr("email has already been invited to the project")
+		case "orgs_autoinvite_domains_org_id_domain_idx":
+			return newAlreadyExistsErr("domain has already been added for the org")
 		default:
 			if target == "" {
 				return database.ErrNotUnique
