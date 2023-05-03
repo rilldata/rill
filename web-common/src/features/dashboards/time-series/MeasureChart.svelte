@@ -52,8 +52,9 @@
   /** if we are making a comparison, factor this into the extents calculation.*/
   $: if (showComparison) {
     comparisonExtents = extent(data, (d) => d[`comparison.${yAccessor}`]);
-    yExtentMin = Math.min(yExtentMin, comparisonExtents[0]);
-    yExtentMax = Math.max(yExtentMax, comparisonExtents[1]);
+
+    yExtentMin = Math.min(yExtentMin, comparisonExtents[0] || yExtentMin);
+    yExtentMax = Math.max(yExtentMax, comparisonExtents[1] || yExtentMax);
   }
 
   $: [internalYMin, internalYMax] = niceMeasureExtents(
@@ -131,7 +132,7 @@
   xMaxTweenProps={tweenProps}
   xMinTweenProps={tweenProps}
 >
-  <Axis side="right" format={mouseoverFormat} {numberKind} />
+  <Axis side="right" {numberKind} />
   <Grid />
   <Body>
     <!-- key on the time range itself to prevent weird tweening animations.
@@ -153,7 +154,6 @@
             {data}
             {xAccessor}
             yAccessor="comparison.{yAccessor}"
-            key={$timeRangeKey}
           />
         </g>
       {/if}
@@ -163,7 +163,6 @@
         {data}
         {xAccessor}
         {yAccessor}
-        key={$timeRangeKey}
       />
     {/key}
     <line

@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/browser"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
@@ -25,10 +25,11 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 			ctx := cmd.Context()
 
 			if cfg.AdminTokenDefault != "" {
-				warn.Println("You are already logged in. To log in again, run `rill auth logout` first.")
+				warn.Println("You are already logged in. To log in again, run `rill logout` first.")
 				return nil
 			}
-			// login user
+
+			// Login user
 			if err := Login(ctx, cfg, ""); err != nil {
 				return err
 			}
@@ -111,6 +112,6 @@ func Login(ctx context.Context, cfg *config.Config, redirectURL string) error {
 	}
 	// set the default token to the one we just got
 	cfg.AdminTokenDefault = res1.AccessToken
-	bold.Print("Successfully logged in.\n")
+	bold.Print("Successfully logged in. Welcome to Rill!\n")
 	return nil
 }

@@ -8,7 +8,6 @@ import {
   NumberKind,
 } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 import { PerRangeFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/per-range";
-import type { LeaderboardValue } from "./dashboard-stores";
 
 const shortHandSymbols = ["Q", "T", "B", "M", "k", "none"] as const;
 export type ShortHandSymbols = typeof shortHandSymbols[number];
@@ -20,15 +19,6 @@ interface HumanizeOptions {
 }
 
 type formatterOptions = Intl.NumberFormatOptions & HumanizeOptions;
-
-const shortHandMap = {
-  Q: 1.0e15,
-  T: 1.0e12,
-  B: 1.0e9,
-  M: 1.0e6,
-  k: 1.0e3,
-  none: 1,
-};
 
 export enum NicelyFormattedTypes {
   HUMANIZE = "humanize",
@@ -58,51 +48,6 @@ export const nicelyFormattedTypesSelectorOptions = [
   },
 ];
 
-function getScaleForValue(value: number): ShortHandSymbols {
-  return Math.abs(value) >= 1.0e15
-    ? "Q"
-    : Math.abs(value) >= 1.0e12
-    ? "T"
-    : Math.abs(value) >= 1.0e9
-    ? "B"
-    : Math.abs(value) >= 1.0e6
-    ? "M"
-    : Math.abs(value) >= 1.0e3
-    ? "k"
-    : "none";
-}
-
-function determineScaleForValues(values: number[]): ShortHandSymbols {
-  let numberValues = values;
-  const nullIndex = values.indexOf(null);
-  if (nullIndex !== -1) {
-    numberValues = values.slice(0, nullIndex);
-  }
-
-  // Convert negative numbers to absolute
-  numberValues = numberValues.map((v) => Math.abs(v)).sort((a, b) => b - a);
-
-  const half = Math.floor(numberValues.length / 2);
-  let median: number;
-  if (numberValues.length % 2) median = numberValues[half];
-  else median = (numberValues[half - 1] + numberValues[half]) / 2.0;
-
-  let scaleForMax = getScaleForValue(numberValues[0]);
-  while (scaleForMax != shortHandSymbols[shortHandSymbols.length - 1]) {
-    const medianShorthand = (
-      Math.abs(median) / shortHandMap[scaleForMax]
-    ).toFixed(1);
-
-    const numDigitsInMedian = medianShorthand.toString().split(".")[0].length;
-    if (numDigitsInMedian >= 1) {
-      return scaleForMax;
-    } else {
-      scaleForMax = shortHandSymbols[shortHandSymbols.indexOf(scaleForMax) + 1];
-    }
-  }
-  return scaleForMax;
-}
-
 export function humanizeGroupValues(
   values: Array<Record<string, number | string>>,
   type: NicelyFormattedTypes,
@@ -115,11 +60,7 @@ export function humanizeGroupValues(
   if (!areAllNumbers) return values;
 
   numValues = (numValues as number[]).sort((a, b) => b - a);
-  const formattedValues = humanizeGroupValuesUtil2(
-    numValues as number[],
-    type,
-    options
-  );
+  const formattedValues = humanizeGroupValuesUtil2(numValues as number[], type);
 
   const formattedValueKey = "__formatted_" + valueKey;
   const humanizedValues = values.map((v) => {
@@ -143,27 +84,6 @@ export function humanizeGroupByColumns(
       }
     );
   }, values);
-}
-
-export function getScaleForLeaderboard(
-  leaderboard: Map<string, Array<LeaderboardValue>>
-) {
-  if (!leaderboard) return "none";
-
-  const numValues = [...leaderboard.values()]
-    // use the first five dimensions as the sample
-    .slice(0, 5)
-    // Take only first 7 values which are shown as input
-    .map((values) => values.slice(0, 7))
-    .flat()
-    .map((values) => values.value);
-
-  const areAllNumbers = numValues.every((e) => typeof e === "number");
-  if (!areAllNumbers) return "none";
-
-  const sortedValues = numValues.sort((a, b) => b - a);
-
-  return determineScaleForValues(sortedValues);
 }
 
 // NOTE: the following are adapters that I think fit the API
@@ -227,8 +147,7 @@ export function humanizeDataType(
 /** This function is used primarily in the leaderboard and the detail tables. */
 function humanizeGroupValuesUtil2(
   values: number[],
-  type: NicelyFormattedTypes,
-  _options?: formatterOptions
+  type: NicelyFormattedTypes
 ) {
   if (!values.length) return values;
   if (type == NicelyFormattedTypes.NONE) return values;

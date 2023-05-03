@@ -56,7 +56,7 @@ func testOrganizations(t *testing.T, db database.DB) {
 	ctx := context.Background()
 
 	org, err := db.FindOrganizationByName(ctx, "foo")
-	require.Equal(t, database.ErrNotFound, err)
+	require.ErrorIs(t, err, database.ErrNotFound)
 	require.Nil(t, org)
 
 	org, err = db.InsertOrganization(ctx, &database.InsertOrganizationOptions{
@@ -98,7 +98,7 @@ func testOrganizations(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 
 	org, err = db.FindOrganizationByName(ctx, "foo")
-	require.Equal(t, database.ErrNotFound, err)
+	require.ErrorIs(t, err, database.ErrNotFound)
 	require.Nil(t, org)
 }
 
@@ -110,7 +110,7 @@ func testProjects(t *testing.T, db database.DB) {
 	require.Equal(t, "foo", org.Name)
 
 	proj, err := db.FindProjectByName(ctx, org.Name, "bar")
-	require.Equal(t, database.ErrNotFound, err)
+	require.ErrorIs(t, err, database.ErrNotFound)
 	require.Nil(t, proj)
 
 	proj, err = db.InsertProject(ctx, &database.InsertProjectOptions{
@@ -148,14 +148,14 @@ func testProjects(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 
 	proj, err = db.FindProjectByName(ctx, org.Name, "bar")
-	require.Equal(t, database.ErrNotFound, err)
+	require.ErrorIs(t, err, database.ErrNotFound)
 	require.Nil(t, proj)
 
 	err = db.DeleteOrganization(ctx, org.Name)
 	require.NoError(t, err)
 
 	org, err = db.FindOrganizationByName(ctx, "foo")
-	require.Equal(t, database.ErrNotFound, err)
+	require.ErrorIs(t, err, database.ErrNotFound)
 	require.Nil(t, org)
 }
 
@@ -167,16 +167,16 @@ func testProjectsWithVariables(t *testing.T, db database.DB) {
 	require.Equal(t, "foo", org.Name)
 
 	opts := &database.InsertProjectOptions{
-		OrganizationID:      org.ID,
-		Name:                "bar",
-		Description:         "hello world",
-		ProductionVariables: map[string]string{"hello": "world"},
+		OrganizationID: org.ID,
+		Name:           "bar",
+		Description:    "hello world",
+		ProdVariables:  map[string]string{"hello": "world"},
 	}
 	proj, err := db.InsertProject(ctx, opts)
 	require.NoError(t, err)
-	require.Equal(t, database.Variables(opts.ProductionVariables), proj.ProductionVariables)
+	require.Equal(t, database.Variables(opts.ProdVariables), proj.ProdVariables)
 
 	proj, err = db.FindProjectByName(ctx, org.Name, proj.Name)
 	require.NoError(t, err)
-	require.Equal(t, database.Variables(opts.ProductionVariables), proj.ProductionVariables)
+	require.Equal(t, database.Variables(opts.ProdVariables), proj.ProdVariables)
 }

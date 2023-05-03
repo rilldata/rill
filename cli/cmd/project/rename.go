@@ -3,27 +3,22 @@ package project
 import (
 	"fmt"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
 func RenameCmd(cfg *config.Config) *cobra.Command {
+	var name, newName string
+
 	renameCmd := &cobra.Command{
-		Use:   "rename <from-project-name> <to-project-name>",
-		Args:  cobra.MaximumNArgs(2),
-		Short: "Rename",
+		Use:   "rename",
+		Args:  cobra.NoArgs,
+		Short: "Rename project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			var currentName string
-			var newName string
-
-			if len(args) == 1 {
-				return fmt.Errorf("Invalid args provided, required 0 or 2 args")
-			}
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -31,64 +26,31 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if len(args) > 1 {
-				currentName = args[0]
-				newName = args[1]
-			} else {
-				resp, err := client.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{OrganizationName: cfg.Org})
+			fmt.Println("Warn: Renaming an project would invalidate dashboard URLs")
+
+			if !cmd.Flags().Changed("project") {
+				projectNames, err := cmdutil.ProjectNamesByOrg(ctx, client, cfg.Org)
 				if err != nil {
 					return err
 				}
 
-				if len(resp.Projects) == 0 {
-					return fmt.Errorf("No projects found for org %q", cfg.Org)
-				}
+				name = cmdutil.SelectPrompt("Select project to rename", projectNames, "")
+			}
 
-				var projectNames []string
-				for _, proj := range resp.Projects {
-					projectNames = append(projectNames, proj.Name)
-				}
-
-				currentName = cmdutil.SelectPrompt("Select project to rename", projectNames, "")
-
-				// Get the new project name from user if not provided in the args
-				question := []*survey.Question{
-					{
-						Name: "name",
-						Prompt: &survey.Input{
-							Message: "Rename to",
-						},
-						Validate: func(any interface{}) error {
-							name := any.(string)
-							if name == "" {
-								return fmt.Errorf("empty name")
-							}
-
-							return nil
-						},
-					},
-				}
-
-				if err := survey.Ask(question, &newName); err != nil {
+			if !cmd.Flags().Changed("new-name") {
+				// Get the new project name from user if not provided in the flag, passing current name as default
+				newName, err = cmdutil.InputPrompt("Rename to", name)
+				if err != nil {
 					return err
 				}
 			}
 
-			confirm := false
-			prompt := &survey.Confirm{
-				Message: fmt.Sprintf("Do you want to rename project \"%s\" to \"%s\"?", color.YellowString(currentName), color.YellowString(newName)),
-			}
-
-			err = survey.AskOne(prompt, &confirm)
-			if err != nil {
-				return err
-			}
-
-			if !confirm {
+			msg := fmt.Sprintf("Do you want to rename project \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName))
+			if !cmdutil.ConfirmPrompt(msg, "", false) {
 				return nil
 			}
 
-			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: currentName})
+			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: name})
 			if err != nil {
 				return err
 			}
@@ -101,19 +63,23 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				Name:             newName,
 				Description:      proj.Description,
 				Public:           proj.Public,
-				ProductionBranch: proj.ProductionBranch,
+				ProdBranch:       proj.ProdBranch,
 				GithubUrl:        proj.GithubUrl,
 			})
 			if err != nil {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Renamed project \n")
+			cmdutil.SuccessPrinter("Renamed project")
 			cmdutil.TablePrinter(toRow(updatedProj.Project))
 
 			return nil
 		},
 	}
+
+	renameCmd.Flags().SortFlags = false
+	renameCmd.Flags().StringVar(&name, "project", "", "Current Project Name")
+	renameCmd.Flags().StringVar(&newName, "new-name", "", "New Project Name")
 
 	return renameCmd
 }

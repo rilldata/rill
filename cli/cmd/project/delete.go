@@ -4,17 +4,20 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
 func DeleteCmd(cfg *config.Config) *cobra.Command {
+	var name, path string
+	var force bool
+
 	deleteCmd := &cobra.Command{
-		Use:   "delete <project-name>",
-		Args:  cobra.ExactArgs(1),
-		Short: "Delete",
+		Use:   "delete",
+		Args:  cobra.NoArgs,
+		Short: "Delete the project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -22,17 +25,44 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
+			if !cmd.Flags().Changed("project") {
+				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
+				if err != nil {
+					return err
+				}
+			}
+
+			if !force {
+				fmt.Printf("Warn: Deleting the project %q will remove all metadata associated with the project\n", name)
+
+				msg := fmt.Sprintf("Enter %q to confirm deletion", name)
+				project, err := cmdutil.InputPrompt(msg, "")
+				if err != nil {
+					return err
+				}
+
+				if project != name {
+					return fmt.Errorf("Entered incorrect name : %s", name)
+				}
+			}
+
 			_, err = client.DeleteProject(context.Background(), &adminv1.DeleteProjectRequest{
 				OrganizationName: cfg.Org,
-				Name:             args[0],
+				Name:             name,
 			})
 			if err != nil {
 				return err
 			}
 
-			cmdutil.SuccessPrinter(fmt.Sprintf("Deleted project: %v\n", args[0]))
+			cmdutil.SuccessPrinter(fmt.Sprintf("Deleted project: %v", name))
 			return nil
 		},
 	}
+
+	deleteCmd.Flags().SortFlags = false
+	deleteCmd.Flags().BoolVar(&force, "force", false, "Delete forcefully, skips the confirmation")
+	deleteCmd.Flags().StringVar(&name, "project", "", "Name")
+	deleteCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+
 	return deleteCmd
 }

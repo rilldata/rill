@@ -5,9 +5,11 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
+	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +17,6 @@ import (
 func StartCmd(cfg *config.Config) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
-	var projectPath string
 	var httpPort int
 	var grpcPort int
 	var verbose bool
@@ -28,10 +29,11 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	var exampleName string
 
 	startCmd := &cobra.Command{
-		Use:   "start",
+		Use:   "start [<path>]",
 		Short: "Build project and start web app",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			var projectPath string
 			if len(args) > 0 {
 				projectPath = args[0]
 				if strings.HasSuffix(projectPath, ".git") {
@@ -42,7 +44,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 
 					projectPath = repoName
 				}
-			} else {
+			} else if !rillv1beta.HasRillProject("") {
 				if !cfg.Interactive {
 					return fmt.Errorf("required arg <path> missing")
 				}
@@ -53,7 +55,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 						Name: "name",
 						Prompt: &survey.Input{
 							Message: "Enter project name",
-							Default: "rill-untitled",
+							Default: cmdutil.DefaultProjectName(),
 						},
 						Validate: func(any interface{}) error {
 							name := any.(string)

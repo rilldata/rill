@@ -2,8 +2,9 @@ package org
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -11,12 +12,12 @@ import (
 )
 
 func CreateCmd(cfg *config.Config) *cobra.Command {
-	var description string
+	var name, description string
 
 	createCmd := &cobra.Command{
-		Use:   "create <org-name>",
-		Short: "Create",
-		Args:  cobra.ExactArgs(1),
+		Use:   "create",
+		Short: "Create organization",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -24,12 +25,25 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
+			if !cmd.Flags().Changed("name") {
+				// Get the new org name from user if not provided in the flag
+				name, err = cmdutil.InputPrompt("Enter the org name", "")
+				if err != nil {
+					return err
+				}
+			}
+
 			res, err := client.CreateOrganization(context.Background(), &adminv1.CreateOrganizationRequest{
-				Name:        args[0],
+				Name:        name,
 				Description: description,
 			})
 			if err != nil {
-				return err
+				if !cmdutil.IsNameExistsErr(err) {
+					return err
+				}
+
+				fmt.Printf("Org name %q already exists\n", name)
+				return nil
 			}
 
 			// Switching to the created org
@@ -38,13 +52,13 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Created organization \n")
+			cmdutil.SuccessPrinter("Created organization")
 			cmdutil.TablePrinter(toRow(res.Organization))
 			return nil
 		},
 	}
 	createCmd.Flags().SortFlags = false
+	createCmd.Flags().StringVar(&name, "name", "", "Name")
 	createCmd.Flags().StringVar(&description, "description", "", "Description")
-
 	return createCmd
 }

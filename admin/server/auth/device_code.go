@@ -70,7 +70,7 @@ func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.R
 		http.Error(w, "invalid scope", http.StatusBadRequest)
 		return
 	}
-	authCode, err := a.admin.IssueAuthCode(r.Context(), clientID)
+	authCode, err := a.admin.IssueDeviceAuthCode(r.Context(), clientID)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to issue auth code: %w", err))
 		return
@@ -98,7 +98,7 @@ func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.R
 		UserCode:                authCode.UserCode,
 		VerificationURI:         verificationURI,
 		VerificationCompleteURI: verificationCompleteURI,
-		ExpiresIn:               int(admin.AuthCodeTTL.Seconds()),
+		ExpiresIn:               int(admin.DeviceAuthCodeTTL.Seconds()),
 		PollingInterval:         5,
 	}
 
@@ -145,7 +145,7 @@ func (a *Authenticator) handleUserCodeConfirmation(w http.ResponseWriter, r *htt
 	}
 	userID := claims.OwnerID()
 
-	authCode, err := a.admin.DB.FindAuthCodeByUserCode(r.Context(), userCode)
+	authCode, err := a.admin.DB.FindPendingDeviceAuthCodeByUserCode(r.Context(), userCode)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			http.Error(w, fmt.Sprintf("no such user code: %s found", userCode), http.StatusBadRequest)
@@ -154,23 +154,15 @@ func (a *Authenticator) handleUserCodeConfirmation(w http.ResponseWriter, r *htt
 		internalServerError(w, fmt.Errorf("failed to get auth code for userCode: %s, %w", userCode, err))
 		return
 	}
-	if authCode.ApprovalState != database.AuthCodeStatePending {
-		http.Error(w, "device code already used", http.StatusBadRequest)
-		return
-	}
-	if authCode.Expiry.Before(time.Now()) {
-		http.Error(w, "device code expired", http.StatusBadRequest)
-		return
-	}
 
 	// Update user code with user id and approval
 	authCode.UserID = &userID
 	if confirmation != "true" {
-		authCode.ApprovalState = database.AuthCodeStateRejected
+		authCode.ApprovalState = database.DeviceAuthCodeStateRejected
 	} else {
-		authCode.ApprovalState = database.AuthCodeStateApproved
+		authCode.ApprovalState = database.DeviceAuthCodeStateApproved
 	}
-	err = a.admin.DB.UpdateAuthCode(r.Context(), userCode, userID, authCode.ApprovalState)
+	err = a.admin.DB.UpdateDeviceAuthCode(r.Context(), authCode.ID, userID, authCode.ApprovalState)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to update auth code for userCode: %s, %w", userCode, err))
 	}
@@ -204,7 +196,7 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authCode, err := a.admin.DB.FindAuthCodeByDeviceCode(r.Context(), deviceCode)
+	authCode, err := a.admin.DB.FindDeviceAuthCodeByDeviceCode(r.Context(), deviceCode)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			http.Error(w, fmt.Sprintf("no such device code: %s found", deviceCode), http.StatusBadRequest)
@@ -223,8 +215,8 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "expired_token", http.StatusUnauthorized)
 		return
 	}
-	if authCode.ApprovalState == database.AuthCodeStateRejected {
-		err = a.admin.DB.DeleteAuthCode(r.Context(), deviceCode)
+	if authCode.ApprovalState == database.DeviceAuthCodeStateRejected {
+		err = a.admin.DB.DeleteDeviceAuthCode(r.Context(), deviceCode)
 		if err != nil {
 			internalServerError(w, fmt.Errorf("failed to clean up rejected code: %s, %w", deviceCode, err))
 			return
@@ -232,11 +224,11 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "rejected", http.StatusUnauthorized)
 		return
 	}
-	if authCode.ApprovalState == database.AuthCodeStatePending {
+	if authCode.ApprovalState == database.DeviceAuthCodeStatePending {
 		http.Error(w, "authorization_pending", http.StatusUnauthorized)
 		return
 	}
-	if authCode.ApprovalState != database.AuthCodeStateApproved || authCode.UserID == nil {
+	if authCode.ApprovalState != database.DeviceAuthCodeStateApproved || authCode.UserID == nil {
 		internalServerError(w, fmt.Errorf("inconsistent state, %w", errors.New("server error")))
 		return
 	}
@@ -248,7 +240,7 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.admin.DB.DeleteAuthCode(r.Context(), deviceCode)
+	err = a.admin.DB.DeleteDeviceAuthCode(r.Context(), deviceCode)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to clean up approved code: %s, %w", deviceCode, err))
 		return

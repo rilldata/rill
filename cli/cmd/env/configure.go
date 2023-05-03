@@ -7,18 +7,20 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
-	"github.com/rilldata/rill/admin/client"
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
+	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
+	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 )
 
 func ConfigureCmd(cfg *config.Config) *cobra.Command {
 	var projectPath, projectName string
+	var redploy bool
 
 	configureCommand := &cobra.Command{
 		Use:   "configure",
@@ -55,13 +57,13 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 			if projectName == "" {
 				// no project name provided infer name from githubURL
 				// Verify projectPath is a Git repo with remote on Github
-				_, githubURL, err := gitutil.ExtractGitRemote(projectPath)
+				_, githubURL, err := gitutil.ExtractGitRemote(projectPath, "")
 				if err != nil {
 					return err
 				}
 
 				// fetch project names for github url
-				names, err := projectNames(ctx, client, cfg.Org, githubURL)
+				names, err := cmdutil.ProjectNamesByGithubURL(ctx, client, cfg.Org, githubURL)
 				if err != nil {
 					return err
 				}
@@ -74,7 +76,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			variables, err := VariablesFlow(ctx, projectPath)
+			variables, err := VariablesFlow(ctx, projectPath, nil)
 			if err != nil {
 				return fmt.Errorf("failed to get variables %w", err)
 			}
@@ -105,8 +107,25 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to update variables %w", err)
 			}
+			cmdutil.SuccessPrinter("Updated project variables")
 
-			cmdutil.SuccessPrinter("Updated project variables\n")
+			if !cmd.Flags().Changed("redeploy") {
+				redploy = cmdutil.ConfirmPrompt("Do you want to redeploy project", "", redploy)
+			}
+
+			if redploy {
+				project, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: projectName})
+				if err != nil {
+					return err
+				}
+
+				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{DeploymentId: project.ProdDeployment.Id})
+				if err != nil {
+					warn.Printf("Redeploy trigger failed. Trigger redeploy again with `rill project reconcile --reset=true` if required.")
+					return err
+				}
+				cmdutil.SuccessPrinter("Redeploy triggered successfully.")
+			}
 			return nil
 		},
 	}
@@ -114,25 +133,52 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 	configureCommand.Flags().SortFlags = false
 	configureCommand.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	configureCommand.Flags().StringVar(&projectName, "project", "", "")
+	configureCommand.Flags().BoolVar(&redploy, "redeploy", false, "Redeploy project")
 
 	return configureCommand
 }
 
-func VariablesFlow(ctx context.Context, projectPath string) (map[string]string, error) {
-	connectors, err := rillv1beta.ExtractConnectors(ctx, projectPath)
+func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telemetry) (map[string]string, error) {
+	connectorList, err := rillv1beta.ExtractConnectors(ctx, projectPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract connectors %w", err)
 	}
 
-	vars := make(map[string]string)
-	for _, c := range connectors {
+	// collect all sources
+	srcs := make([]*connectors.Source, 0)
+	for _, c := range connectorList {
+		if !c.AnonymousAccess {
+			srcs = append(srcs, c.Sources...)
+		}
+	}
+	if len(srcs) == 0 {
+		return nil, nil
+	}
+
+	tel.Emit(telemetry.ActionDataAccessStart)
+	fmt.Printf("Finish deploying your project by providing access to the data store. Rill does not have access to the following data sources:\n\n")
+	for _, src := range srcs {
+		if _, ok := src.Properties["path"]; ok {
+			// print URL wherever applicable
+			fmt.Printf(" - %s\n", src.Properties["path"])
+		} else {
+			fmt.Printf(" - %s\n", src.Name)
+		}
+	}
+
+	variables := make(map[string]string)
+	for _, c := range connectorList {
 		if c.AnonymousAccess {
 			// ignore asking for credentials if external source can be access anonymously
 			continue
 		}
 		connectorVariables := c.Spec.ConnectorVariables
 		if len(connectorVariables) != 0 {
-			fmt.Printf("\nConnector %s requires credentials\n\n", c.Type)
+			fmt.Printf("\nConnector %q requires credentials.\n", c.Type)
+			if c.Spec.ServiceAccountDocs != "" {
+				fmt.Printf("For instructions on how to create a service account, see: %s\n", c.Spec.ServiceAccountDocs)
+			}
+			fmt.Printf("\n")
 		}
 		if c.Spec.Help != "" {
 			fmt.Println(c.Spec.Help)
@@ -164,34 +210,16 @@ func VariablesFlow(ctx context.Context, projectPath string) (map[string]string, 
 			}
 
 			if answer != "" {
-				vars[prop.Key] = answer
+				variables[prop.Key] = answer
 			}
 		}
 	}
 
-	if len(connectors) > 0 {
+	if len(connectorList) > 0 {
 		fmt.Println("")
 	}
 
-	return vars, nil
-}
+	tel.Emit(telemetry.ActionDataAccessSuccess)
 
-func projectNames(ctx context.Context, c *client.Client, orgName, githubURL string) ([]string, error) {
-	resp, err := c.ListProjectsForOrganizationAndGithubURL(ctx, &adminv1.ListProjectsForOrganizationAndGithubURLRequest{
-		OrganizationName: orgName,
-		GithubUrl:        githubURL,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if len(resp.Projects) == 0 {
-		return nil, fmt.Errorf("No project with githubURL %q exist in org %q", githubURL, orgName)
-	}
-
-	names := make([]string, len(resp.Projects))
-	for i, p := range resp.Projects {
-		names[i] = p.Name
-	}
-	return names, nil
+	return variables, nil
 }

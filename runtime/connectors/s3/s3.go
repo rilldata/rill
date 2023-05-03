@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -24,8 +26,9 @@ func init() {
 }
 
 var spec = connectors.Spec{
-	DisplayName: "Amazon S3",
-	Description: "Connect to AWS S3 Storage.",
+	DisplayName:        "Amazon S3",
+	Description:        "Connect to AWS S3 Storage.",
+	ServiceAccountDocs: "https://docs.rilldata.com/connectors/s3",
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "path",
@@ -151,11 +154,18 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		errCode := gcerrors.Code(err)
 		if (errCode == gcerrors.PermissionDenied || errCode == gcerrors.Unknown) && creds != credentials.AnonymousCredentials {
 			creds = credentials.AnonymousCredentials
-			bucketObj, err := openBucket(ctx, conf, conf.url.Host, creds)
-			if err != nil {
-				return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
+			bucketObj, bucketErr := openBucket(ctx, conf, conf.url.Host, creds)
+			if bucketErr != nil {
+				return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, bucketErr)
 			}
-			return rillblob.NewIterator(ctx, bucketObj, opts)
+			it, err = rillblob.NewIterator(ctx, bucketObj, opts)
+		}
+
+		// aws returns StatusForbidden in cases like no creds passed, wrong creds passed and incorrect bucket
+		// r2 returns StatusBadRequest in all cases above
+		var failureErr awserr.RequestFailure
+		if errors.As(err, &failureErr) && (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) {
+			return nil, connectors.NewPermissionDeniedError(fmt.Sprintf("can't access remote source %q err: %v", source.Name, failureErr))
 		}
 	}
 

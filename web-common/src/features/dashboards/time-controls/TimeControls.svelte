@@ -4,12 +4,14 @@
     useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time//config";
   import {
     getAvailableComparisonsForTimeRange,
     getComparisonRange,
   } from "@rilldata/web-common/lib/time/comparisons";
-  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
+  import {
+    DEFAULT_TIME_RANGES,
+    TIME_GRAIN,
+  } from "@rilldata/web-common/lib/time/config";
   import {
     checkValidTimeGrain,
     getDefaultTimeGrain,
@@ -74,7 +76,12 @@
     allTimeRangeQuery = useModelAllTimeRange(
       $runtime.instanceId,
       $metricsViewQuery.data.entry.metricsView.model,
-      $metricsViewQuery.data.entry.metricsView.timeDimension
+      $metricsViewQuery.data.entry.metricsView.timeDimension,
+      {
+        query: {
+          enabled: !!hasTimeSeries,
+        },
+      }
     );
     defaultTimeRange = ISODurationToTimePreset(
       $metricsViewQuery.data.entry.metricsView?.defaultTimeRange
@@ -111,9 +118,15 @@
       timeGrain.grain,
       {}
     );
+
+    /** enable comparisons by default */
+    metricsExplorerStore.toggleComparison(metricViewName, true);
+    metricsExplorerStore.allDefaultsSelected(metricViewName);
   }
 
   function setTimeControlsFromUrl(allTimeRange: TimeRange) {
+    metricsExplorerStore.allDefaultsSelected(metricViewName);
+
     if ($dashboardStore?.selectedTimeRange.name === TimeRangePreset.CUSTOM) {
       /** set the time range to the fixed custom time range */
       baseTimeRange = {
@@ -134,7 +147,7 @@
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
       $dashboardStore?.selectedTimeRange.interval,
-      // do not reset the comparison state when pullling from the URL
+      // do not reset the comparison state when pulling from the URL
       $dashboardStore?.selectedComparisonTimeRange
     );
   }
@@ -180,6 +193,7 @@
       start,
       end,
     });
+    metricsExplorerStore.toggleComparison(metricViewName, true);
   }
 
   function makeTimeSeriesTimeRangeAndUpdateAppState(
@@ -319,12 +333,15 @@
       on:select-comparison={(e) => {
         onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
       }}
+      on:disable-comparison={() =>
+        metricsExplorerStore.toggleComparison(metricViewName, false)}
       {minTimeGrain}
       currentStart={$dashboardStore?.selectedTimeRange?.start}
       currentEnd={$dashboardStore?.selectedTimeRange?.end}
       boundaryStart={allTimeRange.start}
       boundaryEnd={allTimeRange.end}
-      showComparison={isComparisonRangeAvailable}
+      {isComparisonRangeAvailable}
+      showComparison={$dashboardStore?.showComparison}
       selectedComparison={$dashboardStore?.selectedComparisonTimeRange}
       comparisonOptions={availableComparisons}
     />

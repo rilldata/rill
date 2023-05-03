@@ -21,9 +21,6 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-    - name: Download librillsql
-      shell: bash
-      run: go generate ./runtime/sql
     - name: Go fmt
       run: test -z $(gofmt -l .)
     - name: Go test

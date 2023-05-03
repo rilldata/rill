@@ -9,6 +9,7 @@
   import { globalErrorCallback } from "../components/errors/error-utils";
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../components/navigation/TopNavigationBar.svelte";
+  import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
 
   const queryClient = new QueryClient({
     queryCache: new QueryCache({
@@ -35,15 +36,15 @@
 </script>
 
 <svelte:head>
-  <meta name="description" content="Rill Cloud" />
+  <meta content="Rill Cloud" name="description" />
 </svelte:head>
 
 <RillTheme>
   <QueryClientProvider client={queryClient}>
     <div class="flex flex-col h-screen">
-      <main class="flex-grow flex flex-col">
+      <main class="flex-grow flex flex-col h-full">
         <TopNavigationBar />
-        <div class="flex-grow overflow-auto">
+        <div class="flex-grow overflow-auto h-full">
           <ErrorBoundary>
             <slot />
           </ErrorBoundary>
@@ -51,4 +52,6 @@
       </main>
     </div>
   </QueryClientProvider>
+
+  <NotificationCenter />
 </RillTheme>

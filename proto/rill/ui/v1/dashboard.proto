@@ -20,6 +20,8 @@ message DashboardState {
   optional string leaderboard_measure = 5;
   // Focused dimension
   optional string selected_dimension = 6;
+
+  optional bool show_comparison = 7;
 }
 
 message DashboardTimeRange {

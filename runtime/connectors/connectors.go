@@ -10,6 +10,18 @@ import (
 
 var ErrIngestionLimitExceeded = fmt.Errorf("connectors: source ingestion exceeds limit")
 
+type PermissionDeniedError struct {
+	msg string
+}
+
+func NewPermissionDeniedError(msg string) error {
+	return &PermissionDeniedError{msg: msg}
+}
+
+func (e *PermissionDeniedError) Error() string {
+	return e.msg
+}
+
 // Connectors tracks all registered connector drivers.
 var Connectors = make(map[string]Connector)
 
@@ -40,6 +52,7 @@ type Connector interface {
 type Spec struct {
 	DisplayName        string
 	Description        string
+	ServiceAccountDocs string
 	Properties         []PropertySchema
 	ConnectorVariables []VariableSchema
 	Help               string

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -14,7 +14,7 @@ import (
 func SwitchCmd(cfg *config.Config) *cobra.Command {
 	switchCmd := &cobra.Command{
 		Use:   "switch [<org-name>]",
-		Short: "Switch",
+		Short: "Switch to other organization",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
@@ -50,7 +50,7 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 			}
 			cfg.Org = defaultOrg
 
-			fmt.Printf("Set default organization to %q.\n", defaultOrg)
+			fmt.Printf("Set default organization to %q.", defaultOrg)
 			return nil
 		},
 	}

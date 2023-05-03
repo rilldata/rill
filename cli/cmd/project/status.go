@@ -1,11 +1,11 @@
 package project
 
 import (
-	"context"
 	"fmt"
 	"strings"
+	"time"
 
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -14,10 +14,12 @@ import (
 )
 
 func StatusCmd(cfg *config.Config) *cobra.Command {
+	var name, path string
+
 	statusCmd := &cobra.Command{
-		Use:   "status <project-name>",
-		Args:  cobra.ExactArgs(1),
-		Short: "Status",
+		Use:   "status",
+		Args:  cobra.NoArgs,
+		Short: "Project deployment status",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -25,18 +27,25 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			proj, err := client.GetProject(context.Background(), &adminv1.GetProjectRequest{
+			if !cmd.Flags().Changed("project") {
+				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
+				if err != nil {
+					return err
+				}
+			}
+
+			proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
 				OrganizationName: cfg.Org,
-				Name:             args[0],
+				Name:             name,
 			})
 			if err != nil {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Found project\n")
+			cmdutil.SuccessPrinter("Found project")
 			cmdutil.TablePrinter(toRow(proj.Project))
 
-			depl := proj.ProductionDeployment
+			depl := proj.ProdDeployment
 			if depl != nil {
 				logs, err := logsFormatter(depl.Logs)
 				if err != nil {
@@ -44,17 +53,24 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				cmdutil.SuccessPrinter("Deployment info\n")
+				fmt.Printf("  Web: %s\n", proj.Project.FrontendUrl)
 				fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
 				fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)
 				fmt.Printf("  Slots: %d\n", depl.Slots)
 				fmt.Printf("  Branch: %s\n", depl.Branch)
+				fmt.Printf("  Updated: %s\n", depl.UpdatedOn.AsTime().Local().Format(time.RFC3339))
 				fmt.Printf("  Status: %s\n", depl.Status.String())
-				fmt.Println(logs)
+				if proj.ProjectPermissions.ReadProdStatus {
+					fmt.Println(logs)
+				}
 			}
 
 			return nil
 		},
 	}
+
+	statusCmd.Flags().StringVar(&name, "project", "", "Name")
+	statusCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 
 	return statusCmd
 }

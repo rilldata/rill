@@ -298,7 +298,7 @@ func TestMetricsLabelBackwardsCompatibility(t *testing.T) {
 	repoStore, _ := fileStore.RepoStore()
 	ctx := context.Background()
 
-	require.NoError(t, repoStore.Put(ctx, "test", "dashboards/MetricsView.yaml", bytes.NewReader([]byte(`name: dashboard name
+	require.NoError(t, repoStore.Put(ctx, "test", "dashboards/MetricsView.yaml", bytes.NewReader([]byte(`display_name: dashboard name
 description: long description for dashboard
 model: Model
 timeseries: time

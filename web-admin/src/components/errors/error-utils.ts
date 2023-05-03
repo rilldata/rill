@@ -1,30 +1,42 @@
+import { goto } from "$app/navigation";
 import type { AxiosError } from "axios";
 import type { RpcStatus } from "../../client";
-import { ErrorStoreState, errorStore, isErrorStoreEmpty } from "./error-store";
+import { ADMIN_URL } from "../../client/http-client";
+import { ErrorStoreState, errorStore } from "./error-store";
 
 export function globalErrorCallback(error: AxiosError): void {
+  // If Unauthorized, redirect to login page
+  if (error.response.status === 401) {
+    goto(`${ADMIN_URL}/auth/login?redirect=${window.origin}`);
+    return;
+  }
+
+  // Create a pretty message for the error page
   const errorStoreState = createErrorStoreStateFromAxiosError(error);
 
-  // Sometimes there are multiple errors in one page load. When one of them is a 404, we
-  // prioritize it by overwriting whatever error was already in the store.
-  if (isErrorStoreEmpty || errorStoreState.statusCode === 404) {
-    errorStore.set(errorStoreState);
-  }
+  errorStore.set(errorStoreState);
 }
 
 function createErrorStoreStateFromAxiosError(
   error: AxiosError
 ): ErrorStoreState {
+  const status = error.response.status;
   const msg = (error.response.data as RpcStatus).message;
 
   // Specifically handle some errors
-  if (msg === "org not found") {
+  if (status === 403) {
+    return {
+      statusCode: error.response.status,
+      header: "Access denied",
+      body: "You don't have access to this page. Please check that you have the correct permissions.",
+    };
+  } else if (msg === "org not found") {
     return {
       statusCode: error.response.status,
       header: "Organization not found",
       body: "The organization you requested could not be found. Please check that you have provided a valid organization name.",
     };
-  } else if (msg === "proj not found") {
+  } else if (msg === "project not found") {
     return {
       statusCode: error.response.status,
       header: "Project not found",

@@ -1,7 +1,7 @@
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { get } from "svelte/store";
 
 export class StateSyncManager {
@@ -18,7 +18,11 @@ export class StateSyncManager {
 
     // if state didn't change do not call goto. this avoids adding unnecessary urls to history stack
     if (this.protoState !== this.urlState) {
-      goto(`${pageUrl.pathname}?state=${this.protoState}`);
+      if (this.protoState === metricsExplorer.defaultProto) {
+        goto(`${pageUrl.pathname}`);
+      } else {
+        goto(`${pageUrl.pathname}?state=${this.protoState}`);
+      }
       this.updating = true;
     }
   }
