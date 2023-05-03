@@ -1,9 +1,12 @@
+import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import { Duration, Interval } from "luxon";
 import { transformDate } from "../transforms";
 import {
+  DashboardTimeControls,
   RelativeTimeTransformation,
   TimeComparisonOption,
   TimeOffsetType,
+  TimeRange,
 } from "../types";
 
 export function getComparisonTransform(
@@ -148,4 +151,35 @@ export function getTimeComparisonParametersForComponent(
     end,
     isComparisonRangeAvailable,
   };
+}
+
+export function getTimeComparisonFromTimeRange(
+  { name, start, end }: TimeRange,
+  comparisonTimeRange: DashboardTimeControls
+) {
+  let selectedComparisonTimeRange: DashboardTimeControls;
+  if (!comparisonTimeRange?.name) {
+    // if no name in comparisonTimeRange, set selectedComparisonTimeRange to default.
+    const comparisonOption = DEFAULT_TIME_RANGES[name]
+      ?.defaultComparison as TimeComparisonOption;
+    const range = getComparisonRange(start, end, comparisonOption);
+
+    selectedComparisonTimeRange = {
+      ...range,
+      name: comparisonOption,
+    };
+  } else if (comparisonTimeRange.name === TimeComparisonOption.CUSTOM) {
+    selectedComparisonTimeRange = comparisonTimeRange;
+  } else {
+    // variable time range of some kind.
+    const comparisonOption = comparisonTimeRange.name as TimeComparisonOption;
+    const range = getComparisonRange(start, end, comparisonOption);
+
+    selectedComparisonTimeRange = {
+      ...range,
+      name: comparisonOption,
+    };
+  }
+
+  return selectedComparisonTimeRange;
 }

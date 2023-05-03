@@ -7,7 +7,7 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { Duration } from "luxon";
 import { TIME_GRAIN } from "../config";
 import { getTimeWidth } from "../transforms";
-import type { TimeGrain, TimeGrainOption } from "../types";
+import type { TimeRange, TimeGrain, TimeGrainOption } from "../types";
 
 export function unitToTimeGrain(unit: string): V1TimeGrain {
   return (
@@ -155,4 +155,43 @@ export function checkValidTimeGrain(
 
   const isGrainPossible = !isGrainBigger(minTimeGrain, timeGrain);
   return timeGrainOption?.enabled && isGrainPossible;
+}
+
+// validate time range name + time grain combination
+// (necessary because when the time range name is changed, the current time grain may not be valid for the new time range name)
+export function validateAndCorrectTimeGrain(
+  { start, end }: TimeRange,
+  timeGrain: V1TimeGrain,
+  minTimeGrain: V1TimeGrain
+) {
+  const timeGrainOptions = getTimeGrainOptions(start, end);
+  const isValidTimeGrain = checkValidTimeGrain(
+    timeGrain,
+    timeGrainOptions,
+    minTimeGrain
+  );
+
+  if (isValidTimeGrain) return timeGrain;
+
+  const defaultTimeGrain = getDefaultTimeGrain(start, end).grain;
+  const timeGrainEnums = Object.values(TIME_GRAIN).map(
+    (timeGrain) => timeGrain.grain
+  );
+
+  const defaultGrainIndex = timeGrainEnums.indexOf(defaultTimeGrain);
+  timeGrain = defaultTimeGrain;
+  let i = defaultGrainIndex;
+  // loop through time grains until we find a valid one
+  while (!checkValidTimeGrain(timeGrain, timeGrainOptions, minTimeGrain)) {
+    timeGrain = timeGrainEnums[i + 1] as V1TimeGrain;
+    i = i == timeGrainEnums.length - 1 ? -1 : i + 1;
+    if (i == defaultGrainIndex) {
+      // if we've looped through all the time grains and haven't found
+      // a valid one, use default
+      timeGrain = defaultTimeGrain;
+      break;
+    }
+  }
+
+  return timeGrain;
 }

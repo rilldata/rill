@@ -4,16 +4,8 @@
     useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getAvailableComparisonsForTimeRange } from "@rilldata/web-common/lib/time/comparisons";
   import {
-    getAvailableComparisonsForTimeRange,
-    getComparisonRange,
-  } from "@rilldata/web-common/lib/time/comparisons";
-  import {
-    DEFAULT_TIME_RANGES,
-    TIME_GRAIN,
-  } from "@rilldata/web-common/lib/time/config";
-  import {
-    checkValidTimeGrain,
     getDefaultTimeGrain,
     getTimeGrainOptions,
   } from "@rilldata/web-common/lib/time/grains";
@@ -205,83 +197,15 @@
      */
     comparisonTimeRange: DashboardTimeControls
   ) {
-    const { name, start, end } = timeRange;
-
-    // validate time range name + time grain combination
-    // (necessary because when the time range name is changed, the current time grain may not be valid for the new time range name)
-    timeGrainOptions = getTimeGrainOptions(start, end);
-    const isValidTimeGrain = checkValidTimeGrain(
-      timeGrain,
-      timeGrainOptions,
-      minTimeGrain
-    );
-    if (!isValidTimeGrain) {
-      const defaultTimeGrain = getDefaultTimeGrain(start, end).grain;
-      const timeGrainEnums = Object.values(TIME_GRAIN).map(
-        (timeGrain) => timeGrain.grain
-      );
-
-      const defaultGrainIndex = timeGrainEnums.indexOf(defaultTimeGrain);
-      timeGrain = defaultTimeGrain;
-      let i = defaultGrainIndex;
-      // loop through time grains until we find a valid one
-      while (!checkValidTimeGrain(timeGrain, timeGrainOptions, minTimeGrain)) {
-        timeGrain = timeGrainEnums[i + 1] as V1TimeGrain;
-        i = i == timeGrainEnums.length - 1 ? -1 : i + 1;
-        if (i == defaultGrainIndex) {
-          // if we've looped through all the time grains and haven't found
-          // a valid one, use default
-          timeGrain = defaultTimeGrain;
-          break;
-        }
-      }
-    }
-
-    // the adjusted time range
-    const newTimeRange: DashboardTimeControls = {
-      name,
-      start,
-      end,
-      interval: timeGrain,
-    };
-
     cancelDashboardQueries(queryClient, metricViewName);
 
-    metricsExplorerStore.setSelectedTimeRange(metricViewName, newTimeRange);
-
-    // reset comparisonOption to the default for the new time range.
-
-    // if no name in comprisonTimeRange, set selectedComparisonTimeRange to default.
-    if (comparisonTimeRange !== undefined) {
-      let selectedComparisonTimeRange;
-      if (!comparisonTimeRange?.name) {
-        const comparisonOption = DEFAULT_TIME_RANGES[name]
-          ?.defaultComparison as TimeComparisonOption;
-        const range = getComparisonRange(start, end, comparisonOption);
-
-        selectedComparisonTimeRange = {
-          ...range,
-          name: comparisonOption,
-        };
-      } else if (comparisonTimeRange.name === TimeComparisonOption.CUSTOM) {
-        selectedComparisonTimeRange = comparisonTimeRange;
-      } else {
-        // variable time range of some kind.
-        const comparisonOption =
-          comparisonTimeRange.name as TimeComparisonOption;
-        const range = getComparisonRange(start, end, comparisonOption);
-
-        selectedComparisonTimeRange = {
-          ...range,
-          name: comparisonOption,
-        };
-      }
-
-      metricsExplorerStore.setSelectedComparisonRange(
-        metricViewName,
-        selectedComparisonTimeRange
-      );
-    }
+    metricsExplorerStore.makeTimeSeriesTimeRangeAndUpdate(
+      metricViewName,
+      timeRange,
+      timeGrain,
+      minTimeGrain,
+      comparisonTimeRange
+    );
   }
 
   let isComparisonRangeAvailable;

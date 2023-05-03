@@ -1,12 +1,18 @@
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import { getTimeComparisonFromTimeRange } from "@rilldata/web-common/lib/time/comparisons";
+import { validateAndCorrectTimeGrain } from "@rilldata/web-common/lib/time/grains";
+import type {
+  DashboardTimeControls,
+  TimeRange,
+} from "@rilldata/web-common/lib/time/types";
 import type {
   V1MetricsView,
   V1MetricsViewFilter,
+  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
-import { Readable, Writable, derived, writable } from "svelte/store";
+import { derived, Readable, Writable, writable } from "svelte/store";
 
 export interface LeaderboardValue {
   value: number;
@@ -25,19 +31,19 @@ export interface MetricsExplorerEntity {
   // selected measure names to be shown
   selectedMeasureNames: Array<string>;
 
-  /** 
-  FIXME For now we are using the user supplied `expression` for measures
-  and `name` (column name) for dimensions to determine which measures and
-  dimensions are visible. These are used because they are the only fields
-  that are required to exist in measures/dimensions for them to be shown
-  in the dashboard
+  /**
+   FIXME For now we are using the user supplied `expression` for measures
+   and `name` (column name) for dimensions to determine which measures and
+   dimensions are visible. These are used because they are the only fields
+   that are required to exist in measures/dimensions for them to be shown
+   in the dashboard
 
-  This may lead to problems if there are ever duplicates among
-  these. Hamilton has started discussions with Benjamin about
-  adding unique keys that could be used to replace these temporary keys. 
-  Once those become available the logic around the fields below
-  should be updated.
-*/
+   This may lead to problems if there are ever duplicates among
+   these. Hamilton has started discussions with Benjamin about
+   adding unique keys that could be used to replace these temporary keys.
+   Once those become available the logic around the fields below
+   should be updated.
+   */
   // This array controls which measures are visible in
   // explorer on the client. Note that this will need to be
   // updated to include all measure keys upon initialization
@@ -75,6 +81,7 @@ export interface MetricsExplorerEntity {
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
 }
+
 const { update, subscribe } = writable({
   entities: {},
 } as MetricsExplorerStoreType);
@@ -394,6 +401,45 @@ const metricViewReducers = {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.defaultsSelected = true;
     });
+  },
+
+  makeTimeSeriesTimeRangeAndUpdate(
+    metricViewName: string,
+    timeRange: TimeRange,
+    timeGrain: V1TimeGrain,
+    minTimeGrain: V1TimeGrain,
+    /** we should only reset the comparison range when the user has explicitly chosen a new
+     * time range. Otherwise, the current comparison state should continue to be the
+     * source of truth.
+     */
+    comparisonTimeRange: DashboardTimeControls
+  ) {
+    const { name, start, end } = timeRange;
+
+    timeGrain = validateAndCorrectTimeGrain(timeRange, timeGrain, minTimeGrain);
+
+    // the adjusted time range
+    const newTimeRange: DashboardTimeControls = {
+      name,
+      start,
+      end,
+      interval: timeGrain,
+    };
+
+    this.setSelectedTimeRange(metricViewName, newTimeRange);
+
+    // reset comparisonOption to the default for the new time range.
+    if (comparisonTimeRange === undefined) return;
+
+    const selectedComparisonTimeRange = getTimeComparisonFromTimeRange(
+      timeRange,
+      comparisonTimeRange
+    );
+
+    this.setSelectedComparisonRange(
+      metricViewName,
+      selectedComparisonTimeRange
+    );
   },
 };
 
