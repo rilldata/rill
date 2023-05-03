@@ -198,7 +198,6 @@ func TestCsvDelimiterBackwardCompatibility(t *testing.T) {
 	}
 	raw := `type: local_file
 path: data/source.csv
-csv.delimiter: '|'
 format: csv
 duckdb:
     delim: '''|'''
@@ -221,10 +220,9 @@ duckdb:
 			Name:      "Source",
 			Connector: "local_file",
 			Properties: toProtoStruct(map[string]any{
-				"path":          "data/source.csv",
-				"format":        "csv",
-				"csv.delimiter": "|",
-				"duckdb":        map[string]any{"delim": "'|'"},
+				"path":   "data/source.csv",
+				"format": "csv",
+				"duckdb": map[string]any{"delim": "'|'"},
 			}),
 		},
 	})
@@ -255,7 +253,6 @@ func TestHivePartitioningBackwardCompatibility(t *testing.T) {
 	}
 	raw := `type: local_file
 path: data/source.csv
-hive_partitioning: true
 format: csv
 duckdb:
     hive_partitioning: true
@@ -278,10 +275,9 @@ duckdb:
 			Name:      "Source",
 			Connector: "local_file",
 			Properties: toProtoStruct(map[string]any{
-				"path":              "data/source.csv",
-				"format":            "csv",
-				"hive_partitioning": true,
-				"duckdb":            map[string]any{"hive_partitioning": true},
+				"path":   "data/source.csv",
+				"format": "csv",
+				"duckdb": map[string]any{"hive_partitioning": true},
 			}),
 		},
 	})

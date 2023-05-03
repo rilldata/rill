@@ -41,5 +41,5 @@ printf "Downloading data using query :  $query \n"
 
 curl -XPOST -H'Content-Type: application/json' -u "$user:$pass" https://$druid/druid/v2/sql/ -d @/tmp/$datasource-query.json > /tmp/$datasource.csv
 printf "Importing to Rill Developer project: $project \n"
-npm run cli --silent -- import-source /tmp/$datasource.csv --project $project --delimiter ","
+npm run cli --silent -- import-source /tmp/$datasource.csv --project $project
 

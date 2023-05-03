@@ -53,10 +53,6 @@ In your Rill project directory, create a `source.yaml` file in the `sources` dir
 **`timeout`**
  — The maximum time to wait for souce ingestion.
 
-**`hive_partitioning`**
- — If set to true, hive style partitioning is transformed into column values in the data source on ingestion.
- - _`true`_ by default
-
 **`extract`** - Optionally limit the data ingested from remote sources (S3/GCS only)
   - **`rows`** - limits the size of data fetched
     - **`strategy`** - strategy to fetch data (**head** or **tail**)

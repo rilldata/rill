@@ -89,14 +89,6 @@ By default the source name will be a sanitized version of the dataset file name.
 rill source add /path/to/data.parquet --name my_source
 ```
 
-### Custom CSV delimiters
-
-If you have a CSV file that is delimited by a character other than a comma or tab, you can use the `--delimiter` option. If a delimiter is not set, Rill automatically tries to detect the delimiter, so this is not strictly necessary:
-
-```
-rill source add /path/to/data.csv --delimiter "|"
-```
-
 ## Dropping a source
 
 If you have added a source to Rill that you want to drop, run:

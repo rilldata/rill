@@ -152,8 +152,7 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	}
 
 	if source.CsvDelimiter != "" {
-		props["csv.delimiter"] = source.CsvDelimiter
-		// backward compatibility: csv.delimiter
+		// backward compatibility
 		if _, defined := props["duckdb"]; !defined {
 			props["duckdb"] = map[string]any{}
 		}
@@ -161,8 +160,7 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	}
 
 	if source.HivePartition != nil {
-		// backward compatibility: hive_partitioning
-		props["hive_partitioning"] = *source.HivePartition
+		// backward compatibility
 		if _, defined := props["duckdb"]; !defined {
 			props["duckdb"] = map[string]any{}
 		}
