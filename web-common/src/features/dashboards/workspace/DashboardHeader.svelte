@@ -82,8 +82,7 @@
           <Tooltip distance={8}>
             <Button on:click={deployModal} type="primary">Deploy</Button>
             <TooltipContent slot="tooltip-content">
-              Schedule time to chat with Rill about early access to hosted
-              dashboards.
+              Deploy this dashboard to Rill Cloud
             </TooltipContent>
           </Tooltip>
         </PanelCTA>
