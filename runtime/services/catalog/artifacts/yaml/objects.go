@@ -153,22 +153,20 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 
 	if source.CsvDelimiter != "" {
 		props["csv.delimiter"] = source.CsvDelimiter
-		// backward compatibility: csv.delimiter might be passed separately from duckdb.delim and has a priority
-		if duckDBProps, defined := props["duckdb"]; defined {
-			duckDBProps.(map[string]interface{})["delim"] = source.CsvDelimiter
-		} else {
-			props["duckdb"] = map[string]interface{}{"delim": source.CsvDelimiter}
+		// backward compatibility: csv.delimiter
+		if _, defined := props["duckdb"]; !defined {
+			props["duckdb"] = map[string]any{}
 		}
+		props["duckdb"].(map[string]any)["delim"] = fmt.Sprintf("'%v'", source.CsvDelimiter)
 	}
 
 	if source.HivePartition != nil {
-		// backward compatibility: hive_partitioning might be passed separately from duckdb.hive_partitioning
+		// backward compatibility: hive_partitioning
 		props["hive_partitioning"] = *source.HivePartition
-		if duckDBProps, defined := props["duckdb"]; defined {
-			duckDBProps.(map[string]interface{})["hive_partitioning"] = *source.HivePartition
-		} else {
-			props["duckdb"] = map[string]interface{}{"hive_partitioning": *source.HivePartition}
+		if _, defined := props["duckdb"]; !defined {
+			props["duckdb"] = map[string]any{"hive_partitioning": *source.HivePartition}
 		}
+		props["duckdb"].(map[string]any)["hive_partitioning"] = *source.HivePartition
 	}
 
 	if source.GlobMaxTotalSize != 0 {

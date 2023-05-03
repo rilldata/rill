@@ -151,7 +151,7 @@ func resolveLocalPath(env *connectors.Env, path, sourceName string) (string, err
 	return finalPath, nil
 }
 
-func sourceReader(paths []string, properties map[string]interface{}) (string, error) {
+func sourceReader(paths []string, properties map[string]any) (string, error) {
 	format, formatDefined := properties["format"].(string)
 	if formatDefined {
 		format = fmt.Sprintf(".%s", format)
@@ -159,11 +159,11 @@ func sourceReader(paths []string, properties map[string]interface{}) (string, er
 		format = fileutil.FullExt(paths[0])
 	}
 
-	var ingestionProps map[string]interface{}
-	if duckDBProps, ok := properties["duckdb"].(map[string]interface{}); ok {
+	var ingestionProps map[string]any
+	if duckDBProps, ok := properties["duckdb"].(map[string]any); ok {
 		ingestionProps = duckDBProps
 	} else {
-		ingestionProps = map[string]interface{}{}
+		ingestionProps = map[string]any{}
 	}
 
 	// Generate a "read" statement
@@ -191,12 +191,12 @@ func containsAny(s string, targets []string) bool {
 	return false
 }
 
-func generateReadCsvStatement(paths []string, properties map[string]interface{}) (string, error) {
+func generateReadCsvStatement(paths []string, properties map[string]any) (string, error) {
 	// auto_detect (enables auto-detection of parameters) is true by default, it takes care of params/schema
 	return fmt.Sprintf("read_csv_auto(%s)", convertToStatementParamsStr(paths, properties)), nil
 }
 
-func generateReadParquetStatement(paths []string, properties map[string]interface{}) (string, error) {
+func generateReadParquetStatement(paths []string, properties map[string]any) (string, error) {
 	ingestionProps := copyMap(properties)
 	// set hive_partitioning to true by default
 	if _, hivePartitioningDefined := ingestionProps["hive_partitioning"]; !hivePartitioningDefined {
@@ -205,7 +205,7 @@ func generateReadParquetStatement(paths []string, properties map[string]interfac
 	return fmt.Sprintf("read_parquet(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
 }
 
-func generateReadJSONStatement(paths []string, properties map[string]interface{}) (string, error) {
+func generateReadJSONStatement(paths []string, properties map[string]any) (string, error) {
 	ingestionProps := copyMap(properties)
 	// auto_detect is false by default so setting it to true simplifies the ingestion
 	// if columns are defined then DuckDB turns the auto-detection off so no need to check this case here
@@ -215,15 +215,15 @@ func generateReadJSONStatement(paths []string, properties map[string]interface{}
 	return fmt.Sprintf("read_json(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
 }
 
-func copyMap(originalMap map[string]interface{}) map[string]interface{} {
-	newMap := make(map[string]interface{}, len(originalMap))
+func copyMap(originalMap map[string]any) map[string]any {
+	newMap := make(map[string]any, len(originalMap))
 	for key, value := range originalMap {
 		newMap[key] = value
 	}
 	return newMap
 }
 
-func convertToStatementParamsStr(paths []string, properties map[string]interface{}) string {
+func convertToStatementParamsStr(paths []string, properties map[string]any) string {
 	ingestionParamsStr := make([]string, 0, len(properties)+1)
 	// The first parameter is a source path
 	ingestionParamsStr = append(ingestionParamsStr, fmt.Sprintf("['%s']", strings.Join(paths, "','")))
