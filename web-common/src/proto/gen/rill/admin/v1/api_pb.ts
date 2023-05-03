@@ -2709,6 +2709,11 @@ export class Project extends Message<Project> {
   frontendUrl = "";
 
   /**
+   * @generated from field: string sub_path = 17;
+   */
+  subPath = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 14;
    */
   createdOn?: Timestamp;
@@ -2740,6 +2745,7 @@ export class Project extends Message<Project> {
     { no: 12, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 13, name: "prod_deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "sub_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "created_on", kind: "message", T: Timestamp },
     { no: 15, name: "updated_on", kind: "message", T: Timestamp },
   ]);

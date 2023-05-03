@@ -24,7 +24,6 @@ CREATE TABLE projects (
 	prod_olap_driver TEXT NOT NULL,
 	prod_olap_dsn TEXT NOT NULL,
 	prod_slots INTEGER NOT NULL,
-	sub_path TEXT NOT NULL,
 	created_on TIMESTAMPTZ DEFAULT now() NOT NULL,
 	updated_on TIMESTAMPTZ DEFAULT now() NOT NULL
 );

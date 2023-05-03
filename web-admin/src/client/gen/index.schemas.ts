@@ -181,6 +181,7 @@ export interface V1Project {
   prodSlots?: string;
   prodDeploymentId?: string;
   frontendUrl?: string;
+  subPath?: string;
   createdOn?: string;
   updatedOn?: string;
 }

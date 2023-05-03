@@ -1068,6 +1068,8 @@ definitions:
         type: string
       frontendUrl:
         type: string
+      subPath:
+        type: string
       createdOn:
         type: string
         format: date-time

@@ -494,6 +494,7 @@ message Project {
   int64 prod_slots = 12;
   string prod_deployment_id = 13;
   string frontend_url = 16;
+  string sub_path = 17;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
 }

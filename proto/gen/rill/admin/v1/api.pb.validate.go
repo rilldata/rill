@@ -7701,6 +7701,8 @@ func (m *Project) validate(all bool) error {
 
 	// no validation rules for FrontendUrl
 
+	// no validation rules for SubPath
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
