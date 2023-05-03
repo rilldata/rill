@@ -105,7 +105,8 @@
             main: proj.name,
           }))}
         menuKey={projectName}
-        onSelectMenuOption={(project) => goto(`/${orgName}/${project}`)}
+        onSelectMenuOption={(project) =>
+          goto(`/${orgName}/${project}/-/redirect`)}
       />
     {/if}
     {#if currentDashboard}
