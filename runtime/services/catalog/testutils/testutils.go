@@ -120,18 +120,18 @@ func AssertTable(t *testing.T, s *catalog.Service, name, sourcePath string) *dri
 }
 
 func AssertInCatalogStore(t *testing.T, s *catalog.Service, name, sourcePath string) *drivers.CatalogEntry {
-	catalogEntry, ok := s.FindEntry(context.Background(), name)
-	require.True(t, ok)
+	catalogEntry, err := s.FindEntry(context.Background(), name)
+	require.NoError(t, err)
 	require.Equal(t, name, catalogEntry.Name)
 	require.Equal(t, sourcePath, catalogEntry.Path)
 	return catalogEntry
 }
 
 func AssertTableAbsence(t *testing.T, s *catalog.Service, name string) {
-	_, ok := s.FindEntry(context.Background(), name)
-	require.False(t, ok)
+	_, err := s.FindEntry(context.Background(), name)
+	require.ErrorIs(t, err, drivers.ErrNotFound)
 
-	_, err := s.Olap.InformationSchema().Lookup(context.Background(), name)
+	_, err = s.Olap.InformationSchema().Lookup(context.Background(), name)
 	require.ErrorIs(t, err, drivers.ErrNotFound)
 }
 
