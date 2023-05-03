@@ -62,7 +62,7 @@ func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, err
 
 		projectDir := tempdir
 		if dsn.SubPath != "" {
-			projectDir = fmt.Sprintf("%s/%s", tempdir, dsn.SubPath)
+			projectDir = filepath.Join(tempdir, dsn.SubPath)
 		}
 
 		c = &connection{

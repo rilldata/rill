@@ -144,7 +144,6 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 				Branch:               opts.ProdBranch,
 				Variables:            opts.ProdVariables,
 				Reconcile:            reconcileDeployment,
-				SubPath:              opts.SubPath,
 			})
 			if err != nil {
 				// TODO: This may leave things in an inconsistent state. (Although presently, there's almost never multiple deployments.)

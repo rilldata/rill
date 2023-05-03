@@ -63,7 +63,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			fullProjectPath := projectPath
 			if subPath != "" {
-				fullProjectPath = fmt.Sprintf("%s/%s", projectPath, subPath)
+				fullProjectPath = filepath.Join(projectPath, subPath)
 			}
 
 			tel := telemetry.New(cfg.Version)
@@ -108,7 +108,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-			if !repoInSyncFlow(projectPath, prodBranch, remote.Name) {
+			if !repoInSyncFlow(fullProjectPath, prodBranch, remote.Name) {
 				warn.Println("You can run `rill deploy` again once local changes are added to remote repo.")
 				return nil
 			}
@@ -283,7 +283,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 	deployCmd.Flags().SortFlags = false
 	deployCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
-	deployCmd.Flags().StringVar(&subPath, "sub-path", "", "Project sub directory")
+	deployCmd.Flags().StringVar(&subPath, "sub-path", "", "Project path to sub directory of a larger repository")
 	deployCmd.Flags().StringVar(&orgName, "org", cfg.Org, "Org to deploy project")
 	deployCmd.Flags().IntVar(&slots, "prod-slots", 2, "Slots to allocate for production deployments")
 	deployCmd.Flags().StringVar(&description, "description", "", "Project description")
