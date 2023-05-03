@@ -22,8 +22,8 @@ const (
 
 // CatalogStore is implemented by drivers capable of storing catalog info for a specific instance.
 type CatalogStore interface {
-	FindEntries(ctx context.Context, instanceID string, t ObjectType) []*CatalogEntry
-	FindEntry(ctx context.Context, instanceID string, name string) (*CatalogEntry, bool)
+	FindEntries(ctx context.Context, instanceID string, t ObjectType) ([]*CatalogEntry, error)
+	FindEntry(ctx context.Context, instanceID string, name string) (*CatalogEntry, error)
 	CreateEntry(ctx context.Context, instanceID string, entry *CatalogEntry) error
 	UpdateEntry(ctx context.Context, instanceID string, entry *CatalogEntry) error
 	DeleteEntry(ctx context.Context, instanceID string, name string) error
