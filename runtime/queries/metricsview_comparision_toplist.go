@@ -36,7 +36,7 @@ func (q *MetricsViewComparisonToplist) Key() string {
 	if err != nil {
 		panic(err)
 	}
-	return fmt.Sprintf("MetricsViewCompareToplist:%s", string(r))
+	return fmt.Sprintf("MetricsViewComparisonToplist:%s", string(r))
 }
 
 func (q *MetricsViewComparisonToplist) Deps() []string {
@@ -74,6 +74,7 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 	if mv.TimeDimension == "" {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
+
 	if q.BaseTimeStart == nil || q.BaseTimeEnd == nil || q.ComparisonTimeStart == nil || q.ComparisonTimeEnd == nil {
 		return fmt.Errorf("undefined time range for comparison on '%s' metrics view ", q.MetricsViewName)
 	}
@@ -132,6 +133,10 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 		}
 
 		dv, err := pbutil.ToValue(values[0])
+		if err != nil {
+			return err
+		}
+
 		data = append(data, &runtimev1.MetricsViewComparisonRow{
 			DimensionName:  q.DimensionName,
 			DimensionValue: dv,
@@ -146,7 +151,7 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 	return nil
 }
 
-func timeRangeClause(start *timestamppb.Timestamp, end *timestamppb.Timestamp, td string, args *[]any) string {
+func timeRangeClause(start, end *timestamppb.Timestamp, td string, args *[]any) string {
 	var clause string
 	clause += fmt.Sprintf(" AND %s >= ?", td)
 	*args = append(*args, start.AsTime())
@@ -270,7 +275,6 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 		q.Limit,               // 7
 		finalSelectClause,     // 8
 	)
-	fmt.Println("sql " + sql)
 
 	return sql, args, nil
 }
