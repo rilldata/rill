@@ -146,9 +146,31 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	if source.Region != "" {
 		props["region"] = source.Region
 	}
+
+	if source.DuckDBProps != nil {
+		props["duckdb"] = source.DuckDBProps
+	}
+
 	if source.CsvDelimiter != "" {
 		props["csv.delimiter"] = source.CsvDelimiter
+		// backward compatibility: csv.delimiter might be passed separately from duckdb.delim and has a priority
+		if duckDBProps, defined := props["duckdb"]; defined {
+			duckDBProps.(map[string]interface{})["delim"] = source.CsvDelimiter
+		} else {
+			props["duckdb"] = map[string]interface{}{"delim": source.CsvDelimiter}
+		}
 	}
+
+	if source.HivePartition != nil {
+		// backward compatibility: hive_partitioning might be passed separately from duckdb.hive_partitioning
+		props["hive_partitioning"] = *source.HivePartition
+		if duckDBProps, defined := props["duckdb"]; defined {
+			duckDBProps.(map[string]interface{})["hive_partitioning"] = *source.HivePartition
+		} else {
+			props["duckdb"] = map[string]interface{}{"hive_partitioning": *source.HivePartition}
+		}
+	}
+
 	if source.GlobMaxTotalSize != 0 {
 		props["glob.max_total_size"] = source.GlobMaxTotalSize
 	}
@@ -169,16 +191,8 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		props["endpoint"] = source.S3Endpoint
 	}
 
-	if source.HivePartition != nil {
-		props["hive_partitioning"] = *source.HivePartition
-	}
-
 	if source.Format != "" {
 		props["format"] = source.Format
-	}
-
-	if source.DuckDBProps != nil {
-		props["duckdb"] = source.DuckDBProps
 	}
 
 	propsPB, err := structpb.NewStruct(props)

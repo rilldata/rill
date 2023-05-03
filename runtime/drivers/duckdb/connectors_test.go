@@ -179,8 +179,8 @@ func TestCSVDelimiter(t *testing.T) {
 		Name:      "foo",
 		Connector: "local_file",
 		Properties: map[string]any{
-			"path":          testDelimiterCsvPath,
-			"csv.delimiter": "+",
+			"path":   testDelimiterCsvPath,
+			"duckdb": map[string]any{"delim": "'+'"},
 		},
 	})
 	require.NoError(t, err)
@@ -211,9 +211,9 @@ func TestFileFormatAndDelimiter(t *testing.T) {
 		Name:      "foo",
 		Connector: "local_file",
 		Properties: map[string]any{
-			"path":          testDelimiterCsvPath,
-			"format":        "csv",
-			"csv.delimiter": " ",
+			"path":   testDelimiterCsvPath,
+			"format": "csv",
+			"duckdb": map[string]any{"delim": "' '"},
 		},
 	})
 	require.NoError(t, err)
@@ -250,12 +250,10 @@ func TestCSVIngestionWithColumns(t *testing.T) {
 		Properties: map[string]any{
 			"path": filePath,
 			"duckdb": map[string]any{
-				"csv": map[string]any{
-					"auto_detect":   false,
-					"header":        true,
-					"ignore_errors": true,
-					"columns":       "{id:'INTEGER',name:'VARCHAR',country:'VARCHAR',city:'VARCHAR'}",
-				},
+				"auto_detect":   false,
+				"header":        true,
+				"ignore_errors": true,
+				"columns":       "{id:'INTEGER',name:'VARCHAR',country:'VARCHAR',city:'VARCHAR'}",
 			},
 		},
 	})
@@ -329,9 +327,7 @@ func TestJsonIngestionWithColumns(t *testing.T) {
 		Properties: map[string]any{
 			"path": filePath,
 			"duckdb": map[string]any{
-				"json": map[string]any{
-					"columns": "{id:'INTEGER', name:'VARCHAR', isActive:'BOOLEAN', createdDate:'VARCHAR', address:'STRUCT(street VARCHAR, city VARCHAR, postalCode VARCHAR)', tags:'VARCHAR[]', projects:'STRUCT(projectId INTEGER, projectName VARCHAR, startDate VARCHAR, endDate VARCHAR)[]', scores:'INTEGER[]'}",
-				},
+				"columns": "{id:'INTEGER', name:'VARCHAR', isActive:'BOOLEAN', createdDate:'VARCHAR', address:'STRUCT(street VARCHAR, city VARCHAR, postalCode VARCHAR)', tags:'VARCHAR[]', projects:'STRUCT(projectId INTEGER, projectName VARCHAR, startDate VARCHAR, endDate VARCHAR)[]', scores:'INTEGER[]'}",
 			},
 		},
 	})
@@ -368,9 +364,7 @@ func TestJsonIngestionWithLessColumns(t *testing.T) {
 		Properties: map[string]any{
 			"path": filePath,
 			"duckdb": map[string]any{
-				"json": map[string]any{
-					"columns": "{id:'INTEGER',name:'VARCHAR',isActive:'BOOLEAN',createdDate:'VARCHAR',}",
-				},
+				"columns": "{id:'INTEGER',name:'VARCHAR',isActive:'BOOLEAN',createdDate:'VARCHAR',}",
 			},
 		},
 	})
@@ -407,18 +401,16 @@ func TestJsonIngestionWithVariousParams(t *testing.T) {
 		Properties: map[string]any{
 			"path": filePath,
 			"duckdb": map[string]any{
-				"json": map[string]any{
-					"maximum_object_size": "9999999",
-					"lines":               true,
-					"ignore_errors":       true,
-					"compression":         "auto",
-					"columns":             "{id:'INTEGER',name:'VARCHAR',isActive:'BOOLEAN',createdDate:'VARCHAR',}",
-					"json_format":         "records",
-					"auto_detect":         false,
-					"sample_size":         -1,
-					"dateformat":          "iso",
-					"timestampformat":     "iso",
-				},
+				"maximum_object_size": "9999999",
+				"lines":               true,
+				"ignore_errors":       true,
+				"compression":         "auto",
+				"columns":             "{id:'INTEGER',name:'VARCHAR',isActive:'BOOLEAN',createdDate:'VARCHAR',}",
+				"json_format":         "records",
+				"auto_detect":         false,
+				"sample_size":         -1,
+				"dateformat":          "iso",
+				"timestampformat":     "iso",
 			},
 		},
 	})

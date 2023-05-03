@@ -40,16 +40,17 @@ func TestSourceReadWrite(t *testing.T) {
 					Name:      "Source",
 					Connector: "local_file",
 					Properties: toProtoStruct(map[string]any{
-						"path":          "data/source.csv",
-						"csv.delimiter": "|",
-						"format":        "csv",
+						"path":   "data/source.csv",
+						"format": "csv",
+						"duckdb": map[string]any{"delim": "'|'"},
 					}),
 				},
 			},
 			`type: local_file
 path: data/source.csv
-csv.delimiter: '|'
 format: csv
+duckdb:
+    delim: '''|'''
 `,
 		},
 		{
@@ -304,9 +305,10 @@ func TestReadWithEnvVariables(t *testing.T) {
 			filePath: "sources/Source.yaml",
 			content: `type: s3
 uri: "s3://bucket/file"
-csv.delimiter: '{{.env.delimitter}}'
 format: csv
 region: {{.env.region}}
+duckdb:
+    delim: '''{{.env.delimitter}}'''
 `,
 			want: &drivers.CatalogEntry{
 				Name: "Source",
@@ -316,10 +318,10 @@ region: {{.env.region}}
 					Name:      "Source",
 					Connector: "s3",
 					Properties: toProtoStruct(map[string]any{
-						"path":          "s3://bucket/file",
-						"csv.delimiter": "|",
-						"format":        "csv",
-						"region":        "us-east-2",
+						"path":   "s3://bucket/file",
+						"format": "csv",
+						"region": "us-east-2",
+						"duckdb": map[string]any{"delim": "'|'"},
 					}),
 				},
 			},

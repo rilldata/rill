@@ -158,16 +158,24 @@ func sourceReader(paths []string, properties map[string]interface{}) (string, er
 	} else {
 		format = fileutil.FullExt(paths[0])
 	}
+
+	var ingestionProps map[string]interface{}
+	if duckDBProps, ok := properties["duckdb"].(map[string]interface{}); ok {
+		ingestionProps = duckDBProps
+	} else {
+		ingestionProps = map[string]interface{}{}
+	}
+
 	// Generate a "read" statement
 	if containsAny(format, []string{".csv", ".tsv", ".txt"}) {
 		// CSV reader
-		return generateReadCsvStatement(paths, properties)
+		return generateReadCsvStatement(paths, ingestionProps)
 	} else if strings.Contains(format, ".parquet") {
 		// Parquet reader
-		return generateReadParquetStatement(paths, properties)
+		return generateReadParquetStatement(paths, ingestionProps)
 	} else if containsAny(format, []string{".json", ".ndjson"}) {
 		// JSON reader
-		return generateReadJSONStatement(paths, properties)
+		return generateReadJSONStatement(paths, ingestionProps)
 	} else {
 		return "", fmt.Errorf("file type not supported : %s", format)
 	}
@@ -184,30 +192,21 @@ func containsAny(s string, targets []string) bool {
 }
 
 func generateReadCsvStatement(paths []string, properties map[string]interface{}) (string, error) {
-	ingestionProps := collectDuckDBIngestionProperties("duckdb.csv.", properties)
-	// backward compatibility: csv.delimiter might be passed separately from duckdb.csv.delim and has a priority
-	if csvDelimiter, csvDelimiterDefined := properties["csv.delimiter"]; csvDelimiterDefined {
-		ingestionProps["delim"] = fmt.Sprintf("'%v'", csvDelimiter)
-	}
 	// auto_detect (enables auto-detection of parameters) is true by default, it takes care of params/schema
-	return fmt.Sprintf("read_csv_auto(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
+	return fmt.Sprintf("read_csv_auto(%s)", convertToStatementParamsStr(paths, properties)), nil
 }
 
 func generateReadParquetStatement(paths []string, properties map[string]interface{}) (string, error) {
-	ingestionProps := collectDuckDBIngestionProperties("duckdb.parquet.", properties)
+	ingestionProps := copyMap(properties)
 	// set hive_partitioning to true by default
 	if _, hivePartitioningDefined := ingestionProps["hive_partitioning"]; !hivePartitioningDefined {
 		ingestionProps["hive_partitioning"] = true
-	}
-	// backward compatibility: hive_partitioning might be passed separately from duckdb.parquet.hive_partitioning
-	if hivePartitioning, hpDefinedSeparately := properties["hive_partitioning"]; hpDefinedSeparately {
-		ingestionProps["hive_partitioning"] = hivePartitioning
 	}
 	return fmt.Sprintf("read_parquet(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
 }
 
 func generateReadJSONStatement(paths []string, properties map[string]interface{}) (string, error) {
-	ingestionProps := collectDuckDBIngestionProperties("duckdb.json.", properties)
+	ingestionProps := copyMap(properties)
 	// auto_detect is false by default so setting it to true simplifies the ingestion
 	// if columns are defined then DuckDB turns the auto-detection off so no need to check this case here
 	if _, autoDetectDefined := ingestionProps["auto_detect"]; !autoDetectDefined {
@@ -216,37 +215,12 @@ func generateReadJSONStatement(paths []string, properties map[string]interface{}
 	return fmt.Sprintf("read_json(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
 }
 
-func collectDuckDBIngestionProperties(prefix string, properties map[string]interface{}) map[string]interface{} {
-	// collects properties if their names start with a prefix, and does trim the prefix
-	ingestionProps := make(map[string]interface{})
-	// flatten (concatenate keys with a dot) properties in case it is a multilayer map
-	for key, value := range flattenMap(properties) {
-		if strings.HasPrefix(key, prefix) {
-			ingestionProps[strings.TrimPrefix(key, prefix)] = value
-		}
+func copyMap(originalMap map[string]interface{}) map[string]interface{} {
+	newMap := make(map[string]interface{}, len(originalMap))
+	for key, value := range originalMap {
+		newMap[key] = value
 	}
-	return ingestionProps
-}
-
-// Takes a nested map with string keys and any value (including nested maps) and returns a new single-layer map
-// where the keys from the nested maps are concatenated using a dot as the separator. The input map must have the type
-// map[string]interface{} for the nested maps, and the function assumes that the only nested structures are of this type.
-func flattenMap(nestedMap map[string]interface{}) map[string]interface{} {
-	flattenedMap := make(map[string]interface{})
-
-	var iterate func(prefix string, nestedMap map[string]interface{})
-	iterate = func(prefix string, nestedMap map[string]interface{}) {
-		for k, v := range nestedMap {
-			if subMap, ok := v.(map[string]interface{}); ok {
-				iterate(prefix+k+".", subMap)
-			} else {
-				flattenedMap[prefix+k] = v
-			}
-		}
-	}
-
-	iterate("", nestedMap)
-	return flattenedMap
+	return newMap
 }
 
 func convertToStatementParamsStr(paths []string, properties map[string]interface{}) string {
