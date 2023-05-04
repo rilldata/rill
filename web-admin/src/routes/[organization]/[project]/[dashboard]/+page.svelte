@@ -80,7 +80,9 @@
 
 {#if isProjectBuilding}
   <ProjectBuilding organization={orgName} project={projectName} />
-{:else if !currentDashboard?.isValid}
+{:else if !currentDashboard}
+  <!-- show nothing -->
+{:else if currentDashboard && !currentDashboard.isValid}
   <ProjectErrored organization={orgName} project={projectName} />
 {:else}
   <Dashboard

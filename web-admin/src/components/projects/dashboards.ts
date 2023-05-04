@@ -122,6 +122,9 @@ export function useDashboardListItems(
       ),
     ],
     ([dashboardFiles, dashboardCatalogEntries]) => {
+      if (!dashboardFiles.isSuccess || !dashboardCatalogEntries.isSuccess)
+        return [];
+
       return getDashboardListItemsFromFilesAndCatalogEntries(
         dashboardFiles?.data?.paths ?? [],
         dashboardCatalogEntries?.data?.entries ?? []
