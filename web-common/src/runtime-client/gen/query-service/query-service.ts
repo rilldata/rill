@@ -298,54 +298,71 @@ export const queryServiceMetricsViewRows = (
   });
 };
 
-export type QueryServiceMetricsViewRowsMutationResult = NonNullable<
+export const getQueryServiceMetricsViewRowsQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewRowsBody: QueryServiceMetricsViewRowsBody
+) =>
+  [
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/rows`,
+    queryServiceMetricsViewRowsBody,
+  ] as const;
+
+export type QueryServiceMetricsViewRowsQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewRows>>
 >;
-export type QueryServiceMetricsViewRowsMutationBody =
-  QueryServiceMetricsViewRowsBody;
-export type QueryServiceMetricsViewRowsMutationError = RpcStatus;
+export type QueryServiceMetricsViewRowsQueryError = RpcStatus;
 
 export const createQueryServiceMetricsViewRows = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewRowsBody: QueryServiceMetricsViewRowsBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceMetricsViewRowsQueryKey(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewRowsBody
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewRows>>
+  > = () =>
+    queryServiceMetricsViewRows(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewRowsBody
+    );
+
+  const query = createQuery<
     Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
     TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: QueryServiceMetricsViewRowsBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && metricsViewName),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: QueryServiceMetricsViewRowsBody;
-    }
-  > = (props) => {
-    const { instanceId, metricsViewName, data } = props ?? {};
+  query.queryKey = queryKey;
 
-    return queryServiceMetricsViewRows(instanceId, metricsViewName, data);
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
-    TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: QueryServiceMetricsViewRowsBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
+  return query;
 };
+
 /**
  * @summary MetricsViewTimeSeries returns time series for the measures in the metrics view.
 It's a convenience API for querying a metrics view.
