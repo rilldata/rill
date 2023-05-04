@@ -73,7 +73,9 @@ func LoggingUnaryServerInterceptor(logger *zap.Logger) grpc.UnaryServerIntercept
 
 			// Get code and log level
 			code := status.Code(err)
-			lvl = grpcCodeToLevel(code)
+			if err != nil {
+				lvl = grpcCodeToLevel(code)
+			}
 
 			// Format err for logging. If err is a gRPC error, we want to show only the description.
 			logErr := err
