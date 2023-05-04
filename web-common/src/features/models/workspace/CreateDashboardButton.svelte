@@ -16,13 +16,13 @@
     createRuntimeServicePutFileAndReconcile,
     V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
+  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getName } from "../../entity-management/name-utils";

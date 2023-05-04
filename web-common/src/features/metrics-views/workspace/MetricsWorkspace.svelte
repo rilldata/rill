@@ -9,8 +9,8 @@
     V1PutFileAndReconcileResponse,
     V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
+  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { onMount, setContext } from "svelte";

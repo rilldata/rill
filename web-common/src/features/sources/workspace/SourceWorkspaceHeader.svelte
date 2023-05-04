@@ -29,6 +29,7 @@
     V1ReconcileResponse,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
+  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { appQueryStatusStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
@@ -36,7 +37,6 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
   import { WorkspaceHeader } from "../../../layout/workspace";

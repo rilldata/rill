@@ -26,7 +26,7 @@
   import {
     invalidateAfterReconcile,
     isProfilingQuery,
-  } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  } from "@rilldata/web-common/runtime-client/invalidation";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import { useQueryClient } from "@tanstack/svelte-query";
