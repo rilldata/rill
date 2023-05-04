@@ -1,3 +1,4 @@
+import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
 import {
   fetchWrapper,
   FetchWrapperOptions,
@@ -15,7 +16,6 @@ import {
   getPriority,
   InactivePriority,
 } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
-import { appQueryStatusStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
 
 // Examples:
 // v1/instances/id/queries/columns-profile/tables/table-name
