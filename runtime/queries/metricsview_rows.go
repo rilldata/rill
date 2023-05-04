@@ -80,10 +80,6 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return err
 	}
 
-	if len(data) == 0 {
-		return fmt.Errorf("no rows received from totals query")
-	}
-
 	q.Result = &runtimev1.MetricsViewRowsResponse{
 		Meta: meta,
 		Data: data,
