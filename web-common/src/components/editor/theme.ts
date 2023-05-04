@@ -15,6 +15,12 @@ export const editorTheme = () =>
     ".cm-gutter": {
       backgroundColor: "white",
     },
+    ".cm-gutters": {
+      borderRight: "none",
+    },
+    ".cm-scroller": {
+      fontFamily: "var(--monospace)",
+    },
     ".cm-lineNumbers .cm-gutterElement": {
       paddingLeft: "5px",
       paddingRight: "10px",

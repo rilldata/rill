@@ -136,9 +136,13 @@
 
   /** Run all the state field updaters once view is ready */
   $: if (view) {
-    stateFieldUpdaters.forEach((updater) => {
-      updater(view);
-    });
+    /** view.updateState doesn't appear to be in the EditorView type, even though
+     * it clearly exists in this view object.
+     */
+    if (view.updateState !== 2)
+      stateFieldUpdaters.forEach((updater) => {
+        updater(view);
+      });
   }
 
   /** Listen for changes to the content. If it doesn't match the editor state,

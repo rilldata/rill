@@ -1,7 +1,7 @@
 <script lang="ts">
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import { createLineStatusSystem } from "@rilldata/web-common/components/editor/plugins/line-status-decoration";
-  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
+  import { editorTheme } from "@rilldata/web-common/components/editor/theme";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { parseDocument } from "yaml";
   import {
@@ -132,7 +132,7 @@
   class:ring-gray-300={hasFocus}
 >
   <div class="rounded border">
-    <div
+    <!-- <div
       class="bg-gray-50 flex justify-between	items-center   w-full sticky top-0 z-20 surface px-2 py-2 border-b"
     >
       <div>header</div>
@@ -142,10 +142,10 @@
           style:font-size="11px"
         >
           <CancelCircle size="12px" />
-          {nonLineErrors[0].message}
+          {nonLineErrors?.[0]?.message}
         </div>
       {/if}
-    </div>
+    </div> -->
 
     <YAMLEditor
       content={yaml}
@@ -154,7 +154,7 @@
         cursor = event.detail;
       }}
       bind:hasFocus
-      plugins={[placeholder, lineStatusExtensions]}
+      plugins={[editorTheme(), placeholder, lineStatusExtensions]}
       stateFieldUpdaters={[updateLineStatus]}
     />
   </div>
