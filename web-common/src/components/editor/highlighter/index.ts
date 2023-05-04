@@ -6,6 +6,7 @@ import {
   ViewUpdate,
 } from "@codemirror/view";
 import { levels, lineStatusesStateField } from "../line-status";
+
 function backgroundColorDecoration(view) {
   const lineStatuses = view.state.field(lineStatusesStateField);
 
