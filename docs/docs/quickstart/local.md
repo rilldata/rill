@@ -1,7 +1,7 @@
 ---
-title: Quick start
-sidebar_label: Quick start
-sidebar_position: 15
+title: Quick start on local
+sidebar_label: Local
+sidebar_position: 10
 ---
 
 Follow this tutorial to install Rill and create a project on your local computer in less than two minutes.
@@ -20,9 +20,7 @@ On Linux, we recommend installing `rill` using our installation script:
 curl -s https://cdn.rilldata.com/install.sh | bash
 ```
 
-See [Install options](./using-rill/install.md) for more information about different ways to install Rill.
-
-<!-- TODO: Add docs link here -->
+See [Install options](../develop/install.md) for more information about different ways to install Rill.
 
 ## Creating a project
 
@@ -38,7 +36,7 @@ cd rill-developer-example
 Alternatively, you can create a new, empty Rill project:
 
 ```
-rill init --project my-project
+rill init my-project
 cd my-project
 ```
 
@@ -54,7 +52,7 @@ When you run `rill start`, it parses your project and ingests any missing data s
 
 ## Editing and sharing a project
 
-You can now use the Rill web app to add or edit data sources, data models, and dashboards. All changes you make in the UI and [CLI](./references/cli/cli.md) are versionable because they are reflected as [Rill project files](./references/project-files.md) stored on disk. You can share your Rill project files with others by pushing to a shared repository, and they'll be able to completely recreate your project just by running `rill start`.
+You can now use the Rill web app to add or edit data sources, data models, and dashboards. All changes you make in the UI and [CLI](../reference/cli/cli.md) are versionable because they are reflected as [Rill project files](../reference/project-files/overview.md) stored on disk. You can share your Rill project files with others by pushing to a shared repository, and they'll be able to completely recreate your project just by running `rill start`.
 
 Have fun exploring Rill!
 
