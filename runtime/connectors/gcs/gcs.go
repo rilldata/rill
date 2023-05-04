@@ -29,7 +29,7 @@ var errNoCredentials = errors.New("empty credentials: set `google_application_cr
 var spec = connectors.Spec{
 	DisplayName:        "Google Cloud Storage",
 	Description:        "Connect to Google Cloud Storage.",
-	ServiceAccountDocs: "https://docs.rilldata.com/connectors/gcs",
+	ServiceAccountDocs: "https://docs.rilldata.com/reference/connectors/gcs",
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "path",
@@ -46,7 +46,7 @@ var spec = connectors.Spec{
 			Description: "GCP credentials inferred from your local environment.",
 			Type:        connectors.InformationalPropertyType,
 			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
-			Href:        "https://docs.rilldata.com/using-rill/import-data#setting-google-gcs-credentials",
+			Href:        "https://docs.rilldata.com/develop/import-data#setting-local-credentials-for-gcs",
 		},
 	},
 	ConnectorVariables: []connectors.VariableSchema{

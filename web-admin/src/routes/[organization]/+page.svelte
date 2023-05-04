@@ -21,7 +21,7 @@
   }
 
   function openDocs() {
-    window.open("https://docs.rilldata.com/quick-start", "_blank");
+    window.open("https://docs.rilldata.com/quickstart/local", "_blank");
   }
 </script>
 

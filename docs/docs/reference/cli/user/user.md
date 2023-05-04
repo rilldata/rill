@@ -1,19 +1,14 @@
 ---
-title: rill logout
+title: rill user
 ---
-## rill logout
+## rill user
 
-Logout of the Rill API
-
-```
-rill logout [flags]
-```
+Manage users
 
 ### Flags
 
 ```
       --api-token string   Token for authenticating with the admin API
-      --api-url string     Base URL for the admin API (default "https://admin.rilldata.io")
 ```
 
 ### Global flags
@@ -25,5 +20,9 @@ rill logout [flags]
 
 ### SEE ALSO
 
-* [rill](cli.md)	 - Rill CLI
+* [rill](../cli.md)	 - Rill CLI
+* [rill user add](add.md)	 - Add
+* [rill user list](list.md)	 - List
+* [rill user remove](remove.md)	 - Remove
+* [rill user set-role](set-role.md)	 - Set Role
 

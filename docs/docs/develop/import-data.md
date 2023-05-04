@@ -13,7 +13,7 @@ Rill supports several connectors for importing data: local files, download from 
 
 To import a file using the UI, click "+" by Sources in the left hand navigation pane, select "Local File", and navigate to the specific file. Alternately, try dragging and dropping the file directly onto the Rill interface.
 
-*Experimental: Alternatively, you can directly query sources from within the [model](https://docs.rilldata.com/using-rill/sql-models) itself using a `FROM` statment and `path` with double quotes around it.*
+*Experimental: Alternatively, you can directly query sources from within the [model](./sql-models) itself using a `FROM` statment and `path` with double quotes around it.*
 
 ```
 FROM "/path/to/data.csv"
@@ -47,7 +47,7 @@ Note that if you provide a relative path, the path should be relative to your Ri
 ### Using the UI
 To add a remote source using the UI, click "+" by Sources in the left hand navigation pane and select the location where your remote files are stored ("Google Cloud Storage", "Amazon S3", or "http(s)"). Enter your file's URI and click "Add Source".
 
-*Experimental: Alternatively, you can directly query sources from within the [model](https://docs.rilldata.com/using-rill/sql-models) itself using a `FROM` statment and `uri` with double quotes around it. If you need to parameterize your URI for region authentication, we recommend using the modal.*
+*Experimental: Alternatively, you can directly query sources from within the [model](./sql-models) itself using a `FROM` statment and `uri` with double quotes around it. If you need to parameterize your URI for region authentication, we recommend using the modal.*
 
 ```
 FROM "https://data.example.org/path/to/file.parquet"
@@ -61,7 +61,6 @@ Creating remote sources is not currently available through the CLI.
 ### Using code
 When you add a source using the UI or CLI, a code definition will automatically be created as a `.yaml` file in your Rill project in the `sources` directory.
 
-
 To create a remote http(s) source, create a `source_name.yaml` file in the `sources` directory with the following contents:
 
 ```yaml
@@ -69,13 +68,13 @@ type: https
 uri: https://data.example.org/path/to/file.parquet
 ```
 
-For details about all available properties for all remote connectors, see the syntax [reference](../references/project-files#source-connections).
+For details about all available properties for all remote connectors, see the syntax [reference](../reference/project-files/sources).
 
 ## Authenticating remote sources
 
 When attempting to access private data in S3 or Google Cloud Storage, you need to configure your local machine with credentials to the relevant cloud provider. Rill uses the official AWS and Google Cloud SDKs to automatically detect and connect to the cloud. Your credentials are never stored in Rill.
 
-### Setting local credentials GCS
+### Setting local credentials for GCS
 Google Cloud Platform credentials are enabled through `gcloud` authentication in the terminal.
 
 First, ensure you have the `gcloud` CLI installed locally by running the following CLI command. If it is not installed, go through the [gcloud install steps](https://cloud.google.com/sdk/docs/install).
