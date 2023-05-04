@@ -348,6 +348,9 @@ func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string, si
 
 			// Sleep and poll again
 		}
+	} else {
+		// Fire success event if already have access to the repo
+		tel.Emit(telemetry.ActionGithubConnectedSuccess)
 	}
 
 	return res, nil

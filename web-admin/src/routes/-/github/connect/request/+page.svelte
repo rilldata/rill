@@ -3,6 +3,7 @@
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
+  import { onMount } from "svelte";
   import CodeBlockInline from "../../../../../components/calls-to-action/CodeBlockInline.svelte";
   import CtaContentContainer from "../../../../../components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "../../../../../components/calls-to-action/CTAHeader.svelte";

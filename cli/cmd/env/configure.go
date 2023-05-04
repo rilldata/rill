@@ -152,6 +152,8 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 		}
 	}
 	if len(srcs) == 0 {
+		// fire success if there is no action needed
+		tel.Emit(telemetry.ActionDataAccessSuccess)
 		return nil, nil
 	}
 
