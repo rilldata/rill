@@ -3,7 +3,7 @@ package org
 import (
 	"context"
 
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -12,7 +12,7 @@ import (
 func ListCmd(cfg *config.Config) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
-		Short: "List",
+		Short: "List all organizations",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -25,8 +25,8 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Organizations list \n")
-			cmdutil.TablePrinter(toTable(res.Organizations))
+			cmdutil.SuccessPrinter("Organizations list")
+			cmdutil.TablePrinter(toTable(res.Organizations, cfg.Org))
 			return nil
 		},
 	}

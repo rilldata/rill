@@ -10,23 +10,26 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func (c *connection) FindEntries(ctx context.Context, instanceID string, typ drivers.ObjectType) []*drivers.CatalogEntry {
+func (c *connection) FindEntries(ctx context.Context, instanceID string, typ drivers.ObjectType) ([]*drivers.CatalogEntry, error) {
 	if typ == drivers.ObjectTypeUnspecified {
 		return c.findEntries(ctx, "WHERE instance_id = ?", instanceID)
 	}
 	return c.findEntries(ctx, "WHERE instance_id = ? AND type = ?", instanceID, typ)
 }
 
-func (c *connection) FindEntry(ctx context.Context, instanceID, name string) (*drivers.CatalogEntry, bool) {
+func (c *connection) FindEntry(ctx context.Context, instanceID, name string) (*drivers.CatalogEntry, error) {
 	// Names are stored with case everywhere, but the checks should be case-insensitive. Hence, the translation to lower case here.
-	es := c.findEntries(ctx, "WHERE instance_id = ? AND LOWER(name) = LOWER(?)", instanceID, name)
-	if len(es) == 0 {
-		return nil, false
+	es, err := c.findEntries(ctx, "WHERE instance_id = ? AND LOWER(name) = LOWER(?)", instanceID, name)
+	if err != nil {
+		return nil, err
 	}
-	return es[0], true
+	if len(es) == 0 {
+		return nil, drivers.ErrNotFound
+	}
+	return es[0], nil
 }
 
-func (c *connection) findEntries(_ context.Context, whereClause string, args ...any) []*drivers.CatalogEntry {
+func (c *connection) findEntries(_ context.Context, whereClause string, args ...any) ([]*drivers.CatalogEntry, error) {
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 
@@ -34,7 +37,7 @@ func (c *connection) findEntries(_ context.Context, whereClause string, args ...
 
 	rows, err := c.db.QueryxContext(ctx, sql, args...)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -45,7 +48,7 @@ func (c *connection) findEntries(_ context.Context, whereClause string, args ...
 
 		err := rows.Scan(&e.Name, &e.Type, &objBlob, &e.Path, &e.BytesIngested, &e.CreatedOn, &e.UpdatedOn, &e.RefreshedOn)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
 		// Parse object protobuf
@@ -72,7 +75,7 @@ func (c *connection) findEntries(_ context.Context, whereClause string, args ...
 		res = append(res, e)
 	}
 
-	return res
+	return res, nil
 }
 
 func (c *connection) CreateEntry(_ context.Context, instanceID string, e *drivers.CatalogEntry) error {

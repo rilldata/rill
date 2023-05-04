@@ -5,7 +5,7 @@
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { calendlyModalStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { projectShareStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
@@ -43,16 +43,8 @@
   $: displayName = $metaQuery.data?.label;
   $: isEditableDashboard = $featureFlags.readOnly === false;
 
-  function openCalendly() {
-    calendlyModalStore.set(metricViewName);
-    behaviourEvent.firePublishEvent(
-      metricViewName,
-      BehaviourEventMedium.Button,
-      MetricsEventSpace.Workspace,
-      MetricsEventScreenName.Dashboard,
-      MetricsEventScreenName.Dashboard,
-      true
-    );
+  function deployModal() {
+    projectShareStore.set(true);
   }
 </script>
 
@@ -60,8 +52,11 @@
   <!-- top row: title and call to action -->
   <!-- Rill Local includes the title, Rill Cloud does not -->
   {#if hasTitle}
+    <!-- FIXME: adding an -mb-3 fixes the spacing issue incurred by changes to the header
+    to accommodate the cloud dashboard. We should go back and reconcile these headers so we don't need
+  to do this. -->
     <div
-      class="flex items-center justify-between w-full pl-1 pr-4"
+      class="flex items-center justify-between -mb-3 w-full pl-1 pr-4"
       style:height="var(--header-height)"
     >
       <!-- title element -->
@@ -85,10 +80,9 @@
             </TooltipContent>
           </Tooltip>
           <Tooltip distance={8}>
-            <Button on:click={openCalendly} type="primary">Publish</Button>
+            <Button on:click={deployModal} type="primary">Deploy</Button>
             <TooltipContent slot="tooltip-content">
-              Schedule time to chat with Rill about early access to hosted
-              dashboards.
+              Deploy this dashboard to Rill Cloud
             </TooltipContent>
           </Tooltip>
         </PanelCTA>

@@ -3,55 +3,57 @@ package admin
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/provisioner"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/client"
-	"github.com/rilldata/rill/runtime/server/auth"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
-	// TODO: Make this actually fault tolerant.
+// TODO: The functions in this file are not truly fault tolerant. They should be refactored to run as idempotent, retryable background tasks.
 
-	org, err := s.DB.FindOrganizationByID(ctx, opts.OrganizationID)
-	if err != nil {
-		return nil, err
+// CreateProject creates a new project and provisions and reconciles a prod deployment for it.
+func (s *Service) CreateProject(ctx context.Context, org *database.Organization, userID string, opts *database.InsertProjectOptions) (*database.Project, error) {
+	// Check Github info is set (presently required to make a deployment)
+	if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == "" {
+		return nil, fmt.Errorf("cannot create project without github info")
 	}
 
+	// Get roles for initial setup
+	adminRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameAdmin)
+	if err != nil {
+		panic(errors.Wrap(err, "failed to find project admin role"))
+	}
+	viewerRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameViewer)
+	if err != nil {
+		panic(errors.Wrap(err, "failed to find project viewer role"))
+	}
+
+	// Create the project and add initial members using a transaction.
+	// The transaction is not used for provisioning and deployments, since they involve external services.
 	txCtx, tx, err := s.DB.NewTx(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	// Create the project
 	proj, err := s.DB.InsertProject(txCtx, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	adminRole, err := s.DB.FindProjectRole(txCtx, database.ProjectAdminRoleName)
-	if err != nil {
-		panic(errors.Wrap(err, "failed to find project admin role"))
-	}
-
-	// add project admin role to the user
-	err = s.DB.InsertProjectMemberUser(txCtx, proj.ID, opts.UserID, adminRole.ID)
+	// The creating user becomes project admin
+	err = s.DB.InsertProjectMemberUser(txCtx, proj.ID, userID, adminRole.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	// add project viewer role to the all_user_group of the org
-	viewerRole, err := s.DB.FindProjectRole(txCtx, database.ProjectViewerRoleName)
-	if err != nil {
-		panic(errors.Wrap(err, "failed to find project viewer role"))
-	}
+	// All org members as a group get viewer role
 	err = s.DB.InsertProjectMemberUsergroup(txCtx, *org.AllUsergroupID, proj.ID, viewerRole.ID)
 	if err != nil {
 		return nil, err
@@ -62,65 +64,33 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 		return nil, err
 	}
 
-	if proj.GithubURL == nil || proj.GithubInstallationID == nil {
-		return nil, fmt.Errorf("cannot create project without github info")
-	}
-
-	// Provision it
-	provOpts := &provisioner.ProvisionOptions{
-		OLAPDriver:           proj.ProductionOLAPDriver,
-		OLAPDSN:              proj.ProductionOLAPDSN,
-		Region:               proj.Region,
-		Slots:                proj.ProductionSlots,
-		GithubURL:            *proj.GithubURL,
-		GitBranch:            proj.ProductionBranch,
-		GithubInstallationID: *proj.GithubInstallationID,
-		Variables:            proj.ProductionVariables,
-	}
-	// start using original context again since transaction in txCtx is done
-	inst, err := s.provisioner.Provision(ctx, provOpts)
+	// Provision prod deployment.
+	// Start using original context again since transaction in txCtx is done.
+	depl, err := s.createDeployment(ctx, proj)
 	if err != nil {
-		err = fmt.Errorf("provisioner: %w", err)
 		err2 := s.DB.DeleteProject(ctx, proj.ID)
 		return nil, multierr.Combine(err, err2)
 	}
 
-	// Store deployment
-	depl, err := s.DB.InsertDeployment(ctx, &database.InsertDeploymentOptions{
-		ProjectID:         proj.ID,
-		Branch:            proj.ProductionBranch,
-		Slots:             proj.ProductionSlots,
-		RuntimeHost:       inst.Host,
-		RuntimeInstanceID: inst.InstanceID,
-		RuntimeAudience:   inst.Audience,
-		Status:            database.DeploymentStatusPending,
-		Logs:              "",
+	// Update prod deployment on project
+	res, err := s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Name:                 proj.Name,
+		Description:          proj.Description,
+		Public:               proj.Public,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		ProdBranch:           proj.ProdBranch,
+		ProdVariables:        proj.ProdVariables,
+		ProdDeploymentID:     &depl.ID,
 	})
 	if err != nil {
-		err2 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID, proj.ProductionOLAPDriver)
+		err2 := s.teardownDeployment(ctx, proj, depl)
 		err3 := s.DB.DeleteProject(ctx, proj.ID)
 		return nil, multierr.Combine(err, err2, err3)
 	}
 
-	// Update prod deployment on project
-	res, err := s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
-		Description:            proj.Description,
-		Public:                 proj.Public,
-		ProductionBranch:       proj.ProductionBranch,
-		ProductionVariables:    proj.ProductionVariables,
-		GithubURL:              proj.GithubURL,
-		GithubInstallationID:   proj.GithubInstallationID,
-		ProductionDeploymentID: &depl.ID,
-	})
-	if err != nil {
-		err2 := s.DB.DeleteDeployment(ctx, depl.ID)
-		err3 := s.provisioner.Teardown(ctx, inst.Host, inst.InstanceID, proj.ProductionOLAPDriver)
-		err4 := s.DB.DeleteProject(ctx, proj.ID)
-		return nil, multierr.Combine(err, err2, err3, err4)
-	}
-
 	// Trigger reconcile
-	err = s.TriggerReconcile(ctx, depl.ID)
+	err = s.TriggerReconcile(ctx, depl)
 	if err != nil {
 		// This error is weird. But it's safe not to teardown the rest.
 		return nil, err
@@ -129,21 +99,15 @@ func (s *Service) CreateProject(ctx context.Context, opts *database.InsertProjec
 	return res, nil
 }
 
+// TeardownProject tears down a project and all its deployments.
 func (s *Service) TeardownProject(ctx context.Context, p *database.Project) error {
-	// TODO: Make this actually fault tolerant.
-
 	ds, err := s.DB.FindDeployments(ctx, p.ID)
 	if err != nil {
 		return err
 	}
 
 	for _, d := range ds {
-		err := s.provisioner.Teardown(ctx, d.RuntimeHost, d.RuntimeInstanceID, p.ProductionOLAPDriver)
-		if err != nil {
-			return err
-		}
-
-		err = s.DB.DeleteDeployment(ctx, d.ID)
+		err := s.teardownDeployment(ctx, p, d)
 		if err != nil {
 			return err
 		}
@@ -157,149 +121,223 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 	return nil
 }
 
-func (s *Service) TriggerReconcile(ctx context.Context, deploymentID string) error {
-	// TODO: Make this actually fault tolerant
+// UpdateProject updates a project and any impacted deployments.
+// It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
+func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions, reconcileDeployment bool) (*database.Project, error) {
+	impactsDeployments := (proj.ProdBranch != opts.ProdBranch ||
+		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
+		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
+		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables))
 
-	// Run it all in the background
+	if impactsDeployments {
+		ds, err := s.DB.FindDeployments(ctx, proj.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		// NOTE: This assumes every deployment (almost always, there's just one) deploys the prod branch.
+		// It needs to be refactored when implementing preview deploys.
+		for _, d := range ds {
+			err := s.updateDeployment(ctx, d, &updateDeploymentOptions{
+				GithubURL:            opts.GithubURL,
+				GithubInstallationID: opts.GithubInstallationID,
+				Branch:               opts.ProdBranch,
+				Variables:            opts.ProdVariables,
+				Reconcile:            reconcileDeployment,
+			})
+			if err != nil {
+				// TODO: This may leave things in an inconsistent state. (Although presently, there's almost never multiple deployments.)
+				return nil, err
+			}
+		}
+	}
+
+	proj, err := s.DB.UpdateProject(ctx, proj.ID, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return proj, nil
+}
+
+// TriggerRedeploy de-provisions and re-provisions a project's prod deployment.
+func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) error {
+	// Provision new deployment
+	newDepl, err := s.createDeployment(ctx, proj)
+	if err != nil {
+		return err
+	}
+
+	// Update prod deployment on project
+	_, err = s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Name:                 proj.Name,
+		Description:          proj.Description,
+		Public:               proj.Public,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		ProdBranch:           proj.ProdBranch,
+		ProdVariables:        proj.ProdVariables,
+		ProdDeploymentID:     &newDepl.ID,
+	})
+	if err != nil {
+		err2 := s.teardownDeployment(ctx, proj, newDepl)
+		return multierr.Combine(err, err2)
+	}
+
+	// Delete old prod deployment
+	err = s.teardownDeployment(ctx, proj, prevDepl)
+	if err != nil {
+		s.logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err))
+	}
+
+	// Trigger reconcile on new deployment
+	err = s.TriggerReconcile(ctx, newDepl)
+	if err != nil {
+		// This error is weird. But it's safe not to teardown the rest.
+		return err
+	}
+
+	return nil
+}
+
+// TriggerReconcile triggers a reconcile for a deployment.
+func (s *Service) TriggerReconcile(ctx context.Context, depl *database.Deployment) error {
+	// Run reconcile in the background (since it's sync)
 	go func() {
-		// Use s.closeCtx to cancel if the service is stopped
-		ctx := s.closeCtx
-
-		s.logger.Info("reconcile: starting", zap.String("deployment_id", deploymentID))
-
-		// Get deployment
-		depl, err := s.DB.FindDeployment(ctx, deploymentID)
-		if err != nil {
-			s.logger.Error("reconcile: could not find deployment", zap.String("deployment_id", deploymentID), zap.Error(err))
-			return
-		}
-
-		// Check status
-		if depl.Status == database.DeploymentStatusReconciling && time.Since(depl.UpdatedOn) < 30*time.Minute {
-			s.logger.Error("reconcile: skipping because it is already running", zap.String("deployment_id", deploymentID))
-			return
-		}
-
-		// Set deployment status to reconciling
-		depl, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusReconciling, "")
-		if err != nil {
-			s.logger.Error("reconcile: could not update status", zap.String("deployment_id", deploymentID), zap.Error(err))
-			return
-		}
-
-		// Get superuser token for runtime host
-		jwt, err := s.issuer.NewToken(auth.TokenOptions{
-			AudienceURL:         depl.RuntimeAudience,
-			TTL:                 time.Hour,
-			InstancePermissions: map[string][]auth.Permission{depl.RuntimeInstanceID: {auth.EditInstance}},
-		})
-		if err != nil {
-			s.logger.Error("reconcile: could not get token", zap.String("deployment_id", deploymentID), zap.Error(err))
-			return
-		}
-
-		// Make runtime client
-		rt, err := client.New(depl.RuntimeHost, jwt)
-		if err != nil {
-			s.logger.Error("reconcile: could not create client", zap.String("deployment_id", deploymentID), zap.Error(err))
-			return
-		}
-
-		// Call reconcile
-		res, err := rt.Reconcile(ctx, &runtimev1.ReconcileRequest{InstanceId: depl.RuntimeInstanceID})
-		if err != nil {
-			s.logger.Error("reconcile: rpc error", zap.String("deployment_id", deploymentID), zap.Error(err))
-			_, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusError, err.Error())
-			if err != nil {
-				s.logger.Error("reconcile: could not update logs", zap.String("deployment_id", deploymentID), zap.Error(err))
-			}
-			return
-		}
-
-		// Set status
-		if len(res.Errors) > 0 {
-			json, err := protojson.Marshal(res)
-			if err != nil {
-				s.logger.Error("reconcile: json error", zap.String("deployment_id", deploymentID), zap.Error(err))
-				return
-			}
-
-			_, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusError, string(json))
-			if err != nil {
-				s.logger.Error("reconcile: could not update logs", zap.String("deployment_id", deploymentID), zap.Error(err))
-				return
-			}
+		s.logger.Info("reconcile: starting", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+		err := s.triggerReconcile(s.closeCtx, depl) // Use s.closeCtx to cancel if the service is stopped
+		if err == nil {
+			s.logger.Info("reconcile: completed", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 		} else {
-			_, err = s.DB.UpdateDeploymentStatus(ctx, deploymentID, database.DeploymentStatusOK, "")
-			if err != nil {
-				s.logger.Error("reconcile: could not clear logs", zap.String("deployment_id", deploymentID), zap.Error(err))
-				return
-			}
+			s.logger.Error("reconcile: failed", zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 		}
-
-		s.logger.Info("reconcile: completed", zap.String("deployment_id", deploymentID))
 	}()
 	return nil
 }
 
-func (s *Service) UpdateProject(ctx context.Context, projID string, opts *database.UpdateProjectOptions) (*database.Project, error) {
-	// TODO: Make this actually fault tolerant.
-
-	// TODO: Handle if ProductionBranch or GithubURL was changed.
-
-	ds, err := s.DB.FindDeployments(ctx, projID)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, d := range ds {
-		if err := s.editInstance(ctx, d, opts.ProductionVariables); err != nil {
-			return nil, err
-		}
-	}
-
-	// Update the project
-	proj, err := s.DB.UpdateProject(ctx, projID, opts)
-	if err != nil {
-		return nil, err
-	}
-	return proj, nil
-}
-
-func (s *Service) editInstance(ctx context.Context, d *database.Deployment, variables map[string]string) error {
-	jwt, err := s.issuer.NewToken(auth.TokenOptions{
-		AudienceURL:       d.RuntimeAudience,
-		TTL:               time.Hour,
-		SystemPermissions: []auth.Permission{auth.ManageInstances, auth.ReadInstance},
-	})
+func (s *Service) triggerReconcile(ctx context.Context, depl *database.Deployment) error {
+	err := s.startReconcile(ctx, depl)
 	if err != nil {
 		return err
 	}
 
-	rt, err := client.New(d.RuntimeHost, jwt)
+	rt, err := s.openRuntimeClientForDeployment(depl)
 	if err != nil {
-		return err
+		return s.endReconcile(ctx, depl, nil, err)
 	}
 	defer rt.Close()
 
-	resp, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{
-		InstanceId: d.RuntimeInstanceID,
-	})
+	res, err := rt.Reconcile(ctx, &runtimev1.ReconcileRequest{InstanceId: depl.RuntimeInstanceID})
+	return s.endReconcile(ctx, depl, res, err)
+}
+
+// TriggerRefreshSource triggers refresh of a deployment's sources. If the sources slice is nil, it will refresh all sources.f
+func (s *Service) TriggerRefreshSources(ctx context.Context, depl *database.Deployment, sources []string) error {
+	// Run reconcile in the background (since it's sync)
+	go func() {
+		s.logger.Info("refresh sources: starting", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+		err := s.triggerRefreshSources(s.closeCtx, depl, sources) // Use s.closeCtx to cancel if the service is stopped
+		if err == nil {
+			s.logger.Info("refresh sources: completed", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+		} else {
+			s.logger.Error("refresh sources: failed", zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+		}
+	}()
+	return nil
+}
+
+func (s *Service) triggerRefreshSources(ctx context.Context, depl *database.Deployment, sources []string) error {
+	err := s.startReconcile(ctx, depl)
 	if err != nil {
 		return err
 	}
 
-	// Edit the instance
-	inst := resp.Instance
-	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
-		InstanceId:          d.RuntimeInstanceID,
-		OlapDriver:          inst.OlapDriver,
-		OlapDsn:             inst.OlapDsn,
-		RepoDriver:          inst.RepoDriver,
-		RepoDsn:             inst.RepoDsn,
-		EmbedCatalog:        inst.EmbedCatalog,
-		Variables:           variables,
-		IngestionLimitBytes: inst.IngestionLimitBytes,
+	rt, err := s.openRuntimeClientForDeployment(depl)
+	if err != nil {
+		return s.endReconcile(ctx, depl, nil, err)
+	}
+	defer rt.Close()
+
+	// Get paths of sources
+	res1, err := rt.ListCatalogEntries(ctx, &runtimev1.ListCatalogEntriesRequest{InstanceId: depl.RuntimeInstanceID, Type: runtimev1.ObjectType_OBJECT_TYPE_SOURCE})
+	if err != nil {
+		return s.endReconcile(ctx, depl, nil, err)
+	}
+	var paths []string
+	for _, entry := range res1.Entries {
+		// If sources is nil, refresh all sources
+		if len(sources) == 0 {
+			paths = append(paths, entry.Path)
+			continue
+		}
+		// Otherwise, only refresh the selected sources
+		for _, name := range sources {
+			if entry.Name == name {
+				paths = append(paths, entry.Path)
+			}
+		}
+	}
+
+	// If paths is empty, there are no sources to refresh
+	if len(paths) == 0 {
+		return s.endReconcile(ctx, depl, nil, nil)
+	}
+
+	res2, err := rt.Reconcile(ctx, &runtimev1.ReconcileRequest{
+		InstanceId:   depl.RuntimeInstanceID,
+		ChangedPaths: paths,
+		ForcedPaths:  paths,
+		Dry:          false,
+		Strict:       true,
 	})
-	return err
+	return s.endReconcile(ctx, depl, res2, err)
+}
+
+func (s *Service) startReconcile(ctx context.Context, depl *database.Deployment) error {
+	if depl.Status == database.DeploymentStatusReconciling && time.Since(depl.UpdatedOn) < 30*time.Minute {
+		return fmt.Errorf("skipping because it is already running")
+	}
+
+	updatedDepl, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusReconciling, "")
+	if err != nil {
+		return fmt.Errorf("could not update status: %w", err)
+	}
+	depl.Status = updatedDepl.Status
+	depl.Logs = updatedDepl.Logs
+
+	return nil
+}
+
+func (s *Service) endReconcile(ctx context.Context, depl *database.Deployment, res *runtimev1.ReconcileResponse, err error) error {
+	if err != nil {
+		updatedDepl, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
+		if err2 != nil {
+			return multierr.Combine(err, fmt.Errorf("could not update logs: %w", err2))
+		}
+		depl.Status = updatedDepl.Status
+		depl.Logs = updatedDepl.Logs
+		return err
+	}
+
+	var updatedDepl *database.Deployment
+	if res != nil && len(res.Errors) > 0 {
+		json, err := protojson.Marshal(res)
+		if err != nil {
+			return fmt.Errorf("could not marshal logs: %w", err)
+		}
+
+		updatedDepl, err = s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, string(json))
+		if err != nil {
+			return fmt.Errorf("could not update logs: %w", err)
+		}
+	} else {
+		updatedDepl, err = s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusOK, "")
+		if err != nil {
+			return fmt.Errorf("could not clear logs: %w", err)
+		}
+	}
+
+	depl.Status = updatedDepl.Status
+	depl.Logs = updatedDepl.Logs
+	return nil
 }

@@ -98,10 +98,14 @@
     "&.cm-editor": {
       overflowX: "hidden",
       width: "100%",
+      fontSize: "13px",
       height: "100%",
       "&.cm-focused": {
         outline: "none",
       },
+    },
+    ".cm-scroller": {
+      fontFamily: "var(--monospace)",
     },
     "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
       { backgroundColor: "rgb(65 99 255 / 25%)" },
@@ -110,6 +114,10 @@
 
     ".cm-activeLineGutter": {
       backgroundColor: highlightBackground,
+    },
+    ".cm-gutters": {
+      backgroundColor: "white",
+      borderRight: "none",
     },
     ".cm-lineNumbers .cm-gutterElement": {
       paddingLeft: "5px",
@@ -139,7 +147,7 @@
     },
     ".cm-completionLabel": {
       fontSize: "13px",
-      fontFamily: "MD IO",
+      fontFamily: "var(--monospace)",
     },
     ".cm-completionMatchedText": {
       textDecoration: "none",
@@ -147,6 +155,14 @@
     },
     ".cm-underline": {
       backgroundColor: "rgb(254 240 138)",
+    },
+    ".ͼb": {
+      fontWeight: "700",
+    },
+    ".ͼe": {
+      fontStyle: "italic",
+      fontWeight: "600",
+      color: "hsl(200, 70%, 50%)",
     },
   });
 

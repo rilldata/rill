@@ -5,13 +5,16 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -26,27 +29,36 @@ import (
 // Env var keys must be prefixed with RILL_ADMIN_ and are converted from snake_case to CamelCase.
 // For example RILL_ADMIN_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	DatabaseDriver         string        `default:"postgres" split_words:"true"`
-	DatabaseURL            string        `split_words:"true"`
-	HTTPPort               int           `default:"8080" split_words:"true"`
-	GRPCPort               int           `default:"9090" split_words:"true"`
-	LogLevel               zapcore.Level `default:"info" split_words:"true"`
-	ExternalURL            string        `default:"http://localhost:8080" split_words:"true"`
-	FrontendURL            string        `default:"http://localhost:3000" split_words:"true"`
-	SessionKeyPairs        []string      `split_words:"true"`
-	AllowedOrigins         []string      `default:"*" split_words:"true"`
-	AuthDomain             string        `split_words:"true"`
-	AuthClientID           string        `split_words:"true"`
-	AuthClientSecret       string        `split_words:"true"`
-	GithubAppID            int64         `split_words:"true"`
-	GithubAppName          string        `split_words:"true"`
-	GithubAppPrivateKey    string        `split_words:"true"`
-	GithubAppWebhookSecret string        `split_words:"true"`
-	GithubClientID         string        `split_words:"true"`
-	GithubClientSecret     string        `split_words:"true"`
-	ProvisionerSpec        string        `split_words:"true"`
-	SigningJWKS            string        `split_words:"true"`
-	SigningKeyID           string        `split_words:"true"`
+	DatabaseDriver         string                 `default:"postgres" split_words:"true"`
+	DatabaseURL            string                 `split_words:"true"`
+	HTTPPort               int                    `default:"8080" split_words:"true"`
+	GRPCPort               int                    `default:"9090" split_words:"true"`
+	LogLevel               zapcore.Level          `default:"info" split_words:"true"`
+	MetricsExporter        observability.Exporter `default:"prometheus" split_words:"true"`
+	TracesExporter         observability.Exporter `default:"" split_words:"true"`
+	ExternalURL            string                 `default:"http://localhost:8080" split_words:"true"`
+	FrontendURL            string                 `default:"http://localhost:3000" split_words:"true"`
+	SessionKeyPairs        []string               `split_words:"true"`
+	AllowedOrigins         []string               `default:"*" split_words:"true"`
+	AuthDomain             string                 `split_words:"true"`
+	AuthClientID           string                 `split_words:"true"`
+	AuthClientSecret       string                 `split_words:"true"`
+	GithubAppID            int64                  `split_words:"true"`
+	GithubAppName          string                 `split_words:"true"`
+	GithubAppPrivateKey    string                 `split_words:"true"`
+	GithubAppWebhookSecret string                 `split_words:"true"`
+	GithubClientID         string                 `split_words:"true"`
+	GithubClientSecret     string                 `split_words:"true"`
+	ProvisionerSpec        string                 `split_words:"true"`
+	SigningJWKS            string                 `split_words:"true"`
+	SigningKeyID           string                 `split_words:"true"`
+	EmailSMTPHost          string                 `split_words:"true"`
+	EmailSMTPPort          int                    `split_words:"true"`
+	EmailSMTPUsername      string                 `split_words:"true"`
+	EmailSMTPPassword      string                 `split_words:"true"`
+	EmailSenderEmail       string                 `split_words:"true"`
+	EmailSenderName        string                 `split_words:"true"`
+	EmailBCC               string                 `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -75,11 +87,51 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				os.Exit(1)
 			}
 
+			// Init telemetry
+			shutdown, err := observability.Start(cmd.Context(), logger, &observability.Options{
+				MetricsExporter: conf.MetricsExporter,
+				TracesExporter:  conf.TracesExporter,
+				ServiceName:     "admin-server",
+				ServiceVersion:  cliCfg.Version.String(),
+			})
+			if err != nil {
+				logger.Fatal("error starting telemetry", zap.Error(err))
+			}
+			defer func() {
+				// Allow 10 seconds to gracefully shutdown telemetry
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				err := shutdown(ctx)
+				if err != nil {
+					logger.Error("telemetry shutdown failed", zap.Error(err))
+				}
+			}()
+
 			// Init runtime JWT issuer
 			issuer, err := auth.NewIssuer(conf.ExternalURL, conf.SigningKeyID, []byte(conf.SigningJWKS))
 			if err != nil {
 				logger.Fatal("error creating runtime jwt issuer", zap.Error(err))
 			}
+
+			// Init email client
+			var sender email.Sender
+			if conf.EmailSMTPHost != "" {
+				sender, err = email.NewSMTPSender(&email.SMTPOptions{
+					SMTPHost:     conf.EmailSMTPHost,
+					SMTPPort:     conf.EmailSMTPPort,
+					SMTPUsername: conf.EmailSMTPUsername,
+					SMTPPassword: conf.EmailSMTPPassword,
+					FromEmail:    conf.EmailSenderEmail,
+					FromName:     conf.EmailSenderName,
+					BCC:          conf.EmailBCC,
+				})
+			} else {
+				sender, err = email.NewConsoleSender(logger, conf.EmailSenderEmail, conf.EmailSenderName)
+			}
+			if err != nil {
+				logger.Fatal("error creating email sender", zap.Error(err))
+			}
+			emailClient := email.New(sender, conf.FrontendURL)
 
 			// Init admin service
 			admOpts := &admin.Options{
@@ -89,7 +141,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				GithubAppPrivateKey: conf.GithubAppPrivateKey,
 				ProvisionerSpec:     conf.ProvisionerSpec,
 			}
-			adm, err := admin.New(admOpts, logger, issuer)
+			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}
@@ -113,6 +165,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				FrontendURL:            conf.FrontendURL,
 				SessionKeyPairs:        keyPairs,
 				AllowedOrigins:         conf.AllowedOrigins,
+				ServePrometheus:        conf.MetricsExporter == observability.PrometheusExporter,
 				AuthDomain:             conf.AuthDomain,
 				AuthClientID:           conf.AuthClientID,
 				AuthClientSecret:       conf.AuthClientSecret,

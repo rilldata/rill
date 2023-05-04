@@ -106,11 +106,12 @@ export const invalidateMetricsViewData = (
   queryClient.removeQueries({
     predicate: (query) =>
       invalidationForMetricsViewData(query, metricsViewName),
-    active: false,
+    type: "inactive",
   });
   return queryClient.invalidateQueries({
     predicate: (query) =>
       invalidationForMetricsViewData(query, metricsViewName),
+    type: "active",
   });
 };
 
@@ -120,10 +121,11 @@ export function invalidateProfilingQueries(
 ) {
   queryClient.removeQueries({
     predicate: (query) => isProfilingQuery(query.queryHash, name),
-    active: false,
+    type: "inactive",
   });
-  return queryClient.invalidateQueries({
+  return queryClient.refetchQueries({
     predicate: (query) => isProfilingQuery(query.queryHash, name),
+    type: "active",
   });
 }
 

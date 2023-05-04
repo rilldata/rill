@@ -119,7 +119,7 @@ region: us-east-2
 							Format:      "humanise",
 						},
 						{
-							Name:        "measure_1",
+							Name:        "avg_measure",
 							Label:       "Mea1_L",
 							Expression:  "avg(c1)",
 							Description: "Mea1_D",
@@ -130,7 +130,7 @@ region: us-east-2
 					Description: "long description for dashboard",
 				},
 			},
-			`display_name: dashboard name
+			`title: dashboard name
 description: long description for dashboard
 model: Model
 timeseries: time
@@ -145,10 +145,12 @@ dimensions:
   description: Dim1_D
 measures:
 - label: Mea0_L
+  name: measure_0
   expression: count(c0)
   description: Mea0_D
   format_preset: humanise
 - label: Mea1_L
+  name: avg_measure
   expression: avg(c1)
   description: Mea1_D
   format_preset: humanise
@@ -176,6 +178,41 @@ measures:
 			require.Equal(t, tt.Raw, string(b))
 		})
 	}
+}
+
+func TestMetricsLabelBackwardsCompatibility(t *testing.T) {
+	dir := t.TempDir()
+	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	require.NoError(t, err)
+	repoStore, _ := fileStore.RepoStore()
+	ctx := context.Background()
+
+	require.NoError(t, repoStore.Put(ctx, "test", "dashboards/MetricsView.yaml", bytes.NewReader([]byte(`display_name: dashboard name
+description: long description for dashboard
+model: Model
+timeseries: time
+smallest_time_grain: day
+default_time_range: P1D
+dimensions: []
+measures: []
+`))))
+
+	readCatalog, err := artifacts.Read(ctx, repoStore, registryStore(t), "test", "dashboards/MetricsView.yaml")
+	require.NoError(t, err)
+	require.Equal(t, &drivers.CatalogEntry{
+		Name: "MetricsView",
+		Path: "dashboards/MetricsView.yaml",
+		Type: drivers.ObjectTypeMetricsView,
+		Object: &runtimev1.MetricsView{
+			Name:              "MetricsView",
+			Model:             "Model",
+			TimeDimension:     "time",
+			SmallestTimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+			DefaultTimeRange:  "P1D",
+			Label:             "dashboard name",
+			Description:       "long description for dashboard",
+		},
+	}, readCatalog)
 }
 
 func TestReadFailure(t *testing.T) {

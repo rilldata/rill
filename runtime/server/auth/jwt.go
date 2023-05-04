@@ -139,11 +139,13 @@ func (i *Issuer) NewToken(opts TokenOptions) (string, error) {
 	return res, nil
 }
 
-// WellKnownHandleFunc serves the public keys of the Issuer's JWKS.
+// WellKnownHandler serves the public keys of the Issuer's JWKS.
 // The Audience expects it to be mounted on {issuerURL}/.well-known/jwks.json.
-func (i *Issuer) WellKnownHandleFunc(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write(i.publicJWKS)
+func (i *Issuer) WellKnownHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(i.publicJWKS)
+	})
 }
 
 // Audience represents a receiver of tokens from Issuer.

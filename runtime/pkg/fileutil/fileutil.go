@@ -37,22 +37,22 @@ func Stem(path string) string {
 
 // CopyToTempFile pipes a reader to a temporary file. The caller must delete
 // the temporary file when it's no longer needed.
-func CopyToTempFile(r io.Reader, name, ext string) (string, error) {
+func CopyToTempFile(r io.Reader, name, ext string) (string, int64, error) {
 	// The * in the pattern will be replaced by a random string
 	f, err := os.CreateTemp("", fmt.Sprintf("%s*%s", name, ext))
 	if err != nil {
-		return "", fmt.Errorf("os.Create: %w", err)
+		return "", 0, fmt.Errorf("os.Create: %w", err)
 	}
 
-	_, err = io.Copy(f, r)
+	written, err := io.Copy(f, r)
 	if err != nil {
 		f.Close()
 		os.Remove(f.Name())
-		return "", err
+		return "", 0, err
 	}
 	f.Close()
 
-	return f.Name(), err
+	return f.Name(), written, err
 }
 
 // CopyEmbedDir copies an embedded directory to the local file system.

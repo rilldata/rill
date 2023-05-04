@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -24,8 +26,9 @@ func init() {
 }
 
 var spec = connectors.Spec{
-	DisplayName: "Amazon S3",
-	Description: "Connect to AWS S3 Storage.",
+	DisplayName:        "Amazon S3",
+	Description:        "Connect to AWS S3 Storage.",
+	ServiceAccountDocs: "https://docs.rilldata.com/connectors/s3",
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "path",
@@ -65,10 +68,6 @@ var spec = connectors.Spec{
 			Help:   "Leave blank if public access enabled",
 			Secret: true,
 		},
-		{
-			Key:     "region",
-			Default: "us-east-1",
-		},
 	},
 }
 
@@ -80,6 +79,7 @@ type Config struct {
 	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
 	GlobPageSize          int    `mapstructure:"glob.page_size"`
 	S3Endpoint            string `mapstructure:"endpoint"`
+	url                   *globutil.URL
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -93,6 +93,15 @@ func ParseConfig(props map[string]any) (*Config, error) {
 		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
 	}
 
+	url, err := globutil.ParseBucketURL(conf.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse path %q, %w", conf.Path, err)
+	}
+
+	if url.Scheme != "s3" {
+		return nil, fmt.Errorf("invalid s3 path %q, should start with s3://", conf.Path)
+	}
+	conf.url = url
 	return conf, nil
 }
 
@@ -116,23 +125,14 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	url, err := globutil.ParseBucketURL(conf.Path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %q, %w", conf.Path, err)
-	}
-
-	if url.Scheme != "s3" {
-		return nil, fmt.Errorf("invalid s3 path %q, should start with s3://", conf.Path)
-	}
-
 	creds, err := getCredentials(env)
 	if err != nil {
 		return nil, err
 	}
 
-	bucketObj, err := openBucket(ctx, conf, url.Host, creds)
+	bucketObj, err := openBucket(ctx, conf, conf.url.Host, creds)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
+		return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
 	}
 
 	// prepare fetch configs
@@ -141,7 +141,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
 		GlobPageSize:          conf.GlobPageSize,
-		GlobPattern:           url.Path,
+		GlobPattern:           conf.url.Path,
 		ExtractPolicy:         source.ExtractPolicy,
 		StorageLimitInBytes:   env.StorageLimitInBytes,
 	}
@@ -154,15 +154,41 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		errCode := gcerrors.Code(err)
 		if (errCode == gcerrors.PermissionDenied || errCode == gcerrors.Unknown) && creds != credentials.AnonymousCredentials {
 			creds = credentials.AnonymousCredentials
-			bucketObj, err := openBucket(ctx, conf, url.Host, creds)
-			if err != nil {
-				return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
+			bucketObj, bucketErr := openBucket(ctx, conf, conf.url.Host, creds)
+			if bucketErr != nil {
+				return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, bucketErr)
 			}
-			return rillblob.NewIterator(ctx, bucketObj, opts)
+			it, err = rillblob.NewIterator(ctx, bucketObj, opts)
+		}
+
+		// aws returns StatusForbidden in cases like no creds passed, wrong creds passed and incorrect bucket
+		// r2 returns StatusBadRequest in all cases above
+		var failureErr awserr.RequestFailure
+		if errors.As(err, &failureErr) && (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) {
+			return nil, connectors.NewPermissionDeniedError(fmt.Sprintf("can't access remote source %q err: %v", source.Name, failureErr))
 		}
 	}
 
 	return it, err
+}
+
+func (c connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {
+	conf, err := ParseConfig(source.Properties)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	creds, err := getCredentials(env)
+	if err != nil {
+		return false, err
+	}
+
+	bucketObj, err := openBucket(ctx, conf, conf.url.Host, creds)
+	if err != nil {
+		return false, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
+	}
+
+	return bucketObj.IsAccessible(ctx)
 }
 
 func openBucket(ctx context.Context, conf *Config, bucket string, creds *credentials.Credentials) (*blob.Bucket, error) {

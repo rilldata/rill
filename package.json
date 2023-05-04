@@ -4,7 +4,6 @@
   "type": "module",
   "workspaces": [
     "docs",
-    "docs-enterprise",
     "web-admin",
     "web-common",
     "web-local"
@@ -13,7 +12,7 @@
     "build": "npm run build -w web-local",
     "dev": "sh -c 'npm run dev-runtime & npm run dev-web & wait'",
     "dev-web": "npm run dev -w web-local",
-    "dev-runtime": "go run cli/main.go start --no-ui --project dev-project",
+    "dev-runtime": "go run cli/main.go start dev-project --no-ui",
     "clean": "rm -rf dev-project",
     "test": "npm run test -w web-common && npm run test -w web-local"
   },

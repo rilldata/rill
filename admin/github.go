@@ -7,10 +7,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/bradleyfalzon/ghinstallation"
+	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -107,7 +109,7 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 	// Find Rill project matching the repo that was pushed to
 	repo := event.GetRepo()
 	githubURL := *repo.HTMLURL
-	project, err := s.DB.FindProjectByGithubURL(ctx, githubURL)
+	projects, err := s.DB.FindProjectsByGithubURL(ctx, githubURL)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			// App is installed on repo not currently deployed. Do nothing.
@@ -125,16 +127,25 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 		return nil
 	}
 
-	// Exit if push was not to production branch
-	if branch != project.ProductionBranch {
-		return nil
-	}
+	// Iterate over all projects and trigger reconcile
+	for _, project := range projects {
+		if branch != project.ProdBranch {
+			// Ignore if push was not to production branch
+			continue
+		}
 
-	// Trigger reconcile (runs in the background - err means the deployment wasn't found, which is unlikely)
-	if project.ProductionDeploymentID != nil {
-		err = s.TriggerReconcile(ctx, *project.ProductionDeploymentID)
-		if err != nil {
-			return err
+		// Trigger reconcile (runs in the background)
+		if project.ProdDeploymentID != nil {
+			depl, err := s.DB.FindDeployment(ctx, *project.ProdDeploymentID)
+			if err != nil {
+				s.logger.Error("process github event: could not find deployment", zap.String("project_id", project.ID), zap.Error(err), observability.ZapCtx(ctx))
+				continue
+			}
+
+			err = s.TriggerReconcile(ctx, depl)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

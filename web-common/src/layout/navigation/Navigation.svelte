@@ -1,30 +1,19 @@
 <script lang="ts">
   import HideLeftSidebar from "@rilldata/web-common/components/icons/HideLeftSidebar.svelte";
-  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import SurfaceViewIcon from "@rilldata/web-common/components/icons/SurfaceView.svelte";
   import Portal from "@rilldata/web-common/components/Portal.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { ModelAssets } from "@rilldata/web-common/features/models";
   import TableAssets from "@rilldata/web-common/features/sources/navigation/TableAssets.svelte";
-  import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+  import ProjectTitle from "@rilldata/web-common/layout/navigation/ProjectTitle.svelte";
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { getContext, onMount } from "svelte";
+  import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
   import { Readable, Writable, writable } from "svelte/store";
-  import { parseDocument } from "yaml";
   import DashboardAssets from "../../features/dashboards/DashboardAssets.svelte";
-  import { runtime } from "../../runtime-client/runtime-store";
   import { DEFAULT_NAV_WIDTH } from "../config";
   import { drag } from "../drag";
   import Footer from "./Footer.svelte";
-  import { shorthandTitle } from "./shorthand-title";
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
-
-  let mounted = false;
-  onMount(() => {
-    mounted = true;
-  });
 
   /** FIXME: come up with strong defaults here when needed */
   const navigationLayout =
@@ -40,14 +29,6 @@
   const navVisibilityTween =
     (getContext("rill:app:navigation-visibility-tween") as Readable<number>) ||
     tweened(0, { duration: 50 });
-
-  $: thing = createRuntimeServiceGetFile(
-    $runtime?.instanceId,
-    `rill.yaml`
-    //getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
-  );
-
-  $: yaml = parseDocument($thing?.data?.blob || "{}")?.toJS();
 
   $: isModelerEnabled = $featureFlags.readOnly === false;
 </script>
@@ -96,45 +77,7 @@
 
     <div class="w-full flex flex-col h-full">
       <div class="grow">
-        <header
-          style:height="var(--header-height)"
-          class="sticky top-0 grid align-center bg-white z-50"
-        >
-          <!-- the pl-[.875rem] is a fix to move this new element over a pinch.-->
-          <h1
-            class="grid grid-flow-col justify-start gap-x-3 p-4 pl-[.75rem] items-center content-center"
-          >
-            {#if mounted}
-              <a href="/">
-                <div
-                  style:width="20px"
-                  style:font-size="9px"
-                  class="grid place-items-center rounded bg-gray-800 text-white font-normal"
-                  style:height="20px"
-                >
-                  <div>
-                    {shorthandTitle(yaml?.name || "Ri")}
-                  </div>
-                </div>
-              </a>
-            {:else}
-              <Spacer size="16px" />
-            {/if}
-            <Tooltip distance={8}>
-              <a
-                href="/"
-                class="font-semibold text-black grow text-ellipsis overflow-hidden whitespace-nowrap pr-12"
-              >
-                {yaml?.name || "Untitled Rill Project"}
-              </a>
-              <TooltipContent maxWidth="300px" slot="tooltip-content">
-                <div class="font-bold">
-                  {yaml?.name || "Untitled Rill Project"}
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </h1>
-        </header>
+        <ProjectTitle />
         {#if isModelerEnabled}
           <TableAssets />
           <ModelAssets />

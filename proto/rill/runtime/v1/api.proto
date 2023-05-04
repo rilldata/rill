@@ -481,6 +481,8 @@ message ReconcileError {
     CODE_OLAP = 4;
     // Error encountered during source inspection or ingestion
     CODE_SOURCE = 5;
+    // Error returned when unauthorised to access remote sources
+    CODE_SOURCE_PERMISSION_DENIED = 6;
   }
   // CharLocation is a line and column in a code artifact
   message CharLocation {

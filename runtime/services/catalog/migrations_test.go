@@ -450,7 +450,7 @@ bid_price from AdBids;
 		"select id, timestamp, publisher, domain, bid_price AdBids", AdBidsSourceModelRepoPath)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsSourceModelRepoPath})
+	testutils.AssertMigration(t, result, 3, 0, 0, 0, []string{AdBidsModelRepoPath, AdBidsDashboardRepoPath, AdBidsSourceModelRepoPath})
 	testutils.AssertTableAbsence(t, s, "AdBids_source_model")
 }
 
@@ -589,6 +589,30 @@ measures:
 	require.NoError(t, err)
 	// no error if there are no dimensions
 	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsDashboardRepoPath})
+
+	time.Sleep(time.Millisecond * 10)
+	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+timeseries: timestamp
+smallest_time_grain: 
+dimensions:
+- label: Publisher
+  property: publisher
+  ignore: true
+- label: Domain
+  property: domain
+  ignore: true
+measures:
+- expression: count(*)
+  name: imp
+- expression: avg(bid_price)
+  name: imp
+`))
+	require.NoError(t, err)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	// duplicate measure names throws error
+	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsDashboardRepoPath})
+	require.Equal(t, "duplicate measure name", result.Errors[0].Message)
 }
 
 func TestInvalidFiles(t *testing.T) {

@@ -4,6 +4,15 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/metric/global"
+)
+
+var (
+	meter                   = global.Meter("runtime")
+	queryCacheHitsCounter   = observability.Must(meter.Int64Counter("query_cache.hits"))
+	queryCacheMissesCounter = observability.Must(meter.Int64Counter("query_cache.misses"))
 )
 
 type Query interface {
@@ -66,10 +75,13 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		queryKey:      query.Key(),
 		dependencyKey: depKey,
 	}
+
 	val, ok := r.queryCache.get(key)
 	if ok {
+		queryCacheHitsCounter.Add(ctx, 1)
 		return query.UnmarshalResult(val)
 	}
+	queryCacheMissesCounter.Add(ctx, 1)
 
 	// Cache miss. Run the query.
 	err := query.Resolve(ctx, r, instanceID, priority)

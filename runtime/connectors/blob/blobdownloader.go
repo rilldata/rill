@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/bmatcuk/doublestar/v4"
@@ -176,8 +177,22 @@ func (it *blobIterator) NextBatch(n int) ([]string, error) {
 			it.localFiles[index-start] = file.Name()
 			ext := filepath.Ext(obj.obj.Key)
 			partialReader, isPartialDownloadSupported := _partialDownloadReaders[ext]
-			if obj.full || !isPartialDownloadSupported {
-				// download full file
+			downloadFull := obj.full || !isPartialDownloadSupported
+
+			// Collect metrics of download size and time
+			startTime := time.Now()
+			defer func() {
+				connectors.RecordDownloadMetrics(grpCtx, &connectors.DownloadMetrics{
+					Connector: "blob",
+					Ext:       ext,
+					Partial:   !downloadFull,
+					Duration:  time.Since(startTime),
+					Size:      obj.obj.Size,
+				})
+			}()
+
+			// download full file
+			if downloadFull {
 				return downloadObject(grpCtx, it.bucket, obj.obj.Key, file)
 			}
 			// download partial file
