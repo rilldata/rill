@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+CDN="cdn.rilldata.com"
+INSTALL_DIR="/usr/local/bin"
+
 # Determine the platform using 'OS' and 'ARCH'
 initPlatform() {
     OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -34,10 +37,9 @@ checkDependency() {
 
 # Download the binary and check the integrity using the SHA256 checksum
 downloadBinary() {
-    CDN="cdn.rilldata.com"
     LATEST_URL="https://${CDN}/rill/latest.txt"
     if [ "${VERSION}" == "latest" ]; then
-        VERSION=$(curl --silent ${LATEST_URL})
+        VERSION=$(curl --silent --show-error ${LATEST_URL})
     fi
     BINARY_URL="https://${CDN}/rill/${VERSION}/rill_${PLATFORM}.zip"
     CHECKSUM_URL="https://${CDN}/rill/${VERSION}/checksums.txt"
@@ -55,9 +57,25 @@ downloadBinary() {
     unzip -q rill_${PLATFORM}.zip
 }
 
+# Check conflicting installation and exit with a help message
+checkConflictingInstallation() {
+    if [ -x "$(command -v rill)" ]; then
+        INSTALLED_RILL="$(command -v rill)"
+        if [ -x "$(command -v brew)" ] && brew list rilldata/tap/rill &>/dev/null; then
+            printf "There is a conflicting version of Rill installed using Brew.\n\n"
+            printf "To upgrade using Brew, run 'brew upgrade rilldata/tap/rill'.\n\n"
+            printf "To use this script to install Rill, run 'brew remove rilldata/tap/rill' to remove the conflicting version and try again.\n"
+            exit 1
+        elif [ $INSTALLED_RILL != "${INSTALL_DIR}/rill" ]; then
+            printf "There is a conflicting version of Rill installed at '${INSTALLED_RILL}'\n\n"
+            printf "To use this script to install Rill, remove the conflicting version and try again.\n"
+            exit 1
+        fi
+    fi
+}
+
 # Ask for elevated permissions to install the binary
 installBinary() {
-    INSTALL_DIR="/usr/local/bin"
     printf "\nElevated permissions required to install the Rill binary to: ${INSTALL_DIR}/rill\n"
     sudo install -d ${INSTALL_DIR}
     sudo install rill "${INSTALL_DIR}/"
@@ -67,7 +85,7 @@ installBinary() {
 testInstalledBinary() {
     RILL_VERSION=$(rill version)
     printf "\nInstallation of ${RILL_VERSION} completed!\n"
-    printf "\nThis application is extremely alpha and we want to hear from you if you have any questions or ideas to share! You can reach us in our Rill Discord server at https://rilldata.link/cli.\n"
+    printf "\nThis application is in beta and we want to hear from you if you have any questions or ideas to share! You can reach us in our Rill Discord server at https://rilldata.link/cli.\n"
 }
 
 # Parse input flag
@@ -81,6 +99,7 @@ checkDependency curl
 checkDependency shasum
 checkDependency unzip
 initPlatform
+checkConflictingInstallation
 initTmpDir
 downloadBinary
 installBinary
