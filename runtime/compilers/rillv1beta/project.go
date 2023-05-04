@@ -84,10 +84,6 @@ func (c *Codec) PutSource(ctx context.Context, repo drivers.RepoStore, instanceI
 		out.Region = val
 	}
 
-	if val, ok := props["csv.delimiter"].(string); ok {
-		out.CSVDelimiter = val
-	}
-
 	blob, err := yaml.Marshal(out)
 	if err != nil {
 		return "", err

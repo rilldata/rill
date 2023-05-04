@@ -21,7 +21,6 @@ rill source add <file> [flags]
       --path string        Project directory (default ".")
       --db string          Database DSN (default "stage.db")
       --db-driver string   Database driver (default "duckdb")
-      --delimiter string   CSV delimiter override (defaults to autodetect)
       --verbose            Sets the log level to debug
 ```
 
