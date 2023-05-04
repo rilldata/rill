@@ -17,7 +17,7 @@ import (
 
 const (
 	_maxPageSize     = 100
-	_defaultPageSize = 1
+	_defaultPageSize = 20
 )
 
 func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganizationsRequest) (*adminv1.ListOrganizationsResponse, error) {

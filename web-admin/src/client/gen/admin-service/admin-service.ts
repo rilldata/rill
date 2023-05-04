@@ -911,7 +911,7 @@ export const createAdminServiceLeaveOrganization = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary ListProjectInvites lists all the project members
+ * @summary ListProjectInvites lists all the project invites
  */
 export const adminServiceListProjectInvites = (
   organization: string,

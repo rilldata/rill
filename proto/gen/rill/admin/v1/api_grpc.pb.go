@@ -101,7 +101,7 @@ type AdminServiceClient interface {
 	SetOrganizationMemberRole(ctx context.Context, in *SetOrganizationMemberRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberRoleResponse, error)
 	// ListProjectMembers lists all the project members
 	ListProjectMembers(ctx context.Context, in *ListProjectMembersRequest, opts ...grpc.CallOption) (*ListProjectMembersResponse, error)
-	// ListProjectInvites lists all the project members
+	// ListProjectInvites lists all the project invites
 	ListProjectInvites(ctx context.Context, in *ListProjectInvitesRequest, opts ...grpc.CallOption) (*ListProjectInvitesResponse, error)
 	// AddProjectMember adds a member to the project
 	AddProjectMember(ctx context.Context, in *AddProjectMemberRequest, opts ...grpc.CallOption) (*AddProjectMemberResponse, error)
@@ -446,7 +446,7 @@ type AdminServiceServer interface {
 	SetOrganizationMemberRole(context.Context, *SetOrganizationMemberRoleRequest) (*SetOrganizationMemberRoleResponse, error)
 	// ListProjectMembers lists all the project members
 	ListProjectMembers(context.Context, *ListProjectMembersRequest) (*ListProjectMembersResponse, error)
-	// ListProjectInvites lists all the project members
+	// ListProjectInvites lists all the project invites
 	ListProjectInvites(context.Context, *ListProjectInvitesRequest) (*ListProjectInvitesResponse, error)
 	// AddProjectMember adds a member to the project
 	AddProjectMember(context.Context, *AddProjectMemberRequest) (*AddProjectMemberResponse, error)

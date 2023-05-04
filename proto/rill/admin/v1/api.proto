@@ -151,7 +151,7 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/members"};
   }
 
-  // ListProjectInvites lists all the project members
+  // ListProjectInvites lists all the project invites
   rpc ListProjectInvites(ListProjectInvitesRequest) returns (ListProjectInvitesResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/invites"};
   }

@@ -108,21 +108,21 @@ type DB interface {
 	ResolveOrganizationRolesForUser(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
 	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
 
-	FindOrganizationMemberUsers(ctx context.Context, orgID string, popts *PaginationOptions) ([]*Member, error)
+	FindOrganizationMemberUsers(ctx context.Context, orgID string, paginationOpts *PaginationOptions) ([]*Member, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string) error
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
 
-	FindProjectMemberUsers(ctx context.Context, projectID string, popts *PaginationOptions) ([]*Member, error)
+	FindProjectMemberUsers(ctx context.Context, projectID string, paginationOpts *PaginationOptions) ([]*Member, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
 	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
 
-	FindOrganizationInvites(ctx context.Context, orgID string, popts *PaginationOptions) ([]*Invite, error)
+	FindOrganizationInvites(ctx context.Context, orgID string, paginationOpts *PaginationOptions) ([]*Invite, error)
 	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
 	FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*OrganizationInvite, error)
 	InsertOrganizationInvite(ctx context.Context, email, orgID, roleID, invitedByID string) error
@@ -130,7 +130,7 @@ type DB interface {
 	CountInvitesForOrganization(ctx context.Context, orgID string) (int, error)
 	UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error
 
-	FindProjectInvites(ctx context.Context, projectID string, popts *PaginationOptions) ([]*Invite, error)
+	FindProjectInvites(ctx context.Context, projectID string, paginationOpts *PaginationOptions) ([]*Invite, error)
 	FindProjectInvitesByEmail(ctx context.Context, userEmail string) ([]*ProjectInvite, error)
 	FindProjectInvite(ctx context.Context, projectID, userEmail string) (*ProjectInvite, error)
 	InsertProjectInvite(ctx context.Context, email, projectID, roleID, invitedByID string) error
