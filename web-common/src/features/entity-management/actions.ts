@@ -1,5 +1,6 @@
 import { goto } from "$app/navigation";
 import { notifications } from "@rilldata/web-common/components/notifications";
+import type { ActiveEntity } from "@rilldata/web-common/layout/app-store";
 import { currentHref } from "@rilldata/web-common/layout/navigation/stores";
 import type {
   V1DeleteFileAndReconcileResponse,
@@ -10,7 +11,6 @@ import {
   invalidateAfterReconcile,
   removeEntityQueries,
 } from "@rilldata/web-common/runtime-client/invalidation";
-import type { ActiveEntity } from "@rilldata/web-local/lib/application-state-stores/app-store";
 import type {
   CreateBaseMutationResult,
   QueryClient,
