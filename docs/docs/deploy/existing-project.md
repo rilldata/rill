@@ -10,7 +10,7 @@ If you have not yet created a Rill project, check out the [Quick start on cloud]
 
 ## Push the project to Github
 
-Rill Cloud works by connecting to a repository on Github containing a Rill project, and continuously deploys that project on every push. Therefore, your project must be on Github before you deploy it to Rill.
+Rill Cloud connects to a repository on Github containing a Rill project, and continuously deploys that project on every push. Therefore, your project must be on Github before you deploy it to Rill.
 
 Follow these steps to push your project to Github:
 
@@ -35,7 +35,7 @@ git push -u origin main
 
 ## Deploy to Rill Cloud
 
-With your project files on Github, you're ready to deploy the project. In the directory containing the cloned starter project, run:
+With your project files on Github, you're ready to deploy the project. In the directory containing your project, run:
 
 ```
 rill deploy

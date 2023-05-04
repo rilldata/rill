@@ -17,7 +17,7 @@ rill login
 
 ## Manage members of an organization
 
-When you invite a user to an organization on Rill Cloud, they automatically get access to *all projects in the organization*. Users can have one of two roles:
+When you invite a user to an organization on Rill Cloud, they automatically get access to *all projects* in the organization. Users can have one of two roles:
 
 - **Viewers** can browse projects and view their dashboards
 - **Admins** can additionally create and edit projects, and view and edit members
@@ -28,11 +28,13 @@ To add a member to an org, run the following command:
 ```
 rill user add
 ```
+You will then be prompted for details about the user.
+
 If you add a user who has not yet signed up for Rill, they will receive an email inviting them to join.
 
 ### Other actions
 
-Run `rill user --help` to show commands for listing, removing or editing roles.
+Run `rill user --help` to show commands for listing members or changing access.
 
 ## Manage members of a project
 
@@ -47,11 +49,13 @@ To add a member to a project, run the following command:
 ```
 rill user add --project [PROJECT NAME]
 ```
+You will then be prompted for details about the user. HINT: Run `rill project list` to show available projects.
+
 If you add a user who has not yet signed up for Rill, they will receive an email inviting them to join.
 
 ### Other actions
 
-Run `rill user --help` to show commands for listing, removing or editing roles.
+Run `rill user --help` to show commands for listing members or changing access.
 
 ## Make a project public
 
