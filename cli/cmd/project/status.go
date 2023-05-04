@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"

@@ -59,7 +59,7 @@ func DropCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	dropCmd.Flags().SortFlags = false
-	dropCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
+	dropCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	dropCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	dropCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
 	dropCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")

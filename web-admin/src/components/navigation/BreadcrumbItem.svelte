@@ -5,6 +5,7 @@
   export let label: string;
   export let isCurrentPage = false;
   export let menuOptions: { key: string; main: string }[] = [];
+  export let menuKey: string;
   export let onSelectMenuOption: (option: string) => void = undefined;
 
   const activeClass = "text-gray-800 font-semibold";
@@ -26,7 +27,7 @@
       distance={4}
       options={menuOptions}
       selection={{
-        key: label,
+        key: menuKey,
         main: label,
       }}
       on:select={({ detail: { key } }) => onSelectMenuOption(key)}

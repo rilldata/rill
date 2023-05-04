@@ -361,6 +361,7 @@ export interface V1RefreshAndReconcileRequest {
  - CODE_DEPENDENCY: Code artifact is valid, but has invalid dependencies
  - CODE_OLAP: Error returned from the OLAP database
  - CODE_SOURCE: Error encountered during source inspection or ingestion
+ - CODE_SOURCE_PERMISSION_DENIED: Error returned when unauthorised to access remote sources
  */
 export type V1ReconcileErrorCode =
   typeof V1ReconcileErrorCode[keyof typeof V1ReconcileErrorCode];
@@ -373,6 +374,7 @@ export const V1ReconcileErrorCode = {
   CODE_DEPENDENCY: "CODE_DEPENDENCY",
   CODE_OLAP: "CODE_OLAP",
   CODE_SOURCE: "CODE_SOURCE",
+  CODE_SOURCE_PERMISSION_DENIED: "CODE_SOURCE_PERMISSION_DENIED",
 } as const;
 
 /**

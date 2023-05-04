@@ -13,10 +13,10 @@
     nicelyFormattedTypesToNumberKind,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import {
-    useMetaQuery,
-    useModelAllTimeRange,
     selectBestMeasureStrings,
     selectMeasureKeys,
+    useMetaQuery,
+    useModelAllTimeRange,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
@@ -55,7 +55,12 @@
   $: allTimeRangeQuery = useModelAllTimeRange(
     $runtime.instanceId,
     $metaQuery.data.model,
-    $metaQuery.data.timeDimension
+    $metaQuery.data.timeDimension,
+    {
+      query: {
+        enabled: !!$metaQuery.data.timeDimension,
+      },
+    }
   );
 
   // get the time range name, which is the preset.

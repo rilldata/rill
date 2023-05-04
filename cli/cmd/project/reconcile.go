@@ -3,7 +3,7 @@ package project
 import (
 	"fmt"
 
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -17,7 +17,6 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 	reconcileCmd := &cobra.Command{
 		Use:               "reconcile",
 		Args:              cobra.NoArgs,
-		Hidden:            !cfg.IsDev(),
 		Short:             "Send trigger to deployment",
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 		RunE: func(cmd *cobra.Command, args []string) error {

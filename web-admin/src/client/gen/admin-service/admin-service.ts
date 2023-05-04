@@ -35,6 +35,7 @@ import type {
   V1AddOrganizationMemberResponse,
   AdminServiceAddOrganizationMemberBodyBody,
   V1RemoveOrganizationMemberResponse,
+  AdminServiceRemoveOrganizationMemberParams,
   V1SetOrganizationMemberRoleResponse,
   AdminServiceSetOrganizationMemberRoleBodyBody,
   V1LeaveOrganizationResponse,
@@ -670,11 +671,13 @@ export const createAdminServiceAddOrganizationMember = <
  */
 export const adminServiceRemoveOrganizationMember = (
   organization: string,
-  email: string
+  email: string,
+  params?: AdminServiceRemoveOrganizationMemberParams
 ) => {
   return httpClient<V1RemoveOrganizationMemberResponse>({
     url: `/v1/organizations/${organization}/members/${email}`,
     method: "delete",
+    params,
   });
 };
 
@@ -691,7 +694,11 @@ export const createAdminServiceRemoveOrganizationMember = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceRemoveOrganizationMember>>,
     TError,
-    { organization: string; email: string },
+    {
+      organization: string;
+      email: string;
+      params?: AdminServiceRemoveOrganizationMemberParams;
+    },
     TContext
   >;
 }) => {
@@ -699,17 +706,25 @@ export const createAdminServiceRemoveOrganizationMember = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceRemoveOrganizationMember>>,
-    { organization: string; email: string }
+    {
+      organization: string;
+      email: string;
+      params?: AdminServiceRemoveOrganizationMemberParams;
+    }
   > = (props) => {
-    const { organization, email } = props ?? {};
+    const { organization, email, params } = props ?? {};
 
-    return adminServiceRemoveOrganizationMember(organization, email);
+    return adminServiceRemoveOrganizationMember(organization, email, params);
   };
 
   return createMutation<
     Awaited<ReturnType<typeof adminServiceRemoveOrganizationMember>>,
     TError,
-    { organization: string; email: string },
+    {
+      organization: string;
+      email: string;
+      params?: AdminServiceRemoveOrganizationMemberParams;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };

@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/lensesio/tableprinter"
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/variable"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
