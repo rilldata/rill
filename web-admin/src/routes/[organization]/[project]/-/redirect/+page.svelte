@@ -18,7 +18,7 @@
     }
   );
 
-  // Avoid a race condition: ensure the runtime store has been updated with the new project's runtime instance ID
+  // Avoid a race condition: make sure the runtime store has been updated (with the host, instanceID, and jwt).
   $: isRuntimeStoreReady =
     $proj?.data &&
     $proj.data.prodDeployment.runtimeInstanceId === $runtime.instanceId;
