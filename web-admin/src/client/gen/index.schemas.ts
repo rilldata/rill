@@ -4,12 +4,6 @@
  * rill/admin/v1/api.proto
  * OpenAPI spec version: version not set
  */
-export type AdminServiceListProjectsForOrganizationAndGithubURLParams = {
-  githubUrl?: string;
-  pageSize?: number;
-  pageToken?: string;
-};
-
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
   [key: string]: string;
 };
@@ -51,11 +45,21 @@ export type AdminServiceListProjectMembersParams = {
   pageToken?: string;
 };
 
+export type AdminServiceListProjectInvitesParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceRemoveOrganizationMemberParams = {
   keepProjectRoles?: boolean;
 };
 
 export type AdminServiceListOrganizationMembersParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceListOrganizationInvitesParams = {
   pageSize?: number;
   pageToken?: string;
 };
@@ -221,13 +225,12 @@ export interface V1ListProjectsForOrganizationResponse {
   nextPageToken?: string;
 }
 
-export interface V1ListProjectsForOrganizationAndGithubURLResponse {
-  projects?: V1Project[];
+export interface V1ListProjectMembersResponse {
+  members?: V1Member[];
   nextPageToken?: string;
 }
 
-export interface V1ListProjectMembersResponse {
-  members?: V1Member[];
+export interface V1ListProjectInvitesResponse {
   invites?: V1UserInvite[];
   nextPageToken?: string;
 }
@@ -239,6 +242,10 @@ export interface V1ListOrganizationsResponse {
 
 export interface V1ListOrganizationMembersResponse {
   members?: V1Member[];
+  nextPageToken?: string;
+}
+
+export interface V1ListOrganizationInvitesResponse {
   invites?: V1UserInvite[];
   nextPageToken?: string;
 }

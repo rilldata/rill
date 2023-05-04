@@ -224,6 +224,35 @@ paths:
                 type: string
       tags:
         - AdminService
+  /v1/organizations/{organization}/invites:
+    get:
+      summary: ListOrganizationInvites lists all the org invites
+      operationId: AdminService_ListOrganizationInvites
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListOrganizationInvitesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/organizations/{organization}/members:
     get:
       summary: ListOrganizationMembers lists all the org members
@@ -358,6 +387,39 @@ paths:
         - name: organization
           in: path
           required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/invites:
+    get:
+      summary: ListProjectInvites lists all the project members
+      operationId: AdminService_ListProjectInvites
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectInvitesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
           type: string
       tags:
         - AdminService
@@ -710,39 +772,6 @@ paths:
                   type: string
       tags:
         - AdminService
-  /v1/organizations/{organizationName}/projects_by_github_url:
-    get:
-      summary: ListProjectsForOrganizationAndGithubURL lists all the project for org deployed from githubURL
-      operationId: AdminService_ListProjectsForOrganizationAndGithubURL
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListProjectsForOrganizationAndGithubURLResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: githubUrl
-          in: query
-          required: false
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - AdminService
   /v1/ping:
     get:
       summary: Ping returns information about the server
@@ -915,6 +944,16 @@ definitions:
           type: string
   v1LeaveOrganizationResponse:
     type: object
+  v1ListOrganizationInvitesResponse:
+    type: object
+    properties:
+      invites:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1UserInvite'
+      nextPageToken:
+        type: string
   v1ListOrganizationMembersResponse:
     type: object
     properties:
@@ -923,11 +962,6 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Member'
-      invites:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1UserInvite'
       nextPageToken:
         type: string
   v1ListOrganizationsResponse:
@@ -940,6 +974,16 @@ definitions:
           $ref: '#/definitions/v1Organization'
       nextPageToken:
         type: string
+  v1ListProjectInvitesResponse:
+    type: object
+    properties:
+      invites:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1UserInvite'
+      nextPageToken:
+        type: string
   v1ListProjectMembersResponse:
     type: object
     properties:
@@ -948,21 +992,6 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Member'
-      invites:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1UserInvite'
-      nextPageToken:
-        type: string
-  v1ListProjectsForOrganizationAndGithubURLResponse:
-    type: object
-    properties:
-      projects:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1Project'
       nextPageToken:
         type: string
   v1ListProjectsForOrganizationResponse:

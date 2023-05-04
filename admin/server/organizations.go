@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
@@ -9,7 +11,13 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
+)
+
+const (
+	_maxPageSize     = 100
+	_defaultPageSize = 1
 )
 
 func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganizationsRequest) (*adminv1.ListOrganizationsResponse, error) {
@@ -19,9 +27,22 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
-	orgs, err := s.admin.DB.FindOrganizationsForUser(ctx, claims.OwnerID())
+	opts, err := paginationOptions(req.PageToken, int(req.PageSize))
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	orgs, err := s.admin.DB.FindOrganizationsForUser(ctx, claims.OwnerID(), opts)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	nextToken := ""
+	if len(orgs) >= opts.PageSize {
+		nextToken, err = nextPageToken(orgs[len(orgs)-1].Name)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 	}
 
 	pbs := make([]*adminv1.Organization, len(orgs))
@@ -29,7 +50,7 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 		pbs[i] = organizationToDTO(org)
 	}
 
-	return &adminv1.ListOrganizationsResponse{Organizations: pbs}, nil
+	return &adminv1.ListOrganizationsResponse{Organizations: pbs, NextPageToken: nextToken}, nil
 }
 
 func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizationRequest) (*adminv1.GetOrganizationResponse, error) {
@@ -163,9 +184,22 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
 	}
 
-	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID)
+	opts, err := paginationOptions(req.PageToken, int(req.PageSize))
+	if err != nil {
+		return nil, err
+	}
+
+	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, opts)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	nextToken := ""
+	if len(members) >= opts.PageSize {
+		nextToken, err = nextPageToken(members[len(members)-1].Email)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 	}
 
 	dtos := make([]*adminv1.Member, len(members))
@@ -173,19 +207,50 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 		dtos[i] = memberToPB(user)
 	}
 
+	return &adminv1.ListOrganizationMembersResponse{
+		Members:       dtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
+func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListOrganizationInvitesRequest) (*adminv1.ListOrganizationInvitesResponse, error) {
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
+	}
+
+	opts, err := paginationOptions(req.PageToken, int(req.PageSize))
+	if err != nil {
+		return nil, err
+	}
+
 	// get pending user invites for this org
-	userInvites, err := s.admin.DB.FindOrganizationInvites(ctx, org.ID)
+	userInvites, err := s.admin.DB.FindOrganizationInvites(ctx, org.ID, opts)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	nextToken := ""
+	if len(userInvites) >= opts.PageSize {
+		nextToken, err = nextPageToken(userInvites[len(userInvites)-1].Email)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
 	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))
 	for i, invite := range userInvites {
 		invitesDtos[i] = inviteToPB(invite)
 	}
 
-	return &adminv1.ListOrganizationMembersResponse{
-		Members: dtos,
-		Invites: invitesDtos,
+	return &adminv1.ListOrganizationInvitesResponse{
+		Invites:       invitesDtos,
+		NextPageToken: nextToken,
 	}, nil
 }
 
@@ -470,4 +535,41 @@ func organizationToDTO(o *database.Organization) *adminv1.Organization {
 		CreatedOn:   timestamppb.New(o.CreatedOn),
 		UpdatedOn:   timestamppb.New(o.UpdatedOn),
 	}
+}
+
+func paginationOptions(reqToken string, pageSize int) (*database.PaginationOptions, error) {
+	opts := &database.PaginationOptions{PageSize: validPageSize(pageSize)}
+	if reqToken != "" {
+		token := &adminv1.PageToken{}
+		in, err := base64.URLEncoding.DecodeString(reqToken)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := proto.Unmarshal(in, token); err != nil {
+			return nil, fmt.Errorf("Failed to parse request token: %w", err)
+		}
+		opts.Cursor = token.Cursor[0]
+	}
+	return opts, nil
+}
+
+func nextPageToken(cursor string) (string, error) {
+	token := &adminv1.PageToken{Cursor: []string{cursor}}
+	bytes, err := proto.Marshal(token)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.URLEncoding.EncodeToString(bytes), nil
+}
+
+func validPageSize(pageSize int) int {
+	if pageSize <= 0 {
+		return _defaultPageSize
+	}
+	if pageSize > _maxPageSize {
+		return _maxPageSize
+	}
+	return pageSize
 }

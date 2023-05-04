@@ -47,11 +47,6 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects"};
   }
 
-  // ListProjectsForOrganizationAndGithubURL lists all the project for org deployed from githubURL
-  rpc ListProjectsForOrganizationAndGithubURL(ListProjectsForOrganizationAndGithubURLRequest) returns (ListProjectsForOrganizationAndGithubURLResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects_by_github_url"};
-  }
-
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}"};
@@ -120,6 +115,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization}/members"};
   }
 
+  // ListOrganizationInvites lists all the org invites
+  rpc ListOrganizationInvites(ListOrganizationInvitesRequest) returns (ListOrganizationInvitesResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/invites"};
+  }
+
   // AddOrganizationMember lists all the org members
   rpc AddOrganizationMember(AddOrganizationMemberRequest) returns (AddOrganizationMemberResponse) {
     option (google.api.http) = {
@@ -149,6 +149,11 @@ service AdminService {
   // ListProjectMembers lists all the project members
   rpc ListProjectMembers(ListProjectMembersRequest) returns (ListProjectMembersResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/members"};
+  }
+
+  // ListProjectInvites lists all the project members
+  rpc ListProjectInvites(ListProjectInvitesRequest) returns (ListProjectInvitesResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/invites"};
   }
 
   // AddProjectMember adds a member to the project
@@ -253,18 +258,6 @@ message ListProjectsForOrganizationResponse {
   string next_page_token = 2;
 }
 
-message ListProjectsForOrganizationAndGithubURLRequest {
-  string organization_name = 1 [(validate.rules).string.min_len = 1];
-  string github_url = 2 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 3;
-  string page_token = 4;
-}
-
-message ListProjectsForOrganizationAndGithubURLResponse {
-  repeated Project projects = 1;
-  string next_page_token = 2;
-}
-
 message GetProjectRequest {
   string organization_name = 1;
   string name = 2;
@@ -362,7 +355,17 @@ message ListOrganizationMembersRequest {
 
 message ListOrganizationMembersResponse {
   repeated Member members = 1;
-  repeated UserInvite invites = 3;
+  string next_page_token = 2;
+}
+
+message ListOrganizationInvitesRequest {
+  string organization = 1;
+  uint32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListOrganizationInvitesResponse {
+  repeated UserInvite invites = 1;
   string next_page_token = 2;
 }
 
@@ -407,7 +410,18 @@ message ListProjectMembersRequest {
 
 message ListProjectMembersResponse {
   repeated Member members = 1;
-  repeated UserInvite invites = 3;
+  string next_page_token = 2;
+}
+
+message ListProjectInvitesRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 3;
+  string page_token = 4;
+}
+
+message ListProjectInvitesResponse {
+  repeated UserInvite invites = 1;
   string next_page_token = 2;
 }
 
@@ -554,4 +568,10 @@ message UserInvite {
   string email = 1;
   string role = 2;
   string invited_by = 3;
+}
+
+// PageToken 
+message PageToken {
+  // cursor is kept as an array since it may not be possible to use one field to unqiuely identify
+  repeated string cursor = 1;
 }

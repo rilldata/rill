@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"sort"
 	"time"
 
 	"github.com/rilldata/rill/admin"
@@ -24,95 +23,48 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	opts, err := paginationOptions(req.PageToken, int(req.PageSize))
+	if err != nil {
+		return nil, err
+	}
+
 	// If user has ManageProjects, return all projects
 	claims := auth.GetClaims(ctx)
+	projs := make([]*database.Project, 0)
 	if claims.OrganizationPermissions(ctx, org.ID).ManageProjects {
-		projs, err := s.admin.DB.FindProjectsForOrganization(ctx, org.ID)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-
-		dtos := make([]*adminv1.Project, len(projs))
-		for i, p := range projs {
-			dtos[i] = s.projToDTO(p, org.Name)
-		}
-
-		return &adminv1.ListProjectsForOrganizationResponse{
-			Projects: dtos,
-		}, nil
+		projs, err = s.admin.DB.FindProjectsForOrganization(ctx, org.ID, opts)
+	} else if claims.OwnerType() == auth.OwnerTypeUser {
+		// Get projects the user is a (direct or group) member of (note: the user can be a member of a project in the org, without being a member of org - we call this an "outside member")
+		// plus all public projects
+		projs, err = s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID(), opts)
 	}
-
-	// Get public projects
-	projsMap := map[string]*database.Project{}
-	projs, err := s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	for _, p := range projs {
-		projsMap[p.Name] = p
-	}
-
-	// Get projects the user is a (direct or group) member of (note: the user can be a member of a project in the org, without being a member of org - we call this an "outside member")
-	if claims.OwnerType() == auth.OwnerTypeUser {
-		projs, err := s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID())
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-		for _, p := range projs {
-			projsMap[p.Name] = p
-		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// If no projects are public, and user is not an outside member of any projects, the projsMap is empty.
 	// If additionally, the user is not an org member, return permission denied (instead of an empty slice).
-	if len(projsMap) == 0 && !claims.OrganizationPermissions(ctx, org.ID).ReadProjects {
+	if len(projs) == 0 && !claims.OrganizationPermissions(ctx, org.ID).ReadProjects {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read projects")
 	}
 
-	// Convert map to slice
-	i := 0
-	dtos := make([]*adminv1.Project, len(projsMap))
-	for _, p := range projsMap {
+	nextToken := ""
+	if len(projs) >= opts.PageSize {
+		nextToken, err = nextPageToken(projs[len(projs)-1].Name)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	dtos := make([]*adminv1.Project, len(projs))
+	for i, p := range projs {
 		dtos[i] = s.projToDTO(p, org.Name)
-		i++
 	}
 
-	// Sort output by project name
-	sort.Slice(dtos, func(i, j int) bool { return dtos[i].Name < dtos[j].Name })
-
-	return &adminv1.ListProjectsForOrganizationResponse{Projects: dtos}, nil
-}
-
-func (s *Server) ListProjectsForOrganizationAndGithubURL(ctx context.Context, req *adminv1.ListProjectsForOrganizationAndGithubURLRequest) (*adminv1.ListProjectsForOrganizationAndGithubURLResponse, error) {
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "org not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ReadProjects {
-		return nil, status.Errorf(codes.PermissionDenied, "does not have permission to read projects in org %s", req.OrganizationName)
-	}
-
-	projects, err := s.admin.DB.FindProjectsByOrgAndGithubURL(ctx, org.ID, req.GithubUrl)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Errorf(codes.NotFound, "project with github URL %q not found in org %q", req.GithubUrl, req.OrganizationName)
-		}
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	accessibleProjects := make([]*adminv1.Project, 0)
-	for _, p := range projects {
-		if claims.ProjectPermissions(ctx, p.OrganizationID, p.ID).ReadProject {
-			accessibleProjects = append(accessibleProjects, s.projToDTO(p, org.Name))
-		}
-	}
-
-	return &adminv1.ListProjectsForOrganizationAndGithubURLResponse{Projects: accessibleProjects}, nil
+	return &adminv1.ListProjectsForOrganizationResponse{
+		Projects:      dtos,
+		NextPageToken: nextToken,
+	}, nil
 }
 
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
@@ -374,9 +326,22 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read project members")
 	}
 
-	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID)
+	opts, err := paginationOptions(req.PageToken, int(req.PageSize))
+	if err != nil {
+		return nil, err
+	}
+
+	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID, opts)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	nextToken := ""
+	if len(members) >= opts.PageSize {
+		nextToken, err = nextPageToken(members[len(members)-1].Email)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 	}
 
 	dtos := make([]*adminv1.Member, len(members))
@@ -384,19 +349,50 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 		dtos[i] = memberToPB(member)
 	}
 
+	return &adminv1.ListProjectMembersResponse{
+		Members:       dtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
+func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjectInvitesRequest) (*adminv1.ListProjectInvitesResponse, error) {
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProjectMembers {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to read project members")
+	}
+
+	opts, err := paginationOptions(req.PageToken, int(req.PageSize))
+	if err != nil {
+		return nil, err
+	}
+
 	// get pending user invites for this project
-	userInvites, err := s.admin.DB.FindProjectInvites(ctx, proj.ID)
+	userInvites, err := s.admin.DB.FindProjectInvites(ctx, proj.ID, opts)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	nextToken := ""
+	if len(userInvites) >= opts.PageSize {
+		nextToken, err = nextPageToken(userInvites[len(userInvites)-1].Email)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
 	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))
 	for i, invite := range userInvites {
 		invitesDtos[i] = inviteToPB(invite)
 	}
 
-	return &adminv1.ListProjectMembersResponse{
-		Members: dtos,
-		Invites: invitesDtos,
+	return &adminv1.ListProjectInvitesResponse{
+		Invites:       invitesDtos,
+		NextPageToken: nextToken,
 	}, nil
 }
 

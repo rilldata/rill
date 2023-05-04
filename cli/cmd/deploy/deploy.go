@@ -204,19 +204,16 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			nameExist := false
 			// check if a project with github url already exists in this org
-			resp, err := client.ListProjectsForOrganizationAndGithubURL(ctx, &adminv1.ListProjectsForOrganizationAndGithubURLRequest{
-				OrganizationName: cfg.Org,
-				GithubUrl:        githubURL,
-			})
-			if err == nil && len(resp.Projects) != 0 { // ignoring error since this is just for a confirmation prompt
-				for _, p := range resp.Projects {
-					if strings.EqualFold(name, p.Name) {
+			projects, err := cmdutil.ProjectNamesByGithubURL(ctx, client, cfg.Org, githubURL)
+			if err == nil && len(projects) != 0 { // ignoring error since this is just for a confirmation prompt
+				for _, p := range projects {
+					if strings.EqualFold(name, p) {
 						nameExist = true
 						break
 					}
 				}
 
-				warn.Printf("Another project %q already deploys from %q\n", resp.Projects[0].Name, githubURL)
+				warn.Printf("Another project %q already deploys from %q\n", projects[0], githubURL)
 				if !cmdutil.ConfirmPrompt("Do you want to continue", "", true) {
 					warn.Println("Aborted")
 					return nil

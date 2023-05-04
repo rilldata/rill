@@ -46,16 +46,16 @@ func (c *connection) Close() error {
 	return c.db.Close()
 }
 
-func (c *connection) FindOrganizations(ctx context.Context) ([]*database.Organization, error) {
+func (c *connection) FindOrganizations(ctx context.Context, paginationOpts *database.PaginationOptions) ([]*database.Organization, error) {
 	var res []*database.Organization
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs ORDER BY lower(name)")
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs WHERE name > $1 ORDER BY lower(name) LIMIT $2", paginationOpts.Cursor, paginationOpts.PageSize)
 	if err != nil {
 		return nil, parseErr("orgs", err)
 	}
 	return res, nil
 }
 
-func (c *connection) FindOrganizationsForUser(ctx context.Context, userID string) ([]*database.Organization, error) {
+func (c *connection) FindOrganizationsForUser(ctx context.Context, userID string, paginationOpts *database.PaginationOptions) ([]*database.Organization, error) {
 	var res []*database.Organization
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT u.* FROM (SELECT o.* FROM orgs o JOIN users_orgs_roles uor ON o.id = uor.org_id
@@ -67,8 +67,8 @@ func (c *connection) FindOrganizationsForUser(ctx context.Context, userID string
 		UNION
 		SELECT o.* FROM orgs o JOIN projects p ON o.id = p.org_id
 		JOIN users_projects_roles upr ON p.id = upr.project_id
-		WHERE upr.user_id = $1) u order by u.name
-	`, userID)
+		WHERE upr.user_id = $1) u where u.name > $2 order by u.name limit $3
+	`, userID, paginationOpts.Cursor, paginationOpts.PageSize)
 	if err != nil {
 		return nil, parseErr("orgs", err)
 	}
@@ -180,25 +180,31 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 	return res, nil
 }
 
-func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID string) ([]*database.Project, error) {
+func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID string, paginationOpts *database.PaginationOptions) ([]*database.Project, error) {
 	var res []*database.Project
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.org_id=$1 ORDER BY lower(p.name)", orgID)
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.org_id=$1 AND lower(p.name) > $2 ORDER BY lower(p.name) LIMIT $3",
+		orgID,
+		paginationOpts.Cursor,
+		paginationOpts.PageSize)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
 	return res, nil
 }
 
-func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string) ([]*database.Project, error) {
+func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, popts *database.PaginationOptions) ([]*database.Project, error) {
 	var res []*database.Project
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT p.* FROM projects p
-		WHERE p.org_id = $1 AND p.id IN (
-			SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $2
+		select up.* from ( SELECT p.* FROM projects p
+			WHERE p.org_id = $1 AND p.id IN (
+				SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $2
+				UNION
+				SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $2
+			)
 			UNION
-			SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $2
-		)
-	`, orgID, userID)
+			SELECT p.* FROM projects p WHERE p.org_id = $1 AND p.public = true
+		) up where lower(up.name) > $3 ORDER BY lower(up.name) LIMIT $4
+	`, orgID, userID, popts.Cursor, popts.PageSize)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
@@ -217,15 +223,6 @@ func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID
 func (c *connection) FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*database.Project, error) {
 	result := make([]*database.Project, 0)
 	err := c.getDB(ctx).SelectContext(ctx, &result, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) ", githubURL)
-	if err != nil {
-		return nil, parseErr("projects", err)
-	}
-	return result, nil
-}
-
-func (c *connection) FindProjectsByOrgAndGithubURL(ctx context.Context, orgID, githubURL string) ([]*database.Project, error) {
-	result := make([]*database.Project, 0)
-	err := c.getDB(ctx).SelectContext(ctx, &result, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) AND org_id=$2", githubURL, orgID)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
@@ -596,11 +593,13 @@ func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, pro
 	return res, nil
 }
 
-func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID string) ([]*database.Member, error) {
+// todo :: check indexes
+func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID string, popts *database.PaginationOptions) ([]*database.Member, error) {
 	var res []*database.Member
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u 
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u 
     	JOIN users_orgs_roles uor ON u.id = uor.user_id
-		JOIN org_roles r ON r.id = uor.org_role_id WHERE uor.org_id=$1`, orgID)
+		JOIN org_roles r ON r.id = uor.org_role_id WHERE uor.org_id=$1 AND u.email > $2 order by lower(u.email) limit $3`, orgID, popts.Cursor, popts.PageSize)
 	if err != nil {
 		return nil, parseErr("org members", err)
 	}
@@ -657,11 +656,11 @@ func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Conte
 	return count, nil
 }
 
-func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID string) ([]*database.Member, error) {
+func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID string, popts *database.PaginationOptions) ([]*database.Member, error) {
 	var res []*database.Member
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u 
     	JOIN users_projects_roles upr ON u.id = upr.user_id
-		JOIN project_roles r ON r.id = upr.project_role_id WHERE upr.project_id=$1`, projectID)
+		JOIN project_roles r ON r.id = upr.project_role_id WHERE upr.project_id=$1 AND u.email > $2 ORDER BY lower(u.email) limit $3`, projectID, popts.Cursor, popts.PageSize)
 	if err != nil {
 		return nil, parseErr("project members", err)
 	}
@@ -709,11 +708,12 @@ func (c *connection) UpdateProjectMemberUserRole(ctx context.Context, projectID,
 	return checkUpdateRow("project member", res, err)
 }
 
-func (c *connection) FindOrganizationInvites(ctx context.Context, orgID string) ([]*database.Invite, error) {
+func (c *connection) FindOrganizationInvites(ctx context.Context, orgID string, popts *database.PaginationOptions) ([]*database.Invite, error) {
 	var res []*database.Invite
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 			SELECT uoi.email, ur.name as role, u.email as invited_by 
-			FROM org_invites uoi JOIN org_roles ur ON uoi.org_role_id = ur.id JOIN users u ON uoi.invited_by_user_id = u.id WHERE uoi.org_id = $1`, orgID)
+			FROM org_invites uoi JOIN org_roles ur ON uoi.org_role_id = ur.id JOIN users u ON uoi.invited_by_user_id = u.id 
+			WHERE uoi.org_id = $1 AND lower(uoi.email) > $2 ORDER BY lower(uoi.email) LIMIT $3`, orgID, popts.Cursor, popts.PageSize)
 	if err != nil {
 		return nil, parseErr("org invites", err)
 	}
@@ -772,11 +772,12 @@ func (c *connection) UpdateOrganizationInviteRole(ctx context.Context, id, roleI
 	return checkUpdateRow("org invite", res, err)
 }
 
-func (c *connection) FindProjectInvites(ctx context.Context, projectID string) ([]*database.Invite, error) {
+func (c *connection) FindProjectInvites(ctx context.Context, projectID string, popts *database.PaginationOptions) ([]*database.Invite, error) {
 	var res []*database.Invite
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 			SELECT upi.email, ur.name as role, u.email as invited_by 
-			FROM project_invites upi JOIN project_roles ur ON upi.project_role_id = ur.id JOIN users u ON upi.invited_by_user_id = u.id WHERE upi.project_id = $1`, projectID)
+			FROM project_invites upi JOIN project_roles ur ON upi.project_role_id = ur.id JOIN users u ON upi.invited_by_user_id = u.id 
+			WHERE upi.project_id = $1 AND lower(upi.email) > $2 ORDER BY lower(upi.emial) LIMIT $3`, projectID, popts.Cursor, popts.PageSize)
 	if err != nil {
 		return nil, parseErr("project invites", err)
 	}

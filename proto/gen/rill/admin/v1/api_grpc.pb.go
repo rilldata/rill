@@ -19,35 +19,36 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AdminService_Ping_FullMethodName                                    = "/rill.admin.v1.AdminService/Ping"
-	AdminService_ListOrganizations_FullMethodName                       = "/rill.admin.v1.AdminService/ListOrganizations"
-	AdminService_GetOrganization_FullMethodName                         = "/rill.admin.v1.AdminService/GetOrganization"
-	AdminService_CreateOrganization_FullMethodName                      = "/rill.admin.v1.AdminService/CreateOrganization"
-	AdminService_DeleteOrganization_FullMethodName                      = "/rill.admin.v1.AdminService/DeleteOrganization"
-	AdminService_UpdateOrganization_FullMethodName                      = "/rill.admin.v1.AdminService/UpdateOrganization"
-	AdminService_ListProjectsForOrganization_FullMethodName             = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
-	AdminService_ListProjectsForOrganizationAndGithubURL_FullMethodName = "/rill.admin.v1.AdminService/ListProjectsForOrganizationAndGithubURL"
-	AdminService_GetProject_FullMethodName                              = "/rill.admin.v1.AdminService/GetProject"
-	AdminService_GetProjectVariables_FullMethodName                     = "/rill.admin.v1.AdminService/GetProjectVariables"
-	AdminService_CreateProject_FullMethodName                           = "/rill.admin.v1.AdminService/CreateProject"
-	AdminService_DeleteProject_FullMethodName                           = "/rill.admin.v1.AdminService/DeleteProject"
-	AdminService_UpdateProject_FullMethodName                           = "/rill.admin.v1.AdminService/UpdateProject"
-	AdminService_UpdateProjectVariables_FullMethodName                  = "/rill.admin.v1.AdminService/UpdateProjectVariables"
-	AdminService_TriggerReconcile_FullMethodName                        = "/rill.admin.v1.AdminService/TriggerReconcile"
-	AdminService_TriggerRefreshSources_FullMethodName                   = "/rill.admin.v1.AdminService/TriggerRefreshSources"
-	AdminService_TriggerRedeploy_FullMethodName                         = "/rill.admin.v1.AdminService/TriggerRedeploy"
-	AdminService_ListOrganizationMembers_FullMethodName                 = "/rill.admin.v1.AdminService/ListOrganizationMembers"
-	AdminService_AddOrganizationMember_FullMethodName                   = "/rill.admin.v1.AdminService/AddOrganizationMember"
-	AdminService_RemoveOrganizationMember_FullMethodName                = "/rill.admin.v1.AdminService/RemoveOrganizationMember"
-	AdminService_LeaveOrganization_FullMethodName                       = "/rill.admin.v1.AdminService/LeaveOrganization"
-	AdminService_SetOrganizationMemberRole_FullMethodName               = "/rill.admin.v1.AdminService/SetOrganizationMemberRole"
-	AdminService_ListProjectMembers_FullMethodName                      = "/rill.admin.v1.AdminService/ListProjectMembers"
-	AdminService_AddProjectMember_FullMethodName                        = "/rill.admin.v1.AdminService/AddProjectMember"
-	AdminService_RemoveProjectMember_FullMethodName                     = "/rill.admin.v1.AdminService/RemoveProjectMember"
-	AdminService_SetProjectMemberRole_FullMethodName                    = "/rill.admin.v1.AdminService/SetProjectMemberRole"
-	AdminService_GetCurrentUser_FullMethodName                          = "/rill.admin.v1.AdminService/GetCurrentUser"
-	AdminService_RevokeCurrentAuthToken_FullMethodName                  = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
-	AdminService_GetGithubRepoStatus_FullMethodName                     = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
+	AdminService_Ping_FullMethodName                        = "/rill.admin.v1.AdminService/Ping"
+	AdminService_ListOrganizations_FullMethodName           = "/rill.admin.v1.AdminService/ListOrganizations"
+	AdminService_GetOrganization_FullMethodName             = "/rill.admin.v1.AdminService/GetOrganization"
+	AdminService_CreateOrganization_FullMethodName          = "/rill.admin.v1.AdminService/CreateOrganization"
+	AdminService_DeleteOrganization_FullMethodName          = "/rill.admin.v1.AdminService/DeleteOrganization"
+	AdminService_UpdateOrganization_FullMethodName          = "/rill.admin.v1.AdminService/UpdateOrganization"
+	AdminService_ListProjectsForOrganization_FullMethodName = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
+	AdminService_GetProject_FullMethodName                  = "/rill.admin.v1.AdminService/GetProject"
+	AdminService_GetProjectVariables_FullMethodName         = "/rill.admin.v1.AdminService/GetProjectVariables"
+	AdminService_CreateProject_FullMethodName               = "/rill.admin.v1.AdminService/CreateProject"
+	AdminService_DeleteProject_FullMethodName               = "/rill.admin.v1.AdminService/DeleteProject"
+	AdminService_UpdateProject_FullMethodName               = "/rill.admin.v1.AdminService/UpdateProject"
+	AdminService_UpdateProjectVariables_FullMethodName      = "/rill.admin.v1.AdminService/UpdateProjectVariables"
+	AdminService_TriggerReconcile_FullMethodName            = "/rill.admin.v1.AdminService/TriggerReconcile"
+	AdminService_TriggerRefreshSources_FullMethodName       = "/rill.admin.v1.AdminService/TriggerRefreshSources"
+	AdminService_TriggerRedeploy_FullMethodName             = "/rill.admin.v1.AdminService/TriggerRedeploy"
+	AdminService_ListOrganizationMembers_FullMethodName     = "/rill.admin.v1.AdminService/ListOrganizationMembers"
+	AdminService_ListOrganizationInvites_FullMethodName     = "/rill.admin.v1.AdminService/ListOrganizationInvites"
+	AdminService_AddOrganizationMember_FullMethodName       = "/rill.admin.v1.AdminService/AddOrganizationMember"
+	AdminService_RemoveOrganizationMember_FullMethodName    = "/rill.admin.v1.AdminService/RemoveOrganizationMember"
+	AdminService_LeaveOrganization_FullMethodName           = "/rill.admin.v1.AdminService/LeaveOrganization"
+	AdminService_SetOrganizationMemberRole_FullMethodName   = "/rill.admin.v1.AdminService/SetOrganizationMemberRole"
+	AdminService_ListProjectMembers_FullMethodName          = "/rill.admin.v1.AdminService/ListProjectMembers"
+	AdminService_ListProjectInvites_FullMethodName          = "/rill.admin.v1.AdminService/ListProjectInvites"
+	AdminService_AddProjectMember_FullMethodName            = "/rill.admin.v1.AdminService/AddProjectMember"
+	AdminService_RemoveProjectMember_FullMethodName         = "/rill.admin.v1.AdminService/RemoveProjectMember"
+	AdminService_SetProjectMemberRole_FullMethodName        = "/rill.admin.v1.AdminService/SetProjectMemberRole"
+	AdminService_GetCurrentUser_FullMethodName              = "/rill.admin.v1.AdminService/GetCurrentUser"
+	AdminService_RevokeCurrentAuthToken_FullMethodName      = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
+	AdminService_GetGithubRepoStatus_FullMethodName         = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -68,8 +69,6 @@ type AdminServiceClient interface {
 	UpdateOrganization(ctx context.Context, in *UpdateOrganizationRequest, opts ...grpc.CallOption) (*UpdateOrganizationResponse, error)
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(ctx context.Context, in *ListProjectsForOrganizationRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationResponse, error)
-	// ListProjectsForOrganizationAndGithubURL lists all the project for org deployed from githubURL
-	ListProjectsForOrganizationAndGithubURL(ctx context.Context, in *ListProjectsForOrganizationAndGithubURLRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationAndGithubURLResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
 	// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
@@ -90,6 +89,8 @@ type AdminServiceClient interface {
 	TriggerRedeploy(ctx context.Context, in *TriggerRedeployRequest, opts ...grpc.CallOption) (*TriggerRedeployResponse, error)
 	// ListOrganizationMembers lists all the org members
 	ListOrganizationMembers(ctx context.Context, in *ListOrganizationMembersRequest, opts ...grpc.CallOption) (*ListOrganizationMembersResponse, error)
+	// ListOrganizationInvites lists all the org invites
+	ListOrganizationInvites(ctx context.Context, in *ListOrganizationInvitesRequest, opts ...grpc.CallOption) (*ListOrganizationInvitesResponse, error)
 	// AddOrganizationMember lists all the org members
 	AddOrganizationMember(ctx context.Context, in *AddOrganizationMemberRequest, opts ...grpc.CallOption) (*AddOrganizationMemberResponse, error)
 	// RemoveOrganizationMember removes member from the organization
@@ -100,6 +101,8 @@ type AdminServiceClient interface {
 	SetOrganizationMemberRole(ctx context.Context, in *SetOrganizationMemberRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberRoleResponse, error)
 	// ListProjectMembers lists all the project members
 	ListProjectMembers(ctx context.Context, in *ListProjectMembersRequest, opts ...grpc.CallOption) (*ListProjectMembersResponse, error)
+	// ListProjectInvites lists all the project members
+	ListProjectInvites(ctx context.Context, in *ListProjectInvitesRequest, opts ...grpc.CallOption) (*ListProjectInvitesResponse, error)
 	// AddProjectMember adds a member to the project
 	AddProjectMember(ctx context.Context, in *AddProjectMemberRequest, opts ...grpc.CallOption) (*AddProjectMemberResponse, error)
 	// RemoveProjectMember removes member from the project
@@ -180,15 +183,6 @@ func (c *adminServiceClient) UpdateOrganization(ctx context.Context, in *UpdateO
 func (c *adminServiceClient) ListProjectsForOrganization(ctx context.Context, in *ListProjectsForOrganizationRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationResponse, error) {
 	out := new(ListProjectsForOrganizationResponse)
 	err := c.cc.Invoke(ctx, AdminService_ListProjectsForOrganization_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) ListProjectsForOrganizationAndGithubURL(ctx context.Context, in *ListProjectsForOrganizationAndGithubURLRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationAndGithubURLResponse, error) {
-	out := new(ListProjectsForOrganizationAndGithubURLResponse)
-	err := c.cc.Invoke(ctx, AdminService_ListProjectsForOrganizationAndGithubURL_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -285,6 +279,15 @@ func (c *adminServiceClient) ListOrganizationMembers(ctx context.Context, in *Li
 	return out, nil
 }
 
+func (c *adminServiceClient) ListOrganizationInvites(ctx context.Context, in *ListOrganizationInvitesRequest, opts ...grpc.CallOption) (*ListOrganizationInvitesResponse, error) {
+	out := new(ListOrganizationInvitesResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListOrganizationInvites_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) AddOrganizationMember(ctx context.Context, in *AddOrganizationMemberRequest, opts ...grpc.CallOption) (*AddOrganizationMemberResponse, error) {
 	out := new(AddOrganizationMemberResponse)
 	err := c.cc.Invoke(ctx, AdminService_AddOrganizationMember_FullMethodName, in, out, opts...)
@@ -324,6 +327,15 @@ func (c *adminServiceClient) SetOrganizationMemberRole(ctx context.Context, in *
 func (c *adminServiceClient) ListProjectMembers(ctx context.Context, in *ListProjectMembersRequest, opts ...grpc.CallOption) (*ListProjectMembersResponse, error) {
 	out := new(ListProjectMembersResponse)
 	err := c.cc.Invoke(ctx, AdminService_ListProjectMembers_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListProjectInvites(ctx context.Context, in *ListProjectInvitesRequest, opts ...grpc.CallOption) (*ListProjectInvitesResponse, error) {
+	out := new(ListProjectInvitesResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListProjectInvites_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -402,8 +414,6 @@ type AdminServiceServer interface {
 	UpdateOrganization(context.Context, *UpdateOrganizationRequest) (*UpdateOrganizationResponse, error)
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error)
-	// ListProjectsForOrganizationAndGithubURL lists all the project for org deployed from githubURL
-	ListProjectsForOrganizationAndGithubURL(context.Context, *ListProjectsForOrganizationAndGithubURLRequest) (*ListProjectsForOrganizationAndGithubURLResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
 	// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
@@ -424,6 +434,8 @@ type AdminServiceServer interface {
 	TriggerRedeploy(context.Context, *TriggerRedeployRequest) (*TriggerRedeployResponse, error)
 	// ListOrganizationMembers lists all the org members
 	ListOrganizationMembers(context.Context, *ListOrganizationMembersRequest) (*ListOrganizationMembersResponse, error)
+	// ListOrganizationInvites lists all the org invites
+	ListOrganizationInvites(context.Context, *ListOrganizationInvitesRequest) (*ListOrganizationInvitesResponse, error)
 	// AddOrganizationMember lists all the org members
 	AddOrganizationMember(context.Context, *AddOrganizationMemberRequest) (*AddOrganizationMemberResponse, error)
 	// RemoveOrganizationMember removes member from the organization
@@ -434,6 +446,8 @@ type AdminServiceServer interface {
 	SetOrganizationMemberRole(context.Context, *SetOrganizationMemberRoleRequest) (*SetOrganizationMemberRoleResponse, error)
 	// ListProjectMembers lists all the project members
 	ListProjectMembers(context.Context, *ListProjectMembersRequest) (*ListProjectMembersResponse, error)
+	// ListProjectInvites lists all the project members
+	ListProjectInvites(context.Context, *ListProjectInvitesRequest) (*ListProjectInvitesResponse, error)
 	// AddProjectMember adds a member to the project
 	AddProjectMember(context.Context, *AddProjectMemberRequest) (*AddProjectMemberResponse, error)
 	// RemoveProjectMember removes member from the project
@@ -475,9 +489,6 @@ func (UnimplementedAdminServiceServer) UpdateOrganization(context.Context, *Upda
 func (UnimplementedAdminServiceServer) ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForOrganization not implemented")
 }
-func (UnimplementedAdminServiceServer) ListProjectsForOrganizationAndGithubURL(context.Context, *ListProjectsForOrganizationAndGithubURLRequest) (*ListProjectsForOrganizationAndGithubURLResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForOrganizationAndGithubURL not implemented")
-}
 func (UnimplementedAdminServiceServer) GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProject not implemented")
 }
@@ -508,6 +519,9 @@ func (UnimplementedAdminServiceServer) TriggerRedeploy(context.Context, *Trigger
 func (UnimplementedAdminServiceServer) ListOrganizationMembers(context.Context, *ListOrganizationMembersRequest) (*ListOrganizationMembersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationMembers not implemented")
 }
+func (UnimplementedAdminServiceServer) ListOrganizationInvites(context.Context, *ListOrganizationInvitesRequest) (*ListOrganizationInvitesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationInvites not implemented")
+}
 func (UnimplementedAdminServiceServer) AddOrganizationMember(context.Context, *AddOrganizationMemberRequest) (*AddOrganizationMemberResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddOrganizationMember not implemented")
 }
@@ -522,6 +536,9 @@ func (UnimplementedAdminServiceServer) SetOrganizationMemberRole(context.Context
 }
 func (UnimplementedAdminServiceServer) ListProjectMembers(context.Context, *ListProjectMembersRequest) (*ListProjectMembersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectMembers not implemented")
+}
+func (UnimplementedAdminServiceServer) ListProjectInvites(context.Context, *ListProjectInvitesRequest) (*ListProjectInvitesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjectInvites not implemented")
 }
 func (UnimplementedAdminServiceServer) AddProjectMember(context.Context, *AddProjectMemberRequest) (*AddProjectMemberResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddProjectMember not implemented")
@@ -676,24 +693,6 @@ func _AdminService_ListProjectsForOrganization_Handler(srv interface{}, ctx cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).ListProjectsForOrganization(ctx, req.(*ListProjectsForOrganizationRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_ListProjectsForOrganizationAndGithubURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListProjectsForOrganizationAndGithubURLRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).ListProjectsForOrganizationAndGithubURL(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_ListProjectsForOrganizationAndGithubURL_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).ListProjectsForOrganizationAndGithubURL(ctx, req.(*ListProjectsForOrganizationAndGithubURLRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -878,6 +877,24 @@ func _AdminService_ListOrganizationMembers_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_ListOrganizationInvites_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListOrganizationInvitesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListOrganizationInvites(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListOrganizationInvites_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListOrganizationInvites(ctx, req.(*ListOrganizationInvitesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_AddOrganizationMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AddOrganizationMemberRequest)
 	if err := dec(in); err != nil {
@@ -964,6 +981,24 @@ func _AdminService_ListProjectMembers_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).ListProjectMembers(ctx, req.(*ListProjectMembersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListProjectInvites_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectInvitesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListProjectInvites(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListProjectInvites_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListProjectInvites(ctx, req.(*ListProjectInvitesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1112,10 +1147,6 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_ListProjectsForOrganization_Handler,
 		},
 		{
-			MethodName: "ListProjectsForOrganizationAndGithubURL",
-			Handler:    _AdminService_ListProjectsForOrganizationAndGithubURL_Handler,
-		},
-		{
 			MethodName: "GetProject",
 			Handler:    _AdminService_GetProject_Handler,
 		},
@@ -1156,6 +1187,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_ListOrganizationMembers_Handler,
 		},
 		{
+			MethodName: "ListOrganizationInvites",
+			Handler:    _AdminService_ListOrganizationInvites_Handler,
+		},
+		{
 			MethodName: "AddOrganizationMember",
 			Handler:    _AdminService_AddOrganizationMember_Handler,
 		},
@@ -1174,6 +1209,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListProjectMembers",
 			Handler:    _AdminService_ListProjectMembers_Handler,
+		},
+		{
+			MethodName: "ListProjectInvites",
+			Handler:    _AdminService_ListProjectInvites_Handler,
 		},
 		{
 			MethodName: "AddProjectMember",
