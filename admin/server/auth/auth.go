@@ -64,9 +64,3 @@ func NewAuthenticator(logger *zap.Logger, adm *admin.Service, cookieStore *cooki
 
 	return a, nil
 }
-
-func NewMockAuthenticator(adminService *admin.Service) *Authenticator {
-	return &Authenticator{
-		admin: adminService,
-	}
-}

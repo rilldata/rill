@@ -503,3 +503,21 @@ const (
 	DefaultQuotaOutstandingInvites = 200
 	DefaultQuotaSingleuserOrgs     = 3
 )
+
+type InviteUserToOrganizationOptions struct {
+	Email     string `validate:"email"`
+	InviterID string
+	OrgID     string `validate:"required"`
+	RoleID    string `validate:"required"`
+	OrgName   string `validate:"required"`
+	RoleName  string `validate:"required"`
+}
+
+type InviteUserToProjectOptions struct {
+	Email       string `validate:"email"`
+	InviterID   string
+	ProjectID   string `validate:"required"`
+	RoleID      string `validate:"required"`
+	ProjectName string `validate:"required"`
+	RoleName    string `validate:"required"`
+}

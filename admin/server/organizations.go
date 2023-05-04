@@ -275,7 +275,14 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		if claims.OwnerType() == auth.OwnerTypeUser {
 			invitedBy = claims.OwnerID()
 		}
-		err = s.admin.InviteUserToOrganization(ctx, req.Email, invitedBy, org.ID, role.ID, org.Name, role.Name)
+		err = s.admin.InviteUserToOrganization(ctx, &database.InviteUserToOrganizationOptions{
+			Email:     req.Email,
+			InviterID: invitedBy,
+			OrgID:     org.ID,
+			RoleID:    role.ID,
+			OrgName:   org.Name,
+			RoleName:  role.Name,
+		})
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}

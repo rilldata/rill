@@ -3,9 +3,13 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/rilldata/rill/admin/server/cookies"
+	"net"
+	"strconv"
+	"testing"
+
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
-	_ "github.com/rilldata/rill/admin/database/postgres"
 	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -18,9 +22,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
-	"net"
-	"strconv"
-	"testing"
+
+	_ "github.com/rilldata/rill/admin/database/postgres"
 )
 
 func TestAdmin_RBAC(t *testing.T) {
@@ -79,31 +82,37 @@ func TestAdmin_RBAC(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, testUser)
 
-	sender, err := email.NewConsoleSender(zap.NewNop(), "rill-test@rilldata.io", "")
+	logger := zap.NewNop()
+	sender, err := email.NewConsoleSender(logger, "rill-test@rilldata.io", "")
 	require.NoError(t, err)
 
 	service := admin.NewMock(db, nil, nil, nil, email.New(sender, ""))
 
 	// issue admin and viewer tokens
-	adminAuthToken, err := service.IssueUserAuthToken(ctx, adminUser.ID, "12345678-0000-0000-0000-000000000001", "test")
+	adminAuthToken, err := service.IssueUserAuthToken(ctx, adminUser.ID, database.AuthClientIDRillWeb, "test")
 	require.NoError(t, err)
 	require.NotNil(t, adminAuthToken)
 	adminToken := adminAuthToken.Token().String()
 
-	viewerAuthToken, err := service.IssueUserAuthToken(ctx, viewerUser.ID, "12345678-0000-0000-0000-000000000001", "test")
+	viewerAuthToken, err := service.IssueUserAuthToken(ctx, viewerUser.ID, database.AuthClientIDRillWeb, "test")
 	require.NoError(t, err)
 	require.NotNil(t, viewerAuthToken)
 	viewerToken := viewerAuthToken.Token().String()
 
-	testAuthToken, err := service.IssueUserAuthToken(ctx, testUser.ID, "12345678-0000-0000-0000-000000000001", "test")
+	testAuthToken, err := service.IssueUserAuthToken(ctx, testUser.ID, database.AuthClientIDRillWeb, "test")
 	require.NoError(t, err)
 	require.NotNil(t, testAuthToken)
 	testToken := testAuthToken.Token().String()
 
+	authenticator, err := auth.NewAuthenticator(logger, service, cookies.New(logger, nil), &auth.AuthenticatorOptions{
+		AuthDomain: "gorillio-stage.auth0.com",
+	})
+	require.NoError(t, err)
+
 	// create a server instance
 	server := Server{
 		admin:         service,
-		authenticator: auth.NewMockAuthenticator(service),
+		authenticator: authenticator,
 	}
 
 	// create a mock bufconn listener

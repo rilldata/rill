@@ -157,21 +157,19 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 	return org, nil
 }
 
-func (s *Service) InviteUserToOrganization(ctx context.Context, email, inviterID, orgID, roleID, orgName, roleName string) error {
-	// Validate email address
-	_, err := mail.ParseAddress(email)
-	if err != nil {
-		return fmt.Errorf("invalid user email address %q", email)
+func (s *Service) InviteUserToOrganization(ctx context.Context, opts *database.InviteUserToOrganizationOptions) error {
+	if err := database.Validate(opts); err != nil {
+		return err
 	}
 
 	// Create invite
-	err = s.DB.InsertOrganizationInvite(ctx, email, orgID, roleID, inviterID)
+	err := s.DB.InsertOrganizationInvite(ctx, opts.Email, opts.OrgID, opts.RoleID, opts.InviterID)
 	if err != nil {
 		return err
 	}
 
 	// Send invitation email
-	err = s.Email.SendOrganizationInvite(email, "", orgName, roleName)
+	err = s.Email.SendOrganizationInvite(opts.Email, "", opts.OrgName, opts.RoleName)
 	if err != nil {
 		return err
 	}
@@ -179,21 +177,19 @@ func (s *Service) InviteUserToOrganization(ctx context.Context, email, inviterID
 	return nil
 }
 
-func (s *Service) InviteUserToProject(ctx context.Context, email, inviterID, projectID, roleID, projectName, roleName string) error {
-	// Validate email address
-	_, err := mail.ParseAddress(email)
-	if err != nil {
-		return fmt.Errorf("invalid user email address %q", email)
+func (s *Service) InviteUserToProject(ctx context.Context, opts *database.InviteUserToProjectOptions) error {
+	if err := database.Validate(opts); err != nil {
+		return err
 	}
 
 	// Create invite
-	err = s.DB.InsertProjectInvite(ctx, email, projectID, roleID, inviterID)
+	err := s.DB.InsertProjectInvite(ctx, opts.Email, opts.ProjectID, opts.RoleID, opts.InviterID)
 	if err != nil {
 		return err
 	}
 
 	// Send invitation email
-	err = s.Email.SendProjectInvite(email, "", projectName, roleName)
+	err = s.Email.SendProjectInvite(opts.Email, "", opts.ProjectName, opts.RoleName)
 	if err != nil {
 		return err
 	}
