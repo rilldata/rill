@@ -6,7 +6,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { projectShareStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-  import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
