@@ -21,6 +21,8 @@ import type {
   QueryServiceTableColumnsParams,
   V1ColumnDescriptiveStatisticsResponse,
   QueryServiceColumnDescriptiveStatisticsParams,
+  V1MetricsViewRowsResponse,
+  QueryServiceMetricsViewRowsBody,
   V1MetricsViewTimeSeriesResponse,
   QueryServiceMetricsViewTimeSeriesBody,
   V1MetricsViewToplistResponse,
@@ -280,6 +282,70 @@ export const createQueryServiceColumnDescriptiveStatistics = <
   return query;
 };
 
+/**
+ * @summary MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+ */
+export const queryServiceMetricsViewRows = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewRowsBody: QueryServiceMetricsViewRowsBody
+) => {
+  return httpClient<V1MetricsViewRowsResponse>({
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/rows`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceMetricsViewRowsBody,
+  });
+};
+
+export type QueryServiceMetricsViewRowsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceMetricsViewRows>>
+>;
+export type QueryServiceMetricsViewRowsMutationBody =
+  QueryServiceMetricsViewRowsBody;
+export type QueryServiceMetricsViewRowsMutationError = RpcStatus;
+
+export const createQueryServiceMetricsViewRows = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
+    TError,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewRowsBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewRowsBody;
+    }
+  > = (props) => {
+    const { instanceId, metricsViewName, data } = props ?? {};
+
+    return queryServiceMetricsViewRows(instanceId, metricsViewName, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
+    TError,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewRowsBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary MetricsViewTimeSeries returns time series for the measures in the metrics view.
 It's a convenience API for querying a metrics view.

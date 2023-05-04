@@ -547,6 +547,138 @@ export class MetricsViewTotalsResponse extends Message<MetricsViewTotalsResponse
 }
 
 /**
+ * Request message for QueryService.MetricsViewRows
+ *
+ * @generated from message rill.runtime.v1.MetricsViewRowsRequest
+ */
+export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string metrics_view_name = 2;
+   */
+  metricsViewName = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time_start = 3;
+   */
+  timeStart?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time_end = 4;
+   */
+  timeEnd?: Timestamp;
+
+  /**
+   * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 5;
+   */
+  filter?: MetricsViewFilter;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSort sort = 6;
+   */
+  sort: MetricsViewSort[] = [];
+
+  /**
+   * @generated from field: int32 limit = 7;
+   */
+  limit = 0;
+
+  /**
+   * @generated from field: int64 offset = 8;
+   */
+  offset = protoInt64.zero;
+
+  /**
+   * @generated from field: int32 priority = 9;
+   */
+  priority = 0;
+
+  constructor(data?: PartialMessage<MetricsViewRowsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewRowsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "time_start", kind: "message", T: Timestamp },
+    { no: 4, name: "time_end", kind: "message", T: Timestamp },
+    { no: 5, name: "filter", kind: "message", T: MetricsViewFilter },
+    { no: 6, name: "sort", kind: "message", T: MetricsViewSort, repeated: true },
+    { no: 7, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 8, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 9, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewRowsRequest {
+    return new MetricsViewRowsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewRowsRequest {
+    return new MetricsViewRowsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewRowsRequest {
+    return new MetricsViewRowsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewRowsRequest | PlainMessage<MetricsViewRowsRequest> | undefined, b: MetricsViewRowsRequest | PlainMessage<MetricsViewRowsRequest> | undefined): boolean {
+    return proto3.util.equals(MetricsViewRowsRequest, a, b);
+  }
+}
+
+/**
+ * Response message for QueryService.MetricsViewRows
+ *
+ * @generated from message rill.runtime.v1.MetricsViewRowsResponse
+ */
+export class MetricsViewRowsResponse extends Message<MetricsViewRowsResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewColumn meta = 1;
+   */
+  meta: MetricsViewColumn[] = [];
+
+  /**
+   * @generated from field: repeated google.protobuf.Struct data = 2;
+   */
+  data: Struct[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewRowsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewRowsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "meta", kind: "message", T: MetricsViewColumn, repeated: true },
+    { no: 2, name: "data", kind: "message", T: Struct, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewRowsResponse {
+    return new MetricsViewRowsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewRowsResponse {
+    return new MetricsViewRowsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewRowsResponse {
+    return new MetricsViewRowsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewRowsResponse | PlainMessage<MetricsViewRowsResponse> | undefined, b: MetricsViewRowsResponse | PlainMessage<MetricsViewRowsResponse> | undefined): boolean {
+    return proto3.util.equals(MetricsViewRowsResponse, a, b);
+  }
+}
+
+/**
  * Sort clause for metrics view requests
  *
  * @generated from message rill.runtime.v1.MetricsViewSort
