@@ -62,7 +62,7 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 		return err
 	}
 
-	if olap.Dialect() != drivers.DialectDuckDB {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -226,7 +226,10 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 
 	orderClause := "true"
 	for _, s := range q.Sort {
-		i := measureMap[s.MeasureName]
+		i, ok := measureMap[s.MeasureName]
+		if !ok {
+			return "", nil, fmt.Errorf("Metrics view '%s' doesn't contain '%s' sort column", q.MetricsViewName, s.MeasureName)
+		}
 		orderClause += ", "
 		var pos int
 		switch s.Type {
@@ -234,8 +237,10 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 			pos = 2 + i*4
 		case runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_COMPARISON_VALUE:
 			pos = 3 + i*4
-		case runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_DELTA:
+		case runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_ABS_DELTA:
 			pos = 4 + i*4
+		case runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_REL_DELTA:
+			pos = 5 + i*4
 		default:
 			return "", nil, fmt.Errorf("undefined sort type for measure %s", s.MeasureName)
 		}
@@ -243,7 +248,9 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 		if !s.Ascending {
 			orderClause += " DESC"
 		}
-		orderClause += " NULLS LAST"
+		if dialect == drivers.DialectDuckDB {
+			orderClause += " NULLS LAST"
+		}
 	}
 
 	if q.Limit == 0 {
@@ -276,5 +283,6 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 		finalSelectClause,     // 8
 	)
 
+	fmt.Println(sql)
 	return sql, args, nil
 }

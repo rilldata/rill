@@ -18,26 +18,32 @@ export enum ComparisonSortType {
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: COMPARISON_SORT_TYPE_COMPARISON_VALUE = 1;
+   * @generated from enum value: COMPARISON_SORT_TYPE_BASE_VALUE = 1;
    */
-  COMPARISON_VALUE = 1,
+  BASE_VALUE = 1,
 
   /**
-   * @generated from enum value: COMPARISON_SORT_TYPE_BASE_VALUE = 2;
+   * @generated from enum value: COMPARISON_SORT_TYPE_COMPARISON_VALUE = 2;
    */
-  BASE_VALUE = 2,
+  COMPARISON_VALUE = 2,
 
   /**
-   * @generated from enum value: COMPARISON_SORT_TYPE_DELTA = 3;
+   * @generated from enum value: COMPARISON_SORT_TYPE_ABS_DELTA = 3;
    */
-  DELTA = 3,
+  ABS_DELTA = 3,
+
+  /**
+   * @generated from enum value: COMPARISON_SORT_TYPE_REL_DELTA = 4;
+   */
+  REL_DELTA = 4,
 }
 // Retrieve enum metadata with: proto3.getEnumType(ComparisonSortType)
 proto3.util.setEnumType(ComparisonSortType, "rill.runtime.v1.ComparisonSortType", [
   { no: 0, name: "COMPARISON_SORT_TYPE_UNSPECIFIED" },
-  { no: 1, name: "COMPARISON_SORT_TYPE_COMPARISON_VALUE" },
-  { no: 2, name: "COMPARISON_SORT_TYPE_BASE_VALUE" },
-  { no: 3, name: "COMPARISON_SORT_TYPE_DELTA" },
+  { no: 1, name: "COMPARISON_SORT_TYPE_BASE_VALUE" },
+  { no: 2, name: "COMPARISON_SORT_TYPE_COMPARISON_VALUE" },
+  { no: 3, name: "COMPARISON_SORT_TYPE_ABS_DELTA" },
+  { no: 4, name: "COMPARISON_SORT_TYPE_REL_DELTA" },
 ]);
 
 /**

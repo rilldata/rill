@@ -789,14 +789,102 @@ the result should be:
 
 |domain                  |base |comparison|delta|rel    |
 |------------------------|-----|----------|-----|-------|
-|yahoo.com               |1    |2         |1    |1      |
-|msn.com                 |2    |1         | -1  |-0.5   |
+|yahoo.com               |100  |200       |100  |1      |
+|msn.com                 |1    |10        |9    |9      |
 */
 
-func TestServer_MetricsViewComparisonToplist_sort_by_delta(t *testing.T) {
+func TestServer_MetricsViewComparisonToplist_sort_by_abs_delta(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_mini_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_1"},
+		BaseTimeRange: &runtimev1.TimeRange{
+			Start: parseTime(t, "2022-01-01T00:00:00Z"),
+			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: parseTime(t, "2022-01-03T00:00:00Z"),
+			End:   parseTime(t, "2022-01-04T23:59:00Z"),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_1",
+				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Ascending:   false,
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Data))
+
+	require.Equal(t, "yahoo.com", tr.Data[0].DimensionValue.GetStringValue())
+	require.Equal(t, 100.0, tr.Data[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, 200.0, tr.Data[0].MeasureValues[0].ComparisonValue.GetNumberValue())
+	require.Equal(t, 100.0, tr.Data[0].MeasureValues[0].DeltaAbs.GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[0].MeasureValues[0].DeltaRel.GetNumberValue())
+
+	require.Equal(t, "msn.com", tr.Data[1].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Data[1].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, 10.0, tr.Data[1].MeasureValues[0].ComparisonValue.GetNumberValue())
+	require.Equal(t, 9.0, tr.Data[1].MeasureValues[0].DeltaAbs.GetNumberValue())
+	require.Equal(t, 9.0, tr.Data[1].MeasureValues[0].DeltaRel.GetNumberValue())
+}
+
+/*
+the result should be:
+
+|domain                  |base |comparison|delta|rel    |
+|------------------------|-----|----------|-----|-------|
+|msn.com                 |1    |10        |9    |9      |
+|yahoo.com               |100  |200       |100  |1      |
+*/
+func TestServer_MetricsViewComparisonToplist_sort_by_rel_delta(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_mini_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_1"},
+		BaseTimeRange: &runtimev1.TimeRange{
+			Start: parseTime(t, "2022-01-01T00:00:00Z"),
+			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: parseTime(t, "2022-01-03T00:00:00Z"),
+			End:   parseTime(t, "2022-01-04T23:59:00Z"),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_1",
+				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_REL_DELTA,
+				Ascending:   false,
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Data))
+
+	require.Equal(t, "msn.com", tr.Data[0].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Data[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, 10.0, tr.Data[0].MeasureValues[0].ComparisonValue.GetNumberValue())
+	require.Equal(t, 9.0, tr.Data[0].MeasureValues[0].DeltaAbs.GetNumberValue())
+	require.Equal(t, 9.0, tr.Data[0].MeasureValues[0].DeltaRel.GetNumberValue())
+
+	require.Equal(t, "yahoo.com", tr.Data[1].DimensionValue.GetStringValue())
+	require.Equal(t, 100.0, tr.Data[1].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, 200.0, tr.Data[1].MeasureValues[0].ComparisonValue.GetNumberValue())
+	require.Equal(t, 100.0, tr.Data[1].MeasureValues[0].DeltaAbs.GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[1].MeasureValues[0].DeltaRel.GetNumberValue())
+}
+
+func TestServer_MetricsViewComparisonToplist_sort_error(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	_, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
 		DimensionName:   "domain",
@@ -811,26 +899,13 @@ func TestServer_MetricsViewComparisonToplist_sort_by_delta(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_2",
-				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_DELTA,
+				MeasureName: "measure_1",
+				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_ABS_DELTA,
 				Ascending:   false,
 			},
 		},
 	})
-	require.NoError(t, err)
-	require.Equal(t, 2, len(tr.Data))
-
-	require.Equal(t, "yahoo.com", tr.Data[0].DimensionValue.GetStringValue())
-	require.Equal(t, 1.0, tr.Data[0].MeasureValues[0].BaseValue.GetNumberValue())
-	require.Equal(t, 2.0, tr.Data[0].MeasureValues[0].ComparisonValue.GetNumberValue())
-	require.Equal(t, 1.0, tr.Data[0].MeasureValues[0].DeltaAbs.GetNumberValue())
-	require.Equal(t, 1.0, tr.Data[0].MeasureValues[0].DeltaRel.GetNumberValue())
-
-	require.Equal(t, "msn.com", tr.Data[1].DimensionValue.GetStringValue())
-	require.Equal(t, 2.0, tr.Data[1].MeasureValues[0].BaseValue.GetNumberValue())
-	require.Equal(t, 1.0, tr.Data[1].MeasureValues[0].ComparisonValue.GetNumberValue())
-	require.Equal(t, -1.0, tr.Data[1].MeasureValues[0].DeltaAbs.GetNumberValue())
-	require.Equal(t, -0.5, tr.Data[1].MeasureValues[0].DeltaRel.GetNumberValue())
+	require.Error(t, err)
 }
 
 /*
@@ -860,7 +935,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_delta_limit_1(t *testing.T)
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				MeasureName: "measure_2",
-				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_DELTA,
+				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_ABS_DELTA,
 				Ascending:   false,
 			},
 		},
@@ -958,17 +1033,17 @@ Model:
 
 |id |timestamp               |publisher|domain   |bid_price|volume|impressions|ad words|clicks|device|
 |---|------------------------|---------|---------|---------|------|-----------|--------|------|------|
-|0  |2022-01-01T14:49:50.459Z|         |msn.com  |2        |4     |2          |cars    |      |iphone|
-|2  |2022-01-03T14:49:50.459Z|         |msn.com  |2.5      |4.5   |1          |cars    |      |iphone|
-|1  |2022-01-02T11:58:12.475Z|Yahoo    |yahoo.com|2        |4     |1          |cars    |1     |      |
-|3  |2022-01-04T11:58:12.475Z|Yahoo    |yahoo.com|2.5      |4.5   |2          |cars    |1.5   |      |
+|0  |2022-01-01T14:49:50.459Z|         |msn.com  |2        |1     |2          |cars    |      |iphone|
+|2  |2022-01-03T14:49:50.459Z|         |msn.com  |2.5      |10    |1          |cars    |      |iphone|
+|1  |2022-01-02T11:58:12.475Z|Yahoo    |yahoo.com|2        |100   |1          |cars    |1     |      |
+|3  |2022-01-04T11:58:12.475Z|Yahoo    |yahoo.com|2.5      |200   |2          |cars    |1.5   |      |
 
 the result should be:
 
 |domain                  |base|comparison |delta|rel    |base |comparison|delta|rel    |
 |------------------------|-----|----------|-----|-------|-----|----------|-----|-------|
-|yahoo.com               |4    |4.5       |0.5  |0.125  | 1   |2         |1    |1      |
-|msn.com                 |4    |4.5       |0.5  |0.125  | 2   |1         | -1  |-0.5   |
+|yahoo.com               |100  |200       |100  |1      | 1   |2         |1    |1      |
+|msn.com                 |1    |10        |9    |9      | 2   |1         | -1  |-0.5   |
 */
 func TestServer_MetricsViewComparisonToplist_2_measures(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
@@ -989,7 +1064,7 @@ func TestServer_MetricsViewComparisonToplist_2_measures(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				MeasureName: "measure_2",
-				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_DELTA,
+				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_ABS_DELTA,
 				Ascending:   false,
 			},
 		},
@@ -998,20 +1073,20 @@ func TestServer_MetricsViewComparisonToplist_2_measures(t *testing.T) {
 	require.Equal(t, 2, len(tr.Data))
 
 	require.Equal(t, "yahoo.com", tr.Data[0].DimensionValue.GetStringValue())
-	require.Equal(t, 4.0, tr.Data[0].MeasureValues[0].BaseValue.GetNumberValue())
-	require.Equal(t, 4.5, tr.Data[0].MeasureValues[0].ComparisonValue.GetNumberValue())
-	require.Equal(t, 0.5, tr.Data[0].MeasureValues[0].DeltaAbs.GetNumberValue())
-	require.Equal(t, 0.125, tr.Data[0].MeasureValues[0].DeltaRel.GetNumberValue())
+	require.Equal(t, 100.0, tr.Data[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, 200.0, tr.Data[0].MeasureValues[0].ComparisonValue.GetNumberValue())
+	require.Equal(t, 100.0, tr.Data[0].MeasureValues[0].DeltaAbs.GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[0].MeasureValues[0].DeltaRel.GetNumberValue())
 	require.Equal(t, 1.0, tr.Data[0].MeasureValues[1].BaseValue.GetNumberValue())
 	require.Equal(t, 2.0, tr.Data[0].MeasureValues[1].ComparisonValue.GetNumberValue())
 	require.Equal(t, 1.0, tr.Data[0].MeasureValues[1].DeltaAbs.GetNumberValue())
 	require.Equal(t, 1.0, tr.Data[0].MeasureValues[1].DeltaRel.GetNumberValue())
 
 	require.Equal(t, "msn.com", tr.Data[1].DimensionValue.GetStringValue())
-	require.Equal(t, 4.0, tr.Data[1].MeasureValues[0].BaseValue.GetNumberValue())
-	require.Equal(t, 4.5, tr.Data[1].MeasureValues[0].ComparisonValue.GetNumberValue())
-	require.Equal(t, 0.5, tr.Data[1].MeasureValues[0].DeltaAbs.GetNumberValue())
-	require.Equal(t, 0.125, tr.Data[1].MeasureValues[0].DeltaRel.GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[1].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, 10.0, tr.Data[1].MeasureValues[0].ComparisonValue.GetNumberValue())
+	require.Equal(t, 9.0, tr.Data[1].MeasureValues[0].DeltaAbs.GetNumberValue())
+	require.Equal(t, 9.0, tr.Data[1].MeasureValues[0].DeltaRel.GetNumberValue())
 	require.Equal(t, 2.0, tr.Data[1].MeasureValues[1].BaseValue.GetNumberValue())
 	require.Equal(t, 1.0, tr.Data[1].MeasureValues[1].ComparisonValue.GetNumberValue())
 	require.Equal(t, -1.0, tr.Data[1].MeasureValues[1].DeltaAbs.GetNumberValue())
