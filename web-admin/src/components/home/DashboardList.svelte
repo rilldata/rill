@@ -25,7 +25,7 @@
 {:else if dashboardListItems?.length > 0}
   <ol>
     {#each dashboardListItems as dashboardListItem}
-      <li class="mb-1 text-xs font-medium leading-4">
+      <li class="mb-1 text-xs font-medium leading-4 break-all">
         {#if dashboardListItem.isValid}
           <a
             href="/{organization}/{project}/{dashboardListItem.name}"
