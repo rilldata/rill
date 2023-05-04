@@ -192,8 +192,13 @@ func containsAny(s string, targets []string) bool {
 }
 
 func generateReadCsvStatement(paths []string, properties map[string]any) (string, error) {
+	ingestionProps := copyMap(properties)
+	// set sample_size to -1 (the entire source is read for sampling) by default
+	if _, sampleSizeDefined := ingestionProps["sample_size"]; !sampleSizeDefined {
+		ingestionProps["sample_size"] = -1
+	}
 	// auto_detect (enables auto-detection of parameters) is true by default, it takes care of params/schema
-	return fmt.Sprintf("read_csv_auto(%s)", convertToStatementParamsStr(paths, properties)), nil
+	return fmt.Sprintf("read_csv_auto(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
 }
 
 func generateReadParquetStatement(paths []string, properties map[string]any) (string, error) {
@@ -211,6 +216,10 @@ func generateReadJSONStatement(paths []string, properties map[string]any) (strin
 	// if columns are defined then DuckDB turns the auto-detection off so no need to check this case here
 	if _, autoDetectDefined := ingestionProps["auto_detect"]; !autoDetectDefined {
 		ingestionProps["auto_detect"] = true
+	}
+	// set sample_size to -1 (the entire source is read for sampling) by default
+	if _, sampleSizeDefined := ingestionProps["sample_size"]; !sampleSizeDefined {
+		ingestionProps["sample_size"] = -1
 	}
 	return fmt.Sprintf("read_json(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
 }
