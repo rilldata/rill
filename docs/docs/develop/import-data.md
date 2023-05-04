@@ -74,7 +74,7 @@ For details about all available properties for all remote connectors, see the sy
 
 When attempting to access private data in S3 or Google Cloud Storage, you need to configure your local machine with credentials to the relevant cloud provider. Rill uses the official AWS and Google Cloud SDKs to automatically detect and connect to the cloud. Your credentials are never stored in Rill.
 
-### Setting local credentials GCS
+### Setting local credentials for GCS
 Google Cloud Platform credentials are enabled through `gcloud` authentication in the terminal.
 
 First, ensure you have the `gcloud` CLI installed locally by running the following CLI command. If it is not installed, go through the [gcloud install steps](https://cloud.google.com/sdk/docs/install).
