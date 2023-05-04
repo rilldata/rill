@@ -14,12 +14,12 @@ _**`display_name`**_ — the display name for the dashboard _(required)_
 
 _**`timeseries`**_ — column from your model that will underlie x-axis data in the line charts _(required)_
 
-_**`dimensions:`**_ — for exploring [segments](../develop/metrics-dashboard#dimensions) and filtering the dashboard _(required)_
+_**`dimensions:`**_ — for exploring [segments](/develop/metrics-dashboard#dimensions) and filtering the dashboard _(required)_
   - _**`property`**_ — a categorical column _(required)_ 
   - _**`label`**_ — a label for your dashboard dimension _(optional)_ 
   - _**`description`**_ — a freeform text description of the dimension for your dashboard _(optional)_ 
 
-_**`measures:`**_ — numeric [aggregates](../develop/metrics-dashboard#measures) of columns from your data model  _(required)_
+_**`measures:`**_ — numeric [aggregates](/develop/metrics-dashboard#measures) of columns from your data model  _(required)_
   - _**`expression`**_ — a combination of operators and functions for aggregations _(required)_ 
   - _**`label`**_ — a label for your dashboard measure _(optional)_ 
   - _**`description`**_ — a freeform text description of the dimension for your dashboard _(optional)_ 
