@@ -17,6 +17,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { errorStore } from "../../../../components/errors/error-store";
   import ProjectBuilding from "../../../../components/projects/ProjectBuilding.svelte";
   import ProjectErrored from "../../../../components/projects/ProjectErrored.svelte";
 
@@ -106,6 +107,15 @@
     currentDashboard = dashboardListItems?.find(
       (listing) => listing.name === $page.params.dashboard
     );
+
+    // If no dashboard is found, show a 404 page
+    if (!currentDashboard) {
+      errorStore.set({
+        statusCode: 404,
+        header: "Dashboard not found",
+        body: `The dashboard you requested could not be found. Please check that you have provided a valid dashboard name.`,
+      });
+    }
   }
 </script>
 
