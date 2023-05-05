@@ -81,7 +81,7 @@ func testOrganizations(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 	require.Equal(t, "bar", org.Name)
 
-	orgs, err := db.FindOrganizations(ctx, &database.PaginationOptions{PageSize: 1000})
+	orgs, err := db.FindOrganizations(ctx, "", 1000)
 	require.NoError(t, err)
 	require.Equal(t, "bar", orgs[0].Name)
 	require.Equal(t, "foo", orgs[1].Name)
@@ -213,13 +213,13 @@ func testOrgsWithPagination(t *testing.T, db database.DB) {
 	require.Equal(t, "gamma", org.Name)
 
 	// fetch org without name filter
-	orgs, err := db.FindOrganizationsForUser(ctx, user.ID, &database.PaginationOptions{PageSize: 1})
+	orgs, err := db.FindOrganizationsForUser(ctx, user.ID, "", 1)
 	require.NoError(t, err)
 	require.Equal(t, len(orgs), 1)
 	require.Equal(t, "alpha", orgs[0].Name)
 
 	// fetch org with name filter
-	orgs, err = db.FindOrganizationsForUser(ctx, user.ID, &database.PaginationOptions{PageSize: 10, Cursor: orgs[0].Name})
+	orgs, err = db.FindOrganizationsForUser(ctx, user.ID, orgs[0].Name, 10)
 	require.NoError(t, err)
 	require.Equal(t, len(orgs), 1)
 	require.Equal(t, "beta", orgs[0].Name)
@@ -262,14 +262,14 @@ func testProjectsWithPagination(t *testing.T, db database.DB) {
 	require.Equal(t, "other", proj3.Name)
 
 	// fetch project name without name filter
-	projs, err := db.FindProjectsForOrganization(ctx, org.ID, &database.PaginationOptions{PageSize: 2})
+	projs, err := db.FindProjectsForOrganization(ctx, org.ID, "", 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 2)
 	require.Equal(t, "alpha", projs[0].Name)
 	require.Equal(t, "beta", projs[1].Name)
 
 	// fetch project with name filter
-	projs, err = db.FindProjectsForOrganization(ctx, org.ID, &database.PaginationOptions{PageSize: 2, Cursor: projs[1].Name})
+	projs, err = db.FindProjectsForOrganization(ctx, org.ID, projs[1].Name, 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 1)
 	require.Equal(t, "gamma", projs[0].Name)
@@ -322,14 +322,14 @@ func testProjectsForUserWithPagination(t *testing.T, db database.DB) {
 	require.Equal(t, "internal", proj3.Name)
 
 	// fetch projects without name filter
-	projs, err := db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, &database.PaginationOptions{PageSize: 2})
+	projs, err := db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, "", 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 2)
 	require.Equal(t, "alpha", projs[0].Name)
 	require.Equal(t, "beta", projs[1].Name)
 
 	// fetch project with name filter
-	projs, err = db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, &database.PaginationOptions{PageSize: 2, Cursor: projs[1].Name})
+	projs, err = db.FindProjectsForOrgAndUser(ctx, org.ID, user.ID, projs[1].Name, 2)
 	require.NoError(t, err)
 	require.Equal(t, len(projs), 1)
 	require.Equal(t, "gamma", projs[0].Name)
@@ -363,24 +363,24 @@ func testOrgsMembersPagination(t *testing.T, db database.DB) {
 	require.NoError(t, db.InsertOrganizationInvite(ctx, "test3@rilldata.com", org.ID, viewer.ID, adminUser.ID))
 
 	// fetch members without name filter
-	users, err := db.FindOrganizationMemberUsers(ctx, org.ID, &database.PaginationOptions{PageSize: 1})
+	users, err := db.FindOrganizationMemberUsers(ctx, org.ID, "", 1)
 	require.NoError(t, err)
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test1@rilldata.com", users[0].Email)
 
 	// fetch members with name filter
-	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, &database.PaginationOptions{PageSize: 1, Cursor: users[0].Email})
+	users, err = db.FindOrganizationMemberUsers(ctx, org.ID, users[0].Email, 1)
 	require.NoError(t, err)
 	require.Equal(t, len(users), 1)
 	require.Equal(t, "test2@rilldata.com", users[0].Email)
 
 	// fetch invites without name filter
-	invites, err := db.FindOrganizationInvites(ctx, org.ID, &database.PaginationOptions{PageSize: 1})
+	invites, err := db.FindOrganizationInvites(ctx, org.ID, "", 1)
 	require.NoError(t, err)
 	require.Equal(t, len(invites), 1)
 	require.Equal(t, "test3@rilldata.com", invites[0].Email)
 
-	invites, err = db.FindOrganizationInvites(ctx, org.ID, &database.PaginationOptions{PageSize: 1, Cursor: invites[0].Email})
+	invites, err = db.FindOrganizationInvites(ctx, org.ID, invites[0].Email, 1)
 	require.NoError(t, err)
 	require.Equal(t, len(invites), 0)
 

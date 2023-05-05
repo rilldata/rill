@@ -47,8 +47,8 @@ type DB interface {
 	Migrate(ctx context.Context) error
 	FindMigrationVersion(ctx context.Context) (int, error)
 
-	FindOrganizations(ctx context.Context, paginationOpts *PaginationOptions) ([]*Organization, error)
-	FindOrganizationsForUser(ctx context.Context, userID string, paginationOpts *PaginationOptions) ([]*Organization, error)
+	FindOrganizations(ctx context.Context, afterName string, limit int) ([]*Organization, error)
+	FindOrganizationsForUser(ctx context.Context, userID string, afterName string, limit int) ([]*Organization, error)
 	FindOrganization(ctx context.Context, id string) (*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
 	CheckOrganizationHasOutsideUser(ctx context.Context, orgID, userID string) (bool, error)
@@ -60,10 +60,10 @@ type DB interface {
 
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
-	FindProjectsForOrganization(ctx context.Context, orgID string, paginationOpts *PaginationOptions) ([]*Project, error)
+	FindProjectsForOrganization(ctx context.Context, orgID string, afterName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
-	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, paginationOpts *PaginationOptions) ([]*Project, error)
-	FindPublicProjectsInOrganization(ctx context.Context, orgID string) ([]*Project, error)
+	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string, afterName string, limit int) ([]*Project, error)
+	FindPublicProjectsInOrganization(ctx context.Context, orgID string, afterName string, limit int) ([]*Project, error)
 	FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*Project, error)
 	FindProject(ctx context.Context, id string) (*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
@@ -109,21 +109,21 @@ type DB interface {
 	ResolveOrganizationRolesForUser(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
 	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
 
-	FindOrganizationMemberUsers(ctx context.Context, orgID string, paginationOpts *PaginationOptions) ([]*Member, error)
+	FindOrganizationMemberUsers(ctx context.Context, orgID, afterEmail string, limit int) ([]*Member, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string) error
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
 
-	FindProjectMemberUsers(ctx context.Context, projectID string, paginationOpts *PaginationOptions) ([]*Member, error)
+	FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*Member, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
 	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
 
-	FindOrganizationInvites(ctx context.Context, orgID string, paginationOpts *PaginationOptions) ([]*Invite, error)
+	FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*Invite, error)
 	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
 	FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*OrganizationInvite, error)
 	InsertOrganizationInvite(ctx context.Context, email, orgID, roleID, invitedByID string) error
@@ -131,7 +131,7 @@ type DB interface {
 	CountInvitesForOrganization(ctx context.Context, orgID string) (int, error)
 	UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error
 
-	FindProjectInvites(ctx context.Context, projectID string, paginationOpts *PaginationOptions) ([]*Invite, error)
+	FindProjectInvites(ctx context.Context, projectID, afterEmail string, limit int) ([]*Invite, error)
 	FindProjectInvitesByEmail(ctx context.Context, userEmail string) ([]*ProjectInvite, error)
 	FindProjectInvite(ctx context.Context, projectID, userEmail string) (*ProjectInvite, error)
 	InsertProjectInvite(ctx context.Context, email, projectID, roleID, invitedByID string) error
@@ -479,8 +479,3 @@ const (
 	DefaultQuotaOutstandingInvites = 200
 	DefaultQuotaSingleuserOrgs     = 3
 )
-
-type PaginationOptions struct {
-	PageSize int
-	Cursor   string
-}

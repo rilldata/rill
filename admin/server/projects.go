@@ -23,20 +23,23 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	opts, err := paginationOptions(req.PageToken, int(req.PageSize))
+	token, err := unmarshalPageToken(req.PageToken)
 	if err != nil {
 		return nil, err
 	}
+	pageSize := validPageSize(int(req.PageSize))
 
 	// If user has ManageProjects, return all projects
 	claims := auth.GetClaims(ctx)
-	projs := make([]*database.Project, 0)
+	var projs []*database.Project
 	if claims.OrganizationPermissions(ctx, org.ID).ManageProjects {
-		projs, err = s.admin.DB.FindProjectsForOrganization(ctx, org.ID, opts)
+		projs, err = s.admin.DB.FindProjectsForOrganization(ctx, org.ID, token.Cursor[0], pageSize)
 	} else if claims.OwnerType() == auth.OwnerTypeUser {
 		// Get projects the user is a (direct or group) member of (note: the user can be a member of a project in the org, without being a member of org - we call this an "outside member")
 		// plus all public projects
-		projs, err = s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID(), opts)
+		projs, err = s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID(), token.Cursor[0], pageSize)
+	} else {
+		projs, err = s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID, token.Cursor[0], pageSize)
 	}
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -49,8 +52,8 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	}
 
 	nextToken := ""
-	if len(projs) >= opts.PageSize {
-		nextToken, err = nextPageToken(projs[len(projs)-1].Name)
+	if len(projs) >= pageSize {
+		nextToken, err = marshalPageToken(projs[len(projs)-1].Name)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -326,19 +329,20 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read project members")
 	}
 
-	opts, err := paginationOptions(req.PageToken, int(req.PageSize))
+	token, err := unmarshalPageToken(req.PageToken)
 	if err != nil {
 		return nil, err
 	}
+	pageSize := validPageSize(int(req.PageSize))
 
-	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID, opts)
+	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID, token.Cursor[0], pageSize)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	nextToken := ""
-	if len(members) >= opts.PageSize {
-		nextToken, err = nextPageToken(members[len(members)-1].Email)
+	if len(members) >= pageSize {
+		nextToken, err = marshalPageToken(members[len(members)-1].Email)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -366,20 +370,21 @@ func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjec
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read project members")
 	}
 
-	opts, err := paginationOptions(req.PageToken, int(req.PageSize))
+	token, err := unmarshalPageToken(req.PageToken)
 	if err != nil {
 		return nil, err
 	}
+	pageSize := validPageSize(int(req.PageSize))
 
 	// get pending user invites for this project
-	userInvites, err := s.admin.DB.FindProjectInvites(ctx, proj.ID, opts)
+	userInvites, err := s.admin.DB.FindProjectInvites(ctx, proj.ID, token.Cursor[0], pageSize)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	nextToken := ""
-	if len(userInvites) >= opts.PageSize {
-		nextToken, err = nextPageToken(userInvites[len(userInvites)-1].Email)
+	if len(userInvites) >= pageSize {
+		nextToken, err = marshalPageToken(userInvites[len(userInvites)-1].Email)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}

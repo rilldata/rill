@@ -2,8 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/base64"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
@@ -11,7 +9,6 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -27,19 +24,20 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
-	opts, err := paginationOptions(req.PageToken, int(req.PageSize))
+	token, err := unmarshalPageToken(req.PageToken)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	pageSize := validPageSize(int(req.PageSize))
 
-	orgs, err := s.admin.DB.FindOrganizationsForUser(ctx, claims.OwnerID(), opts)
+	orgs, err := s.admin.DB.FindOrganizationsForUser(ctx, claims.OwnerID(), token.Cursor[0], pageSize)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	nextToken := ""
-	if len(orgs) >= opts.PageSize {
-		nextToken, err = nextPageToken(orgs[len(orgs)-1].Name)
+	if len(orgs) >= pageSize {
+		nextToken, err = marshalPageToken(orgs[len(orgs)-1].Name)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -184,19 +182,20 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
 	}
 
-	opts, err := paginationOptions(req.PageToken, int(req.PageSize))
+	token, err := unmarshalPageToken(req.PageToken)
 	if err != nil {
 		return nil, err
 	}
+	pageSize := validPageSize(int(req.PageSize))
 
-	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, opts)
+	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, token.Cursor[0], pageSize)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	nextToken := ""
-	if len(members) >= opts.PageSize {
-		nextToken, err = nextPageToken(members[len(members)-1].Email)
+	if len(members) >= pageSize {
+		nextToken, err = marshalPageToken(members[len(members)-1].Email)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -224,20 +223,21 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
 	}
 
-	opts, err := paginationOptions(req.PageToken, int(req.PageSize))
+	token, err := unmarshalPageToken(req.PageToken)
 	if err != nil {
 		return nil, err
 	}
+	pageSize := validPageSize(int(req.PageSize))
 
 	// get pending user invites for this org
-	userInvites, err := s.admin.DB.FindOrganizationInvites(ctx, org.ID, opts)
+	userInvites, err := s.admin.DB.FindOrganizationInvites(ctx, org.ID, token.Cursor[0], pageSize)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	nextToken := ""
-	if len(userInvites) >= opts.PageSize {
-		nextToken, err = nextPageToken(userInvites[len(userInvites)-1].Email)
+	if len(userInvites) >= pageSize {
+		nextToken, err = marshalPageToken(userInvites[len(userInvites)-1].Email)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -535,41 +535,4 @@ func organizationToDTO(o *database.Organization) *adminv1.Organization {
 		CreatedOn:   timestamppb.New(o.CreatedOn),
 		UpdatedOn:   timestamppb.New(o.UpdatedOn),
 	}
-}
-
-func paginationOptions(reqToken string, pageSize int) (*database.PaginationOptions, error) {
-	opts := &database.PaginationOptions{PageSize: validPageSize(pageSize)}
-	if reqToken != "" {
-		token := &adminv1.PageToken{}
-		in, err := base64.URLEncoding.DecodeString(reqToken)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := proto.Unmarshal(in, token); err != nil {
-			return nil, fmt.Errorf("Failed to parse request token: %w", err)
-		}
-		opts.Cursor = token.Cursor[0]
-	}
-	return opts, nil
-}
-
-func nextPageToken(cursor string) (string, error) {
-	token := &adminv1.PageToken{Cursor: []string{cursor}}
-	bytes, err := proto.Marshal(token)
-	if err != nil {
-		return "", err
-	}
-
-	return base64.URLEncoding.EncodeToString(bytes), nil
-}
-
-func validPageSize(pageSize int) int {
-	if pageSize <= 0 {
-		return _defaultPageSize
-	}
-	if pageSize > _maxPageSize {
-		return _maxPageSize
-	}
-	return pageSize
 }
