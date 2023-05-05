@@ -570,8 +570,8 @@ message UserInvite {
   string invited_by = 3;
 }
 
-// PageToken 
+
 message PageToken {
-  // cursor is kept as an array since it may not be possible to use one field to unqiuely identify
+  // cursor is kept as an array since it may not be possible to use one field to unqiuely identify in all cases
   repeated string cursor = 1;
 }

@@ -48,7 +48,7 @@ func (c *connection) Close() error {
 
 func (c *connection) FindOrganizations(ctx context.Context, paginationOpts *database.PaginationOptions) ([]*database.Organization, error) {
 	var res []*database.Organization
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs WHERE name > $1 ORDER BY lower(name) LIMIT $2", paginationOpts.Cursor, paginationOpts.PageSize)
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs WHERE lower(name) > $1 ORDER BY lower(name) LIMIT $2", paginationOpts.Cursor, paginationOpts.PageSize)
 	if err != nil {
 		return nil, parseErr("orgs", err)
 	}
@@ -593,13 +593,12 @@ func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, pro
 	return res, nil
 }
 
-// todo :: check indexes
 func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID string, paginationOpts *database.PaginationOptions) ([]*database.Member, error) {
 	var res []*database.Member
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u 
     	JOIN users_orgs_roles uor ON u.id = uor.user_id
-		JOIN org_roles r ON r.id = uor.org_role_id WHERE uor.org_id=$1 AND u.email > $2 order by lower(u.email) limit $3`, orgID, paginationOpts.Cursor, paginationOpts.PageSize)
+		JOIN org_roles r ON r.id = uor.org_role_id WHERE uor.org_id=$1 AND lower(u.email) > $2 order by lower(u.email) limit $3`, orgID, paginationOpts.Cursor, paginationOpts.PageSize)
 	if err != nil {
 		return nil, parseErr("org members", err)
 	}
@@ -660,7 +659,7 @@ func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID strin
 	var res []*database.Member
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u 
     	JOIN users_projects_roles upr ON u.id = upr.user_id
-		JOIN project_roles r ON r.id = upr.project_role_id WHERE upr.project_id=$1 AND u.email > $2 ORDER BY lower(u.email) limit $3`, projectID, paginationOpts.Cursor, paginationOpts.PageSize)
+		JOIN project_roles r ON r.id = upr.project_role_id WHERE upr.project_id=$1 AND lower(u.email) > $2 ORDER BY lower(u.email) limit $3`, projectID, paginationOpts.Cursor, paginationOpts.PageSize)
 	if err != nil {
 		return nil, parseErr("project members", err)
 	}
@@ -777,7 +776,7 @@ func (c *connection) FindProjectInvites(ctx context.Context, projectID string, p
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 			SELECT upi.email, ur.name as role, u.email as invited_by 
 			FROM project_invites upi JOIN project_roles ur ON upi.project_role_id = ur.id JOIN users u ON upi.invited_by_user_id = u.id 
-			WHERE upi.project_id = $1 AND lower(upi.email) > $2 ORDER BY lower(upi.emial) LIMIT $3`, projectID, paginationOpts.Cursor, paginationOpts.PageSize)
+			WHERE upi.project_id = $1 AND lower(upi.email) > $2 ORDER BY lower(upi.email) LIMIT $3`, projectID, paginationOpts.Cursor, paginationOpts.PageSize)
 	if err != nil {
 		return nil, parseErr("project invites", err)
 	}
