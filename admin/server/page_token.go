@@ -8,10 +8,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const (
-	_maxPageSize     = 100
-	_defaultPageSize = 20
-)
+const _defaultPageSize = 20
 
 func unmarshalPageToken(reqToken string) (*adminv1.StringPageToken, error) {
 	token := &adminv1.StringPageToken{}
