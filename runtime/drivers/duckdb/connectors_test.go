@@ -28,7 +28,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		{"local_file", filepath.Join(testdataPathRel, "AdBids.csv"), nil},
 		{"local_file", filepath.Join(testdataPathRel, "AdBids.csv"), map[string]any{"csv.delimiter": ","}},
 		{"local_file", filepath.Join(testdataPathRel, "AdBids.csv.gz"), nil},
-		{"local_file", filepath.Join(testdataPathRel, "AdBids.parquet"), nil},
+		{"local_file", filepath.Join(testdataPathRel, "AdBids.parquet"), map[string]any{"hive_partitioning": true}},
 		{"local_file", filepath.Join(testdataPathAbs, "AdBids.parquet"), nil},
 		{"local_file", filepath.Join(testdataPathAbs, "AdBids.txt"), nil},
 		{"local_file", "../../../runtime/testruntime/testdata/ad_bids/data/AdBids.csv.gz", nil},
@@ -179,8 +179,8 @@ func TestCSVDelimiter(t *testing.T) {
 		Name:      "foo",
 		Connector: "local_file",
 		Properties: map[string]any{
-			"path":          testDelimiterCsvPath,
-			"csv.delimiter": "+",
+			"path":   testDelimiterCsvPath,
+			"duckdb": map[string]any{"delim": "'+'"},
 		},
 	})
 	require.NoError(t, err)
@@ -211,9 +211,9 @@ func TestFileFormatAndDelimiter(t *testing.T) {
 		Name:      "foo",
 		Connector: "local_file",
 		Properties: map[string]any{
-			"path":          testDelimiterCsvPath,
-			"format":        "csv",
-			"csv.delimiter": " ",
+			"path":   testDelimiterCsvPath,
+			"format": "csv",
+			"duckdb": map[string]any{"delim": "' '"},
 		},
 	})
 	require.NoError(t, err)
@@ -233,4 +233,240 @@ func TestFileFormatAndDelimiter(t *testing.T) {
 	require.Equal(t, count, 8)
 	require.False(t, rows.Next())
 	require.NoError(t, rows.Close())
+}
+
+func TestCSVIngestionWithColumns(t *testing.T) {
+	olap := runOLAPStore(t)
+	ctx := context.Background()
+	filePath := createFilePath(t, "../../../web-local/test/data", "Users.csv")
+
+	_, err := olap.Ingest(ctx, &connectors.Env{
+		RepoDriver:      "file",
+		RepoRoot:        ".",
+		AllowHostAccess: true,
+	}, &connectors.Source{
+		Name:      "csv_source",
+		Connector: "local_file",
+		Properties: map[string]any{
+			"path": filePath,
+			"duckdb": map[string]any{
+				"auto_detect":   false,
+				"header":        true,
+				"ignore_errors": true,
+				"columns":       "{id:'INTEGER',name:'VARCHAR',country:'VARCHAR',city:'VARCHAR'}",
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM csv_source"})
+	require.NoError(t, err)
+	cols, err := rows.Columns()
+	require.NoError(t, err)
+	require.Len(t, cols, 4)
+	require.ElementsMatch(t, cols, [4]string{"id", "name", "country", "city"})
+	require.NoError(t, rows.Close())
+
+	var count int
+	rows, err = olap.Execute(ctx, &drivers.Statement{Query: "SELECT count(*) FROM csv_source"})
+	require.NoError(t, err)
+	require.True(t, rows.Next())
+	require.NoError(t, rows.Scan(&count))
+	require.Equal(t, count, 100)
+	require.False(t, rows.Next())
+	require.NoError(t, rows.Close())
+}
+
+func TestJsonIngestionDefault(t *testing.T) {
+	olap := runOLAPStore(t)
+	ctx := context.Background()
+	filePath := createFilePath(t, "../../../web-local/test/data", "Users.json")
+
+	_, err := olap.Ingest(ctx, &connectors.Env{
+		RepoDriver:      "file",
+		RepoRoot:        ".",
+		AllowHostAccess: true,
+	}, &connectors.Source{
+		Name:      "json_source",
+		Connector: "local_file",
+		Properties: map[string]any{
+			"path": filePath,
+		},
+	})
+	require.NoError(t, err)
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM json_source"})
+	require.NoError(t, err)
+	cols, err := rows.Columns()
+	require.NoError(t, err)
+	require.Len(t, cols, 9)
+	require.NoError(t, rows.Close())
+
+	var count int
+	rows, err = olap.Execute(ctx, &drivers.Statement{Query: "SELECT count(*) FROM json_source"})
+	require.NoError(t, err)
+	require.True(t, rows.Next())
+	require.NoError(t, rows.Scan(&count))
+	require.Equal(t, count, 10)
+	require.False(t, rows.Next())
+	require.NoError(t, rows.Close())
+}
+
+func TestJsonIngestionWithColumns(t *testing.T) {
+	olap := runOLAPStore(t)
+	ctx := context.Background()
+	filePath := createFilePath(t, "../../../web-local/test/data", "Users.json")
+
+	_, err := olap.Ingest(ctx, &connectors.Env{
+		RepoDriver:      "file",
+		RepoRoot:        ".",
+		AllowHostAccess: true,
+	}, &connectors.Source{
+		Name:      "json_source",
+		Connector: "local_file",
+		Properties: map[string]any{
+			"path": filePath,
+			"duckdb": map[string]any{
+				"columns": "{id:'INTEGER', name:'VARCHAR', isActive:'BOOLEAN', createdDate:'VARCHAR', address:'STRUCT(street VARCHAR, city VARCHAR, postalCode VARCHAR)', tags:'VARCHAR[]', projects:'STRUCT(projectId INTEGER, projectName VARCHAR, startDate VARCHAR, endDate VARCHAR)[]', scores:'INTEGER[]'}",
+			},
+		},
+	})
+	require.NoError(t, err)
+	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM json_source"})
+	require.NoError(t, err)
+	cols, err := rows.Columns()
+	require.NoError(t, err)
+	require.Len(t, cols, 8)
+	require.NoError(t, rows.Close())
+
+	var count int
+	rows, err = olap.Execute(ctx, &drivers.Statement{Query: "SELECT count(*) FROM json_source"})
+	require.NoError(t, err)
+	require.True(t, rows.Next())
+	require.NoError(t, rows.Scan(&count))
+	require.Equal(t, count, 10)
+	require.False(t, rows.Next())
+	require.NoError(t, rows.Close())
+}
+
+func TestJsonIngestionWithLessColumns(t *testing.T) {
+	olap := runOLAPStore(t)
+	ctx := context.Background()
+	filePath := createFilePath(t, "../../../web-local/test/data", "Users.json")
+
+	_, err := olap.Ingest(ctx, &connectors.Env{
+		RepoDriver:      "file",
+		RepoRoot:        ".",
+		AllowHostAccess: true,
+	}, &connectors.Source{
+		Name:      "json_source",
+		Connector: "local_file",
+		Properties: map[string]any{
+			"path": filePath,
+			"duckdb": map[string]any{
+				"columns": "{id:'INTEGER',name:'VARCHAR',isActive:'BOOLEAN',createdDate:'VARCHAR',}",
+			},
+		},
+	})
+	require.NoError(t, err)
+	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM json_source"})
+	require.NoError(t, err)
+	cols, err := rows.Columns()
+	require.NoError(t, err)
+	require.Len(t, cols, 4)
+	require.NoError(t, rows.Close())
+
+	var count int
+	rows, err = olap.Execute(ctx, &drivers.Statement{Query: "SELECT count(*) FROM json_source"})
+	require.NoError(t, err)
+	require.True(t, rows.Next())
+	require.NoError(t, rows.Scan(&count))
+	require.Equal(t, count, 10)
+	require.False(t, rows.Next())
+	require.NoError(t, rows.Close())
+}
+
+func TestJsonIngestionWithVariousParams(t *testing.T) {
+	olap := runOLAPStore(t)
+	ctx := context.Background()
+	filePath := createFilePath(t, "../../../web-local/test/data", "Users.json")
+
+	_, err := olap.Ingest(ctx, &connectors.Env{
+		RepoDriver:      "file",
+		RepoRoot:        ".",
+		AllowHostAccess: true,
+	}, &connectors.Source{
+		Name:      "json_source",
+		Connector: "local_file",
+		Properties: map[string]any{
+			"path": filePath,
+			"duckdb": map[string]any{
+				"maximum_object_size": "9999999",
+				"lines":               true,
+				"ignore_errors":       true,
+				"compression":         "auto",
+				"columns":             "{id:'INTEGER',name:'VARCHAR',isActive:'BOOLEAN',createdDate:'VARCHAR',}",
+				"json_format":         "records",
+				"auto_detect":         false,
+				"sample_size":         -1,
+				"dateformat":          "iso",
+				"timestampformat":     "iso",
+			},
+		},
+	})
+	require.NoError(t, err)
+	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM json_source"})
+	require.NoError(t, err)
+	cols, err := rows.Columns()
+	require.NoError(t, err)
+	require.Len(t, cols, 4)
+	require.NoError(t, rows.Close())
+
+	var count int
+	rows, err = olap.Execute(ctx, &drivers.Statement{Query: "SELECT count(*) FROM json_source"})
+	require.NoError(t, err)
+	require.True(t, rows.Next())
+	require.NoError(t, rows.Scan(&count))
+	require.Equal(t, count, 10)
+	require.False(t, rows.Next())
+	require.NoError(t, rows.Close())
+}
+
+func TestJsonIngestionWithInvalidParam(t *testing.T) {
+	olap := runOLAPStore(t)
+	ctx := context.Background()
+	filePath := createFilePath(t, "../../../web-local/test/data", "Users.json")
+
+	_, err := olap.Ingest(ctx, &connectors.Env{
+		RepoDriver:      "file",
+		RepoRoot:        ".",
+		AllowHostAccess: true,
+	}, &connectors.Source{
+		Name:      "json_source",
+		Connector: "local_file",
+		Properties: map[string]any{
+			"path": filePath,
+			"duckdb": map[string]any{
+				"json": map[string]any{
+					"invalid_param": "auto",
+				},
+			},
+		},
+	})
+	require.Error(t, err, "Invalid named parameter \"invalid_param\" for function read_json")
+}
+
+func createFilePath(t *testing.T, dirPath string, fileName string) string {
+	testdataPathAbs, err := filepath.Abs(dirPath)
+	require.NoError(t, err)
+	filePath := filepath.Join(testdataPathAbs, fileName)
+	return filePath
+}
+
+func runOLAPStore(t *testing.T) drivers.OLAPStore {
+	conn, err := Driver{}.Open("?access_mode=read_write", zap.NewNop())
+	require.NoError(t, err)
+	olap, canServe := conn.OLAPStore()
+	require.True(t, canServe)
+	return olap
 }

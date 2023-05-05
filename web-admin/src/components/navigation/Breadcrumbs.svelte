@@ -40,7 +40,7 @@
   // Here, we compose the dashboard list via two separate runtime queries.
   // We should create a custom hook to hide this complexity.
   $: dashboardListItems = useDashboardListItems($runtime?.instanceId, project);
-  $: currentDashboard = $dashboardListItems?.find(
+  $: currentDashboard = $dashboardListItems?.items?.find(
     (listing) => listing.name === $page.params.dashboard
   );
   $: isDashboardPage =
@@ -85,8 +85,8 @@
       <BreadcrumbItem
         label={currentDashboard?.title || currentDashboard.name}
         isCurrentPage={isDashboardPage}
-        menuOptions={$dashboardListItems?.length > 1 &&
-          $dashboardListItems.map((listing) => {
+        menuOptions={$dashboardListItems?.items?.length > 1 &&
+          $dashboardListItems.items.map((listing) => {
             return {
               key: listing.name,
               main: listing?.title || listing.name,

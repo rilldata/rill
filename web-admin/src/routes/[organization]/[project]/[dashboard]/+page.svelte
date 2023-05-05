@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import { V1DeploymentStatus } from "@rilldata/web-admin/client";
   import {
+    DashboardListItem,
     getDashboardsForProject,
     useDashboardListItems,
   } from "@rilldata/web-admin/components/projects/dashboards";
@@ -14,6 +15,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { errorStore } from "../../../../components/errors/error-store";
   import ProjectBuilding from "../../../../components/projects/ProjectBuilding.svelte";
   import ProjectErrored from "../../../../components/projects/ProjectErrored.svelte";
 
@@ -69,9 +71,21 @@
   // and we should hide this complexity in a custom hook.
   // We avoid calling `GetCatalogEntry` to check for dashboard validity because that would trigger a 404 page.
   $: dashboardListItems = useDashboardListItems($runtime?.instanceId, project);
-  $: currentDashboard = $dashboardListItems?.find(
-    (listing) => listing.name === $page.params.dashboard
-  );
+  let currentDashboard: DashboardListItem;
+  $: if ($dashboardListItems.success) {
+    currentDashboard = $dashboardListItems?.items?.find(
+      (listing) => listing.name === $page.params.dashboard
+    );
+
+    // If no dashboard is found, show a 404 page
+    if (!currentDashboard) {
+      errorStore.set({
+        statusCode: 404,
+        header: "Dashboard not found",
+        body: `The dashboard you requested could not be found. Please check that you have provided a valid dashboard name.`,
+      });
+    }
+  }
 </script>
 
 <svelte:head>

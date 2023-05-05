@@ -6,7 +6,7 @@ import {
 import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import Axios from "axios";
-import { derived, get } from "svelte/store";
+import { derived, get, Readable } from "svelte/store";
 
 export interface DashboardListItem {
   name: string;
@@ -82,7 +82,10 @@ export function getDashboardListItemsFromFilesAndCatalogEntries(
 export function useDashboardListItems(
   instanceId: string,
   project: CreateQueryResult<V1GetProjectResponse>
-) {
+): Readable<{
+  items: DashboardListItem[];
+  success: boolean;
+}> {
   let isProfiling = false;
   if (project) {
     const status = get(project)?.data?.prodDeployment?.status;
@@ -123,12 +126,18 @@ export function useDashboardListItems(
     ],
     ([dashboardFiles, dashboardCatalogEntries]) => {
       if (!dashboardFiles.isSuccess || !dashboardCatalogEntries.isSuccess)
-        return [];
+        return {
+          success: false,
+          items: [],
+        };
 
-      return getDashboardListItemsFromFilesAndCatalogEntries(
-        dashboardFiles?.data?.paths ?? [],
-        dashboardCatalogEntries?.data?.entries ?? []
-      );
+      return {
+        success: true,
+        items: getDashboardListItemsFromFilesAndCatalogEntries(
+          dashboardFiles?.data?.paths ?? [],
+          dashboardCatalogEntries?.data?.entries ?? []
+        ),
+      };
     }
   );
 }
