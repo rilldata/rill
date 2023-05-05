@@ -1,4 +1,3 @@
-ALTER TABLE projects ADD COLUMN sub_path TEXT NOT NULL;
 ALTER TABLE users ADD COLUMN superuser BOOLEAN NOT NULL DEFAULT FALSE;
 
 CREATE TABLE orgs_autoinvite_domains (
@@ -12,4 +11,3 @@ CREATE TABLE orgs_autoinvite_domains (
 
 CREATE INDEX orgs_autoinvite_domains_domain_idx ON orgs_autoinvite_domains (lower(domain));
 CREATE UNIQUE INDEX orgs_autoinvite_domains_org_id_domain_idx ON orgs_autoinvite_domains (org_id, lower(domain));
-ALTER TABLE projects RENAME COLUMN sub_path TO subpath;
