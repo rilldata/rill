@@ -194,7 +194,6 @@ func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, aft
 	return res, nil
 }
 
-// todo :: check indentation
 func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID, afterProjectName string, limit int) ([]*database.Project, error) {
 	var res []*database.Project
 	err := c.getDB(ctx).SelectContext(ctx, &res, `

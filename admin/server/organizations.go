@@ -12,11 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const (
-	_maxPageSize     = 100
-	_defaultPageSize = 20
-)
-
 func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganizationsRequest) (*adminv1.ListOrganizationsResponse, error) {
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
