@@ -1,17 +1,17 @@
-import type { V1RuntimeGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
 import type {
   ActionServiceBase,
   ExtractActionTypeDefinitions,
   PickActionFunctions,
-} from "@rilldata/web-local/lib/metrics/service/ServiceBase";
-import { getActionMethods } from "@rilldata/web-local/lib/metrics/service/ServiceBase";
-import type { MetricsEventFactory } from "./MetricsEventFactory";
-import type { ProductHealthEventFactory } from "./ProductHealthEventFactory";
-import type { RillIntakeClient } from "./RillIntakeClient";
-import type { CommonFields, MetricsEvent } from "./MetricsTypes";
-import type { BehaviourEventFactory } from "./BehaviourEventFactory";
+} from "@rilldata/web-common/metrics/service/ServiceBase";
+import { getActionMethods } from "@rilldata/web-common/metrics/service/ServiceBase";
+import type { V1RuntimeGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
 import MD5 from "crypto-js/md5";
 import { v4 as uuidv4 } from "uuid";
+import type { BehaviourEventFactory } from "./BehaviourEventFactory";
+import type { MetricsEventFactory } from "./MetricsEventFactory";
+import type { CommonFields, MetricsEvent } from "./MetricsTypes";
+import type { ProductHealthEventFactory } from "./ProductHealthEventFactory";
+import type { RillIntakeClient } from "./RillIntakeClient";
 
 export const ClientIDStorageKey = "client_id";
 

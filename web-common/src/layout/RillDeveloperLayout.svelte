@@ -13,8 +13,8 @@
   import FileDrop from "@rilldata/web-common/features/sources/add-source/FileDrop.svelte";
   import { duplicateSourceName } from "@rilldata/web-common/features/sources/sources-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
+  import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
   import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
-  import { initMetrics } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";

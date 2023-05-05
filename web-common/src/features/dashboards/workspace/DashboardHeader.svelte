@@ -7,12 +7,12 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { projectShareStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
   //  import { getContext } from "svelte";
   //  import type { Tweened } from "svelte/motion";
   import { runtime } from "../../../runtime-client/runtime-store";

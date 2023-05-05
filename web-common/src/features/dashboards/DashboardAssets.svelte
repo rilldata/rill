@@ -20,25 +20,25 @@
   import { SourceModelValidationStatus } from "@rilldata/web-common/features/metrics-views/errors.js";
   import { initBlankDashboardYAML } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import { appStore } from "@rilldata/web-common/layout/app-store";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+  import {
+    EntityTypeToScreenMap,
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
     createRuntimeServiceDeleteFileAndReconcile,
     createRuntimeServicePutFileAndReconcile,
     runtimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
   import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
-  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
-  import {
-    EntityTypeToScreenMap,
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages.js";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { slide } from "svelte/transition";
-  import { behaviourEvent } from "../../../../web-local/src/lib/metrics/initMetrics";
   import { LIST_SLIDE_DURATION } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
+  import { behaviourEvent } from "../../metrics/initMetrics";
   import { runtime } from "../../runtime-client/runtime-store";
   import RenameAssetModal from "../entity-management/RenameAssetModal.svelte";
 
