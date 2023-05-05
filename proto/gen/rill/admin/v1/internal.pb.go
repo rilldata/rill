@@ -20,17 +20,16 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type PageToken struct {
+type StringPageToken struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// cursor is kept as an array since it may not be possible to use one field to unqiuely identify in all cases
-	Cursor []string `protobuf:"bytes,1,rep,name=cursor,proto3" json:"cursor,omitempty"`
+	Val string `protobuf:"bytes,1,opt,name=val,proto3" json:"val,omitempty"`
 }
 
-func (x *PageToken) Reset() {
-	*x = PageToken{}
+func (x *StringPageToken) Reset() {
+	*x = StringPageToken{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_rill_admin_v1_internal_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -38,13 +37,13 @@ func (x *PageToken) Reset() {
 	}
 }
 
-func (x *PageToken) String() string {
+func (x *StringPageToken) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*PageToken) ProtoMessage() {}
+func (*StringPageToken) ProtoMessage() {}
 
-func (x *PageToken) ProtoReflect() protoreflect.Message {
+func (x *StringPageToken) ProtoReflect() protoreflect.Message {
 	mi := &file_rill_admin_v1_internal_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -56,16 +55,16 @@ func (x *PageToken) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use PageToken.ProtoReflect.Descriptor instead.
-func (*PageToken) Descriptor() ([]byte, []int) {
+// Deprecated: Use StringPageToken.ProtoReflect.Descriptor instead.
+func (*StringPageToken) Descriptor() ([]byte, []int) {
 	return file_rill_admin_v1_internal_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *PageToken) GetCursor() []string {
+func (x *StringPageToken) GetVal() string {
 	if x != nil {
-		return x.Cursor
+		return x.Val
 	}
-	return nil
+	return ""
 }
 
 var File_rill_admin_v1_internal_proto protoreflect.FileDescriptor
@@ -74,9 +73,9 @@ var file_rill_admin_v1_internal_proto_rawDesc = []byte{
 	0x0a, 0x1c, 0x72, 0x69, 0x6c, 0x6c, 0x2f, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x2f, 0x76, 0x31, 0x2f,
 	0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x0d,
 	0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x2e, 0x76, 0x31, 0x22, 0x23, 0x0a,
-	0x09, 0x50, 0x61, 0x67, 0x65, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x12, 0x16, 0x0a, 0x06, 0x63, 0x75,
-	0x72, 0x73, 0x6f, 0x72, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x06, 0x63, 0x75, 0x72, 0x73,
-	0x6f, 0x72, 0x42, 0xa8, 0x01, 0x0a, 0x11, 0x63, 0x6f, 0x6d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e,
+	0x0f, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x50, 0x61, 0x67, 0x65, 0x54, 0x6f, 0x6b, 0x65, 0x6e,
+	0x12, 0x10, 0x0a, 0x03, 0x76, 0x61, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x76,
+	0x61, 0x6c, 0x42, 0xa8, 0x01, 0x0a, 0x11, 0x63, 0x6f, 0x6d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e,
 	0x61, 0x64, 0x6d, 0x69, 0x6e, 0x2e, 0x76, 0x31, 0x42, 0x0d, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x6e,
 	0x61, 0x6c, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x2e, 0x67, 0x69, 0x74, 0x68, 0x75,
 	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x72, 0x69, 0x6c, 0x6c, 0x64, 0x61, 0x74, 0x61, 0x2f, 0x72,
@@ -104,7 +103,7 @@ func file_rill_admin_v1_internal_proto_rawDescGZIP() []byte {
 
 var file_rill_admin_v1_internal_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_rill_admin_v1_internal_proto_goTypes = []interface{}{
-	(*PageToken)(nil), // 0: rill.admin.v1.PageToken
+	(*StringPageToken)(nil), // 0: rill.admin.v1.StringPageToken
 }
 var file_rill_admin_v1_internal_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -121,7 +120,7 @@ func file_rill_admin_v1_internal_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_rill_admin_v1_internal_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PageToken); i {
+			switch v := v.(*StringPageToken); i {
 			case 0:
 				return &v.state
 			case 1:

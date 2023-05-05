@@ -35,41 +35,44 @@ var (
 	_ = sort.Sort
 )
 
-// Validate checks the field values on PageToken with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *PageToken) Validate() error {
+// Validate checks the field values on StringPageToken with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *StringPageToken) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on PageToken with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in PageTokenMultiError, or nil
-// if none found.
-func (m *PageToken) ValidateAll() error {
+// ValidateAll checks the field values on StringPageToken with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// StringPageTokenMultiError, or nil if none found.
+func (m *StringPageToken) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *PageToken) validate(all bool) error {
+func (m *StringPageToken) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
+	// no validation rules for Val
+
 	if len(errors) > 0 {
-		return PageTokenMultiError(errors)
+		return StringPageTokenMultiError(errors)
 	}
 
 	return nil
 }
 
-// PageTokenMultiError is an error wrapping multiple validation errors returned
-// by PageToken.ValidateAll() if the designated constraints aren't met.
-type PageTokenMultiError []error
+// StringPageTokenMultiError is an error wrapping multiple validation errors
+// returned by StringPageToken.ValidateAll() if the designated constraints
+// aren't met.
+type StringPageTokenMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m PageTokenMultiError) Error() string {
+func (m StringPageTokenMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -78,11 +81,11 @@ func (m PageTokenMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m PageTokenMultiError) AllErrors() []error { return m }
+func (m StringPageTokenMultiError) AllErrors() []error { return m }
 
-// PageTokenValidationError is the validation error returned by
-// PageToken.Validate if the designated constraints aren't met.
-type PageTokenValidationError struct {
+// StringPageTokenValidationError is the validation error returned by
+// StringPageToken.Validate if the designated constraints aren't met.
+type StringPageTokenValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -90,22 +93,22 @@ type PageTokenValidationError struct {
 }
 
 // Field function returns field value.
-func (e PageTokenValidationError) Field() string { return e.field }
+func (e StringPageTokenValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e PageTokenValidationError) Reason() string { return e.reason }
+func (e StringPageTokenValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e PageTokenValidationError) Cause() error { return e.cause }
+func (e StringPageTokenValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e PageTokenValidationError) Key() bool { return e.key }
+func (e StringPageTokenValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e PageTokenValidationError) ErrorName() string { return "PageTokenValidationError" }
+func (e StringPageTokenValidationError) ErrorName() string { return "StringPageTokenValidationError" }
 
 // Error satisfies the builtin error interface
-func (e PageTokenValidationError) Error() string {
+func (e StringPageTokenValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -117,14 +120,14 @@ func (e PageTokenValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sPageToken.%s: %s%s",
+		"invalid %sStringPageToken.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = PageTokenValidationError{}
+var _ error = StringPageTokenValidationError{}
 
 var _ interface {
 	Field() string
@@ -132,4 +135,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = PageTokenValidationError{}
+} = StringPageTokenValidationError{}

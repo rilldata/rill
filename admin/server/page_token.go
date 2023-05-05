@@ -13,8 +13,8 @@ const (
 	_defaultPageSize = 20
 )
 
-func unmarshalPageToken(reqToken string) (*adminv1.PageToken, error) {
-	token := &adminv1.PageToken{}
+func unmarshalPageToken(reqToken string) (*adminv1.StringPageToken, error) {
+	token := &adminv1.StringPageToken{}
 	if reqToken != "" {
 		in, err := base64.URLEncoding.DecodeString(reqToken)
 		if err != nil {
@@ -29,7 +29,7 @@ func unmarshalPageToken(reqToken string) (*adminv1.PageToken, error) {
 }
 
 func marshalPageToken(val string) (string, error) {
-	token := &adminv1.PageToken{Cursor: []string{val}}
+	token := &adminv1.StringPageToken{Val: val}
 	bytes, err := proto.Marshal(token)
 	if err != nil {
 		return "", err
@@ -41,9 +41,6 @@ func marshalPageToken(val string) (string, error) {
 func validPageSize(pageSize int) int {
 	if pageSize <= 0 {
 		return _defaultPageSize
-	}
-	if pageSize > _maxPageSize {
-		return _maxPageSize
 	}
 	return pageSize
 }

@@ -33,13 +33,13 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	claims := auth.GetClaims(ctx)
 	var projs []*database.Project
 	if claims.OrganizationPermissions(ctx, org.ID).ManageProjects {
-		projs, err = s.admin.DB.FindProjectsForOrganization(ctx, org.ID, token.Cursor[0], pageSize)
+		projs, err = s.admin.DB.FindProjectsForOrganization(ctx, org.ID, token.Val, pageSize)
 	} else if claims.OwnerType() == auth.OwnerTypeUser {
 		// Get projects the user is a (direct or group) member of (note: the user can be a member of a project in the org, without being a member of org - we call this an "outside member")
 		// plus all public projects
-		projs, err = s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID(), token.Cursor[0], pageSize)
+		projs, err = s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID(), token.Val, pageSize)
 	} else {
-		projs, err = s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID, token.Cursor[0], pageSize)
+		projs, err = s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID, token.Val, pageSize)
 	}
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -335,7 +335,7 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 	}
 	pageSize := validPageSize(int(req.PageSize))
 
-	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID, token.Cursor[0], pageSize)
+	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID, token.Val, pageSize)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -377,7 +377,7 @@ func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjec
 	pageSize := validPageSize(int(req.PageSize))
 
 	// get pending user invites for this project
-	userInvites, err := s.admin.DB.FindProjectInvites(ctx, proj.ID, token.Cursor[0], pageSize)
+	userInvites, err := s.admin.DB.FindProjectInvites(ctx, proj.ID, token.Val, pageSize)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

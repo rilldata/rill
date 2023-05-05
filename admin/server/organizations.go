@@ -25,7 +25,7 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 	}
 	pageSize := validPageSize(int(req.PageSize))
 
-	orgs, err := s.admin.DB.FindOrganizationsForUser(ctx, claims.OwnerID(), token.Cursor[0], pageSize)
+	orgs, err := s.admin.DB.FindOrganizationsForUser(ctx, claims.OwnerID(), token.Val, pageSize)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -183,7 +183,7 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 	}
 	pageSize := validPageSize(int(req.PageSize))
 
-	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, token.Cursor[0], pageSize)
+	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, token.Val, pageSize)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -225,7 +225,7 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 	pageSize := validPageSize(int(req.PageSize))
 
 	// get pending user invites for this org
-	userInvites, err := s.admin.DB.FindOrganizationInvites(ctx, org.ID, token.Cursor[0], pageSize)
+	userInvites, err := s.admin.DB.FindOrganizationInvites(ctx, org.ID, token.Val, pageSize)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

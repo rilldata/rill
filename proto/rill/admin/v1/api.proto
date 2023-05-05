@@ -204,7 +204,7 @@ message PingResponse {
 }
 
 message ListOrganizationsRequest {
-  uint32 page_size = 1;
+  uint32 page_size = 1 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   string page_token = 2;
 }
 
@@ -249,7 +249,7 @@ message UpdateOrganizationResponse {
 
 message ListProjectsForOrganizationRequest {
   string organization_name = 1 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 2;
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   string page_token = 3;
 }
 
@@ -349,7 +349,7 @@ message TriggerRedeployResponse {}
 
 message ListOrganizationMembersRequest {
   string organization = 1;
-  uint32 page_size = 2;
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   string page_token = 3;
 }
 
@@ -360,7 +360,7 @@ message ListOrganizationMembersResponse {
 
 message ListOrganizationInvitesRequest {
   string organization = 1;
-  uint32 page_size = 2;
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   string page_token = 3;
 }
 
@@ -404,8 +404,8 @@ message SetOrganizationMemberRoleResponse {}
 message ListProjectMembersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 3;
-  string page_token = 4;
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 4 ;
 }
 
 message ListProjectMembersResponse {
@@ -416,7 +416,7 @@ message ListProjectMembersResponse {
 message ListProjectInvitesRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 3;
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   string page_token = 4;
 }
 

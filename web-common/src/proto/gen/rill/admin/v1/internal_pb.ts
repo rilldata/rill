@@ -7,41 +7,39 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
- * @generated from message rill.admin.v1.PageToken
+ * @generated from message rill.admin.v1.StringPageToken
  */
-export class PageToken extends Message<PageToken> {
+export class StringPageToken extends Message<StringPageToken> {
   /**
-   * cursor is kept as an array since it may not be possible to use one field to unqiuely identify in all cases
-   *
-   * @generated from field: repeated string cursor = 1;
+   * @generated from field: string val = 1;
    */
-  cursor: string[] = [];
+  val = "";
 
-  constructor(data?: PartialMessage<PageToken>) {
+  constructor(data?: PartialMessage<StringPageToken>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.PageToken";
+  static readonly typeName = "rill.admin.v1.StringPageToken";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "cursor", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 1, name: "val", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PageToken {
-    return new PageToken().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StringPageToken {
+    return new StringPageToken().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PageToken {
-    return new PageToken().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): StringPageToken {
+    return new StringPageToken().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PageToken {
-    return new PageToken().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): StringPageToken {
+    return new StringPageToken().fromJsonString(jsonString, options);
   }
 
-  static equals(a: PageToken | PlainMessage<PageToken> | undefined, b: PageToken | PlainMessage<PageToken> | undefined): boolean {
-    return proto3.util.equals(PageToken, a, b);
+  static equals(a: StringPageToken | PlainMessage<StringPageToken> | undefined, b: StringPageToken | PlainMessage<StringPageToken> | undefined): boolean {
+    return proto3.util.equals(StringPageToken, a, b);
   }
 }
 
