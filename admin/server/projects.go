@@ -27,7 +27,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 	if err != nil {
 		return nil, err
 	}
-	pageSize := validPageSize(int(req.PageSize))
+	pageSize := validPageSize(req.PageSize)
 
 	// If user has ManageProjects, return all projects
 	claims := auth.GetClaims(ctx)
@@ -53,10 +53,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 
 	nextToken := ""
 	if len(projs) >= pageSize {
-		nextToken, err = marshalPageToken(projs[len(projs)-1].Name)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
+		nextToken = marshalPageToken(projs[len(projs)-1].Name)
 	}
 
 	dtos := make([]*adminv1.Project, len(projs))
@@ -333,7 +330,7 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 	if err != nil {
 		return nil, err
 	}
-	pageSize := validPageSize(int(req.PageSize))
+	pageSize := validPageSize(req.PageSize)
 
 	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID, token.Val, pageSize)
 	if err != nil {
@@ -342,10 +339,7 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 
 	nextToken := ""
 	if len(members) >= pageSize {
-		nextToken, err = marshalPageToken(members[len(members)-1].Email)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
+		nextToken = marshalPageToken(members[len(members)-1].Email)
 	}
 
 	dtos := make([]*adminv1.Member, len(members))
@@ -374,7 +368,7 @@ func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjec
 	if err != nil {
 		return nil, err
 	}
-	pageSize := validPageSize(int(req.PageSize))
+	pageSize := validPageSize(req.PageSize)
 
 	// get pending user invites for this project
 	userInvites, err := s.admin.DB.FindProjectInvites(ctx, proj.ID, token.Val, pageSize)
@@ -384,10 +378,7 @@ func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjec
 
 	nextToken := ""
 	if len(userInvites) >= pageSize {
-		nextToken, err = marshalPageToken(userInvites[len(userInvites)-1].Email)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
+		nextToken = marshalPageToken(userInvites[len(userInvites)-1].Email)
 	}
 
 	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))

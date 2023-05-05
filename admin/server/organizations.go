@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -22,7 +23,7 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	pageSize := validPageSize(int(req.PageSize))
+	pageSize := validPageSize(req.PageSize)
 
 	orgs, err := s.admin.DB.FindOrganizationsForUser(ctx, claims.OwnerID(), token.Val, pageSize)
 	if err != nil {
@@ -31,10 +32,7 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 
 	nextToken := ""
 	if len(orgs) >= pageSize {
-		nextToken, err = marshalPageToken(orgs[len(orgs)-1].Name)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
+		nextToken = marshalPageToken(orgs[len(orgs)-1].Name)
 	}
 
 	pbs := make([]*adminv1.Organization, len(orgs))
@@ -180,7 +178,7 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 	if err != nil {
 		return nil, err
 	}
-	pageSize := validPageSize(int(req.PageSize))
+	pageSize := validPageSize(req.PageSize)
 
 	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, token.Val, pageSize)
 	if err != nil {
@@ -189,10 +187,7 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 
 	nextToken := ""
 	if len(members) >= pageSize {
-		nextToken, err = marshalPageToken(members[len(members)-1].Email)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
+		nextToken = marshalPageToken(members[len(members)-1].Email)
 	}
 
 	dtos := make([]*adminv1.Member, len(members))
@@ -221,7 +216,7 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 	if err != nil {
 		return nil, err
 	}
-	pageSize := validPageSize(int(req.PageSize))
+	pageSize := validPageSize(req.PageSize)
 
 	// get pending user invites for this org
 	userInvites, err := s.admin.DB.FindOrganizationInvites(ctx, org.ID, token.Val, pageSize)
@@ -231,10 +226,7 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 
 	nextToken := ""
 	if len(userInvites) >= pageSize {
-		nextToken, err = marshalPageToken(userInvites[len(userInvites)-1].Email)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
+		nextToken = marshalPageToken(userInvites[len(userInvites)-1].Email)
 	}
 
 	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))

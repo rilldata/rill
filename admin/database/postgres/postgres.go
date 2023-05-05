@@ -242,14 +242,13 @@ func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, aft
 func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID, afterProjectName string, limit int) ([]*database.Project, error) {
 	var res []*database.Project
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT up.* FROM ( SELECT p.* FROM projects p
-			WHERE p.org_id = $1 AND (p.public = true OR p.id IN (
-				SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $2
-				UNION
-				SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $2
-			))
-		) up WHERE lower(up.name) > $3 ORDER BY lower(up.name) LIMIT $4
-	`, orgID, userID, afterProjectName, limit)
+		SELECT p.* FROM projects p
+		WHERE p.org_id = $1 AND lower(p.name) > $2 AND (p.public = true OR p.id IN (
+			SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $3
+			UNION
+			SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $3
+		))  ORDER BY lower(p.name) LIMIT $4
+	`, orgID, afterProjectName, userID, limit)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}

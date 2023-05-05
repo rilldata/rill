@@ -15,7 +15,7 @@ func unmarshalPageToken(reqToken string) (*adminv1.StringPageToken, error) {
 	if reqToken != "" {
 		in, err := base64.URLEncoding.DecodeString(reqToken)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Failed to parse request token: %w", err)
 		}
 
 		if err := proto.Unmarshal(in, token); err != nil {
@@ -25,19 +25,19 @@ func unmarshalPageToken(reqToken string) (*adminv1.StringPageToken, error) {
 	return token, nil
 }
 
-func marshalPageToken(val string) (string, error) {
+func marshalPageToken(val string) string {
 	token := &adminv1.StringPageToken{Val: val}
 	bytes, err := proto.Marshal(token)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
 
-	return base64.URLEncoding.EncodeToString(bytes), nil
+	return base64.URLEncoding.EncodeToString(bytes)
 }
 
-func validPageSize(pageSize int) int {
-	if pageSize <= 0 {
+func validPageSize(pageSize uint32) int {
+	if pageSize == 0 {
 		return _defaultPageSize
 	}
-	return pageSize
+	return int(pageSize)
 }
