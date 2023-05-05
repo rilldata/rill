@@ -99,7 +99,7 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 	result.Errors = reconcileErrors
 
 	// order the items to have parents before children
-	migrations, reconcileErrors := s.collectMigrationItems(migrationMap)
+	migrations, reconcileErrors := s.topologicalSort(migrationMap)
 	result.Errors = append(result.Errors, reconcileErrors...)
 
 	err = s.runMigrationItems(ctx, conf, migrations, result)
@@ -114,6 +114,91 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 	}
 	result.collectAffectedPaths()
 	return result, nil
+}
+
+func (s *Service) topologicalSort(migrationMap map[string]*MigrationItem) ([]*MigrationItem, []*runtimev1.ReconcileError) {
+	migrationItems := make([]*MigrationItem, 0)
+	reconcileErrors := make([]*runtimev1.ReconcileError, 0)
+	update := make(map[string]bool)
+
+	// temporary local dag for just the items to be migrated
+	// this will also help in getting a dag for new items
+	// TODO: is there a better way to do this?
+	tempDag := dag.NewDAG()
+	for name, migration := range migrationMap {
+		_, err := tempDag.Add(name, migration.NormalizedDependencies)
+		if err != nil {
+			reconcileErrors = append(reconcileErrors, &runtimev1.ReconcileError{
+				Code:     runtimev1.ReconcileError_CODE_SOURCE,
+				Message:  err.Error(),
+				FilePath: migration.Path,
+			})
+		}
+	}
+
+	fmt.Println(tempDag.TopologicalSort(), s.Meta.dag.TopologicalSort())
+
+	for _, name := range tempDag.TopologicalSort() {
+		item, ok := migrationMap[name]
+		if !ok {
+			continue
+		}
+
+		if item.Type == MigrationNoChange {
+			if update[name] {
+				// items identified as to created/updated because a parent changed
+				// but was initially marked no change
+				if item.CatalogInStore == nil {
+					item.Type = MigrationCreate
+				} else {
+					item.Type = MigrationUpdate
+				}
+			} else if _, ok := s.Meta.NameToPath[item.NormalizedName]; ok {
+				continue
+			}
+		}
+
+		migrationItems = append(migrationItems, item)
+
+		newChildren := tempDag.GetDeepChildren(name)
+
+		if item.NewCatalog != nil && item.NewCatalog.Embedded {
+			if len(newChildren) == 0 {
+				// if embedded item's children is empty then delete it
+				item.Type = MigrationDelete
+			} else if item.Type == MigrationReportUpdate {
+				// do not update children for embedded sources that didn't change
+				continue
+			}
+		}
+
+		if item.Type == MigrationNoChange {
+			continue
+		}
+
+		// get all the children and make sure they are not present before the parent in the order
+		children := arrayutil.Dedupe(append(
+			s.Meta.dag.GetDeepChildren(name),
+			newChildren...,
+		))
+		if item.FromName != "" {
+			children = append(children, arrayutil.Dedupe(append(
+				s.Meta.dag.GetDeepChildren(strings.ToLower(item.FromNormalizedName)),
+				tempDag.GetDeepChildren(strings.ToLower(item.FromNormalizedName))...,
+			))...)
+		}
+		fmt.Println(item.NormalizedName, item.FromNormalizedName, children)
+
+		for _, child := range children {
+			update[child] = true
+
+			if _, ok := migrationMap[child]; !ok {
+				fmt.Println("Not present")
+			}
+		}
+	}
+
+	return migrationItems, reconcileErrors
 }
 
 // collectMigrationItems collects all valid MigrationItem
@@ -184,6 +269,7 @@ func (s *Service) collectMigrationItems(
 				tempDag.GetDeepChildren(strings.ToLower(item.FromNormalizedName))...,
 			))...)
 		}
+
 		for _, child := range children {
 			i, ok := visited[child]
 			if !ok {
