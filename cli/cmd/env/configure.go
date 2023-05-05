@@ -137,7 +137,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 
 	configureCommand.Flags().SortFlags = false
 	configureCommand.Flags().StringVar(&projectPath, "path", ".", "Project directory")
-	configureCommand.Flags().StringVar(&subPath, "sub-path", "", "Project path to sub directory of a larger repository")
+	configureCommand.Flags().StringVar(&subPath, "subpath", "", "Project path to sub directory of a larger repository")
 	configureCommand.Flags().StringVar(&projectName, "project", "", "")
 	configureCommand.Flags().BoolVar(&redploy, "redeploy", false, "Redeploy project")
 

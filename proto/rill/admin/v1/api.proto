@@ -308,7 +308,7 @@ message CreateProjectRequest {
   string prod_olap_driver = 6;
   string prod_olap_dsn = 7;
   int64 prod_slots = 8;
-    string subpath = 12;
+  string subpath = 12;
   string prod_branch = 9;
   string github_url = 10;
   map<string, string> variables = 11;

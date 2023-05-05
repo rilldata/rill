@@ -25,7 +25,7 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 	if proj.GithubURL == nil || proj.GithubInstallationID == nil || proj.ProdBranch == "" {
 		return nil, fmt.Errorf("cannot create project without github info")
 	}
-	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*proj.GithubURL, *proj.GithubInstallationID, proj.ProdBranch, proj.Subpath)
+	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*proj.GithubURL, *proj.GithubInstallationID, proj.Subpath, proj.ProdBranch)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 		return fmt.Errorf("cannot update deployment without github info")
 	}
 
-	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*opts.GithubURL, *opts.GithubInstallationID, opts.Branch, opts.Subpath)
+	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*opts.GithubURL, *opts.GithubInstallationID, opts.Subpath, opts.Branch)
 	if err != nil {
 		return err
 	}

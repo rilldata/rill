@@ -290,7 +290,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	deployCmd.Flags().StringVar(&dbDriver, "prod-db-driver", "duckdb", "Database driver")
 	deployCmd.Flags().StringVar(&dbDSN, "prod-db-dsn", "", "Database driver configuration")
 	deployCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
-	deployCmd.Flags().StringVar(&subPath, "sub-path", "", "Relative path to project in the repository (for monorepos)")
+	deployCmd.Flags().StringVar(&subPath, "subpath", "", "Relative path to project in the repository (for monorepos)")
 	deployCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().StringVar(&name, "project", "", "Project name (default: Git repo name)")
 	deployCmd.Flags().StringVar(&remote, "remote", "", "Remote name (defaults: first github remote)")
