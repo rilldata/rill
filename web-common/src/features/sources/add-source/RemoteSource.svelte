@@ -153,7 +153,7 @@
     <div class="pt-4 pb-2">
       Need help? Refer to our
       <a
-        href="https://docs.rilldata.com/using-rill/import-data"
+        href="https://docs.rilldata.com/develop/import-data"
         target="_blank"
         rel="noreferrer">docs</a
       > for more information.

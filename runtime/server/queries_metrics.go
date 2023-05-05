@@ -8,9 +8,6 @@ import (
 	"github.com/rilldata/rill/runtime/server/auth"
 )
 
-// NOTE: The queries in here are generally not vetted or fully implemented. Use it as guidelines for the real implementation
-// once the metrics view artifact representation is ready.
-
 // MetricsViewToplist implements QueryService.
 func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsViewToplistRequest) (*runtimev1.MetricsViewToplistResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
@@ -78,17 +75,25 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 	return q.Result, nil
 }
 
-// Commenting as its unused
+// MetricsViewRows implements QueryService.
+func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsViewRowsRequest) (*runtimev1.MetricsViewRowsResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
 
-// func (s *Server) lookupMetricsView(ctx context.Context, instanceID, name string) (*runtimev1.MetricsView, error) {
-// 	obj, err := s.runtime.GetCatalogEntry(ctx, instanceID, name)
-// 	if err != nil {
-// 		return nil, status.Error(codes.InvalidArgument, err.Error())
-// 	}
+	q := &queries.MetricsViewRows{
+		MetricsViewName: req.MetricsViewName,
+		TimeStart:       req.TimeStart,
+		TimeEnd:         req.TimeEnd,
+		Filter:          req.Filter,
+		Sort:            req.Sort,
+		Limit:           req.Limit,
+		Offset:          req.Offset,
+	}
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	if err != nil {
+		return nil, err
+	}
 
-// 	if obj.GetMetricsView() == nil {
-// 		return nil, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", name)
-// 	}
-
-// 	return obj.GetMetricsView(), nil
-// }
+	return q.Result, nil
+}

@@ -58,6 +58,11 @@ export default defineConfig({
               useQuery: true,
             },
           },
+          QueryService_MetricsViewRows: {
+            query: {
+              useQuery: true,
+            },
+          },
         },
       },
     },
