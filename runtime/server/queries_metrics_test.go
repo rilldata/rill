@@ -902,3 +902,27 @@ func TestServer_MetricsViewTimeSeries_complete_source_sanity_test(t *testing.T) 
 	require.True(t, tr.Data[0].Records.Fields["measure_0"].GetNumberValue() > 0)
 	require.True(t, tr.Data[0].Records.Fields["measure_1"].GetNumberValue() > 0)
 }
+
+func TestServer_MetricsViewRows(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := server.MetricsViewRows(testCtx(), &runtimev1.MetricsViewRowsRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		Filter: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "domain",
+					In: []*structpb.Value{
+						structpb.NewStringValue("msn.com"),
+					},
+					Like: []string{"%yahoo%"},
+				},
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	require.True(t, len(tr.Data) > 0)
+	require.True(t, len(tr.Data[0].AsMap()["domain"].(string)) > 0)
+}
