@@ -2,6 +2,7 @@ package catalog_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -262,7 +263,7 @@ func TestInterdependentModel(t *testing.T) {
 	var AdBidsGoogleModelPath = "/models/AdBids_Google.sql"
 	var AdBidsYahooGoogleModelPath = "/models/AdBids_YahooGoogle.sql"
 	AdBidsSourceAffectedPaths := []string{AdBidsYahooModelPath, AdBidsGoogleModelPath, AdBidsYahooGoogleModelPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
-	//AdBidsAllAffectedPaths := append([]string{AdBidsRepoPath}, AdBidsSourceAffectedPaths...)
+	AdBidsAllAffectedPaths := append([]string{AdBidsRepoPath}, AdBidsSourceAffectedPaths...)
 
 	for _, tt := range configs {
 		t.Run(tt.title, func(t *testing.T) {
@@ -283,22 +284,23 @@ func TestInterdependentModel(t *testing.T) {
 			testutils.AssertTable(t, s, "AdBids_Yahoo", AdBidsYahooModelPath)
 			testutils.AssertTable(t, s, "AdBids_Google", AdBidsGoogleModelPath)
 
-			//// trigger error in source
-			//testutils.CreateSource(t, s, "AdBids", AdImpressionsCsvPath, AdBidsRepoPath)
-			//result, err = s.Reconcile(context.Background(), tt.config)
-			//require.NoError(t, err)
-			//testutils.AssertMigration(t, result, 3, 0, 1, 0, AdBidsAllAffectedPaths)
-			//require.Equal(t, metricsviews.SourceNotFound, result.Errors[2].Message)
-			//testutils.AssertTableAbsence(t, s, "AdBids_source_model")
-			//testutils.AssertTableAbsence(t, s, "AdBids_model")
-			//
-			//// reset the source
-			//testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
-			//result, err = s.Reconcile(context.Background(), tt.config)
-			//require.NoError(t, err)
-			//testutils.AssertMigration(t, result, 0, 3, 1, 0, AdBidsAllAffectedPaths)
-			//testutils.AssertTable(t, s, "AdBids_source_model", AdBidsSourceModelRepoPath)
-			//testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+			// trigger error in source
+			testutils.CreateSource(t, s, "AdBids", AdImpressionsCsvPath, AdBidsRepoPath)
+			result, err = s.Reconcile(context.Background(), tt.config)
+			require.NoError(t, err)
+			fmt.Println(result.AffectedPaths)
+			testutils.AssertMigration(t, result, 5, 0, 1, 0, AdBidsAllAffectedPaths)
+			require.Equal(t, metricsviews.SourceNotFound, result.Errors[4].Message)
+			testutils.AssertTableAbsence(t, s, "AdBids_Yahoo")
+			testutils.AssertTableAbsence(t, s, "AdBids_Google")
+
+			// reset the source
+			testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
+			result, err = s.Reconcile(context.Background(), tt.config)
+			require.NoError(t, err)
+			testutils.AssertMigration(t, result, 0, 5, 1, 0, AdBidsAllAffectedPaths)
+			testutils.AssertTable(t, s, "AdBids_Yahoo", AdBidsYahooModelPath)
+			testutils.AssertTable(t, s, "AdBids_Google", AdBidsGoogleModelPath)
 		})
 	}
 }
