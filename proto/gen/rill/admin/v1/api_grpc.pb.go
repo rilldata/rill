@@ -49,6 +49,8 @@ const (
 	AdminService_GetCurrentUser_FullMethodName              = "/rill.admin.v1.AdminService/GetCurrentUser"
 	AdminService_RevokeCurrentAuthToken_FullMethodName      = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
 	AdminService_GetGithubRepoStatus_FullMethodName         = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
+	AdminService_CreateAutoinviteDomain_FullMethodName      = "/rill.admin.v1.AdminService/CreateAutoinviteDomain"
+	AdminService_RemoveAutoinviteDomain_FullMethodName      = "/rill.admin.v1.AdminService/RemoveAutoinviteDomain"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -116,6 +118,10 @@ type AdminServiceClient interface {
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
 	GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error)
+	// CreateAutoinviteDomain adds a domain to the autoinvite list
+	CreateAutoinviteDomain(ctx context.Context, in *CreateAutoinviteDomainRequest, opts ...grpc.CallOption) (*CreateAutoinviteDomainResponse, error)
+	// RemoveAutoinviteDomain removes a domain from the autoinvite list
+	RemoveAutoinviteDomain(ctx context.Context, in *RemoveAutoinviteDomainRequest, opts ...grpc.CallOption) (*RemoveAutoinviteDomainResponse, error)
 }
 
 type adminServiceClient struct {
@@ -396,6 +402,24 @@ func (c *adminServiceClient) GetGithubRepoStatus(ctx context.Context, in *GetGit
 	return out, nil
 }
 
+func (c *adminServiceClient) CreateAutoinviteDomain(ctx context.Context, in *CreateAutoinviteDomainRequest, opts ...grpc.CallOption) (*CreateAutoinviteDomainResponse, error) {
+	out := new(CreateAutoinviteDomainResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateAutoinviteDomain_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RemoveAutoinviteDomain(ctx context.Context, in *RemoveAutoinviteDomainRequest, opts ...grpc.CallOption) (*RemoveAutoinviteDomainResponse, error) {
+	out := new(RemoveAutoinviteDomainResponse)
+	err := c.cc.Invoke(ctx, AdminService_RemoveAutoinviteDomain_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility
@@ -461,6 +485,10 @@ type AdminServiceServer interface {
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
 	GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error)
+	// CreateAutoinviteDomain adds a domain to the autoinvite list
+	CreateAutoinviteDomain(context.Context, *CreateAutoinviteDomainRequest) (*CreateAutoinviteDomainResponse, error)
+	// RemoveAutoinviteDomain removes a domain from the autoinvite list
+	RemoveAutoinviteDomain(context.Context, *RemoveAutoinviteDomainRequest) (*RemoveAutoinviteDomainResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -557,6 +585,12 @@ func (UnimplementedAdminServiceServer) RevokeCurrentAuthToken(context.Context, *
 }
 func (UnimplementedAdminServiceServer) GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGithubRepoStatus not implemented")
+}
+func (UnimplementedAdminServiceServer) CreateAutoinviteDomain(context.Context, *CreateAutoinviteDomainRequest) (*CreateAutoinviteDomainResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateAutoinviteDomain not implemented")
+}
+func (UnimplementedAdminServiceServer) RemoveAutoinviteDomain(context.Context, *RemoveAutoinviteDomainRequest) (*RemoveAutoinviteDomainResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveAutoinviteDomain not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -1111,6 +1145,42 @@ func _AdminService_GetGithubRepoStatus_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_CreateAutoinviteDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAutoinviteDomainRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateAutoinviteDomain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateAutoinviteDomain_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateAutoinviteDomain(ctx, req.(*CreateAutoinviteDomainRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RemoveAutoinviteDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveAutoinviteDomainRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RemoveAutoinviteDomain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RemoveAutoinviteDomain_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RemoveAutoinviteDomain(ctx, req.(*RemoveAutoinviteDomainRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1237,6 +1307,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetGithubRepoStatus",
 			Handler:    _AdminService_GetGithubRepoStatus_Handler,
+		},
+		{
+			MethodName: "CreateAutoinviteDomain",
+			Handler:    _AdminService_CreateAutoinviteDomain_Handler,
+		},
+		{
+			MethodName: "RemoveAutoinviteDomain",
+			Handler:    _AdminService_RemoveAutoinviteDomain_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

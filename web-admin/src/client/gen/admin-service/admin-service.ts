@@ -30,6 +30,9 @@ import type {
   V1DeleteOrganizationResponse,
   V1UpdateOrganizationResponse,
   AdminServiceUpdateOrganizationBody,
+  V1CreateAutoinviteDomainResponse,
+  AdminServiceCreateAutoinviteDomainBody,
+  V1RemoveAutoinviteDomainResponse,
   V1ListOrganizationInvitesResponse,
   AdminServiceListOrganizationInvitesParams,
   V1ListOrganizationMembersResponse,
@@ -543,6 +546,105 @@ export const createAdminServiceUpdateOrganization = <
     Awaited<ReturnType<typeof adminServiceUpdateOrganization>>,
     TError,
     { name: string; data: AdminServiceUpdateOrganizationBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary CreateAutoinviteDomain adds a domain to the autoinvite list
+ */
+export const adminServiceCreateAutoinviteDomain = (
+  organization: string,
+  adminServiceCreateAutoinviteDomainBody: AdminServiceCreateAutoinviteDomainBody
+) => {
+  return httpClient<V1CreateAutoinviteDomainResponse>({
+    url: `/v1/organizations/${organization}/autoinvite`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateAutoinviteDomainBody,
+  });
+};
+
+export type AdminServiceCreateAutoinviteDomainMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateAutoinviteDomain>>
+>;
+export type AdminServiceCreateAutoinviteDomainMutationBody =
+  AdminServiceCreateAutoinviteDomainBody;
+export type AdminServiceCreateAutoinviteDomainMutationError = RpcStatus;
+
+export const createAdminServiceCreateAutoinviteDomain = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateAutoinviteDomain>>,
+    TError,
+    { organization: string; data: AdminServiceCreateAutoinviteDomainBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateAutoinviteDomain>>,
+    { organization: string; data: AdminServiceCreateAutoinviteDomainBody }
+  > = (props) => {
+    const { organization, data } = props ?? {};
+
+    return adminServiceCreateAutoinviteDomain(organization, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceCreateAutoinviteDomain>>,
+    TError,
+    { organization: string; data: AdminServiceCreateAutoinviteDomainBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary RemoveAutoinviteDomain removes a domain from the autoinvite list
+ */
+export const adminServiceRemoveAutoinviteDomain = (
+  organization: string,
+  domain: string
+) => {
+  return httpClient<V1RemoveAutoinviteDomainResponse>({
+    url: `/v1/organizations/${organization}/autoinvite/${domain}`,
+    method: "delete",
+  });
+};
+
+export type AdminServiceRemoveAutoinviteDomainMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRemoveAutoinviteDomain>>
+>;
+
+export type AdminServiceRemoveAutoinviteDomainMutationError = RpcStatus;
+
+export const createAdminServiceRemoveAutoinviteDomain = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRemoveAutoinviteDomain>>,
+    TError,
+    { organization: string; domain: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRemoveAutoinviteDomain>>,
+    { organization: string; domain: string }
+  > = (props) => {
+    const { organization, domain } = props ?? {};
+
+    return adminServiceRemoveAutoinviteDomain(organization, domain);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceRemoveAutoinviteDomain>>,
+    TError,
+    { organization: string; domain: string },
     TContext
   >(mutationFn, mutationOptions);
 };

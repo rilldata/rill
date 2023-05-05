@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/rilldata/rill/cli/cmd/sudo"
 	"os"
 	"strings"
 
@@ -133,6 +134,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		env.EnvCmd(cfg),
 		auth.LoginCmd(cfg),
 		auth.LogoutCmd(cfg),
+		sudo.SudoCmd(cfg),
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
