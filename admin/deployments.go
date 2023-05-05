@@ -25,7 +25,7 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 	if proj.GithubURL == nil || proj.GithubInstallationID == nil || proj.ProdBranch == "" {
 		return nil, fmt.Errorf("cannot create project without github info")
 	}
-	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*proj.GithubURL, *proj.GithubInstallationID, proj.ProdBranch, proj.SubPath)
+	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*proj.GithubURL, *proj.GithubInstallationID, proj.ProdBranch, proj.Subpath)
 	if err != nil {
 		return nil, err
 	}
@@ -107,10 +107,10 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 type updateDeploymentOptions struct {
 	GithubURL            *string
 	GithubInstallationID *int64
+	Subpath              string
 	Branch               string
 	Variables            map[string]string
 	Reconcile            bool
-	SubPath              string
 }
 
 func (s *Service) updateDeployment(ctx context.Context, depl *database.Deployment, opts *updateDeploymentOptions) error {
@@ -118,7 +118,7 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 		return fmt.Errorf("cannot update deployment without github info")
 	}
 
-	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*opts.GithubURL, *opts.GithubInstallationID, opts.Branch, opts.SubPath)
+	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*opts.GithubURL, *opts.GithubInstallationID, opts.Branch, opts.Subpath)
 	if err != nil {
 		return err
 	}
@@ -218,12 +218,12 @@ func (s *Service) openRuntimeClient(host, audience string) (*client.Client, erro
 	return rt, nil
 }
 
-func githubRepoInfoForRuntime(githubURL string, installationID int64, branch, subPath string) (string, string, error) {
+func githubRepoInfoForRuntime(githubURL string, installationID int64, subPath, branch string) (string, string, error) {
 	dsn, err := json.Marshal(github.DSN{
 		GithubURL:      githubURL,
 		InstallationID: installationID,
+		Subpath:        subPath,
 		Branch:         branch,
-		SubPath:        subPath,
 	})
 	if err != nil {
 		return "", "", err

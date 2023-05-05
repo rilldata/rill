@@ -242,11 +242,11 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProdOLAPDriver:       req.ProdOlapDriver,
 		ProdOLAPDSN:          req.ProdOlapDsn,
 		ProdSlots:            int(req.ProdSlots),
+		Subpath:              req.Subpath,
 		ProdBranch:           req.ProdBranch,
 		GithubURL:            &req.GithubUrl,
 		GithubInstallationID: &installationID,
 		ProdVariables:        req.Variables,
-		SubPath:              req.SubPath,
 	})
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())

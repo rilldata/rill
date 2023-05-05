@@ -557,6 +557,8 @@ paths:
               prodSlots:
                 type: string
                 format: int64
+              subpath:
+                type: string
               prodBranch:
                 type: string
               githubUrl:
@@ -565,8 +567,6 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
-              subPath:
-                type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}:
@@ -1055,6 +1055,8 @@ definitions:
         type: string
       githubUrl:
         type: string
+      subpath:
+        type: string
       prodBranch:
         type: string
       prodOlapDriver:
@@ -1067,8 +1069,6 @@ definitions:
       prodDeploymentId:
         type: string
       frontendUrl:
-        type: string
-      subPath:
         type: string
       createdOn:
         type: string

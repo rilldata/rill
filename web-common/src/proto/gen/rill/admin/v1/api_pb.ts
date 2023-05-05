@@ -931,6 +931,11 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   prodSlots = protoInt64.zero;
 
   /**
+   * @generated from field: string subpath = 12;
+   */
+  subpath = "";
+
+  /**
    * @generated from field: string prod_branch = 9;
    */
   prodBranch = "";
@@ -944,11 +949,6 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
    * @generated from field: map<string, string> variables = 11;
    */
   variables: { [key: string]: string } = {};
-
-  /**
-   * @generated from field: string sub_path = 12;
-   */
-  subPath = "";
 
   constructor(data?: PartialMessage<CreateProjectRequest>) {
     super();
@@ -966,10 +966,10 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 6, name: "prod_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "prod_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 12, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 12, name: "sub_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateProjectRequest {
@@ -2679,6 +2679,11 @@ export class Project extends Message<Project> {
   githubUrl = "";
 
   /**
+   * @generated from field: string subpath = 17;
+   */
+  subpath = "";
+
+  /**
    * @generated from field: string prod_branch = 9;
    */
   prodBranch = "";
@@ -2709,11 +2714,6 @@ export class Project extends Message<Project> {
   frontendUrl = "";
 
   /**
-   * @generated from field: string sub_path = 17;
-   */
-  subPath = "";
-
-  /**
    * @generated from field: google.protobuf.Timestamp created_on = 14;
    */
   createdOn?: Timestamp;
@@ -2739,13 +2739,13 @@ export class Project extends Message<Project> {
     { no: 6, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "prod_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "prod_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 13, name: "prod_deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 17, name: "sub_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 14, name: "created_on", kind: "message", T: Timestamp },
     { no: 15, name: "updated_on", kind: "message", T: Timestamp },
   ]);

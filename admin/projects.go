@@ -141,10 +141,10 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 			err := s.updateDeployment(ctx, d, &updateDeploymentOptions{
 				GithubURL:            opts.GithubURL,
 				GithubInstallationID: opts.GithubInstallationID,
+				Subpath:              proj.Subpath,
 				Branch:               opts.ProdBranch,
 				Variables:            opts.ProdVariables,
 				Reconcile:            reconcileDeployment,
-				SubPath:              proj.SubPath,
 			})
 			if err != nil {
 				// TODO: This may leave things in an inconsistent state. (Although presently, there's almost never multiple deployments.)

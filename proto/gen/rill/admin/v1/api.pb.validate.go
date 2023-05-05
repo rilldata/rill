@@ -2579,13 +2579,13 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for ProdSlots
 
+	// no validation rules for Subpath
+
 	// no validation rules for ProdBranch
 
 	// no validation rules for GithubUrl
 
 	// no validation rules for Variables
-
-	// no validation rules for SubPath
 
 	if len(errors) > 0 {
 		return CreateProjectRequestMultiError(errors)
@@ -7689,6 +7689,8 @@ func (m *Project) validate(all bool) error {
 
 	// no validation rules for GithubUrl
 
+	// no validation rules for Subpath
+
 	// no validation rules for ProdBranch
 
 	// no validation rules for ProdOlapDriver
@@ -7700,8 +7702,6 @@ func (m *Project) validate(all bool) error {
 	// no validation rules for ProdDeploymentId
 
 	// no validation rules for FrontendUrl
-
-	// no validation rules for SubPath
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

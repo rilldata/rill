@@ -199,13 +199,13 @@ type Project struct {
 	Region               string
 	GithubURL            *string   `db:"github_url"`
 	GithubInstallationID *int64    `db:"github_installation_id"`
+	Subpath              string    `db:"subpath"`
 	ProdBranch           string    `db:"prod_branch"`
 	ProdVariables        Variables `db:"prod_variables"`
 	ProdOLAPDriver       string    `db:"prod_olap_driver"`
 	ProdOLAPDSN          string    `db:"prod_olap_dsn"`
 	ProdSlots            int       `db:"prod_slots"`
 	ProdDeploymentID     *string   `db:"prod_deployment_id"`
-	SubPath              string    `db:"sub_path"`
 	CreatedOn            time.Time `db:"created_on"`
 	UpdatedOn            time.Time `db:"updated_on"`
 }
@@ -230,12 +230,12 @@ type InsertProjectOptions struct {
 	Region               string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	Subpath              string
 	ProdBranch           string
 	ProdVariables        map[string]string
 	ProdOLAPDriver       string
 	ProdOLAPDSN          string
 	ProdSlots            int
-	SubPath              string
 }
 
 // UpdateProjectOptions defines options for updating a Project.

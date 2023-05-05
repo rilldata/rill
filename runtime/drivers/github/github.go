@@ -28,9 +28,9 @@ const (
 
 type DSN struct {
 	GithubURL      string `json:"github_url"`
+	Subpath        string `json:"subpath"`
 	Branch         string `json:"branch"`
 	InstallationID int64  `json:"installation_id"`
-	SubPath        string `json:"sub_path"`
 }
 
 func init() {
@@ -61,8 +61,8 @@ func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, err
 		}
 
 		projectDir := tempdir
-		if dsn.SubPath != "" {
-			projectDir = filepath.Join(tempdir, dsn.SubPath)
+		if dsn.Subpath != "" {
+			projectDir = filepath.Join(tempdir, dsn.Subpath)
 		}
 
 		c = &connection{
