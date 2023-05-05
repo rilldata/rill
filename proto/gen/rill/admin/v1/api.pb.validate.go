@@ -7323,6 +7323,473 @@ var _ interface {
 	ErrorName() string
 } = GetGithubRepoStatusResponseValidationError{}
 
+// Validate checks the field values on CreateAutoinviteDomainRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreateAutoinviteDomainRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreateAutoinviteDomainRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// CreateAutoinviteDomainRequestMultiError, or nil if none found.
+func (m *CreateAutoinviteDomainRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreateAutoinviteDomainRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := CreateAutoinviteDomainRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetDomain()) < 1 {
+		err := CreateAutoinviteDomainRequestValidationError{
+			field:  "Domain",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetRole()) < 1 {
+		err := CreateAutoinviteDomainRequestValidationError{
+			field:  "Role",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return CreateAutoinviteDomainRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreateAutoinviteDomainRequestMultiError is an error wrapping multiple
+// validation errors returned by CreateAutoinviteDomainRequest.ValidateAll()
+// if the designated constraints aren't met.
+type CreateAutoinviteDomainRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreateAutoinviteDomainRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreateAutoinviteDomainRequestMultiError) AllErrors() []error { return m }
+
+// CreateAutoinviteDomainRequestValidationError is the validation error
+// returned by CreateAutoinviteDomainRequest.Validate if the designated
+// constraints aren't met.
+type CreateAutoinviteDomainRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateAutoinviteDomainRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateAutoinviteDomainRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateAutoinviteDomainRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateAutoinviteDomainRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateAutoinviteDomainRequestValidationError) ErrorName() string {
+	return "CreateAutoinviteDomainRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateAutoinviteDomainRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateAutoinviteDomainRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateAutoinviteDomainRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateAutoinviteDomainRequestValidationError{}
+
+// Validate checks the field values on CreateAutoinviteDomainResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreateAutoinviteDomainResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreateAutoinviteDomainResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// CreateAutoinviteDomainResponseMultiError, or nil if none found.
+func (m *CreateAutoinviteDomainResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreateAutoinviteDomainResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return CreateAutoinviteDomainResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreateAutoinviteDomainResponseMultiError is an error wrapping multiple
+// validation errors returned by CreateAutoinviteDomainResponse.ValidateAll()
+// if the designated constraints aren't met.
+type CreateAutoinviteDomainResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreateAutoinviteDomainResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreateAutoinviteDomainResponseMultiError) AllErrors() []error { return m }
+
+// CreateAutoinviteDomainResponseValidationError is the validation error
+// returned by CreateAutoinviteDomainResponse.Validate if the designated
+// constraints aren't met.
+type CreateAutoinviteDomainResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateAutoinviteDomainResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateAutoinviteDomainResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateAutoinviteDomainResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateAutoinviteDomainResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateAutoinviteDomainResponseValidationError) ErrorName() string {
+	return "CreateAutoinviteDomainResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateAutoinviteDomainResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateAutoinviteDomainResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateAutoinviteDomainResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateAutoinviteDomainResponseValidationError{}
+
+// Validate checks the field values on RemoveAutoinviteDomainRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RemoveAutoinviteDomainRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RemoveAutoinviteDomainRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// RemoveAutoinviteDomainRequestMultiError, or nil if none found.
+func (m *RemoveAutoinviteDomainRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RemoveAutoinviteDomainRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := RemoveAutoinviteDomainRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetDomain()) < 1 {
+		err := RemoveAutoinviteDomainRequestValidationError{
+			field:  "Domain",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return RemoveAutoinviteDomainRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// RemoveAutoinviteDomainRequestMultiError is an error wrapping multiple
+// validation errors returned by RemoveAutoinviteDomainRequest.ValidateAll()
+// if the designated constraints aren't met.
+type RemoveAutoinviteDomainRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RemoveAutoinviteDomainRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RemoveAutoinviteDomainRequestMultiError) AllErrors() []error { return m }
+
+// RemoveAutoinviteDomainRequestValidationError is the validation error
+// returned by RemoveAutoinviteDomainRequest.Validate if the designated
+// constraints aren't met.
+type RemoveAutoinviteDomainRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RemoveAutoinviteDomainRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RemoveAutoinviteDomainRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RemoveAutoinviteDomainRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RemoveAutoinviteDomainRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RemoveAutoinviteDomainRequestValidationError) ErrorName() string {
+	return "RemoveAutoinviteDomainRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RemoveAutoinviteDomainRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRemoveAutoinviteDomainRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RemoveAutoinviteDomainRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RemoveAutoinviteDomainRequestValidationError{}
+
+// Validate checks the field values on RemoveAutoinviteDomainResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RemoveAutoinviteDomainResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RemoveAutoinviteDomainResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// RemoveAutoinviteDomainResponseMultiError, or nil if none found.
+func (m *RemoveAutoinviteDomainResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RemoveAutoinviteDomainResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return RemoveAutoinviteDomainResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RemoveAutoinviteDomainResponseMultiError is an error wrapping multiple
+// validation errors returned by RemoveAutoinviteDomainResponse.ValidateAll()
+// if the designated constraints aren't met.
+type RemoveAutoinviteDomainResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RemoveAutoinviteDomainResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RemoveAutoinviteDomainResponseMultiError) AllErrors() []error { return m }
+
+// RemoveAutoinviteDomainResponseValidationError is the validation error
+// returned by RemoveAutoinviteDomainResponse.Validate if the designated
+// constraints aren't met.
+type RemoveAutoinviteDomainResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RemoveAutoinviteDomainResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RemoveAutoinviteDomainResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RemoveAutoinviteDomainResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RemoveAutoinviteDomainResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RemoveAutoinviteDomainResponseValidationError) ErrorName() string {
+	return "RemoveAutoinviteDomainResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RemoveAutoinviteDomainResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRemoveAutoinviteDomainResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RemoveAutoinviteDomainResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RemoveAutoinviteDomainResponseValidationError{}
+
 // Validate checks the field values on User with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error
 // encountered is returned, or nil if there are no violations.
