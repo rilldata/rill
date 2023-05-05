@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/rilldata/rill/cli/cmd/sudo"
 	"os"
 	"strings"
 
@@ -32,7 +33,7 @@ func init() {
 
 // defaultAdminURL is the default admin server URL.
 // Users can override it with the "--api-url" flag or by setting "api-url" in ~/.rill/config.yaml.
-const defaultAdminURL = "https://admin.rilldata.io"
+const defaultAdminURL = "https://admin.rilldata.com"
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
@@ -133,6 +134,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		env.EnvCmd(cfg),
 		auth.LoginCmd(cfg),
 		auth.LogoutCmd(cfg),
+		sudo.SudoCmd(cfg),
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")

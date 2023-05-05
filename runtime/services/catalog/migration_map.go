@@ -36,7 +36,10 @@ func (s *Service) getMigrationMap(ctx context.Context, conf ReconcileConfig) (ma
 	storeObjectsMap := make(map[string]*drivers.CatalogEntry)
 	storeObjectsPathMap := make(map[string]*drivers.CatalogEntry)
 	storeObjectsConsumed := make(map[string]bool)
-	storeObjects := s.Catalog.FindEntries(ctx, s.InstID, drivers.ObjectTypeUnspecified)
+	storeObjects, err := s.Catalog.FindEntries(ctx, s.InstID, drivers.ObjectTypeUnspecified)
+	if err != nil {
+		return nil, nil, err
+	}
 	for _, storeObject := range storeObjects {
 		storeObjectsMap[strings.ToLower(storeObject.Name)] = storeObject
 		storeObjectsPathMap[storeObject.Path] = storeObject

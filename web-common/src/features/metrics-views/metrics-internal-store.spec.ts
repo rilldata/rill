@@ -24,7 +24,7 @@ describe("Metrics Internal Store", () => {
 
     internalRepresentation.addNewDimension();
     expect(internalRepresentation.internalYAML)
-      .toEqual(`# Visit https://docs.rilldata.com/references/project-files to learn more about Rill project files.
+      .toEqual(`# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
 display_name: "AdBids"
 model: ""
@@ -40,7 +40,7 @@ dimensions:
     internalRepresentation.updateDimension(0, "label", "Publisher");
     internalRepresentation.updateDimension(0, "property", "publisher");
     expect(internalRepresentation.internalYAML)
-      .toEqual(`# Visit https://docs.rilldata.com/references/project-files to learn more about Rill project files.
+      .toEqual(`# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
 display_name: "AdBids"
 model: ""
@@ -60,7 +60,7 @@ dimensions:
 
     internalRepresentation.addNewMeasure();
     expect(internalRepresentation.internalYAML)
-      .toEqual(`# Visit https://docs.rilldata.com/references/project-files to learn more about Rill project files.
+      .toEqual(`# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
 display_name: "AdBids"
 model: ""
@@ -80,7 +80,7 @@ dimensions: []
     internalRepresentation.updateMeasure(0, "name", "impressions");
     internalRepresentation.updateMeasure(0, "label", "Total Impressions");
     expect(internalRepresentation.internalYAML)
-      .toEqual(`# Visit https://docs.rilldata.com/references/project-files to learn more about Rill project files.
+      .toEqual(`# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
 display_name: "AdBids"
 model: ""
@@ -98,7 +98,7 @@ dimensions: []
 
     internalRepresentation.addNewMeasure();
     expect(internalRepresentation.internalYAML)
-      .toEqual(`# Visit https://docs.rilldata.com/references/project-files to learn more about Rill project files.
+      .toEqual(`# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
 display_name: "AdBids"
 model: ""
@@ -121,7 +121,7 @@ dimensions: []
 
     internalRepresentation.addNewMeasure();
     expect(internalRepresentation.internalYAML)
-      .toEqual(`# Visit https://docs.rilldata.com/references/project-files to learn more about Rill project files.
+      .toEqual(`# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
 display_name: "AdBids"
 model: ""
@@ -150,7 +150,7 @@ dimensions: []
     internalRepresentation.updateMeasure(1, "name", "measure_2");
     internalRepresentation.addNewMeasure();
     expect(internalRepresentation.internalYAML)
-      .toEqual(`# Visit https://docs.rilldata.com/references/project-files to learn more about Rill project files.
+      .toEqual(`# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
 display_name: "AdBids"
 model: ""

@@ -18,7 +18,8 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 	ctx := context.Background()
 	instanceID := uuid.NewString()
 
-	objs := catalog.FindEntries(ctx, instanceID, drivers.ObjectTypeSource)
+	objs, err := catalog.FindEntries(ctx, instanceID, drivers.ObjectTypeSource)
+	require.NoError(t, err)
 	require.Len(t, objs, 0)
 
 	obj1 := &drivers.CatalogEntry{
@@ -44,7 +45,7 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 		},
 	}
 
-	err := catalog.CreateEntry(ctx, instanceID, obj1)
+	err = catalog.CreateEntry(ctx, instanceID, obj1)
 	require.NoError(t, err)
 	require.Greater(t, time.Minute, time.Since(obj1.CreatedOn))
 	require.Greater(t, time.Minute, time.Since(obj1.UpdatedOn))
@@ -58,7 +59,8 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 	err = catalog.CreateEntry(ctx, instanceID, obj2)
 	require.NoError(t, err)
 
-	objs = catalog.FindEntries(ctx, instanceID, drivers.ObjectTypeSource)
+	objs, err = catalog.FindEntries(ctx, instanceID, drivers.ObjectTypeSource)
+	require.NoError(t, err)
 	require.Len(t, objs, 1)
 	require.Equal(t, objs[0].Name, obj1.Name)
 	require.Equal(t, objs[0].Type, obj1.Type)
@@ -66,7 +68,8 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 	require.Equal(t, objs[0].BytesIngested, obj1.BytesIngested)
 	require.True(t, proto.Equal(objs[0].GetSource(), obj1.GetSource()))
 
-	objs = catalog.FindEntries(ctx, instanceID, drivers.ObjectTypeUnspecified)
+	objs, err = catalog.FindEntries(ctx, instanceID, drivers.ObjectTypeUnspecified)
+	require.NoError(t, err)
 	require.Len(t, objs, 2)
 	require.Equal(t, objs[0].Name, obj1.Name)
 	require.Equal(t, objs[0].Type, obj1.Type)
@@ -77,15 +80,15 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 	err = catalog.UpdateEntry(ctx, instanceID, obj1)
 	require.NoError(t, err)
 
-	obj, found := catalog.FindEntry(ctx, instanceID, "bar")
-	require.True(t, found)
+	obj, err := catalog.FindEntry(ctx, instanceID, "bar")
+	require.NoError(t, err)
 	require.Equal(t, obj.Name, "bar")
 	require.Equal(t, obj.Type, drivers.ObjectTypeMetricsView)
 
 	err = catalog.DeleteEntry(ctx, instanceID, "bar")
 	require.NoError(t, err)
 
-	obj, found = catalog.FindEntry(ctx, instanceID, "bar")
-	require.False(t, found)
+	obj, err = catalog.FindEntry(ctx, instanceID, "bar")
+	require.ErrorIs(t, err, drivers.ErrNotFound)
 	require.Nil(t, obj)
 }

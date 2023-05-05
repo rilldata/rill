@@ -45,20 +45,24 @@ func NewService(
 	}
 }
 
-func (s *Service) FindEntries(ctx context.Context, typ drivers.ObjectType) []*drivers.CatalogEntry {
-	entries := s.Catalog.FindEntries(ctx, s.InstID, typ)
+func (s *Service) FindEntries(ctx context.Context, typ drivers.ObjectType) ([]*drivers.CatalogEntry, error) {
+	entries, err := s.Catalog.FindEntries(ctx, s.InstID, typ)
+	if err != nil {
+		return nil, err
+	}
 	for _, entry := range entries {
 		s.Meta.fillDAGInEntry(entry)
 	}
-	return entries
+	return entries, nil
 }
 
-func (s *Service) FindEntry(ctx context.Context, name string) (*drivers.CatalogEntry, bool) {
-	entry, ok := s.Catalog.FindEntry(ctx, s.InstID, name)
-	if ok {
-		s.Meta.fillDAGInEntry(entry)
+func (s *Service) FindEntry(ctx context.Context, name string) (*drivers.CatalogEntry, error) {
+	entry, err := s.Catalog.FindEntry(ctx, s.InstID, name)
+	if err != nil {
+		return nil, err
 	}
-	return entry, ok
+	s.Meta.fillDAGInEntry(entry)
+	return entry, nil
 }
 
 type MigrationMeta struct {

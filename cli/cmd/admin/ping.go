@@ -31,7 +31,7 @@ func PingCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	pingCmd.Flags().StringVar(&cfg.AdminURL, "base-url", "https://admin.rilldata.io", "Base URL for the admin API")
+	pingCmd.Flags().StringVar(&cfg.AdminURL, "base-url", "https://admin.rilldata.com", "Base URL for the admin API")
 
 	return pingCmd
 }

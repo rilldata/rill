@@ -86,7 +86,7 @@
     </div>
     <div>
       For more information,
-      <a href="https://docs.rilldata.com/using-rill/import-data"
+      <a href="https://docs.rilldata.com/develop/import-data"
         >view the documentation</a
       >.
     </div>
@@ -111,7 +111,7 @@
     </div>
     <div>
       For more information,
-      <a href="https://docs.rilldata.com/using-rill/import-data"
+      <a href="https://docs.rilldata.com/develop/import-data"
         >view the documentation</a
       >.
     </div>
@@ -123,7 +123,7 @@
     </div>
     <div>
       For more information,
-      <a href="https://docs.rilldata.com/using-rill/import-data"
+      <a href="https://docs.rilldata.com/develop/import-data"
         >view the documentation</a
       >.
     </div>
@@ -137,7 +137,7 @@
     </div>
     <div>
       For more information,
-      <a href="https://docs.rilldata.com/using-rill/import-data"
+      <a href="https://docs.rilldata.com/develop/import-data"
         >view the documentation</a
       >.
     </div>
