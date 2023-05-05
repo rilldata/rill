@@ -1,1 +1,1 @@
-ALTER TABLE projects ADD COLUMN sub_path TEXT NOT NULL;
+ALTER TABLE projects ADD COLUMN subpath TEXT NOT NULL;
