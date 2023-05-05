@@ -16,6 +16,7 @@
   } from "@rilldata/web-common/features/models/utils/get-table-references";
   import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import {
     createRuntimeServiceGetFile,
     createRuntimeServicePutFileAndReconcile,
@@ -28,7 +29,6 @@
     isProfilingQuery,
   } from "@rilldata/web-common/runtime-client/invalidation";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
-  import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
