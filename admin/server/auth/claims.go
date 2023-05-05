@@ -81,7 +81,7 @@ type authTokenClaims struct {
 	admin                   *admin.Service
 	orgPermissionsCache     map[string]*adminv1.OrganizationPermissions
 	projectPermissionsCache map[string]*adminv1.ProjectPermissions
-	superuser               TriBool
+	superuser               *bool
 }
 
 func newAuthTokenClaims(token admin.AuthToken, adminService *admin.Service) Claims {
@@ -90,7 +90,7 @@ func newAuthTokenClaims(token admin.AuthToken, adminService *admin.Service) Clai
 		admin:                   adminService,
 		orgPermissionsCache:     make(map[string]*adminv1.OrganizationPermissions),
 		projectPermissionsCache: make(map[string]*adminv1.ProjectPermissions),
-		superuser:               Unknown,
+		superuser:               nil,
 	}
 }
 
@@ -204,8 +204,8 @@ func (c *authTokenClaims) Superuser(ctx context.Context) bool {
 	c.Lock()
 	defer c.Unlock()
 
-	if c.superuser.isDefined() {
-		return c.superuser.boolValue()
+	if c.superuser != nil {
+		return *c.superuser
 	}
 
 	user, err := c.admin.DB.FindUser(ctx, c.token.OwnerID())
@@ -213,13 +213,9 @@ func (c *authTokenClaims) Superuser(ctx context.Context) bool {
 		panic(fmt.Errorf("failed to get user info: %w", err))
 	}
 
-	if user.Superuser {
-		c.superuser = True
-	} else {
-		c.superuser = False
-	}
+	c.superuser = &user.Superuser
 
-	return user.Superuser
+	return *c.superuser
 }
 
 // ensure *authTokenClaims implements Claims
@@ -250,21 +246,4 @@ func unionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *
 		ReadProjectMembers:   a.ReadProjectMembers || b.ReadProjectMembers,
 		ManageProjectMembers: a.ManageProjectMembers || b.ManageProjectMembers,
 	}
-}
-
-type TriBool int
-
-const (
-	Unknown TriBool = iota
-	True
-	False
-)
-
-func (b TriBool) isDefined() bool {
-	return b != Unknown
-}
-
-// call only if isDefined() == true
-func (b TriBool) boolValue() bool {
-	return b == True
 }

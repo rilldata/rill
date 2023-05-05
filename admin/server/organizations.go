@@ -462,10 +462,9 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 }
 
 func (s *Server) CreateAutoinviteDomain(ctx context.Context, req *adminv1.CreateAutoinviteDomainRequest) (*adminv1.CreateAutoinviteDomainResponse, error) {
-	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can add autoinvite domain")
 	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
@@ -484,10 +483,6 @@ func (s *Server) CreateAutoinviteDomain(ctx context.Context, req *adminv1.Create
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can add autoinvite domain")
-	}
-
 	_, err = s.admin.DB.InsertOrganizationAutoinviteDomain(ctx, &database.InsertOrganizationAutoinviteDomainOptions{
 		OrgID:     org.ID,
 		OrgRoleID: role.ID,
@@ -502,10 +497,9 @@ func (s *Server) CreateAutoinviteDomain(ctx context.Context, req *adminv1.Create
 }
 
 func (s *Server) RemoveAutoinviteDomain(ctx context.Context, req *adminv1.RemoveAutoinviteDomainRequest) (*adminv1.RemoveAutoinviteDomainResponse, error) {
-	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can remove autoinvite domain")
 	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
@@ -514,10 +508,6 @@ func (s *Server) RemoveAutoinviteDomain(ctx context.Context, req *adminv1.Remove
 			return nil, status.Error(codes.NotFound, "org not found")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can remove autoinvite domain")
 	}
 
 	invite, err := s.admin.DB.FindOrganizationAutoinviteDomain(ctx, org.ID, req.Domain)

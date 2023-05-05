@@ -155,24 +155,6 @@ func (c *connection) UpdateOrganizationAllUsergroup(ctx context.Context, orgID, 
 	return res, nil
 }
 
-func (c *connection) InsertOrganizationAutoinviteDomain(ctx context.Context, opts *database.InsertOrganizationAutoinviteDomainOptions) (*database.OrganizationAutoinviteDomain, error) {
-	if err := database.Validate(opts); err != nil {
-		return nil, err
-	}
-
-	res := &database.OrganizationAutoinviteDomain{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs_autoinvite_domains(org_id, org_role_id, domain) VALUES ($1, $2, $3) RETURNING *`, opts.OrgID, opts.OrgRoleID, opts.Domain).StructScan(res)
-	if err != nil {
-		return nil, parseErr("org autoinvite domain", err)
-	}
-	return res, nil
-}
-
-func (c *connection) DeleteOrganizationAutoinviteDomain(ctx context.Context, id string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM orgs_autoinvite_domains WHERE id=$1", id)
-	return checkDeleteRow("org autoinvite domain", res, err)
-}
-
 func (c *connection) FindOrganizationAutoinviteDomainsForOrganization(ctx context.Context, orgID string) ([]*database.OrganizationAutoinviteDomain, error) {
 	var res []*database.OrganizationAutoinviteDomain
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs_autoinvite_domains WHERE org_id=$1", orgID)
@@ -198,6 +180,24 @@ func (c *connection) FindOrganizationAutoinviteDomain(ctx context.Context, orgID
 		return nil, parseErr("org autoinvite domain", err)
 	}
 	return res, nil
+}
+
+func (c *connection) InsertOrganizationAutoinviteDomain(ctx context.Context, opts *database.InsertOrganizationAutoinviteDomainOptions) (*database.OrganizationAutoinviteDomain, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.OrganizationAutoinviteDomain{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs_autoinvite_domains(org_id, org_role_id, domain) VALUES ($1, $2, $3) RETURNING *`, opts.OrgID, opts.OrgRoleID, opts.Domain).StructScan(res)
+	if err != nil {
+		return nil, parseErr("org autoinvite domain", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteOrganizationAutoinviteDomain(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM orgs_autoinvite_domains WHERE id=$1", id)
+	return checkDeleteRow("org autoinvite domain", res, err)
 }
 
 func (c *connection) FindProjects(ctx context.Context, orgName string) ([]*database.Project, error) {

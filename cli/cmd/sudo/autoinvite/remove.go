@@ -11,10 +11,9 @@ import (
 
 func RemoveCmd(cfg *config.Config) *cobra.Command {
 	removeCmd := &cobra.Command{
-		Use:    "remove <org> <domain>",
-		Args:   cobra.ExactArgs(2),
-		Short:  "Remove autoinvite for an org and domain",
-		Hidden: true,
+		Use:   "remove <org> <domain>",
+		Args:  cobra.ExactArgs(2),
+		Short: "Remove autoinvite for an org and domain",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 

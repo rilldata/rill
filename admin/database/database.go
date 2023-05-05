@@ -58,11 +58,11 @@ type DB interface {
 	UpdateOrganization(ctx context.Context, id string, opts *UpdateOrganizationOptions) (*Organization, error)
 	UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
 
-	InsertOrganizationAutoinviteDomain(ctx context.Context, opts *InsertOrganizationAutoinviteDomainOptions) (*OrganizationAutoinviteDomain, error)
-	DeleteOrganizationAutoinviteDomain(ctx context.Context, id string) error
 	FindOrganizationAutoinviteDomain(ctx context.Context, orgID string, domain string) (*OrganizationAutoinviteDomain, error)
 	FindOrganizationAutoinviteDomainsForOrganization(ctx context.Context, orgID string) ([]*OrganizationAutoinviteDomain, error)
 	FindOrganizationAutoinviteDomainsForDomain(ctx context.Context, domain string) ([]*OrganizationAutoinviteDomain, error)
+	InsertOrganizationAutoinviteDomain(ctx context.Context, opts *InsertOrganizationAutoinviteDomainOptions) (*OrganizationAutoinviteDomain, error)
+	DeleteOrganizationAutoinviteDomain(ctx context.Context, id string) error
 
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)

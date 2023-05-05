@@ -9,12 +9,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func CreateCmd(cfg *config.Config) *cobra.Command {
-	createCmd := &cobra.Command{
-		Use:    "create <org> <domain> <role>",
-		Args:   cobra.ExactArgs(3),
-		Short:  "Autoinvite users from a domain",
-		Hidden: true,
+func AddCmd(cfg *config.Config) *cobra.Command {
+	addCmd := &cobra.Command{
+		Use:   "add <org> <domain> <role>",
+		Args:  cobra.ExactArgs(3),
+		Short: "Autoinvite users from a domain",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -49,5 +48,5 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	return createCmd
+	return addCmd
 }

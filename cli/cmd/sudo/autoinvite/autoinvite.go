@@ -7,10 +7,10 @@ import (
 
 func AutoinviteCmd(cfg *config.Config) *cobra.Command {
 	autoinviteCmd := &cobra.Command{
-		Use:   "auto-invite",
+		Use:   "autoinvite",
 		Short: "Auto invite users from a domain",
 	}
-	autoinviteCmd.AddCommand(CreateCmd(cfg))
+	autoinviteCmd.AddCommand(AddCmd(cfg))
 	autoinviteCmd.AddCommand(RemoveCmd(cfg))
 
 	return autoinviteCmd
