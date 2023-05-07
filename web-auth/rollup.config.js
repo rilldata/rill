@@ -63,7 +63,7 @@ function serve() {
 }
 
 export default {
-	input: 'src/main.js',
+	input: 'src/exporter.js',
 	output: {
 		sourcemap: false,
 		format: 'iife',
