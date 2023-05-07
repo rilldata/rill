@@ -5,7 +5,7 @@ const app = new Auth({
 	props: {
 		// This gets populated by Auth0 runtime
 		configParams: "@@config@@",
-		// This get populated by RollUp
+		// This gets populated by RollUp
 		cloudClientIDs: "%%cloudClientIDs%%"
 	}
 });
