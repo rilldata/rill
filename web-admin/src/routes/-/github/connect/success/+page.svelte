@@ -1,9 +1,9 @@
 <script>
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import CtaContentContainer from "../../../../../../../web-common/src/components/calls-to-action/CTAContentContainer.svelte";
-  import CtaHeader from "../../../../../../../web-common/src/components/calls-to-action/CTAHeader.svelte";
-  import CtaLayoutContainer from "../../../../../../../web-common/src/components/calls-to-action/CTALayoutContainer.svelte";
-  import CtaMessage from "../../../../../../../web-common/src/components/calls-to-action/CTAMessage.svelte";
+  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
+  import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
+  import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
+  import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
 </script>
 
 <svelte:head>
