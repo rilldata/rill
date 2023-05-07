@@ -3,12 +3,12 @@
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import CodeBlockInline from "../../../../../components/calls-to-action/CodeBlockInline.svelte";
-  import CtaContentContainer from "../../../../../components/calls-to-action/CTAContentContainer.svelte";
-  import CtaHeader from "../../../../../components/calls-to-action/CTAHeader.svelte";
-  import CtaLayoutContainer from "../../../../../components/calls-to-action/CTALayoutContainer.svelte";
-  import CtaMessage from "../../../../../components/calls-to-action/CTAMessage.svelte";
-  import KeyboardKey from "../../../../../components/calls-to-action/KeyboardKey.svelte";
+  import CodeBlockInline from "../../../../../../../web-common/src/components/calls-to-action/CodeBlockInline.svelte";
+  import CtaContentContainer from "../../../../../../../web-common/src/components/calls-to-action/CTAContentContainer.svelte";
+  import CtaHeader from "../../../../../../../web-common/src/components/calls-to-action/CTAHeader.svelte";
+  import CtaLayoutContainer from "../../../../../../../web-common/src/components/calls-to-action/CTALayoutContainer.svelte";
+  import CtaMessage from "../../../../../../../web-common/src/components/calls-to-action/CTAMessage.svelte";
+  import KeyboardKey from "../../../../../../../web-common/src/components/calls-to-action/KeyboardKey.svelte";
   import GithubRepoInline from "../../../../../components/projects/GithubRepoInline.svelte";
 
   const remote = new URLSearchParams(window.location.search).get("remote");

@@ -5,13 +5,14 @@
   export let disabled = false;
 
   function getVariantClass(variant: string) {
+    console.log;
     switch (variant) {
       case "primary":
         return "border-blue-600 bg-blue-600 text-white hover:bg-blue-500 hover:border-blue-500";
       case "primary-outline":
         return "border-blue-300 text-blue-600 hover:bg-slate-100 hover:border-gray-100";
       case "secondary":
-        return "border-gray-300 text-gray-600 hover:bg-slate-100";
+        return "text-slate-600 border-slate-300 hover:bg-slate-100";
     }
   }
 
