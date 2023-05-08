@@ -20,7 +20,6 @@
     createQueryServiceTableRows,
     createRuntimeServiceGetFile,
     createRuntimeServicePutFileAndReconcile,
-    getQueryServiceTableRowsQueryKey,
     getRuntimeServiceGetFileQueryKey,
     V1CatalogEntry,
     V1PutFileAndReconcileResponse,
