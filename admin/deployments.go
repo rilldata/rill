@@ -170,7 +170,7 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 	return nil
 }
 
-// HIBERNATED free deployments
+// HIBERNATE free deployments
 func (s *Service) HibernateDeployments(ctx context.Context) error {
 	// Not checking any permissions as its use only internally by scheduled job, will add if required
 	projects, err := s.DB.FindAllProjects(ctx)
@@ -193,17 +193,17 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 		if proj.ProductionTTL < time.Since(depl.UpdatedOn) {
 			err := s.teardownDeployment(ctx, proj, depl)
 			if err != nil {
-				fmt.Printf("error in teardown deployment, error:%v", err)
+				fmt.Printf("could not teardown deployment, error:%v\n", err)
 				continue
 			}
 
 			updatedDepl, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusHibernated, "")
 			if err != nil {
-				fmt.Println("could not update status: %w", err)
+				fmt.Printf("could not update status: %v \n", err)
 				continue
 			}
 
-			fmt.Println("updated depl ", updatedDepl)
+			fmt.Printf("updated depl, Project %s, Depl ID: %s", proj.Name, updatedDepl.ID)
 		}
 	}
 
