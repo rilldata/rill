@@ -149,6 +149,9 @@ body {
   --error-text: hsl(1, 60%, 30%);
 
   overscroll-behavior: none;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
