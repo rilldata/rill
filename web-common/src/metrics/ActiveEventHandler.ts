@@ -1,5 +1,5 @@
-import type { MetricsService } from "@rilldata/web-local/lib/metrics/service/MetricsService";
-import type { CommonUserFields } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
+import type { MetricsService } from "@rilldata/web-common/metrics/service/MetricsService";
+import type { CommonUserFields } from "@rilldata/web-common/metrics/service/MetricsTypes";
 
 const ActiveEventInterval = 60;
 

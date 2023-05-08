@@ -7,7 +7,7 @@
   import { useAllNames } from "@rilldata/web-common/features/entity-management/selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { createRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { appQueryStatusStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { runtime } from "../../../runtime-client/runtime-store";

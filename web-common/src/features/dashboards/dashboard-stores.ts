@@ -1,11 +1,11 @@
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+import { removeIfExists } from "@rilldata/web-common/lib/arrayUtils";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import type {
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
-import { removeIfExists } from "@rilldata/web-local/lib/util/arrayUtils";
 import { Readable, Writable, derived, writable } from "svelte/store";
 
 export interface LeaderboardValue {
