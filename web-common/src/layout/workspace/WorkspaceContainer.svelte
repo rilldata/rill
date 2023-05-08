@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
+  import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { getContext, setContext } from "svelte";
   import { tweened } from "svelte/motion";

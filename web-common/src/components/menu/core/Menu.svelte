@@ -146,7 +146,7 @@
         pt-{paddingTop} 
         pb-{paddingBottom}
         w-max
-        flex 
+        flex
         flex-col
         outline-none
         {dark
