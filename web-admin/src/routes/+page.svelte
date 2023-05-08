@@ -34,7 +34,7 @@
     <h1 class="text-4xl leading-10 font-light mb-2">
       Hi {getFirstNameFromDisplayName($user.data.user.displayName)}!
     </h1>
-    <div class="flex flex-row gap-3 flex-wrap">
+    <div class="flex flex-row gap-x-7 flex-wrap">
       <div class="md:w-1/2">
         {#if $orgs.isSuccess}
           {#if !hasAnOrganization}
