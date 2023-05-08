@@ -42,7 +42,7 @@
 <button
   class="
 {block ? 'flex w-full h-full px-2' : 'inline-flex w-max rounded px-1'} 
-  items-center gap-x-2 justify-between 
+  items-center gap-x-2 justify-between
   {classes[level]}
   {tailwindClasses}
   {active && !disabled ? activeTailwindClasses : ''}

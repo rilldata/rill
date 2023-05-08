@@ -245,7 +245,7 @@
 </script>
 
 <TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
-  <div class="bg-white sticky  top-0" style="z-index:100">
+  <div class="bg-white sticky top-0" style="z-index:100">
     <SeachableFilterButton
       selectableItems={availableMeasureLabels}
       selectedItems={visibleMeasuresBitmask}

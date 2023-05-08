@@ -35,12 +35,12 @@
   <button
     class="
         px-4
-        select-none	
-        flex 
-        space-between 
+        select-none
+        flex
+        space-between
         gap-2
         transition-colors
-        hover:bg-gray-100 
+        hover:bg-gray-100
         focus:bg-gray-100
         focus:ring-gray-500
         focus:outline-gray-300 flex-1
@@ -66,7 +66,7 @@
     </div>
     <div
       class:hidden={hideRight || mode !== "summaries"}
-      class="grid gap-x-2 "
+      class="grid gap-x-2"
       style:grid-template-columns={columns}
     >
       {#if mode === "summaries"}

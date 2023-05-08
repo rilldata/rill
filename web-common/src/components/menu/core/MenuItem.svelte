@@ -124,7 +124,7 @@
     ? 'rgb(75, 85, 99)'
     : 'rgb(235, 235, 235)'}"
   class="
-        text-left 
+        text-left
         py-1
         px-3
         focus:outline-none

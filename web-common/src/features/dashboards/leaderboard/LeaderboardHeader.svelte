@@ -18,7 +18,7 @@
   let optionsMenuActive = false;
 </script>
 
-<div class="flex flex-row  items-center">
+<div class="flex flex-row items-center">
   <div class="grid place-items-center" style:height="22px" style:width="22px">
     {#if isFetching}
       <Spinner size="16px" status={EntityStatus.Running} />

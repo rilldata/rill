@@ -177,7 +177,7 @@
       $outputVisibilityTween}px - var(--header-height))"
   >
     {#if hasModelSql}
-      <div class="h-full  p-5  grid overflow-auto">
+      <div class="h-full p-5 grid overflow-auto">
         {#key modelName}
           <Editor
             {modelName}
