@@ -1,5 +1,5 @@
+import type { CommonUserFields } from "@rilldata/web-common/metrics/service/MetricsTypes";
 import UAParser from "ua-parser-js";
-import type { CommonUserFields } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
 
 export async function collectCommonUserFields(): Promise<CommonUserFields> {
   const parser = new UAParser();

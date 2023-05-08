@@ -5,12 +5,5 @@
  */
 import { writable } from "svelte/store";
 
-export type FeatureFlags = {
-  readOnly: boolean;
-};
-export const featureFlags = writable<FeatureFlags>({
-  readOnly: undefined,
-});
-
 // Store to show application running status based on Query Queue
 export const appQueryStatusStore = writable<boolean>(false);

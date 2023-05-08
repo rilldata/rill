@@ -111,9 +111,9 @@
     on:keydown
     class="
       {positionStatic ? 'static' : 'absolute'}
-      z-9 
-      text-ellipsis 
-      whitespace-nowrap 
+      z-9
+      text-ellipsis
+      whitespace-nowrap
       {isDimensionTable ? 'pr-5' : 'border-r border-b'}
       {activityStatus}
       "
