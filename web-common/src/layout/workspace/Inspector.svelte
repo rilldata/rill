@@ -29,10 +29,10 @@
   <div
     class="
       bg-white
-        border-l 
-        border-gray-200 
-        fixed 
-        overflow-auto 
+        border-l
+        border-gray-200
+        fixed
+        overflow-auto
         transition-colors
         h-screen
       "
