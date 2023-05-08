@@ -39,7 +39,7 @@
         focus:outline-none
         focus:bg-gray-300
         hover:bg-gray-300
-        transition-tranform 
+        transition-tranform
         text-gray-500
         duration-100
         grid

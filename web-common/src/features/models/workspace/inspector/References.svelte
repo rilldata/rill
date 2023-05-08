@@ -99,7 +99,7 @@
     {#if showSourceTables}
       <div
         transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
-        class="mt-2 "
+        class="mt-2"
       >
         {#each $referencedWithMetadata as reference}
           {#if reference?.entry?.embedded}
