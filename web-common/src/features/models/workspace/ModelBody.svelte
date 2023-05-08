@@ -20,6 +20,7 @@
     createQueryServiceTableRows,
     createRuntimeServiceGetFile,
     createRuntimeServicePutFileAndReconcile,
+    getQueryServiceTableRowsQueryKey,
     getRuntimeServiceGetFileQueryKey,
     V1CatalogEntry,
     V1PutFileAndReconcileResponse,
@@ -55,25 +56,14 @@
 
   $: runtimeInstanceId = $runtime.instanceId;
   const updateModel = createRuntimeServicePutFileAndReconcile();
-  
-  $: tableQuery = createQueryServiceTableRows(
-      runtimeInstanceId,
-      modelName, 
-      {
-        limit: 0
-      });
 
-  $: {
-    const runtimeError = $tableQuery.error?.response.data;
-    if(runtimeError) {
-      console.log("RUNTIME ERROR", runtimeError)
-      fileArtifactsStore.setErrors([modelPath], [{
-        ...runtimeError,
-        filePath: modelPath
-      }]);
-    }
-  }
+  let limit = 150;
 
+  $: tableQuery = createQueryServiceTableRows(runtimeInstanceId, modelName, {
+    limit,
+  });
+
+  $: runtimeError = $tableQuery.error?.response.data;
 
   // track innerHeight to calculate the size of the editor element.
   let innerHeight: number;
@@ -165,15 +155,9 @@
         },
       })) as V1PutFileAndReconcileResponse;
 
-      
       embeddedSourceErrors = embeddedSourcesError(resp.errors, embeddedSources);
-      const runtimeErrors = $tableQuery.error ? [{
-        ...$tableQuery.error?.response.data,
-        filePath: modelPath
-    }] : [];
+      fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 
-    const mergedErrors = [...resp.errors, ...runtimeErrors]
-      fileArtifactsStore.setErrors(resp.affectedPaths, mergedErrors);
       if (!resp.errors.length && hasChanged) {
         sanitizedQuery = sanitizeQuery(content);
       }
@@ -197,13 +181,12 @@
     to: selection?.referenceIndex + selection?.reference?.length,
   })) as SelectionRange[];
 
+  let errors = [];
   $: {
-    console.log({
-      embeddedSourceErrors,
-      modelError,
-      modelPath,
-      modelName
-    })
+    errors = [];
+    if (embeddedSourceErrors?.length) errors.push(...embeddedSourceErrors);
+    if (modelError) errors.push(modelError);
+    if (runtimeError) errors.push(runtimeError.message);
   }
 </script>
 
@@ -263,13 +246,13 @@
           'hidden'}"
       >
         <div
-          style="{modelError ? 'filter: brightness(.9);' : ''}
+          style="{modelError || runtimeError ? 'filter: brightness(.9);' : ''}
             transition: filter 200ms;
           "
           class="relative h-full"
         >
           {#if !$modelEmpty?.data}
-            <ConnectedPreviewTable objectName={modelName} />
+            <ConnectedPreviewTable objectName={modelName} {limit} />
           {/if}
         </div>
         <!--TODO {:else}-->
@@ -280,18 +263,14 @@
         <!--  </div>-->
         <!--{/if}-->
       </div>
-      {#if embeddedSourceErrors?.length || modelError}
+      {#if errors.length > 0}
         <div
           transition:slide={{ duration: 200 }}
-          class="error break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100"
+          class="error break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100 flex flex-col gap-2"
         >
-          {#if embeddedSourceErrors?.length}
-            {#each embeddedSourceErrors as embeddedSourceError}
-              {embeddedSourceError}<br />
-            {/each}
-          {:else}
-            {modelError}
-          {/if}
+          {#each errors as error}
+            <div>{error}</div>
+          {/each}
         </div>
       {/if}
     </div>
