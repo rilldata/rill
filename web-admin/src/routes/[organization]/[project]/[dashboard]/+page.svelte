@@ -21,6 +21,8 @@
 
   const queryClient = useQueryClient();
 
+  $: instanceId = $runtime?.instanceId;
+
   $: orgName = $page.params.organization;
   $: projectName = $page.params.project;
   $: dashboardName = $page.params.dashboard;
@@ -48,12 +50,12 @@
 
       // Invalidate the queries used to assess dashboard validity
       queryClient.invalidateQueries(
-        getRuntimeServiceListFilesQueryKey($runtime?.instanceId, {
+        getRuntimeServiceListFilesQueryKey(instanceId, {
           glob: "dashboards/*.yaml",
         })
       );
       queryClient.invalidateQueries(
-        getRuntimeServiceListCatalogEntriesQueryKey($runtime?.instanceId, {
+        getRuntimeServiceListCatalogEntriesQueryKey(instanceId, {
           type: "OBJECT_TYPE_METRICS_VIEW",
         })
       );
@@ -66,13 +68,10 @@
     return invalidateDashboardsQueries(queryClient, dashboardNames);
   }
 
-  // Here we check to see if a dashboard is valid by looking at `DashboardListItem.isValid`
-  // As is the case in `Breadcrumbs.svelte`, there are two queries we compose to get the dashboard list items,
-  // and we should hide this complexity in a custom hook.
   // We avoid calling `GetCatalogEntry` to check for dashboard validity because that would trigger a 404 page.
-  $: dashboardListItems = useDashboardListItems($runtime?.instanceId, project);
+  $: dashboardListItems = useDashboardListItems(instanceId, project);
   let currentDashboard: DashboardListItem;
-  $: if ($dashboardListItems.success) {
+  $: if ($dashboardListItems.isSuccess) {
     currentDashboard = $dashboardListItems?.items?.find(
       (listing) => listing.name === $page.params.dashboard
     );

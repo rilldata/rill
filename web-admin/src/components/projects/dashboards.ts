@@ -1,3 +1,4 @@
+import { V1DeploymentStatus } from "@rilldata/web-admin/client";
 import type { V1GetProjectResponse } from "@rilldata/web-admin/client";
 import {
   createRuntimeServiceListCatalogEntries,
@@ -81,21 +82,16 @@ export function getDashboardListItemsFromFilesAndCatalogEntries(
 
 export function useDashboardListItems(
   instanceId: string,
-  project: CreateQueryResult<V1GetProjectResponse>
+  projectStatus: V1DeploymentStatus
 ): Readable<{
   items: DashboardListItem[];
-  success: boolean;
+  isSuccess: boolean;
 }> {
-  let isProfiling = false;
-  if (project) {
-    const status = get(project)?.data?.prodDeployment?.status;
-    if (
-      status === "DEPLOYMENT_STATUS_PENDING" ||
-      status === "DEPLOYMENT_STATUS_RECONCILING"
-    ) {
-      isProfiling = true;
-    }
-  }
+  const hasProjectStats = !!projectStatus;
+  const isProfiling =
+    hasProjectStats &&
+    (projectStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
+      projectStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING);
 
   return derived(
     [
@@ -107,7 +103,7 @@ export function useDashboardListItems(
         {
           query: {
             placeholderData: undefined,
-            enabled: !isProfiling && !!project && !!instanceId,
+            enabled: !isProfiling && hasProjectStats && !!instanceId,
           },
         }
       ),
@@ -119,7 +115,7 @@ export function useDashboardListItems(
         {
           query: {
             placeholderData: undefined,
-            enabled: !isProfiling && !!project && !!instanceId,
+            enabled: !isProfiling && hasProjectStats && !!instanceId,
           },
         }
       ),
@@ -127,12 +123,12 @@ export function useDashboardListItems(
     ([dashboardFiles, dashboardCatalogEntries]) => {
       if (!dashboardFiles.isSuccess || !dashboardCatalogEntries.isSuccess)
         return {
-          success: false,
+          isSuccess: false,
           items: [],
         };
 
       return {
-        success: true,
+        isSuccess: true,
         items: getDashboardListItemsFromFilesAndCatalogEntries(
           dashboardFiles?.data?.paths ?? [],
           dashboardCatalogEntries?.data?.entries ?? []

@@ -15,6 +15,8 @@
 
   const user = createAdminServiceGetCurrentUser();
 
+  $: instanceId = $runtime?.instanceId;
+
   $: orgName = $page.params.organization;
   $: organization = createAdminServiceGetOrganization(orgName);
   $: organizations = createAdminServiceListOrganizations(undefined, {
@@ -39,7 +41,10 @@
 
   // Here, we compose the dashboard list via two separate runtime queries.
   // We should create a custom hook to hide this complexity.
-  $: dashboardListItems = useDashboardListItems($runtime?.instanceId, project);
+  $: dashboardListItems = useDashboardListItems(
+    instanceId,
+    $project.data.prodDeployment?.status
+  );
   $: currentDashboard = $dashboardListItems?.items?.find(
     (listing) => listing.name === $page.params.dashboard
   );
