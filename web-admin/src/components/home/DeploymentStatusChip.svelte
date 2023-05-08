@@ -1,8 +1,11 @@
 <script lang="ts">
-  import { V1DeploymentStatus } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceGetProject,
+    V1DeploymentStatus,
+  } from "@rilldata/web-admin/client";
   import { getDashboardsForProject } from "@rilldata/web-admin/components/projects/dashboards";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/components/projects/invalidations";
-  import { useProject } from "@rilldata/web-admin/components/projects/use-project";
+  import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/use-project";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
@@ -20,17 +23,22 @@
   export let project: string;
   export let iconOnly = false;
 
-  $: proj = useProject(organization, project);
+  $: proj = createAdminServiceGetProject(organization, project);
+  // Poll specifically for the project's deployment status
+  $: projectDeploymentStatus = useProjectDeploymentStatus(
+    organization,
+    project
+  );
   let deploymentStatus: V1DeploymentStatus;
   $: currentStatusDisplay =
     !!deploymentStatus && statusDisplays[deploymentStatus];
 
   const queryClient = useQueryClient();
 
-  $: if ($proj.data?.prodDeployment?.status) {
+  $: if ($projectDeploymentStatus.data) {
     const prevStatus = deploymentStatus;
 
-    deploymentStatus = $proj.data?.prodDeployment?.status;
+    deploymentStatus = $projectDeploymentStatus.data;
 
     if (
       prevStatus &&

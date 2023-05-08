@@ -1,14 +1,20 @@
-import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
+import {
+  V1DeploymentStatus,
+  createAdminServiceGetProject,
+} from "@rilldata/web-admin/client";
 
 const PollTimeDuringReconcile = 1000;
 const PollTimeDuringError = 5000;
 const PollTimeWhenProjectReady = 60 * 1000;
 
-export function useProject(orgName: string, projName: string) {
-  return createAdminServiceGetProject(orgName, projName, {
+export function useProjectDeploymentStatus(orgName: string, projName: string) {
+  return createAdminServiceGetProject<V1DeploymentStatus>(orgName, projName, {
     query: {
+      select: (data) => {
+        return data?.prodDeployment?.status;
+      },
       refetchInterval: (data) => {
-        switch (data?.prodDeployment?.status) {
+        switch (data) {
           case "DEPLOYMENT_STATUS_PENDING":
           case "DEPLOYMENT_STATUS_RECONCILING":
             return PollTimeDuringReconcile;

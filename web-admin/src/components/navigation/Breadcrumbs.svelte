@@ -1,11 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { useProject } from "@rilldata/web-admin/components/projects/use-project";
+  import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/use-project";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceGetOrganization,
+    createAdminServiceGetProject,
     createAdminServiceListOrganizations,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
@@ -27,7 +28,9 @@
   $: isOrganizationPage = $page.route.id === "/[organization]";
 
   $: projectName = $page.params.project;
-  $: project = useProject(orgName, projectName);
+  $: project = createAdminServiceGetProject(orgName, projectName);
+  // Poll specifically for the project's deployment status
+  $: projectDeploymentStatus = useProjectDeploymentStatus(orgName, projectName);
   $: projects = createAdminServiceListProjectsForOrganization(
     orgName,
     undefined,
@@ -41,7 +44,7 @@
 
   $: dashboardListItems = useDashboardListItems(
     instanceId,
-    $project.data.prodDeployment?.status
+    $projectDeploymentStatus.data
   );
   $: currentDashboard = $dashboardListItems?.items?.find(
     (listing) => listing.name === $page.params.dashboard
