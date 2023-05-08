@@ -10,12 +10,7 @@
 
   $: proj = createAdminServiceGetProject(
     $page.params.organization,
-    $page.params.project,
-    {
-      query: {
-        placeholderData: undefined,
-      },
-    }
+    $page.params.project
   );
 
   // Avoid a race condition: make sure the runtime store has been updated (with the host, instanceID, and jwt).
