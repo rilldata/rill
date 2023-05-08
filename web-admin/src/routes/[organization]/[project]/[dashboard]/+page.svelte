@@ -10,7 +10,7 @@
     useDashboardListItems,
   } from "@rilldata/web-admin/components/projects/dashboards";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/components/projects/invalidations";
-  import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/use-project";
+  import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/selectors";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import {
     getRuntimeServiceListCatalogEntriesQueryKey,

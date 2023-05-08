@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/use-project";
+  import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceGetCurrentUser,
