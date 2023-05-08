@@ -6,9 +6,13 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { projectShareStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { useLocalProjectTitle } from "@rilldata/web-common/layout/navigation/useLocalProjectTitle";
   import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
+  import {
+    BehaviourEventAction,
+    BehaviourEventMedium,
+  } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
@@ -43,7 +47,13 @@
   $: displayName = $metaQuery.data?.label;
   $: isEditableDashboard = $featureFlags.readOnly === false;
 
+  $: projectTitle = useLocalProjectTitle($runtime?.instanceId);
+
   function deployModal() {
+    behaviourEvent.fireDeployEvent(
+      projectTitle,
+      BehaviourEventAction.DeployStart
+    );
     projectShareStore.set(true);
   }
 </script>

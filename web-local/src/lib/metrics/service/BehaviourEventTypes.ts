@@ -5,6 +5,11 @@ export enum BehaviourEventAction {
   Navigate = "navigate",
   PublishStart = "publish-start",
   PublishSuccess = "publish-success",
+  DeployStart = "deploy-start",
+  GithubConnectedStart = "ghconnected-start",
+  GithubConnectedSuccess = "ghconnected-success",
+  DataAccessStart = "dataaccess-start",
+  DataAccessSuccess = "dataaccess-success",
 }
 
 export enum BehaviourEventMedium {

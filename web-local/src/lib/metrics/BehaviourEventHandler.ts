@@ -1,4 +1,7 @@
-import type { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
+import type {
+  BehaviourEventMedium,
+  BehaviourEventAction,
+} from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
 import type { MetricsService } from "@rilldata/web-local/lib/metrics/service/MetricsService";
 import type {
   CommonUserFields,
@@ -34,23 +37,12 @@ export class BehaviourEventHandler {
     ]);
   }
 
-  public firePublishEvent(
-    entity_name: string,
-    medium: BehaviourEventMedium,
-    space: MetricsEventSpace,
-    source_screen: MetricsEventScreenName,
-    screen_name: MetricsEventScreenName,
-    isStart: boolean
-  ) {
-    const hashedName = MD5(entity_name).toString();
-    return this.metricsService.dispatch("publishEvent", [
+  public fireDeployEvent(project_name: string, action: BehaviourEventAction) {
+    const project_id = MD5(project_name).toString();
+    return this.metricsService.dispatch("deployEvent", [
       this.commonUserMetrics,
-      hashedName,
-      medium,
-      space,
-      source_screen,
-      screen_name,
-      isStart,
+      project_id,
+      action,
     ]);
   }
 }
