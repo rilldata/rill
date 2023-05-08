@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import { V1DeploymentStatus } from "@rilldata/web-admin/client";
   import {
+    DashboardListItem,
     getDashboardListItemsFromFilesAndCatalogEntries,
     getDashboardsForProject,
   } from "@rilldata/web-admin/components/projects/dashboards";
@@ -16,6 +17,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { errorStore } from "../../../../components/errors/error-store";
   import ProjectBuilding from "../../../../components/projects/ProjectBuilding.svelte";
   import ProjectErrored from "../../../../components/projects/ProjectErrored.svelte";
 
@@ -92,13 +94,27 @@
       },
     }
   );
-  $: dashboardListItems = getDashboardListItemsFromFilesAndCatalogEntries(
-    $dashboardFiles.data?.paths,
-    $dashboardCatalogEntries.data?.entries
-  );
-  $: currentDashboard = dashboardListItems?.find(
-    (listing) => listing.name === $page.params.dashboard
-  );
+  let dashboardListItems: DashboardListItem[];
+  let currentDashboard: DashboardListItem;
+  $: if ($dashboardFiles.isSuccess && $dashboardCatalogEntries.isSuccess) {
+    dashboardListItems = getDashboardListItemsFromFilesAndCatalogEntries(
+      $dashboardFiles.data?.paths,
+      $dashboardCatalogEntries.data?.entries
+    );
+
+    currentDashboard = dashboardListItems?.find(
+      (listing) => listing.name === $page.params.dashboard
+    );
+
+    // If no dashboard is found, show a 404 page
+    if (!currentDashboard) {
+      errorStore.set({
+        statusCode: 404,
+        header: "Dashboard not found",
+        body: `The dashboard you requested could not be found. Please check that you have provided a valid dashboard name.`,
+      });
+    }
+  }
 </script>
 
 <svelte:head>
@@ -107,7 +123,9 @@
 
 {#if isProjectBuilding}
   <ProjectBuilding organization={orgName} project={projectName} />
-{:else if !currentDashboard?.isValid}
+{:else if !currentDashboard}
+  <!-- show nothing -->
+{:else if currentDashboard && !currentDashboard.isValid}
   <ProjectErrored organization={orgName} project={projectName} />
 {:else}
   <Dashboard

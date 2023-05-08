@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-
 	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -328,6 +327,15 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	// delete from projects if KeepProjectRoles flag is set
+	if !req.KeepProjectRoles {
+		err = s.admin.DB.DeleteAllProjectMemberUserForOrganization(ctx, org.ID, user.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -451,6 +459,71 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 	}
 
 	return &adminv1.LeaveOrganizationResponse{}, nil
+}
+
+func (s *Server) CreateAutoinviteDomain(ctx context.Context, req *adminv1.CreateAutoinviteDomainRequest) (*adminv1.CreateAutoinviteDomainResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can add autoinvite domain")
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "org not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "role not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	_, err = s.admin.DB.InsertOrganizationAutoinviteDomain(ctx, &database.InsertOrganizationAutoinviteDomainOptions{
+		OrgID:     org.ID,
+		OrgRoleID: role.ID,
+		Domain:    req.Domain,
+	})
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.CreateAutoinviteDomainResponse{}, nil
+}
+
+func (s *Server) RemoveAutoinviteDomain(ctx context.Context, req *adminv1.RemoveAutoinviteDomainRequest) (*adminv1.RemoveAutoinviteDomainResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can remove autoinvite domain")
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "org not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	invite, err := s.admin.DB.FindOrganizationAutoinviteDomain(ctx, org.ID, req.Domain)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Errorf(codes.NotFound, "auto invite not found for org %q and domain %q", org.Name, req.Domain)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	err = s.admin.DB.DeleteOrganizationAutoinviteDomain(ctx, invite.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.RemoveAutoinviteDomainResponse{}, nil
 }
 
 func organizationToDTO(o *database.Organization) *adminv1.Organization {

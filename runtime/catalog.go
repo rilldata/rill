@@ -17,7 +17,7 @@ func (r *Runtime) ListCatalogEntries(ctx context.Context, instanceID string, t d
 		return nil, err
 	}
 
-	return cat.FindEntries(ctx, t), nil
+	return cat.FindEntries(ctx, t)
 }
 
 func (r *Runtime) GetCatalogEntry(ctx context.Context, instanceID, name string) (*drivers.CatalogEntry, error) {
@@ -26,9 +26,12 @@ func (r *Runtime) GetCatalogEntry(ctx context.Context, instanceID, name string) 
 		return nil, err
 	}
 
-	e, ok := cat.FindEntry(ctx, name)
-	if !ok {
-		return nil, fmt.Errorf("entry not found")
+	e, err := cat.FindEntry(ctx, name)
+	if err != nil {
+		if errors.Is(err, drivers.ErrNotFound) {
+			return nil, fmt.Errorf("entry not found")
+		}
+		return nil, err
 	}
 
 	return e, nil
@@ -117,7 +120,10 @@ func (r *Runtime) SyncExistingTables(ctx context.Context, instanceID string) err
 	}
 
 	// Get full catalog
-	objs := cat.FindEntries(ctx, drivers.ObjectTypeUnspecified)
+	objs, err := cat.FindEntries(ctx, drivers.ObjectTypeUnspecified)
+	if err != nil {
+		return err
+	}
 
 	// Get information schema
 	tables, err := olap.InformationSchema().All(ctx)

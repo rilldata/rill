@@ -11,11 +11,9 @@ export function clickOutside(node: Node, [elementsToIgnore, cb]) {
     }
   }
   document.addEventListener("click", handleClick);
-  document.addEventListener("focusin", handleClick);
   return {
     destroy() {
       document.removeEventListener("click", handleClick);
-      document.removeEventListener("focusin", handleClick);
     },
   };
 }

@@ -130,3 +130,17 @@ curl --request GET --url http://localhost:8080/v1/instances/default/files/-/mode
 curl --request POST --url http://localhost:8080/v1/instances/default/files/-/models/ad_bids.sql --header 'Content-Type: application/json' \
   --data '{ "blob": "select id, timestamp, publisher, domain, bid_price from ad_bids_source" }'
 ```
+
+## Using a DuckDB nightly build
+
+The following steps apply for macOS, but a similar approach should work for Linux.
+
+1. Download the latest DuckDB nightly from Github from the "Artifacts" section on the newest workflow run [here](https://github.com/duckdb/duckdb/actions?query=branch%3Amaster+event%3Arepository_dispatch+workflow%3AOSX))
+2. Unzip the downloaded archive and copy the `libduckdb.dylib` file in the `libduckdb-osx-universal` folder to `/usr/local/lib`
+  - You must use the command-line to copy the file. If you touch it using the Finder, macOS will quarantine it. To remove a quarantine, run: `xattr -d com.apple.quarantine libduckdb.dylib`.
+3. DuckDB usually does not support older file formats, so delete the `stage.db` and `stage.db.wal` files in your `dev-project`
+4. Add the flag `-tags=duckdb_use_lib` when running `go run` or `go build` to use the nightly build of DuckDB
+  - If testing the local frontend, you need to temporarily set it in the `dev-runtime` script in `package.json`
+  - For details, see [Linking DuckDB](https://github.com/marcboeker/go-duckdb#linking-duckdb)
+
+Note: DuckDB often makes breaking changes to its APIs, so you may encounter other errors when using a dev version of DuckDB.

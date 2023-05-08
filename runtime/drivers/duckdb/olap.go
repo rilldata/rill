@@ -13,8 +13,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument"
 	"go.uber.org/zap"
 )
 
@@ -22,9 +22,9 @@ import (
 var (
 	meter                 = global.Meter("runtime/drivers/duckdb")
 	queriesCounter        = observability.Must(meter.Int64Counter("queries"))
-	queueLatencyHistogram = observability.Must(meter.Int64Histogram("queue_latency", instrument.WithUnit("ms")))
-	queryLatencyHistogram = observability.Must(meter.Int64Histogram("query_latency", instrument.WithUnit("ms")))
-	totalLatencyHistogram = observability.Must(meter.Int64Histogram("total_latency", instrument.WithUnit("ms")))
+	queueLatencyHistogram = observability.Must(meter.Int64Histogram("queue_latency", metric.WithUnit("ms")))
+	queryLatencyHistogram = observability.Must(meter.Int64Histogram("query_latency", metric.WithUnit("ms")))
+	totalLatencyHistogram = observability.Must(meter.Int64Histogram("total_latency", metric.WithUnit("ms")))
 )
 
 func (c *connection) Dialect() drivers.Dialect {
@@ -90,18 +90,18 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		totalLatency := time.Since(start).Milliseconds()
 		queueLatency := acquiredTime.Sub(start).Milliseconds()
 
-		attrs := []attribute.KeyValue{
+		attrs := attribute.NewSet(
 			attribute.String("db", c.config.DBFilePath),
 			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
 			attribute.Bool("failed", outErr != nil),
-		}
+		)
 
-		queriesCounter.Add(ctx, 1, attrs...)
-		queueLatencyHistogram.Record(ctx, queueLatency, attrs...)
-		totalLatencyHistogram.Record(ctx, totalLatency, attrs...)
+		queriesCounter.Add(ctx, 1, metric.WithAttributeSet(attrs))
+		queueLatencyHistogram.Record(ctx, queueLatency, metric.WithAttributeSet(attrs))
+		totalLatencyHistogram.Record(ctx, totalLatency, metric.WithAttributeSet(attrs))
 		if acquired {
 			// Only track query latency when not cancelled in queue
-			queryLatencyHistogram.Record(ctx, totalLatency-queueLatency, attrs...)
+			queryLatencyHistogram.Record(ctx, totalLatency-queueLatency, metric.WithAttributeSet(attrs))
 		}
 	}()
 

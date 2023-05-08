@@ -2,12 +2,14 @@ package catalog
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/dag"
@@ -303,8 +305,13 @@ func (s *Service) runMigrationItems(
 		}
 
 		if err != nil {
+			errCode := runtimev1.ReconcileError_CODE_OLAP
+			var connectorErr *connectors.PermissionDeniedError
+			if errors.As(err, &connectorErr) {
+				errCode = runtimev1.ReconcileError_CODE_SOURCE_PERMISSION_DENIED
+			}
 			result.Errors = append(result.Errors, &runtimev1.ReconcileError{
-				Code:     runtimev1.ReconcileError_CODE_OLAP,
+				Code:     errCode,
 				Message:  err.Error(),
 				FilePath: item.Path,
 			})
@@ -368,9 +375,13 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 	}
 
 	// NOTE :: IngestStorageLimitInBytes check will only work if sources are ingested in serial
+	ingestionLimit, err := s.getSourceIngestionLimit(ctx, inst)
+	if err != nil {
+		return err
+	}
 	opts := migrator.Options{
 		InstanceEnv:               inst.ResolveVariables(),
-		IngestStorageLimitInBytes: s.getSourceIngestionLimit(ctx, inst),
+		IngestStorageLimitInBytes: ingestionLimit,
 	}
 
 	// create in olap
@@ -386,12 +397,15 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 	if err != nil {
 		return err
 	}
-	_, found := s.Catalog.FindEntry(ctx, s.InstID, item.Name)
+	_, err = s.Catalog.FindEntry(ctx, s.InstID, item.Name)
 	// create or updated
-	if found {
-		return s.Catalog.UpdateEntry(ctx, s.InstID, catalog)
+	if err != nil {
+		if !errors.Is(err, drivers.ErrNotFound) {
+			return err
+		}
+		return s.Catalog.CreateEntry(ctx, s.InstID, catalog)
 	}
-	return s.Catalog.CreateEntry(ctx, s.InstID, catalog)
+	return s.Catalog.UpdateEntry(ctx, s.InstID, catalog)
 }
 
 func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error {
@@ -441,10 +455,14 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 
 	// update in olap
 	if item.Type == MigrationUpdate {
+		ingestionLimit, err := s.getSourceIngestionLimit(ctx, inst)
+		if err != nil {
+			return err
+		}
 		err = s.wrapMigrator(item.CatalogInFile, func() error {
 			opts := migrator.Options{
 				InstanceEnv:               inst.ResolveVariables(),
-				IngestStorageLimitInBytes: s.getSourceIngestionLimit(ctx, inst),
+				IngestStorageLimitInBytes: ingestionLimit,
 			}
 			return migrator.Update(ctx, s.Olap, s.Repo, opts, item.CatalogInStore, item.CatalogInFile)
 		})
@@ -535,13 +553,16 @@ func (s *Service) addToDag(item *MigrationItem) *runtimev1.ReconcileError {
 	return nil
 }
 
-func (s *Service) getSourceIngestionLimit(ctx context.Context, inst *drivers.Instance) int64 {
+func (s *Service) getSourceIngestionLimit(ctx context.Context, inst *drivers.Instance) (int64, error) {
 	if inst.IngestionLimitBytes == 0 {
-		return math.MaxInt64
+		return math.MaxInt64, nil
 	}
 
 	var sizeSoFar int64
-	entries := s.Catalog.FindEntries(ctx, s.InstID, drivers.ObjectTypeSource)
+	entries, err := s.Catalog.FindEntries(ctx, s.InstID, drivers.ObjectTypeSource)
+	if err != nil {
+		return 0, err
+	}
 	for _, entry := range entries {
 		sizeSoFar += entry.BytesIngested
 	}
@@ -549,7 +570,7 @@ func (s *Service) getSourceIngestionLimit(ctx context.Context, inst *drivers.Ins
 	limitInBytes := inst.IngestionLimitBytes
 	limitInBytes -= sizeSoFar
 	if limitInBytes < 0 {
-		return 0
+		return 0, nil
 	}
-	return limitInBytes
+	return limitInBytes, nil
 }

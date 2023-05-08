@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/admin/database"
@@ -65,30 +66,29 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 		return nil, err
 	}
 
+	hostToSlotsUsed := make(map[string]int, len(stats))
+	for _, stat := range stats {
+		hostToSlotsUsed[stat.RuntimeHost] = stat.SlotsUsed
+	}
+
 	// Find runtime with available capacity
-	var target *staticRuntime
+	targets := make([]*staticRuntime, 0)
 	for _, candidate := range p.spec.Runtimes {
 		if opts.Region != "" && opts.Region != candidate.Region {
 			continue
 		}
 
-		available := true
-		for _, stat := range stats {
-			if stat.RuntimeHost == candidate.Host && stat.SlotsUsed+opts.Slots > candidate.Slots {
-				available = false
-				break
-			}
-		}
-
-		if available {
-			target = candidate
-			break
+		if hostToSlotsUsed[candidate.Host]+opts.Slots <= candidate.Slots {
+			targets = append(targets, candidate)
 		}
 	}
-	if target == nil {
+
+	if len(targets) == 0 {
 		return nil, fmt.Errorf("no runtimes found with sufficient available slots")
 	}
 
+	// nolint:gosec // We don't need cryptographically secure random numbers
+	target := targets[rand.Intn(len(targets))]
 	return &Allocation{
 		Host:         target.Host,
 		Audience:     target.Audience,
