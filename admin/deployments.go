@@ -20,6 +20,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const hibernateTTL = 30 * 24 * time.Hour
+
 func (s *Service) createDeployment(ctx context.Context, proj *database.Project) (*database.Deployment, error) {
 	// We require Github info on project to create a deployment
 	if proj.GithubURL == nil || proj.GithubInstallationID == nil || proj.ProdBranch == "" {
@@ -162,6 +164,46 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 		if err := s.triggerReconcile(ctx, depl); err != nil {
 			s.logger.Error("failed to trigger reconcile", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 			return err
+		}
+	}
+
+	return nil
+}
+
+// HIBERNATED free deployments
+func (s *Service) HibernateDeployments(ctx context.Context) error {
+	// Not checking any permissions as its use only internally by scheduled job, will add if required
+	projects, err := s.DB.FindAllProjects(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, proj := range projects {
+		depl, err := s.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+		if err != nil {
+			fmt.Printf("depl not found for proj %s", proj.Name)
+			continue
+		}
+
+		if depl.Status == database.DeploymentStatusReconciling && time.Since(depl.UpdatedOn) < 30*time.Minute {
+			fmt.Printf("skipping because it is already running\n")
+			continue
+		}
+
+		if proj.ProductionTTL < time.Since(depl.UpdatedOn) {
+			err := s.teardownDeployment(ctx, proj, depl)
+			if err != nil {
+				fmt.Printf("error in teardown deployment, error:%v", err)
+				continue
+			}
+
+			updatedDepl, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusHibernated, "")
+			if err != nil {
+				fmt.Println("could not update status: %w", err)
+				continue
+			}
+
+			fmt.Println("updated depl ", updatedDepl)
 		}
 	}
 

@@ -58,6 +58,7 @@ type DB interface {
 	UpdateOrganization(ctx context.Context, id string, opts *UpdateOrganizationOptions) (*Organization, error)
 	UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
 
+	FindAllProjects(ctx context.Context) ([]*Project, error)
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID string) ([]*Project, error)
@@ -198,18 +199,18 @@ type Project struct {
 	Description          string
 	Public               bool
 	Region               string
-	GithubURL            *string   `db:"github_url"`
-	GithubInstallationID *int64    `db:"github_installation_id"`
-	ProdBranch           string    `db:"prod_branch"`
-	ProdVariables        Variables `db:"prod_variables"`
-	ProdOLAPDriver       string    `db:"prod_olap_driver"`
-	ProdOLAPDSN          string    `db:"prod_olap_dsn"`
-	ProdSlots            int       `db:"prod_slots"`
-	ProdDeploymentID     *string   `db:"prod_deployment_id"`
-	ProductionTTL        string    `db:"production_ttl"`
-	PreviewTTL           string    `db:"preview_ttl"`
-	CreatedOn            time.Time `db:"created_on"`
-	UpdatedOn            time.Time `db:"updated_on"`
+	GithubURL            *string       `db:"github_url"`
+	GithubInstallationID *int64        `db:"github_installation_id"`
+	ProdBranch           string        `db:"prod_branch"`
+	ProdVariables        Variables     `db:"prod_variables"`
+	ProdOLAPDriver       string        `db:"prod_olap_driver"`
+	ProdOLAPDSN          string        `db:"prod_olap_dsn"`
+	ProdSlots            int           `db:"prod_slots"`
+	ProdDeploymentID     *string       `db:"prod_deployment_id"`
+	ProductionTTL        time.Duration `db:"production_ttl"`
+	PreviewTTL           time.Duration `db:"preview_ttl"`
+	CreatedOn            time.Time     `db:"created_on"`
+	UpdatedOn            time.Time     `db:"updated_on"`
 }
 
 // Variables implements JSON SQL encoding of variables in Project.
@@ -260,6 +261,7 @@ const (
 	DeploymentStatusOK          DeploymentStatus = 2
 	DeploymentStatusReconciling DeploymentStatus = 3
 	DeploymentStatusError       DeploymentStatus = 4
+	DeploymentStatusHibernated  DeploymentStatus = 3
 )
 
 // Deployment is a single deployment of a git branch.
