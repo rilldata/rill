@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -106,18 +107,18 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		grpc.ChainStreamInterceptor(
 			observability.TracingStreamServerInterceptor(),
 			observability.LoggingStreamServerInterceptor(s.logger),
-			observability.RecovererStreamServerInterceptor(),
+			errorMappingStreamServerInterceptor(),
+			grpc_auth.StreamServerInterceptor(checkUserAgent),
 			grpc_validator.StreamServerInterceptor(),
 			s.authenticator.StreamServerInterceptor(),
-			grpc_auth.StreamServerInterceptor(CheckUserAgent),
 		),
 		grpc.ChainUnaryInterceptor(
 			observability.TracingUnaryServerInterceptor(),
 			observability.LoggingUnaryServerInterceptor(s.logger),
-			observability.RecovererUnaryServerInterceptor(),
+			errorMappingUnaryServerInterceptor(),
+			grpc_auth.UnaryServerInterceptor(checkUserAgent),
 			grpc_validator.UnaryServerInterceptor(),
 			s.authenticator.UnaryServerInterceptor(),
-			grpc_auth.UnaryServerInterceptor(CheckUserAgent),
 		),
 	)
 
@@ -228,7 +229,38 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 	return resp, nil
 }
 
-func CheckUserAgent(ctx context.Context) (context.Context, error) {
+// errorMappingUnaryServerInterceptor is an interceptor that applies mapGRPCError.
+func errorMappingUnaryServerInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		resp, err := handler(ctx, req)
+		return resp, mapGRPCError(err)
+	}
+}
+
+// errorMappingUnaryServerInterceptor is an interceptor that applies mapGRPCError.
+func errorMappingStreamServerInterceptor() grpc.StreamServerInterceptor {
+	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		err := handler(srv, ss)
+		return mapGRPCError(err)
+	}
+}
+
+// mapGRPCError rewrites errors returned from gRPC handlers before they are returned to the client.
+func mapGRPCError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return status.Error(codes.DeadlineExceeded, err.Error())
+	}
+	if errors.Is(err, context.Canceled) {
+		return status.Error(codes.Canceled, err.Error())
+	}
+	return err
+}
+
+// checkUserAgent is an interceptor that checks rejects from requests from old versions of the Rill CLI.
+func checkUserAgent(ctx context.Context) (context.Context, error) {
 	userAgent := strings.Split(metautils.ExtractIncoming(ctx).Get("user-agent"), " ")
 	var ver string
 	for _, s := range userAgent {

@@ -9,7 +9,9 @@
 
   $: org = createAdminServiceGetOrganization($page.params.organization);
   $: projs = createAdminServiceListProjectsForOrganization(
-    $page.params.organization
+    $page.params.organization,
+    undefined,
+    { query: { enabled: !!$org.data.organization } }
   );
 
   $: if ($projs.data && $projs.data.projects?.length > 0) {
@@ -19,7 +21,7 @@
   }
 
   function openDocs() {
-    window.open("https://docs.rilldata.com/quick-start", "_blank");
+    window.open("https://docs.rilldata.com/quickstart/local", "_blank");
   }
 </script>
 

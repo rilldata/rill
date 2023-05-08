@@ -76,7 +76,12 @@
     allTimeRangeQuery = useModelAllTimeRange(
       $runtime.instanceId,
       $metricsViewQuery.data.entry.metricsView.model,
-      $metricsViewQuery.data.entry.metricsView.timeDimension
+      $metricsViewQuery.data.entry.metricsView.timeDimension,
+      {
+        query: {
+          enabled: !!hasTimeSeries,
+        },
+      }
     );
     defaultTimeRange = ISODurationToTimePreset(
       $metricsViewQuery.data.entry.metricsView?.defaultTimeRange

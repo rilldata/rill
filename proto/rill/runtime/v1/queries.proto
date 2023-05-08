@@ -46,6 +46,14 @@ service QueryService {
     };
   }
 
+  // MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+  rpc MetricsViewRows(MetricsViewRowsRequest) returns (MetricsViewRowsResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/rows",
+      body: "*"
+    };
+  }
+
   // Profiling APIs
 
   // ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
@@ -206,6 +214,25 @@ message MetricsViewTotalsRequest {
 message MetricsViewTotalsResponse {
   repeated MetricsViewColumn meta = 1;
   google.protobuf.Struct data = 2;
+}
+
+// Request message for QueryService.MetricsViewRows
+message MetricsViewRowsRequest {
+  string instance_id = 1;
+  string metrics_view_name = 2;
+  google.protobuf.Timestamp time_start = 3;
+  google.protobuf.Timestamp time_end = 4;
+  MetricsViewFilter filter = 5;
+  repeated MetricsViewSort sort = 6;
+  int32 limit = 7;
+  int64 offset = 8;
+  int32 priority = 9;
+}
+
+// Response message for QueryService.MetricsViewRows
+message MetricsViewRowsResponse {
+  repeated MetricsViewColumn meta = 1;
+  repeated google.protobuf.Struct data = 2;
 }
 
 // Sort clause for metrics view requests

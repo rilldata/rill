@@ -1698,6 +1698,11 @@ export class RemoveOrganizationMemberRequest extends Message<RemoveOrganizationM
    */
   email = "";
 
+  /**
+   * @generated from field: bool keep_project_roles = 3;
+   */
+  keepProjectRoles = false;
+
   constructor(data?: PartialMessage<RemoveOrganizationMemberRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1708,6 +1713,7 @@ export class RemoveOrganizationMemberRequest extends Message<RemoveOrganizationM
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "keep_project_roles", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveOrganizationMemberRequest {
@@ -2487,6 +2493,160 @@ export class GetGithubRepoStatusResponse extends Message<GetGithubRepoStatusResp
 
   static equals(a: GetGithubRepoStatusResponse | PlainMessage<GetGithubRepoStatusResponse> | undefined, b: GetGithubRepoStatusResponse | PlainMessage<GetGithubRepoStatusResponse> | undefined): boolean {
     return proto3.util.equals(GetGithubRepoStatusResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.CreateAutoinviteDomainRequest
+ */
+export class CreateAutoinviteDomainRequest extends Message<CreateAutoinviteDomainRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string domain = 2;
+   */
+  domain = "";
+
+  /**
+   * @generated from field: string role = 3;
+   */
+  role = "";
+
+  constructor(data?: PartialMessage<CreateAutoinviteDomainRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreateAutoinviteDomainRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "domain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateAutoinviteDomainRequest {
+    return new CreateAutoinviteDomainRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateAutoinviteDomainRequest {
+    return new CreateAutoinviteDomainRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateAutoinviteDomainRequest {
+    return new CreateAutoinviteDomainRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateAutoinviteDomainRequest | PlainMessage<CreateAutoinviteDomainRequest> | undefined, b: CreateAutoinviteDomainRequest | PlainMessage<CreateAutoinviteDomainRequest> | undefined): boolean {
+    return proto3.util.equals(CreateAutoinviteDomainRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.CreateAutoinviteDomainResponse
+ */
+export class CreateAutoinviteDomainResponse extends Message<CreateAutoinviteDomainResponse> {
+  constructor(data?: PartialMessage<CreateAutoinviteDomainResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.CreateAutoinviteDomainResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateAutoinviteDomainResponse {
+    return new CreateAutoinviteDomainResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateAutoinviteDomainResponse {
+    return new CreateAutoinviteDomainResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateAutoinviteDomainResponse {
+    return new CreateAutoinviteDomainResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateAutoinviteDomainResponse | PlainMessage<CreateAutoinviteDomainResponse> | undefined, b: CreateAutoinviteDomainResponse | PlainMessage<CreateAutoinviteDomainResponse> | undefined): boolean {
+    return proto3.util.equals(CreateAutoinviteDomainResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RemoveAutoinviteDomainRequest
+ */
+export class RemoveAutoinviteDomainRequest extends Message<RemoveAutoinviteDomainRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string domain = 2;
+   */
+  domain = "";
+
+  constructor(data?: PartialMessage<RemoveAutoinviteDomainRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RemoveAutoinviteDomainRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "domain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveAutoinviteDomainRequest {
+    return new RemoveAutoinviteDomainRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveAutoinviteDomainRequest {
+    return new RemoveAutoinviteDomainRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveAutoinviteDomainRequest {
+    return new RemoveAutoinviteDomainRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RemoveAutoinviteDomainRequest | PlainMessage<RemoveAutoinviteDomainRequest> | undefined, b: RemoveAutoinviteDomainRequest | PlainMessage<RemoveAutoinviteDomainRequest> | undefined): boolean {
+    return proto3.util.equals(RemoveAutoinviteDomainRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RemoveAutoinviteDomainResponse
+ */
+export class RemoveAutoinviteDomainResponse extends Message<RemoveAutoinviteDomainResponse> {
+  constructor(data?: PartialMessage<RemoveAutoinviteDomainResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RemoveAutoinviteDomainResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveAutoinviteDomainResponse {
+    return new RemoveAutoinviteDomainResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveAutoinviteDomainResponse {
+    return new RemoveAutoinviteDomainResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveAutoinviteDomainResponse {
+    return new RemoveAutoinviteDomainResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RemoveAutoinviteDomainResponse | PlainMessage<RemoveAutoinviteDomainResponse> | undefined, b: RemoveAutoinviteDomainResponse | PlainMessage<RemoveAutoinviteDomainResponse> | undefined): boolean {
+    return proto3.util.equals(RemoveAutoinviteDomainResponse, a, b);
   }
 }
 

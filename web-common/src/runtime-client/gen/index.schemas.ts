@@ -121,6 +121,16 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   priority?: number;
 };
 
+export type QueryServiceMetricsViewRowsBody = {
+  timeStart?: string;
+  timeEnd?: string;
+  filter?: V1MetricsViewFilter;
+  sort?: V1MetricsViewSort[];
+  limit?: number;
+  offset?: string;
+  priority?: number;
+};
+
 export type QueryServiceColumnDescriptiveStatisticsParams = {
   columnName?: string;
   priority?: number;
@@ -361,6 +371,7 @@ export interface V1RefreshAndReconcileRequest {
  - CODE_DEPENDENCY: Code artifact is valid, but has invalid dependencies
  - CODE_OLAP: Error returned from the OLAP database
  - CODE_SOURCE: Error encountered during source inspection or ingestion
+ - CODE_SOURCE_PERMISSION_DENIED: Error returned when unauthorised to access remote sources
  */
 export type V1ReconcileErrorCode =
   typeof V1ReconcileErrorCode[keyof typeof V1ReconcileErrorCode];
@@ -373,6 +384,7 @@ export const V1ReconcileErrorCode = {
   CODE_DEPENDENCY: "CODE_DEPENDENCY",
   CODE_OLAP: "CODE_OLAP",
   CODE_SOURCE: "CODE_SOURCE",
+  CODE_SOURCE_PERMISSION_DENIED: "CODE_SOURCE_PERMISSION_DENIED",
 } as const;
 
 /**
@@ -517,15 +529,12 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
-export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1TimeSeriesValue[];
-}
-
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
 }
+
+export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
@@ -536,6 +545,16 @@ export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
+}
+
+export interface V1MetricsViewTimeSeriesResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1TimeSeriesValue[];
+}
+
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
 }
 
 export interface V1MetricsView {

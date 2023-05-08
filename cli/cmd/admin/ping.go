@@ -4,15 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
 func PingCmd(cfg *config.Config) *cobra.Command {
-	var adminURL string
-
 	pingCmd := &cobra.Command{
 		Use:   "ping",
 		Short: "Ping",
@@ -33,7 +31,7 @@ func PingCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	pingCmd.Flags().StringVar(&adminURL, "base-url", "https://admin.rilldata.io", "Base URL for the admin API")
+	pingCmd.Flags().StringVar(&cfg.AdminURL, "base-url", "https://admin.rilldata.com", "Base URL for the admin API")
 
 	return pingCmd
 }
