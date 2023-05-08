@@ -32,7 +32,7 @@
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { getContext, onMount } from "svelte";
+  import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { SIDE_PAD } from "../../../layout/config";
@@ -157,7 +157,6 @@
 
       embeddedSourceErrors = embeddedSourcesError(resp.errors, embeddedSources);
       fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-
       if (!resp.errors.length && hasChanged) {
         sanitizedQuery = sanitizeQuery(content);
       }

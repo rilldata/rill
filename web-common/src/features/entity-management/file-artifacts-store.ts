@@ -46,13 +46,6 @@ const fileArtifactsEntitiesReducers = {
     });
   },
 
-  // setRuntimeError(path: string, errors: Array<V1ReconcileError>) {
-  //   createOrUpdateFileArtifact(path, (entityData) => {
-  //     entityData.errors = errors;
-  //   });
-  // },
-
-  // SK: Only handles embedded source errors, not model entity errors (those errors don't have file paths)
   setErrors(affectedPaths: Array<string>, errors: Array<V1ReconcileError>) {
     const errorsForPaths = new Map<string, Array<V1ReconcileError>>();
     affectedPaths.forEach((affectedPath) =>
