@@ -39,8 +39,6 @@
   );
   $: isProjectPage = $page.route.id === "/[organization]/[project]";
 
-  // Here, we compose the dashboard list via two separate runtime queries.
-  // We should create a custom hook to hide this complexity.
   $: dashboardListItems = useDashboardListItems(
     instanceId,
     $project.data.prodDeployment?.status

@@ -69,7 +69,10 @@
   }
 
   // We avoid calling `GetCatalogEntry` to check for dashboard validity because that would trigger a 404 page.
-  $: dashboardListItems = useDashboardListItems(instanceId, project);
+  $: dashboardListItems = useDashboardListItems(
+    instanceId,
+    $project.data.prodDeployment?.status
+  );
   let currentDashboard: DashboardListItem;
   $: if ($dashboardListItems.isSuccess) {
     currentDashboard = $dashboardListItems?.items?.find(

@@ -86,9 +86,9 @@ export function useDashboardListItems(
   items: DashboardListItem[];
   isSuccess: boolean;
 }> {
-  const hasProjectStats = !!projectStatus;
+  const hasProjectStatus = !!projectStatus;
   const isProfiling =
-    hasProjectStats &&
+    hasProjectStatus &&
     (projectStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
       projectStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING);
 
@@ -102,7 +102,7 @@ export function useDashboardListItems(
         {
           query: {
             placeholderData: undefined,
-            enabled: !isProfiling && hasProjectStats && !!instanceId,
+            enabled: !isProfiling && hasProjectStatus && !!instanceId,
           },
         }
       ),
@@ -114,7 +114,7 @@ export function useDashboardListItems(
         {
           query: {
             placeholderData: undefined,
-            enabled: !isProfiling && hasProjectStats && !!instanceId,
+            enabled: !isProfiling && hasProjectStatus && !!instanceId,
           },
         }
       ),
