@@ -189,6 +189,19 @@ service AdminService {
   rpc GetGithubRepoStatus(GetGithubRepoStatusRequest) returns (GetGithubRepoStatusResponse) {
     option (google.api.http) = {get: "/v1/github/repositories"};
   }
+
+  // CreateAutoinviteDomain adds a domain to the autoinvite list
+  rpc CreateAutoinviteDomain(CreateAutoinviteDomainRequest) returns (CreateAutoinviteDomainResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/autoinvite",
+      body: "*"
+    };
+  }
+
+  // RemoveAutoinviteDomain removes a domain from the autoinvite list
+  rpc RemoveAutoinviteDomain(RemoveAutoinviteDomainRequest) returns (RemoveAutoinviteDomainResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/autoinvite/{domain}"};
+  }
 }
 
 message PingRequest {}
@@ -460,6 +473,21 @@ message GetGithubRepoStatusResponse {
   string grant_access_url = 2;
   string default_branch = 3;
 }
+
+message CreateAutoinviteDomainRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string domain = 2 [(validate.rules).string.min_len = 1];
+  string role = 3 [(validate.rules).string.min_len = 1];
+}
+
+message CreateAutoinviteDomainResponse {}
+
+message RemoveAutoinviteDomainRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string domain = 2 [(validate.rules).string.min_len = 1];
+}
+
+message RemoveAutoinviteDomainResponse {}
 
 message User {
   string id = 1;

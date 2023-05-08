@@ -35,15 +35,15 @@
 
 <div
   aria-hidden={!$navigationLayout?.visible}
-  class="box-border	assets fixed"
+  class="box-border assets fixed"
   style:left="{-$navVisibilityTween * $navigationWidth}px"
 >
   <div
     class="
-  border-r 
-  fixed 
-  overflow-auto 
-  border-gray-200 
+  border-r
+  fixed
+  overflow-auto
+  border-gray-200
   transition-colors
   h-screen
   bg-white

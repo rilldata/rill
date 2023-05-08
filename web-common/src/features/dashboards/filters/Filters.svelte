@@ -192,7 +192,7 @@ The main feature-set component for dashboard filters
 </script>
 
 <section
-  class="pl-2  grid gap-x-2 items-start"
+  class="pl-2 grid gap-x-2 items-start"
   style:grid-template-columns="max-content auto"
   style:min-height={MIN_CONTAINER_HEIGHT}
 >
