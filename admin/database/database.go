@@ -78,6 +78,7 @@ type DB interface {
 	DeleteDeployment(ctx context.Context, id string) error
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, logs string) (*Deployment, error)
 	UpdateDeploymentBranch(ctx context.Context, id, branch string) (*Deployment, error)
+	UpdateDeploymentTS(ctx context.Context, ids []string) (*Deployment, error)
 	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
 
 	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
@@ -205,6 +206,8 @@ type Project struct {
 	ProdOLAPDSN          string    `db:"prod_olap_dsn"`
 	ProdSlots            int       `db:"prod_slots"`
 	ProdDeploymentID     *string   `db:"prod_deployment_id"`
+	ProductionTTL        string    `db:"production_ttl"`
+	PreviewTTL           string    `db:"preview_ttl"`
 	CreatedOn            time.Time `db:"created_on"`
 	UpdatedOn            time.Time `db:"updated_on"`
 }

@@ -174,6 +174,8 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
 	}
 
+	s.admin.UpdateDeplTS(ctx, depl.ID)
+
 	return &adminv1.GetProjectResponse{
 		Project:            s.projToDTO(proj, org.Name),
 		ProdDeployment:     deploymentToDTO(depl),

@@ -121,6 +121,51 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 	return nil
 }
 
+func (s *Service) UpdateDeplTS(ctx context.Context, deplID string) {
+	s.deplTSCache.lock.Lock()
+	defer s.deplTSCache.lock.Unlock()
+
+	s.deplTSCache.cache[deplID] = true
+}
+
+func (s *Service) LastUsedFlusher(ctx context.Context) {
+	ticker := time.NewTicker(20 * time.Second)
+	quit := make(chan struct{})
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				fmt.Println("Tick at", ticker.C, " and ", s.deplTSCache.cache)
+
+				if len(s.deplTSCache.cache) > 0 {
+					err := s.updateDeplTSToDB(ctx)
+					if err != nil {
+						fmt.Printf("Error while flush update timestamp map into db, error: %v", err)
+					}
+				}
+			case <-quit:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+}
+
+func (s *Service) updateDeplTSToDB(ctx context.Context) error {
+	s.deplTSCache.lock.Lock()
+	defer s.deplTSCache.lock.Unlock()
+
+	deplIds := make([]string, 0, len(s.deplTSCache.cache))
+	for k := range s.deplTSCache.cache {
+		deplIds = append(deplIds, k)
+	}
+
+	_, err := s.DB.UpdateDeploymentTS(ctx, deplIds)
+
+	s.deplTSCache.cache = make(map[string]bool)
+	return err
+}
+
 // UpdateProject updates a project and any impacted deployments.
 // It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
 func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions, reconcileDeployment bool) (*database.Project, error) {

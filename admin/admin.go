@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"net/http"
+	"sync"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v50/github"
@@ -21,6 +22,11 @@ type Options struct {
 	ProvisionerSpec     string
 }
 
+type updateTSCache struct {
+	cache map[string]bool
+	lock  sync.Mutex
+}
+
 type Service struct {
 	DB             database.DB
 	opts           *Options
@@ -31,6 +37,7 @@ type Service struct {
 	closeCtx       context.Context
 	closeCtxCancel context.CancelFunc
 	Email          *email.Client
+	deplTSCache    *updateTSCache
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client) (*Service, error) {
@@ -75,7 +82,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 	// Create context that we cancel in Close() (for background reconciles)
 	ctx, cancel := context.WithCancel(context.Background())
 
-	return &Service{
+	adm := &Service{
 		DB:             db,
 		opts:           opts,
 		logger:         logger,
@@ -85,7 +92,12 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		closeCtx:       ctx,
 		closeCtxCancel: cancel,
 		Email:          emailClient,
-	}, nil
+		deplTSCache:    &updateTSCache{cache: make(map[string]bool)},
+	}
+
+	adm.LastUsedFlusher(ctx)
+
+	return adm, nil
 }
 
 func (s *Service) Close() error {
