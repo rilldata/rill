@@ -62,7 +62,6 @@
           $organizations.data.organizations.map((org) => ({
             key: org.name,
             main: org.name,
-            callback: () => goto(`/${org.name}`),
           }))}
         menuKey={orgName}
         onSelectMenuOption={(organization) => goto(`/${organization}`)}
@@ -79,10 +78,10 @@
           $projects.data.projects.map((proj) => ({
             key: proj.name,
             main: proj.name,
-            callback: () => goto(`/${orgName}/${proj.name}`),
           }))}
         menuKey={projectName}
-        onSelectMenuOption={(project) => goto(`/${orgName}/${project}`)}
+        onSelectMenuOption={(project) =>
+          goto(`/${orgName}/${project}/-/redirect`)}
       />
     {/if}
     {#if currentDashboard}
@@ -95,8 +94,6 @@
             return {
               key: listing.name,
               main: listing?.title || listing.name,
-              callback: () =>
-                goto(`/${orgName}/${projectName}/${listing.name}`),
             };
           })}
         menuKey={currentDashboard.name}

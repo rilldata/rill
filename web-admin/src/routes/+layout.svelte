@@ -1,6 +1,7 @@
 <script lang="ts">
+  import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
-  import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
     QueryCache,
     QueryClient,
@@ -9,7 +10,6 @@
   import { globalErrorCallback } from "../components/errors/error-utils";
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../components/navigation/TopNavigationBar.svelte";
-  import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
 
   const queryClient = new QueryClient({
     queryCache: new QueryCache({

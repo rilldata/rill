@@ -7,13 +7,13 @@
     uploadTableFiles,
   } from "@rilldata/web-common/features/sources/add-source/file-upload";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
+  import { appStore } from "@rilldata/web-common/layout/app-store";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     createRuntimeServiceDeleteFileAndReconcile,
     createRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";

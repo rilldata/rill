@@ -19,6 +19,12 @@
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
     createRuntimeServiceGetCatalogEntry,
     createRuntimeServicePutFileAndReconcile,
@@ -29,14 +35,8 @@
     V1ReconcileResponse,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
-  import { appQueryStatusStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
-  import {
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
+  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
   import { WorkspaceHeader } from "../../../layout/workspace";

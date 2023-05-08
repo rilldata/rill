@@ -2,6 +2,7 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { appStore } from "@rilldata/web-common/layout/app-store";
   import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
     createRuntimeServiceGetCatalogEntry,
@@ -9,8 +10,7 @@
     V1PutFileAndReconcileResponse,
     V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
-  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { onMount, setContext } from "svelte";
