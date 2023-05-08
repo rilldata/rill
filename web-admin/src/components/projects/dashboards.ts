@@ -5,9 +5,8 @@ import {
   createRuntimeServiceListFiles,
 } from "@rilldata/web-common/runtime-client";
 import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
 import Axios from "axios";
-import { derived, get, Readable } from "svelte/store";
+import { derived, Readable } from "svelte/store";
 
 export interface DashboardListItem {
   name: string;
