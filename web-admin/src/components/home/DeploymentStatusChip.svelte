@@ -80,6 +80,7 @@
     [V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING]: {
       icon: Spinner,
       iconProps: {
+        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
         className: "text-purple-600 hover:text-purple-500",
         status: EntityStatus.Running,
       },
@@ -90,6 +91,7 @@
     [V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING]: {
       icon: Spinner,
       iconProps: {
+        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
         className: "text-purple-600 hover:text-purple-500",
         status: EntityStatus.Running,
       },
