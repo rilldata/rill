@@ -138,7 +138,7 @@
     <div
       slot="tooltip-content"
       style="min-height: 300px; width: 300px;"
-      class="border border-2 border-black p-3 rounded backdrop-blur-md	"
+      class="border border-2 border-black p-3 rounded backdrop-blur-md"
     >
       This is a tooltip. It will follow our little 🚐 everywhere it goes. Ignore
       the design; the <i>positioning semantics</i> are the important part.

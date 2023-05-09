@@ -6,8 +6,6 @@ sidebar_position: 0
 
 Follow this tutorial to deploy an existing Rill project to Rill Cloud. When you deploy a project, its dashboards become available online and you can invite other people to access it.
 
-If you have not yet created a Rill project, check out the [Quick start on cloud](../quickstart/cloud.md) tutorial instead.
-
 ## Push the project to Github
 
 Rill Cloud connects to a repository on Github containing a Rill project, and continuously deploys that project on every push. Therefore, your project must be on Github before you deploy it to Rill.

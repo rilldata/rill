@@ -3,15 +3,13 @@
   import { V1DeploymentStatus } from "@rilldata/web-admin/client";
   import {
     DashboardListItem,
-    getDashboardListItemsFromFilesAndCatalogEntries,
     getDashboardsForProject,
+    useDashboardListItems,
   } from "@rilldata/web-admin/components/projects/dashboards";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/components/projects/invalidations";
   import { useProject } from "@rilldata/web-admin/components/projects/use-project";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import {
-    createRuntimeServiceListCatalogEntries,
-    createRuntimeServiceListFiles,
     getRuntimeServiceListCatalogEntriesQueryKey,
     getRuntimeServiceListFilesQueryKey,
   } from "@rilldata/web-common/runtime-client";
@@ -22,6 +20,8 @@
   import ProjectErrored from "../../../../components/projects/ProjectErrored.svelte";
 
   const queryClient = useQueryClient();
+
+  $: instanceId = $runtime?.instanceId;
 
   $: orgName = $page.params.organization;
   $: projectName = $page.params.project;
@@ -50,12 +50,12 @@
 
       // Invalidate the queries used to assess dashboard validity
       queryClient.invalidateQueries(
-        getRuntimeServiceListFilesQueryKey($runtime?.instanceId, {
+        getRuntimeServiceListFilesQueryKey(instanceId, {
           glob: "dashboards/*.yaml",
         })
       );
       queryClient.invalidateQueries(
-        getRuntimeServiceListCatalogEntriesQueryKey($runtime?.instanceId, {
+        getRuntimeServiceListCatalogEntriesQueryKey(instanceId, {
           type: "OBJECT_TYPE_METRICS_VIEW",
         })
       );
@@ -68,41 +68,14 @@
     return invalidateDashboardsQueries(queryClient, dashboardNames);
   }
 
-  // Here we check to see if a dashboard is valid by looking at `DashboardListItem.isValid`
-  // As is the case in `Breadcrumbs.svelte`, there are two queries we compose to get the dashboard list items,
-  // and we should hide this complexity in a custom hook.
   // We avoid calling `GetCatalogEntry` to check for dashboard validity because that would trigger a 404 page.
-  $: dashboardFiles = createRuntimeServiceListFiles(
-    $runtime?.instanceId,
-    {
-      glob: "dashboards/*.yaml",
-    },
-    {
-      query: {
-        enabled: !!project && !!$runtime?.instanceId,
-      },
-    }
+  $: dashboardListItems = useDashboardListItems(
+    instanceId,
+    $project.data.prodDeployment?.status
   );
-  $: dashboardCatalogEntries = createRuntimeServiceListCatalogEntries(
-    $runtime?.instanceId,
-    {
-      type: "OBJECT_TYPE_METRICS_VIEW",
-    },
-    {
-      query: {
-        enabled: !!project && !!$runtime?.instanceId,
-      },
-    }
-  );
-  let dashboardListItems: DashboardListItem[];
   let currentDashboard: DashboardListItem;
-  $: if ($dashboardFiles.isSuccess && $dashboardCatalogEntries.isSuccess) {
-    dashboardListItems = getDashboardListItemsFromFilesAndCatalogEntries(
-      $dashboardFiles.data?.paths,
-      $dashboardCatalogEntries.data?.entries
-    );
-
-    currentDashboard = dashboardListItems?.find(
+  $: if ($dashboardListItems.isSuccess) {
+    currentDashboard = $dashboardListItems?.items?.find(
       (listing) => listing.name === $page.params.dashboard
     );
 
