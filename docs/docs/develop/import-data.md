@@ -72,50 +72,11 @@ For details about all available properties for all remote connectors, see the sy
 
 ## Authenticating remote sources
 
-When attempting to access private data in S3 or Google Cloud Storage, you need to configure your local machine with credentials to the relevant cloud provider. Rill uses the official AWS and Google Cloud SDKs to automatically detect and connect to the cloud. Your credentials are never stored in Rill.
+Rill requires credentials to connect to remote data sources such as private buckets in S3 or GCS.
 
-### Setting local credentials for GCS
-Google Cloud Platform credentials are enabled through `gcloud` authentication in the terminal.
+When running Rill locally, Rill attempts to find existing credentials configured on your computer. When deploying projects to Rill Cloud, you must explicitly provide service account credentials with correct access permissions.
 
-First, ensure you have the `gcloud` CLI installed locally by running the following CLI command. If it is not installed, go through the [gcloud install steps](https://cloud.google.com/sdk/docs/install).
+Please consult the relevant documentation for instructions on how to configure credentials:
 
-```bash
-gcloud --version
-```
-
-Second, authenticate your local machine by running the following command, which opens a browser window and takes you through the Google authentication flow:
-
-```bash
-gcloud auth application-default login
-```
-
-Upon login, private GCS files available to this account can be accessed by Rill.
-
-### Setting local credentials for S3
-Amazon Web Services credentials are enabled through `aws` authentication in the terminal.
-
-
-First, ensure you have the AWS CLI installed locally by running the following command. If it is not installed, go through the [AWS CLI install steps](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html).
-
-```bash
-aws --version
-```
-
-Second, create an [access key and secret](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html) for a user that has _S3 read access_.
-
-Third, run the following command to configure your local AWS credentials:
-
-```bash
-aws configure
-```
-
-Enter the `Access Key`, `Access Secret`, and `region` for the AWS user with S3 read access. The default output format has no effect on Rill.
-
-```
-AWS Access Key ID [None]: <your secret access ID>
-AWS Secret Access Key [None]: <your secret access key>
-Default region name [None]: <your region>
-Default output format [None]: <None>
-```
-
-Upon login, private S3 files available to this account can be accessed by Rill.
+- [Amazon S3](../connectors/s3.md)
+- [Google Cloud Storage (GCS)](../connectors/gcs.md)
