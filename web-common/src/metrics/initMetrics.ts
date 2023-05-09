@@ -1,9 +1,9 @@
+import { BehaviourEventHandler } from "@rilldata/web-common/metrics/BehaviourEventHandler";
+import { BehaviourEventFactory } from "@rilldata/web-common/metrics/service/BehaviourEventFactory";
+import { MetricsService } from "@rilldata/web-common/metrics/service/MetricsService";
+import { ProductHealthEventFactory } from "@rilldata/web-common/metrics/service/ProductHealthEventFactory";
+import { RillIntakeClient } from "@rilldata/web-common/metrics/service/RillIntakeClient";
 import type { V1RuntimeGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
-import { BehaviourEventHandler } from "@rilldata/web-local/lib/metrics/BehaviourEventHandler";
-import { BehaviourEventFactory } from "@rilldata/web-local/lib/metrics/service/BehaviourEventFactory";
-import { MetricsService } from "@rilldata/web-local/lib/metrics/service/MetricsService";
-import { ProductHealthEventFactory } from "@rilldata/web-local/lib/metrics/service/ProductHealthEventFactory";
-import { RillIntakeClient } from "@rilldata/web-local/lib/metrics/service/RillIntakeClient";
 import { ActiveEventHandler } from "./ActiveEventHandler";
 import { collectCommonUserFields } from "./collectCommonUserFields";
 

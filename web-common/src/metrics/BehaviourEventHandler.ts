@@ -1,10 +1,10 @@
-import type { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
-import type { MetricsService } from "@rilldata/web-local/lib/metrics/service/MetricsService";
+import type { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+import type { MetricsService } from "@rilldata/web-common/metrics/service/MetricsService";
 import type {
   CommonUserFields,
   MetricsEventScreenName,
   MetricsEventSpace,
-} from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
+} from "@rilldata/web-common/metrics/service/MetricsTypes";
 import MD5 from "crypto-js/md5";
 
 // TODO: simplify telemetry code to fewer classes and layers
