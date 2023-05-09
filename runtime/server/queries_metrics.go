@@ -18,6 +18,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		MetricsViewName: req.MetricsViewName,
 		DimensionName:   req.DimensionName,
 		MeasureNames:    req.MeasureNames,
+		InlineMeasures:  req.InlineMeasures,
 		TimeStart:       req.TimeStart,
 		TimeEnd:         req.TimeEnd,
 		Limit:           req.Limit,
@@ -42,6 +43,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 	q := &queries.MetricsViewTimeSeries{
 		MetricsViewName: req.MetricsViewName,
 		MeasureNames:    req.MeasureNames,
+		InlineMeasures:  req.InlineMeasures,
 		TimeStart:       req.TimeStart,
 		TimeEnd:         req.TimeEnd,
 		TimeGranularity: req.TimeGranularity,
@@ -64,6 +66,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 	q := &queries.MetricsViewTotals{
 		MetricsViewName: req.MetricsViewName,
 		MeasureNames:    req.MeasureNames,
+		InlineMeasures:  req.InlineMeasures,
 		TimeStart:       req.TimeStart,
 		TimeEnd:         req.TimeEnd,
 		Filter:          req.Filter,

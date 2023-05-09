@@ -16,6 +16,7 @@ type MetricsViewToplist struct {
 	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
 	DimensionName   string                       `json:"dimension_name,omitempty"`
 	MeasureNames    []string                     `json:"measure_names,omitempty"`
+	InlineMeasures  []*runtimev1.InlineMeasure   `json:"inline_measures,omitempty"`
 	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
 	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
 	Limit           int64                        `json:"limit,omitempty"`
@@ -93,21 +94,16 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 }
 
 func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
+	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
+	if err != nil {
+		return "", nil, err
+	}
+
 	dimName := safeName(q.DimensionName)
 	selectCols := []string{dimName}
-	for _, n := range q.MeasureNames {
-		found := false
-		for _, m := range mv.Measures {
-			if m.Name == n {
-				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
-				selectCols = append(selectCols, expr)
-				found = true
-				break
-			}
-		}
-		if !found {
-			return "", nil, fmt.Errorf("measure does not exist: '%s'", n)
-		}
+	for _, m := range ms {
+		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+		selectCols = append(selectCols, expr)
 	}
 
 	whereClause := "1=1"
@@ -162,4 +158,40 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 	)
 
 	return sql, args, nil
+}
+
+// resolveMeasures returns the selected measures
+func resolveMeasures(mv *runtimev1.MetricsView, inlines []*runtimev1.InlineMeasure, selectedNames []string) ([]*runtimev1.MetricsView_Measure, error) {
+	// Build combined measures
+	ms := make([]*runtimev1.MetricsView_Measure, len(selectedNames))
+	for i, n := range selectedNames {
+		found := false
+		// Search in the inlines (take precedence)
+		for _, m := range inlines {
+			if m.Name == n {
+				ms[i] = &runtimev1.MetricsView_Measure{
+					Name:       m.Name,
+					Expression: m.Expression,
+				}
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+		// Search in the metrics view
+		for _, m := range mv.Measures {
+			if m.Name == n {
+				ms[i] = m
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("measure does not exist: '%s'", n)
+		}
+	}
+
+	return ms, nil
 }

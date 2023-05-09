@@ -803,6 +803,46 @@ func TestServer_MetricsViewToplist_2measures(t *testing.T) {
 	require.Equal(t, 2.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
 }
 
+func TestServer_MetricsViewToplist_InlineMeasures(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_0", "tmp_measure", "measure_2"},
+		InlineMeasures: []*runtimev1.InlineMeasure{
+			{
+				Name:       "tmp_measure",
+				Expression: "COUNT(distinct id)",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewSort{
+			{
+				Name:      "measure_0",
+				Ascending: true,
+			},
+			{
+				Name:      "measure_2",
+				Ascending: true,
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Data))
+	require.Equal(t, 4, len(tr.Data[0].Fields))
+
+	require.Equal(t, "yahoo.com", tr.Data[0].Fields["domain"].GetStringValue())
+	require.Equal(t, 1.0, tr.Data[0].Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[0].Fields["measure_2"].GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[0].Fields["tmp_measure"].GetNumberValue())
+
+	require.Equal(t, "msn.com", tr.Data[1].Fields["domain"].GetStringValue())
+	require.Equal(t, 1.0, tr.Data[1].Fields["measure_0"].GetNumberValue())
+	require.Equal(t, 2.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[1].Fields["tmp_measure"].GetNumberValue())
+}
+
 func TestServer_MetricsViewToplist_complete_source_sanity_test(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
