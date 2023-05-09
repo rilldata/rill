@@ -244,20 +244,20 @@
   };
 </script>
 
-<TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
+<TimeSeriesChartContainer end={endValue} start={startValue} {workspaceWidth}>
   <div class="bg-white sticky top-0" style="z-index:100">
     <SeachableFilterButton
+      label="Measures"
+      on:deselect-all={setAllMeasuresNotVisible}
+      on:item-clicked={toggleMeasureVisibility}
+      on:select-all={setAllMeasuresVisible}
       selectableItems={availableMeasureLabels}
       selectedItems={visibleMeasuresBitmask}
-      on:item-clicked={toggleMeasureVisibility}
-      on:deselect-all={setAllMeasuresNotVisible}
-      on:select-all={setAllMeasuresVisible}
-      label="Measures"
       tooltipText="Choose measures to display"
     />
   </div>
   <div class="bg-white sticky left-0 top-0">
-    <div style:padding-left="24px" style:height="20px" />
+    <div style:height="20px" style:padding-left="24px" />
     <!-- top axis element -->
     <div />
     {#if $dashboardStore?.selectedTimeRange}
@@ -274,7 +274,7 @@
   </div>
   <!-- bignumbers and line charts -->
   {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
-    {#each $metaQuery.data?.measures.filter((_, i) => visibleMeasuresBitmask[i]) as measure, index (measure.name)}
+    {#each $metaQuery.data?.measures.filter((_, i) => visibleMeasuresBitmask[i]) as measure, index ((measure.name, displayComparison))}
       <!-- FIXME: I can't select the big number by the measure id. -->
       {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
       {@const showComparison = displayComparison}
