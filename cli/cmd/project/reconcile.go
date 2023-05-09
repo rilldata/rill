@@ -54,7 +54,7 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				fmt.Printf("Triggered project reset. To see status, run \"rill project status --project %s\".\n", project)
+				fmt.Printf("Triggered project reset. To see status, run `rill project status --project %s`.\n", project)
 				return nil
 			}
 
@@ -64,7 +64,7 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				fmt.Printf("Triggered refresh. To see status, run \"rill project status --project %s\".\n", project)
+				fmt.Printf("Triggered refresh. To see status, run `rill project status --project %s`.\n", project)
 				return nil
 			}
 
@@ -74,7 +74,7 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("Triggered reconcile. To see status, run \"rill project status --project %s\".\n", project)
+			fmt.Printf("Triggered reconcile. To see status, run `rill project status --project %s`.\n", project)
 			return nil
 		},
 	}

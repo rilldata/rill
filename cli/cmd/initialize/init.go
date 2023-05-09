@@ -84,7 +84,7 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-			fmt.Println("This application is extremely alpha and we want to hear from you if you have any questions or ideas to share!")
+			fmt.Println("This application is alpha and we want to hear from you if you have any questions or ideas to share!")
 			fmt.Println("You can reach us in our Rill Discord server at https://bit.ly/3NSMKdT.")
 			fmt.Println("")
 
@@ -98,7 +98,7 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 				if projectPath == "." {
 					return fmt.Errorf("a Rill project already exists in the current directory")
 				}
-				return fmt.Errorf("a Rill project already exists in directory '%s'", projectPath)
+				return fmt.Errorf("a Rill project already exists in directory %q", projectPath)
 			}
 
 			// Only use example=default if --example was explicitly set.
