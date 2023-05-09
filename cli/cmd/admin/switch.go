@@ -19,15 +19,11 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 	switchCmd := &cobra.Command{
 		Use:    "switch {stage|prod}",
 		Short:  "switch",
-		Args:   cobra.MaximumNArgs(1),
+		Args:   cobra.ExactArgs(1),
 		Hidden: !cfg.IsDev(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				env = args[0]
-			}
-
-			if len(args) == 0 && cfg.Interactive {
-				env = cmdutil.SelectPrompt("Select org to rename", []string{"prod", "stage"}, "")
 			}
 
 			var url string
@@ -38,7 +34,7 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 			case "stage":
 				url = stagingAdminURL
 			default:
-				url = cfg.AdminURL
+				return fmt.Errorf("invalid args provided, valid args are {stage|prod}")
 			}
 
 			err := dotrill.SetDefaultAdminURL(url)
