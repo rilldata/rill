@@ -15,8 +15,8 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	var orgName, description string
 
 	editCmd := &cobra.Command{
-		Use:   "edit",
-		Args:  cobra.NoArgs,
+		Use:   "edit <org-name>",
+		Args:  cobra.MaximumNArgs(1),
 		Short: "Edit organization details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -27,7 +27,10 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if !cmd.Flags().Changed("org") {
+			if len(args) > 0 {
+				orgName = args[0]
+			}
+			if !cmd.Flags().Changed("org") && len(args) == 0 {
 				orgNames, err := cmdutil.OrgNames(ctx, client)
 				if err != nil {
 					return err

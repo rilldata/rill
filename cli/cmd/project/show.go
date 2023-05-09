@@ -13,7 +13,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 	var name, path string
 
 	showCmd := &cobra.Command{
-		Use:   "show",
+		Use:   "show <project-name>",
 		Args:  cobra.NoArgs,
 		Short: "Show project details",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -23,7 +23,11 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if !cmd.Flags().Changed("project") {
+			if len(args) > 0 {
+				name = args[0]
+			}
+
+			if !cmd.Flags().Changed("project") && len(args) == 0 {
 				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
 				if err != nil {
 					return err
@@ -38,7 +42,6 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Found project")
 			cmdutil.TablePrinter(toRow(proj.Project))
 			return nil
 		},

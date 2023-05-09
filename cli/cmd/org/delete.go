@@ -13,17 +13,30 @@ import (
 
 func DeleteCmd(cfg *config.Config) *cobra.Command {
 	var force bool
+	var name string
 
 	deleteCmd := &cobra.Command{
 		Use:   "delete <org-name>",
 		Short: "Delete organization",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
+
+			if len(args) > 0 {
+				name = args[0]
+			}
+
+			if !cmd.Flags().Changed("name") && len(args) == 0 {
+				// Get the new org name from user if not provided in the flag
+				name, err = cmdutil.InputPrompt("Enter the org name", "")
+				if err != nil {
+					return err
+				}
+			}
 
 			// Find all the projects for the given org
 			res, err := client.ListProjectsForOrganization(context.Background(), &adminv1.ListProjectsForOrganizationRequest{OrganizationName: args[0]})
@@ -83,6 +96,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 	deleteCmd.Flags().SortFlags = false
+	deleteCmd.Flags().StringVar(&name, "name", "", "Name")
 	deleteCmd.Flags().BoolVar(&force, "force", false, "Delete forcefully, skips the confirmation")
 
 	return deleteCmd

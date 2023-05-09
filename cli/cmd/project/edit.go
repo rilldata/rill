@@ -16,8 +16,8 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	var public bool
 
 	editCmd := &cobra.Command{
-		Use:   "edit",
-		Args:  cobra.NoArgs,
+		Use:   "edit <project-name>",
+		Args:  cobra.MaximumNArgs(1),
 		Short: "Edit the project details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -28,7 +28,11 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if !cmd.Flags().Changed("project") {
+			if len(args) > 0 {
+				name = args[0]
+			}
+
+			if !cmd.Flags().Changed("project") && len(args) == 0 {
 				names, err := cmdutil.ProjectNamesByOrg(ctx, client, cfg.Org)
 				if err != nil {
 					return err
@@ -92,7 +96,6 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	editCmd.Flags().SortFlags = false
-
 	editCmd.Flags().StringVar(&name, "project", "noname", "Name")
 	editCmd.Flags().StringVar(&description, "description", "", "Description")
 	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "noname", "Production branch name")

@@ -15,8 +15,8 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 	var force bool
 
 	deleteCmd := &cobra.Command{
-		Use:   "delete",
-		Args:  cobra.NoArgs,
+		Use:   "delete <project-name>",
+		Args:  cobra.MaximumNArgs(1),
 		Short: "Delete the project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
@@ -25,7 +25,11 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if !cmd.Flags().Changed("project") {
+			if len(args) > 0 {
+				name = args[0]
+			}
+
+			if !cmd.Flags().Changed("project") && len(args) == 0 {
 				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
 				if err != nil {
 					return err

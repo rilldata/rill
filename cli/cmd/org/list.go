@@ -13,6 +13,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all organizations",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {

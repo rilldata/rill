@@ -17,12 +17,11 @@ func LogoutCmd(cfg *config.Config) *cobra.Command {
 		Use:   "logout",
 		Short: "Logout of the Rill API",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			warn := color.New(color.Bold).Add(color.FgYellow)
 			ctx := cmd.Context()
 
 			token := cfg.AdminToken()
 			if token == "" {
-				warn.Println("You are already logged out.")
+				cmdutil.WarnPrinter("You are already logged out.")
 				return nil
 			}
 
