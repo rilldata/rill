@@ -1,23 +1,21 @@
 ---
 title: Google Cloud Storage (GCS)
-description: Create a Google Cloud service account for connecting to a GCS bucket from Rill Cloud
+description: Connect to data in a GCS bucket
 sidebar_label: GCS
 sidebar_position: 20
 ---
 
 ## How to configure credentials in Rill
 
-How you configure access to S3 depends on whether you are developing a project locally using `rill start` or are setting up a deployment using `rill deploy`.
+How you configure access to GCS depends on whether you are developing a project locally using `rill start` or are setting up a deployment using `rill deploy`.
 
 ### Configure credentials for local development
 
-When developing a project locally, Rill uses the credentials configured in your local environment using the Google Cloud CLI (`gcloud`).
+When developing a project locally, Rill uses the credentials configured in your local environment using the Google Cloud CLI (`gcloud`). Follow these steps to configure it:
 
-To check if you already have the Google Cloud CLI installed and authenticated, open a terminal window and run `gcloud auth list`. If it prints information about your current user, there is nothing more to do. Rill will be able to connect to any data in Google Cloud Storage that you access to.
+1. Open a terminal window and run `gcloud auth list` to check if you already have the Google Cloud CLI installed and authenticated. 
 
-If you do not have the Google Cloud CLI installed, follow these steps:
-
-1. Open a terminal window and follow the steps on [Install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk). Make sure to run `gcloud init` after the installation succeeds (as described in the tutorial).
+2. If it did not print information about your user, follow the steps on [Install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk). Make sure to run `gcloud init` after installation as described in the tutorial.
 
 You have now configured Google Cloud access from your local environment. Rill will detect and use your credentials next time you try to ingest a source.
 
@@ -44,7 +42,7 @@ Here is a step-by-step guide on how to create a Google Cloud service account wit
 3. In the "Create Service Account" window, enter a name for the service account, then click "Create and continue".
 
 4. In the "Role" field, search for and select the "Storage Object Viewer" role. Click "Continue", then click "Done".
-    - This grants the service account access to data in all buckets. To grant access to data only in a specific bucket leave the "Role" field blank, click "Done", then follow the steps described in [Add a principal to a bucket-level policy](https://cloud.google.com/storage/docs/access-control/using-iam-permissions#bucket-add).
+    - This grants the service account access to data in all buckets. To only grant access to data in a specific bucket, leave the "Role" field blank, click "Done", then follow the steps described in [Add a principal to a bucket-level policy](https://cloud.google.com/storage/docs/access-control/using-iam-permissions#bucket-add).
 
 5. On the "Service Accounts" page, locate the service account you just created and click on the three dots on the right-hand side. Select "Manage Keys" from the dropdown menu.
 
@@ -75,7 +73,7 @@ Here is a step-by-step guide on how to create a Google Cloud service account wit
             --member="serviceAccount:rill-service-account@[PROJECT_ID].iam.gserviceaccount.com" \
             --role="roles/storage.objectViewer"
         ```
-    - To grant access to data in a specific bucket, replace `[BUCKET_NAME]` and `[PROJECT_ID]` with your details in the following command, and run it:
+    - To only grant access to data in a specific bucket, replace `[BUCKET_NAME]` and `[PROJECT_ID]` with your details in the following command, and run it:
         ```bash
         gcloud storage buckets add-iam-policy-binding gs://[BUCKET_NAME] \
             --member="serviceAccount:rill-service-account@[PROJECT_ID].iam.gserviceaccount.com" \
