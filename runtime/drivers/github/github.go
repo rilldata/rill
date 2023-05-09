@@ -28,6 +28,7 @@ const (
 
 type DSN struct {
 	GithubURL      string `json:"github_url"`
+	Subpath        string `json:"subpath"`
 	Branch         string `json:"branch"`
 	InstallationID int64  `json:"installation_id"`
 }
@@ -59,10 +60,16 @@ func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, err
 			return err
 		}
 
+		projectDir := tempdir
+		if dsn.Subpath != "" {
+			projectDir = filepath.Join(tempdir, dsn.Subpath)
+		}
+
 		c = &connection{
-			dsnStr:  dsnStr,
-			dsn:     dsn,
-			tempdir: tempdir,
+			dsnStr:     dsnStr,
+			dsn:        dsn,
+			tempdir:    tempdir,
+			projectdir: projectDir,
 		}
 
 		err = c.clone(context.Background())
@@ -85,6 +92,7 @@ type connection struct {
 	dsn    DSN
 	// tempdir path should be absolute
 	tempdir             string
+	projectdir          string
 	cloneURLWithToken   string
 	cloneURLRefreshedOn time.Time
 }

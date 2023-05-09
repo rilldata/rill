@@ -11,7 +11,7 @@
   <slot />
   <button
     style:margin-right="-.2rem"
-    class="hover:bg-red-100 p-1 rounded-xl "
+    class="hover:bg-red-100 p-1 rounded-xl"
     on:click
   >
     <Close />

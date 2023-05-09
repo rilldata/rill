@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"fmt"
 
+	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"golang.org/x/exp/slices"
 )
 
@@ -82,7 +83,7 @@ func (d *DAG) GetDeepChildren(name string) []string {
 	for queue.Len() > 0 {
 		qnode := queue.Front()
 		// iterate through all of its neighbors
-		// mark the visited nodes; enqueue the non-visted
+		// mark the visited nodes; enqueue the non-visited
 		for child, node := range qnode.Value.(*Node).Children {
 			if _, ok := visited[child]; !ok {
 				children = append(children, child)
@@ -94,6 +95,21 @@ func (d *DAG) GetDeepChildren(name string) []string {
 	}
 
 	return children
+}
+
+func (d *DAG) TopologicalSort() []string {
+	visited := make(map[string]bool)
+	stack := make([]string, 0)
+
+	for _, node := range d.NameMap {
+		if visited[node.Name] {
+			continue
+		}
+		stack = d.topologicalSortHelper(node, visited, stack)
+	}
+
+	arrayutil.Reverse(stack)
+	return stack
 }
 
 // GetChildren only returns the immediate children
@@ -164,4 +180,19 @@ func (d *DAG) deleteBranch(n *Node) {
 	}
 
 	delete(d.NameMap, n.Name)
+}
+
+func (d *DAG) topologicalSortHelper(n *Node, visited map[string]bool, stack []string) []string {
+	visited[n.Name] = true
+
+	for _, childNode := range n.Children {
+		if visited[childNode.Name] {
+			continue
+		}
+		stack = d.topologicalSortHelper(childNode, visited, stack)
+	}
+
+	stack = append(stack, n.Name)
+
+	return stack
 }

@@ -4,12 +4,6 @@
  * rill/admin/v1/api.proto
  * OpenAPI spec version: version not set
  */
-export type AdminServiceListProjectsForOrganizationAndGithubURLParams = {
-  githubUrl?: string;
-  pageSize?: number;
-  pageToken?: string;
-};
-
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
   [key: string]: string;
 };
@@ -36,6 +30,7 @@ export type AdminServiceCreateProjectBody = {
   prodOlapDriver?: string;
   prodOlapDsn?: string;
   prodSlots?: string;
+  subpath?: string;
   prodBranch?: string;
   githubUrl?: string;
   variables?: AdminServiceCreateProjectBodyVariables;
@@ -51,9 +46,28 @@ export type AdminServiceListProjectMembersParams = {
   pageToken?: string;
 };
 
+export type AdminServiceListProjectInvitesParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceRemoveOrganizationMemberParams = {
+  keepProjectRoles?: boolean;
+};
+
 export type AdminServiceListOrganizationMembersParams = {
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceListOrganizationInvitesParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceCreateAutoinviteDomainBody = {
+  domain?: string;
+  role?: string;
 };
 
 export type AdminServiceUpdateOrganizationBody = {
@@ -148,6 +162,10 @@ export interface V1RemoveOrganizationMemberResponse {
   [key: string]: any;
 }
 
+export interface V1RemoveAutoinviteDomainResponse {
+  [key: string]: any;
+}
+
 export interface V1ProjectPermissions {
   readProject?: boolean;
   manageProject?: boolean;
@@ -170,6 +188,7 @@ export interface V1Project {
   public?: boolean;
   region?: string;
   githubUrl?: string;
+  subpath?: string;
   prodBranch?: string;
   prodOlapDriver?: string;
   prodOlapDsn?: string;
@@ -217,13 +236,12 @@ export interface V1ListProjectsForOrganizationResponse {
   nextPageToken?: string;
 }
 
-export interface V1ListProjectsForOrganizationAndGithubURLResponse {
-  projects?: V1Project[];
+export interface V1ListProjectMembersResponse {
+  members?: V1Member[];
   nextPageToken?: string;
 }
 
-export interface V1ListProjectMembersResponse {
-  members?: V1Member[];
+export interface V1ListProjectInvitesResponse {
   invites?: V1UserInvite[];
   nextPageToken?: string;
 }
@@ -235,6 +253,10 @@ export interface V1ListOrganizationsResponse {
 
 export interface V1ListOrganizationMembersResponse {
   members?: V1Member[];
+  nextPageToken?: string;
+}
+
+export interface V1ListOrganizationInvitesResponse {
   invites?: V1UserInvite[];
   nextPageToken?: string;
 }
@@ -315,6 +337,10 @@ export interface V1CreateOrganizationResponse {
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
+}
+
+export interface V1CreateAutoinviteDomainResponse {
+  [key: string]: any;
 }
 
 export interface V1AddProjectMemberResponse {

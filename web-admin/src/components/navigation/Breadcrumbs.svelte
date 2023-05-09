@@ -1,23 +1,24 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import {
-    createRuntimeServiceListCatalogEntries,
-    createRuntimeServiceListFiles,
-  } from "@rilldata/web-common/runtime-client";
+  import { useProject } from "@rilldata/web-admin/components/projects/use-project";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceGetCurrentUser,
+    createAdminServiceGetOrganization,
     createAdminServiceListOrganizations,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
-  import { getDashboardListItemsFromFilesAndCatalogEntries } from "../projects/dashboards";
+  import { useDashboardListItems } from "../projects/dashboards";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
   import OrganizationAvatar from "./OrganizationAvatar.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 
-  $: organization = $page.params.organization;
+  $: instanceId = $runtime?.instanceId;
+
+  $: orgName = $page.params.organization;
+  $: organization = createAdminServiceGetOrganization(orgName);
   $: organizations = createAdminServiceListOrganizations(undefined, {
     query: {
       enabled: !!$user.data.user,
@@ -25,40 +26,24 @@
   });
   $: isOrganizationPage = $page.route.id === "/[organization]";
 
-  $: project = $page.params.project;
-  $: projects = createAdminServiceListProjectsForOrganization(organization);
+  $: projectName = $page.params.project;
+  $: project = useProject(orgName, projectName);
+  $: projects = createAdminServiceListProjectsForOrganization(
+    orgName,
+    undefined,
+    {
+      query: {
+        enabled: !!$organization.data.organization,
+      },
+    }
+  );
   $: isProjectPage = $page.route.id === "/[organization]/[project]";
 
-  // Here, we compose the dashboard list via two separate runtime queries.
-  // We should create a custom hook to hide this complexity.
-  $: dashboardFiles = createRuntimeServiceListFiles(
-    $runtime?.instanceId,
-    {
-      glob: "dashboards/*.yaml",
-    },
-    {
-      query: {
-        enabled: !!project && !!$runtime?.instanceId,
-      },
-    }
+  $: dashboardListItems = useDashboardListItems(
+    instanceId,
+    $project.data.prodDeployment?.status
   );
-  $: dashboardCatalogEntries = createRuntimeServiceListCatalogEntries(
-    $runtime?.instanceId,
-    {
-      type: "OBJECT_TYPE_METRICS_VIEW",
-    },
-    {
-      query: {
-        placeholderData: undefined,
-        enabled: !!project && !!$runtime?.instanceId,
-      },
-    }
-  );
-  $: dashboardListItems = getDashboardListItemsFromFilesAndCatalogEntries(
-    $dashboardFiles.data?.paths,
-    $dashboardCatalogEntries.data?.entries
-  );
-  $: currentDashboard = dashboardListItems?.find(
+  $: currentDashboard = $dashboardListItems?.items?.find(
     (listing) => listing.name === $page.params.dashboard
   );
   $: isDashboardPage =
@@ -67,35 +52,34 @@
 
 <nav>
   <ol class="flex flex-row items-center">
-    {#if organization}
+    {#if $organization.data.organization}
       <BreadcrumbItem
-        label={organization}
+        label={orgName}
         isCurrentPage={isOrganizationPage}
         menuOptions={$organizations.data?.organizations?.length > 1 &&
           $organizations.data.organizations.map((org) => ({
             key: org.name,
             main: org.name,
-            callback: () => goto(`/${org.name}`),
           }))}
-        menuKey={organization}
+        menuKey={orgName}
         onSelectMenuOption={(organization) => goto(`/${organization}`)}
       >
-        <OrganizationAvatar {organization} slot="icon" />
+        <OrganizationAvatar organization={orgName} slot="icon" />
       </BreadcrumbItem>
     {/if}
-    {#if project}
+    {#if $project.data.project}
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
-        label={project}
+        label={projectName}
         isCurrentPage={isProjectPage}
         menuOptions={$projects.data?.projects?.length > 1 &&
           $projects.data.projects.map((proj) => ({
             key: proj.name,
             main: proj.name,
-            callback: () => goto(`/${organization}/${proj.name}`),
           }))}
-        menuKey={project}
-        onSelectMenuOption={(project) => goto(`/${organization}/${project}`)}
+        menuKey={projectName}
+        onSelectMenuOption={(project) =>
+          goto(`/${orgName}/${project}/-/redirect`)}
       />
     {/if}
     {#if currentDashboard}
@@ -103,18 +87,16 @@
       <BreadcrumbItem
         label={currentDashboard?.title || currentDashboard.name}
         isCurrentPage={isDashboardPage}
-        menuOptions={dashboardListItems?.length > 1 &&
-          dashboardListItems.map((listing) => {
+        menuOptions={$dashboardListItems?.items?.length > 1 &&
+          $dashboardListItems.items.map((listing) => {
             return {
               key: listing.name,
               main: listing?.title || listing.name,
-              callback: () =>
-                goto(`/${organization}/${project}/${listing.name}`),
             };
           })}
         menuKey={currentDashboard.name}
         onSelectMenuOption={(dashboard) =>
-          goto(`/${organization}/${project}/${dashboard}`)}
+          goto(`/${orgName}/${projectName}/${dashboard}`)}
       />
     {/if}
   </ol>

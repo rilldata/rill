@@ -6,13 +6,12 @@
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import {
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
-
   import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";

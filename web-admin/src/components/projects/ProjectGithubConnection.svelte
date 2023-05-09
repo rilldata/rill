@@ -1,6 +1,5 @@
 <script lang="ts">
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
-  import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -24,20 +23,17 @@
     >
     <div>
       {#if isGithubConnected}
-        <div class="flex items-center gap-x-1">
-          <CheckCircle className="text-blue-500" size={"16px"} />
-          <a
-            href={$proj.data?.project?.githubUrl}
-            class="flex items-center gap-x-1 text-gray-800 flex-1 truncate"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <Github className="inline-block w-4 h-4" />
-            <span class="font-semibold text-[12px] leading-5 font-mono truncate"
-              >{repoName}</span
-            ></a
-          >
-        </div>
+        <a
+          href={$proj.data?.project?.githubUrl}
+          class="flex items-center gap-x-1 text-gray-800 flex-1 truncate"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <Github className="inline-block w-4 h-4" />
+          <span class="font-semibold text-[12px] leading-5 font-mono truncate">
+            {repoName}
+          </span>
+        </a>
       {:else}
         <Tooltip alignment="start" distance={4}>
           <div class="flex items-center gap-x-1">

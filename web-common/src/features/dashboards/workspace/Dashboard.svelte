@@ -7,8 +7,8 @@
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { appStore } from "@rilldata/web-common/layout/app-store";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";

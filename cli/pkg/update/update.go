@@ -37,6 +37,8 @@ func CheckVersion(ctx context.Context, currentVersion string) error {
 
 	v2, err := version.NewVersion(latestVersion)
 	if err != nil {
+		// Set version as empty if any parse errors
+		_ = dotrill.SetVersion("")
 		return err
 	}
 
@@ -58,18 +60,20 @@ func LatestVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	if cachedVersion != "" {
-		cachedVersionUpdatedAt, err := dotrill.GetVersionUpdatedAt()
+	cachedVersionUpdatedAt, err := dotrill.GetVersionUpdatedAt()
+	if err != nil {
+		return "", err
+	}
+
+	if cachedVersion != "" && cachedVersionUpdatedAt != "" {
+		updatedAt, err := time.Parse(time.RFC3339, cachedVersionUpdatedAt)
 		if err != nil {
+			// Set versionTs as empty if any parse errors
+			_ = dotrill.SetVersionUpdatedAt("")
 			return "", err
 		}
 
-		updatedAt, err := time.Parse("2006-01-02 15:04", cachedVersionUpdatedAt)
-		if err != nil {
-			return "", err
-		}
-
-		if time.Since(updatedAt).Hours() < versionCheckTTL.Hours() {
+		if time.Since(updatedAt) < versionCheckTTL {
 			return cachedVersion, nil
 		}
 	}
@@ -80,7 +84,7 @@ func LatestVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	err = dotrill.SetVersionUpdatedAt(time.Now().Format("2006-01-02 15:04"))
+	err = dotrill.SetVersionUpdatedAt(time.Now().Format(time.RFC3339))
 	if err != nil {
 		return "", err
 	}

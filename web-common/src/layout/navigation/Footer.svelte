@@ -42,7 +42,7 @@
 </script>
 
 <div
-  class="flex flex-col  pt-3 pb-3 gap-y-1 bg-gray-50 border-t border-gray-200 sticky bottom-0"
+  class="flex flex-col pt-3 pb-3 gap-y-1 bg-gray-50 border-t border-gray-200 sticky bottom-0"
 >
   {#each lineItems as lineItem}
     <a href={lineItem.href} target="_blank" rel="noreferrer"
@@ -66,7 +66,7 @@
     >
   {/each}
   <div
-    class="px-4 py-1 text-gray-600 flex flex-row  gap-x-2"
+    class="px-4 py-1 text-gray-600 flex flex-row gap-x-2"
     style:font-size="10px"
   >
     <span class="text-gray-400">

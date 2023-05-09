@@ -15,6 +15,12 @@
       placeholderData: undefined,
     },
   });
+
+  $: hasAnOrganization = $orgs.data?.organizations?.length > 0;
+
+  function getFirstNameFromDisplayName(displayName: string) {
+    return displayName.split(" ")[0];
+  }
 </script>
 
 <svelte:head>
@@ -22,26 +28,28 @@
 </svelte:head>
 
 <AuthRedirect>
-  <section class="flex flex-col w-4/5 mx-auto h-2/5">
-    <h1 class="text-4xl leading-10 font-light mb-2 my-auto">
-      Hi {$user.data.user.displayName}!
+  <section
+    class="flex flex-col mx-8 my-8 sm:my-16 sm:mx-16 lg:mx-32 lg:my-24 2xl:mx-64 mx-auto"
+  >
+    <h1 class="text-4xl leading-10 font-light mb-2">
+      Hi {getFirstNameFromDisplayName($user.data.user.displayName)}!
     </h1>
-    <div class="flex flex-row">
-      <div class="w-2/3">
+    <div class="flex flex-row gap-x-7 flex-wrap">
+      <div class="md:w-1/2">
         {#if $orgs.isSuccess}
-          {#if $orgs.data.organizations.length === 0}
+          {#if !hasAnOrganization}
             <WelcomeMessage />
           {:else}
-            <h3 class="text-base leading-6 font-normal text-gray-500 mb-2">
+            <h3 class="text-base leading-6 font-normal text-gray-500 mb-3">
               Check out your dashboards below.
             </h3>
             <OrganizationList />
           {/if}
         {/if}
       </div>
-      <div class="w-1/3">
+      {#if hasAnOrganization}
         <HomeShareCTA />
-      </div>
+      {/if}
     </div>
   </section>
 </AuthRedirect>
