@@ -42,9 +42,9 @@
 <RillTheme>
   <QueryClientProvider client={queryClient}>
     <div class="flex flex-col h-screen">
-      <main class="flex-grow flex flex-col h-full">
+      <main class="flex-grow flex flex-col">
         <TopNavigationBar />
-        <div class="flex-grow overflow-auto h-full">
+        <div class="flex-grow overflow-auto">
           <ErrorBoundary>
             <slot />
           </ErrorBoundary>

@@ -11,10 +11,15 @@ import (
 )
 
 func PingCmd(cfg *config.Config) *cobra.Command {
+	var adminURL string
+
 	pingCmd := &cobra.Command{
 		Use:   "ping",
 		Short: "Ping",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Must set here to avoid flag parser overriding it globally
+			cfg.AdminURL = adminURL
+
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -31,7 +36,7 @@ func PingCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	pingCmd.Flags().StringVar(&cfg.AdminURL, "base-url", cfg.AdminURL, "Base URL for the admin API")
+	pingCmd.Flags().StringVar(&adminURL, "url", "https://admin.rilldata.com", "Base URL for the admin API")
 
 	return pingCmd
 }

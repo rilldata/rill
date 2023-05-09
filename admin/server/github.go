@@ -204,7 +204,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
+	user, err = s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
 		DisplayName:    user.DisplayName,
 		PhotoURL:       user.PhotoURL,
 		GithubUsername: githubUser.GetLogin(),
@@ -243,7 +243,14 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !isCollaborator {
-		http.Error(w, "unauthorised user", http.StatusUnauthorized)
+		redirectURL, err := urlutil.WithQuery(s.urls.githubAuthRetry, map[string]string{"remote": remoteURL, "githubUsername": user.GithubUsername})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Redirect to retry page
+		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
 
@@ -399,7 +406,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 
 	ok, err = s.isCollaborator(ctx, account, repo, c, gitUser)
 	if err != nil {
-		http.Error(w, "unidentified user", http.StatusUnauthorized)
+		http.Error(w, fmt.Sprintf("user identification failed with error %s", err.Error()), http.StatusUnauthorized)
 		return
 	}
 
@@ -513,8 +520,8 @@ func (s *Server) isCollaborator(ctx context.Context, owner, repo string, client 
 	// repo belongs to an org
 	isCollaborator, resp, err := client.Repositories.IsCollaborator(ctx, owner, repo, user.GetLogin())
 	if err != nil {
-		// user client will not have access to the repository
-		if resp != nil && resp.StatusCode == http.StatusUnauthorized {
+		// user client does not have access to the repository
+		if resp != nil && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
 			return false, nil
 		}
 		return false, err

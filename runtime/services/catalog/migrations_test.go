@@ -2,6 +2,7 @@ package catalog_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -258,39 +259,48 @@ func TestInterdependentModel(t *testing.T) {
 		}},
 	}
 
-	AdBidsSourceAffectedPaths := []string{AdBidsSourceModelRepoPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
+	var AdBidsYahooModelPath = "/models/AdBids_Yahoo.sql"
+	var AdBidsGoogleModelPath = "/models/AdBids_Google.sql"
+	var AdBidsYahooGoogleModelPath = "/models/AdBids_YahooGoogle.sql"
+	AdBidsSourceAffectedPaths := []string{AdBidsYahooModelPath, AdBidsGoogleModelPath, AdBidsYahooGoogleModelPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
 	AdBidsAllAffectedPaths := append([]string{AdBidsRepoPath}, AdBidsSourceAffectedPaths...)
 
 	for _, tt := range configs {
 		t.Run(tt.title, func(t *testing.T) {
 			s, _ := initBasicService(t)
 
-			testutils.CreateModel(t, s, "AdBids_source_model",
-				"select id, timestamp, publisher, domain, bid_price from AdBids", AdBidsSourceModelRepoPath)
+			testutils.CreateModel(t, s, "AdBids_Yahoo",
+				"select id, timestamp, publisher, domain, bid_price from AdBids where publisher='Yahoo'", AdBidsYahooModelPath)
+			testutils.CreateModel(t, s, "AdBids_Google",
+				"select id, timestamp, publisher, domain, bid_price from AdBids where publisher='Google'", AdBidsGoogleModelPath)
+			testutils.CreateModel(t, s, "AdBids_YahooGoogle",
+				"select y.* from AdBids_Yahoo y join AdBids_Google g on y.id=g.id", AdBidsYahooGoogleModelPath)
 			testutils.CreateModel(t, s, "AdBids_model",
-				"select id, timestamp, publisher, domain, bid_price from AdBids_source_model", AdBidsModelRepoPath)
+				"select y.* from AdBids_Yahoo y join AdBids_YahooGoogle yg on y.id = yg.id", AdBidsModelRepoPath)
+
 			result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 0, 1, 2, 0, AdBidsSourceAffectedPaths)
-			testutils.AssertTable(t, s, "AdBids_source_model", AdBidsSourceModelRepoPath)
-			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+			testutils.AssertMigration(t, result, 0, 3, 2, 0, AdBidsSourceAffectedPaths)
+			testutils.AssertTable(t, s, "AdBids_Yahoo", AdBidsYahooModelPath)
+			testutils.AssertTable(t, s, "AdBids_Google", AdBidsGoogleModelPath)
 
 			// trigger error in source
 			testutils.CreateSource(t, s, "AdBids", AdImpressionsCsvPath, AdBidsRepoPath)
 			result, err = s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 3, 0, 1, 0, AdBidsAllAffectedPaths)
-			require.Equal(t, metricsviews.SourceNotFound, result.Errors[2].Message)
-			testutils.AssertTableAbsence(t, s, "AdBids_source_model")
-			testutils.AssertTableAbsence(t, s, "AdBids_model")
+			fmt.Println(result.AffectedPaths)
+			testutils.AssertMigration(t, result, 5, 0, 1, 0, AdBidsAllAffectedPaths)
+			require.Equal(t, metricsviews.SourceNotFound, result.Errors[4].Message)
+			testutils.AssertTableAbsence(t, s, "AdBids_Yahoo")
+			testutils.AssertTableAbsence(t, s, "AdBids_Google")
 
 			// reset the source
 			testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
 			result, err = s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 0, 3, 1, 0, AdBidsAllAffectedPaths)
-			testutils.AssertTable(t, s, "AdBids_source_model", AdBidsSourceModelRepoPath)
-			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+			testutils.AssertMigration(t, result, 0, 5, 1, 0, AdBidsAllAffectedPaths)
+			testutils.AssertTable(t, s, "AdBids_Yahoo", AdBidsYahooModelPath)
+			testutils.AssertTable(t, s, "AdBids_Google", AdBidsGoogleModelPath)
 		})
 	}
 }
