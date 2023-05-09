@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/queries"
@@ -12,6 +13,11 @@ import (
 func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsViewToplistRequest) (*runtimev1.MetricsViewToplistResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
+	}
+
+	err := validateInlineMeasures(req.InlineMeasures)
+	if err != nil {
+		return nil, err
 	}
 
 	q := &queries.MetricsViewToplist{
@@ -26,7 +32,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		Sort:            req.Sort,
 		Filter:          req.Filter,
 	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
@@ -40,6 +46,11 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		return nil, ErrForbidden
 	}
 
+	err := validateInlineMeasures(req.InlineMeasures)
+	if err != nil {
+		return nil, err
+	}
+
 	q := &queries.MetricsViewTimeSeries{
 		MetricsViewName: req.MetricsViewName,
 		MeasureNames:    req.MeasureNames,
@@ -49,8 +60,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		TimeGranularity: req.TimeGranularity,
 		Filter:          req.Filter,
 	}
-
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
@@ -63,6 +73,11 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		return nil, ErrForbidden
 	}
 
+	err := validateInlineMeasures(req.InlineMeasures)
+	if err != nil {
+		return nil, err
+	}
+
 	q := &queries.MetricsViewTotals{
 		MetricsViewName: req.MetricsViewName,
 		MeasureNames:    req.MeasureNames,
@@ -71,7 +86,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		TimeEnd:         req.TimeEnd,
 		Filter:          req.Filter,
 	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
@@ -99,4 +114,17 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 	}
 
 	return q.Result, nil
+}
+
+// validateInlineMeasures checks that the inline measures are allowed.
+// This is to prevent injection of arbitrary SQL from clients with only ReadMetrics access.
+// In the future, we should consider allowing arbitrary expressions from people with wider access.
+// Currently, only COUNT(*) is allowed.
+func validateInlineMeasures(ms []*runtimev1.InlineMeasure) error {
+	for _, im := range ms {
+		if im.Expression != "COUNT(*)" {
+			return fmt.Errorf("illegal inline measure expression: %q", im.Expression)
+		}
+	}
+	return nil
 }
