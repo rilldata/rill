@@ -302,9 +302,9 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, region, prod_olap_driver, prod_olap_dsn, prod_slots, prod_branch, prod_variables, github_url, github_installation_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.Region, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID,
+		INSERT INTO projects (org_id, name, description, public, region, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, github_url, github_installation_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.Region, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)

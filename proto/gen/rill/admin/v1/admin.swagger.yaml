@@ -611,6 +611,8 @@ paths:
               prodSlots:
                 type: string
                 format: int64
+              subpath:
+                type: string
               prodBranch:
                 type: string
               githubUrl:
@@ -1108,6 +1110,8 @@ definitions:
       region:
         type: string
       githubUrl:
+        type: string
+      subpath:
         type: string
       prodBranch:
         type: string

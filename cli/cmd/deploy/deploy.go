@@ -38,7 +38,7 @@ const (
 
 // DeployCmd is the guided tour for deploying rill projects to rill cloud.
 func DeployCmd(cfg *config.Config) *cobra.Command {
-	var description, projectPath, region, dbDriver, dbDSN, prodBranch, name, remote, orgName string
+	var description, projectPath, subPath, region, dbDriver, dbDSN, prodBranch, name, remote, orgName string
 	var slots int
 	var public bool
 
@@ -61,6 +61,11 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
+			fullProjectPath := projectPath
+			if subPath != "" {
+				fullProjectPath = filepath.Join(projectPath, subPath)
+			}
+
 			tel := telemetry.New(cfg.Version)
 			tel.Emit(telemetry.ActionDeployStart)
 			defer func() {
@@ -74,8 +79,8 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}()
 
 			// Verify that the projectPath contains a Rill project
-			if !rillv1beta.HasRillProject(projectPath) {
-				fullpath, err := filepath.Abs(projectPath)
+			if !rillv1beta.HasRillProject(fullProjectPath) {
+				fullpath, err := filepath.Abs(fullProjectPath)
 				if err != nil {
 					return err
 				}
@@ -103,7 +108,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-			if !repoInSyncFlow(projectPath, prodBranch, remote.Name) {
+			if !repoInSyncFlow(fullProjectPath, prodBranch, remote.Name) {
 				warn.Println("You can run `rill deploy` again once local changes are added to remote repo.")
 				return nil
 			}
@@ -232,7 +237,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Run flow to get connector credentials and other variables
-			variables, err := env.VariablesFlow(ctx, projectPath, tel)
+			variables, err := env.VariablesFlow(ctx, fullProjectPath, tel)
 			if err != nil {
 				return err
 			}
@@ -246,6 +251,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				ProdOlapDriver:   dbDriver,
 				ProdOlapDsn:      dbDSN,
 				ProdSlots:        int64(slots),
+				Subpath:          subPath,
 				ProdBranch:       prodBranch,
 				Public:           public,
 				GithubUrl:        githubURL,
@@ -276,7 +282,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	deployCmd.Flags().SortFlags = false
-	deployCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
+	deployCmd.Flags().StringVar(&projectPath, "path", ".", "Path to project repository")
 	deployCmd.Flags().StringVar(&orgName, "org", cfg.Org, "Org to deploy project")
 	deployCmd.Flags().IntVar(&slots, "prod-slots", 2, "Slots to allocate for production deployments")
 	deployCmd.Flags().StringVar(&description, "description", "", "Project description")
@@ -284,6 +290,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	deployCmd.Flags().StringVar(&dbDriver, "prod-db-driver", "duckdb", "Database driver")
 	deployCmd.Flags().StringVar(&dbDSN, "prod-db-dsn", "", "Database driver configuration")
 	deployCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
+	deployCmd.Flags().StringVar(&subPath, "subpath", "", "Relative path to project in the repository (for monorepos)")
 	deployCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().StringVar(&name, "project", "", "Project name (default: Git repo name)")
 	deployCmd.Flags().StringVar(&remote, "remote", "", "Remote name (defaults: first github remote)")

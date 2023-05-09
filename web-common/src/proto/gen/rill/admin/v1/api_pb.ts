@@ -931,6 +931,11 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   prodSlots = protoInt64.zero;
 
   /**
+   * @generated from field: string subpath = 12;
+   */
+  subpath = "";
+
+  /**
    * @generated from field: string prod_branch = 9;
    */
   prodBranch = "";
@@ -961,6 +966,7 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 6, name: "prod_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "prod_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 12, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
@@ -2827,6 +2833,11 @@ export class Project extends Message<Project> {
   githubUrl = "";
 
   /**
+   * @generated from field: string subpath = 17;
+   */
+  subpath = "";
+
+  /**
    * @generated from field: string prod_branch = 9;
    */
   prodBranch = "";
@@ -2882,6 +2893,7 @@ export class Project extends Message<Project> {
     { no: 6, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "prod_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "prod_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },

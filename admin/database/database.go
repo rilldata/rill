@@ -205,6 +205,7 @@ type Project struct {
 	Region               string
 	GithubURL            *string   `db:"github_url"`
 	GithubInstallationID *int64    `db:"github_installation_id"`
+	Subpath              string    `db:"subpath"`
 	ProdBranch           string    `db:"prod_branch"`
 	ProdVariables        Variables `db:"prod_variables"`
 	ProdOLAPDriver       string    `db:"prod_olap_driver"`
@@ -235,6 +236,7 @@ type InsertProjectOptions struct {
 	Region               string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	Subpath              string
 	ProdBranch           string
 	ProdVariables        map[string]string
 	ProdOLAPDriver       string
