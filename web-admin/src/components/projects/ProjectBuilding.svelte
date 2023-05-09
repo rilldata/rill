@@ -1,11 +1,11 @@
 <script lang="ts">
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import CtaButton from "../calls-to-action/CTAButton.svelte";
-  import CtaContentContainer from "../calls-to-action/CTAContentContainer.svelte";
-  import CtaHeader from "../calls-to-action/CTAHeader.svelte";
-  import CtaLayoutContainer from "../calls-to-action/CTALayoutContainer.svelte";
-  import CtaNeedHelp from "../calls-to-action/CTANeedHelp.svelte";
+  import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
+  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
+  import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
+  import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
+  import CtaNeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
 
   export let organization: string;
   export let project: string;
