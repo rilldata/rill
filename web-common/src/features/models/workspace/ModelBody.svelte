@@ -45,8 +45,6 @@
   export let modelName: string;
   export let focusEditorOnMount = false;
 
-  let tableQuery;
-
   const queryClient = useQueryClient();
 
   const queryHighlight: Writable<QueryHighlightState> = getContext(
@@ -56,13 +54,13 @@
   $: runtimeInstanceId = $runtime.instanceId;
   const updateModel = createRuntimeServicePutFileAndReconcile();
 
-  let limit = 150;
+  const limit = 150;
 
   $: tableQuery = createQueryServiceTableRows(runtimeInstanceId, modelName, {
     limit,
   });
 
-  $: runtimeError = $tableQuery.error?.response.data;
+  $: runtimeError = ($tableQuery.error as any)?.response.data;
 
   // track innerHeight to calculate the size of the editor element.
   let innerHeight: number;
