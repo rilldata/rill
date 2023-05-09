@@ -10,6 +10,8 @@
   import {
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
+    QueryServiceMetricsViewTotalsBody,
+    V1InlineMeasure,
     V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
   import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
@@ -62,7 +64,18 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    let totalsQueryParams = { measureNames: selectedMeasureNames };
+    let inlineMeasures: V1InlineMeasure[] = [
+      {
+        name: "name_that_must_never_collide",
+        expression: "COUNT(*)",
+      },
+    ];
+
+    let totalsQueryParams: QueryServiceMetricsViewTotalsBody = {
+      measureNames: selectedMeasureNames,
+      inlineMeasures,
+    };
+
     if (hasTimeSeries) {
       totalsQueryParams = {
         ...totalsQueryParams,
@@ -78,6 +91,8 @@
       totalsQueryParams
     );
   }
+
+  $: console.log("$totalsQuery?.data", $totalsQuery?.data);
 
   let referenceValue: number;
   $: if (activeMeasure?.name && $totalsQuery?.data?.data) {
