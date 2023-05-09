@@ -5,7 +5,6 @@
   export let disabled = false;
 
   function getVariantClass(variant: string) {
-    console.log;
     switch (variant) {
       case "primary":
         return "border-blue-600 bg-blue-600 text-white hover:bg-blue-500 hover:border-blue-500";
