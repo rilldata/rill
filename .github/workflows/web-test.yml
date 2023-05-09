@@ -4,6 +4,7 @@ on:
     paths:
       - ".github/workflows/web-test.yml"
       - "web-admin/**"
+      - "web-auth/**"
       - "web-common/**"
       - "web-local/**"
 jobs:
@@ -21,6 +22,9 @@ jobs:
             admin:
               - ".github/workflows/web-test.yml"
               - "web-admin/**"
+            auth:
+              - ".github/workflows/web-test.yml"
+              - "web-auth/**"
             local:
               - ".github/workflows/web-test.yml"
               - "web-local/**"
