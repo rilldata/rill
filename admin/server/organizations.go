@@ -19,9 +19,20 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
-	orgs, err := s.admin.DB.FindOrganizationsForUser(ctx, claims.OwnerID())
+	token, err := unmarshalPageToken(req.PageToken)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	orgs, err := s.admin.DB.FindOrganizationsForUser(ctx, claims.OwnerID(), token.Val, pageSize)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	nextToken := ""
+	if len(orgs) >= pageSize {
+		nextToken = marshalPageToken(orgs[len(orgs)-1].Name)
 	}
 
 	pbs := make([]*adminv1.Organization, len(orgs))
@@ -29,7 +40,7 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 		pbs[i] = organizationToDTO(org)
 	}
 
-	return &adminv1.ListOrganizationsResponse{Organizations: pbs}, nil
+	return &adminv1.ListOrganizationsResponse{Organizations: pbs, NextPageToken: nextToken}, nil
 }
 
 func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizationRequest) (*adminv1.GetOrganizationResponse, error) {
@@ -163,9 +174,20 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
 	}
 
-	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID)
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, token.Val, pageSize)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	nextToken := ""
+	if len(members) >= pageSize {
+		nextToken = marshalPageToken(members[len(members)-1].Email)
 	}
 
 	dtos := make([]*adminv1.Member, len(members))
@@ -173,19 +195,48 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 		dtos[i] = memberToPB(user)
 	}
 
+	return &adminv1.ListOrganizationMembersResponse{
+		Members:       dtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
+func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListOrganizationInvitesRequest) (*adminv1.ListOrganizationInvitesResponse, error) {
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
+	}
+
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
 	// get pending user invites for this org
-	userInvites, err := s.admin.DB.FindOrganizationInvites(ctx, org.ID)
+	userInvites, err := s.admin.DB.FindOrganizationInvites(ctx, org.ID, token.Val, pageSize)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	nextToken := ""
+	if len(userInvites) >= pageSize {
+		nextToken = marshalPageToken(userInvites[len(userInvites)-1].Email)
+	}
+
 	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))
 	for i, invite := range userInvites {
 		invitesDtos[i] = inviteToPB(invite)
 	}
 
-	return &adminv1.ListOrganizationMembersResponse{
-		Members: dtos,
-		Invites: invitesDtos,
+	return &adminv1.ListOrganizationInvitesResponse{
+		Invites:       invitesDtos,
+		NextPageToken: nextToken,
 	}, nil
 }
 

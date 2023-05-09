@@ -286,7 +286,20 @@ func (m *ListOrganizationsRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for PageSize
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 100 {
+			err := ListOrganizationsRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 100",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	// no validation rules for PageToken
 
@@ -1506,7 +1519,20 @@ func (m *ListProjectsForOrganizationRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for PageSize
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 100 {
+			err := ListProjectsForOrganizationRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 100",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	// no validation rules for PageToken
 
@@ -1732,288 +1758,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListProjectsForOrganizationResponseValidationError{}
-
-// Validate checks the field values on
-// ListProjectsForOrganizationAndGithubURLRequest with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *ListProjectsForOrganizationAndGithubURLRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on
-// ListProjectsForOrganizationAndGithubURLRequest with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in
-// ListProjectsForOrganizationAndGithubURLRequestMultiError, or nil if none found.
-func (m *ListProjectsForOrganizationAndGithubURLRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ListProjectsForOrganizationAndGithubURLRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
-		err := ListProjectsForOrganizationAndGithubURLRequestValidationError{
-			field:  "OrganizationName",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if utf8.RuneCountInString(m.GetGithubUrl()) < 1 {
-		err := ListProjectsForOrganizationAndGithubURLRequestValidationError{
-			field:  "GithubUrl",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for PageSize
-
-	// no validation rules for PageToken
-
-	if len(errors) > 0 {
-		return ListProjectsForOrganizationAndGithubURLRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// ListProjectsForOrganizationAndGithubURLRequestMultiError is an error
-// wrapping multiple validation errors returned by
-// ListProjectsForOrganizationAndGithubURLRequest.ValidateAll() if the
-// designated constraints aren't met.
-type ListProjectsForOrganizationAndGithubURLRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ListProjectsForOrganizationAndGithubURLRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ListProjectsForOrganizationAndGithubURLRequestMultiError) AllErrors() []error { return m }
-
-// ListProjectsForOrganizationAndGithubURLRequestValidationError is the
-// validation error returned by
-// ListProjectsForOrganizationAndGithubURLRequest.Validate if the designated
-// constraints aren't met.
-type ListProjectsForOrganizationAndGithubURLRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) Reason() string {
-	return e.reason
-}
-
-// Cause function returns cause value.
-func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) ErrorName() string {
-	return "ListProjectsForOrganizationAndGithubURLRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ListProjectsForOrganizationAndGithubURLRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sListProjectsForOrganizationAndGithubURLRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ListProjectsForOrganizationAndGithubURLRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ListProjectsForOrganizationAndGithubURLRequestValidationError{}
-
-// Validate checks the field values on
-// ListProjectsForOrganizationAndGithubURLResponse with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *ListProjectsForOrganizationAndGithubURLResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on
-// ListProjectsForOrganizationAndGithubURLResponse with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in
-// ListProjectsForOrganizationAndGithubURLResponseMultiError, or nil if none found.
-func (m *ListProjectsForOrganizationAndGithubURLResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ListProjectsForOrganizationAndGithubURLResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	for idx, item := range m.GetProjects() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ListProjectsForOrganizationAndGithubURLResponseValidationError{
-						field:  fmt.Sprintf("Projects[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ListProjectsForOrganizationAndGithubURLResponseValidationError{
-						field:  fmt.Sprintf("Projects[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ListProjectsForOrganizationAndGithubURLResponseValidationError{
-					field:  fmt.Sprintf("Projects[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	// no validation rules for NextPageToken
-
-	if len(errors) > 0 {
-		return ListProjectsForOrganizationAndGithubURLResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// ListProjectsForOrganizationAndGithubURLResponseMultiError is an error
-// wrapping multiple validation errors returned by
-// ListProjectsForOrganizationAndGithubURLResponse.ValidateAll() if the
-// designated constraints aren't met.
-type ListProjectsForOrganizationAndGithubURLResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ListProjectsForOrganizationAndGithubURLResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ListProjectsForOrganizationAndGithubURLResponseMultiError) AllErrors() []error { return m }
-
-// ListProjectsForOrganizationAndGithubURLResponseValidationError is the
-// validation error returned by
-// ListProjectsForOrganizationAndGithubURLResponse.Validate if the designated
-// constraints aren't met.
-type ListProjectsForOrganizationAndGithubURLResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ListProjectsForOrganizationAndGithubURLResponseValidationError) Field() string {
-	return e.field
-}
-
-// Reason function returns reason value.
-func (e ListProjectsForOrganizationAndGithubURLResponseValidationError) Reason() string {
-	return e.reason
-}
-
-// Cause function returns cause value.
-func (e ListProjectsForOrganizationAndGithubURLResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ListProjectsForOrganizationAndGithubURLResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ListProjectsForOrganizationAndGithubURLResponseValidationError) ErrorName() string {
-	return "ListProjectsForOrganizationAndGithubURLResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ListProjectsForOrganizationAndGithubURLResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sListProjectsForOrganizationAndGithubURLResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ListProjectsForOrganizationAndGithubURLResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ListProjectsForOrganizationAndGithubURLResponseValidationError{}
 
 // Validate checks the field values on GetProjectRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -4147,7 +3891,20 @@ func (m *ListOrganizationMembersRequest) validate(all bool) error {
 
 	// no validation rules for Organization
 
-	// no validation rules for PageSize
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 100 {
+			err := ListOrganizationMembersRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 100",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	// no validation rules for PageToken
 
@@ -4288,40 +4045,6 @@ func (m *ListOrganizationMembersResponse) validate(all bool) error {
 
 	}
 
-	for idx, item := range m.GetInvites() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ListOrganizationMembersResponseValidationError{
-						field:  fmt.Sprintf("Invites[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ListOrganizationMembersResponseValidationError{
-						field:  fmt.Sprintf("Invites[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ListOrganizationMembersResponseValidationError{
-					field:  fmt.Sprintf("Invites[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
 	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
@@ -4404,6 +4127,267 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListOrganizationMembersResponseValidationError{}
+
+// Validate checks the field values on ListOrganizationInvitesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListOrganizationInvitesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListOrganizationInvitesRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListOrganizationInvitesRequestMultiError, or nil if none found.
+func (m *ListOrganizationInvitesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListOrganizationInvitesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Organization
+
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 100 {
+			err := ListOrganizationInvitesRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 100",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
+	if len(errors) > 0 {
+		return ListOrganizationInvitesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListOrganizationInvitesRequestMultiError is an error wrapping multiple
+// validation errors returned by ListOrganizationInvitesRequest.ValidateAll()
+// if the designated constraints aren't met.
+type ListOrganizationInvitesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListOrganizationInvitesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListOrganizationInvitesRequestMultiError) AllErrors() []error { return m }
+
+// ListOrganizationInvitesRequestValidationError is the validation error
+// returned by ListOrganizationInvitesRequest.Validate if the designated
+// constraints aren't met.
+type ListOrganizationInvitesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListOrganizationInvitesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListOrganizationInvitesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListOrganizationInvitesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListOrganizationInvitesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListOrganizationInvitesRequestValidationError) ErrorName() string {
+	return "ListOrganizationInvitesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListOrganizationInvitesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListOrganizationInvitesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListOrganizationInvitesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListOrganizationInvitesRequestValidationError{}
+
+// Validate checks the field values on ListOrganizationInvitesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListOrganizationInvitesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListOrganizationInvitesResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListOrganizationInvitesResponseMultiError, or nil if none found.
+func (m *ListOrganizationInvitesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListOrganizationInvitesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetInvites() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListOrganizationInvitesResponseValidationError{
+						field:  fmt.Sprintf("Invites[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListOrganizationInvitesResponseValidationError{
+						field:  fmt.Sprintf("Invites[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListOrganizationInvitesResponseValidationError{
+					field:  fmt.Sprintf("Invites[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for NextPageToken
+
+	if len(errors) > 0 {
+		return ListOrganizationInvitesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListOrganizationInvitesResponseMultiError is an error wrapping multiple
+// validation errors returned by ListOrganizationInvitesResponse.ValidateAll()
+// if the designated constraints aren't met.
+type ListOrganizationInvitesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListOrganizationInvitesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListOrganizationInvitesResponseMultiError) AllErrors() []error { return m }
+
+// ListOrganizationInvitesResponseValidationError is the validation error
+// returned by ListOrganizationInvitesResponse.Validate if the designated
+// constraints aren't met.
+type ListOrganizationInvitesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListOrganizationInvitesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListOrganizationInvitesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListOrganizationInvitesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListOrganizationInvitesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListOrganizationInvitesResponseValidationError) ErrorName() string {
+	return "ListOrganizationInvitesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListOrganizationInvitesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListOrganizationInvitesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListOrganizationInvitesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListOrganizationInvitesResponseValidationError{}
 
 // Validate checks the field values on AddOrganizationMemberRequest with the
 // rules defined in the proto definition for this message. If any rules are
@@ -5524,7 +5508,20 @@ func (m *ListProjectMembersRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for PageSize
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 100 {
+			err := ListProjectMembersRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 100",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	// no validation rules for PageToken
 
@@ -5664,40 +5661,6 @@ func (m *ListProjectMembersResponse) validate(all bool) error {
 
 	}
 
-	for idx, item := range m.GetInvites() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ListProjectMembersResponseValidationError{
-						field:  fmt.Sprintf("Invites[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ListProjectMembersResponseValidationError{
-						field:  fmt.Sprintf("Invites[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ListProjectMembersResponseValidationError{
-					field:  fmt.Sprintf("Invites[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
 	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
@@ -5779,6 +5742,285 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListProjectMembersResponseValidationError{}
+
+// Validate checks the field values on ListProjectInvitesRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListProjectInvitesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListProjectInvitesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListProjectInvitesRequestMultiError, or nil if none found.
+func (m *ListProjectInvitesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListProjectInvitesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := ListProjectInvitesRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := ListProjectInvitesRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 100 {
+			err := ListProjectInvitesRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 100",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
+	if len(errors) > 0 {
+		return ListProjectInvitesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListProjectInvitesRequestMultiError is an error wrapping multiple validation
+// errors returned by ListProjectInvitesRequest.ValidateAll() if the
+// designated constraints aren't met.
+type ListProjectInvitesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListProjectInvitesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListProjectInvitesRequestMultiError) AllErrors() []error { return m }
+
+// ListProjectInvitesRequestValidationError is the validation error returned by
+// ListProjectInvitesRequest.Validate if the designated constraints aren't met.
+type ListProjectInvitesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListProjectInvitesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListProjectInvitesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListProjectInvitesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListProjectInvitesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListProjectInvitesRequestValidationError) ErrorName() string {
+	return "ListProjectInvitesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListProjectInvitesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListProjectInvitesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListProjectInvitesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListProjectInvitesRequestValidationError{}
+
+// Validate checks the field values on ListProjectInvitesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListProjectInvitesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListProjectInvitesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListProjectInvitesResponseMultiError, or nil if none found.
+func (m *ListProjectInvitesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListProjectInvitesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetInvites() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListProjectInvitesResponseValidationError{
+						field:  fmt.Sprintf("Invites[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListProjectInvitesResponseValidationError{
+						field:  fmt.Sprintf("Invites[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListProjectInvitesResponseValidationError{
+					field:  fmt.Sprintf("Invites[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for NextPageToken
+
+	if len(errors) > 0 {
+		return ListProjectInvitesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListProjectInvitesResponseMultiError is an error wrapping multiple
+// validation errors returned by ListProjectInvitesResponse.ValidateAll() if
+// the designated constraints aren't met.
+type ListProjectInvitesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListProjectInvitesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListProjectInvitesResponseMultiError) AllErrors() []error { return m }
+
+// ListProjectInvitesResponseValidationError is the validation error returned
+// by ListProjectInvitesResponse.Validate if the designated constraints aren't met.
+type ListProjectInvitesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListProjectInvitesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListProjectInvitesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListProjectInvitesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListProjectInvitesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListProjectInvitesResponseValidationError) ErrorName() string {
+	return "ListProjectInvitesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListProjectInvitesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListProjectInvitesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListProjectInvitesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListProjectInvitesResponseValidationError{}
 
 // Validate checks the field values on AddProjectMemberRequest with the rules
 // defined in the proto definition for this message. If any rules are
