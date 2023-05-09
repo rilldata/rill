@@ -10,7 +10,7 @@
   }
 </script>
 
-<Dialog on:cancel={close} size="md">
+<Dialog on:cancel={close} size="sm" useContentForMinSize>
   <svelte:fragment slot="title"
     >Deploy your project to Rill Cloud</svelte:fragment
   >
