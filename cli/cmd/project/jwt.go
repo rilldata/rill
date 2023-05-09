@@ -16,7 +16,7 @@ func JwtCmd(cfg *config.Config) *cobra.Command {
 	jwtCmd := &cobra.Command{
 		Use:    "jwt <project-name>",
 		Args:   cobra.MaximumNArgs(1),
-		Short:  "Generate token for connecting directly to the deployment",
+		Short:  "Generate the token for connecting directly to the deployment",
 		Hidden: !cfg.IsDev(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()

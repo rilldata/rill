@@ -45,7 +45,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			msg := fmt.Sprintf("Do you want to rename project \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName))
+			msg := fmt.Sprintf("Do you want to rename the project \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName))
 			if !cmdutil.ConfirmPrompt(msg, "", false) {
 				return nil
 			}

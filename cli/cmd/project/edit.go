@@ -65,7 +65,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 
 			if !cmd.Flags().Changed("public") {
 				prompt := &survey.Confirm{
-					Message: fmt.Sprintf("Do you want project \"%s\" to public?", color.YellowString(name)),
+					Message: fmt.Sprintf("Do you want the project \"%s\" to public?", color.YellowString(name)),
 				}
 
 				err = survey.AskOne(prompt, &public)
