@@ -814,7 +814,7 @@ func TestServer_MetricsViewToplist_InlineMeasures(t *testing.T) {
 		InlineMeasures: []*runtimev1.InlineMeasure{
 			{
 				Name:       "tmp_measure",
-				Expression: "COUNT(*)",
+				Expression: "count(*)",
 			},
 		},
 		Sort: []*runtimev1.MetricsViewSort{

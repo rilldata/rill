@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/queries"
@@ -122,7 +123,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 // Currently, only COUNT(*) is allowed.
 func validateInlineMeasures(ms []*runtimev1.InlineMeasure) error {
 	for _, im := range ms {
-		if im.Expression != "COUNT(*)" {
+		if !strings.EqualFold(im.Expression, "COUNT(*)") {
 			return fmt.Errorf("illegal inline measure expression: %q", im.Expression)
 		}
 	}
