@@ -5,6 +5,7 @@
   export let label: string;
   export let isCurrentPage = false;
   export let menuOptions: { key: string; main: string }[] = [];
+  export let menuKey: string;
   export let onSelectMenuOption: (option: string) => void = undefined;
 
   const activeClass = "text-gray-800 font-semibold";
@@ -16,7 +17,7 @@
   }
 </script>
 
-<li class="flex flex items-center gap-x-3 p-2">
+<li class="flex flex items-center gap-x-2 p-2">
   <slot name="icon" />
   {#if !menuOptions}
     <span class={isCurrentPage ? activeClass : inactiveClass}>{label}</span>
@@ -26,7 +27,7 @@
       distance={4}
       options={menuOptions}
       selection={{
-        key: label,
+        key: menuKey,
         main: label,
       }}
       on:select={({ detail: { key } }) => onSelectMenuOption(key)}
@@ -41,7 +42,7 @@
         on:mouseleave={() => setHovered(false)}
       >
         <span>{label}</span>
-        <div class="transition-transform" class:translate-y-2={hovered}>
+        <div class="transition-transform {hovered ? 'translate-y-[2px]' : ''}">
           <CaretDownIcon size="14px" />
         </div>
       </button>

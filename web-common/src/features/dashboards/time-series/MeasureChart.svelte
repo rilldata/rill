@@ -9,8 +9,8 @@
   } from "@rilldata/web-common/components/data-graphic/guides";
   import { ChunkedLine } from "@rilldata/web-common/components/data-graphic/marks";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+  import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { previousValueStore } from "@rilldata/web-local/lib/store-utils";
   import { extent } from "d3-array";
   import { cubicOut } from "svelte/easing";
   import { writable } from "svelte/store";
@@ -53,8 +53,9 @@
   /** if we are making a comparison, factor this into the extents calculation.*/
   $: if (showComparison) {
     comparisonExtents = extent(data, (d) => d[`comparison.${yAccessor}`]);
-    yExtentMin = Math.min(yExtentMin, comparisonExtents[0]);
-    yExtentMax = Math.max(yExtentMax, comparisonExtents[1]);
+
+    yExtentMin = Math.min(yExtentMin, comparisonExtents[0] || yExtentMin);
+    yExtentMax = Math.max(yExtentMax, comparisonExtents[1] || yExtentMax);
   }
 
   $: [internalYMin, internalYMax] = niceMeasureExtents(
@@ -132,7 +133,7 @@
   xMaxTweenProps={tweenProps}
   xMinTweenProps={tweenProps}
 >
-  <Axis side="right" format={mouseoverFormat} {numberKind} />
+  <Axis side="right" {numberKind} />
   <Grid />
   <Body>
     <!-- key on the time range itself to prevent weird tweening animations.
@@ -154,7 +155,6 @@
             {data}
             {xAccessor}
             yAccessor="comparison.{yAccessor}"
-            key={$timeRangeKey}
           />
         </g>
       {/if}
@@ -164,7 +164,6 @@
         {data}
         {xAccessor}
         {yAccessor}
-        key={$timeRangeKey}
       />
     {/key}
     <line

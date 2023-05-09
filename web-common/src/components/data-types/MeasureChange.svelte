@@ -6,7 +6,8 @@
   export let customStyle = "";
   export let value;
 
-  $: isNegative = typeof value === "string" && value?.startsWith("-");
+  $: isNegative =
+    (typeof value === "string" && value?.startsWith("-")) || value < 0;
 </script>
 
 <Base

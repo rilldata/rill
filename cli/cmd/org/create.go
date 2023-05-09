@@ -2,9 +2,9 @@ package org
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/rilldata/rill/admin/client"
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -12,12 +12,12 @@ import (
 )
 
 func CreateCmd(cfg *config.Config) *cobra.Command {
-	var description string
+	var name, description string
 
 	createCmd := &cobra.Command{
-		Use:   "create <org-name>",
-		Short: "Create",
-		Args:  cobra.ExactArgs(1),
+		Use:   "create",
+		Short: "Create organization",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -25,37 +25,40 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			org, err := Create(client, args[0], description)
+			if !cmd.Flags().Changed("name") {
+				// Get the new org name from user if not provided in the flag
+				name, err = cmdutil.InputPrompt("Enter the org name", "")
+				if err != nil {
+					return err
+				}
+			}
+
+			res, err := client.CreateOrganization(context.Background(), &adminv1.CreateOrganizationRequest{
+				Name:        name,
+				Description: description,
+			})
+			if err != nil {
+				if !cmdutil.IsNameExistsErr(err) {
+					return err
+				}
+
+				fmt.Printf("Org name %q already exists\n", name)
+				return nil
+			}
+
+			// Switching to the created org
+			err = dotrill.SetDefaultOrg(res.Organization.Name)
 			if err != nil {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Created organization \n")
-			cmdutil.TablePrinter(toRow(org))
+			cmdutil.SuccessPrinter("Created organization")
+			cmdutil.TablePrinter(toRow(res.Organization))
 			return nil
 		},
 	}
 	createCmd.Flags().SortFlags = false
+	createCmd.Flags().StringVar(&name, "name", "", "Name")
 	createCmd.Flags().StringVar(&description, "description", "", "Description")
-
 	return createCmd
-}
-
-// Create org and run any post creation steps
-func Create(adminClient *client.Client, name, description string) (*adminv1.Organization, error) {
-	resp, err := adminClient.CreateOrganization(context.Background(), &adminv1.CreateOrganizationRequest{
-		Name:        name,
-		Description: description,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Switching to the created org
-	err = dotrill.SetDefaultOrg(resp.Organization.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp.Organization, nil
 }

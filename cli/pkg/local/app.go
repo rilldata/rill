@@ -15,12 +15,14 @@ import (
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/examples"
+	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/rilldata/rill/cli/pkg/variable"
 	"github.com/rilldata/rill/cli/pkg/web"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -46,14 +48,15 @@ const (
 // Here, a local environment means a non-authenticated, single-instance and single-project setup on localhost.
 // App encapsulates logic shared between different CLI commands, like start, init, build and source.
 type App struct {
-	Context     context.Context
-	Runtime     *runtime.Runtime
-	Instance    *drivers.Instance
-	Logger      *zap.SugaredLogger
-	BaseLogger  *zap.Logger
-	Version     config.Version
-	Verbose     bool
-	ProjectPath string
+	Context               context.Context
+	Runtime               *runtime.Runtime
+	Instance              *drivers.Instance
+	Logger                *zap.SugaredLogger
+	BaseLogger            *zap.Logger
+	Version               config.Version
+	Verbose               bool
+	ProjectPath           string
+	observabilityShutdown observability.ShutdownFunc
 }
 
 func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string) (*App, error) {
@@ -86,6 +89,17 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		lvl = zap.DebugLevel
 	}
 	logger = logger.WithOptions(zap.IncreaseLevel(lvl))
+
+	// Init Prometheus telemetry
+	shutdown, err := observability.Start(ctx, logger, &observability.Options{
+		MetricsExporter: observability.PrometheusExporter,
+		TracesExporter:  observability.NoopExporter,
+		ServiceName:     "rill-local",
+		ServiceVersion:  ver.String(),
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	// Create a local runtime with an in-memory metastore
 	rtOpts := &runtime.Options{
@@ -137,19 +151,28 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 
 	// Done
 	app := &App{
-		Context:     ctx,
-		Runtime:     rt,
-		Instance:    inst,
-		Logger:      logger.Sugar(),
-		BaseLogger:  logger,
-		Version:     ver,
-		Verbose:     verbose,
-		ProjectPath: projectPath,
+		Context:               ctx,
+		Runtime:               rt,
+		Instance:              inst,
+		Logger:                logger.Sugar(),
+		BaseLogger:            logger,
+		Version:               ver,
+		Verbose:               verbose,
+		ProjectPath:           projectPath,
+		observabilityShutdown: shutdown,
 	}
 	return app, nil
 }
 
 func (a *App) Close() error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	err := a.observabilityShutdown(ctx)
+	if err != nil {
+		fmt.Printf("telemetry shutdown failed: %s\n", err.Error())
+	}
+
 	return a.Runtime.Close()
 }
 
@@ -310,9 +333,10 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 
 	// Create a runtime server
 	opts := &runtimeserver.Options{
-		HTTPPort:       httpPort,
-		GRPCPort:       grpcPort,
-		AllowedOrigins: []string{"*"},
+		HTTPPort:        httpPort,
+		GRPCPort:        grpcPort,
+		AllowedOrigins:  []string{"*"},
+		ServePrometheus: true,
 	}
 	runtimeServer, err := runtimeserver.NewServer(opts, a.Runtime, serverLogger)
 	if err != nil {
@@ -332,6 +356,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 				mux.Handle("/", web.StaticHandler())
 			}
 			mux.Handle("/local/config", a.infoHandler(inf))
+			mux.Handle("/local/version", a.versionHandler())
 			mux.Handle("/local/track", a.trackingHandler(inf))
 		})
 	})
@@ -409,6 +434,39 @@ func (a *App) infoHandler(info *localInfo) http.Handler {
 			return
 		}
 	})
+}
+
+// versionHandler servers the version struct.
+func (a *App) versionHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get the latest version available
+		latestVersion, err := update.LatestVersion(r.Context())
+		if err != nil {
+			a.Logger.Warnf("error finding latest version: %v", err)
+		}
+
+		inf := &versionInfo{
+			CurrentVersion: a.Version.Number,
+			LatestVersion:  latestVersion,
+		}
+
+		data, err := json.Marshal(inf)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		w.Header().Add("Content-Type", "application/json")
+		_, err = w.Write(data)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to write response data: %s", err), http.StatusInternalServerError)
+			return
+		}
+	})
+}
+
+type versionInfo struct {
+	CurrentVersion string `json:"current_version"`
+	LatestVersion  string `json:"latest_version"`
 }
 
 // trackingHandler proxies events to intake.rilldata.io.

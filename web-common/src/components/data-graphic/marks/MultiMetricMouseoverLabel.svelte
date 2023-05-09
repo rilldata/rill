@@ -134,17 +134,19 @@ It is probably not the most up to date code; but it works very well in practice.
   $: if (container && locations && $xScale && $yScale) {
     clearTimeout(transitionalTimeoutForCalculatingLabelWidth);
     transitionalTimeoutForCalculatingLabelWidth = setTimeout(() => {
-      labelWidth = Math.max(
-        ...Array.from(container.querySelectorAll(".widths")).map(
-          (q: SVGElement) => q.getBoundingClientRect().width
-        )
-      );
+      if (container) {
+        labelWidth = Math.max(
+          ...Array.from(container.querySelectorAll(".widths")).map(
+            (q: SVGElement) => q.getBoundingClientRect().width
+          )
+        );
 
-      textWidths = Array.from(container.querySelectorAll(".text-elements")).map(
-        (q: SVGElement) => q.getBoundingClientRect().width
-      );
-      if (!Number.isFinite(labelWidth)) {
-        labelWidth = 0;
+        textWidths = Array.from(
+          container.querySelectorAll(".text-elements")
+        ).map((q: SVGElement) => q.getBoundingClientRect().width);
+        if (!Number.isFinite(labelWidth)) {
+          labelWidth = 0;
+        }
       }
     }, 0);
   }
@@ -192,7 +194,7 @@ It is probably not the most up to date code; but it works very well in practice.
                   dy=".35em"
                   y={y.label}
                   x={xText - (location?.yOverride ? labelWidth : 0)}
-                  class="mc-mouseover-label  {location?.yOverride
+                  class="mc-mouseover-label {location?.yOverride
                     ? location?.yOverrideStyleClass
                     : location?.labelStyleClass || ''} {(!location?.yOverride &&
                     location?.labelColorClass) ||
@@ -209,7 +211,7 @@ It is probably not the most up to date code; but it works very well in practice.
                   dy=".35em"
                   y={y.label}
                   x={xText - labelWidth}
-                  class="mc-mouseover-label  {location?.labelStyleClass ||
+                  class="mc-mouseover-label {location?.labelStyleClass ||
                     ''} {(!location?.yOverride && location?.labelColorClass) ||
                     ''}"
                   text-anchor="end"

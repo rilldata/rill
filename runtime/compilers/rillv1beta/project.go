@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/go-yaml/yaml"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"gopkg.in/yaml.v2"
 )
 
 const Version = "rill-beta"
@@ -31,7 +31,7 @@ func (c *Codec) IsInit(ctx context.Context) bool {
 }
 
 func (c *Codec) InitEmpty(ctx context.Context, name, rillVersion string) error {
-	err := c.Repo.Put(ctx, c.InstanceID, "rill.yaml", strings.NewReader(fmt.Sprintf("compiler: %s\nrill_version: %s\n\nname: %s\n", Version, rillVersion, name)))
+	err := c.Repo.Put(ctx, c.InstanceID, "rill.yaml", strings.NewReader(fmt.Sprintf("compiler: %s\nrill_version: %s\n\ntitle: %s\n", Version, rillVersion, name)))
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func (c *Codec) InitEmpty(ctx context.Context, name, rillVersion string) error {
 	if gitignore != "" {
 		gitignore += "\n"
 	}
-	gitignore += "# Rill\n*.db\n*.db.tmp\n*.db.wal\ndata/\n"
+	gitignore += "# Rill\n*.db\n*.db.tmp\n*.db.wal\n"
 
 	err = c.Repo.Put(ctx, c.InstanceID, ".gitignore", strings.NewReader(gitignore))
 	if err != nil {
@@ -82,10 +82,6 @@ func (c *Codec) PutSource(ctx context.Context, repo drivers.RepoStore, instanceI
 
 	if val, ok := props["region"].(string); ok {
 		out.Region = val
-	}
-
-	if val, ok := props["csv.delimiter"].(string); ok {
-		out.CSVDelimiter = val
 	}
 
 	blob, err := yaml.Marshal(out)
@@ -150,4 +146,9 @@ func ProjectName(dir string) (string, error) {
 	}
 
 	return c.SanitizedName(), nil
+}
+
+func HasRillProject(dir string) bool {
+	_, err := os.Open(filepath.Join(dir, "rill.yaml"))
+	return err == nil
 }

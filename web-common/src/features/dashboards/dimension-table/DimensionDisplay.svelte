@@ -1,12 +1,11 @@
 <script lang="ts">
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
-
   /**
    * DimensionDisplay.svelte
    * -------------------------
    * Create a table with the selected dimension and measures
    * to be displayed in explore
    */
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     getFilterForDimension,
     useMetaDimension,
@@ -37,12 +36,10 @@
   } from "../humanize-numbers";
   import {
     computeComparisonValues,
-    customSortMeasures,
     getComparisonProperties,
     getFilterForComparisonTable,
     updateFilterOnSearch,
   } from "./dimension-table-utils";
-  import DimensionContainer from "./DimensionContainer.svelte";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
 
@@ -154,7 +151,12 @@
     allTimeRangeQuery = useModelAllTimeRange(
       $runtime.instanceId,
       $metaQuery.data.model,
-      $metaQuery.data.timeDimension
+      $metaQuery.data.timeDimension,
+      {
+        query: {
+          enabled: !!$metaQuery.data.timeDimension,
+        },
+      }
     );
   }
 
@@ -165,6 +167,8 @@
 
   let comparisonTopListQuery;
   let isComparisonRangeAvailable = false;
+  let displayComparison = false;
+
   // create the right compareTopListParams.
   $: if (
     !$topListQuery?.isFetching &&
@@ -186,6 +190,8 @@
 
     const { start, end } = comparisonTimeRange;
     isComparisonRangeAvailable = comparisonTimeRange.isComparisonRangeAvailable;
+    displayComparison =
+      metricsExplorer?.showComparison && isComparisonRangeAvailable;
 
     let comparisonFilterSet = getFilterForComparisonTable(
       filterForDimension,
@@ -212,8 +218,8 @@
         ...comparisonParams,
 
         ...{
-          timeStart: isComparisonRangeAvailable ? start : undefined,
-          timeEnd: isComparisonRangeAvailable ? end : undefined,
+          timeStart: displayComparison ? start : undefined,
+          timeEnd: displayComparison ? end : undefined,
         },
       };
     }
@@ -224,7 +230,7 @@
       comparisonParams
     );
   } else if (!hasTimeSeries) {
-    isComparisonRangeAvailable = false;
+    displayComparison = false;
   }
 
   let totalsQuery;
@@ -271,20 +277,25 @@
     let columnsMeta = $topListQuery?.data?.meta || [];
     values = $topListQuery?.data?.data ?? [];
 
-    let columnNames = columnsMeta
+    let columnNames: Array<string> = columnsMeta
       .map((c) => c.name)
       .filter((name) => name !== dimension?.name);
 
     const selectedMeasure = allMeasures.find((m) => m.name === sortByColumn);
+    const sortByColumnIndex = columnNames.indexOf(sortByColumn);
     // Add comparison columns if available
-    if (isComparisonRangeAvailable) {
-      columnNames.push(`${sortByColumn}_delta`);
+    if (displayComparison) {
+      columnNames.splice(sortByColumnIndex + 1, 0, `${sortByColumn}_delta`);
 
       // Only push percentage delta column if selected measure is not a percentage
-      if (selectedMeasure?.format != NicelyFormattedTypes.PERCENTAGE)
-        columnNames.push(`${sortByColumn}_delta_perc`);
+      if (selectedMeasure?.format != NicelyFormattedTypes.PERCENTAGE) {
+        columnNames.splice(
+          sortByColumnIndex + 2,
+          0,
+          `${sortByColumn}_delta_perc`
+        );
+      }
     }
-    columnNames = columnNames.sort(customSortMeasures);
 
     // Make dimension the first column
     columnNames.unshift(dimension?.name);
@@ -347,12 +358,13 @@
     }
   }
 
-  $: if (
-    $comparisonTopListQuery?.data &&
-    values.length &&
-    isComparisonRangeAvailable
-  ) {
-    values = computeComparisonValues($comparisonTopListQuery?.data, values);
+  $: if ($comparisonTopListQuery?.data && values.length && displayComparison) {
+    values = computeComparisonValues(
+      $comparisonTopListQuery?.data,
+      values,
+      dimensionName,
+      leaderboardMeasureName
+    );
   }
 
   $: if (values) {
@@ -369,28 +381,32 @@
 </script>
 
 {#if topListQuery}
-  <DimensionContainer>
-    <DimensionHeader
-      {metricViewName}
-      {dimensionName}
-      {excludeMode}
-      isFetching={$topListQuery?.isFetching}
-      on:search={(event) => {
-        searchText = event.detail;
-      }}
-    />
+  <div class="h-full flex flex-col" style:min-width="365px">
+    <div class="flex-none" style:height="50px">
+      <DimensionHeader
+        {metricViewName}
+        {dimensionName}
+        {excludeMode}
+        isFetching={$topListQuery?.isFetching}
+        on:search={(event) => {
+          searchText = event.detail;
+        }}
+      />
+    </div>
 
     {#if values && columns.length}
-      <DimensionTable
-        on:select-item={(event) => onSelectItem(event)}
-        on:sort={(event) => onSortByColumn(event)}
-        dimensionName={dimension?.name}
-        {columns}
-        {selectedValues}
-        rows={values}
-        {sortByColumn}
-        {excludeMode}
-      />
+      <div class="grow" style="overflow-y: hidden;">
+        <DimensionTable
+          on:select-item={(event) => onSelectItem(event)}
+          on:sort={(event) => onSortByColumn(event)}
+          dimensionName={dimension?.name}
+          {columns}
+          {selectedValues}
+          rows={values}
+          {sortByColumn}
+          {excludeMode}
+        />
+      </div>
     {/if}
-  </DimensionContainer>
+  </div>
 {/if}

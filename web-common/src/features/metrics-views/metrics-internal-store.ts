@@ -1,3 +1,4 @@
+import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
 import { guidGenerator } from "@rilldata/web-common/lib/guid";
 import type {
@@ -15,12 +16,14 @@ export interface MetricsConfig extends MetricsParams {
 }
 export interface MetricsParams {
   display_name: string;
+  title: string;
   timeseries: string;
   smallest_time_grain?: string;
   default_time_range?: string;
   model: string;
 }
 export interface MeasureEntity {
+  name?: string;
   label?: string;
   expression?: string;
   description?: string;
@@ -50,6 +53,9 @@ export class MetricsInternalRepresentation {
   updateRuntime: (yamlString: string) => void;
 
   constructor(yamlString: string, updateRuntime) {
+    // backwards compatibility for dashboard title
+    yamlString = yamlString.replace(/^display_name:/m, "title:");
+
     this.internalRepresentation = this.decorateInternalRepresentation(
       yamlString
     ) as MetricsConfig;
@@ -174,9 +180,15 @@ export class MetricsInternalRepresentation {
   }
 
   addNewMeasure() {
+    const newName = getName(
+      "measure",
+      this.internalRepresentation.measures.map((measure) => measure.name)
+    );
+
     const measureNode = this.internalRepresentationDocument.createNode({
       label: "",
       expression: "",
+      name: newName,
       description: "",
       format_preset: "humanize",
       __GUID__: guidGenerator(),
@@ -243,9 +255,9 @@ const capitalize = (s) => s && s[0].toUpperCase() + s.slice(1);
 
 export function initBlankDashboardYAML(dashboardName: string) {
   const metricsTemplate = `
-# Visit https://docs.rilldata.com/references/project-files to learn more about Rill project files.
+# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-display_name: ""
+title: ""
 model: ""
 default_time_range: ""
 smallest_time_grain: ""
@@ -254,7 +266,7 @@ measures: []
 dimensions: []
 `;
   const template = parseDocument(metricsTemplate);
-  template.set("display_name", dashboardName);
+  template.set("title", dashboardName);
   return template.toString();
 }
 
@@ -272,6 +284,7 @@ export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
   const measureNode = doc.createNode({
     label: "Total records",
     expression: "count(*)",
+    name: "total_records",
     description: "Total number of records present",
     format_preset: "humanize",
   });

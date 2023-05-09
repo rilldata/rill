@@ -54,7 +54,6 @@
 
 <div
   class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3"
-  style:height="50px"
 >
   <button
     class="flex flex-row items-center"
@@ -62,7 +61,7 @@
     style:grid-column-gap=".4rem"
   >
     {#if isFetching}
-      <div transition:slideRight|local={{ leftOffset: 8 }}>
+      <div>
         <Spinner size="16px" status={EntityStatus.Running} />
       </div>
     {:else}

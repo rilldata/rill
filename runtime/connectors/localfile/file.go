@@ -32,22 +32,12 @@ var spec = connectors.Spec{
 			Description: "Either CSV or Parquet. Inferred if not set.",
 			Placeholder: "csv",
 		},
-		{
-			Key:         "csv.delimiter",
-			Type:        connectors.StringPropertyType,
-			Required:    false,
-			DisplayName: "CSV Delimiter",
-			Description: "Force delimiter for a CSV file.",
-			Placeholder: ",",
-		},
 	},
 }
 
 type Config struct {
-	Path          string `mapstructure:"path"`
-	Format        string `mapstructure:"format"`
-	CSVDelimiter  string `mapstructure:"csv.delimiter"`
-	HivePartition *bool  `mapstructure:"hive_partitioning"`
+	Path   string `mapstructure:"path"`
+	Format string `mapstructure:"format"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -70,4 +60,8 @@ func (c connector) Spec() connectors.Spec {
 // keeping it for reference
 func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
 	return nil, fmt.Errorf("not implemented")
+}
+
+func (c connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {
+	return true, nil
 }

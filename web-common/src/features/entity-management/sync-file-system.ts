@@ -13,11 +13,11 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { Page } from "@sveltejs/kit";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { get, Readable, Writable } from "svelte/store";
-import type { FeatureFlags } from "../../../../web-local/src/lib/application-state-stores/application-store";
-import { invalidateAfterReconcile } from "../../../../web-local/src/lib/svelte-query/invalidation";
+import { Readable, Writable, get } from "svelte/store";
 import { overlay } from "../../layout/overlay-store";
+import { invalidateAfterReconcile } from "../../runtime-client/invalidation";
 import type { Runtime } from "../../runtime-client/runtime-store";
+import type { FeatureFlags } from "../feature-flags";
 import { getFilePathFromPagePath } from "./entity-mappers";
 import {
   FileArtifactsStore,

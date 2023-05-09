@@ -8,8 +8,9 @@ import (
 	"net/url"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
 )
 
@@ -23,49 +24,23 @@ const (
 // RegisterEndpoints adds HTTP endpoints for auth.
 // The mux must be served on the ExternalURL of the Authenticator since the logic in these handlers relies on knowing the full external URIs.
 // Note that these are not gRPC handlers, just regular HTTP endpoints that we mount on the gRPC-gateway mux.
-func (a *Authenticator) RegisterEndpoints(mux *gateway.ServeMux) error {
-	err := mux.HandlePath("GET", "/auth/login", a.authLogin)
-	if err != nil {
-		return err
-	}
-
-	err = mux.HandlePath("GET", "/auth/callback", a.authLoginCallback)
-	if err != nil {
-		return err
-	}
-
-	err = mux.HandlePath("GET", "/auth/logout", a.authLogout)
-	if err != nil {
-		return err
-	}
-
-	err = mux.HandlePath("GET", "/auth/logout/callback", a.authLogoutCallback)
-	if err != nil {
-		return err
-	}
-
-	err = mux.HandlePath("POST", "/auth/oauth/device_authorization", a.handleDeviceCodeRequest)
-	if err != nil {
-		return err
-	}
-
-	err = mux.HandlePath("POST", "/auth/oauth/device", a.HTTPMiddleware(a.handleUserCodeConfirmation))
-	if err != nil {
-		return err
-	}
-
-	err = mux.HandlePath("POST", "/auth/oauth/token", a.getAccessToken)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux) {
+	// TODO: Add helper utils to clean this up
+	inner := http.NewServeMux()
+	inner.Handle("/auth/login", otelhttp.WithRouteTag("/auth/login", http.HandlerFunc(a.authLogin)))
+	inner.Handle("/auth/callback", otelhttp.WithRouteTag("/auth/callback", http.HandlerFunc(a.authLoginCallback)))
+	inner.Handle("/auth/logout", otelhttp.WithRouteTag("/auth/logout", http.HandlerFunc(a.authLogout)))
+	inner.Handle("/auth/logout/callback", otelhttp.WithRouteTag("/auth/logout/callback", http.HandlerFunc(a.authLogoutCallback)))
+	inner.Handle("/auth/oauth/device_authorization", otelhttp.WithRouteTag("/auth/oauth/device_authorization", http.HandlerFunc(a.handleDeviceCodeRequest)))
+	inner.Handle("/auth/oauth/device", otelhttp.WithRouteTag("/auth/oauth/device", a.HTTPMiddleware(http.HandlerFunc(a.handleUserCodeConfirmation)))) // NOTE: Uses auth middleware
+	inner.Handle("/auth/oauth/token", otelhttp.WithRouteTag("/auth/oauth/token", http.HandlerFunc(a.getAccessToken)))
+	mux.Handle("/auth/", observability.Middleware("admin", a.logger, inner))
 }
 
 // authLogin starts an OAuth and OIDC flow that redirects the user for authentication with the auth provider.
 // After auth, the user is redirected back to authLoginCallback, which in turn will redirect the user to "/".
 // You can override the redirect destination by passing a `?redirect=URI` query to this endpoint.
-func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request) {
 	// Generate random state for CSRF
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
@@ -76,11 +51,7 @@ func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request, pathPa
 	state := base64.StdEncoding.EncodeToString(b)
 
 	// Get auth cookie
-	sess, err := a.cookies.Get(r, cookieName)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
-		return
-	}
+	sess := a.cookies.Get(r, cookieName)
 
 	// Set state in cookie
 	sess.Values[cookieFieldState] = state
@@ -105,14 +76,9 @@ func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request, pathPa
 // It validates the OAuth info, fetches user profile info, and creates/updates the user in our DB.
 // It then issues a new user auth token and saves it in a cookie.
 // Finally, it redirects the user to the location specified in the initial call to authLogin.
-func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request) {
 	// Get auth cookie
-	sess, err := a.cookies.Get(r, cookieName)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
-		return
-	}
-
+	sess := a.cookies.Get(r, cookieName)
 	// Check that random state matches (for CSRF protection)
 	if r.URL.Query().Get("state") != sess.Values[cookieFieldState] {
 		http.Error(w, "invalid state parameter", http.StatusBadRequest)
@@ -178,7 +144,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	if ok && oldAuthToken != "" {
 		err := a.admin.RevokeAuthToken(r.Context(), oldAuthToken)
 		if err != nil {
-			a.logger.Error("failed to revoke old user auth token during new auth", zap.Error(err))
+			a.logger.Error("failed to revoke old user auth token during new auth", zap.Error(err), observability.ZapCtx(r.Context()))
 			// The old token was probably manually revoked. We can still continue.
 		}
 	}
@@ -212,20 +178,15 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 
 // authLogout implements user logout. It revokes the current user auth token, then redirects to the auth provider's logout flow.
 // Once the logout has completed, the auth provider will redirect the user to authLogoutCallback.
-func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request) {
 	// Get auth cookie
-	sess, err := a.cookies.Get(r, cookieName)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
-		return
-	}
-
+	sess := a.cookies.Get(r, cookieName)
 	// Revoke access token and clear in cookie
 	authToken, ok := sess.Values[cookieFieldAccessToken].(string)
 	if ok && authToken != "" {
 		err := a.admin.RevokeAuthToken(r.Context(), authToken)
 		if err != nil {
-			a.logger.Error("failed to revoke user auth token during logout", zap.Error(err))
+			a.logger.Error("failed to revoke user auth token during logout", zap.Error(err), observability.ZapCtx(r.Context()))
 			// We should still continue to ensure the user is logged out on the auth provider as well.
 		}
 	}
@@ -267,14 +228,9 @@ func (a *Authenticator) authLogout(w http.ResponseWriter, r *http.Request, pathP
 }
 
 // authLogoutCallback is called when a logout flow iniated by authLogout has completed.
-func (a *Authenticator) authLogoutCallback(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+func (a *Authenticator) authLogoutCallback(w http.ResponseWriter, r *http.Request) {
 	// Get auth cookie
-	sess, err := a.cookies.Get(r, cookieName)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get session: %s", err), http.StatusInternalServerError)
-		return
-	}
-
+	sess := a.cookies.Get(r, cookieName)
 	// Get redirect destination
 	redirect, ok := sess.Values[cookieFieldRedirect].(string)
 	if !ok || redirect == "" {

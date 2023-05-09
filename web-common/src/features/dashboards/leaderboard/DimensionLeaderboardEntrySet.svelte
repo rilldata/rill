@@ -27,6 +27,7 @@ see more button
     humanizeDataType,
   } from "../humanize-numbers";
   import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
+  import { FormattedDataType } from "../../../components/data-types";
 
   export let values;
   export let comparisonValues;
@@ -115,10 +116,10 @@ see more button
       {excluded}
     >
       <svelte:fragment slot="label">
-        {label}
+        <FormattedDataType value={label} />
       </svelte:fragment>
       <div slot="right" class="flex items-baseline gap-x-1">
-        {#if showComparisonForThisValue && comparisonValue !== undefined}
+        {#if showComparisonForThisValue && comparisonValue !== undefined && comparisonValue !== null}
           <span
             class="inline-block opacity-50"
             transition:slideRight={{ duration: LIST_SLIDE_DURATION }}
@@ -127,8 +128,7 @@ see more button
             →
           </span>
         {/if}
-
-        {formattedValue || value || "∅"}
+        <FormattedDataType type="INTEGER" value={formattedValue || value} />
       </div>
       <span slot="context">
         <PercentageChange

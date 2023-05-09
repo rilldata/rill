@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -21,6 +22,11 @@ import (
 const (
 	formMediaType = "application/x-www-form-urlencoded"
 	jsonMediaType = "application/json"
+)
+
+var (
+	ErrAuthenticationTimedout = fmt.Errorf("authentication timed out")
+	ErrCodeRejected           = fmt.Errorf("confirmation code rejected")
 )
 
 // Authenticator is the interface for authentication via device oauth
@@ -75,10 +81,11 @@ func New(authURL string) (*DeviceAuthenticator, error) {
 }
 
 // VerifyDevice performs the device verification API calls.
-func (d *DeviceAuthenticator) VerifyDevice(ctx context.Context) (*DeviceVerification, error) {
+func (d *DeviceAuthenticator) VerifyDevice(ctx context.Context, redirectURL string) (*DeviceVerification, error) {
 	req, err := d.newFormRequest(ctx, "auth/oauth/device_authorization", url.Values{
 		"client_id": []string{d.ClientID},
 		"scope":     []string{"full_account"},
+		"redirect":  []string{url.QueryEscape(redirectURL)},
 	})
 	if err != nil {
 		return nil, err
@@ -142,7 +149,7 @@ func (d *DeviceAuthenticator) GetAccessTokenForDevice(ctx context.Context, v *De
 		}
 
 		if d.Clock.Now().After(v.ExpiresAt) {
-			return nil, errors.New("authentication timed out")
+			return nil, ErrAuthenticationTimedout
 		}
 	}
 }
@@ -231,8 +238,11 @@ func checkErrorResponse(res *http.Response) (bool, error) {
 	if bodyStr == "authorization_pending" || bodyStr == "slow_down" {
 		return true, nil
 	}
-	if bodyStr == "expired_token" || bodyStr == "rejected" {
+	if bodyStr == "expired_token" {
 		return false, errors.New(bodyStr)
+	}
+	if bodyStr == "rejected" {
+		return false, ErrCodeRejected
 	}
 
 	return false, errors.New(strconv.Itoa(res.StatusCode) + ": " + bodyStr)

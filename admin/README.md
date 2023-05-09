@@ -10,11 +10,17 @@ RILL_ADMIN_DATABASE_DRIVER=postgres
 RILL_ADMIN_DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres
 RILL_ADMIN_HTTP_PORT=8080
 RILL_ADMIN_GRPC_PORT=9090
+RILL_ADMIN_METRICS_EXPORTER="prometheus"
+RILL_ADMIN_TRACES_EXPORTER=""
 RILL_ADMIN_EXTERNAL_URL=http://localhost:8080
 RILL_ADMIN_FRONTEND_URL=http://localhost:3000
 RILL_ADMIN_ALLOWED_ORIGINS=*
-# Hex-encoded comma-separated list of keys. For details: https://pkg.go.dev/github.com/gorilla/sessions#NewCookieStore
+# Hex-encoded comma-separated list of key pairs. To generate, run "go run ./scripts/generate_keypairs/main.go"
+# For details: https://pkg.go.dev/github.com/gorilla/sessions#NewCookieStore
 RILL_ADMIN_SESSION_KEY_PAIRS=7938b8c95ac90b3731c353076daeae8a,90c22a5a6c6b442afdb46855f95eb7d6
+# JWKS details for signing JWTs. The JWKS must contain *private* keys. To generate, run "go run ./scripts/generate_jwks/main.go"
+RILL_ADMIN_SIGNING_JWKS=
+RILL_ADMIN_SIGNING_KEY_ID=
 # Get these from https://auth0.com/ (or ask a team member)
 RILL_ADMIN_AUTH_DOMAIN=gorillio-stage.auth0.com
 RILL_ADMIN_AUTH_CLIENT_ID=
@@ -24,6 +30,16 @@ RILL_ADMIN_GITHUB_APP_ID=302634
 RILL_ADMIN_GITHUB_APP_NAME=rill-cloud-dev
 RILL_ADMIN_GITHUB_APP_PRIVATE_KEY=
 RILL_ADMIN_GITHUB_APP_WEBHOOK_SECRET=
+RILL_ADMIN_GITHUB_CLIENT_ID=
+RILL_ADMIN_GITHUB_CLIENT_SECRET=
+# For email client
+RILL_ADMIN_EMAIL_SMTP_HOST=
+RILL_ADMIN_EMAIL_SMTP_PORT=
+RILL_ADMIN_EMAIL_SMTP_USERNAME=
+RILL_ADMIN_EMAIL_SMTP_PASSWORD=
+RILL_ADMIN_EMAIL_SENDER_EMAIL=
+RILL_ADMIN_EMAIL_SENDER_NAME=
+RILL_ADMIN_EMAIL_BCC=
 ```
 2. In a separate terminal, run Postgres in the background:
 ```bash

@@ -2,7 +2,7 @@ import { goto } from "$app/navigation";
 import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import type { V1PutFileAndReconcileResponse } from "@rilldata/web-common/runtime-client";
-import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
 import type {
   CreateBaseMutationResult,
   QueryClient,

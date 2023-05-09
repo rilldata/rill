@@ -167,11 +167,6 @@ paths:
           schema:
             type: object
             properties:
-              embedCatalog:
-                type: boolean
-              ingestionLimitBytes:
-                type: string
-                format: int64
               olapDriver:
                 type: string
               olapDsn:
@@ -180,10 +175,15 @@ paths:
                 type: string
               repoDsn:
                 type: string
+              embedCatalog:
+                type: boolean
               variables:
                 type: object
                 additionalProperties:
                   type: string
+              ingestionLimitBytes:
+                type: string
+                format: int64
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
@@ -513,6 +513,59 @@ paths:
           format: int32
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/rows:
+    post:
+      summary: MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+      operationId: QueryService_MetricsViewRows
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewRowsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              timeStart:
+                type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              sort:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewSort'
+              limit:
+                type: integer
+                format: int32
+              offset:
+                type: string
+                format: int64
+              priority:
+                type: integer
+                format: int32
+            title: Request message for QueryService.MetricsViewRows
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
     post:
       summary: |-
@@ -543,23 +596,23 @@ paths:
           schema:
             type: object
             properties:
-              filter:
-                $ref: '#/definitions/v1MetricsViewFilter'
               measureNames:
                 type: array
                 items:
                   type: string
-              priority:
-                type: integer
-                format: int32
+              timeStart:
+                type: string
+                format: date-time
               timeEnd:
                 type: string
                 format: date-time
               timeGranularity:
                 $ref: '#/definitions/v1TimeGrain'
-              timeStart:
-                type: string
-                format: date-time
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              priority:
+                type: integer
+                format: int32
             title: Request message for QueryService.MetricsViewTimeSeries
       tags:
         - QueryService
@@ -595,31 +648,32 @@ paths:
             properties:
               dimensionName:
                 type: string
-              filter:
-                $ref: '#/definitions/v1MetricsViewFilter'
-              limit:
-                type: string
-                format: int64
               measureNames:
                 type: array
                 items:
                   type: string
-              offset:
-                type: string
-                format: int64
-              priority:
-                type: integer
-                format: int32
-              sort:
-                type: array
-                items:
-                  $ref: '#/definitions/v1MetricsViewSort'
-              timeEnd:
-                type: string
-                format: date-time
               timeStart:
                 type: string
                 format: date-time
+              timeEnd:
+                type: string
+                format: date-time
+              limit:
+                type: string
+                format: int64
+              offset:
+                type: string
+                format: int64
+              sort:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewSort'
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              priority:
+                type: integer
+                format: int32
             title: Request message for QueryService.MetricsViewToplist
       tags:
         - QueryService
@@ -653,21 +707,21 @@ paths:
           schema:
             type: object
             properties:
-              filter:
-                $ref: '#/definitions/v1MetricsViewFilter'
               measureNames:
                 type: array
                 items:
                   type: string
-              priority:
-                type: integer
-                format: int32
-              timeEnd:
-                type: string
-                format: date-time
               timeStart:
                 type: string
                 format: date-time
+              timeEnd:
+                type: string
+                format: date-time
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              priority:
+                type: integer
+                format: int32
             title: Request message for QueryService.MetricsViewTotals
       tags:
         - QueryService
@@ -971,25 +1025,26 @@ paths:
           schema:
             type: object
             properties:
-              filters:
-                $ref: '#/definitions/v1MetricsViewFilter'
               measures:
                 type: array
                 items:
+                  type: object
                   $ref: '#/definitions/ColumnTimeSeriesRequestBasicMeasure'
+              timestampColumnName:
+                type: string
+              timeRange:
+                $ref: '#/definitions/v1TimeSeriesTimeRange'
+              filters:
+                $ref: '#/definitions/v1MetricsViewFilter'
               pixels:
-                type: integer
-                format: int32
-              priority:
                 type: integer
                 format: int32
               sampleSize:
                 type: integer
                 format: int32
-              timeRange:
-                $ref: '#/definitions/v1TimeSeriesTimeRange'
-              timestampColumnName:
-                type: string
+              priority:
+                type: integer
+                format: int32
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/topk/tables/{tableName}:
@@ -1022,11 +1077,11 @@ paths:
           schema:
             type: object
             properties:
+              columnName:
+                type: string
               agg:
                 type: string
                 title: default is count(*)
-              columnName:
-                type: string
               k:
                 type: integer
                 format: int32
@@ -1062,20 +1117,20 @@ paths:
           schema:
             type: object
             properties:
+              sql:
+                type: string
+                title: SELECT statement
               args:
                 type: array
                 items: {}
                 title: Args to interpolate into the statement
-              dryRun:
-                type: boolean
-                title: If true, will only validate the query, not execute it
               priority:
                 type: integer
                 format: int32
                 title: Query priority (not supported by all backends)
-              sql:
-                type: string
-                title: SELECT statement
+              dryRun:
+                type: boolean
+                title: If true, will only validate the query, not execute it
             title: Request message for QueryService.Query
       tags:
         - QueryService
@@ -1115,9 +1170,6 @@ paths:
                 description: |-
                   Changed paths provides a way to "hint" what files have changed in the repo, enabling
                   reconciliation to execute faster by not scanning all code artifacts for changes.
-              dry:
-                type: boolean
-                title: If true, will validate the file artifacts, but not actually execute any migrations
               forcedPaths:
                 type: array
                 items:
@@ -1125,6 +1177,9 @@ paths:
                 description: |-
                   Forced paths is used to force run reconcile on certain files.
                   This is mainly used by UI to reconcile paths missing in catalog and get errors if any.
+              dry:
+                type: boolean
+                title: If true, will validate the file artifacts, but not actually execute any migrations
               strict:
                 type: boolean
                 title: |-
@@ -1239,41 +1294,41 @@ definitions:
   ColumnTimeSeriesRequestBasicMeasure:
     type: object
     properties:
+      id:
+        type: string
       expression:
         type: string
         title: mandatory user defined metadata
-      id:
-        type: string
       sqlName:
         type: string
         title: optional user defined metadata
   ConnectorProperty:
     type: object
     properties:
-      description:
-        type: string
-        title: Human readable description of the field
-      displayName:
-        type: string
-        title: Pretty name for the property
-      hint:
-        type: string
-        title: Additional textual explanation for use in UIs
-      href:
-        type: string
-        title: Link to documentation for this property
       key:
         type: string
         title: The property key
-      nullable:
-        type: boolean
-        title: Nullable is true if the field is optional
+      displayName:
+        type: string
+        title: Pretty name for the property
+      description:
+        type: string
+        title: Human readable description of the field
       placeholder:
         type: string
         title: Placeholder value for use in UIs
       type:
         $ref: '#/definitions/ConnectorPropertyType'
         title: The type expected for this property
+      nullable:
+        type: boolean
+        title: Nullable is true if the field is optional
+      hint:
+        type: string
+        title: Additional textual explanation for use in UIs
+      href:
+        type: string
+        title: Link to documentation for this property
     title: Property represents one of the connector's config properties
   ConnectorPropertyType:
     type: string
@@ -1295,16 +1350,18 @@ definitions:
   MetricsViewDimension:
     type: object
     properties:
-      description:
+      name:
         type: string
       label:
         type: string
-      name:
+      description:
         type: string
     title: Dimensions are columns to filter and group by
   MetricsViewFilterCond:
     type: object
     properties:
+      name:
+        type: string
       in:
         type: array
         items: {}
@@ -1312,20 +1369,18 @@ definitions:
         type: array
         items:
           type: string
-      name:
-        type: string
   MetricsViewMeasure:
     type: object
     properties:
-      description:
-        type: string
-      expression:
-        type: string
-      format:
+      name:
         type: string
       label:
         type: string
-      name:
+      expression:
+        type: string
+      description:
+        type: string
+      format:
         type: string
     title: Measures are aggregated computed values
   ModelDialect:
@@ -1341,16 +1396,16 @@ definitions:
       bucket:
         type: integer
         format: int32
-      count:
+      low:
+        type: number
+        format: double
+      midpoint:
         type: number
         format: double
       high:
         type: number
         format: double
-      low:
-        type: number
-        format: double
-      midpoint:
+      count:
         type: number
         format: double
   NumericOutliersOutlier:
@@ -1359,46 +1414,46 @@ definitions:
       bucket:
         type: integer
         format: int32
-      count:
-        type: integer
-        format: int32
-      high:
+      low:
         type: number
         format: double
-      low:
+      high:
         type: number
         format: double
       present:
         type: boolean
+      count:
+        type: integer
+        format: int32
   ReconcileErrorCharLocation:
     type: object
     properties:
-      column:
+      line:
         type: integer
         format: int64
-      line:
+      column:
         type: integer
         format: int64
     title: CharLocation is a line and column in a code artifact
   SourceExtractPolicy:
     type: object
     properties:
-      filesLimit:
-        type: string
-        format: uint64
-        title: limit on number of files
-      filesStrategy:
+      rowsStrategy:
         $ref: '#/definitions/ExtractPolicyStrategy'
-        title: strategy for selecting files
+        title: strategy for selecting rows in a file
       rowsLimitBytes:
         type: string
         format: uint64
         title: |-
           could in future add: uint64 rows_limit = n;
           limit on data fetched in bytes
-      rowsStrategy:
+      filesStrategy:
         $ref: '#/definitions/ExtractPolicyStrategy'
-        title: strategy for selecting rows in a file
+        title: strategy for selecting files
+      filesLimit:
+        type: string
+        format: uint64
+        title: limit on number of files
     title: Extract policy for glob connectors
   StructTypeField:
     type: object
@@ -1410,22 +1465,22 @@ definitions:
   TimeRangeSummaryInterval:
     type: object
     properties:
+      months:
+        type: integer
+        format: int32
       days:
         type: integer
         format: int32
       micros:
         type: string
         format: int64
-      months:
-        type: integer
-        format: int32
   TopKEntry:
     type: object
     properties:
+      value: {}
       count:
         type: number
         format: double
-      value: {}
   protobufAny:
     type: object
     properties:
@@ -1450,34 +1505,55 @@ definitions:
       code:
         type: integer
         format: int32
+      message:
+        type: string
       details:
         type: array
         items:
+          type: object
           $ref: '#/definitions/protobufAny'
-      message:
-        type: string
   runtimev1Type:
     type: object
     properties:
-      arrayElementType:
-        $ref: '#/definitions/runtimev1Type'
-        title: If code is CODE_ARRAY, array_element_type specifies the type of the array elements
       code:
         $ref: '#/definitions/v1TypeCode'
         title: Code designates the type
-      mapType:
-        $ref: '#/definitions/v1MapType'
-        title: If code is CODE_MAP, map_type specifies the map's key and value types
       nullable:
         type: boolean
         title: Nullable indicates whether null values are possible
+      arrayElementType:
+        $ref: '#/definitions/runtimev1Type'
+        title: If code is CODE_ARRAY, array_element_type specifies the type of the array elements
       structType:
         $ref: '#/definitions/v1StructType'
         title: If code is CODE_STRUCT, struct_type specifies the type of the struct's fields
+      mapType:
+        $ref: '#/definitions/v1MapType'
+        title: If code is CODE_MAP, map_type specifies the map's key and value types
     title: Type represents a data type in a schema
   v1CatalogEntry:
     type: object
     properties:
+      name:
+        type: string
+      table:
+        $ref: '#/definitions/v1Table'
+      source:
+        $ref: '#/definitions/v1Source'
+      model:
+        $ref: '#/definitions/v1Model'
+      metricsView:
+        $ref: '#/definitions/v1MetricsView'
+      path:
+        type: string
+      embedded:
+        type: boolean
+        description: Marks whether this entry is embedded or not. If yes then this will not have a corresponding artifact.
+      parents:
+        type: array
+        items:
+          type: string
+        title: Immediate parent entries in the DAG
       children:
         type: array
         items:
@@ -1486,41 +1562,21 @@ definitions:
       createdOn:
         type: string
         format: date-time
-      embedded:
-        type: boolean
-        description: Marks whether this entry is embedded or not. If yes then this will not have a corresponding artifact.
-      metricsView:
-        $ref: '#/definitions/v1MetricsView'
-      model:
-        $ref: '#/definitions/v1Model'
-      name:
-        type: string
-      parents:
-        type: array
-        items:
-          type: string
-        title: Immediate parent entries in the DAG
-      path:
-        type: string
-      refreshedOn:
+      updatedOn:
         type: string
         format: date-time
-      source:
-        $ref: '#/definitions/v1Source'
-      table:
-        $ref: '#/definitions/v1Table'
-      updatedOn:
+      refreshedOn:
         type: string
         format: date-time
     title: CatalogEntry contains information about an object in the catalog
   v1CategoricalSummary:
     type: object
     properties:
+      topK:
+        $ref: '#/definitions/v1TopK'
       cardinality:
         type: number
         format: double
-      topK:
-        $ref: '#/definitions/v1TopK'
     description: Response for QueryService.ColumnTopK and QueryService.ColumnCardinality. Message will have either topK or cardinality set.
   v1ColumnCardinalityResponse:
     type: object
@@ -1548,14 +1604,14 @@ definitions:
   v1ColumnRollupIntervalResponse:
     type: object
     properties:
+      start:
+        type: string
+        format: date-time
       end:
         type: string
         format: date-time
       interval:
         $ref: '#/definitions/v1TimeGrain'
-      start:
-        type: string
-        format: date-time
   v1ColumnRugHistogramResponse:
     type: object
     properties:
@@ -1585,18 +1641,19 @@ definitions:
   v1Connector:
     type: object
     properties:
-      description:
-        type: string
-        title: Human readable description of the connector
-      displayName:
-        type: string
-        title: Pretty display name for use in UIs
       name:
         type: string
         title: Name is the name of the connector (e.g. "CREATE SOURCE foo WITH connector = 'name'")
+      displayName:
+        type: string
+        title: Pretty display name for use in UIs
+      description:
+        type: string
+        title: Human readable description of the connector
       properties:
         type: array
         items:
+          type: object
           $ref: '#/definitions/ConnectorProperty'
         title: Properties accepted by the connector
     description: |-
@@ -1605,11 +1662,6 @@ definitions:
   v1CreateInstanceRequest:
     type: object
     properties:
-      embedCatalog:
-        type: boolean
-      ingestionLimitBytes:
-        type: string
-        format: int64
       instanceId:
         type: string
       olapDriver:
@@ -1620,10 +1672,15 @@ definitions:
         type: string
       repoDsn:
         type: string
+      embedCatalog:
+        type: boolean
       variables:
         type: object
         additionalProperties:
           type: string
+      ingestionLimitBytes:
+        type: string
+        format: int64
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -1636,15 +1693,15 @@ definitions:
   v1DeleteFileAndReconcileRequest:
     type: object
     properties:
-      dry:
-        type: boolean
-        description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
       instanceId:
         type: string
         title: Instance to store file in and reconcile
       path:
         type: string
         title: Path to store the file at
+      dry:
+        type: boolean
+        description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
       strict:
         type: boolean
         title: |-
@@ -1654,6 +1711,14 @@ definitions:
   v1DeleteFileAndReconcileResponse:
     type: object
     properties:
+      errors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ReconcileError'
+        description: |-
+          Errors encountered during reconciliation. If strict = false, any path in
+          affected_paths without an error can be assumed to have been reconciled succesfully.
       affectedPaths:
         type: array
         items:
@@ -1662,13 +1727,6 @@ definitions:
           affected_paths lists all the file artifact paths that were considered while
           executing the reconciliation. If changed_paths was empty, this will include all
           code artifacts in the repo.
-      errors:
-        type: array
-        items:
-          $ref: '#/definitions/v1ReconcileError'
-        description: |-
-          Errors encountered during reconciliation. If strict = false, any path in
-          affected_paths without an error can be assumed to have been reconciled succesfully.
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
@@ -1712,15 +1770,6 @@ definitions:
   v1Instance:
     type: object
     properties:
-      embedCatalog:
-        type: boolean
-        description: |-
-          If true, the runtime will store the instance's catalog in its OLAP store instead
-          of in the runtime's metadata store. Currently only supported for the duckdb driver.
-      ingestionLimitBytes:
-        type: string
-        format: int64
-        title: ingestion limit across all sources, 0 means no limit
       instanceId:
         type: string
         title: Identifier (UUID)
@@ -1730,11 +1779,6 @@ definitions:
       olapDsn:
         type: string
         title: DSN for connection to OLAP
-      projectVariables:
-        type: object
-        additionalProperties:
-          type: string
-        title: project defaults
       repoDriver:
         type: string
         description: |-
@@ -1743,11 +1787,25 @@ definitions:
       repoDsn:
         type: string
         title: DSN for connecting to repo
+      embedCatalog:
+        type: boolean
+        description: |-
+          If true, the runtime will store the instance's catalog in its OLAP store instead
+          of in the runtime's metadata store. Currently only supported for the duckdb driver.
       variables:
         type: object
         additionalProperties:
           type: string
         title: instance specific variables
+      projectVariables:
+        type: object
+        additionalProperties:
+          type: string
+        title: project defaults
+      ingestionLimitBytes:
+        type: string
+        format: int64
+        title: ingestion limit across all sources, 0 means no limit
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
       one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
@@ -1761,6 +1819,7 @@ definitions:
       entries:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1CatalogEntry'
     title: Response message for RuntimeService.ListCatalogEntries
   v1ListConnectorsResponse:
@@ -1769,6 +1828,7 @@ definitions:
       connectors:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1Connector'
     title: Response message for RuntimeService.ListConnectors
   v1ListFilesResponse:
@@ -1785,6 +1845,7 @@ definitions:
       instances:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1Instance'
       nextPageToken:
         type: string
@@ -1800,120 +1861,141 @@ definitions:
   v1MetricsView:
     type: object
     properties:
-      defaultTimeRange:
-        type: string
-        description: Default time range for the dashboard. It should be a valid ISO 8601 duration string.
-      description:
-        type: string
-        title: Brief description of the dashboard
-      dimensions:
-        type: array
-        items:
-          $ref: '#/definitions/MetricsViewDimension'
-        title: Dimensions in the metrics view
-      label:
-        type: string
-        title: User friendly label for the dashboard
-      measures:
-        type: array
-        items:
-          $ref: '#/definitions/MetricsViewMeasure'
-        title: Measures in the metrics view
-      model:
-        type: string
-        title: Name of the source or model that the metrics view is based on
       name:
         type: string
         title: Name of the metrics view
-      smallestTimeGrain:
-        $ref: '#/definitions/v1TimeGrain'
-        title: Smallest time grain to show in the dashboard
+      model:
+        type: string
+        title: Name of the source or model that the metrics view is based on
       timeDimension:
         type: string
         title: Name of the primary time dimension, used for rendering time series
+      dimensions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewDimension'
+        title: Dimensions in the metrics view
+      measures:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewMeasure'
+        title: Measures in the metrics view
+      label:
+        type: string
+        title: User friendly label for the dashboard
+      description:
+        type: string
+        title: Brief description of the dashboard
+      smallestTimeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        title: Smallest time grain to show in the dashboard
+      defaultTimeRange:
+        type: string
+        description: Default time range for the dashboard. It should be a valid ISO 8601 duration string.
     title: Metrics view is the internal representation of a metrics view definition
   v1MetricsViewColumn:
     type: object
     properties:
       name:
         type: string
-      nullable:
-        type: boolean
       type:
         type: string
+      nullable:
+        type: boolean
     title: MetricsViewColumn represents a column in a metrics view
   v1MetricsViewFilter:
     type: object
     properties:
-      exclude:
-        type: array
-        items:
-          $ref: '#/definitions/MetricsViewFilterCond'
       include:
         type: array
         items:
+          type: object
           $ref: '#/definitions/MetricsViewFilterCond'
-    title: Filter clause for metrics view requests
-  v1MetricsViewSort:
-    type: object
-    properties:
-      ascending:
-        type: boolean
-      name:
-        type: string
-    title: Sort clause for metrics view requests
-  v1MetricsViewTimeSeriesResponse:
-    type: object
-    properties:
-      data:
+      exclude:
         type: array
         items:
-          $ref: '#/definitions/v1TimeSeriesValue'
+          type: object
+          $ref: '#/definitions/MetricsViewFilterCond'
+    title: Filter clause for metrics view requests
+  v1MetricsViewRowsResponse:
+    type: object
+    properties:
       meta:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1MetricsViewColumn'
-    title: Response message for QueryService.MetricsViewTimeSeries
-  v1MetricsViewToplistResponse:
-    type: object
-    properties:
       data:
         type: array
         items:
           type: object
+    title: Response message for QueryService.MetricsViewRows
+  v1MetricsViewSort:
+    type: object
+    properties:
+      name:
+        type: string
+      ascending:
+        type: boolean
+    title: Sort clause for metrics view requests
+  v1MetricsViewTimeSeriesResponse:
+    type: object
+    properties:
       meta:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1MetricsViewColumn'
+      data:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1TimeSeriesValue'
+    title: Response message for QueryService.MetricsViewTimeSeries
+  v1MetricsViewToplistResponse:
+    type: object
+    properties:
+      meta:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewColumn'
+      data:
+        type: array
+        items:
+          type: object
     title: Response message for QueryService.MetricsViewToplist
   v1MetricsViewTotalsResponse:
     type: object
     properties:
-      data:
-        type: object
       meta:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1MetricsViewColumn'
+      data:
+        type: object
     title: Response message for QueryService.MetricsViewTotals
   v1Model:
     type: object
     properties:
-      dialect:
-        $ref: '#/definitions/ModelDialect'
-        title: Dialect of the SQL statement
-      materialize:
-        type: boolean
-        title: To materialize model or not
       name:
         type: string
         title: Name of the model
-      schema:
-        $ref: '#/definitions/v1StructType'
-        title: Detected schema of the model
       sql:
         type: string
         title: SQL is a SELECT statement representing the model
+      dialect:
+        $ref: '#/definitions/ModelDialect'
+        title: Dialect of the SQL statement
+      schema:
+        $ref: '#/definitions/v1StructType'
+        title: Detected schema of the model
+      materialize:
+        type: boolean
+        title: To materialize model or not
     title: Model is the internal representation of a model definition
   v1NumericHistogramBins:
     type: object
@@ -1921,6 +2003,7 @@ definitions:
       bins:
         type: array
         items:
+          type: object
           $ref: '#/definitions/NumericHistogramBinsBin'
   v1NumericOutliers:
     type: object
@@ -1928,17 +2011,18 @@ definitions:
       outliers:
         type: array
         items:
+          type: object
           $ref: '#/definitions/NumericOutliersOutlier'
   v1NumericStatistics:
     type: object
     properties:
+      min:
+        type: number
+        format: double
       max:
         type: number
         format: double
       mean:
-        type: number
-        format: double
-      min:
         type: number
         format: double
       q25:
@@ -1959,10 +2043,10 @@ definitions:
     properties:
       numericHistogramBins:
         $ref: '#/definitions/v1NumericHistogramBins'
-      numericOutliers:
-        $ref: '#/definitions/v1NumericOutliers'
       numericStatistics:
         $ref: '#/definitions/v1NumericStatistics'
+      numericOutliers:
+        $ref: '#/definitions/v1NumericOutliers'
     description: |-
       Response for QueryService.ColumnNumericHistogram, QueryService.ColumnDescriptiveStatistics and QueryService.ColumnCardinality.
       Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
@@ -1979,27 +2063,33 @@ definitions:
   v1PingResponse:
     type: object
     properties:
+      version:
+        type: string
+        title: Runtime version
       time:
         type: string
         format: date-time
         title: Runtime server time
-      version:
-        type: string
-        title: Runtime version
     title: Response message for RuntimeService.Ping
   v1ProfileColumn:
     type: object
     properties:
-      largestStringLength:
-        type: integer
-        format: int32
       name:
         type: string
       type:
         type: string
+      largestStringLength:
+        type: integer
+        format: int32
   v1PutFileAndReconcileRequest:
     type: object
     properties:
+      instanceId:
+        type: string
+        title: Instance to store file in and reconcile
+      path:
+        type: string
+        title: Path to store the file at
       blob:
         type: string
         title: Contents to save to the file
@@ -2014,12 +2104,6 @@ definitions:
       dry:
         type: boolean
         description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
-      instanceId:
-        type: string
-        title: Instance to store file in and reconcile
-      path:
-        type: string
-        title: Path to store the file at
       strict:
         type: boolean
         title: |-
@@ -2029,6 +2113,14 @@ definitions:
   v1PutFileAndReconcileResponse:
     type: object
     properties:
+      errors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ReconcileError'
+        description: |-
+          Errors encountered during reconciliation. If strict = false, any path in
+          affected_paths without an error can be assumed to have been reconciled succesfully.
       affectedPaths:
         type: array
         items:
@@ -2037,13 +2129,6 @@ definitions:
           affected_paths lists all the file artifact paths that were considered while
           executing the reconciliation. If changed_paths was empty, this will include all
           code artifacts in the repo.
-      errors:
-        type: array
-        items:
-          $ref: '#/definitions/v1ReconcileError'
-        description: |-
-          Errors encountered during reconciliation. If strict = false, any path in
-          affected_paths without an error can be assumed to have been reconciled succesfully.
   v1PutFileResponse:
     type: object
     properties:
@@ -2054,14 +2139,14 @@ definitions:
   v1QueryResponse:
     type: object
     properties:
+      meta:
+        $ref: '#/definitions/v1StructType'
+        title: Schema of result data
       data:
         type: array
         items:
           type: object
         title: Result data
-      meta:
-        $ref: '#/definitions/v1StructType'
-        title: Schema of result data
     title: Response message for QueryService.Query
   v1ReconcileError:
     type: object
@@ -2069,17 +2154,12 @@ definitions:
       code:
         $ref: '#/definitions/v1ReconcileErrorCode'
         title: Code denotes the category of error
-      endLocation:
-        $ref: '#/definitions/ReconcileErrorCharLocation'
-        description: |-
-          End location of the error in the code artifact (if any).
-          Only applicable if file_path and start_location is set.
-      filePath:
-        type: string
-        title: File path of the code artifact that this error relates to (if any)
       message:
         type: string
         title: Message is a developer-friendly error message
+      filePath:
+        type: string
+        title: File path of the code artifact that this error relates to (if any)
       propertyPath:
         type: array
         items:
@@ -2094,6 +2174,11 @@ definitions:
         description: |-
           Start location of the error in the code artifact (if any).
           Only applicable if file_path is set.
+      endLocation:
+        $ref: '#/definitions/ReconcileErrorCharLocation'
+        description: |-
+          End location of the error in the code artifact (if any).
+          Only applicable if file_path and start_location is set.
     description: ReconcileError represents an error encountered while running Reconcile.
   v1ReconcileErrorCode:
     type: string
@@ -2104,6 +2189,7 @@ definitions:
       - CODE_DEPENDENCY
       - CODE_OLAP
       - CODE_SOURCE
+      - CODE_SOURCE_PERMISSION_DENIED
     default: CODE_UNSPECIFIED
     description: |-
       - CODE_UNSPECIFIED: Unspecified error
@@ -2112,10 +2198,19 @@ definitions:
        - CODE_DEPENDENCY: Code artifact is valid, but has invalid dependencies
        - CODE_OLAP: Error returned from the OLAP database
        - CODE_SOURCE: Error encountered during source inspection or ingestion
+       - CODE_SOURCE_PERMISSION_DENIED: Error returned when unauthorised to access remote sources
     title: Code represents different categories of reconciliation errors
   v1ReconcileResponse:
     type: object
     properties:
+      errors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ReconcileError'
+        description: |-
+          Errors encountered during reconciliation. If strict = false, any path in
+          affected_paths without an error can be assumed to have been reconciled succesfully.
       affectedPaths:
         type: array
         items:
@@ -2124,26 +2219,19 @@ definitions:
           affected_paths lists all the file artifact paths that were considered while
           executing the reconciliation. If changed_paths was empty, this will include all
           code artifacts in the repo.
-      errors:
-        type: array
-        items:
-          $ref: '#/definitions/v1ReconcileError'
-        description: |-
-          Errors encountered during reconciliation. If strict = false, any path in
-          affected_paths without an error can be assumed to have been reconciled succesfully.
     title: Response message for RuntimeService.Reconcile
   v1RefreshAndReconcileRequest:
     type: object
     properties:
-      dry:
-        type: boolean
-        description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
       instanceId:
         type: string
         title: Instance to store file in and reconcile
       path:
         type: string
         title: Current path of the file
+      dry:
+        type: boolean
+        description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
       strict:
         type: boolean
         title: |-
@@ -2153,6 +2241,14 @@ definitions:
   v1RefreshAndReconcileResponse:
     type: object
     properties:
+      errors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ReconcileError'
+        description: |-
+          Errors encountered during reconciliation. If strict = false, any path in
+          affected_paths without an error can be assumed to have been reconciled succesfully.
       affectedPaths:
         type: array
         items:
@@ -2161,37 +2257,38 @@ definitions:
           affected_paths lists all the file artifact paths that were considered while
           executing the reconciliation. If changed_paths was empty, this will include all
           code artifacts in the repo.
-      errors:
-        type: array
-        items:
-          $ref: '#/definitions/v1ReconcileError'
-        description: |-
-          Errors encountered during reconciliation. If strict = false, any path in
-          affected_paths without an error can be assumed to have been reconciled succesfully.
   v1RenameFileAndReconcileRequest:
     type: object
     properties:
-      dry:
-        type: boolean
-        description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
-      fromPath:
-        type: string
-        title: Current path of the file
       instanceId:
         type: string
         title: Instance to store file in and reconcile
+      fromPath:
+        type: string
+        title: Current path of the file
+      toPath:
+        type: string
+        title: New path of the file
+      dry:
+        type: boolean
+        description: If true, will save the file and validate it and related file artifacts, but not actually execute any migrations.
       strict:
         type: boolean
         title: |-
           If true, will not execute any migrations if any artifact fails to validate.
           Otherwise, it will execute a best-effort reconciliation (including dropping objects with
           artifacts that fail to validate.)
-      toPath:
-        type: string
-        title: New path of the file
   v1RenameFileAndReconcileResponse:
     type: object
     properties:
+      errors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ReconcileError'
+        description: |-
+          Errors encountered during reconciliation. If strict = false, any path in
+          affected_paths without an error can be assumed to have been reconciled succesfully.
       affectedPaths:
         type: array
         items:
@@ -2200,34 +2297,27 @@ definitions:
           affected_paths lists all the file artifact paths that were considered while
           executing the reconciliation. If changed_paths was empty, this will include all
           code artifacts in the repo.
-      errors:
-        type: array
-        items:
-          $ref: '#/definitions/v1ReconcileError'
-        description: |-
-          Errors encountered during reconciliation. If strict = false, any path in
-          affected_paths without an error can be assumed to have been reconciled succesfully.
   v1RenameFileResponse:
     type: object
     title: Response message for RuntimeService.RenameFile
   v1Source:
     type: object
     properties:
-      connector:
-        type: string
-        title: Connector used by the source
       name:
         type: string
         title: Name of the source
-      policy:
-        $ref: '#/definitions/SourceExtractPolicy'
-        title: extraction policy for the source
+      connector:
+        type: string
+        title: Connector used by the source
       properties:
         type: object
         title: Connector properties assigned in the source
       schema:
         $ref: '#/definitions/v1StructType'
         title: Detected schema of the source
+      policy:
+        $ref: '#/definitions/SourceExtractPolicy'
+        title: extraction policy for the source
       timeoutSeconds:
         type: integer
         format: int32
@@ -2239,22 +2329,23 @@ definitions:
       fields:
         type: array
         items:
+          type: object
           $ref: '#/definitions/StructTypeField'
     title: StructType is a type composed of ordered, named and typed sub-fields
   v1Table:
     type: object
     properties:
-      managed:
-        type: boolean
-        description: |-
-          Managed is true if the table was created through a runtime migration, false if it was discovered in by
-          scanning the database's information schema.
       name:
         type: string
         title: Table name
       schema:
         $ref: '#/definitions/v1StructType'
         title: Table schema
+      managed:
+        type: boolean
+        description: |-
+          Managed is true if the table was created through a runtime migration, false if it was discovered in by
+          scanning the database's information schema.
     description: |-
       Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically
       scanning the database's information schema when the instance is created with exposed=true. Pre-existing tables
@@ -2271,6 +2362,7 @@ definitions:
       profileColumns:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1ProfileColumn'
   v1TableRowsResponse:
     type: object
@@ -2295,58 +2387,61 @@ definitions:
   v1TimeRangeSummary:
     type: object
     properties:
-      interval:
-        $ref: '#/definitions/TimeRangeSummaryInterval'
-      max:
-        type: string
-        format: date-time
       min:
         type: string
         format: date-time
+      max:
+        type: string
+        format: date-time
+      interval:
+        $ref: '#/definitions/TimeRangeSummaryInterval'
   v1TimeSeriesResponse:
     type: object
     properties:
       results:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1TimeSeriesValue'
-      sampleSize:
-        type: integer
-        format: int32
       spark:
         type: array
         items:
+          type: object
           $ref: '#/definitions/v1TimeSeriesValue'
       timeRange:
         $ref: '#/definitions/v1TimeSeriesTimeRange'
+      sampleSize:
+        type: integer
+        format: int32
   v1TimeSeriesTimeRange:
     type: object
     properties:
+      start:
+        type: string
+        format: date-time
       end:
         type: string
         format: date-time
       interval:
         $ref: '#/definitions/v1TimeGrain'
-      start:
-        type: string
-        format: date-time
   v1TimeSeriesValue:
     type: object
     properties:
+      ts:
+        type: string
+        format: date-time
       bin:
         type: number
         format: double
       records:
         type: object
-      ts:
-        type: string
-        format: date-time
   v1TopK:
     type: object
     properties:
       entries:
         type: array
         items:
+          type: object
           $ref: '#/definitions/TopKEntry'
   v1TriggerRefreshResponse:
     type: object
@@ -2354,16 +2449,16 @@ definitions:
   v1TriggerSyncResponse:
     type: object
     properties:
-      objectsAddedCount:
-        type: integer
-        format: int64
       objectsCount:
         type: integer
         format: int64
-      objectsRemovedCount:
+      objectsAddedCount:
         type: integer
         format: int64
       objectsUpdatedCount:
+        type: integer
+        format: int64
+      objectsRemovedCount:
         type: integer
         format: int64
     title: Response message for RuntimeService.TriggerSync

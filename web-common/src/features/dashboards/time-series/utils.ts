@@ -1,4 +1,4 @@
-import { convertTimestampPreviewFcn } from "@rilldata/web-local/lib/util/convertTimestampPreview";
+import { convertTimestampPreviewFcn } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { TimeOffsetType } from "../../../lib/time/types";
 

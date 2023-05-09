@@ -13,9 +13,8 @@ import (
 )
 
 func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUserRequest) (*adminv1.GetCurrentUserResponse, error) {
-	claims := auth.GetClaims(ctx)
-
 	// Return an empty result if not authenticated.
+	claims := auth.GetClaims(ctx)
 	if claims.OwnerType() == auth.OwnerTypeAnon {
 		return &adminv1.GetCurrentUserResponse{}, nil
 	}
@@ -78,5 +77,13 @@ func memberToPB(m *database.Member) *adminv1.Member {
 		RoleName:  m.RoleName,
 		CreatedOn: timestamppb.New(m.CreatedOn),
 		UpdatedOn: timestamppb.New(m.UpdatedOn),
+	}
+}
+
+func inviteToPB(i *database.Invite) *adminv1.UserInvite {
+	return &adminv1.UserInvite{
+		Email:     i.Email,
+		Role:      i.Role,
+		InvitedBy: i.InvitedBy,
 	}
 }

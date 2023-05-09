@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/examples"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
@@ -22,7 +24,7 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 	var variables []string
 
 	initCmd := &cobra.Command{
-		Use:   "init",
+		Use:   "init [<path>]",
 		Short: "Initialize a new project",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -35,6 +37,36 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 					}
 
 					projectPath = repoName
+				}
+			} else {
+				if !cfg.Interactive {
+					return fmt.Errorf("required arg <path> missing")
+				}
+
+				fmt.Println("No existing project found. Enter name to initialize a new Rill project.")
+				questions := []*survey.Question{
+					{
+						Name: "name",
+						Prompt: &survey.Input{
+							Message: "Enter project name",
+							Default: cmdutil.DefaultProjectName(),
+						},
+						Validate: func(any interface{}) error {
+							name := any.(string)
+							if name == "" {
+								return fmt.Errorf("empty name")
+							}
+							return nil
+						},
+					},
+				}
+
+				if !listExamples && !cmd.Flags().Changed("example") {
+					if err := survey.Ask(questions, &projectPath); err != nil {
+						return err
+					}
+				} else {
+					projectPath = exampleName
 				}
 			}
 
@@ -98,7 +130,6 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 	initCmd.Flags().BoolVar(&listExamples, "list-examples", false, "List available example projects")
 	initCmd.Flags().StringVar(&exampleName, "example", "default", "Name of example project")
 	initCmd.Flags().Lookup("example").NoOptDefVal = "default" // Allows "--example" without a specific name
-	initCmd.Flags().StringVar(&projectPath, "project", ".", "Project directory")
 	initCmd.Flags().StringVar(&olapDSN, "db", local.DefaultOLAPDSN, "Database DSN")
 	initCmd.Flags().StringVar(&olapDriver, "db-driver", local.DefaultOLAPDriver, "Database driver")
 	initCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
