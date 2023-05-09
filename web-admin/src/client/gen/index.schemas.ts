@@ -30,6 +30,7 @@ export type AdminServiceCreateProjectBody = {
   prodOlapDriver?: string;
   prodOlapDsn?: string;
   prodSlots?: string;
+  subpath?: string;
   prodBranch?: string;
   githubUrl?: string;
   variables?: AdminServiceCreateProjectBodyVariables;
@@ -187,6 +188,7 @@ export interface V1Project {
   public?: boolean;
   region?: string;
   githubUrl?: string;
+  subpath?: string;
   prodBranch?: string;
   prodOlapDriver?: string;
   prodOlapDsn?: string;

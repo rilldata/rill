@@ -194,7 +194,7 @@ It is probably not the most up to date code; but it works very well in practice.
                   dy=".35em"
                   y={y.label}
                   x={xText - (location?.yOverride ? labelWidth : 0)}
-                  class="mc-mouseover-label  {location?.yOverride
+                  class="mc-mouseover-label {location?.yOverride
                     ? location?.yOverrideStyleClass
                     : location?.labelStyleClass || ''} {(!location?.yOverride &&
                     location?.labelColorClass) ||
@@ -211,7 +211,7 @@ It is probably not the most up to date code; but it works very well in practice.
                   dy=".35em"
                   y={y.label}
                   x={xText - labelWidth}
-                  class="mc-mouseover-label  {location?.labelStyleClass ||
+                  class="mc-mouseover-label {location?.labelStyleClass ||
                     ''} {(!location?.yOverride && location?.labelColorClass) ||
                     ''}"
                   text-anchor="end"

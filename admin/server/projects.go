@@ -194,6 +194,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProdOLAPDriver:       req.ProdOlapDriver,
 		ProdOLAPDSN:          req.ProdOlapDsn,
 		ProdSlots:            int(req.ProdSlots),
+		Subpath:              req.Subpath,
 		ProdBranch:           req.ProdBranch,
 		GithubURL:            &req.GithubUrl,
 		GithubInstallationID: &installationID,

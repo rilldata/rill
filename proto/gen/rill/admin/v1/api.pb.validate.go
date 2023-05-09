@@ -2323,6 +2323,8 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for ProdSlots
 
+	// no validation rules for Subpath
+
 	// no validation rules for ProdBranch
 
 	// no validation rules for GithubUrl
@@ -8395,6 +8397,8 @@ func (m *Project) validate(all bool) error {
 	// no validation rules for Region
 
 	// no validation rules for GithubUrl
+
+	// no validation rules for Subpath
 
 	// no validation rules for ProdBranch
 

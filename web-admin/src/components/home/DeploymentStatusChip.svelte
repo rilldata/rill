@@ -33,6 +33,7 @@
     deploymentStatus = $proj.data?.prodDeployment?.status;
 
     if (
+      prevStatus &&
       prevStatus !== V1DeploymentStatus.DEPLOYMENT_STATUS_OK &&
       deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_OK
     ) {

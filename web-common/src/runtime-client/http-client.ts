@@ -1,4 +1,4 @@
-import type { FetchWrapperOptions } from "@rilldata/web-local/lib/util/fetchWrapper";
+import type { FetchWrapperOptions } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { get } from "svelte/store";
 import { HttpRequestQueue } from "./http-request-queue/HttpRequestQueue";
 import { runtime } from "./runtime-store";

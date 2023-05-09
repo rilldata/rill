@@ -37,6 +37,8 @@ func CheckVersion(ctx context.Context, currentVersion string) error {
 
 	v2, err := version.NewVersion(latestVersion)
 	if err != nil {
+		// Set version as empty if any parse errors
+		_ = dotrill.SetVersion("")
 		return err
 	}
 
@@ -58,14 +60,16 @@ func LatestVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	if cachedVersion != "" {
-		cachedVersionUpdatedAt, err := dotrill.GetVersionUpdatedAt()
-		if err != nil {
-			return "", err
-		}
+	cachedVersionUpdatedAt, err := dotrill.GetVersionUpdatedAt()
+	if err != nil {
+		return "", err
+	}
 
+	if cachedVersion != "" && cachedVersionUpdatedAt != "" {
 		updatedAt, err := time.Parse(time.RFC3339, cachedVersionUpdatedAt)
 		if err != nil {
+			// Set versionTs as empty if any parse errors
+			_ = dotrill.SetVersionUpdatedAt("")
 			return "", err
 		}
 
