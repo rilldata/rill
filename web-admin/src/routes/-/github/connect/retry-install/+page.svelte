@@ -5,7 +5,7 @@
   import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
-  import Github from "@rilldata/web-common/components/icons/Github.svelte";
+  import GithubFail from "@rilldata/web-common/components/icons/GithubFail.svelte";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
@@ -38,7 +38,7 @@
 {#if $user.data && $user.data.user}
   <CtaLayoutContainer>
     <CtaContentContainer>
-      <Github className="w-10 h-10 text-gray-900" />
+      <GithubFail />
       <CtaHeader>Connect to Github</CtaHeader>
       <CtaMessage>
         It looks like you did not grant access to the desired repository at <GithubRepoInline

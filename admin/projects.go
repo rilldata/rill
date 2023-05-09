@@ -141,6 +141,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 			err := s.updateDeployment(ctx, d, &updateDeploymentOptions{
 				GithubURL:            opts.GithubURL,
 				GithubInstallationID: opts.GithubInstallationID,
+				Subpath:              proj.Subpath,
 				Branch:               opts.ProdBranch,
 				Variables:            opts.ProdVariables,
 				Reconcile:            reconcileDeployment,

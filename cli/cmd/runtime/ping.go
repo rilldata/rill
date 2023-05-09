@@ -33,7 +33,7 @@ func PingCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	pingCmd.Flags().StringVar(&runtimeURL, "base-url", "http://localhost:9010", "Base URL for the runtime")
+	pingCmd.Flags().StringVar(&runtimeURL, "url", "http://localhost:9010", "Base URL for the runtime")
 
 	return pingCmd
 }
