@@ -5,13 +5,13 @@
   import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
-  import GithubFail from "@rilldata/web-common/components/icons/GithubFail.svelte";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import KeyboardKey from "@rilldata/web-common/components/calls-to-action/KeyboardKey.svelte";
+  import GithubFail from "@rilldata/web-common/components/icons/GithubFail.svelte";
   import GithubRepoInline from "../../../../../components/projects/GithubRepoInline.svelte";
 
   const remote = new URLSearchParams(window.location.search).get("remote");
@@ -32,14 +32,14 @@
 </script>
 
 <svelte:head>
-  <title>Connect to Github</title>
+  <title>Could not connect to Github</title>
 </svelte:head>
 
 {#if $user.data && $user.data.user}
   <CtaLayoutContainer>
     <CtaContentContainer>
       <GithubFail />
-      <CtaHeader>Connect to Github</CtaHeader>
+      <CtaHeader>Could not connect to Github</CtaHeader>
       <CtaMessage>
         It looks like you did not grant access to the desired repository at <GithubRepoInline
           githubUrl={remote}

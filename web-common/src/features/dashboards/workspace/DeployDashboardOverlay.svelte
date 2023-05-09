@@ -11,10 +11,12 @@
 </script>
 
 <Dialog on:cancel={close} size="md">
-  <svelte:fragment slot="title">Deploy your project</svelte:fragment>
+  <svelte:fragment slot="title"
+    >Deploy your project to Rill Cloud</svelte:fragment
+  >
   <div class="flex flex-col items-center gap-y-4" slot="body">
     <div class="text-left text-sm text-gray-500 w-full">
-      Run this command in the Rill CLI to deploy this project to Rill Cloud. <a
+      Run this command from your project directory. <a
         href="https://docs.rilldata.com/deploy/existing-project"
         target="_blank"
         rel="noreferrer">See docs</a
