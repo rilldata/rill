@@ -39,7 +39,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Find all the projects for the given org
-			res, err := client.ListProjectsForOrganization(context.Background(), &adminv1.ListProjectsForOrganizationRequest{OrganizationName: args[0]})
+			res, err := client.ListProjectsForOrganization(context.Background(), &adminv1.ListProjectsForOrganizationRequest{OrganizationName: name})
 			if err != nil {
 				return err
 			}
@@ -50,53 +50,53 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if len(projects) > 0 {
-				fmt.Printf("Deleting %q will also delete these projects:\n", args[0])
+				fmt.Printf("Deleting %q will also delete these projects:\n", name)
 				for _, proj := range projects {
-					fmt.Printf("\t%s/%s\n", args[0], proj)
+					fmt.Printf("\t%s/%s\n", name, proj)
 				}
 			}
 
 			if !force {
-				fmt.Printf("Warn: Deleting the org %q will remove all metadata associated with the org\n", args[0])
-				msg := fmt.Sprintf("Enter %q to confirm deletion", args[0])
+				fmt.Printf("Warn: Deleting the org %q will remove all metadata associated with the org\n", name)
+				msg := fmt.Sprintf("Type %q to confirm deletion", name)
 				org, err := cmdutil.InputPrompt(msg, "")
 				if err != nil {
 					return err
 				}
 
-				if org != args[0] {
-					return fmt.Errorf("Entered incorrect name : %s", org)
+				if org != name {
+					return fmt.Errorf("Entered incorrect name : %q, expected value is %q", org, name)
 				}
 			}
 
 			for _, proj := range projects {
-				_, err := client.DeleteProject(context.Background(), &adminv1.DeleteProjectRequest{OrganizationName: args[0], Name: proj})
+				_, err := client.DeleteProject(context.Background(), &adminv1.DeleteProjectRequest{OrganizationName: name, Name: proj})
 				if err != nil {
 					return err
 				}
 
-				fmt.Printf("Deleted project %s/%s\n", args[0], proj)
+				fmt.Printf("Deleted project %s/%s\n", name, proj)
 			}
 
-			_, err = client.DeleteOrganization(context.Background(), &adminv1.DeleteOrganizationRequest{Name: args[0]})
+			_, err = client.DeleteOrganization(context.Background(), &adminv1.DeleteOrganizationRequest{Name: name})
 			if err != nil {
 				return err
 			}
 
 			// If deleting the default org, set the default org to empty
-			if args[0] == cfg.Org {
+			if name == cfg.Org {
 				err = dotrill.SetDefaultOrg("")
 				if err != nil {
 					return err
 				}
 			}
 
-			cmdutil.SuccessPrinter(fmt.Sprintf("Deleted organization: %v", args[0]))
+			cmdutil.SuccessPrinter(fmt.Sprintf("Deleted organization: %v", name))
 			return nil
 		},
 	}
 	deleteCmd.Flags().SortFlags = false
-	deleteCmd.Flags().StringVar(&name, "name", "", "Name")
+	deleteCmd.Flags().StringVar(&name, "name", cfg.Org, "Name")
 	deleteCmd.Flags().BoolVar(&force, "force", false, "Delete forcefully, skips the confirmation")
 
 	return deleteCmd

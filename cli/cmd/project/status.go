@@ -61,6 +61,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 				fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)
 				fmt.Printf("  Slots: %d\n", depl.Slots)
 				fmt.Printf("  Branch: %s\n", depl.Branch)
+				fmt.Printf("  Created: %s\n", depl.CreatedOn.AsTime().Local().Format(time.RFC3339))
 				fmt.Printf("  Updated: %s\n", depl.UpdatedOn.AsTime().Local().Format(time.RFC3339))
 				fmt.Printf("  Status: %s\n", depl.Status.String())
 				if proj.ProjectPermissions.ReadProdStatus {

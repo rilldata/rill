@@ -146,7 +146,7 @@ func InputPrompt(msg, def string) (string, error) {
 		fmt.Printf("Prompt failed %v\n", err)
 		return "", err
 	}
-	return result, nil
+	return strings.TrimSpace(result), nil
 }
 
 func StringPromptIfEmpty(input *string, msg string) {
