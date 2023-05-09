@@ -113,7 +113,10 @@
     </div>
     <div class="flex flex-col gap-y-4" style:width="400px">
       {#each loginOptions as { label, icon, style, connection }}
-        <CtaButton variant={style} on:click={() => authorize(connection)}>
+        <CtaButton
+          variant={style === "primary" ? "primary" : "secondary"}
+          on:click={() => authorize(connection)}
+        >
           <div class="flex justify-center items-center gap-x-2 font-medium">
             {#if icon}
               <svelte:component this={icon} />

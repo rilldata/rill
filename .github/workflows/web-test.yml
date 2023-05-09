@@ -77,6 +77,13 @@ jobs:
           npx eslint web-admin --quiet
           npx svelte-check --workspace web-admin --no-tsconfig
 
+      - name: Prettier checks and lint for web auth
+        if: steps.filter.outputs.auth == 'true'
+        run: |-
+          npx prettier --check "web-auth/**/*"
+          npx eslint web-auth --quiet
+          npx svelte-check --workspace web-auth --no-tsconfig
+
       - name: Build & Test the web local
         if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}
         run: |-
