@@ -2,7 +2,6 @@
   import auth0, { WebAuth } from "auth0-js";
   import { onMount } from "svelte";
   import { LOGIN_OPTIONS } from "../config";
-  import Search from "@rilldata/web-common/components/icons/Search.svelte";
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import AuthContainer from "./AuthContainer.svelte";
