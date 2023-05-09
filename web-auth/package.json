@@ -24,6 +24,7 @@
 		"@typescript-eslint/eslint-plugin": "^5.45.0",
 		"@typescript-eslint/parser": "^5.45.0",
 		"autoprefixer": "^10.4.13",
+		"dotenv": "^16.0.3",
 		"eslint": "^8.28.0",
 		"eslint-config-prettier": "^8.5.0",
 		"eslint-plugin-svelte3": "^4.0.0",
@@ -42,7 +43,6 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"auth0-js": "^9.20.2",
-		"dotenv": "^16.0.3"
+		"auth0-js": "^9.20.2"
 	}
 }

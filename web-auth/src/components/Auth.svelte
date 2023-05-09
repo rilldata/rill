@@ -1,5 +1,4 @@
 <script lang="ts">
-  import "../app.css";
   import auth0, { WebAuth } from "auth0-js";
   import { onMount } from "svelte";
   import { LOGIN_OPTIONS } from "../config";
@@ -9,6 +8,7 @@
   import AuthContainer from "./AuthContainer.svelte";
   import Disclaimer from "./Disclaimer.svelte";
   import EmailPassForm from "./EmailPassForm.svelte";
+  import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
 
   export let configParams: string;
   export let cloudClientIDs = "";
@@ -106,49 +106,46 @@
   });
 </script>
 
-<AuthContainer>
-  <RillLogoSquareNegative size="84px" />
-  <div class="text-xl my-6">
-    {isLoginPage ? "Log in to Rill" : "Create your Rill account"}
-  </div>
-  <div class="flex flex-col gap-y-4" style:width="400px">
-    {#each loginOptions as { label, icon, style, connection }}
-      <CtaButton variant={style} on:click={() => authorize(connection)}>
-        <div class="flex justify-center items-center gap-x-2 font-medium">
-          {#if icon}
-            <svelte:component this={icon} />
-          {/if}
-          <div>{label}</div>
-        </div>
-      </CtaButton>
-    {/each}
-    <EmailPassForm
-      {isLoginPage}
-      on:submit={(e) => {
-        handleEmailSubmit(e.detail.email, e.detail.password);
-      }}
-      on:resetPass={(e) => {
-        handleResetPassword(e.detail.email);
-      }}
-    />
-  </div>
+<RillTheme>
+  <AuthContainer>
+    <RillLogoSquareNegative size="84px" />
+    <div class="text-xl my-6">
+      {isLoginPage ? "Log in to Rill" : "Create your Rill account"}
+    </div>
+    <div class="flex flex-col gap-y-4" style:width="400px">
+      {#each loginOptions as { label, icon, style, connection }}
+        <CtaButton variant={style} on:click={() => authorize(connection)}>
+          <div class="flex justify-center items-center gap-x-2 font-medium">
+            {#if icon}
+              <svelte:component this={icon} />
+            {/if}
+            <div>{label}</div>
+          </div>
+        </CtaButton>
+      {/each}
+      <EmailPassForm
+        {isLoginPage}
+        on:submit={(e) => {
+          handleEmailSubmit(e.detail.email, e.detail.password);
+        }}
+        on:resetPass={(e) => {
+          handleResetPassword(e.detail.email);
+        }}
+      />
+    </div>
 
-  {#if errorText}
-    <div class="text-red-500 text-sm mt-2">{errorText}</div>
-  {/if}
+    {#if errorText}
+      <div class="text-red-500 text-sm mt-2">{errorText}</div>
+    {/if}
 
-  <Disclaimer />
-  <div class="flex mt-6 text-sm text-slate-500">
-    {isLoginPage ? "Don't" : "Already"} have an account?
+    <Disclaimer />
+    <div class="mt-6 text-sm text-slate-500">
+      {isLoginPage ? "Don't" : "Already"} have an account?
 
-    <!-- svelte-ignore a11y-invalid-attribute -->
-    <a
-      class="mx-1 flex items-center gap-x-1"
-      href="#"
-      on:click={() => (isLoginPage = !isLoginPage)}
-    >
-      <Search />
-      {isLoginPage ? "Sign up" : "Log in"}</a
-    >
-  </div>
-</AuthContainer>
+      <!-- svelte-ignore a11y-invalid-attribute -->
+      <a href="#" on:click={() => (isLoginPage = !isLoginPage)}>
+        {isLoginPage ? "Sign up" : "Log in"}</a
+      >
+    </div>
+  </AuthContainer>
+</RillTheme>

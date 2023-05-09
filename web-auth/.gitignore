@@ -1,5 +1,3 @@
-bundle.html
-
 .DS_Store
 node_modules
 /build
@@ -8,69 +6,16 @@ node_modules
 /package
 .env
 .env.*
-server/__pycache__/*
-web-local/src/server/duckdb
-web-local/src/server/scratch/
 server/venv/
 tsc-tmp/
 export/
 .vscode
-/temp
-/tmp
-/runtime/sql/deps
-/runtime/release
-/cli/pkg/web/embed/dist
-/rill
-/cli/pkg/examples/embed/dist
-/dev-project
-
-# data files
-*.duckdb
-*.duckdb.wal
-*.db
-*.db.tmp
-*.wal
-*.parquet
-*.tsv
-/*_state.json
-/state
-/models
-/dashboards
-/sources
-
-# check in generated data files
-!/web-local/test/data/*.parquet
-!/web-local/test/data/*.csv
-!/web-local/test/data/*.tsv
-!/runtime/testruntime/**/*.parquet
-!/runtime/testruntime/**/*.csv
 
 # generated content
-log
-profile.log
-saved-state.json
-last-query-output.json
-staging-databases
-/rilldata
-docs/dist/
-
-# Maven
-target/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-release.properties
+bundle.html
 
 # IntelliJ
 .idea
 *.ipr
 *.iml
 *.iws
-
-dist/*
-rill-binary-sa.json
-.release-env
-# runtime test resources
-!runtime/testdata/**
-sysroot/
-latest.txt

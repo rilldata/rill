@@ -17,7 +17,8 @@
   let hasError = false;
   let errorText = "";
 
-  let inputClasses = "h-10 px-4 py-2 border border-slate-300 rounded-sm";
+  let inputClasses =
+    "h-10 px-4 py-2 border border-slate-300 rounded-sm text-base";
   let focusClasses =
     "ring-offset-2 focus:ring-2 focus:ring-blue-300 focus:outline-none";
 
