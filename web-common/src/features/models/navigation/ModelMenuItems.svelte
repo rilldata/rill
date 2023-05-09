@@ -4,6 +4,7 @@
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
+  import { notifications } from "@rilldata/web-common/components/notifications";
   import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
@@ -57,6 +58,13 @@
   $: model = $modelQuery.data?.entry?.model;
 
   const createDashboardFromModel = (modelName: string) => {
+    if (!model) {
+      notifications.send({
+        message: "model is not valid",
+      });
+      return;
+    }
+
     overlay.set({
       title: "Creating a dashboard for " + modelName,
     });
