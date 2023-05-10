@@ -382,14 +382,14 @@ func TestAdmin_RBAC(t *testing.T) {
 			require.Equal(t, true, resp.PendingSignup)
 
 			// check pending invite
-			membersResp, err := tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+			invitesResp, err := tt.client.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{
 				Organization: adminOrg.Organization.Name,
 			})
 			require.NoError(t, err)
-			require.Equal(t, 1, len(membersResp.Invites))
-			require.Equal(t, e, membersResp.Invites[0].Email)
-			require.Equal(t, r, membersResp.Invites[0].Role)
-			require.Equal(t, adminUser.Email, membersResp.Invites[0].InvitedBy)
+			require.Equal(t, 1, len(invitesResp.Invites))
+			require.Equal(t, e, invitesResp.Invites[0].Email)
+			require.Equal(t, r, invitesResp.Invites[0].Role)
+			require.Equal(t, adminUser.Email, invitesResp.Invites[0].InvitedBy)
 
 			// clean up invite
 			_, err = tt.client.RemoveOrganizationMember(ctx, &adminv1.RemoveOrganizationMemberRequest{
@@ -399,11 +399,11 @@ func TestAdmin_RBAC(t *testing.T) {
 			require.NoError(t, err)
 
 			// check pending invite again
-			membersResp, err = tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+			invitesResp, err = tt.client.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{
 				Organization: adminOrg.Organization.Name,
 			})
 			require.NoError(t, err)
-			require.Equal(t, 0, len(membersResp.Invites))
+			require.Equal(t, 0, len(invitesResp.Invites))
 		})
 	}
 
@@ -592,14 +592,14 @@ func TestAdmin_RBAC(t *testing.T) {
 			require.Equal(t, true, addResp.PendingSignup)
 
 			// check pending invite
-			membersResp, err = tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+			invitesResp, err := tt.client.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{
 				Organization: adminOrg.Organization.Name,
 			})
 			require.NoError(t, err)
-			require.Equal(t, 1, len(membersResp.Invites))
-			require.Equal(t, e, membersResp.Invites[0].Email)
-			require.Equal(t, r, membersResp.Invites[0].Role)
-			require.Equal(t, adminUser.Email, membersResp.Invites[0].InvitedBy)
+			require.Equal(t, 1, len(invitesResp.Invites))
+			require.Equal(t, e, invitesResp.Invites[0].Email)
+			require.Equal(t, r, invitesResp.Invites[0].Role)
+			require.Equal(t, adminUser.Email, invitesResp.Invites[0].InvitedBy)
 
 			r = "admin"
 			// change the role of the invited user
@@ -611,14 +611,14 @@ func TestAdmin_RBAC(t *testing.T) {
 			require.NoError(t, err)
 
 			// check pending invite
-			membersResp, err = tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+			invitesResp, err = tt.client.ListOrganizationInvites(ctx, &adminv1.ListOrganizationInvitesRequest{
 				Organization: adminOrg.Organization.Name,
 			})
 			require.NoError(t, err)
-			require.Equal(t, 1, len(membersResp.Invites))
-			require.Equal(t, e, membersResp.Invites[0].Email)
-			require.Equal(t, r, membersResp.Invites[0].Role)
-			require.Equal(t, adminUser.Email, membersResp.Invites[0].InvitedBy)
+			require.Equal(t, 1, len(invitesResp.Invites))
+			require.Equal(t, e, invitesResp.Invites[0].Email)
+			require.Equal(t, r, invitesResp.Invites[0].Role)
+			require.Equal(t, adminUser.Email, invitesResp.Invites[0].InvitedBy)
 		})
 	}
 
