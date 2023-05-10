@@ -21,7 +21,7 @@ const environmentVars = [
   "VITE_OKTA_CONNECTION",
   "VITE_PINGFED_CONNECTION",
   "VITE_DISABLE_FORGOT_PASS_DOMAINS",
-]
+];
 
 const removeUnusedCss = purgeCss({
   content: [
@@ -46,7 +46,8 @@ function inlineSvelte(template) {
       // Replace all environment variables
       environmentVars.forEach((envVar) => {
         bundle[file].code = bundle[file].code.replace(
-          `%%${envVar}%%`, () => process.env[envVar]
+          `%%${envVar}%%`,
+          () => process.env[envVar]
         );
       });
     },
