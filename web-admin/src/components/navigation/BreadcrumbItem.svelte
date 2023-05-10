@@ -9,7 +9,7 @@
   export let onSelectMenuOption: (option: string) => void = undefined;
   export let isCurrentPage = false;
 
-  const activeClass = "text-gray-800 font-semibold";
+  const activeClass = "text-gray-800 font-medium";
   const inactiveClass = "text-gray-500";
 
   let hovered = false;
