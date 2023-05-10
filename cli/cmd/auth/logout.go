@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/fatih/color"
@@ -20,32 +21,15 @@ func LogoutCmd(cfg *config.Config) *cobra.Command {
 			warn := color.New(color.Bold).Add(color.FgYellow)
 			ctx := cmd.Context()
 
+			err := Logout(ctx, cfg)
+			if err != nil {
+				return err
+			}
+
 			token := cfg.AdminToken()
 			if token == "" {
 				warn.Println("You are already logged out.")
 				return nil
-			}
-
-			client, err := cmdutil.Client(cfg)
-			if err != nil {
-				return err
-			}
-			defer client.Close()
-
-			_, err = client.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
-			if err != nil {
-				fmt.Printf("Failed to revoke token (did you revoke it manually?). Clearing local token anyway.\n")
-			}
-
-			err = dotrill.SetAccessToken("")
-			if err != nil {
-				return err
-			}
-
-			// Clear the state during logout
-			err = dotrill.SetDefaultOrg("")
-			if err != nil {
-				return err
 			}
 
 			color.New(color.FgGreen).Println("Successfully logged out.")
@@ -53,4 +37,30 @@ func LogoutCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 	return cmd
+}
+
+func Logout(ctx context.Context, cfg *config.Config) error {
+	client, err := cmdutil.Client(cfg)
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+
+	_, err = client.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
+	if err != nil {
+		fmt.Printf("Failed to revoke token (did you revoke it manually?). Clearing local token anyway.\n")
+	}
+
+	err = dotrill.SetAccessToken("")
+	if err != nil {
+		return err
+	}
+
+	// Clear the state during logout
+	err = dotrill.SetDefaultOrg("")
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

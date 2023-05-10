@@ -53,7 +53,7 @@ func Execute(ctx context.Context, ver config.Version) {
 		} else if strings.Contains(errMsg, "project not found") {
 			fmt.Println("Project not found. Run `rill project list` to check the list of projects.")
 		} else if strings.Contains(errMsg, "auth token not found") {
-			fmt.Println("Auth token is invalid/expired. Run `rill logout` and login again with `rill login`.")
+			fmt.Println("Auth token is invalid/expired. Login again with `rill login`.")
 		} else if strings.Contains(errMsg, "not authenticated as a user") {
 			fmt.Println("Please log in or sign up for Rill with `rill login`.")
 		} else {

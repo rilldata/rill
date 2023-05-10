@@ -24,9 +24,14 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 			warn := color.New(color.Bold).Add(color.FgYellow)
 			ctx := cmd.Context()
 
+			// updating this as its not required to logout first and login again
 			if cfg.AdminTokenDefault != "" {
-				warn.Println("You are already logged in. To log in again, run `rill logout` first.")
-				return nil
+				err := Logout(ctx, cfg)
+				if err != nil {
+					return err
+				}
+
+				cfg.AdminTokenDefault = ""
 			}
 
 			// Login user

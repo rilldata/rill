@@ -25,7 +25,11 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Organizations list")
+			if len(res.Organizations) == 0 {
+				cmdutil.WarnPrinter("No organizations found")
+				return nil
+			}
+
 			cmdutil.TablePrinter(toTable(res.Organizations, cfg.Org))
 			return nil
 		},
