@@ -74,12 +74,24 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 
 	var validationErrors []*runtimev1.ReconcileError
 
+	dimensionNames := make(map[string]bool)
 	for i, dimension := range mv.Dimensions {
-		if _, ok := fieldsMap[strings.ToLower(dimension.Name)]; !ok {
+		if _, ok := dimensionNames[dimension.Name]; ok {
 			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
 				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
 				FilePath:     catalog.Path,
-				Message:      fmt.Sprintf("dimension not found: %s", dimension.Name),
+				Message:      "duplicate dimension name",
+				PropertyPath: []string{"Dimensions", strconv.Itoa(i)},
+			})
+			continue
+		}
+		dimensionNames[dimension.Name] = true
+
+		if _, ok := fieldsMap[strings.ToLower(dimension.Property)]; !ok {
+			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
+				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
+				FilePath:     catalog.Path,
+				Message:      fmt.Sprintf("dimension not found: %s", dimension.Property),
 				PropertyPath: []string{"Dimensions", strconv.Itoa(i)},
 			})
 		}

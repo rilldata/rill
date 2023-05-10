@@ -67,8 +67,9 @@ type Measure struct {
 }
 
 type Dimension struct {
+	Name        string
 	Label       string
-	Property    string `copier:"Name"`
+	Property    string
 	Description string
 	Ignore      bool `yaml:"ignore,omitempty"`
 }
@@ -320,6 +321,16 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 	for i, measure := range apiMetrics.Measures {
 		if measure.Name == "" {
 			measure.Name = fmt.Sprintf("measure_%d", i)
+		}
+	}
+
+	// backwards compatibility where name was used as property
+	for i, dimension := range apiMetrics.Dimensions {
+		if dimension.Name == "" {
+			dimension.Name = fmt.Sprintf("dimension_%d", i)
+		}
+		if dimension.Property == "" {
+			dimension.Property = dimension.Name
 		}
 	}
 

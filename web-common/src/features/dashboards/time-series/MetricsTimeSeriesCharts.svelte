@@ -18,6 +18,7 @@
     useMetaQuery,
     useModelAllTimeRange,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { convertFilters } from "@rilldata/web-common/features/dashboards/selectors.js";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -99,7 +100,10 @@
 
     const totalsQueryParams = {
       measureNames: selectedMeasureNames,
-      filter: $dashboardStore?.filters,
+      filter: convertFilters(
+        $dashboardStore?.filters,
+        $metaQuery.data.dimensions
+      ),
       timeStart: $dashboardStore.selectedTimeRange?.start.toISOString(),
       timeEnd: $dashboardStore.selectedTimeRange?.end.toISOString(),
     };
@@ -145,12 +149,16 @@
     !$metaQuery.isRefetching &&
     $dashboardStore?.selectedTimeRange?.start
   ) {
+    const filter = convertFilters(
+      $dashboardStore?.filters,
+      $metaQuery.data.dimensions
+    );
     timeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
       instanceId,
       metricViewName,
       {
         measureNames: selectedMeasureNames,
-        filter: $dashboardStore?.filters,
+        filter,
         timeStart: $dashboardStore.selectedTimeRange?.start.toISOString(),
         timeEnd: $dashboardStore.selectedTimeRange?.end.toISOString(),
         timeGranularity: $dashboardStore.selectedTimeRange?.interval,
@@ -162,7 +170,7 @@
         metricViewName,
         {
           measureNames: selectedMeasureNames,
-          filter: $dashboardStore?.filters,
+          filter,
           timeStart:
             $dashboardStore?.selectedComparisonTimeRange?.start.toISOString(),
           timeEnd:
@@ -244,20 +252,20 @@
   };
 </script>
 
-<TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
-  <div class="bg-white sticky  top-0" style="z-index:100">
+<TimeSeriesChartContainer end={endValue} start={startValue} {workspaceWidth}>
+  <div class="bg-white sticky top-0" style="z-index:100">
     <SeachableFilterButton
+      label="Measures"
+      on:deselect-all={setAllMeasuresNotVisible}
+      on:item-clicked={toggleMeasureVisibility}
+      on:select-all={setAllMeasuresVisible}
       selectableItems={availableMeasureLabels}
       selectedItems={visibleMeasuresBitmask}
-      on:item-clicked={toggleMeasureVisibility}
-      on:deselect-all={setAllMeasuresNotVisible}
-      on:select-all={setAllMeasuresVisible}
-      label="Measures"
       tooltipText="Choose measures to display"
     />
   </div>
   <div class="bg-white sticky left-0 top-0">
-    <div style:padding-left="24px" style:height="20px" />
+    <div style:height="20px" style:padding-left="24px" />
     <!-- top axis element -->
     <div />
     {#if $dashboardStore?.selectedTimeRange}

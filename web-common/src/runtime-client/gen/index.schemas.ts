@@ -859,6 +859,7 @@ export interface MetricsViewDimension {
   name?: string;
   label?: string;
   description?: string;
+  property?: string;
 }
 
 export type ExtractPolicyStrategy =

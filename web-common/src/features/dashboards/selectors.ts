@@ -7,7 +7,9 @@ import {
   createRuntimeServiceGetCatalogEntry,
   createRuntimeServiceListCatalogEntries,
   createRuntimeServiceListFiles,
+  MetricsViewDimension,
 } from "@rilldata/web-common/runtime-client";
+import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
 import type {
   CreateQueryOptions,
   QueryObserverResult,
@@ -232,3 +234,26 @@ export const useGetDashboardsForModel = (
     }
   );
 };
+
+export function convertFilters(
+  filters: V1MetricsViewFilter,
+  dimensions: Array<MetricsViewDimension>
+): V1MetricsViewFilter {
+  const dimensionMap = getMapFromArray(
+    dimensions,
+    (dimension) => dimension.name
+  );
+
+  return {
+    include: filters.include.map((filter) => ({
+      name: dimensionMap.get(filter.name).property,
+      in: filter.in,
+      like: filter.like,
+    })),
+    exclude: filters.exclude.map((filter) => ({
+      name: dimensionMap.get(filter.name).property,
+      in: filter.in,
+      like: filter.like,
+    })),
+  };
+}

@@ -9,6 +9,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
+    convertFilters,
     getFilterForDimension,
     useMetaDimension,
     useMetaMeasure,
@@ -133,7 +134,7 @@
     !$metaQuery?.isRefetching
   ) {
     let topListParams = {
-      dimensionName: dimensionName,
+      dimensionName: dimension.property,
       measureNames: [measure.name],
       limit: "250",
       offset: "0",
@@ -143,7 +144,7 @@
           ascending: false,
         },
       ],
-      filter: filterForDimension,
+      filter: convertFilters(filterForDimension, $metaQuery.data.dimensions),
     };
 
     if (hasTimeSeries) {
@@ -171,7 +172,7 @@
     values =
       $topListQuery?.data?.data.map((val) => ({
         value: val[measure?.name],
-        label: val[dimension?.name],
+        label: val[dimension?.property],
       })) ?? [];
     setLeaderboardValues(values);
   }
@@ -227,7 +228,7 @@
       values
         ?.slice(0, slice)
         ?.concat(selectedValuesThatAreBelowTheFold)
-        ?.map((v) => v[dimensionName]) ?? [];
+        ?.map((v) => v[dimension.property]) ?? [];
 
     const updatedFilters = getFilterForComparsion(
       filterForDimension,
@@ -236,7 +237,7 @@
     );
 
     let comparisonParams = {
-      dimensionName: dimensionName,
+      dimensionName: dimension.property,
       measureNames: [measure.name],
       limit: currentVisibleValues.length.toString(),
       offset: "0",
@@ -246,7 +247,7 @@
           ascending: false,
         },
       ],
-      filter: updatedFilters,
+      filter: convertFilters(updatedFilters, $metaQuery.data.dimensions),
     };
 
     if (hasTimeSeries) {
@@ -273,9 +274,11 @@
     comparisonValues =
       $comparisonTopListQuery?.data?.data?.map((val) => ({
         value: val[measure?.name],
-        label: val[dimension?.name],
+        label: val[dimension?.property],
       })) ?? [];
   }
+
+  $: console.log();
 
   let hovered: boolean;
 </script>

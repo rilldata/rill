@@ -32,6 +32,7 @@ export interface MeasureEntity {
   __ERROR__?: string;
 }
 export interface DimensionEntity {
+  name?: string;
   label?: string;
   property?: string;
   description?: string;
@@ -214,7 +215,13 @@ export class MetricsInternalRepresentation {
   }
 
   addNewDimension() {
+    const newName = getName(
+      "dimension",
+      this.internalRepresentation.dimensions.map((dimension) => dimension.name)
+    );
+
     const dimensionNode = this.internalRepresentationDocument.createNode({
+      name: newName,
       label: "",
       property: "",
       description: "",
@@ -297,6 +304,7 @@ export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
     })
     .map((field) => {
       return {
+        name: field.name,
         label: capitalize(field.name),
         property: field.name,
         description: "",

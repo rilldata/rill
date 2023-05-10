@@ -811,6 +811,8 @@ func (m *MetricsView_Dimension) validate(all bool) error {
 
 	// no validation rules for Description
 
+	// no validation rules for Property
+
 	if len(errors) > 0 {
 		return MetricsView_DimensionMultiError(errors)
 	}

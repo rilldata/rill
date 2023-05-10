@@ -85,6 +85,7 @@ message MetricsView {
     string name = 1;
     string label = 2;
     string description = 3;
+    string property = 4;
   }
   // Measures are aggregated computed values
   message Measure {

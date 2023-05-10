@@ -126,7 +126,7 @@
       sort: [
         {
           name: sortByColumn,
-          ascending: sortDirection === "asc" ? true : false,
+          ascending: sortDirection === "asc",
         },
       ],
       filter: filterSet,
@@ -207,7 +207,7 @@
       sort: [
         {
           name: sortByColumn,
-          ascending: sortDirection === "asc" ? true : false,
+          ascending: sortDirection === "asc",
         },
       ],
       filter: comparisonFilterSet,
