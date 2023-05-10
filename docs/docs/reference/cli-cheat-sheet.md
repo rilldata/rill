@@ -43,7 +43,7 @@ to initialize an empty project.
 
 ## Initializing an example project
 
-We recommend following our [quick start](../quickstart/local.md) to experience how well Rill ties together with Git. However, Rill also bundles some built-in examples to help you get started quickly. To initialize the default example, run:
+We recommend following our [quick start](../quickstart/end-to-end.md) to experience how well Rill ties together with Git. However, Rill also bundles some built-in examples to help you get started quickly. To initialize the default example, run:
 
 ```
 rill init --example
