@@ -108,16 +108,6 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 		return nil, fmt.Errorf("file does not exist at %s", conf.Path)
 	}
 
-	// Calculate bytes that will be ingested
-	var bytesIngested int64
-	for _, p := range localPaths {
-		fi, err := os.Stat(p)
-		if err != nil {
-			return nil, err
-		}
-		bytesIngested += fi.Size()
-	}
-
 	// Ingest data
 	from, err := sourceReader(localPaths, source.Properties)
 	if err != nil {
@@ -129,6 +119,7 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 		return nil, err
 	}
 
+	bytesIngested := fileSize(localPaths)
 	return &drivers.IngestionSummary{BytesIngested: bytesIngested}, nil
 }
 
