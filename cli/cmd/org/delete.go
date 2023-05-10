@@ -30,7 +30,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("name") && len(args) == 0 {
+			if !cmd.Flags().Changed("name") && len(args) == 0 && cfg.Interactive {
 				// Get the new org name from user if not provided in the flag
 				name, err = cmdutil.InputPrompt("Enter the org name", "")
 				if err != nil {

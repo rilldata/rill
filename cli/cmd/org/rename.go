@@ -29,7 +29,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 
 			fmt.Println("Warn: Renaming an org would invalidate dashboard URLs")
 
-			if !cmd.Flags().Changed("org") {
+			if !cmd.Flags().Changed("name") && cfg.Interactive {
 				orgNames, err := cmdutil.OrgNames(ctx, client)
 				if err != nil {
 					return err
@@ -38,12 +38,16 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				name = cmdutil.SelectPrompt("Select org to rename", orgNames, "")
 			}
 
-			if !cmd.Flags().Changed("new-name") {
+			if !cmd.Flags().Changed("new-name") && cfg.Interactive {
 				// Get the new org name from user if not provided in the flag, passing current name as default
 				newName, err = cmdutil.InputPrompt("Rename to", "")
 				if err != nil {
 					return err
 				}
+			}
+
+			if newName == "" {
+				return fmt.Errorf("please provide valid org new-name, provided: %q", newName)
 			}
 
 			msg := fmt.Sprintf("Do you want to rename org \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName))
@@ -77,7 +81,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 	renameCmd.Flags().SortFlags = false
-	renameCmd.Flags().StringVar(&name, "org", cfg.Org, "Current Org Name")
+	renameCmd.Flags().StringVar(&name, "name", cfg.Org, "Current Org Name")
 	renameCmd.Flags().StringVar(&newName, "new-name", "", "New Org Name")
 
 	return renameCmd

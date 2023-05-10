@@ -30,7 +30,7 @@ func JwtCmd(cfg *config.Config) *cobra.Command {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 {
+			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
 				names, err := cmdutil.ProjectNamesByOrg(ctx, client, cfg.Org)
 				if err != nil {
 					return err

@@ -29,11 +29,15 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 {
+			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
 				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
 				if err != nil {
 					return err
 				}
+			}
+
+			if name == "" {
+				return fmt.Errorf("please provide valid project name, Run `rill project list` for available projects")
 			}
 
 			if !force {
