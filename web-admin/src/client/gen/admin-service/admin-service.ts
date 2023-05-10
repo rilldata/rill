@@ -33,6 +33,8 @@ import type {
   V1CreateAutoinviteDomainResponse,
   AdminServiceCreateAutoinviteDomainBody,
   V1RemoveAutoinviteDomainResponse,
+  V1ListOrganizationInvitesResponse,
+  AdminServiceListOrganizationInvitesParams,
   V1ListOrganizationMembersResponse,
   AdminServiceListOrganizationMembersParams,
   V1AddOrganizationMemberResponse,
@@ -42,6 +44,8 @@ import type {
   V1SetOrganizationMemberRoleResponse,
   AdminServiceSetOrganizationMemberRoleBodyBody,
   V1LeaveOrganizationResponse,
+  V1ListProjectInvitesResponse,
+  AdminServiceListProjectInvitesParams,
   V1ListProjectMembersResponse,
   AdminServiceListProjectMembersParams,
   V1AddProjectMemberResponse,
@@ -58,8 +62,6 @@ import type {
   V1GetProjectVariablesResponse,
   V1UpdateProjectVariablesResponse,
   AdminServiceUpdateProjectVariablesBody,
-  V1ListProjectsForOrganizationAndGithubURLResponse,
-  AdminServiceListProjectsForOrganizationAndGithubURLParams,
   V1PingResponse,
   V1RevokeCurrentAuthTokenResponse,
   V1GetCurrentUserResponse,
@@ -647,6 +649,77 @@ export const createAdminServiceRemoveAutoinviteDomain = <
   >(mutationFn, mutationOptions);
 };
 /**
+ * @summary ListOrganizationInvites lists all the org invites
+ */
+export const adminServiceListOrganizationInvites = (
+  organization: string,
+  params?: AdminServiceListOrganizationInvitesParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1ListOrganizationInvitesResponse>({
+    url: `/v1/organizations/${organization}/invites`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceListOrganizationInvitesQueryKey = (
+  organization: string,
+  params?: AdminServiceListOrganizationInvitesParams
+) =>
+  [
+    `/v1/organizations/${organization}/invites`,
+    ...(params ? [params] : []),
+  ] as const;
+
+export type AdminServiceListOrganizationInvitesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>
+>;
+export type AdminServiceListOrganizationInvitesQueryError = RpcStatus;
+
+export const createAdminServiceListOrganizationInvites = <
+  TData = Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>,
+  TError = RpcStatus
+>(
+  organization: string,
+  params?: AdminServiceListOrganizationInvitesParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListOrganizationInvitesQueryKey(organization, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>
+  > = ({ signal }) =>
+    adminServiceListOrganizationInvites(organization, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceListOrganizationInvites>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!organization,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
  * @summary ListOrganizationMembers lists all the org members
  */
 export const adminServiceListOrganizationMembers = (
@@ -939,6 +1012,80 @@ export const createAdminServiceLeaveOrganization = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary ListProjectInvites lists all the project invites
+ */
+export const adminServiceListProjectInvites = (
+  organization: string,
+  project: string,
+  params?: AdminServiceListProjectInvitesParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1ListProjectInvitesResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/invites`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceListProjectInvitesQueryKey = (
+  organization: string,
+  project: string,
+  params?: AdminServiceListProjectInvitesParams
+) =>
+  [
+    `/v1/organizations/${organization}/projects/${project}/invites`,
+    ...(params ? [params] : []),
+  ] as const;
+
+export type AdminServiceListProjectInvitesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListProjectInvites>>
+>;
+export type AdminServiceListProjectInvitesQueryError = RpcStatus;
+
+export const createAdminServiceListProjectInvites = <
+  TData = Awaited<ReturnType<typeof adminServiceListProjectInvites>>,
+  TError = RpcStatus
+>(
+  organization: string,
+  project: string,
+  params?: AdminServiceListProjectInvitesParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListProjectInvites>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListProjectInvitesQueryKey(organization, project, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListProjectInvites>>
+  > = ({ signal }) =>
+    adminServiceListProjectInvites(organization, project, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceListProjectInvites>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(organization && project),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary ListProjectMembers lists all the project members
  */
@@ -1627,96 +1774,6 @@ export const createAdminServiceUpdateProjectVariables = <
     TContext
   >(mutationFn, mutationOptions);
 };
-/**
- * @summary ListProjectsForOrganizationAndGithubURL lists all the project for org deployed from githubURL
- */
-export const adminServiceListProjectsForOrganizationAndGithubURL = (
-  organizationName: string,
-  params?: AdminServiceListProjectsForOrganizationAndGithubURLParams,
-  signal?: AbortSignal
-) => {
-  return httpClient<V1ListProjectsForOrganizationAndGithubURLResponse>({
-    url: `/v1/organizations/${organizationName}/projects_by_github_url`,
-    method: "get",
-    params,
-    signal,
-  });
-};
-
-export const getAdminServiceListProjectsForOrganizationAndGithubURLQueryKey = (
-  organizationName: string,
-  params?: AdminServiceListProjectsForOrganizationAndGithubURLParams
-) =>
-  [
-    `/v1/organizations/${organizationName}/projects_by_github_url`,
-    ...(params ? [params] : []),
-  ] as const;
-
-export type AdminServiceListProjectsForOrganizationAndGithubURLQueryResult =
-  NonNullable<
-    Awaited<
-      ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
-    >
-  >;
-export type AdminServiceListProjectsForOrganizationAndGithubURLQueryError =
-  RpcStatus;
-
-export const createAdminServiceListProjectsForOrganizationAndGithubURL = <
-  TData = Awaited<
-    ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
-  >,
-  TError = RpcStatus
->(
-  organizationName: string,
-  params?: AdminServiceListProjectsForOrganizationAndGithubURLParams,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<
-        ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
-      >,
-      TError,
-      TData
-    >;
-  }
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getAdminServiceListProjectsForOrganizationAndGithubURLQueryKey(
-      organizationName,
-      params
-    );
-
-  const queryFn: QueryFunction<
-    Awaited<
-      ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
-    >
-  > = ({ signal }) =>
-    adminServiceListProjectsForOrganizationAndGithubURL(
-      organizationName,
-      params,
-      signal
-    );
-
-  const query = createQuery<
-    Awaited<
-      ReturnType<typeof adminServiceListProjectsForOrganizationAndGithubURL>
-    >,
-    TError,
-    TData
-  >({
-    queryKey,
-    queryFn,
-    enabled: !!organizationName,
-    ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
 /**
  * @summary Ping returns information about the server
  */

@@ -5,6 +5,7 @@
   "workspaces": [
     "docs",
     "web-admin",
+    "web-auth",
     "web-common",
     "web-local"
   ],

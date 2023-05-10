@@ -23,7 +23,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			if projectName != "" {
-				res, err := client.ListProjectMembers(context.Background(), &adminv1.ListProjectMembersRequest{
+				members, err := client.ListProjectMembers(context.Background(), &adminv1.ListProjectMembersRequest{
 					Organization: cfg.Org,
 					Project:      projectName,
 				})
@@ -31,19 +31,34 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				cmdutil.PrintMembers(res.Members)
-				cmdutil.PrintInvites(res.Invites)
+				invites, err := client.ListProjectInvites(context.Background(), &adminv1.ListProjectInvitesRequest{
+					Organization: cfg.Org,
+					Project:      projectName,
+				})
+				if err != nil {
+					return err
+				}
+
+				cmdutil.PrintMembers(members.Members)
+				cmdutil.PrintInvites(invites.Invites)
 				// TODO: user groups
 			} else {
-				res, err := client.ListOrganizationMembers(context.Background(), &adminv1.ListOrganizationMembersRequest{
+				members, err := client.ListOrganizationMembers(context.Background(), &adminv1.ListOrganizationMembersRequest{
 					Organization: cfg.Org,
 				})
 				if err != nil {
 					return err
 				}
 
-				cmdutil.PrintMembers(res.Members)
-				cmdutil.PrintInvites(res.Invites)
+				invites, err := client.ListOrganizationInvites(context.Background(), &adminv1.ListOrganizationInvitesRequest{
+					Organization: cfg.Org,
+				})
+				if err != nil {
+					return err
+				}
+
+				cmdutil.PrintMembers(members.Members)
+				cmdutil.PrintInvites(invites.Invites)
 				// TODO: user groups
 			}
 

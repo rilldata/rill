@@ -153,3 +153,31 @@ func TestCyclicDAG(t *testing.T) {
 	_, err = d.Add("A0", []string{"B0"})
 	require.Error(t, err)
 }
+
+func TestOrderedGetDeepChildren(t *testing.T) {
+	d := NewDAG()
+	_, err := d.Add("A0", []string{})
+	require.NoError(t, err)
+	_, err = d.Add("B1", []string{"A0"})
+	require.NoError(t, err)
+	_, err = d.Add("B2", []string{"B1"})
+	require.NoError(t, err)
+	_, err = d.Add("A1", []string{"A0", "B1"})
+	require.NoError(t, err)
+	_, err = d.Add("A2", []string{"A1"})
+	require.NoError(t, err)
+	// A0
+	// |  \
+	// A1 - B1
+	// |    |
+	// A2   B2
+
+	i := 0
+	for i < 10 {
+		sorted := d.TopologicalSort()
+		require.Equal(t, sorted[0], "A0")
+		require.Equal(t, sorted[1], "B1")
+		// we cannot guarantee the order of the other nodes
+		i++
+	}
+}
