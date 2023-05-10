@@ -1,5 +1,6 @@
 <script lang="ts">
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
+  import { indentGuide } from "@rilldata/web-common/components/editor/indent-guide";
   import { createLineStatusSystem } from "@rilldata/web-common/components/editor/plugins/line-status-decoration";
   import { editorTheme } from "@rilldata/web-common/components/editor/theme";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
@@ -115,8 +116,6 @@
     mappedSyntaxErrors = [];
   }
 
-  $: totalErrors = [...nonLineErrors, ...mappedSyntaxErrors].length;
-
   const { createUpdater, extension: lineStatusExtensions } =
     createLineStatusSystem();
   $: updateLineStatus = createUpdater([...mappedErrors, ...mappedSyntaxErrors]);
@@ -132,21 +131,6 @@
   class:ring-gray-300={hasFocus}
 >
   <div class="rounded border">
-    <!-- <div
-      class="bg-gray-50 flex justify-between	items-center   w-full sticky top-0 z-20 surface px-2 py-2 border-b"
-    >
-      <div>header</div>
-      {#if totalErrors}
-        <div
-          class="bg-red-100 border rounded border-red-400 text-red-700 px-2 py-1 flex gap-x-1 items-center"
-          style:font-size="11px"
-        >
-          <CancelCircle size="12px" />
-          {nonLineErrors?.[0]?.message}
-        </div>
-      {/if}
-    </div> -->
-
     <YAMLEditor
       content={yaml}
       on:update
@@ -154,7 +138,7 @@
         cursor = event.detail;
       }}
       bind:hasFocus
-      plugins={[editorTheme(), placeholder, lineStatusExtensions]}
+      plugins={[editorTheme(), placeholder, lineStatusExtensions, indentGuide]}
       stateFieldUpdaters={[updateLineStatus]}
     />
   </div>

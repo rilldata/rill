@@ -9,6 +9,13 @@ export const editorTheme = () =>
         outline: "none",
       },
     },
+    ".cm-line.cm-line-level": {
+      backgroundColor: "hsl(1,90%,94%)",
+    },
+    ".cm-line-level.cm-activeLine": {
+      backgroundColor: "hsl(1,90%,80%)",
+      color: "blue",
+    },
     "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
       { backgroundColor: "rgb(65 99 255 / 25%)" },
     ".cm-selectionMatch": { backgroundColor: "rgb(189 233 255)" },
@@ -49,7 +56,6 @@ export const editorTheme = () =>
     },
     ".cm-completionLabel": {
       fontSize: "13px",
-      fontFamily: "MD IO",
     },
     ".cm-completionMatchedText": {
       textDecoration: "none",

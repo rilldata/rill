@@ -12,6 +12,7 @@ function backgroundColorDecoration(view) {
 
   const builder = new RangeSetBuilder<Decoration>();
 
+  // reset all line statuses.
   for (const { line, level } of lineStatuses) {
     if (line !== null && line !== 0 && view.state.doc.length) {
       const startPos = view.state.doc.line(line).from;
@@ -20,8 +21,6 @@ function backgroundColorDecoration(view) {
       builder.add(
         from,
         to,
-        // FIXME: this should be Decoration.line, but it appears to clobber
-        // the line text if I use it. Something must be wrong with the updates.
         Decoration.mark({
           attributes: {
             style: `background-color: ${
@@ -48,9 +47,6 @@ export function createLineStatusHighlighter() {
       update(update: ViewUpdate) {
         this.decorations = backgroundColorDecoration(update.view);
       }
-    },
-    {
-      decorations: (v) => v.decorations,
     }
   );
 }

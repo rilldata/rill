@@ -8,20 +8,20 @@
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
   import {
+    V1Model,
+    V1TableCardinalityResponse,
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
     createRuntimeServiceGetCatalogEntry,
     createRuntimeServiceListCatalogEntries,
-    V1Model,
-    V1TableCardinalityResponse,
   } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { derived } from "svelte/store";
   import { COLUMN_PROFILE_CONFIG } from "../../../../layout/config";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import { getTableReferences } from "../../utils/get-table-references";
-  import { getMatchingReferencesAndEntries } from "./utils";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
+  import { getMatchingReferencesAndEntries } from "./utils";
 
   export let modelName: string;
   export let containerWidth = 0;

@@ -1,59 +1,128 @@
-import { StateEffect, StateField } from "@codemirror/state";
-import { Decoration, EditorView, ViewPlugin } from "@codemirror/view";
+import type { EditorView } from "@codemirror/basic-setup";
+import {
+  Decoration,
+  DecorationSet,
+  ViewPlugin,
+  WidgetType,
+} from "@codemirror/view";
+import IndentGuide from "./IndentGuide.svelte";
 
-const updateIndentGuides = StateEffect.define({});
+class IndentGuideWidget extends WidgetType {
+  toDOM() {
+    const element = document.createElement("span");
+    element.style.display = "inline-block";
+    element.style.position = "absolute";
+    element.style.width = "1px";
+    element.style.height = "17px";
+    // element.style.height = "17px";
+    new IndentGuide({ target: element });
+    // return element;
+    return element;
+    // FIXME: gthis shoudl be taken from teh veiw.
+    // const lineHeight = "17px";
 
-const indentGuidesField = StateField.define({
-  create: () => Decoration.none,
-  update(deco, tr) {
-    if (tr.effects.some((effect) => effect.is(updateIndentGuides))) {
-      const newDeco = [];
-      const config = tr.state.facet(EditorView.theme);
-      const indentUnit = tr.state.facet(EditorView.indentUnit);
+    // element.className = "indent-guide";
+    // FIXME we need this to be read by tailwind!
+    // element.classList.add("border-left");
+    // element.classList.add("border-slate-300");
+    // element.style.display = "inline-block";
+    // element.style.height = lineHeight;
+    // element.style.position = "absolute";
+    // return element;
+  }
+}
 
-      for (let pos = tr.start, end = tr.end; pos < end; ) {
-        const { lineBreak, to } = tr.state.doc.lineAt(pos);
-        const lineContent = tr.state.sliceDoc(pos, to);
-        const indent = /^ */.exec(lineContent)[0].length;
+export const indentGuide = ViewPlugin.fromClass(
+  class {
+    indentGuides: Decoration[];
+    view: EditorView;
+    decorations: DecorationSet;
 
-        if (indent > 0) {
-          const width = (indent / indentUnit) * config.indentGuideWidth;
-          newDeco.push(Decoration.line({}).range(pos, to));
+    constructor(view) {
+      this.view = view;
+      this.indentGuides = this.calculateIndentGuides();
+      this.decorations = this.createDecorations();
+    }
+
+    update(tr) {
+      if (tr.docChanged) {
+        this.indentGuides = this.calculateIndentGuides();
+        this.decorations = this.createDecorations();
+      }
+    }
+
+    /** v1, not so great */
+    // decorationsFromLine(lineNumber) {
+
+    //   const indent = /^\s*/.exec(this.view.state.doc.line(lineNumber).text)[0];
+    //   const indentSize = indent.length;
+    //   const decorations = [];
+
+    //   for (let i = 0; i < indentSize; i++) {
+    //     if (indent[i] === " " || indent[i] === "\t") {
+    //       const guidePos = this.view.state.doc.line(lineNumber).from + i;
+    //       decorations.push(
+    //         Decoration.widget({
+    //           widget: new IndentGuideWidget(),
+    //           side: -1,
+    //         }).range(guidePos)
+    //       );
+    //     }
+    //   }
+
+    //   return decorations;
+    // }
+
+    /** Creates a Monaco-like indent */
+    decorationsFromLine(lineNumber) {
+      const line = this.view.state.doc.line(lineNumber);
+      const indent = /^\s*/.exec(line.text)[0];
+      const indentSize = indent.length;
+      const decorations = [];
+
+      for (let i = 0; i < indentSize; i++) {
+        if (
+          // tab
+          indent[i] === "\t" ||
+          // two spaces
+          (indent[i] === " " && indent[i + 1] === " ") ||
+          // case where we are indented, but user adds one additional space
+          i === indentSize - 1
+        ) {
+          const guidePos = line.from + i;
+          decorations.push(
+            Decoration.widget({
+              widget: new IndentGuideWidget(),
+              side: -1,
+            }).range(guidePos)
+          );
+
+          // If we have two spaces, skip the next space character
+          if (indent[i] === " " && indent[i + 1] === " ") {
+            i++;
+          }
         }
-        pos = lineBreak + 1;
       }
 
-      deco = Decoration.set(newDeco);
-    }
-    return deco.map(tr.changes);
-  },
-  provide: (f) => EditorView.decorations.from(f),
-});
-
-export const indentGuides = ViewPlugin.fromClass(
-  class {
-    constructor(view) {
-      this.update(view);
+      return decorations;
     }
 
-    update(view) {
-      const config = view.state.facet(EditorView.theme);
-      view.dom.style.setProperty(
-        "--indent-guide-width",
-        config.indentGuideWidth + "px"
-      );
-      view.dom.style.setProperty(
-        "--indent-guide-color",
-        config.indentGuideColor
-      );
+    calculateIndentGuides() {
+      const guides = [];
+      const lineCount = this.view.state.doc.lines;
+
+      for (let i = 1; i <= lineCount; i++) {
+        guides.push(...this.decorationsFromLine(i));
+      }
+
+      return guides;
+    }
+
+    createDecorations() {
+      return Decoration.set(this.indentGuides);
     }
   },
   {
-    decorations: (v) => v.state.field(indentGuidesField),
+    decorations: (v) => v.decorations,
   }
 );
-
-export const indentGuidesTheme = EditorView.theme({
-  indentGuideWidth: 4,
-  indentGuideColor: "rgba(169, 169, 169, 0.4)",
-});
