@@ -3,6 +3,8 @@
     DashboardListItem,
     getDashboardsForProject,
   } from "@rilldata/web-admin/components/projects/dashboards";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import {
     createAdminServiceGetProject,
     V1DeploymentStatus,
@@ -46,9 +48,14 @@
             {dashboardListItem?.title || dashboardListItem.name}
           </a>
         {:else}
-          <span class="text-gray-400"
-            >{dashboardListItem?.title || dashboardListItem.name}
-          </span>
+          <Tooltip location="right" distance={4}>
+            <span class="text-gray-400"
+              >{dashboardListItem?.title || dashboardListItem.name}
+            </span>
+            <TooltipContent slot="tooltip-content">
+              This dashboard isn't working. Check project logs.
+            </TooltipContent>
+          </Tooltip>
         {/if}
       </li>
     {/each}
