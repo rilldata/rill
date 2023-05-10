@@ -3,10 +3,11 @@
   import WithSelectMenu from "@rilldata/web-common/components/menu/wrappers/WithSelectMenu.svelte";
 
   export let label: string;
-  export let isCurrentPage = false;
+  export let href: string;
   export let menuOptions: { key: string; main: string }[] = [];
   export let menuKey: string;
   export let onSelectMenuOption: (option: string) => void = undefined;
+  export let isCurrentPage = false;
 
   const activeClass = "text-gray-800 font-semibold";
   const inactiveClass = "text-gray-500";
@@ -20,7 +21,7 @@
 <li class="flex flex items-center gap-x-2 p-2">
   <slot name="icon" />
   {#if !menuOptions}
-    <span class={isCurrentPage ? activeClass : inactiveClass}>{label}</span>
+    <a {href} class={isCurrentPage ? activeClass : inactiveClass}>{label}</a>
   {:else}
     <WithSelectMenu
       minWidth="0px"
