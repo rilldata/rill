@@ -10,7 +10,7 @@
   export let isCurrentPage = false;
 
   const activeClass = "text-gray-800 font-medium";
-  const inactiveClass = "text-gray-500";
+  const inactiveClass = "text-gray-500 hover:text-gray-600";
 
   let hovered = false;
   function setHovered(value: boolean) {
