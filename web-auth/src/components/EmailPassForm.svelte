@@ -62,6 +62,13 @@
   }
 
   function handleForgotPass() {
+    if (!validateEmail(email)) {
+      hasError = true;
+      errorText = "Please enter a valid email address";
+      return;
+    }
+
+    hasError = false;
     dispatch("resetPass", {
       email,
     });

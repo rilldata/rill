@@ -18,13 +18,11 @@ export const LOGIN_OPTIONS = [
   },
   {
     name: "Okta",
-    connection: "Rill-Okta",
     label: "Continue with Okta",
     style: "secondary",
   },
   {
     name: "Pingfed",
-    connection: "pingone",
     label: "Continue with Ping Fed",
     style: "secondary",
   },

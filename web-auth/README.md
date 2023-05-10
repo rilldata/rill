@@ -1,6 +1,6 @@
 # Login and Sign up page template
 
-This folder contains the log in and sign up which is used for Rill Cloud and Rill Enterprise. It's implemented with TypeScript and [SvelteKit](https://kit.svelte.dev). 
+This folder contains the log in and sign up which is used for Rill Cloud and Rill Enterprise. It's implemented with TypeScript and [SvelteKit](https://kit.svelte.dev). Rollup is used for bundling the template.
 
 ## Running in development
 
@@ -15,6 +15,9 @@ This folder contains the log in and sign up which is used for Rill Cloud and Ril
 
 ```
 VITE_RILL_CLOUD_AUTH0_CLIENT_IDS="clientID1,clientID2,..."
+VITE_OKTA_CONNECTION="<connection-name>"
+VITE_PINGFED_CONNECTION="<connection-name>"
+VITE_DISABLE_FORGOT_PASS_DOMAINS="domain1.com,domain2.com,..."
 ```
 2. Run `npm run build -w web-auth`
 3. Copy the contents of `bundle.html` and paste it to the Auth0 universal login page

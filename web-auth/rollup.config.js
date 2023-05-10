@@ -16,6 +16,13 @@ import dotenv from "dotenv";
 dotenv.config();
 const production = !process.env.ROLLUP_WATCH;
 
+const environmentVars = [
+  "VITE_RILL_CLOUD_AUTH0_CLIENT_IDS",
+  "VITE_OKTA_CONNECTION",
+  "VITE_PINGFED_CONNECTION",
+  "VITE_DISABLE_FORGOT_PASS_DOMAINS",
+]
+
 const removeUnusedCss = purgeCss({
   content: [
     "./src/**/*.html",
@@ -36,11 +43,12 @@ function inlineSvelte(template) {
       // Replace script tag with svelte component bundle
       bundle[file].code = output.replace("%%script%%", () => code);
 
-      // Replace client params with env vars
-      bundle[file].code = bundle[file].code.replace(
-        "%%cloudClientIDs%%",
-        () => process.env.VITE_RILL_CLOUD_AUTH0_CLIENT_IDS
-      );
+      // Replace all environment variables
+      environmentVars.forEach((envVar) => {
+        bundle[file].code = bundle[file].code.replace(
+          `%%${envVar}%%`, () => process.env[envVar]
+        );
+      });
     },
   };
 }

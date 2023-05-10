@@ -11,8 +11,12 @@
 
   export let configParams: string;
   export let cloudClientIDs = "";
+  export let oktaName = "";
+  export let pingFedName = "";
+  export let disableForgotPassDomains = "";
 
   const cloudClientIDsArr = cloudClientIDs.split(",");
+  const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
 
   // By default show the SignUp page
   let isLoginPage = false;
@@ -22,6 +26,15 @@
   const databaseConnection = "Username-Password-Authentication";
 
   $: loginOptions = LOGIN_OPTIONS;
+
+  $: loginOptions.forEach((option) => {
+    if (option.name === "Okta") {
+      option.connection = oktaName;
+    }
+    if (option.name === "Pingfed") {
+      option.connection = pingFedName;
+    }
+  });
 
   function initConfig() {
     const config = JSON.parse(
@@ -87,7 +100,19 @@
   }
 
   function handleResetPassword(email: string) {
+    errorText = "";
     if (!email) return displayError({ message: "Please enter an email" });
+
+    if (
+      disableForgotPassDomainsArr.some((domain) =>
+        email.toLowerCase().endsWith(domain.toLowerCase())
+      )
+    ) {
+      return displayError({
+        message: "Password reset is not available. Please contact your admin.",
+      });
+    }
+
     webAuth.changePassword(
       {
         connection: databaseConnection,
