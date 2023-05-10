@@ -10,17 +10,14 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type MetricsViewComparisonToplist struct {
 	MetricsViewName     string                                 `json:"metrics_view_name,omitempty"`
 	DimensionName       string                                 `json:"dimension_name,omitempty"`
 	MeasureNames        []string                               `json:"measure_names,omitempty"`
-	BaseTimeStart       *timestamppb.Timestamp                 `json:"base_time_start,omitempty"`
-	BaseTimeEnd         *timestamppb.Timestamp                 `json:"base_time_end,omitempty"`
-	ComparisonTimeStart *timestamppb.Timestamp                 `json:"comparison_time_start,omitempty"`
-	ComparisonTimeEnd   *timestamppb.Timestamp                 `json:"comparison_time_end,omitempty"`
+	BaseTimeRange       *runtimev1.TimeRange                   `json:"base_time_range,omitempty"`
+	ComparisonTimeRange *runtimev1.TimeRange                   `json:"comparison_time_range,omitempty"`
 	Limit               int64                                  `json:"limit,omitempty"`
 	Offset              int64                                  `json:"offset,omitempty"`
 	Sort                []*runtimev1.MetricsViewComparisonSort `json:"sort,omitempty"`
@@ -71,11 +68,11 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 		return err
 	}
 
-	if mv.TimeDimension == "" && (q.BaseTimeStart != nil || q.BaseTimeEnd != nil || q.ComparisonTimeStart != nil || q.ComparisonTimeEnd != nil) {
+	if mv.TimeDimension == "" && (q.BaseTimeRange != nil || q.ComparisonTimeRange != nil) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	if q.ComparisonTimeStart != nil || q.ComparisonTimeEnd != nil {
+	if q.ComparisonTimeRange != nil {
 		return q.executeComparisonToplist(ctx, olap, mv, priority)
 	}
 
@@ -210,13 +207,21 @@ func (q *MetricsViewComparisonToplist) executeComparisonToplist(ctx context.Cont
 	return nil
 }
 
-func timeRangeClause(start, end *timestamppb.Timestamp, td string, args *[]any) string {
+func timeRangeClause(timeRange *runtimev1.TimeRange, td string, args *[]any) string {
 	var clause string
-	clause += fmt.Sprintf(" AND %s >= ?", td)
-	*args = append(*args, start.AsTime())
+	if timeRange == nil {
+		return clause
+	}
 
-	clause += fmt.Sprintf(" AND %s < ?", td)
-	*args = append(*args, end.AsTime())
+	if timeRange.Start != nil {
+		clause += fmt.Sprintf(" AND %s >= ?", td)
+		*args = append(*args, timeRange.Start.AsTime())
+	}
+
+	if timeRange.End != nil {
+		clause += fmt.Sprintf(" AND %s < ?", td)
+		*args = append(*args, timeRange.End.AsTime())
+	}
 
 	return clause
 }
@@ -247,7 +252,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 	args := []any{}
 	td := safeName(mv.TimeDimension)
 
-	baseWhereClause += timeRangeClause(q.BaseTimeStart, q.BaseTimeEnd, td, &args)
+	baseWhereClause += timeRangeClause(q.BaseTimeRange, td, &args)
 	if q.Filter != nil {
 		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, dialect)
 		if err != nil {
@@ -265,7 +270,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 			return "", nil, fmt.Errorf("Metrics view '%s' doesn't contain '%s' sort column", q.MetricsViewName, s.MeasureName)
 		}
 		orderClause += ", "
-		orderClause += fmt.Sprint(i + 1)
+		orderClause += fmt.Sprint(i + 2)
 		if !s.Ascending {
 			orderClause += " DESC"
 		}
@@ -279,7 +284,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 	}
 
 	sql := fmt.Sprintf(
-		` SELECT %[2]s, %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s LIMIT %[6]d `,
+		` SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s LIMIT %[6]d `,
 		selectClause,    // 1
 		dimName,         // 2
 		mv.Model,        // 3
@@ -331,7 +336,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 
 	td := safeName(mv.TimeDimension)
 
-	baseWhereClause += timeRangeClause(q.BaseTimeStart, q.BaseTimeEnd, td, &args)
+	baseWhereClause += timeRangeClause(q.BaseTimeRange, td, &args)
 	if q.Filter != nil {
 		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, dialect)
 		if err != nil {
@@ -342,7 +347,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		args = append(args, clauseArgs...)
 	}
 
-	comparisonWhereClause += timeRangeClause(q.ComparisonTimeStart, q.ComparisonTimeEnd, td, &args)
+	comparisonWhereClause += timeRangeClause(q.ComparisonTimeRange, td, &args)
 	if q.Filter != nil {
 		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, dialect)
 		if err != nil {
@@ -389,11 +394,11 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 	sql := fmt.Sprintf(`
 		SELECT COALESCE(base.%[2]s, comparison.%[2]s), %[8]s FROM 
 			(
-				SELECT %[1]s, %[2]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s
+				SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s
 			) base
 		FULL JOIN
 			(
-				SELECT %[1]s, %[2]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
+				SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
 			) comparison
 		ON
 				base.%[2]s = comparison.%[2]s

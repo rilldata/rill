@@ -46,10 +46,8 @@ func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev
 		MetricsViewName:     req.MetricsViewName,
 		DimensionName:       req.DimensionName,
 		MeasureNames:        req.MeasureNames,
-		BaseTimeStart:       req.BaseTimeRange.Start,
-		BaseTimeEnd:         req.BaseTimeRange.End,
-		ComparisonTimeStart: req.ComparisonTimeRange.Start,
-		ComparisonTimeEnd:   req.ComparisonTimeRange.End,
+		BaseTimeRange:       req.BaseTimeRange,
+		ComparisonTimeRange: req.ComparisonTimeRange,
 		Limit:               req.Limit,
 		Offset:              req.Offset,
 		Sort:                req.Sort,
@@ -104,18 +102,3 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 	}
 	return q.Result, nil
 }
-
-// Commenting as its unused
-
-// func (s *Server) lookupMetricsView(ctx context.Context, instanceID, name string) (*runtimev1.MetricsView, error) {
-// 	obj, err := s.runtime.GetCatalogEntry(ctx, instanceID, name)
-// 	if err != nil {
-// 		return nil, status.Error(codes.InvalidArgument, err.Error())
-// 	}
-
-// 	if obj.GetMetricsView() == nil {
-// 		return nil, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", name)
-// 	}
-
-// 	return obj.GetMetricsView(), nil
-// }
