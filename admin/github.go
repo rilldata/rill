@@ -52,7 +52,7 @@ func (g *GithubClient) AppService() (*github.AppsService, error) {
 	if g.Apps != nil {
 		return g.Apps, nil
 	}
-	itr, err := ghinstallation.NewAppsTransportKeyFromFile(http.DefaultTransport, g.GithubAppID, g.GithubAppPrivateKey)
+	itr, err := ghinstallation.NewAppsTransport(http.DefaultTransport, g.GithubAppID, []byte(g.GithubAppPrivateKey))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github app transport: %w", err)
 	}
