@@ -123,11 +123,6 @@ func (c *connection) updateSchema(ctx context.Context, from string, fileNames []
 		allowRelaxation = true
 	}
 
-	// no change in schema allowed return
-	if !allowAddition && !allowRelaxation {
-		return
-	}
-
 	qry := fmt.Sprintf("DESCRIBE ((SELECT * FROM %s limit 0) UNION ALL BY NAME (SELECT * FROM %s limit 0));", source.Name, from)
 	unionSchema, err := c.scanSchemaFromQuery(ctx, qry)
 	if err != nil {

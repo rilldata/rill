@@ -631,6 +631,124 @@ mum,8.2`)
 
 }
 
+func TestIterativeCSVIngestionWithVariableSchemaError(t *testing.T) {
+	tempDir := t.TempDir()
+	file1 := filepath.Join(tempDir, "data1.csv")
+	temp, err := os.Create(file1)
+	require.NoError(t, err)
+	_, err = temp.WriteString(`id,city
+1,bglr
+2,mum`)
+	require.NoError(t, err)
+
+	file2 := filepath.Join(tempDir, "data2.csv")
+	temp, err = os.Create(file2)
+	require.NoError(t, err)
+	_, err = temp.WriteString(`id,city,country
+3,bglr,IND
+4,mum,IND`)
+	require.NoError(t, err)
+
+	file3 := filepath.Join(tempDir, "data3.csv")
+	temp, err = os.Create(file3)
+	require.NoError(t, err)
+	_, err = temp.WriteString(`city,id
+bglr,5
+mum,6`)
+	require.NoError(t, err)
+
+	file4 := filepath.Join(tempDir, "data4.csv")
+	temp, err = os.Create(file4)
+	require.NoError(t, err)
+	_, err = temp.WriteString(`city,id
+bglr,7.1
+mum,8.2`)
+	require.NoError(t, err)
+
+	type test struct {
+		mockIterator mockIterator
+		name         string
+		hasError     bool
+	}
+
+	tests := []test{
+		{
+			mockIterator: mockIterator{batches: [][]string{
+				{file1, file1},
+				{file1, file1},
+			}},
+			name:     "same_schema",
+			hasError: false,
+		},
+		{
+			mockIterator: mockIterator{batches: [][]string{
+				{file1, file2, file3, file4},
+			}},
+			name:     "variable_schema_ingested_at_once",
+			hasError: false,
+		},
+		{
+			mockIterator: mockIterator{batches: [][]string{
+				{file1, file2, file3, file4},
+			}},
+			name:     "columns_jumbled",
+			hasError: false,
+		},
+		{
+			mockIterator: mockIterator{batches: [][]string{
+				{file1},
+				{file2},
+			}},
+			name:     "new_columns",
+			hasError: true,
+		},
+		{
+			mockIterator: mockIterator{batches: [][]string{
+				{file2},
+				{file1},
+			}},
+			name:     "less_columns",
+			hasError: true,
+		},
+		{
+			mockIterator: mockIterator{batches: [][]string{
+				{file1},
+				{file4},
+			}},
+			name:     "datatype_change",
+			hasError: true,
+		},
+	}
+
+	mockConnector := &mockConnector{}
+	connectors.Register("mock-csv-error", mockConnector)
+	for _, test := range tests {
+		mockConnector.mockIterator = &test.mockIterator
+		olap := runOLAPStore(t)
+		ctx := context.Background()
+
+		_, err = olap.Ingest(ctx, &connectors.Env{
+			RepoDriver:      "file",
+			RepoRoot:        ".",
+			AllowHostAccess: true,
+		}, &connectors.Source{
+			Name:      test.name,
+			Connector: "mock-csv-error",
+			Properties: map[string]any{
+				"path":                   filepath.Join(tempDir, "*.csv"),
+				"allow_field_addition":   false,
+				"allow_field_relaxation": false,
+			},
+		})
+		if test.hasError {
+			require.Error(t, err, fmt.Errorf("error expected for %s got nil", test.name))
+		} else {
+			require.NoError(t, err, fmt.Errorf("no error expected for %s got %s", test.name, err))
+		}
+	}
+
+}
+
 func TestIterativeParquetIngestionWithVariableSchema(t *testing.T) {
 	file1 := filepath.Join("../../testruntime/testdata/variable-schema", "data.parquet")
 	file2 := filepath.Join("../../testruntime/testdata/variable-schema", "data1.parquet")
@@ -861,7 +979,6 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 		}
 		require.Equal(t, test.colCount, colCount)
 	}
-
 }
 
 func createFilePath(t *testing.T, dirPath string, fileName string) string {
