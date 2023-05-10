@@ -444,9 +444,9 @@ export class MetricsViewComparisonToplistRequest extends Message<MetricsViewComp
  */
 export class MetricsViewComparisonToplistResponse extends Message<MetricsViewComparisonToplistResponse> {
   /**
-   * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonRow data = 1;
+   * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonRow rows = 1;
    */
-  data: MetricsViewComparisonRow[] = [];
+  rows: MetricsViewComparisonRow[] = [];
 
   constructor(data?: PartialMessage<MetricsViewComparisonToplistResponse>) {
     super();
@@ -456,7 +456,7 @@ export class MetricsViewComparisonToplistResponse extends Message<MetricsViewCom
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.MetricsViewComparisonToplistResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "data", kind: "message", T: MetricsViewComparisonRow, repeated: true },
+    { no: 1, name: "rows", kind: "message", T: MetricsViewComparisonRow, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonToplistResponse {
@@ -573,17 +573,12 @@ export class MetricsViewComparisonSort extends Message<MetricsViewComparisonSort
  */
 export class MetricsViewComparisonRow extends Message<MetricsViewComparisonRow> {
   /**
-   * @generated from field: string dimension_name = 1;
-   */
-  dimensionName = "";
-
-  /**
-   * @generated from field: google.protobuf.Value dimension_value = 2;
+   * @generated from field: google.protobuf.Value dimension_value = 1;
    */
   dimensionValue?: Value;
 
   /**
-   * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonValue measure_values = 3;
+   * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonValue measure_values = 2;
    */
   measureValues: MetricsViewComparisonValue[] = [];
 
@@ -595,9 +590,8 @@ export class MetricsViewComparisonRow extends Message<MetricsViewComparisonRow> 
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.MetricsViewComparisonRow";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "dimension_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "dimension_value", kind: "message", T: Value },
-    { no: 3, name: "measure_values", kind: "message", T: MetricsViewComparisonValue, repeated: true },
+    { no: 1, name: "dimension_value", kind: "message", T: Value },
+    { no: 2, name: "measure_values", kind: "message", T: MetricsViewComparisonValue, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonRow {

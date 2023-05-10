@@ -554,13 +554,12 @@ export interface V1MetricsViewComparisonSort {
 }
 
 export interface V1MetricsViewComparisonRow {
-  dimensionName?: string;
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
 }
 
 export interface V1MetricsViewComparisonToplistResponse {
-  data?: V1MetricsViewComparisonRow[];
+  rows?: V1MetricsViewComparisonRow[];
 }
 
 export interface V1MetricsViewColumn {

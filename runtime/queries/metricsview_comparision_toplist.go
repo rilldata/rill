@@ -71,15 +71,75 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 		return err
 	}
 
-	if mv.TimeDimension == "" {
+	if mv.TimeDimension == "" && (q.BaseTimeStart != nil || q.BaseTimeEnd != nil || q.ComparisonTimeStart != nil || q.ComparisonTimeEnd != nil) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	if q.BaseTimeStart == nil || q.BaseTimeEnd == nil || q.ComparisonTimeStart == nil || q.ComparisonTimeEnd == nil {
-		return fmt.Errorf("undefined time range for comparison on '%s' metrics view ", q.MetricsViewName)
+	if q.ComparisonTimeStart != nil || q.ComparisonTimeEnd != nil {
+		return q.executeComparisonToplist(ctx, olap, mv, priority)
 	}
 
+	return q.executeToplist(ctx, olap, mv, priority)
+}
+
+func (q *MetricsViewComparisonToplist) executeToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int) error {
 	sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect())
+	if err != nil {
+		return fmt.Errorf("error building query: %w", err)
+	}
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:    sql,
+		Args:     args,
+		Priority: priority,
+	})
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+
+	var data []*runtimev1.MetricsViewComparisonRow
+
+	for rows.Next() {
+		values, err := rows.SliceScan()
+		if err != nil {
+			return err
+		}
+		measureValues := []*runtimev1.MetricsViewComparisonValue{}
+
+		for i, name := range q.MeasureNames {
+			v, err := pbutil.ToValue(values[1+i])
+			if err != nil {
+				return err
+			}
+
+			measureValues = append(measureValues, &runtimev1.MetricsViewComparisonValue{
+				MeasureName: name,
+				BaseValue:   v,
+			})
+		}
+
+		dv, err := pbutil.ToValue(values[0])
+		if err != nil {
+			return err
+		}
+
+		data = append(data, &runtimev1.MetricsViewComparisonRow{
+			DimensionValue: dv,
+			MeasureValues:  measureValues,
+		})
+	}
+
+	q.Result = &runtimev1.MetricsViewComparisonToplistResponse{
+		Rows: data,
+	}
+
+	return nil
+}
+
+func (q *MetricsViewComparisonToplist) executeComparisonToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int) error {
+	sql, args, err := q.buildMetricsComparisonTopListSQL(mv, olap.Dialect())
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -138,14 +198,13 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 		}
 
 		data = append(data, &runtimev1.MetricsViewComparisonRow{
-			DimensionName:  q.DimensionName,
 			DimensionValue: dv,
 			MeasureValues:  measureValues,
 		})
 	}
 
 	q.Result = &runtimev1.MetricsViewComparisonToplistResponse{
-		Data: data,
+		Rows: data,
 	}
 
 	return nil
@@ -163,6 +222,76 @@ func timeRangeClause(start, end *timestamppb.Timestamp, td string, args *[]any) 
 }
 
 func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
+	dimName := safeName(q.DimensionName)
+	selectCols := []string{dimName}
+	measureMap := make(map[string]int)
+	for i, n := range q.MeasureNames {
+		measureMap[n] = i
+		found := false
+		for _, m := range mv.Measures {
+			if m.Name == n {
+				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+				selectCols = append(selectCols, expr)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return "", nil, fmt.Errorf("measure does not exist: '%s'", n)
+		}
+	}
+	selectClause := strings.Join(selectCols, ", ")
+
+	baseWhereClause := "1=1"
+
+	args := []any{}
+	td := safeName(mv.TimeDimension)
+
+	baseWhereClause += timeRangeClause(q.BaseTimeStart, q.BaseTimeEnd, td, &args)
+	if q.Filter != nil {
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, dialect)
+		if err != nil {
+			return "", nil, err
+		}
+		baseWhereClause += " " + clause
+
+		args = append(args, clauseArgs...)
+	}
+
+	orderClause := "true"
+	for _, s := range q.Sort {
+		i, ok := measureMap[s.MeasureName]
+		if !ok {
+			return "", nil, fmt.Errorf("Metrics view '%s' doesn't contain '%s' sort column", q.MetricsViewName, s.MeasureName)
+		}
+		orderClause += ", "
+		orderClause += fmt.Sprint(i + 1)
+		if !s.Ascending {
+			orderClause += " DESC"
+		}
+		if dialect == drivers.DialectDuckDB {
+			orderClause += " NULLS LAST"
+		}
+	}
+
+	if q.Limit == 0 {
+		q.Limit = 100
+	}
+
+	sql := fmt.Sprintf(
+		` SELECT %[2]s, %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s LIMIT %[6]d `,
+		selectClause,    // 1
+		dimName,         // 2
+		mv.Model,        // 3
+		baseWhereClause, // 4
+		orderClause,     // 5
+		q.Limit,         // 6
+	)
+
+	return sql, args, nil
+}
+
+func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
 	dimName := safeName(q.DimensionName)
 	selectCols := []string{dimName}
 	finalSelectCols := []string{}
@@ -283,6 +412,5 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 		finalSelectClause,     // 8
 	)
 
-	fmt.Println(sql)
 	return sql, args, nil
 }

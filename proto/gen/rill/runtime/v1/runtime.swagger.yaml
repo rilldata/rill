@@ -1920,8 +1920,6 @@ definitions:
   v1MetricsViewComparisonRow:
     type: object
     properties:
-      dimensionName:
-        type: string
       dimensionValue: {}
       measureValues:
         type: array
@@ -1940,7 +1938,7 @@ definitions:
   v1MetricsViewComparisonToplistResponse:
     type: object
     properties:
-      data:
+      rows:
         type: array
         items:
           type: object

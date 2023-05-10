@@ -1016,7 +1016,7 @@ func (m *MetricsViewComparisonToplistResponse) validate(all bool) error {
 
 	var errors []error
 
-	for idx, item := range m.GetData() {
+	for idx, item := range m.GetRows() {
 		_, _ = idx, item
 
 		if all {
@@ -1024,7 +1024,7 @@ func (m *MetricsViewComparisonToplistResponse) validate(all bool) error {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
 					errors = append(errors, MetricsViewComparisonToplistResponseValidationError{
-						field:  fmt.Sprintf("Data[%v]", idx),
+						field:  fmt.Sprintf("Rows[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -1032,7 +1032,7 @@ func (m *MetricsViewComparisonToplistResponse) validate(all bool) error {
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
 					errors = append(errors, MetricsViewComparisonToplistResponseValidationError{
-						field:  fmt.Sprintf("Data[%v]", idx),
+						field:  fmt.Sprintf("Rows[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -1041,7 +1041,7 @@ func (m *MetricsViewComparisonToplistResponse) validate(all bool) error {
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return MetricsViewComparisonToplistResponseValidationError{
-					field:  fmt.Sprintf("Data[%v]", idx),
+					field:  fmt.Sprintf("Rows[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -1418,8 +1418,6 @@ func (m *MetricsViewComparisonRow) validate(all bool) error {
 	}
 
 	var errors []error
-
-	// no validation rules for DimensionName
 
 	if all {
 		switch v := interface{}(m.GetDimensionValue()).(type) {
