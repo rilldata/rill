@@ -120,10 +120,12 @@
 
 {#if deploymentStatus && deploymentStatus !== V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED}
   {#if iconOnly}
-    <svelte:component
-      this={currentStatusDisplay.icon}
-      {...currentStatusDisplay.iconProps}
-    />
+    <div class="pb-0.5">
+      <svelte:component
+        this={currentStatusDisplay.icon}
+        {...currentStatusDisplay.iconProps}
+      />
+    </div>
   {:else}
     <div
       class="flex space-x-1 items-center px-2 border rounded rounded-[20px] w-fit {currentStatusDisplay.wrapperClass} {iconOnly &&
