@@ -433,14 +433,7 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		if claims.OwnerType() == auth.OwnerTypeUser {
 			invitedBy = claims.OwnerID()
 		}
-		err = s.admin.InviteUserToProject(ctx, &database.InviteUserToProjectOptions{
-			Email:       req.Email,
-			InviterID:   invitedBy,
-			ProjectID:   proj.ID,
-			RoleID:      role.ID,
-			ProjectName: proj.Name,
-			RoleName:    role.Name,
-		})
+		err = s.admin.InviteUserToProject(ctx, req.Email, invitedBy, proj.ID, role.ID, proj.Name, role.Name)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}

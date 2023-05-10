@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -51,11 +52,33 @@ func TestAdmin_RBAC(t *testing.T) {
 	require.NoError(t, err)
 	databaseURL := fmt.Sprintf("postgres://postgres:postgres@%s:%d/postgres", host, port.Int())
 
-	db, err := database.Open("postgres", databaseURL)
-	require.NoError(t, err)
-	require.NotNil(t, db)
+	logger := zap.NewNop()
 
-	require.NoError(t, db.Migrate(ctx))
+	sender, err := email.NewConsoleSender(logger, "rill-test@rilldata.io", "")
+	require.NoError(t, err)
+	emailClient := email.New(sender, "")
+
+	github := admin.NewMockGithubClient()
+
+	issuer, err := runtimeauth.NewEphemeralIssuer("")
+	require.NoError(t, err)
+
+	provisionerSpec := "{\"runtimes\":[{\"host\":\"http://localhost:9091\",\"slots\":50,\"data_dir\":\"\",\"audience_url\":\"http://localhost:8081\"}]}"
+
+	service, err := admin.New(context.Background(),
+		&admin.Options{
+			DatabaseDriver:  "postgres",
+			DatabaseDSN:     databaseURL,
+			ProvisionerSpec: provisionerSpec,
+		},
+		logger,
+		issuer,
+		emailClient,
+		github,
+	)
+	require.NoError(t, err)
+
+	db := service.DB
 
 	// create admin and viewer users
 	adminUser, err := db.InsertUser(ctx, &database.InsertUserOptions{
@@ -81,12 +104,6 @@ func TestAdmin_RBAC(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.NotNil(t, testUser)
-
-	logger := zap.NewNop()
-	sender, err := email.NewConsoleSender(logger, "rill-test@rilldata.io", "")
-	require.NoError(t, err)
-
-	service := admin.NewMock(db, nil, nil, nil, email.New(sender, ""))
 
 	// issue admin and viewer tokens
 	adminAuthToken, err := service.IssueUserAuthToken(ctx, adminUser.ID, database.AuthClientIDRillWeb, "test")

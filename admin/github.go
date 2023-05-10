@@ -22,6 +22,56 @@ var (
 	ErrGithubInstallationNotFound = fmt.Errorf("github installation not found")
 )
 
+type Github interface {
+	AppService() (*github.AppsService, error)
+	RepositoryService(installationID int64) (*github.RepositoriesService, error)
+}
+
+type GithubClient struct {
+	GithubAppID         int64
+	GithubAppPrivateKey string
+	Apps                *github.AppsService
+	Repositories        map[int64]*github.RepositoriesService
+}
+
+func NewGithubClient(githubAppID int64, githubAppPrivateKey string) (Github, error) {
+	gh := &GithubClient{
+		GithubAppID:         githubAppID,
+		GithubAppPrivateKey: githubAppPrivateKey,
+		Repositories:        make(map[int64]*github.RepositoriesService),
+	}
+	// init app service
+	_, err := gh.AppService()
+	if err != nil {
+		return nil, err
+	}
+	return gh, nil
+}
+
+func (g *GithubClient) AppService() (*github.AppsService, error) {
+	if g.Apps != nil {
+		return g.Apps, nil
+	}
+	itr, err := ghinstallation.NewAppsTransportKeyFromFile(http.DefaultTransport, g.GithubAppID, g.GithubAppPrivateKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create github app transport: %w", err)
+	}
+	g.Apps = github.NewClient(&http.Client{Transport: itr}).Apps
+	return g.Apps, nil
+}
+
+func (g *GithubClient) RepositoryService(installationID int64) (*github.RepositoriesService, error) {
+	if g.Repositories[installationID] != nil {
+		return g.Repositories[installationID], nil
+	}
+	itr, err := ghinstallation.New(http.DefaultTransport, g.GithubAppID, installationID, []byte(g.GithubAppPrivateKey))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create github installation transport: %w", err)
+	}
+	g.Repositories[installationID] = github.NewClient(&http.Client{Transport: itr}).Repositories
+	return g.Repositories[installationID], nil
+}
+
 // GetGithubInstallation returns a non zero Github installation ID iff the Github App is installed on the repository.
 // The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
 func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (int64, error) {
@@ -31,7 +81,11 @@ func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (
 	}
 
 	// TODO :: handle suspended case
-	installation, resp, err := s.github.Apps.FindRepositoryInstallation(ctx, account, repo)
+	apps, err := s.github.AppService()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get github app service: %w", err)
+	}
+	installation, resp, err := apps.FindRepositoryInstallation(ctx, account, repo)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
 			// We don't have an installation on the repo
@@ -62,12 +116,12 @@ func (s *Service) LookupGithubRepoForUser(ctx context.Context, installationID in
 		return nil, fmt.Errorf("invalid gitUsername %q", gitUsername)
 	}
 
-	gh, err := s.githubInstallationClient(installationID)
+	repositories, err := s.github.RepositoryService(installationID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create github installation client: %w", err)
+		return nil, fmt.Errorf("failed to create github repository service: %w", err)
 	}
 
-	isColab, resp, err := gh.Repositories.IsCollaborator(ctx, account, repo, gitUsername)
+	isColab, resp, err := repositories.IsCollaborator(ctx, account, repo, gitUsername)
 	if err != nil {
 		if resp.StatusCode == http.StatusUnauthorized {
 			return nil, ErrUserIsNotCollaborator
@@ -79,7 +133,7 @@ func (s *Service) LookupGithubRepoForUser(ctx context.Context, installationID in
 		return nil, ErrUserIsNotCollaborator
 	}
 
-	repository, _, err := gh.Repositories.Get(ctx, account, repo)
+	repository, _, err := repositories.Get(ctx, account, repo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get github repository: %w", err)
 	}
@@ -167,12 +221,17 @@ func (s *Service) processGithubInstallationRepositoriesEvent(ctx context.Context
 	return nil
 }
 
-// githubInstallationClient makes a Github client that authenticates as a specific installation.
-// (As opposed to s.github, which authenticates as the Git App, and cannot access the contents of an installation.)
-func (s *Service) githubInstallationClient(installationID int64) (*github.Client, error) {
-	itr, err := ghinstallation.New(http.DefaultTransport, s.opts.GithubAppID, installationID, []byte(s.opts.GithubAppPrivateKey))
-	if err != nil {
-		return nil, err
-	}
-	return github.NewClient(&http.Client{Transport: itr}), nil
+// MockGithubClient to be used in tests
+type MockGithubClient struct{}
+
+func NewMockGithubClient() *MockGithubClient {
+	return &MockGithubClient{}
+}
+
+func (m *MockGithubClient) RepositoryService(installationID int64) (*github.RepositoriesService, error) {
+	return nil, nil
+}
+
+func (m *MockGithubClient) AppService() (*github.AppsService, error) {
+	return nil, nil
 }
