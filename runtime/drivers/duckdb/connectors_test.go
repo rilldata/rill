@@ -586,7 +586,7 @@ mum,8.2`)
 	}
 
 	mockConnector := &mockConnector{}
-	connectors.Register("mock", mockConnector)
+	connectors.Register("mock-csv", mockConnector)
 	for _, test := range tests {
 		mockConnector.mockIterator = &test.mockIterator
 		olap := runOLAPStore(t)
@@ -598,7 +598,7 @@ mum,8.2`)
 			AllowHostAccess: true,
 		}, &connectors.Source{
 			Name:      test.name,
-			Connector: "mock",
+			Connector: "mock-csv",
 			Properties: map[string]any{
 				"path": filepath.Join(tempDir, "*.csv"),
 			},
@@ -692,7 +692,7 @@ func TestIterativeParquetIngestionWithVariableSchema(t *testing.T) {
 	}
 
 	mockConnector := &mockConnector{}
-	connectors.Register("mock", mockConnector)
+	connectors.Register("mock-parquet", mockConnector)
 	for _, test := range tests {
 		mockConnector.mockIterator = &test.mockIterator
 		olap := runOLAPStore(t)
@@ -704,7 +704,7 @@ func TestIterativeParquetIngestionWithVariableSchema(t *testing.T) {
 			AllowHostAccess: true,
 		}, &connectors.Source{
 			Name:      test.name,
-			Connector: "mock",
+			Connector: "mock-parquet",
 		})
 		require.NoError(t, err)
 
@@ -819,7 +819,7 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 	}
 
 	mockConnector := &mockConnector{}
-	connectors.Register("mock", mockConnector)
+	connectors.Register("mock-json", mockConnector)
 	for _, test := range tests {
 		mockConnector.mockIterator = &test.mockIterator
 		olap := runOLAPStore(t)
@@ -831,7 +831,7 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 			AllowHostAccess: true,
 		}, &connectors.Source{
 			Name:      test.name,
-			Connector: "mock",
+			Connector: "mock-json",
 			Properties: map[string]any{
 				"path": filepath.Join(tempDir, "*.csv"),
 			},

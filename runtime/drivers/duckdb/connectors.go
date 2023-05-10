@@ -22,16 +22,6 @@ const (
 	_defaultIngestTimeout = 60 * time.Minute
 )
 
-var dateTypeChangeMapping = map[string][]string{
-	"BOOLEAN":   {"BIGINT", "DOUBLE", "VARCHAR"},
-	"BIGINT":    {"DOUBLE", "VARCHAR"},
-	"DOUBLE":    {"VARCHAR"},
-	"TIME":      {"VARCHAR"},
-	"DATE":      {"TIMESTAMP", "VARCHAR"},
-	"TIMESTAMP": {"VARCHAR"},
-	"VARCHAR":   {},
-}
-
 // Ingest data from a source with a timeout
 func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) (*drivers.IngestionSummary, error) {
 	// Wraps c.ingest with timeout handling
@@ -122,9 +112,7 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 
 // updateSchema updates the schema of the table in case new file adds a new column or
 // updates the datatypes of an existing columns with a wider datatype.
-func (c *connection) updateSchema(ctx context.Context, from string, fileNames []string,
-	source *connectors.Source, oldSchema map[string]string,
-) (srcSchema, currentSchema map[string]string, err error) {
+func (c *connection) updateSchema(ctx context.Context, from string, fileNames []string, source *connectors.Source, oldSchema map[string]string) (srcSchema, currentSchema map[string]string, err error) {
 	allowAddition, ok := source.Properties["allow_field_addition"].(bool)
 	if !ok {
 		allowAddition = true
@@ -140,21 +128,23 @@ func (c *connection) updateSchema(ctx context.Context, from string, fileNames []
 		return
 	}
 
-	if oldSchema == nil {
-		if currentSchema, err = c.scanSchemaFromQuery(ctx, fmt.Sprintf("Describe %s;", source.Name)); err != nil {
-			return
-		}
-	} else {
-		currentSchema = oldSchema
+	qry := fmt.Sprintf("DESCRIBE ((SELECT * FROM %s limit 0) UNION ALL BY NAME (SELECT * FROM %s limit 0));", source.Name, from)
+	unionSchema, err := c.scanSchemaFromQuery(ctx, qry)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	if srcSchema, err = c.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE (SELECT * FROM %s LIMIT 0);", from)); err != nil {
-		return
+	currentSchema = oldSchema
+	if currentSchema == nil {
+		currentSchema, err = c.scanSchemaFromQuery(ctx, fmt.Sprintf("Describe %s;", source.Name))
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	newCols := make(map[string]string)
 	colTypeChanged := make(map[string]string)
-	for colName, colType := range srcSchema {
+	for colName, colType := range unionSchema {
 		oldType, ok := currentSchema[colName]
 		if !ok {
 			newCols[colName] = colType
@@ -163,49 +153,48 @@ func (c *connection) updateSchema(ctx context.Context, from string, fileNames []
 		}
 	}
 
-	if len(srcSchema) < len(currentSchema) && !allowRelaxation {
-		c.logger.Error("new files are missing columns and column relaxation not allowed",
-			zap.String("files", strings.Join(names(fileNames), ",")),
-			zap.String("columns", strings.Join(missingMapKeys(currentSchema, srcSchema), ",")))
-		err = errors.New("new files are missing columns and schema relaxation not allowed")
-		return
-	}
+	if !allowRelaxation {
+		// infer source schema to check if columns are removed
+		if srcSchema, err = c.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE (SELECT * FROM %s LIMIT 0);", from)); err != nil {
+			return
+		}
+		if len(srcSchema) < len(unionSchema) {
+			c.logger.Error("new files are missing columns and column relaxation not allowed",
+				zap.String("files", strings.Join(names(fileNames), ",")),
+				zap.String("columns", strings.Join(missingMapKeys(unionSchema, srcSchema), ",")))
+			return nil, nil, errors.New("new files are missing columns and schema relaxation not allowed")
+		}
 
-	if len(colTypeChanged) != 0 && !allowRelaxation {
-		c.logger.Error("new files change datatypes of some columns and column relaxation not allowed",
-			zap.String("files", strings.Join(names(fileNames), ",")),
-			zap.String("columns", strings.Join(keys(colTypeChanged), ",")))
-		err = errors.New("new files change datatypes of some columns and column relaxation not allowed")
-		return
+		if len(colTypeChanged) != 0 {
+			c.logger.Error("new files change datatypes of some columns and column relaxation not allowed",
+				zap.String("files", strings.Join(names(fileNames), ",")),
+				zap.String("columns", strings.Join(keys(colTypeChanged), ",")))
+			return nil, nil, errors.New("new files change datatypes of some columns and column relaxation not allowed")
+		}
 	}
-
 	if len(newCols) != 0 && !allowAddition {
 		c.logger.Error("new files have new columns and column addition not allowed",
 			zap.String("files", strings.Join(names(fileNames), ",")),
 			zap.String("columns", strings.Join(keys(newCols), ",")))
-		err = errors.New("new files are missing columns and schema relaxation not allowed")
-		return
+		return nil, nil, errors.New("new files have new columns and column addition not allowed")
 	}
 
 	for colName, colType := range newCols {
 		currentSchema[colName] = colType
 		qry := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", source.Name, colName, colType)
-		if err = c.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
-			return
+		if err := c.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
+			return nil, nil, err
 		}
 	}
 
 	for colName, colType := range colTypeChanged {
-		if !canConvertToType(currentSchema[colName], colType) {
-			continue
-		}
 		currentSchema[colName] = colType
 		qry := fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s SET DATA TYPE %s", source.Name, colName, colType)
-		if err = c.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
-			return
+		if err := c.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
+			return nil, nil, err
 		}
 	}
-	return srcSchema, currentSchema, err
+	return srcSchema, currentSchema, nil
 }
 
 // local files
@@ -424,24 +413,6 @@ func schemaToDuckDBColumnsProp(schema map[string]string) string {
 	}
 	typeStr.WriteString("}")
 	return typeStr.String()
-}
-
-// canConvertToType returns true only if new datatypes is wider than older datatypes
-// and the conversion is allowed
-func canConvertToType(oldType, newType string) bool {
-	types, ok := dateTypeChangeMapping[newType]
-	if !ok {
-		// a new datatype,we rely on duckdb
-		return true
-	}
-
-	for _, t := range types {
-		if strings.EqualFold(t, oldType) {
-			// old type is already wider
-			return false
-		}
-	}
-	return true
 }
 
 type duckDBTableSchemaResult struct {
