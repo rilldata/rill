@@ -82,8 +82,7 @@
             main: proj.name,
           }))}
         menuKey={projectName}
-        onSelectMenuOption={(project) =>
-          goto(`/${orgName}/${project}/-/redirect`)}
+        onSelectMenuOption={(project) => goto(`/${orgName}/${project}`)}
         isCurrentPage={isProjectPage}
       />
     {/if}
