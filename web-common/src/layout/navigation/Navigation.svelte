@@ -2,10 +2,10 @@
   import HideLeftSidebar from "@rilldata/web-common/components/icons/HideLeftSidebar.svelte";
   import SurfaceViewIcon from "@rilldata/web-common/components/icons/SurfaceView.svelte";
   import Portal from "@rilldata/web-common/components/Portal.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { ModelAssets } from "@rilldata/web-common/features/models";
   import TableAssets from "@rilldata/web-common/features/sources/navigation/TableAssets.svelte";
   import ProjectTitle from "@rilldata/web-common/layout/navigation/ProjectTitle.svelte";
-  import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
   import { Readable, Writable, writable } from "svelte/store";
@@ -35,15 +35,15 @@
 
 <div
   aria-hidden={!$navigationLayout?.visible}
-  class="box-border	assets fixed"
+  class="box-border assets fixed"
   style:left="{-$navVisibilityTween * $navigationWidth}px"
 >
   <div
     class="
-  border-r 
-  fixed 
-  overflow-auto 
-  border-gray-200 
+  border-r
+  fixed
+  overflow-auto
+  border-gray-200
   transition-colors
   h-screen
   bg-white

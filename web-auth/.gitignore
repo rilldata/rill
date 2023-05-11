@@ -1,0 +1,21 @@
+.DS_Store
+node_modules
+/build
+/dist
+/.svelte-kit
+/package
+.env
+.env.*
+server/venv/
+tsc-tmp/
+export/
+.vscode
+
+# generated content
+bundle.html
+
+# IntelliJ
+.idea
+*.ipr
+*.iml
+*.iws

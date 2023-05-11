@@ -16,6 +16,7 @@ type MetricsViewToplist struct {
 	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
 	DimensionName   string                       `json:"dimension_name,omitempty"`
 	MeasureNames    []string                     `json:"measure_names,omitempty"`
+	InlineMeasures  []*runtimev1.InlineMeasure   `json:"inline_measures,omitempty"`
 	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
 	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
 	Limit           int64                        `json:"limit,omitempty"`
@@ -93,21 +94,16 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 }
 
 func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
+	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
+	if err != nil {
+		return "", nil, err
+	}
+
 	dimName := safeName(q.DimensionName)
 	selectCols := []string{dimName}
-	for _, n := range q.MeasureNames {
-		found := false
-		for _, m := range mv.Measures {
-			if m.Name == n {
-				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
-				selectCols = append(selectCols, expr)
-				found = true
-				break
-			}
-		}
-		if !found {
-			return "", nil, fmt.Errorf("measure does not exist: '%s'", n)
-		}
+	for _, m := range ms {
+		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+		selectCols = append(selectCols, expr)
 	}
 
 	whereClause := "1=1"

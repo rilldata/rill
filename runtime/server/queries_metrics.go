@@ -2,14 +2,13 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 )
-
-// NOTE: The queries in here are generally not vetted or fully implemented. Use it as guidelines for the real implementation
-// once the metrics view artifact representation is ready.
 
 // MetricsViewToplist implements QueryService.
 func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsViewToplistRequest) (*runtimev1.MetricsViewToplistResponse, error) {
@@ -17,10 +16,16 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		return nil, ErrForbidden
 	}
 
+	err := validateInlineMeasures(req.InlineMeasures)
+	if err != nil {
+		return nil, err
+	}
+
 	q := &queries.MetricsViewToplist{
 		MetricsViewName: req.MetricsViewName,
 		DimensionName:   req.DimensionName,
 		MeasureNames:    req.MeasureNames,
+		InlineMeasures:  req.InlineMeasures,
 		TimeStart:       req.TimeStart,
 		TimeEnd:         req.TimeEnd,
 		Limit:           req.Limit,
@@ -28,7 +33,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		Sort:            req.Sort,
 		Filter:          req.Filter,
 	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
@@ -42,16 +47,21 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		return nil, ErrForbidden
 	}
 
+	err := validateInlineMeasures(req.InlineMeasures)
+	if err != nil {
+		return nil, err
+	}
+
 	q := &queries.MetricsViewTimeSeries{
 		MetricsViewName: req.MetricsViewName,
 		MeasureNames:    req.MeasureNames,
+		InlineMeasures:  req.InlineMeasures,
 		TimeStart:       req.TimeStart,
 		TimeEnd:         req.TimeEnd,
 		TimeGranularity: req.TimeGranularity,
 		Filter:          req.Filter,
 	}
-
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
@@ -64,31 +74,58 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		return nil, ErrForbidden
 	}
 
+	err := validateInlineMeasures(req.InlineMeasures)
+	if err != nil {
+		return nil, err
+	}
+
 	q := &queries.MetricsViewTotals{
 		MetricsViewName: req.MetricsViewName,
 		MeasureNames:    req.MeasureNames,
+		InlineMeasures:  req.InlineMeasures,
 		TimeStart:       req.TimeStart,
 		TimeEnd:         req.TimeEnd,
 		Filter:          req.Filter,
 	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
 	return q.Result, nil
 }
 
-// Commenting as its unused
+// MetricsViewRows implements QueryService.
+func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsViewRowsRequest) (*runtimev1.MetricsViewRowsResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
 
-// func (s *Server) lookupMetricsView(ctx context.Context, instanceID, name string) (*runtimev1.MetricsView, error) {
-// 	obj, err := s.runtime.GetCatalogEntry(ctx, instanceID, name)
-// 	if err != nil {
-// 		return nil, status.Error(codes.InvalidArgument, err.Error())
-// 	}
+	q := &queries.MetricsViewRows{
+		MetricsViewName: req.MetricsViewName,
+		TimeStart:       req.TimeStart,
+		TimeEnd:         req.TimeEnd,
+		Filter:          req.Filter,
+		Sort:            req.Sort,
+		Limit:           req.Limit,
+		Offset:          req.Offset,
+	}
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	if err != nil {
+		return nil, err
+	}
 
-// 	if obj.GetMetricsView() == nil {
-// 		return nil, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", name)
-// 	}
+	return q.Result, nil
+}
 
-// 	return obj.GetMetricsView(), nil
-// }
+// validateInlineMeasures checks that the inline measures are allowed.
+// This is to prevent injection of arbitrary SQL from clients with only ReadMetrics access.
+// In the future, we should consider allowing arbitrary expressions from people with wider access.
+// Currently, only COUNT(*) is allowed.
+func validateInlineMeasures(ms []*runtimev1.InlineMeasure) error {
+	for _, im := range ms {
+		if !strings.EqualFold(im.Expression, "COUNT(*)") {
+			return fmt.Errorf("illegal inline measure expression: %q", im.Expression)
+		}
+	}
+	return nil
+}

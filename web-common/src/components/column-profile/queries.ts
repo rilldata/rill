@@ -1,3 +1,4 @@
+import { convertTimestampPreview } from "@rilldata/web-common/lib/convertTimestampPreview";
 import {
   createQueryServiceColumnCardinality,
   createQueryServiceColumnNullCount,
@@ -11,7 +12,6 @@ import {
   V1ProfileColumn,
 } from "@rilldata/web-common/runtime-client";
 import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
-import { convertTimestampPreview } from "@rilldata/web-local/lib/util/convertTimestampPreview";
 import { derived, Readable, writable } from "svelte/store";
 
 export function isFetching(...queries) {

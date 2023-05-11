@@ -33,6 +33,7 @@ type Source struct {
 	Timeout               int32          `yaml:"timeout,omitempty"`
 	ExtractPolicy         *ExtractPolicy `yaml:"extract,omitempty"`
 	Format                string         `yaml:"format,omitempty" mapstructure:"format,omitempty"`
+	DuckDBProps           map[string]any `yaml:"duckdb,omitempty" mapstructure:"duckdb,omitempty"`
 }
 
 type ExtractPolicy struct {
@@ -146,9 +147,27 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	if source.Region != "" {
 		props["region"] = source.Region
 	}
-	if source.CsvDelimiter != "" {
-		props["csv.delimiter"] = source.CsvDelimiter
+
+	if source.DuckDBProps != nil {
+		props["duckdb"] = source.DuckDBProps
 	}
+
+	if source.CsvDelimiter != "" {
+		// backward compatibility
+		if _, defined := props["duckdb"]; !defined {
+			props["duckdb"] = map[string]any{}
+		}
+		props["duckdb"].(map[string]any)["delim"] = fmt.Sprintf("'%v'", source.CsvDelimiter)
+	}
+
+	if source.HivePartition != nil {
+		// backward compatibility
+		if _, defined := props["duckdb"]; !defined {
+			props["duckdb"] = map[string]any{}
+		}
+		props["duckdb"].(map[string]any)["hive_partitioning"] = *source.HivePartition
+	}
+
 	if source.GlobMaxTotalSize != 0 {
 		props["glob.max_total_size"] = source.GlobMaxTotalSize
 	}
@@ -167,10 +186,6 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 
 	if source.S3Endpoint != "" {
 		props["endpoint"] = source.S3Endpoint
-	}
-
-	if source.HivePartition != nil {
-		props["hive_partitioning"] = *source.HivePartition
 	}
 
 	if source.Format != "" {

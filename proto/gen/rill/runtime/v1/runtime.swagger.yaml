@@ -513,6 +513,59 @@ paths:
           format: int32
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/rows:
+    post:
+      summary: MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+      operationId: QueryService_MetricsViewRows
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewRowsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              timeStart:
+                type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              sort:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewSort'
+              limit:
+                type: integer
+                format: int32
+              offset:
+                type: string
+                format: int64
+              priority:
+                type: integer
+                format: int32
+            title: Request message for QueryService.MetricsViewRows
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
     post:
       summary: |-
@@ -547,6 +600,11 @@ paths:
                 type: array
                 items:
                   type: string
+              inlineMeasures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -599,6 +657,11 @@ paths:
                 type: array
                 items:
                   type: string
+              inlineMeasures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -658,6 +721,11 @@ paths:
                 type: array
                 items:
                   type: string
+              inlineMeasures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -1716,6 +1784,14 @@ definitions:
       - HISTOGRAM_METHOD_FD
       - HISTOGRAM_METHOD_DIAGNOSTIC
     default: HISTOGRAM_METHOD_UNSPECIFIED
+  v1InlineMeasure:
+    type: object
+    properties:
+      name:
+        type: string
+      expression:
+        type: string
+    title: InlineMeasure is a measure to inject in a metrics view query that is not defined in the underlying MetricsView
   v1Instance:
     type: object
     properties:
@@ -1868,6 +1944,19 @@ definitions:
           type: object
           $ref: '#/definitions/MetricsViewFilterCond'
     title: Filter clause for metrics view requests
+  v1MetricsViewRowsResponse:
+    type: object
+    properties:
+      meta:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewColumn'
+      data:
+        type: array
+        items:
+          type: object
+    title: Response message for QueryService.MetricsViewRows
   v1MetricsViewSort:
     type: object
     properties:

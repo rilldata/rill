@@ -44,11 +44,7 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) (*drivers.IngestionSummary, error) {
 	// Driver-specific overrides
 	if source.Connector == "local_file" {
-		err := c.ingestLocalFiles(ctx, env, source)
-		if err != nil {
-			return nil, err
-		}
-		return &drivers.IngestionSummary{}, nil
+		return c.ingestLocalFiles(ctx, env, source)
 	}
 
 	iterator, err := connectors.ConsumeAsIterator(ctx, env, source)
@@ -77,24 +73,7 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 
 // for files downloaded locally from remote sources
 func (c *connection) ingestIteratorFiles(ctx context.Context, source *connectors.Source, filenames []string, appendToTable bool) error {
-	format := ""
-	if value, ok := source.Properties["format"]; ok {
-		format = value.(string)
-	}
-
-	delimiter := ""
-	if value, ok := source.Properties["csv.delimiter"]; ok {
-		delimiter = value.(string)
-	}
-
-	hivePartition := 1
-	if value, ok := source.Properties["hive_partitioning"]; ok {
-		if !value.(bool) {
-			hivePartition = 0
-		}
-	}
-
-	from, err := sourceReader(filenames, delimiter, format, hivePartition)
+	from, err := sourceReader(filenames, source.Properties)
 	if err != nil {
 		return err
 	}
@@ -109,68 +88,39 @@ func (c *connection) ingestIteratorFiles(ctx context.Context, source *connectors
 }
 
 // local files
-func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
+func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) (*drivers.IngestionSummary, error) {
 	conf, err := localfile.ParseConfig(source.Properties)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	path, err := resolveLocalPath(env, conf.Path, source.Name)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// get all files in case glob passed
 	localPaths, err := doublestar.FilepathGlob(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(localPaths) == 0 {
-		return fmt.Errorf("file does not exist at %s", conf.Path)
+		return nil, fmt.Errorf("file does not exist at %s", conf.Path)
 	}
 
-	hivePartition := 1
-	if conf.HivePartition != nil && !*conf.HivePartition {
-		hivePartition = 0
-	}
-
-	from, err := sourceReader(localPaths, conf.CSVDelimiter, conf.Format, hivePartition)
+	// Ingest data
+	from, err := sourceReader(localPaths, source.Properties)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
 	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (SELECT * FROM %s)", source.Name, from)
-
-	return c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
-}
-
-func sourceReader(paths []string, csvDelimiter, format string, hivePartition int) (string, error) {
-	if format == "" {
-		format = fileutil.FullExt(paths[0])
-	} else {
-		// users will set format like csv, tsv, parquet
-		// while infering format from file name extensions its better to rely on .csv, .parquet
-		format = fmt.Sprintf(".%s", format)
+	err = c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
+	if err != nil {
+		return nil, err
 	}
 
-	if format == "" {
-		return "", fmt.Errorf("invalid file")
-	} else if strings.Contains(format, ".csv") || strings.Contains(format, ".tsv") || strings.Contains(format, ".txt") {
-		return sourceReaderWithDelimiter(paths, csvDelimiter), nil
-	} else if strings.Contains(format, ".parquet") {
-		return fmt.Sprintf("read_parquet(['%s'], HIVE_PARTITIONING=%v)", strings.Join(paths, "','"), hivePartition), nil
-	} else if strings.Contains(format, ".json") || strings.Contains(format, ".ndjson") {
-		return fmt.Sprintf("read_json_auto(['%s'], sample_size=-1)", strings.Join(paths, "','")), nil
-	} else {
-		return "", fmt.Errorf("file type not supported : %s", format)
-	}
-}
-
-func sourceReaderWithDelimiter(paths []string, delimiter string) string {
-	if delimiter == "" {
-		return fmt.Sprintf("read_csv_auto(['%s'], sample_size=-1)", strings.Join(paths, "','"))
-	}
-	return fmt.Sprintf("read_csv_auto(['%s'], delim='%s', sample_size=-1)", strings.Join(paths, "','"), delimiter)
+	bytesIngested := fileSize(localPaths)
+	return &drivers.IngestionSummary{BytesIngested: bytesIngested}, nil
 }
 
 func fileSize(paths []string) int64 {
@@ -200,4 +150,95 @@ func resolveLocalPath(env *connectors.Env, path, sourceName string) (string, err
 		return "", fmt.Errorf("file connector cannot ingest source '%s': path is outside repo root", sourceName)
 	}
 	return finalPath, nil
+}
+
+func sourceReader(paths []string, properties map[string]any) (string, error) {
+	format, formatDefined := properties["format"].(string)
+	if formatDefined {
+		format = fmt.Sprintf(".%s", format)
+	} else {
+		format = fileutil.FullExt(paths[0])
+	}
+
+	var ingestionProps map[string]any
+	if duckDBProps, ok := properties["duckdb"].(map[string]any); ok {
+		ingestionProps = duckDBProps
+	} else {
+		ingestionProps = map[string]any{}
+	}
+
+	// Generate a "read" statement
+	if containsAny(format, []string{".csv", ".tsv", ".txt"}) {
+		// CSV reader
+		return generateReadCsvStatement(paths, ingestionProps)
+	} else if strings.Contains(format, ".parquet") {
+		// Parquet reader
+		return generateReadParquetStatement(paths, ingestionProps)
+	} else if containsAny(format, []string{".json", ".ndjson"}) {
+		// JSON reader
+		return generateReadJSONStatement(paths, ingestionProps)
+	} else {
+		return "", fmt.Errorf("file type not supported : %s", format)
+	}
+}
+
+func containsAny(s string, targets []string) bool {
+	source := strings.ToLower(s)
+	for _, target := range targets {
+		if strings.Contains(source, target) {
+			return true
+		}
+	}
+	return false
+}
+
+func generateReadCsvStatement(paths []string, properties map[string]any) (string, error) {
+	ingestionProps := copyMap(properties)
+	// set sample_size to 200000 by default
+	if _, sampleSizeDefined := ingestionProps["sample_size"]; !sampleSizeDefined {
+		ingestionProps["sample_size"] = 200000
+	}
+	// auto_detect (enables auto-detection of parameters) is true by default, it takes care of params/schema
+	return fmt.Sprintf("read_csv_auto(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
+}
+
+func generateReadParquetStatement(paths []string, properties map[string]any) (string, error) {
+	ingestionProps := copyMap(properties)
+	// set hive_partitioning to true by default
+	if _, hivePartitioningDefined := ingestionProps["hive_partitioning"]; !hivePartitioningDefined {
+		ingestionProps["hive_partitioning"] = true
+	}
+	return fmt.Sprintf("read_parquet(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
+}
+
+func generateReadJSONStatement(paths []string, properties map[string]any) (string, error) {
+	ingestionProps := copyMap(properties)
+	// auto_detect is false by default so setting it to true simplifies the ingestion
+	// if columns are defined then DuckDB turns the auto-detection off so no need to check this case here
+	if _, autoDetectDefined := ingestionProps["auto_detect"]; !autoDetectDefined {
+		ingestionProps["auto_detect"] = true
+	}
+	// set sample_size to 200000 by default
+	if _, sampleSizeDefined := ingestionProps["sample_size"]; !sampleSizeDefined {
+		ingestionProps["sample_size"] = 200000
+	}
+	return fmt.Sprintf("read_json(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
+}
+
+func copyMap(originalMap map[string]any) map[string]any {
+	newMap := make(map[string]any, len(originalMap))
+	for key, value := range originalMap {
+		newMap[key] = value
+	}
+	return newMap
+}
+
+func convertToStatementParamsStr(paths []string, properties map[string]any) string {
+	ingestionParamsStr := make([]string, 0, len(properties)+1)
+	// The first parameter is a source path
+	ingestionParamsStr = append(ingestionParamsStr, fmt.Sprintf("['%s']", strings.Join(paths, "','")))
+	for key, value := range properties {
+		ingestionParamsStr = append(ingestionParamsStr, fmt.Sprintf("%s=%v", key, value))
+	}
+	return strings.Join(ingestionParamsStr, ",")
 }

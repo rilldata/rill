@@ -14,15 +14,15 @@
 <Tooltip location="bottom" alignment="start" distance={12}>
   <button
     class="
-        fixed 
-        z-40 
+        fixed
+        z-40
         grid place-items-center
-        hover:text-gray-500 
+        hover:text-gray-500
         rounded
         bg-transparent
         hover:bg-gray-300
         {show ? 'opacity-100 text-gray-500' : 'opacity-0 text-white'} 
-        focus:opacity-100 
+        focus:opacity-100
         hover:opacity-100
         transition-opacity
         "

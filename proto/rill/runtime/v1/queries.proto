@@ -46,6 +46,14 @@ service QueryService {
     };
   }
 
+  // MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+  rpc MetricsViewRows(MetricsViewRowsRequest) returns (MetricsViewRowsResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/rows",
+      body: "*"
+    };
+  }
+
   // Profiling APIs
 
   // ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
@@ -158,6 +166,7 @@ message MetricsViewToplistRequest {
   string metrics_view_name = 2;
   string dimension_name = 3;
   repeated string measure_names = 4;
+  repeated InlineMeasure inline_measures = 12;
   google.protobuf.Timestamp time_start = 5;
   google.protobuf.Timestamp time_end = 6;
   int64 limit = 7;
@@ -178,6 +187,7 @@ message MetricsViewTimeSeriesRequest {
   string instance_id = 1;
   string metrics_view_name = 2;
   repeated string measure_names = 3;
+  repeated InlineMeasure inline_measures = 9;
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
   TimeGrain time_granularity = 6;
@@ -196,6 +206,7 @@ message MetricsViewTotalsRequest {
   string instance_id = 1;
   string metrics_view_name = 2;
   repeated string measure_names = 3;
+  repeated InlineMeasure inline_measures = 9;
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
   MetricsViewFilter filter = 7;
@@ -206,6 +217,25 @@ message MetricsViewTotalsRequest {
 message MetricsViewTotalsResponse {
   repeated MetricsViewColumn meta = 1;
   google.protobuf.Struct data = 2;
+}
+
+// Request message for QueryService.MetricsViewRows
+message MetricsViewRowsRequest {
+  string instance_id = 1;
+  string metrics_view_name = 2;
+  google.protobuf.Timestamp time_start = 3;
+  google.protobuf.Timestamp time_end = 4;
+  MetricsViewFilter filter = 5;
+  repeated MetricsViewSort sort = 6;
+  int32 limit = 7;
+  int64 offset = 8;
+  int32 priority = 9;
+}
+
+// Response message for QueryService.MetricsViewRows
+message MetricsViewRowsResponse {
+  repeated MetricsViewColumn meta = 1;
+  repeated google.protobuf.Struct data = 2;
 }
 
 // Sort clause for metrics view requests
@@ -230,6 +260,12 @@ message MetricsViewColumn {
   string name = 1;
   string type = 2;
   bool nullable = 3;
+}
+
+// InlineMeasure is a measure to inject in a metrics view query that is not defined in the underlying MetricsView
+message InlineMeasure {
+  string name = 1;
+  string expression = 2;
 }
 
 // **********

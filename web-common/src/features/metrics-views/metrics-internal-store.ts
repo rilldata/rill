@@ -262,7 +262,7 @@ const capitalize = (s) => s && s[0].toUpperCase() + s.slice(1);
 
 export function initBlankDashboardYAML(dashboardName: string) {
   const metricsTemplate = `
-# Visit https://docs.rilldata.com/references/project-files to learn more about Rill project files.
+# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
 title: ""
 model: ""
