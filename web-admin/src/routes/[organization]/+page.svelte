@@ -29,7 +29,7 @@
   <title>{$page.params.organization} overview - Rill</title>
 </svelte:head>
 
-<div class="flex-grow overflow-hidden">
+<div class="overflow-auto h-full">
   <section class="flex flex-col justify-center items-center h-3/5">
     {#if $org.isLoading || $projs.isLoading}
       <span>Loading...</span>
