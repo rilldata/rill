@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/rilldata/rill/admin/server/cookies"
-
+	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/server/auth"
+	"github.com/rilldata/rill/admin/server/cookies"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/stretchr/testify/require"
@@ -59,7 +59,7 @@ func TestAdmin_RBAC(t *testing.T) {
 	require.NoError(t, err)
 	emailClient := email.New(sender, "")
 
-	github := admin.NewMockGithub()
+	github := &mockGithub{}
 
 	issuer, err := runtimeauth.NewEphemeralIssuer("")
 	require.NoError(t, err)
@@ -662,4 +662,15 @@ func (c *bearerTokenCredential) GetRequestMetadata(ctx context.Context, uri ...s
 
 func (c *bearerTokenCredential) RequireTransportSecurity() bool {
 	return false // false for testing
+}
+
+// mockGithub provides a mock implementation of admin.Github.
+type mockGithub struct{}
+
+func (m *mockGithub) AppClient() *github.Client {
+	return nil
+}
+
+func (m *mockGithub) InstallationClient(installationID int64) (*github.Client, error) {
+	return nil, nil
 }

@@ -24,8 +24,8 @@ var (
 
 // Github exposes the features we require from the Github API.
 type Github interface {
-	Apps() *github.AppsService
-	Repositories(installationID int64) (*github.RepositoriesService, error)
+	AppClient() *github.Client
+	InstallationClient(installationID int64) (*github.Client, error)
 }
 
 // githubClient implements the Github interface.
@@ -50,32 +50,17 @@ func NewGithub(appID int64, appPrivateKey string) (Github, error) {
 	}, nil
 }
 
-func (g *githubClient) Apps() *github.AppsService {
-	return g.appClient.Apps
+func (g *githubClient) AppClient() *github.Client {
+	return g.appClient
 }
 
-func (g *githubClient) Repositories(installationID int64) (*github.RepositoriesService, error) {
+func (g *githubClient) InstallationClient(installationID int64) (*github.Client, error) {
 	itr, err := ghinstallation.New(http.DefaultTransport, g.appID, installationID, []byte(g.appPrivateKey))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github installation transport: %w", err)
 	}
 	installationClient := github.NewClient(&http.Client{Transport: itr})
-	return installationClient.Repositories, nil
-}
-
-// mockGithubClient provides a mock implementation of the Github interface.
-type mockGithubClient struct{}
-
-func NewMockGithub() Github {
-	return &mockGithubClient{}
-}
-
-func (m *mockGithubClient) Apps() *github.AppsService {
-	return nil
-}
-
-func (m *mockGithubClient) Repositories(installationID int64) (*github.RepositoriesService, error) {
-	return nil, nil
+	return installationClient, nil
 }
 
 // GetGithubInstallation returns a non zero Github installation ID iff the Github App is installed on the repository.
@@ -87,7 +72,7 @@ func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (
 	}
 
 	// TODO :: handle suspended case
-	installation, resp, err := s.github.Apps().FindRepositoryInstallation(ctx, account, repo)
+	installation, resp, err := s.github.AppClient().Apps.FindRepositoryInstallation(ctx, account, repo)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
 			// We don't have an installation on the repo
@@ -118,12 +103,12 @@ func (s *Service) LookupGithubRepoForUser(ctx context.Context, installationID in
 		return nil, fmt.Errorf("invalid gitUsername %q", gitUsername)
 	}
 
-	repositories, err := s.github.Repositories(installationID)
+	gh, err := s.github.InstallationClient(installationID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github repository service: %w", err)
 	}
 
-	isColab, resp, err := repositories.IsCollaborator(ctx, account, repo, gitUsername)
+	isColab, resp, err := gh.Repositories.IsCollaborator(ctx, account, repo, gitUsername)
 	if err != nil {
 		if resp.StatusCode == http.StatusUnauthorized {
 			return nil, ErrUserIsNotCollaborator
@@ -135,7 +120,7 @@ func (s *Service) LookupGithubRepoForUser(ctx context.Context, installationID in
 		return nil, ErrUserIsNotCollaborator
 	}
 
-	repository, _, err := repositories.Get(ctx, account, repo)
+	repository, _, err := gh.Repositories.Get(ctx, account, repo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get github repository: %w", err)
 	}
