@@ -24,7 +24,6 @@
         refetchOnReconnect: false,
         refetchOnWindowFocus: false,
         retry: false,
-        placeholderData: {}, // there's an issue somewhere in the Leaderboard components that depends on this setting
       },
     },
   });

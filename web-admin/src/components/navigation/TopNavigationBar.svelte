@@ -11,9 +11,7 @@
 
   $: organization = $page.params.organization;
 
-  const user = createAdminServiceGetCurrentUser({
-    query: { placeholderData: undefined },
-  });
+  const user = createAdminServiceGetCurrentUser();
 </script>
 
 <div
