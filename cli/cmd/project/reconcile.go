@@ -32,7 +32,7 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 				project = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 {
+			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
 				var err error
 				project, err = inferProjectName(ctx, client, cfg.Org, path)
 				if err != nil {

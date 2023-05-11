@@ -76,7 +76,7 @@ func Spinner(prefix string) *spinner.Spinner {
 func TablePrinter(v interface{}) {
 	var b strings.Builder
 	tableprinter.Print(&b, v)
-	fmt.Fprintln(os.Stdout, b.String())
+	fmt.Fprint(os.Stdout, b.String())
 }
 
 func SuccessPrinter(str string) {
@@ -208,7 +208,6 @@ func PrintMembers(members []*adminv1.Member) {
 		return
 	}
 
-	SuccessPrinter("Members list")
 	TablePrinter(toMemberTable(members))
 }
 
@@ -244,7 +243,7 @@ func toMemberRow(m *adminv1.Member) *member {
 type member struct {
 	Name      string `header:"name" json:"display_name"`
 	Email     string `header:"email" json:"email"`
-	RoleName  string `header:"role_name" json:"role_name"`
+	RoleName  string `header:"role" json:"role_name"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
 	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_on"`
 }
@@ -268,7 +267,7 @@ func toInviteRow(i *adminv1.UserInvite) *userInvite {
 
 type userInvite struct {
 	Email     string `header:"email" json:"email"`
-	RoleName  string `header:"role_name" json:"role_name"`
+	RoleName  string `header:"role" json:"role_name"`
 	InvitedBy string `header:"invited_by" json:"invited_by"`
 }
 

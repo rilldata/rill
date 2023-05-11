@@ -23,9 +23,12 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
+			// updating this as its not required to logout first and login again
 			if cfg.AdminTokenDefault != "" {
-				cmdutil.WarnPrinter("You are already logged in. To log in again, run `rill logout` first.")
-				return nil
+				err := Logout(ctx, cfg)
+				if err != nil {
+					return err
+				}
 			}
 
 			// Login user

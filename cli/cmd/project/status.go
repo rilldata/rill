@@ -18,7 +18,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 
 	statusCmd := &cobra.Command{
 		Use:   "status <project-name>",
-		Args:  cobra.NoArgs,
+		Args:  cobra.MaximumNArgs(1),
 		Short: "Project deployment status",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
@@ -31,7 +31,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 {
+			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
 				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
 				if err != nil {
 					return err

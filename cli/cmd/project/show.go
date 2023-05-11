@@ -14,7 +14,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 
 	showCmd := &cobra.Command{
 		Use:   "show <project-name>",
-		Args:  cobra.NoArgs,
+		Args:  cobra.MaximumNArgs(1),
 		Short: "Show project details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
@@ -27,7 +27,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 {
+			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
 				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
 				if err != nil {
 					return err
