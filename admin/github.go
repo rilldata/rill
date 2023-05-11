@@ -126,7 +126,7 @@ func (s *Service) LookupGithubRepoForUser(ctx context.Context, installationID in
 
 	gh, err := s.github.InstallationClient(installationID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create github repository service: %w", err)
+		return nil, fmt.Errorf("failed to create github installation client: %w", err)
 	}
 
 	isColab, resp, err := gh.Repositories.IsCollaborator(ctx, account, repo, gitUsername)
