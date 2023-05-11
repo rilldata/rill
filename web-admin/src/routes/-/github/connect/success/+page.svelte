@@ -1,9 +1,9 @@
 <script>
-  import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import CtaContentContainer from "../../../../../components/calls-to-action/CTAContentContainer.svelte";
-  import CtaHeader from "../../../../../components/calls-to-action/CTAHeader.svelte";
-  import CtaLayoutContainer from "../../../../../components/calls-to-action/CTALayoutContainer.svelte";
-  import CtaMessage from "../../../../../components/calls-to-action/CTAMessage.svelte";
+  import GithubSuccess from "@rilldata/web-common/components/icons/GithubSuccess.svelte";
+  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
+  import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
+  import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
+  import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
 </script>
 
 <svelte:head>
@@ -12,7 +12,7 @@
 
 <CtaLayoutContainer>
   <CtaContentContainer>
-    <Github className="w-10 h-10 text-gray-900" />
+    <GithubSuccess />
     <CtaHeader>Github connected successfully</CtaHeader>
     <CtaMessage>Close this page and continue setup in the Rill CLI.</CtaMessage>
   </CtaContentContainer>

@@ -23,7 +23,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.2
+          go-version: 1.20.3
 
       - name: Authenticate GCloud
         uses: google-github-actions/auth@v1
@@ -45,7 +45,9 @@ jobs:
           gcloud auth configure-docker
 
           docker build -t gcr.io/rilldata/rill-headless:${GITHUB_SHA} .
+          docker tag gcr.io/rilldata/rill-headless:${GITHUB_SHA} gcr.io/rilldata/rill-headless
           docker push gcr.io/rilldata/rill-headless:${GITHUB_SHA}
+          docker push gcr.io/rilldata/rill-headless
 
       - name: Trigger Rill Cloud deployment
         run: |-

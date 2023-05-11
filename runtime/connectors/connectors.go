@@ -3,11 +3,24 @@ package connectors
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 var ErrIngestionLimitExceeded = fmt.Errorf("connectors: source ingestion exceeds limit")
+
+type PermissionDeniedError struct {
+	msg string
+}
+
+func NewPermissionDeniedError(msg string) error {
+	return &PermissionDeniedError{msg: msg}
+}
+
+func (e *PermissionDeniedError) Error() string {
+	return e.msg
+}
 
 // Connectors tracks all registered connector drivers.
 var Connectors = make(map[string]Connector)
@@ -39,6 +52,7 @@ type Connector interface {
 type Spec struct {
 	DisplayName        string
 	Description        string
+	ServiceAccountDocs string
 	Properties         []PropertySchema
 	ConnectorVariables []VariableSchema
 	Help               string
@@ -163,16 +177,5 @@ func ConsumeAsIterator(ctx context.Context, env *Env, source *Source) (FileItera
 }
 
 func (s *Source) PropertiesEquals(o *Source) bool {
-	if len(s.Properties) != len(o.Properties) {
-		return false
-	}
-
-	for k1, v1 := range s.Properties {
-		v2, ok := o.Properties[k1]
-		if !ok || v1 != v2 {
-			return false
-		}
-	}
-
-	return true
+	return reflect.DeepEqual(s.Properties, o.Properties)
 }

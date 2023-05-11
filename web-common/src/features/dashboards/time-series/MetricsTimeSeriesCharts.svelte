@@ -2,13 +2,19 @@
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
-  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
+  import {
+    metricsExplorerStore,
+    useDashboardStore,
+  } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import {
     humanizeDataType,
     NicelyFormattedTypes,
     nicelyFormattedTypesToNumberKind,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import {
+    selectBestMeasureStrings,
+    selectMeasureKeys,
     useMetaQuery,
     useModelAllTimeRange,
   } from "@rilldata/web-common/features/dashboards/selectors";
@@ -49,7 +55,12 @@
   $: allTimeRangeQuery = useModelAllTimeRange(
     $runtime.instanceId,
     $metaQuery.data.model,
-    $metaQuery.data.timeDimension
+    $metaQuery.data.timeDimension,
+    {
+      query: {
+        enabled: !!$metaQuery.data.timeDimension,
+      },
+    }
   );
 
   // get the time range name, which is the preset.
@@ -206,10 +217,45 @@
 
     endValue = removeTimezoneOffset(endValue);
   }
+
+  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+
+  $: availableMeasureLabels = selectBestMeasureStrings($metaQuery);
+  $: availableMeasureKeys = selectMeasureKeys($metaQuery);
+  $: visibleMeasureKeys = metricsExplorer?.visibleMeasureKeys;
+  $: visibleMeasuresBitmask = availableMeasureKeys.map((k) =>
+    visibleMeasureKeys.has(k)
+  );
+
+  const toggleMeasureVisibility = (e) => {
+    metricsExplorerStore.toggleMeasureVisibilityByKey(
+      metricViewName,
+      availableMeasureKeys[e.detail.index]
+    );
+  };
+  const setAllMeasuresNotVisible = () => {
+    metricsExplorerStore.hideAllMeasures(metricViewName);
+  };
+  const setAllMeasuresVisible = () => {
+    metricsExplorerStore.setMultipleMeasuresVisible(
+      metricViewName,
+      availableMeasureKeys
+    );
+  };
 </script>
 
 <TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
-  <div class="bg-white sticky left-0 top-0" />
+  <div class="bg-white sticky top-0" style="z-index:100">
+    <SeachableFilterButton
+      selectableItems={availableMeasureLabels}
+      selectedItems={visibleMeasuresBitmask}
+      on:item-clicked={toggleMeasureVisibility}
+      on:deselect-all={setAllMeasuresNotVisible}
+      on:select-all={setAllMeasuresVisible}
+      label="Measures"
+      tooltipText="Choose measures to display"
+    />
+  </div>
   <div class="bg-white sticky left-0 top-0">
     <div style:padding-left="24px" style:height="20px" />
     <!-- top axis element -->
@@ -228,7 +274,7 @@
   </div>
   <!-- bignumbers and line charts -->
   {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
-    {#each $metaQuery.data?.measures as measure, index (measure.name)}
+    {#each $metaQuery.data?.measures.filter((_, i) => visibleMeasuresBitmask[i]) as measure, index (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
       {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
       {@const showComparison = displayComparison}

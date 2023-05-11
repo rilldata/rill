@@ -1,13 +1,21 @@
 <script lang="ts">
-  import { V1DeploymentStatus } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceGetProject,
+    V1DeploymentStatus,
+  } from "@rilldata/web-admin/client";
   import { getDashboardsForProject } from "@rilldata/web-admin/components/projects/dashboards";
-  import { invalidateProjectQueries } from "@rilldata/web-admin/components/projects/invalidations";
-  import { useProject } from "@rilldata/web-admin/components/projects/use-project";
+  import { invalidateDashboardsQueries } from "@rilldata/web-admin/components/projects/invalidations";
+  import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/selectors";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import {
+    getRuntimeServiceListCatalogEntriesQueryKey,
+    getRuntimeServiceListFilesQueryKey,
+  } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { SvelteComponent } from "svelte";
 
@@ -15,31 +23,48 @@
   export let project: string;
   export let iconOnly = false;
 
-  $: proj = useProject(organization, project);
+  $: proj = createAdminServiceGetProject(organization, project);
+  // Poll specifically for the project's deployment status
+  $: projectDeploymentStatus = useProjectDeploymentStatus(
+    organization,
+    project
+  );
   let deploymentStatus: V1DeploymentStatus;
   $: currentStatusDisplay =
     !!deploymentStatus && statusDisplays[deploymentStatus];
 
   const queryClient = useQueryClient();
 
-  $: if ($proj.data?.prodDeployment?.status) {
+  $: if ($projectDeploymentStatus.data) {
     const prevStatus = deploymentStatus;
 
-    deploymentStatus = $proj.data?.prodDeployment?.status;
+    deploymentStatus = $projectDeploymentStatus.data;
 
     if (
+      prevStatus &&
       prevStatus !== V1DeploymentStatus.DEPLOYMENT_STATUS_OK &&
       deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_OK
     ) {
       getDashboardsAndInvalidate();
+
+      // Invalidate the queries used to compose the dashboard list in the breadcrumbs
+      queryClient.invalidateQueries(
+        getRuntimeServiceListFilesQueryKey($runtime?.instanceId, {
+          glob: "dashboards/*.yaml",
+        })
+      );
+      queryClient.invalidateQueries(
+        getRuntimeServiceListCatalogEntriesQueryKey($runtime?.instanceId, {
+          type: "OBJECT_TYPE_METRICS_VIEW",
+        })
+      );
     }
   }
 
   async function getDashboardsAndInvalidate() {
-    return invalidateProjectQueries(
-      queryClient,
-      await getDashboardsForProject($proj.data)
-    );
+    const dashboardListItems = await getDashboardsForProject($proj.data);
+    const dashboardNames = dashboardListItems.map((listing) => listing.name);
+    return invalidateDashboardsQueries(queryClient, dashboardNames);
   }
 
   type StatusDisplay = {

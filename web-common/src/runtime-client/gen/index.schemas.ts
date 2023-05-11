@@ -94,6 +94,7 @@ export type QueryServiceColumnNullCountParams = {
 
 export type QueryServiceMetricsViewTotalsBody = {
   measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   filter?: V1MetricsViewFilter;
@@ -103,6 +104,7 @@ export type QueryServiceMetricsViewTotalsBody = {
 export type QueryServiceMetricsViewToplistBody = {
   dimensionName?: string;
   measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   limit?: string;
@@ -114,6 +116,7 @@ export type QueryServiceMetricsViewToplistBody = {
 
 export type QueryServiceMetricsViewTimeSeriesBody = {
   measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
@@ -121,14 +124,12 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   priority?: number;
 };
 
-export type QueryServiceMetricsViewComparisonToplistBody = {
-  dimensionName?: string;
-  measureNames?: string[];
-  baseTimeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  sort?: V1MetricsViewComparisonSort[];
+export type QueryServiceMetricsViewRowsBody = {
+  timeStart?: string;
+  timeEnd?: string;
   filter?: V1MetricsViewFilter;
-  limit?: string;
+  sort?: V1MetricsViewSort[];
+  limit?: number;
   offset?: string;
   priority?: number;
 };
@@ -378,6 +379,7 @@ export interface V1RefreshAndReconcileRequest {
  - CODE_DEPENDENCY: Code artifact is valid, but has invalid dependencies
  - CODE_OLAP: Error returned from the OLAP database
  - CODE_SOURCE: Error encountered during source inspection or ingestion
+ - CODE_SOURCE_PERMISSION_DENIED: Error returned when unauthorised to access remote sources
  */
 export type V1ReconcileErrorCode =
   typeof V1ReconcileErrorCode[keyof typeof V1ReconcileErrorCode];
@@ -390,6 +392,7 @@ export const V1ReconcileErrorCode = {
   CODE_DEPENDENCY: "CODE_DEPENDENCY",
   CODE_OLAP: "CODE_OLAP",
   CODE_SOURCE: "CODE_SOURCE",
+  CODE_SOURCE_PERMISSION_DENIED: "CODE_SOURCE_PERMISSION_DENIED",
 } as const;
 
 /**
@@ -534,6 +537,13 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
+export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
@@ -639,6 +649,11 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
   variables?: V1InstanceVariables;
   projectVariables?: V1InstanceProjectVariables;
   ingestionLimitBytes?: string;
+}
+
+export interface V1InlineMeasure {
+  name?: string;
+  expression?: string;
 }
 
 export type V1HistogramMethod =

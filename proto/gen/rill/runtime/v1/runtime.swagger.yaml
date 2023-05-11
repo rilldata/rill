@@ -513,14 +513,15 @@ paths:
           format: int32
       tags:
         - QueryService
-  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/rows:
     post:
-      operationId: QueryService_MetricsViewComparisonToplist
+      summary: MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+      operationId: QueryService_MetricsViewRows
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1MetricsViewComparisonToplistResponse'
+            $ref: '#/definitions/v1MetricsViewRowsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -540,33 +541,29 @@ paths:
           schema:
             type: object
             properties:
-              dimensionName:
+              timeStart:
                 type: string
-              measureNames:
-                type: array
-                items:
-                  type: string
-              baseTimeRange:
-                $ref: '#/definitions/v1TimeRange'
-              comparisonTimeRange:
-                $ref: '#/definitions/v1TimeRange'
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
               sort:
                 type: array
                 items:
                   type: object
-                  $ref: '#/definitions/v1MetricsViewComparisonSort'
-              filter:
-                $ref: '#/definitions/v1MetricsViewFilter'
+                  $ref: '#/definitions/v1MetricsViewSort'
               limit:
-                type: string
-                format: int64
+                type: integer
+                format: int32
               offset:
                 type: string
                 format: int64
               priority:
                 type: integer
                 format: int32
-            title: Request message for QueryService.MetricsViewComparisonToplist
+            title: Request message for QueryService.MetricsViewRows
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
@@ -603,6 +600,11 @@ paths:
                 type: array
                 items:
                   type: string
+              inlineMeasures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -655,6 +657,11 @@ paths:
                 type: array
                 items:
                   type: string
+              inlineMeasures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -714,6 +721,11 @@ paths:
                 type: array
                 items:
                   type: string
+              inlineMeasures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -1779,6 +1791,14 @@ definitions:
       - HISTOGRAM_METHOD_FD
       - HISTOGRAM_METHOD_DIAGNOSTIC
     default: HISTOGRAM_METHOD_UNSPECIFIED
+  v1InlineMeasure:
+    type: object
+    properties:
+      name:
+        type: string
+      expression:
+        type: string
+    title: InlineMeasure is a measure to inject in a metrics view query that is not defined in the underlying MetricsView
   v1Instance:
     type: object
     properties:
@@ -1967,6 +1987,19 @@ definitions:
           type: object
           $ref: '#/definitions/MetricsViewFilterCond'
     title: Filter clause for metrics view requests
+  v1MetricsViewRowsResponse:
+    type: object
+    properties:
+      meta:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewColumn'
+      data:
+        type: array
+        items:
+          type: object
+    title: Response message for QueryService.MetricsViewRows
   v1MetricsViewSort:
     type: object
     properties:
@@ -2224,6 +2257,7 @@ definitions:
       - CODE_DEPENDENCY
       - CODE_OLAP
       - CODE_SOURCE
+      - CODE_SOURCE_PERMISSION_DENIED
     default: CODE_UNSPECIFIED
     description: |-
       - CODE_UNSPECIFIED: Unspecified error
@@ -2232,6 +2266,7 @@ definitions:
        - CODE_DEPENDENCY: Code artifact is valid, but has invalid dependencies
        - CODE_OLAP: Error returned from the OLAP database
        - CODE_SOURCE: Error encountered during source inspection or ingestion
+       - CODE_SOURCE_PERMISSION_DENIED: Error returned when unauthorised to access remote sources
     title: Code represents different categories of reconciliation errors
   v1ReconcileResponse:
     type: object

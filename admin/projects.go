@@ -122,8 +122,8 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 }
 
 // UpdateProject updates a project and any impacted deployments.
-// It does not run a reconcile, even if deployment parameters (like branch or variables) have been changed.
-func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
+// It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
+func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions, reconcileDeployment bool) (*database.Project, error) {
 	impactsDeployments := (proj.ProdBranch != opts.ProdBranch ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
@@ -141,8 +141,10 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 			err := s.updateDeployment(ctx, d, &updateDeploymentOptions{
 				GithubURL:            opts.GithubURL,
 				GithubInstallationID: opts.GithubInstallationID,
+				Subpath:              proj.Subpath,
 				Branch:               opts.ProdBranch,
 				Variables:            opts.ProdVariables,
+				Reconcile:            reconcileDeployment,
 			})
 			if err != nil {
 				// TODO: This may leave things in an inconsistent state. (Although presently, there's almost never multiple deployments.)

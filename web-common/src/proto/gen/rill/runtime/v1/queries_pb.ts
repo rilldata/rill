@@ -221,6 +221,11 @@ export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest
   measureNames: string[] = [];
 
   /**
+   * @generated from field: repeated rill.runtime.v1.InlineMeasure inline_measures = 12;
+   */
+  inlineMeasures: InlineMeasure[] = [];
+
+  /**
    * @generated from field: google.protobuf.Timestamp time_start = 5;
    */
   timeStart?: Timestamp;
@@ -267,6 +272,7 @@ export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "dimension_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 12, name: "inline_measures", kind: "message", T: InlineMeasure, repeated: true },
     { no: 5, name: "time_start", kind: "message", T: Timestamp },
     { no: 6, name: "time_end", kind: "message", T: Timestamp },
     { no: 7, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
@@ -694,6 +700,11 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   measureNames: string[] = [];
 
   /**
+   * @generated from field: repeated rill.runtime.v1.InlineMeasure inline_measures = 9;
+   */
+  inlineMeasures: InlineMeasure[] = [];
+
+  /**
    * @generated from field: google.protobuf.Timestamp time_start = 4;
    */
   timeStart?: Timestamp;
@@ -729,6 +740,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 9, name: "inline_measures", kind: "message", T: InlineMeasure, repeated: true },
     { no: 4, name: "time_start", kind: "message", T: Timestamp },
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 6, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
@@ -820,6 +832,11 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
   measureNames: string[] = [];
 
   /**
+   * @generated from field: repeated rill.runtime.v1.InlineMeasure inline_measures = 9;
+   */
+  inlineMeasures: InlineMeasure[] = [];
+
+  /**
    * @generated from field: google.protobuf.Timestamp time_start = 4;
    */
   timeStart?: Timestamp;
@@ -850,6 +867,7 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 9, name: "inline_measures", kind: "message", T: InlineMeasure, repeated: true },
     { no: 4, name: "time_start", kind: "message", T: Timestamp },
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 7, name: "filter", kind: "message", T: MetricsViewFilter },
@@ -915,6 +933,138 @@ export class MetricsViewTotalsResponse extends Message<MetricsViewTotalsResponse
 
   static equals(a: MetricsViewTotalsResponse | PlainMessage<MetricsViewTotalsResponse> | undefined, b: MetricsViewTotalsResponse | PlainMessage<MetricsViewTotalsResponse> | undefined): boolean {
     return proto3.util.equals(MetricsViewTotalsResponse, a, b);
+  }
+}
+
+/**
+ * Request message for QueryService.MetricsViewRows
+ *
+ * @generated from message rill.runtime.v1.MetricsViewRowsRequest
+ */
+export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string metrics_view_name = 2;
+   */
+  metricsViewName = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time_start = 3;
+   */
+  timeStart?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time_end = 4;
+   */
+  timeEnd?: Timestamp;
+
+  /**
+   * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 5;
+   */
+  filter?: MetricsViewFilter;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSort sort = 6;
+   */
+  sort: MetricsViewSort[] = [];
+
+  /**
+   * @generated from field: int32 limit = 7;
+   */
+  limit = 0;
+
+  /**
+   * @generated from field: int64 offset = 8;
+   */
+  offset = protoInt64.zero;
+
+  /**
+   * @generated from field: int32 priority = 9;
+   */
+  priority = 0;
+
+  constructor(data?: PartialMessage<MetricsViewRowsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewRowsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "time_start", kind: "message", T: Timestamp },
+    { no: 4, name: "time_end", kind: "message", T: Timestamp },
+    { no: 5, name: "filter", kind: "message", T: MetricsViewFilter },
+    { no: 6, name: "sort", kind: "message", T: MetricsViewSort, repeated: true },
+    { no: 7, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 8, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 9, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewRowsRequest {
+    return new MetricsViewRowsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewRowsRequest {
+    return new MetricsViewRowsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewRowsRequest {
+    return new MetricsViewRowsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewRowsRequest | PlainMessage<MetricsViewRowsRequest> | undefined, b: MetricsViewRowsRequest | PlainMessage<MetricsViewRowsRequest> | undefined): boolean {
+    return proto3.util.equals(MetricsViewRowsRequest, a, b);
+  }
+}
+
+/**
+ * Response message for QueryService.MetricsViewRows
+ *
+ * @generated from message rill.runtime.v1.MetricsViewRowsResponse
+ */
+export class MetricsViewRowsResponse extends Message<MetricsViewRowsResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewColumn meta = 1;
+   */
+  meta: MetricsViewColumn[] = [];
+
+  /**
+   * @generated from field: repeated google.protobuf.Struct data = 2;
+   */
+  data: Struct[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewRowsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewRowsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "meta", kind: "message", T: MetricsViewColumn, repeated: true },
+    { no: 2, name: "data", kind: "message", T: Struct, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewRowsResponse {
+    return new MetricsViewRowsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewRowsResponse {
+    return new MetricsViewRowsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewRowsResponse {
+    return new MetricsViewRowsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewRowsResponse | PlainMessage<MetricsViewRowsResponse> | undefined, b: MetricsViewRowsResponse | PlainMessage<MetricsViewRowsResponse> | undefined): boolean {
+    return proto3.util.equals(MetricsViewRowsResponse, a, b);
   }
 }
 
@@ -1105,6 +1255,51 @@ export class MetricsViewColumn extends Message<MetricsViewColumn> {
 
   static equals(a: MetricsViewColumn | PlainMessage<MetricsViewColumn> | undefined, b: MetricsViewColumn | PlainMessage<MetricsViewColumn> | undefined): boolean {
     return proto3.util.equals(MetricsViewColumn, a, b);
+  }
+}
+
+/**
+ * InlineMeasure is a measure to inject in a metrics view query that is not defined in the underlying MetricsView
+ *
+ * @generated from message rill.runtime.v1.InlineMeasure
+ */
+export class InlineMeasure extends Message<InlineMeasure> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string expression = 2;
+   */
+  expression = "";
+
+  constructor(data?: PartialMessage<InlineMeasure>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.InlineMeasure";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InlineMeasure {
+    return new InlineMeasure().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): InlineMeasure {
+    return new InlineMeasure().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): InlineMeasure {
+    return new InlineMeasure().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: InlineMeasure | PlainMessage<InlineMeasure> | undefined, b: InlineMeasure | PlainMessage<InlineMeasure> | undefined): boolean {
+    return proto3.util.equals(InlineMeasure, a, b);
   }
 }
 

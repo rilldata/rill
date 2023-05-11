@@ -14,8 +14,10 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/client"
 	"github.com/rilldata/rill/runtime/drivers/github"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 )
 
 func (s *Service) createDeployment(ctx context.Context, proj *database.Project) (*database.Deployment, error) {
@@ -23,7 +25,7 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 	if proj.GithubURL == nil || proj.GithubInstallationID == nil || proj.ProdBranch == "" {
 		return nil, fmt.Errorf("cannot create project without github info")
 	}
-	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*proj.GithubURL, *proj.GithubInstallationID, proj.ProdBranch)
+	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*proj.GithubURL, *proj.GithubInstallationID, proj.Subpath, proj.ProdBranch)
 	if err != nil {
 		return nil, err
 	}
@@ -105,15 +107,18 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 type updateDeploymentOptions struct {
 	GithubURL            *string
 	GithubInstallationID *int64
+	Subpath              string
 	Branch               string
 	Variables            map[string]string
+	Reconcile            bool
 }
 
 func (s *Service) updateDeployment(ctx context.Context, depl *database.Deployment, opts *updateDeploymentOptions) error {
 	if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.Branch == "" {
 		return fmt.Errorf("cannot update deployment without github info")
 	}
-	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*opts.GithubURL, *opts.GithubInstallationID, opts.Branch)
+
+	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*opts.GithubURL, *opts.GithubInstallationID, opts.Subpath, opts.Branch)
 	if err != nil {
 		return err
 	}
@@ -153,6 +158,13 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 		}
 		depl.Branch = opts.Branch
 		depl.UpdatedOn = newDepl.UpdatedOn
+	}
+
+	if opts.Reconcile {
+		if err := s.triggerReconcile(ctx, depl); err != nil {
+			s.logger.Error("failed to trigger reconcile", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+			return err
+		}
 	}
 
 	return nil
@@ -206,10 +218,11 @@ func (s *Service) openRuntimeClient(host, audience string) (*client.Client, erro
 	return rt, nil
 }
 
-func githubRepoInfoForRuntime(githubURL string, installationID int64, branch string) (string, string, error) {
+func githubRepoInfoForRuntime(githubURL string, installationID int64, subPath, branch string) (string, string, error) {
 	dsn, err := json.Marshal(github.DSN{
 		GithubURL:      githubURL,
 		InstallationID: installationID,
+		Subpath:        subPath,
 		Branch:         branch,
 	})
 	if err != nil {

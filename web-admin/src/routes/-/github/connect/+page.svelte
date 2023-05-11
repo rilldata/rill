@@ -3,11 +3,11 @@
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import CtaButton from "../../../../components/calls-to-action/CTAButton.svelte";
-  import CtaContentContainer from "../../../../components/calls-to-action/CTAContentContainer.svelte";
-  import CtaHeader from "../../../../components/calls-to-action/CTAHeader.svelte";
-  import CtaLayoutContainer from "../../../../components/calls-to-action/CTALayoutContainer.svelte";
-  import CtaMessage from "../../../../components/calls-to-action/CTAMessage.svelte";
+  import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
+  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
+  import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
+  import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
+  import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import GithubRepoInline from "../../../../components/projects/GithubRepoInline.svelte";
 
   const urlParams = new URLSearchParams(window.location.search);

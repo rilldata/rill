@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/fatih/color"
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -17,7 +17,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 	renameCmd := &cobra.Command{
 		Use:   "rename",
 		Args:  cobra.NoArgs,
-		Short: "Rename",
+		Short: "Rename organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -71,7 +71,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Renamed organization\n")
+			cmdutil.SuccessPrinter("Renamed organization")
 			cmdutil.TablePrinter(toRow(updatedOrg.Organization))
 			return nil
 		},

@@ -17,7 +17,7 @@ func PingCmd(cfg *config.Config) *cobra.Command {
 		Use:   "ping",
 		Short: "Ping",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := client.New(runtimeURL, cfg.AdminToken())
+			client, err := client.New(runtimeURL, "")
 			if err != nil {
 				return err
 			}
@@ -33,7 +33,7 @@ func PingCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	pingCmd.Flags().StringVar(&runtimeURL, "base-url", "http://localhost:9010", "Base URL for the runtime")
+	pingCmd.Flags().StringVar(&runtimeURL, "url", "http://localhost:9010", "Base URL for the runtime")
 
 	return pingCmd
 }

@@ -3,12 +3,12 @@
   import { goto } from "$app/navigation";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { ADMIN_URL } from "@rilldata/web-admin/client/http-client";
-  import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import CtaButton from "../../../../../components/calls-to-action/CTAButton.svelte";
-  import CtaContentContainer from "../../../../../components/calls-to-action/CTAContentContainer.svelte";
-  import CtaHeader from "../../../../../components/calls-to-action/CTAHeader.svelte";
-  import CtaLayoutContainer from "../../../../../components/calls-to-action/CTALayoutContainer.svelte";
-  import CtaMessage from "../../../../../components/calls-to-action/CTAMessage.svelte";
+  import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
+  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
+  import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
+  import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
+  import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
+  import GithubFail from "@rilldata/web-common/components/icons/GithubFail.svelte";
   import GithubRepoInline from "../../../../../components/projects/GithubRepoInline.svelte";
   import GithubUserInline from "../../../../../components/projects/GithubUserInline.svelte";
 
@@ -33,16 +33,16 @@
 </script>
 
 <svelte:head>
-  <title>Connect to Github</title>
+  <title>Could not connect to Github</title>
 </svelte:head>
 
 {#if $user.data && $user.data.user}
   <CtaLayoutContainer>
     <CtaContentContainer>
-      <Github className="w-10 h-10 text-gray-900" />
-      <CtaHeader>Connect to Github</CtaHeader>
+      <GithubFail />
+      <CtaHeader>Could not connect to Github</CtaHeader>
       <CtaMessage>
-        Your authorised Github account <GithubUserInline {githubUsername} />
+        Your authorized Github account <GithubUserInline {githubUsername} />
         does not have access to <GithubRepoInline githubUrl={remote} />.
       </CtaMessage>
       <CtaMessage>

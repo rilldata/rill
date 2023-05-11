@@ -5,14 +5,14 @@
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { calendlyModalStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-  import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
+  import { projectShareStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
   //  import { getContext } from "svelte";
   //  import type { Tweened } from "svelte/motion";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -43,16 +43,8 @@
   $: displayName = $metaQuery.data?.label;
   $: isEditableDashboard = $featureFlags.readOnly === false;
 
-  function openCalendly() {
-    calendlyModalStore.set(metricViewName);
-    behaviourEvent.firePublishEvent(
-      metricViewName,
-      BehaviourEventMedium.Button,
-      MetricsEventSpace.Workspace,
-      MetricsEventScreenName.Dashboard,
-      MetricsEventScreenName.Dashboard,
-      true
-    );
+  function deployModal() {
+    projectShareStore.set(true);
   }
 </script>
 
@@ -88,10 +80,9 @@
             </TooltipContent>
           </Tooltip>
           <Tooltip distance={8}>
-            <Button on:click={openCalendly} type="primary">Publish</Button>
+            <Button on:click={deployModal} type="primary">Deploy</Button>
             <TooltipContent slot="tooltip-content">
-              Schedule time to chat with Rill about early access to hosted
-              dashboards.
+              Deploy this dashboard to Rill Cloud
             </TooltipContent>
           </Tooltip>
         </PanelCTA>

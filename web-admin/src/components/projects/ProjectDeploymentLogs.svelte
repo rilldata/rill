@@ -5,6 +5,8 @@
   export let project: string;
 
   $: proj = createAdminServiceGetProject(organization, project);
+  $: hasReadAccess = $proj.data?.projectPermissions?.readProdStatus;
+
   $: errors = parseLogs($proj.data?.prodDeployment?.logs);
 
   interface Error {
@@ -22,16 +24,22 @@
 </script>
 
 {#if $proj.isSuccess && errors}
-  {#if errors.length === 0}
-    <p class="text-gray-500 my-6">No logs available.</p>
-  {:else}
-    <!-- logs count -->
-    <div class="w-full px-12 py-3 border-b border-gray-200 font-semibold">
-      <span class="text-red-600">{errors.length} </span>
-      <span class="text-gray-800"> error(s)</span>
-    </div>
-    <!-- logs -->
-    <ul class="w-full">
+  <ul class="w-full">
+    {#if !hasReadAccess}
+      <li class="px-12 py-2 font-semibold text-gray-500 border-b">
+        You don't have permission to view project logs
+      </li>
+    {:else if errors.length === 0}
+      <li class="px-12 py-2 font-semibold text-gray-500 border-b">
+        No logs present
+      </li>
+    {:else}
+      <!-- logs -->
+      <li class="px-12 py-2 font-semibold text-gray-800 border-b">
+        This project has
+        <span class="text-red-600">{errors.length} </span>
+        {errors.length === 1 ? "error" : "errors"}
+      </li>
       {#each errors as error}
         <li
           class="flex gap-x-5 justify-between py-1 px-12 border-b border-gray-200 bg-red-50 font-mono"
@@ -44,6 +52,6 @@
           </span>
         </li>
       {/each}
-    </ul>
-  {/if}
+    {/if}
+  </ul>
 {/if}

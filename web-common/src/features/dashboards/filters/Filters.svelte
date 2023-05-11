@@ -15,13 +15,13 @@ The main feature-set component for dashboard filters
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type {
     MetricsViewDimension,
     MetricsViewFilterCond,
     V1MetricsViewFilter,
   } from "@rilldata/web-common/runtime-client";
   import { createQueryServiceMetricsViewToplist } from "@rilldata/web-common/runtime-client";
-  import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
@@ -192,7 +192,7 @@ The main feature-set component for dashboard filters
 </script>
 
 <section
-  class="pl-2  grid gap-x-2 items-start"
+  class="pl-2 grid gap-x-2 items-start"
   style:grid-template-columns="max-content auto"
   style:min-height={MIN_CONTAINER_HEIGHT}
 >

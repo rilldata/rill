@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"sort"
 	"time"
 
 	"github.com/rilldata/rill/admin"
@@ -21,116 +20,63 @@ import (
 func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.ListProjectsForOrganizationRequest) (*adminv1.ListProjectsForOrganizationResponse, error) {
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "org not found")
-		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
 	// If user has ManageProjects, return all projects
 	claims := auth.GetClaims(ctx)
+	var projs []*database.Project
 	if claims.OrganizationPermissions(ctx, org.ID).ManageProjects {
-		projs, err := s.admin.DB.FindProjectsForOrganization(ctx, org.ID)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-
-		dtos := make([]*adminv1.Project, len(projs))
-		for i, p := range projs {
-			dtos[i] = projToDTO(p, org.Name)
-		}
-
-		return &adminv1.ListProjectsForOrganizationResponse{
-			Projects: dtos,
-		}, nil
+		projs, err = s.admin.DB.FindProjectsForOrganization(ctx, org.ID, token.Val, pageSize)
+	} else if claims.OwnerType() == auth.OwnerTypeUser {
+		// Get projects the user is a (direct or group) member of (note: the user can be a member of a project in the org, without being a member of org - we call this an "outside member")
+		// plus all public projects
+		projs, err = s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID(), token.Val, pageSize)
+	} else {
+		projs, err = s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID, token.Val, pageSize)
 	}
-
-	// Get public projects
-	projsMap := map[string]*database.Project{}
-	projs, err := s.admin.DB.FindPublicProjectsInOrganization(ctx, org.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	for _, p := range projs {
-		projsMap[p.Name] = p
-	}
-
-	// Get projects the user is a (direct or group) member of (note: the user can be a member of a project in the org, without being a member of org - we call this an "outside member")
-	if claims.OwnerType() == auth.OwnerTypeUser {
-		projs, err := s.admin.DB.FindProjectsForOrgAndUser(ctx, org.ID, claims.OwnerID())
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-		for _, p := range projs {
-			projsMap[p.Name] = p
-		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// If no projects are public, and user is not an outside member of any projects, the projsMap is empty.
 	// If additionally, the user is not an org member, return permission denied (instead of an empty slice).
-	if len(projsMap) == 0 && !claims.OrganizationPermissions(ctx, org.ID).ReadProjects {
+	if len(projs) == 0 && !claims.OrganizationPermissions(ctx, org.ID).ReadProjects {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read projects")
 	}
 
-	// Convert map to slice
-	i := 0
-	dtos := make([]*adminv1.Project, len(projsMap))
-	for _, p := range projsMap {
-		dtos[i] = projToDTO(p, org.Name)
-		i++
+	nextToken := ""
+	if len(projs) >= pageSize {
+		nextToken = marshalPageToken(projs[len(projs)-1].Name)
 	}
 
-	// Sort output by project name
-	sort.Slice(dtos, func(i, j int) bool { return dtos[i].Name < dtos[j].Name })
-
-	return &adminv1.ListProjectsForOrganizationResponse{Projects: dtos}, nil
-}
-
-func (s *Server) ListProjectsForOrganizationAndGithubURL(ctx context.Context, req *adminv1.ListProjectsForOrganizationAndGithubURLRequest) (*adminv1.ListProjectsForOrganizationAndGithubURLResponse, error) {
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "org not found")
-		}
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+	dtos := make([]*adminv1.Project, len(projs))
+	for i, p := range projs {
+		dtos[i] = s.projToDTO(p, org.Name)
 	}
 
-	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ReadProjects {
-		return nil, status.Errorf(codes.PermissionDenied, "does not have permission to read projects in org %s", req.OrganizationName)
-	}
-
-	projects, err := s.admin.DB.FindProjectsByOrgAndGithubURL(ctx, org.ID, req.GithubUrl)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Errorf(codes.NotFound, "project with github url %s not found in org %s", req.GithubUrl, req.OrganizationName)
-		}
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	accessibleProjects := make([]*adminv1.Project, 0)
-	for _, p := range projects {
-		if claims.ProjectPermissions(ctx, p.OrganizationID, p.ID).ReadProject {
-			accessibleProjects = append(accessibleProjects, projToDTO(p, org.Name))
-		}
-	}
-
-	return &adminv1.ListProjectsForOrganizationAndGithubURLResponse{Projects: accessibleProjects}, nil
+	return &adminv1.ListProjectsForOrganizationResponse{
+		Projects:      dtos,
+		NextPageToken: nextToken,
+	}, nil
 }
 
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "org not found")
-		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "proj not found")
+			return nil, status.Error(codes.NotFound, "project not found")
 		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -148,17 +94,14 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 	if proj.ProdDeploymentID == nil || !permissions.ReadProd {
 		return &adminv1.GetProjectResponse{
-			Project:            projToDTO(proj, org.Name),
+			Project:            s.projToDTO(proj, org.Name),
 			ProjectPermissions: permissions,
 		}, nil
 	}
 
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "project does not have a production deployment")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	if !permissions.ReadProdStatus {
@@ -184,7 +127,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	}
 
 	return &adminv1.GetProjectResponse{
-		Project:            projToDTO(proj, org.Name),
+		Project:            s.projToDTO(proj, org.Name),
 		ProdDeployment:     deploymentToDTO(depl),
 		Jwt:                jwt,
 		ProjectPermissions: permissions,
@@ -201,10 +144,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	// Find parent org
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "org not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// Check permissions
@@ -254,6 +194,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		ProdOLAPDriver:       req.ProdOlapDriver,
 		ProdOLAPDSN:          req.ProdOlapDsn,
 		ProdSlots:            int(req.ProdSlots),
+		Subpath:              req.Subpath,
 		ProdBranch:           req.ProdBranch,
 		GithubURL:            &req.GithubUrl,
 		GithubInstallationID: &installationID,
@@ -263,25 +204,15 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Make project URL
-	projectURL, err := url.JoinPath(s.opts.FrontendURL, org.Name, proj.Name)
-	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("project url generation failed with error %s", err.Error()))
-	}
-
 	return &adminv1.CreateProjectResponse{
-		Project:    projToDTO(proj, org.Name),
-		ProjectUrl: projectURL,
+		Project: s.projToDTO(proj, org.Name),
 	}, nil
 }
 
 func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRequest) (*adminv1.DeleteProjectResponse, error) {
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "proj not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -301,10 +232,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	// Find project
 	proj, err := s.admin.DB.FindProject(ctx, req.Id)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "proj not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -325,7 +253,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		githubURL = &req.GithubUrl
 	}
 
-	proj, err = s.admin.UpdateProject(ctx, proj, &database.UpdateProjectOptions{
+	opts := &database.UpdateProjectOptions{
 		Name:                 req.Name,
 		Description:          req.Description,
 		Public:               req.Public,
@@ -334,22 +262,20 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		GithubURL:            githubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdDeploymentID:     proj.ProdDeploymentID,
-	})
+	}
+	proj, err = s.admin.UpdateProject(ctx, proj, opts, true)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &adminv1.UpdateProjectResponse{
-		Project: projToDTO(proj, req.OrganizationName),
+		Project: s.projToDTO(proj, req.OrganizationName),
 	}, nil
 }
 
 func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjectVariablesRequest) (*adminv1.GetProjectVariablesResponse, error) {
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "proj not found")
-		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -364,9 +290,6 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.UpdateProjectVariablesRequest) (*adminv1.UpdateProjectVariablesResponse, error) {
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "proj not found")
-		}
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -375,7 +298,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
 	}
 
-	proj, err = s.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+	opts := &database.UpdateProjectOptions{
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
@@ -384,7 +307,8 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdVariables:        req.Variables,
-	})
+	}
+	proj, err = s.admin.UpdateProject(ctx, proj, opts, false)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "variables updated failed with error %s", err.Error())
 	}
@@ -395,10 +319,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjectMembersRequest) (*adminv1.ListProjectMembersResponse, error) {
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "project not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -406,9 +327,20 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read project members")
 	}
 
-	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID)
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	members, err := s.admin.DB.FindProjectMemberUsers(ctx, proj.ID, token.Val, pageSize)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	nextToken := ""
+	if len(members) >= pageSize {
+		nextToken = marshalPageToken(members[len(members)-1].Email)
 	}
 
 	dtos := make([]*adminv1.Member, len(members))
@@ -416,29 +348,55 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 		dtos[i] = memberToPB(member)
 	}
 
+	return &adminv1.ListProjectMembersResponse{
+		Members:       dtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
+func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjectInvitesRequest) (*adminv1.ListProjectInvitesResponse, error) {
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProjectMembers {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to read project members")
+	}
+
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
 	// get pending user invites for this project
-	userInvites, err := s.admin.DB.FindProjectInvites(ctx, proj.ID)
+	userInvites, err := s.admin.DB.FindProjectInvites(ctx, proj.ID, token.Val, pageSize)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	nextToken := ""
+	if len(userInvites) >= pageSize {
+		nextToken = marshalPageToken(userInvites[len(userInvites)-1].Email)
+	}
+
 	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))
 	for i, invite := range userInvites {
 		invitesDtos[i] = inviteToPB(invite)
 	}
 
-	return &adminv1.ListProjectMembersResponse{
-		Members: dtos,
-		Invites: invitesDtos,
+	return &adminv1.ListProjectInvitesResponse{
+		Invites:       invitesDtos,
+		NextPageToken: nextToken,
 	}, nil
 }
 
 func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMemberRequest) (*adminv1.AddProjectMemberResponse, error) {
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "proj not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -461,10 +419,7 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 
 	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "role not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
@@ -489,9 +444,11 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 
 	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
 	if err != nil {
-		if errors.Is(err, database.ErrNotUnique) {
-			return nil, status.Error(codes.InvalidArgument, "user already member of org")
-		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	err = s.admin.Email.SendProjectAdditionNotification(req.Email, "", proj.Name, role.Name)
+	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -503,10 +460,7 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemoveProjectMemberRequest) (*adminv1.RemoveProjectMemberResponse, error) {
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "proj not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -516,22 +470,22 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			// check if there is a pending invite
-			invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
-			if err != nil {
-				if errors.Is(err, database.ErrNotFound) {
-					return nil, status.Error(codes.InvalidArgument, "user not found")
-				}
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			err = s.admin.DB.DeleteProjectInvite(ctx, invite.ID)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			return &adminv1.RemoveProjectMemberResponse{}, nil
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
 		}
-		return nil, status.Error(codes.Internal, err.Error())
+		// check if there is a pending invite
+		invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				return nil, status.Error(codes.InvalidArgument, "user not found")
+			}
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		err = s.admin.DB.DeleteProjectInvite(ctx, invite.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		return &adminv1.RemoveProjectMemberResponse{}, nil
 	}
 
 	err = s.admin.DB.DeleteProjectMemberUser(ctx, proj.ID, user.ID)
@@ -545,10 +499,7 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProjectMemberRoleRequest) (*adminv1.SetProjectMemberRoleResponse, error) {
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "proj not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -556,20 +507,29 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 		return nil, status.Error(codes.PermissionDenied, "not allowed to set project member roles")
 	}
 
-	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "user not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
 	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.InvalidArgument, "role not found")
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
 		}
-		return nil, status.Error(codes.Internal, err.Error())
+		// Check if there is a pending invite for this user
+		invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				return nil, status.Error(codes.InvalidArgument, "user not found")
+			}
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		err = s.admin.DB.UpdateProjectInviteRole(ctx, invite.ID, role.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		return &adminv1.SetProjectMemberRoleResponse{}, nil
 	}
 
 	err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID)
@@ -617,7 +577,9 @@ func (s *Server) getAndCheckGithubInstallationID(ctx context.Context, githubURL,
 	return installationID, nil
 }
 
-func projToDTO(p *database.Project, orgName string) *adminv1.Project {
+func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project {
+	frontendURL, _ := url.JoinPath(s.opts.FrontendURL, orgName, p.Name)
+
 	return &adminv1.Project{
 		Id:               p.ID,
 		Name:             p.Name,
@@ -632,6 +594,7 @@ func projToDTO(p *database.Project, orgName string) *adminv1.Project {
 		ProdBranch:       p.ProdBranch,
 		GithubUrl:        safeStr(p.GithubURL),
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
+		FrontendUrl:      frontendURL,
 		CreatedOn:        timestamppb.New(p.CreatedOn),
 		UpdatedOn:        timestamppb.New(p.UpdatedOn),
 	}

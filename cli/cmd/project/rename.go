@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/fatih/color"
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -16,7 +16,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 	renameCmd := &cobra.Command{
 		Use:   "rename",
 		Args:  cobra.NoArgs,
-		Short: "Rename",
+		Short: "Rename project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -29,18 +29,9 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			fmt.Println("Warn: Renaming an project would invalidate dashboard URLs")
 
 			if !cmd.Flags().Changed("project") {
-				resp, err := client.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{OrganizationName: cfg.Org})
+				projectNames, err := cmdutil.ProjectNamesByOrg(ctx, client, cfg.Org)
 				if err != nil {
 					return err
-				}
-
-				if len(resp.Projects) == 0 {
-					return fmt.Errorf("No projects found for org %q", cfg.Org)
-				}
-
-				var projectNames []string
-				for _, proj := range resp.Projects {
-					projectNames = append(projectNames, proj.Name)
 				}
 
 				name = cmdutil.SelectPrompt("Select project to rename", projectNames, "")
@@ -79,7 +70,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Renamed project \n")
+			cmdutil.SuccessPrinter("Renamed project")
 			cmdutil.TablePrinter(toRow(updatedProj.Project))
 
 			return nil

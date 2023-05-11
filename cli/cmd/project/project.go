@@ -3,8 +3,8 @@ package project
 import (
 	"context"
 
-	adminClient "github.com/rilldata/rill/admin/client"
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -14,7 +14,6 @@ import (
 func ProjectCmd(cfg *config.Config) *cobra.Command {
 	projectCmd := &cobra.Command{
 		Use:               "project",
-		Hidden:            !cfg.IsDev(),
 		Short:             "Manage projects",
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 	}
@@ -50,7 +49,7 @@ func toRow(o *adminv1.Project) *project {
 	}
 }
 
-func inferProjectName(ctx context.Context, client *adminClient.Client, org, path string) (string, error) {
+func inferProjectName(ctx context.Context, adminClient *client.Client, org, path string) (string, error) {
 	// Verify projectPath is a Git repo with remote on Github
 	_, githubURL, err := gitutil.ExtractGitRemote(path, "")
 	if err != nil {
@@ -58,7 +57,7 @@ func inferProjectName(ctx context.Context, client *adminClient.Client, org, path
 	}
 
 	// fetch project names for github url
-	names, err := cmdutil.ProjectNames(ctx, client, org, githubURL)
+	names, err := cmdutil.ProjectNamesByGithubURL(ctx, adminClient, org, githubURL)
 	if err != nil {
 		return "", err
 	}

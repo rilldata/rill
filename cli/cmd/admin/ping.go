@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -17,6 +17,9 @@ func PingCmd(cfg *config.Config) *cobra.Command {
 		Use:   "ping",
 		Short: "Ping",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Must set here to avoid flag parser overriding it globally
+			cfg.AdminURL = adminURL
+
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -33,7 +36,7 @@ func PingCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	pingCmd.Flags().StringVar(&adminURL, "base-url", "https://admin.rilldata.io", "Base URL for the admin API")
+	pingCmd.Flags().StringVar(&adminURL, "url", "https://admin.rilldata.com", "Base URL for the admin API")
 
 	return pingCmd
 }

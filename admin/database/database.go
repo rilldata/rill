@@ -47,8 +47,8 @@ type DB interface {
 	Migrate(ctx context.Context) error
 	FindMigrationVersion(ctx context.Context) (int, error)
 
-	FindOrganizations(ctx context.Context) ([]*Organization, error)
-	FindOrganizationsForUser(ctx context.Context, userID string) ([]*Organization, error)
+	FindOrganizations(ctx context.Context, afterName string, limit int) ([]*Organization, error)
+	FindOrganizationsForUser(ctx context.Context, userID string, afterName string, limit int) ([]*Organization, error)
 	FindOrganization(ctx context.Context, id string) (*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
 	CheckOrganizationHasOutsideUser(ctx context.Context, orgID, userID string) (bool, error)
@@ -58,13 +58,19 @@ type DB interface {
 	UpdateOrganization(ctx context.Context, id string, opts *UpdateOrganizationOptions) (*Organization, error)
 	UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
 
+	FindOrganizationAutoinviteDomain(ctx context.Context, orgID string, domain string) (*OrganizationAutoinviteDomain, error)
+	FindOrganizationAutoinviteDomainsForOrganization(ctx context.Context, orgID string) ([]*OrganizationAutoinviteDomain, error)
+	FindOrganizationAutoinviteDomainsForDomain(ctx context.Context, domain string) ([]*OrganizationAutoinviteDomain, error)
+	InsertOrganizationAutoinviteDomain(ctx context.Context, opts *InsertOrganizationAutoinviteDomainOptions) (*OrganizationAutoinviteDomain, error)
+	DeleteOrganizationAutoinviteDomain(ctx context.Context, id string) error
+
 	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
-	FindProjectsForOrganization(ctx context.Context, orgID string) ([]*Project, error)
-	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string) ([]*Project, error)
-	FindPublicProjectsInOrganization(ctx context.Context, orgID string) ([]*Project, error)
+	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
+	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
+	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID, afterProjectName string, limit int) ([]*Project, error)
+	FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*Project, error)
-	FindProjectsByOrgAndGithubURL(ctx context.Context, orgID string, githubURL string) ([]*Project, error)
 	FindProject(ctx context.Context, id string) (*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
@@ -99,41 +105,44 @@ type DB interface {
 	DeleteUserAuthToken(ctx context.Context, id string) error
 
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
-	FindDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
+	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
 	InsertDeviceAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*DeviceAuthCode, error)
 	DeleteDeviceAuthCode(ctx context.Context, deviceCode string) error
-	UpdateDeviceAuthCode(ctx context.Context, userCode, userID string, state DeviceAuthCodeState) error
+	UpdateDeviceAuthCode(ctx context.Context, id, userID string, state DeviceAuthCodeState) error
 
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
 	ResolveOrganizationRolesForUser(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
 	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
 
-	FindOrganizationMemberUsers(ctx context.Context, orgID string) ([]*Member, error)
+	FindOrganizationMemberUsers(ctx context.Context, orgID, afterEmail string, limit int) ([]*Member, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string) error
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
 
-	FindProjectMemberUsers(ctx context.Context, projectID string) ([]*Member, error)
+	FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*Member, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
 	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
+	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
 
-	FindOrganizationInvites(ctx context.Context, orgID string) ([]*Invite, error)
+	FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*Invite, error)
 	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
 	FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*OrganizationInvite, error)
 	InsertOrganizationInvite(ctx context.Context, email, orgID, roleID, invitedByID string) error
 	DeleteOrganizationInvite(ctx context.Context, id string) error
 	CountInvitesForOrganization(ctx context.Context, orgID string) (int, error)
+	UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error
 
-	FindProjectInvites(ctx context.Context, projectID string) ([]*Invite, error)
+	FindProjectInvites(ctx context.Context, projectID, afterEmail string, limit int) ([]*Invite, error)
 	FindProjectInvitesByEmail(ctx context.Context, userEmail string) ([]*ProjectInvite, error)
 	FindProjectInvite(ctx context.Context, projectID, userEmail string) (*ProjectInvite, error)
 	InsertProjectInvite(ctx context.Context, email, projectID, roleID, invitedByID string) error
 	DeleteProjectInvite(ctx context.Context, id string) error
+	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -196,6 +205,7 @@ type Project struct {
 	Region               string
 	GithubURL            *string   `db:"github_url"`
 	GithubInstallationID *int64    `db:"github_installation_id"`
+	Subpath              string    `db:"subpath"`
 	ProdBranch           string    `db:"prod_branch"`
 	ProdVariables        Variables `db:"prod_variables"`
 	ProdOLAPDriver       string    `db:"prod_olap_driver"`
@@ -226,6 +236,7 @@ type InsertProjectOptions struct {
 	Region               string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	Subpath              string
 	ProdBranch           string
 	ProdVariables        map[string]string
 	ProdOLAPDriver       string
@@ -301,6 +312,7 @@ type User struct {
 	CreatedOn           time.Time `db:"created_on"`
 	UpdatedOn           time.Time `db:"updated_on"`
 	QuotaSingleuserOrgs int       `db:"quota_singleuser_orgs"`
+	Superuser           bool      `db:"superuser"`
 }
 
 // InsertUserOptions defines options for inserting a new user
@@ -466,6 +478,21 @@ type Invite struct {
 type DeploymentsCount struct {
 	Deployments int
 	Slots       int
+}
+
+type OrganizationAutoinviteDomain struct {
+	ID        string
+	OrgID     string `db:"org_id"`
+	OrgRoleID string `db:"org_role_id"`
+	Domain    string
+	CreatedOn time.Time `db:"created_on"`
+	UpdatedOn time.Time `db:"updated_on"`
+}
+
+type InsertOrganizationAutoinviteDomainOptions struct {
+	OrgID     string `validate:"required"`
+	OrgRoleID string `validate:"required"`
+	Domain    string `validate:"domain"`
 }
 
 const (

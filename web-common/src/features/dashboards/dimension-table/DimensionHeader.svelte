@@ -54,7 +54,6 @@
 
 <div
   class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3"
-  style:height="50px"
 >
   <button
     class="flex flex-row items-center"

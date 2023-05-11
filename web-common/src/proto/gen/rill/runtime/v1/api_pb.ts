@@ -1858,6 +1858,13 @@ export enum ReconcileError_Code {
    * @generated from enum value: CODE_SOURCE = 5;
    */
   SOURCE = 5,
+
+  /**
+   * Error returned when unauthorised to access remote sources
+   *
+   * @generated from enum value: CODE_SOURCE_PERMISSION_DENIED = 6;
+   */
+  SOURCE_PERMISSION_DENIED = 6,
 }
 // Retrieve enum metadata with: proto3.getEnumType(ReconcileError_Code)
 proto3.util.setEnumType(ReconcileError_Code, "rill.runtime.v1.ReconcileError.Code", [
@@ -1867,6 +1874,7 @@ proto3.util.setEnumType(ReconcileError_Code, "rill.runtime.v1.ReconcileError.Cod
   { no: 3, name: "CODE_DEPENDENCY" },
   { no: 4, name: "CODE_OLAP" },
   { no: 5, name: "CODE_SOURCE" },
+  { no: 6, name: "CODE_SOURCE_PERMISSION_DENIED" },
 ]);
 
 /**

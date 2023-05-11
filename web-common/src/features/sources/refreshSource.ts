@@ -11,7 +11,7 @@ import type {
   V1PutFileAndReconcileResponse,
   V1RefreshAndReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
-import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
 import type {
   CreateBaseMutationResult,
   QueryClient,

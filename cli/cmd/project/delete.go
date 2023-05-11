@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -17,7 +17,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete",
 		Args:  cobra.NoArgs,
-		Short: "Delete",
+		Short: "Delete the project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -54,7 +54,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter(fmt.Sprintf("Deleted project: %v\n", name))
+			cmdutil.SuccessPrinter(fmt.Sprintf("Deleted project: %v", name))
 			return nil
 		},
 	}

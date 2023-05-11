@@ -7,18 +7,20 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
-	"github.com/rilldata/rill/cli/cmd/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
+	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 )
 
 func ConfigureCmd(cfg *config.Config) *cobra.Command {
-	var projectPath, projectName string
+	var projectPath, projectName, subPath string
+	var redploy bool
 
 	configureCommand := &cobra.Command{
 		Use:   "configure",
@@ -33,9 +35,14 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
+			fullProjectPath := projectPath
+			if subPath != "" {
+				fullProjectPath = filepath.Join(projectPath, subPath)
+			}
+
 			// Verify that the projectPath contains a Rill project
-			if !rillv1beta.HasRillProject(projectPath) {
-				fullpath, err := filepath.Abs(projectPath)
+			if !rillv1beta.HasRillProject(fullProjectPath) {
+				fullpath, err := filepath.Abs(fullProjectPath)
 				if err != nil {
 					return err
 				}
@@ -61,7 +68,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				// fetch project names for github url
-				names, err := cmdutil.ProjectNames(ctx, client, cfg.Org, githubURL)
+				names, err := cmdutil.ProjectNamesByGithubURL(ctx, client, cfg.Org, githubURL)
 				if err != nil {
 					return err
 				}
@@ -74,7 +81,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			variables, err := VariablesFlow(ctx, projectPath, nil)
+			variables, err := VariablesFlow(ctx, fullProjectPath, nil)
 			if err != nil {
 				return fmt.Errorf("failed to get variables %w", err)
 			}
@@ -105,36 +112,79 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to update variables %w", err)
 			}
+			cmdutil.SuccessPrinter("Updated project variables")
 
-			cmdutil.SuccessPrinter("Updated project variables\n")
+			if !cmd.Flags().Changed("redeploy") {
+				redploy = cmdutil.ConfirmPrompt("Do you want to redeploy project", "", redploy)
+			}
+
+			if redploy {
+				project, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: projectName})
+				if err != nil {
+					return err
+				}
+
+				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{DeploymentId: project.ProdDeployment.Id})
+				if err != nil {
+					warn.Printf("Redeploy trigger failed. Trigger redeploy again with `rill project reconcile --reset=true` if required.")
+					return err
+				}
+				cmdutil.SuccessPrinter("Redeploy triggered successfully.")
+			}
 			return nil
 		},
 	}
 
 	configureCommand.Flags().SortFlags = false
 	configureCommand.Flags().StringVar(&projectPath, "path", ".", "Project directory")
+	configureCommand.Flags().StringVar(&subPath, "subpath", "", "Project path to sub directory of a larger repository")
 	configureCommand.Flags().StringVar(&projectName, "project", "", "")
+	configureCommand.Flags().BoolVar(&redploy, "redeploy", false, "Redeploy project")
 
 	return configureCommand
 }
 
 func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telemetry) (map[string]string, error) {
-	connectors, err := rillv1beta.ExtractConnectors(ctx, projectPath)
+	connectorList, err := rillv1beta.ExtractConnectors(ctx, projectPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract connectors %w", err)
 	}
 
-	tel.Emit(telemetry.ActionDataAccessStart)
+	// collect all sources
+	srcs := make([]*connectors.Source, 0)
+	for _, c := range connectorList {
+		if !c.AnonymousAccess {
+			srcs = append(srcs, c.Sources...)
+		}
+	}
+	if len(srcs) == 0 {
+		return nil, nil
+	}
 
-	vars := make(map[string]string)
-	for _, c := range connectors {
+	tel.Emit(telemetry.ActionDataAccessStart)
+	fmt.Printf("Finish deploying your project by providing access to the data store. Rill does not have access to the following data sources:\n\n")
+	for _, src := range srcs {
+		if _, ok := src.Properties["path"]; ok {
+			// print URL wherever applicable
+			fmt.Printf(" - %s\n", src.Properties["path"])
+		} else {
+			fmt.Printf(" - %s\n", src.Name)
+		}
+	}
+
+	variables := make(map[string]string)
+	for _, c := range connectorList {
 		if c.AnonymousAccess {
 			// ignore asking for credentials if external source can be access anonymously
 			continue
 		}
 		connectorVariables := c.Spec.ConnectorVariables
 		if len(connectorVariables) != 0 {
-			fmt.Printf("\nConnector %s requires credentials\n\n", c.Type)
+			fmt.Printf("\nConnector %q requires credentials.\n", c.Type)
+			if c.Spec.ServiceAccountDocs != "" {
+				fmt.Printf("For instructions on how to create a service account, see: %s\n", c.Spec.ServiceAccountDocs)
+			}
+			fmt.Printf("\n")
 		}
 		if c.Spec.Help != "" {
 			fmt.Println(c.Spec.Help)
@@ -166,16 +216,16 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 			}
 
 			if answer != "" {
-				vars[prop.Key] = answer
+				variables[prop.Key] = answer
 			}
 		}
 	}
 
-	if len(connectors) > 0 {
+	if len(connectorList) > 0 {
 		fmt.Println("")
 	}
 
 	tel.Emit(telemetry.ActionDataAccessSuccess)
 
-	return vars, nil
+	return variables, nil
 }

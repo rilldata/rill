@@ -40,7 +40,6 @@
     getFilterForComparisonTable,
     updateFilterOnSearch,
   } from "./dimension-table-utils";
-  import DimensionContainer from "./DimensionContainer.svelte";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
 
@@ -152,7 +151,12 @@
     allTimeRangeQuery = useModelAllTimeRange(
       $runtime.instanceId,
       $metaQuery.data.model,
-      $metaQuery.data.timeDimension
+      $metaQuery.data.timeDimension,
+      {
+        query: {
+          enabled: !!$metaQuery.data.timeDimension,
+        },
+      }
     );
   }
 
@@ -377,28 +381,32 @@
 </script>
 
 {#if topListQuery}
-  <DimensionContainer>
-    <DimensionHeader
-      {metricViewName}
-      {dimensionName}
-      {excludeMode}
-      isFetching={$topListQuery?.isFetching}
-      on:search={(event) => {
-        searchText = event.detail;
-      }}
-    />
+  <div class="h-full flex flex-col" style:min-width="365px">
+    <div class="flex-none" style:height="50px">
+      <DimensionHeader
+        {metricViewName}
+        {dimensionName}
+        {excludeMode}
+        isFetching={$topListQuery?.isFetching}
+        on:search={(event) => {
+          searchText = event.detail;
+        }}
+      />
+    </div>
 
     {#if values && columns.length}
-      <DimensionTable
-        on:select-item={(event) => onSelectItem(event)}
-        on:sort={(event) => onSortByColumn(event)}
-        dimensionName={dimension?.name}
-        {columns}
-        {selectedValues}
-        rows={values}
-        {sortByColumn}
-        {excludeMode}
-      />
+      <div class="grow" style="overflow-y: hidden;">
+        <DimensionTable
+          on:select-item={(event) => onSelectItem(event)}
+          on:sort={(event) => onSortByColumn(event)}
+          dimensionName={dimension?.name}
+          {columns}
+          {selectedValues}
+          rows={values}
+          {sortByColumn}
+          {excludeMode}
+        />
+      </div>
     {/if}
-  </DimensionContainer>
+  </div>
 {/if}
