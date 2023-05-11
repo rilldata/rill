@@ -83,7 +83,11 @@ export function getFilterForComparisonTable(
 ) {
   if (!values || !values.length) return filterForDimension;
   const filterValues = values.map((v) => v[dimensionName]);
-  getFilterForComparsion(filterForDimension, dimensionName, filterValues);
+  return getFilterForComparsion(
+    filterForDimension,
+    dimensionName,
+    filterValues
+  );
 }
 
 /** Takes previous and current data to construct comparison data

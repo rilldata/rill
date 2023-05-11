@@ -14,6 +14,7 @@
     useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { convertFilters } from "@rilldata/web-common/features/dashboards/selectors.js";
   import {
     createQueryServiceMetricsViewToplist,
     createQueryServiceMetricsViewTotals,
@@ -119,7 +120,7 @@
     );
 
     let topListParams = {
-      dimensionName: dimensionName,
+      dimensionName: dimension.property,
       measureNames: selectedMeasureNames,
       limit: "250",
       offset: "0",
@@ -129,7 +130,7 @@
           ascending: sortDirection === "asc",
         },
       ],
-      filter: filterSet,
+      filter: convertFilters(filterSet, $metaQuery.data.dimensions),
     };
 
     if (hasTimeSeries) {
@@ -200,7 +201,7 @@
     );
 
     let comparisonParams = {
-      dimensionName: dimensionName,
+      dimensionName: dimension.property,
       measureNames: [sortByColumn],
       limit: "250",
       offset: "0",
@@ -210,7 +211,7 @@
           ascending: sortDirection === "asc",
         },
       ],
-      filter: comparisonFilterSet,
+      filter: convertFilters(comparisonFilterSet, $metaQuery.data.dimensions),
     };
 
     if (hasTimeSeries) {
@@ -279,7 +280,7 @@
 
     let columnNames: Array<string> = columnsMeta
       .map((c) => c.name)
-      .filter((name) => name !== dimension?.name);
+      .filter((name) => name !== dimension?.property);
 
     const selectedMeasure = allMeasures.find((m) => m.name === sortByColumn);
     const sortByColumnIndex = columnNames.indexOf(sortByColumn);
@@ -298,7 +299,7 @@
     }
 
     // Make dimension the first column
-    columnNames.unshift(dimension?.name);
+    columnNames.unshift(dimension?.property);
     measureNames = allMeasures.map((m) => m.name);
 
     columns = columnNames.map((columnName) => {
@@ -314,7 +315,7 @@
           enableResize: false,
           format: measure?.format,
         };
-      } else if (columnName === dimension?.name) {
+      } else if (columnName === dimension?.property) {
         // Handle dimension column
         return {
           name: columnName,
@@ -338,7 +339,7 @@
   }
 
   function onSelectItem(event) {
-    const label = values[event.detail][dimension?.name];
+    const label = values[event.detail][dimension?.property];
     cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilter(metricViewName, dimension?.name, label);
   }
@@ -399,7 +400,7 @@
         <DimensionTable
           on:select-item={(event) => onSelectItem(event)}
           on:sort={(event) => onSortByColumn(event)}
-          dimensionName={dimension?.name}
+          dimensionName={dimension?.property}
           {columns}
           {selectedValues}
           rows={values}
