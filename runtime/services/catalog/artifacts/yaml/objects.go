@@ -342,10 +342,13 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 	// backwards compatibility where name was used as property
 	for i, dimension := range apiMetrics.Dimensions {
 		if dimension.Name == "" {
-			dimension.Name = fmt.Sprintf("dimension_%d", i)
-		}
-		if dimension.Property == "" {
-			dimension.Property = dimension.Name
+			if dimension.Property == "" {
+				// if there is no name and property add dimension_<index> as name
+				dimension.Name = fmt.Sprintf("dimension_%d", i)
+			} else {
+				// else use property as name
+				dimension.Name = dimension.Property
+			}
 		}
 	}
 

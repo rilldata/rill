@@ -102,11 +102,13 @@ region: us-east-2
 					Dimensions: []*runtimev1.MetricsView_Dimension{
 						{
 							Name:        "dim0",
+							Property:    "prop0",
 							Label:       "Dim0_L",
 							Description: "Dim0_D",
 						},
 						{
 							Name:        "dim1",
+							Property:    "prop1",
 							Label:       "Dim1_L",
 							Description: "Dim1_D",
 						},
@@ -138,11 +140,13 @@ timeseries: time
 smallest_time_grain: day
 default_time_range: P1D
 dimensions:
-    - label: Dim0_L
-      property: dim0
+    - name: dim0
+      label: Dim0_L
+      property: prop0
       description: Dim0_D
-    - label: Dim1_L
-      property: dim1
+    - name: dim1
+      label: Dim1_L
+      property: prop1
       description: Dim1_D
 measures:
     - label: Mea0_L
@@ -322,6 +326,85 @@ measures: []
 			DefaultTimeRange:  "P1D",
 			Label:             "dashboard name",
 			Description:       "long description for dashboard",
+		},
+	}, readCatalog)
+}
+
+func TestDimensionAndMeasureNameAutoFill(t *testing.T) {
+	dir := t.TempDir()
+	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	require.NoError(t, err)
+	repoStore, _ := fileStore.RepoStore()
+	ctx := context.Background()
+
+	require.NoError(t, repoStore.Put(ctx, "test", "dashboards/MetricsView.yaml", bytes.NewReader([]byte(`display_name: dashboard name
+description: long description for dashboard
+model: Model
+timeseries: time
+smallest_time_grain: day
+default_time_range: P1D
+dimensions:
+    - label: Dim0_L
+      property: prop0
+      description: Dim0_D
+    - name: dim1
+      label: Dim1_L
+      description: Dim1_D
+measures:
+    - label: Mea0_L
+      name: measure_imp
+      expression: count(c0)
+      description: Mea0_D
+      format_preset: humanise
+    - label: Mea1_L
+      expression: avg(c1)
+      description: Mea1_D
+      format_preset: humanise
+`))))
+
+	readCatalog, err := artifacts.Read(ctx, repoStore, registryStore(t), "test", "dashboards/MetricsView.yaml")
+	require.NoError(t, err)
+	require.Equal(t, &drivers.CatalogEntry{
+		Name: "MetricsView",
+		Path: "dashboards/MetricsView.yaml",
+		Type: drivers.ObjectTypeMetricsView,
+		Object: &runtimev1.MetricsView{
+			Name:              "MetricsView",
+			Model:             "Model",
+			TimeDimension:     "time",
+			SmallestTimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+			DefaultTimeRange:  "P1D",
+			Label:             "dashboard name",
+			Description:       "long description for dashboard",
+			Dimensions: []*runtimev1.MetricsView_Dimension{
+				{
+					Name:        "prop0",
+					Property:    "prop0",
+					Label:       "Dim0_L",
+					Description: "Dim0_D",
+				},
+				{
+					Name:        "dim1",
+					Label:       "Dim1_L",
+					Description: "Dim1_D",
+				},
+			},
+			Measures: []*runtimev1.MetricsView_Measure{
+				{
+					Name:        "measure_imp",
+					Label:       "Mea0_L",
+					Expression:  "count(c0)",
+					Description: "Mea0_D",
+					Format:      "humanise",
+				},
+				{
+					Name:        "measure_1",
+					Label:       "Mea1_L",
+					Expression:  "avg(c1)",
+					Description: "Mea1_D",
+					Format:      "humanise",
+				},
+			},
 		},
 	}, readCatalog)
 }
