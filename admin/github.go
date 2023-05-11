@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v50/github"
+	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -33,6 +35,9 @@ type githubClient struct {
 	appID         int64
 	appPrivateKey string
 	appClient     *github.Client
+
+	cacheMu           sync.Mutex
+	installationCache *simplelru.LRU
 }
 
 // NewGithub returns a new client for connecting to Github.
@@ -43,10 +48,16 @@ func NewGithub(appID int64, appPrivateKey string) (Github, error) {
 	}
 	appClient := github.NewClient(&http.Client{Transport: atr})
 
+	lru, err := simplelru.NewLRU(100, nil)
+	if err != nil {
+		panic(err)
+	}
+
 	return &githubClient{
-		appID:         appID,
-		appPrivateKey: appPrivateKey,
-		appClient:     appClient,
+		appID:             appID,
+		appPrivateKey:     appPrivateKey,
+		appClient:         appClient,
+		installationCache: lru,
 	}, nil
 }
 
@@ -55,11 +66,21 @@ func (g *githubClient) AppClient() *github.Client {
 }
 
 func (g *githubClient) InstallationClient(installationID int64) (*github.Client, error) {
+	g.cacheMu.Lock()
+	defer g.cacheMu.Unlock()
+
+	val, ok := g.installationCache.Get(installationID)
+	if ok {
+		return val.(*github.Client), nil
+	}
+
 	itr, err := ghinstallation.New(http.DefaultTransport, g.appID, installationID, []byte(g.appPrivateKey))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github installation transport: %w", err)
 	}
 	installationClient := github.NewClient(&http.Client{Transport: itr})
+
+	g.installationCache.Add(installationID, installationClient)
 	return installationClient, nil
 }
 
