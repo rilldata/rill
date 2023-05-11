@@ -4,7 +4,6 @@
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
-  import { notifications } from "@rilldata/web-common/components/notifications";
   import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
@@ -56,15 +55,9 @@
   );
   let model: V1Model;
   $: model = $modelQuery.data?.entry?.model;
+  $: hasNoModelCatalog = !model;
 
   const createDashboardFromModel = (modelName: string) => {
-    if (!model) {
-      notifications.send({
-        message: "model is not valid",
-      });
-      return;
-    }
-
     overlay.set({
       title: "Creating a dashboard for " + modelName,
     });
@@ -135,12 +128,18 @@
 </script>
 
 <MenuItem
+  disabled={hasNoModelCatalog}
   icon
   on:select={() => createDashboardFromModel(modelName)}
   propogateSelect={false}
 >
   <Explore slot="icon" />
   Autogenerate dashboard
+  <svelte:fragment slot="description">
+    {#if hasNoModelCatalog}
+      Model has errors
+    {/if}
+  </svelte:fragment>
 </MenuItem>
 <Divider />
 <MenuItem
