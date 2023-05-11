@@ -540,11 +540,15 @@ Follow these steps to push your project to Github.
 	
 	git remote add origin https://github.com/your-account/your-repo.git
 	
-5. Push your repository
+5. Rename master branch to main
+	
+	git branch -M main
+
+6. Push your repository
 	
 	git push -u origin main
 	
-6. Deploy Rill to your repository
+7. Deploy Rill to your repository
 	
 	rill deploy
 	

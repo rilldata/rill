@@ -72,6 +72,6 @@ func inferProjectName(ctx context.Context, adminClient *client.Client, org, path
 type project struct {
 	Name         string `header:"name" json:"name"`
 	Public       bool   `header:"public" json:"public"`
-	GithubURL    string `header:"github" json:"github"`
+	GithubURL    string `header:"git url" json:"github"`
 	Organization string `header:"organization" json:"organization"`
 }
