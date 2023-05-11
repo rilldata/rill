@@ -18,6 +18,8 @@ const config = defineConfig({
       src: "/src", // trick to get absolute imports to work
       "@rilldata/web-local": "/src",
       "@rilldata/web-common": "/../web-common/src",
+      "@shoelace-style/shoelace/dist/internal":
+        "/../node_modules/@shoelace-style/shoelace/dist/internal",
     },
   },
   server: {
