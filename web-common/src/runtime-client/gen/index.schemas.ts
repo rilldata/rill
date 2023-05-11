@@ -134,6 +134,18 @@ export type QueryServiceMetricsViewRowsBody = {
   priority?: number;
 };
 
+export type QueryServiceMetricsViewComparisonToplistBody = {
+  dimensionName?: string;
+  measureNames?: string[];
+  baseTimeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  sort?: V1MetricsViewComparisonSort[];
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+};
+
 export type QueryServiceColumnDescriptiveStatisticsParams = {
   columnName?: string;
   priority?: number;
@@ -260,6 +272,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -292,12 +310,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_MONTH: "TIME_GRAIN_MONTH",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -345,16 +357,7 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
-export interface V1RenameFileAndReconcileRequest {
-  instanceId?: string;
-  fromPath?: string;
-  toPath?: string;
-  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
-  dry?: boolean;
-  strict?: boolean;
-}
-
-export interface V1RefreshAndReconcileResponse {
+export interface V1RenameFileAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
   errors?: V1ReconcileError[];
@@ -362,6 +365,15 @@ affected_paths without an error can be assumed to have been reconciled succesful
 executing the reconciliation. If changed_paths was empty, this will include all
 code artifacts in the repo. */
   affectedPaths?: string[];
+}
+
+export interface V1RenameFileAndReconcileRequest {
+  instanceId?: string;
+  fromPath?: string;
+  toPath?: string;
+  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
+  dry?: boolean;
+  strict?: boolean;
 }
 
 export interface V1RefreshAndReconcileRequest {
@@ -411,7 +423,7 @@ Only applicable if file_path is set. */
   endLocation?: ReconcileErrorCharLocation;
 }
 
-export interface V1RenameFileAndReconcileResponse {
+export interface V1RefreshAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
   errors?: V1ReconcileError[];
@@ -532,17 +544,17 @@ export interface V1MetricsViewTotalsResponse {
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
+export interface V1MetricsViewToplistResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewToplistResponseDataItem[];
+}
+
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
 }
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
-
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
 
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
@@ -578,14 +590,14 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
-export interface V1MetricsViewToplistResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewToplistResponseDataItem[];
-}
-
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
+}
+
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
 }
 
 export interface V1MetricsView {

@@ -513,6 +513,62 @@ paths:
           format: int32
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
+    post:
+      operationId: QueryService_MetricsViewComparisonToplist
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewComparisonToplistResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              dimensionName:
+                type: string
+              measureNames:
+                type: array
+                items:
+                  type: string
+              baseTimeRange:
+                $ref: '#/definitions/v1TimeRange'
+              comparisonTimeRange:
+                $ref: '#/definitions/v1TimeRange'
+              sort:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewComparisonSort'
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              limit:
+                type: string
+                format: int64
+              offset:
+                type: string
+                format: int64
+              priority:
+                type: integer
+                format: int32
+            title: Request message for QueryService.MetricsViewComparisonToplist
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/rows:
     post:
       summary: MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
