@@ -102,13 +102,13 @@ region: us-east-2
 					Dimensions: []*runtimev1.MetricsView_Dimension{
 						{
 							Name:        "dim0",
-							Property:    "prop0",
+							Column:      "prop0",
 							Label:       "Dim0_L",
 							Description: "Dim0_D",
 						},
 						{
 							Name:        "dim1",
-							Property:    "prop1",
+							Column:      "prop1",
 							Label:       "Dim1_L",
 							Description: "Dim1_D",
 						},
@@ -379,7 +379,7 @@ measures:
 			Dimensions: []*runtimev1.MetricsView_Dimension{
 				{
 					Name:        "prop0",
-					Property:    "prop0",
+					Column:      "prop0",
 					Label:       "Dim0_L",
 					Description: "Dim0_D",
 				},

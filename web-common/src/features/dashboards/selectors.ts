@@ -9,7 +9,7 @@ import {
   createRuntimeServiceListFiles,
   MetricsViewDimension,
 } from "@rilldata/web-common/runtime-client";
-import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
+import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type {
   CreateQueryOptions,
   QueryObserverResult,
@@ -246,12 +246,12 @@ export function convertFilters(
 
   return {
     include: filters.include.map((filter) => ({
-      name: dimensionMap.get(filter.name).property,
+      name: dimensionMap.get(filter.name).column,
       in: filter.in,
       like: filter.like,
     })),
     exclude: filters.exclude.map((filter) => ({
-      name: dimensionMap.get(filter.name).property,
+      name: dimensionMap.get(filter.name).column,
       in: filter.in,
       like: filter.like,
     })),

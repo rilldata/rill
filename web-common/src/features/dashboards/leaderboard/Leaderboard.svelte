@@ -134,7 +134,7 @@
     !$metaQuery?.isRefetching
   ) {
     let topListParams = {
-      dimensionName: dimension.property,
+      dimensionName: dimension.column,
       measureNames: [measure.name],
       limit: "250",
       offset: "0",
@@ -172,7 +172,7 @@
     values =
       $topListQuery?.data?.data.map((val) => ({
         value: val[measure?.name],
-        label: val[dimension?.property],
+        label: val[dimension?.column],
       })) ?? [];
     setLeaderboardValues(values);
   }
@@ -228,7 +228,7 @@
       values
         ?.slice(0, slice)
         ?.concat(selectedValuesThatAreBelowTheFold)
-        ?.map((v) => v[dimension.property]) ?? [];
+        ?.map((v) => v[dimension.column]) ?? [];
 
     const updatedFilters = getFilterForComparsion(
       filterForDimension,
@@ -237,7 +237,7 @@
     );
 
     let comparisonParams = {
-      dimensionName: dimension.property,
+      dimensionName: dimension.column,
       measureNames: [measure.name],
       limit: currentVisibleValues.length.toString(),
       offset: "0",
@@ -274,7 +274,7 @@
     comparisonValues =
       $comparisonTopListQuery?.data?.data?.map((val) => ({
         value: val[measure?.name],
-        label: val[dimension?.property],
+        label: val[dimension?.column],
       })) ?? [];
   }
 

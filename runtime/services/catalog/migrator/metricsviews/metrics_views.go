@@ -76,7 +76,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 
 	dimensionNames := make(map[string]bool)
 	for i, dimension := range mv.Dimensions {
-		if _, ok := dimensionNames[dimension.Name]; ok {
+		if _, ok := dimensionNames[strings.ToLower(dimension.Name)]; ok {
 			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
 				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
 				FilePath:     catalog.Path,
@@ -85,13 +85,13 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 			})
 			continue
 		}
-		dimensionNames[dimension.Name] = true
+		dimensionNames[strings.ToLower(dimension.Name)] = true
 
-		if _, ok := fieldsMap[strings.ToLower(dimension.Property)]; !ok {
+		if _, ok := fieldsMap[strings.ToLower(dimension.Column)]; !ok {
 			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
 				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
 				FilePath:     catalog.Path,
-				Message:      fmt.Sprintf("dimension not found: %s", dimension.Property),
+				Message:      fmt.Sprintf("dimension not found: %s", dimension.Column),
 				PropertyPath: []string{"Dimensions", strconv.Itoa(i)},
 			})
 		}
@@ -99,7 +99,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 
 	measureNames := make(map[string]bool)
 	for i, measure := range mv.Measures {
-		if _, ok := measureNames[measure.Name]; ok {
+		if _, ok := measureNames[strings.ToLower(measure.Name)]; ok {
 			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
 				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
 				FilePath:     catalog.Path,
@@ -108,7 +108,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 			})
 			continue
 		}
-		measureNames[measure.Name] = true
+		measureNames[strings.ToLower(measure.Name)] = true
 
 		err := validateMeasure(ctx, olap, model, measure)
 		if err != nil {

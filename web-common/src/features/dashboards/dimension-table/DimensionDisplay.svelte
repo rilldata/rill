@@ -120,7 +120,7 @@
     );
 
     let topListParams = {
-      dimensionName: dimension.property,
+      dimensionName: dimension.column,
       measureNames: selectedMeasureNames,
       limit: "250",
       offset: "0",
@@ -201,7 +201,7 @@
     );
 
     let comparisonParams = {
-      dimensionName: dimension.property,
+      dimensionName: dimension.column,
       measureNames: [sortByColumn],
       limit: "250",
       offset: "0",
@@ -280,7 +280,7 @@
 
     let columnNames: Array<string> = columnsMeta
       .map((c) => c.name)
-      .filter((name) => name !== dimension?.property);
+      .filter((name) => name !== dimension?.column);
 
     const selectedMeasure = allMeasures.find((m) => m.name === sortByColumn);
     const sortByColumnIndex = columnNames.indexOf(sortByColumn);
@@ -299,7 +299,7 @@
     }
 
     // Make dimension the first column
-    columnNames.unshift(dimension?.property);
+    columnNames.unshift(dimension?.column);
     measureNames = allMeasures.map((m) => m.name);
 
     columns = columnNames.map((columnName) => {
@@ -315,7 +315,7 @@
           enableResize: false,
           format: measure?.format,
         };
-      } else if (columnName === dimension?.property) {
+      } else if (columnName === dimension?.column) {
         // Handle dimension column
         return {
           name: columnName,
@@ -339,7 +339,7 @@
   }
 
   function onSelectItem(event) {
-    const label = values[event.detail][dimension?.property];
+    const label = values[event.detail][dimension?.column];
     cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilter(metricViewName, dimension?.name, label);
   }
@@ -400,7 +400,7 @@
         <DimensionTable
           on:select-item={(event) => onSelectItem(event)}
           on:sort={(event) => onSortByColumn(event)}
-          dimensionName={dimension?.property}
+          dimensionName={dimension?.column}
           {columns}
           {selectedValues}
           rows={values}

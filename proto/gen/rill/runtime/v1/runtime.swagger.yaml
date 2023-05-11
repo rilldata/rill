@@ -1371,7 +1371,7 @@ definitions:
         type: string
       description:
         type: string
-      property:
+      column:
         type: string
     title: Dimensions are columns to filter and group by
   MetricsViewFilterCond:
