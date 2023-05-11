@@ -3,6 +3,9 @@
 .vscode/
 .idea/
 build/
+web-local/build
+web-admin/build
+web-auth/build
 build-tools/
 cli/
 dist/
