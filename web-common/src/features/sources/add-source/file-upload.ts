@@ -139,9 +139,8 @@ export async function uploadFile(
 
 function reportFileErrors(invalidFiles: File[]) {
   notifications.send({
-    message: `${invalidFiles.length} file${
-      invalidFiles.length !== 1 ? "s are" : " is"
-    } invalid: \n${invalidFiles.map((file) => file.name).join("\n")}`,
+    message: `${invalidFiles.length} file${invalidFiles.length !== 1 ? "s are" : " is"
+      } invalid: \n${invalidFiles.map((file) => file.name).join("\n")}`,
     detail:
       "Only .parquet, .csv, .tsv, .json, and .ndjson files are supported, along with their gzipped (.gz) counterparts",
     options: {
@@ -183,7 +182,6 @@ export function openFileUploadDialog(multiple = true) {
     const focusHandler = () => {
       window.removeEventListener("focus", focusHandler);
       setTimeout(() => {
-        console.log("focus timeout");
         resolve([]);
       }, 1000);
     };
@@ -192,7 +190,6 @@ export function openFileUploadDialog(multiple = true) {
     input.accept = [...PossibleFileExtensions, ...PossibleZipExtensions].join(
       ","
     );
-    console.log(input);
     input.click();
   });
 }
