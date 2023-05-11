@@ -8,6 +8,8 @@
   import OrganizationList from "../components/home/OrganizationList.svelte";
   import WelcomeMessage from "../components/home/WelcomeMessage.svelte";
 
+  import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
+
   const user = createAdminServiceGetCurrentUser();
 
   const orgs = createAdminServiceListOrganizations(undefined, {
@@ -27,8 +29,8 @@
   <title>Home - Rill</title>
 </svelte:head>
 
-<div class="overflow-auto h-full">
-  <AuthRedirect>
+<AuthRedirect>
+  <VerticalScrollContainer>
     <section
       class="flex flex-col mx-8 my-8 sm:my-16 sm:mx-16 lg:mx-32 lg:my-24 2xl:mx-64 mx-auto"
     >
@@ -53,5 +55,5 @@
         {/if}
       </div>
     </section>
-  </AuthRedirect>
-</div>
+  </VerticalScrollContainer>
+</AuthRedirect>

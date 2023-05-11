@@ -6,6 +6,7 @@
     createAdminServiceGetOrganization,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
+  import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
 
   $: org = createAdminServiceGetOrganization($page.params.organization);
   $: projs = createAdminServiceListProjectsForOrganization(
@@ -29,7 +30,7 @@
   <title>{$page.params.organization} overview - Rill</title>
 </svelte:head>
 
-<div class="overflow-auto h-full">
+<VerticalScrollContainer>
   <section class="flex flex-col justify-center items-center h-3/5">
     {#if $org.isLoading || $projs.isLoading}
       <span>Loading...</span>
@@ -45,4 +46,4 @@
       <Button type="primary" on:click={openDocs}>Read the docs</Button>
     {/if}
   </section>
-</div>
+</VerticalScrollContainer>
