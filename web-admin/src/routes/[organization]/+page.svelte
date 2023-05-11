@@ -31,7 +31,7 @@
         {#if $projs.data.projects?.length === 0}
           <span
             >This organization has no projects yet. <a
-              href="https://docs.rilldata.com/quickstart/local"
+              href="https://docs.rilldata.com/quickstart/end-to-end"
               target="_blank"
               rel="noreferrer">See docs</a
             ></span
