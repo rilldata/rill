@@ -559,3 +559,289 @@ func TestServer_MetricsViewComparisonToplist_2_measures(t *testing.T) {
 	require.Equal(t, -1.0, rows[1].MeasureValues[1].DeltaAbs.GetNumberValue())
 	require.Equal(t, -0.5, rows[1].MeasureValues[1].DeltaRel.GetNumberValue())
 }
+
+/*
+Source:
+
+|id |timestamp               |publisher|domain   |bid_price|volume|impressions|ad words|clicks|device|
+|---|------------------------|---------|---------|---------|------|-----------|--------|------|------|
+|0  |2022-01-01T14:49:50.459Z|         |msn.com  |2        |4     |2          |cars    |      |iphone|
+|1  |2022-01-02T11:58:12.475Z|Yahoo    |yahoo.com|2        |4     |1          |cars    |1     |      |
+
+Measures:
+
+  - label: "Number of bids"
+    expression: count(*)
+    description: ""
+    format_preset: ""
+  - label: "Total volume"
+    expression: sum(volume)
+    description: ""
+    format_preset: ""
+  - label: "Total impressions"
+    expression: sum(impressions)
+  - label: "Total clicks"
+    expression: sum(clicks)
+*/
+func TestServer_MetricsViewComparisonToplist_no_comparison(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_2"},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_2",
+				Ascending:   false,
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Rows))
+
+	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+	require.Equal(t, 1, len(tr.Rows[1].MeasureValues))
+
+	require.Equal(t, "msn.com", tr.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, 2.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+
+	require.Equal(t, "yahoo.com", tr.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Rows[1].MeasureValues[0].BaseValue.GetNumberValue())
+}
+
+func TestServer_MetricsViewComparisonToplist_no_comparison_quotes(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "ad words",
+		MeasureNames:    []string{"measure_0"},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_0",
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Rows))
+
+	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+
+	require.Equal(t, "cars", tr.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, 2.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+}
+
+func TestServer_MetricsViewComparisonToplist_no_comparison_numeric_dim(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "numeric_dim",
+		MeasureNames:    []string{"measure_0"},
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Rows))
+	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+
+	require.Equal(t, float64(1), tr.Rows[0].DimensionValue.GetNumberValue())
+	require.Equal(t, 2.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+}
+
+func Ignore_TestServer_MetricsViewComparisonToplist_no_comparison_HugeInt(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "id",
+		MeasureNames:    []string{"measure_2"},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_2",
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Rows))
+
+	require.Equal(t, 2, len(tr.Rows[0].MeasureValues))
+	require.Equal(t, 2, len(tr.Rows[1].MeasureValues))
+
+	require.Equal(t, "170141183460469231731687303715884105727", tr.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+
+	require.Equal(t, "170141183460469231731687303715884105726", tr.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, 2.0, tr.Rows[1].MeasureValues[0].BaseValue.GetNumberValue())
+}
+
+func TestServer_MetricsViewComparisonToplist_no_comparison_asc(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_2"},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_2",
+				Ascending:   true,
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Rows))
+
+	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+	require.Equal(t, 1, len(tr.Rows[1].MeasureValues))
+
+	require.Equal(t, "yahoo.com", tr.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+
+	require.Equal(t, "msn.com", tr.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, 2.0, tr.Rows[1].MeasureValues[0].BaseValue.GetNumberValue())
+}
+
+func TestServer_MetricsViewComparisonToplist_no_comparison_nulls_last(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_3"},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_3",
+				Ascending:   true,
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Rows))
+
+	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+	require.Equal(t, 1, len(tr.Rows[1].MeasureValues))
+
+	require.Equal(t, "yahoo.com", tr.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+
+	require.Equal(t, "msn.com", tr.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, structpb.NullValue(0), tr.Rows[1].MeasureValues[0].BaseValue.GetNullValue())
+
+	tr, err = server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_3"},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_3",
+				Ascending:   false,
+			},
+		},
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Rows))
+
+	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+	require.Equal(t, 1, len(tr.Rows[1].MeasureValues))
+
+	require.Equal(t, "yahoo.com", tr.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+
+	require.Equal(t, "msn.com", tr.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, structpb.NullValue(0), tr.Rows[1].MeasureValues[0].BaseValue.GetNullValue())
+}
+
+func TestServer_MetricsViewComparisonToplist_no_comparison_asc_limit(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_2"},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_2",
+				Ascending:   true,
+			},
+		},
+		Limit: 1,
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Rows))
+	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+
+	require.Equal(t, "yahoo.com", tr.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+}
+
+func TestServer_MetricsViewComparisonToplist_no_comparison_2measures(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_0", "measure_2"},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_0",
+				Ascending:   true,
+			},
+			{
+				MeasureName: "measure_2",
+				Ascending:   true,
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Rows))
+	require.Equal(t, 2, len(tr.Rows[0].MeasureValues))
+
+	require.Equal(t, "yahoo.com", tr.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, 1.0, tr.Rows[0].MeasureValues[1].BaseValue.GetNumberValue())
+
+	require.Equal(t, "msn.com", tr.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Rows[1].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, 2.0, tr.Rows[1].MeasureValues[1].BaseValue.GetNumberValue())
+}
+
+func TestServer_MetricsViewComparisonToplist_no_comparison_complete_source_sanity_test(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_0"},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_0",
+				Ascending:   true,
+			},
+		},
+		Filter: &runtimev1.MetricsViewFilter{
+			Exclude: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "publisher",
+					In: []*structpb.Value{
+						structpb.NewStringValue("Yahoo"),
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.True(t, len(tr.Rows) > 1)
+	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+}
