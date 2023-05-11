@@ -195,13 +195,14 @@ message MetricsViewComparisonToplistRequest {
   string metrics_view_name = 2;
   string dimension_name = 3;
   repeated string measure_names = 4;
-  TimeRange base_time_range = 5;
-  TimeRange comparison_time_range = 6;
-  repeated MetricsViewComparisonSort sort = 7;
-  MetricsViewFilter filter = 8;
-  int64 limit = 9;
-  int64 offset = 10;
-  int32 priority = 11;
+  repeated InlineMeasure inline_measures = 5;
+  TimeRange base_time_range = 6;
+  TimeRange comparison_time_range = 7;
+  repeated MetricsViewComparisonSort sort = 8;
+  MetricsViewFilter filter = 9;
+  int64 limit = 10;
+  int64 offset = 11;
+  int32 priority = 12;
 }
 
 // Response message for QueryService.MetricsViewComparisonToplist
