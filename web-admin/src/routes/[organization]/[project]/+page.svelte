@@ -14,7 +14,7 @@
   <title>{project} overview - Rill</title>
 </svelte:head>
 
-<div class="flex flex-col items-center">
+<div class="flex flex-col items-center overflow-auto h-full">
   <div
     class="flex flex-row border-b border-gray-200 w-full px-12 py-5 gap-x-10"
   >
