@@ -183,6 +183,11 @@ export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest
   measureNames: string[] = [];
 
   /**
+   * @generated from field: repeated rill.runtime.v1.InlineMeasure inline_measures = 12;
+   */
+  inlineMeasures: InlineMeasure[] = [];
+
+  /**
    * @generated from field: google.protobuf.Timestamp time_start = 5;
    */
   timeStart?: Timestamp;
@@ -229,6 +234,7 @@ export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "dimension_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 12, name: "inline_measures", kind: "message", T: InlineMeasure, repeated: true },
     { no: 5, name: "time_start", kind: "message", T: Timestamp },
     { no: 6, name: "time_end", kind: "message", T: Timestamp },
     { no: 7, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
@@ -322,6 +328,11 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   measureNames: string[] = [];
 
   /**
+   * @generated from field: repeated rill.runtime.v1.InlineMeasure inline_measures = 9;
+   */
+  inlineMeasures: InlineMeasure[] = [];
+
+  /**
    * @generated from field: google.protobuf.Timestamp time_start = 4;
    */
   timeStart?: Timestamp;
@@ -357,6 +368,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 9, name: "inline_measures", kind: "message", T: InlineMeasure, repeated: true },
     { no: 4, name: "time_start", kind: "message", T: Timestamp },
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 6, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
@@ -448,6 +460,11 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
   measureNames: string[] = [];
 
   /**
+   * @generated from field: repeated rill.runtime.v1.InlineMeasure inline_measures = 9;
+   */
+  inlineMeasures: InlineMeasure[] = [];
+
+  /**
    * @generated from field: google.protobuf.Timestamp time_start = 4;
    */
   timeStart?: Timestamp;
@@ -478,6 +495,7 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 9, name: "inline_measures", kind: "message", T: InlineMeasure, repeated: true },
     { no: 4, name: "time_start", kind: "message", T: Timestamp },
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 7, name: "filter", kind: "message", T: MetricsViewFilter },
@@ -865,6 +883,51 @@ export class MetricsViewColumn extends Message<MetricsViewColumn> {
 
   static equals(a: MetricsViewColumn | PlainMessage<MetricsViewColumn> | undefined, b: MetricsViewColumn | PlainMessage<MetricsViewColumn> | undefined): boolean {
     return proto3.util.equals(MetricsViewColumn, a, b);
+  }
+}
+
+/**
+ * InlineMeasure is a measure to inject in a metrics view query that is not defined in the underlying MetricsView
+ *
+ * @generated from message rill.runtime.v1.InlineMeasure
+ */
+export class InlineMeasure extends Message<InlineMeasure> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string expression = 2;
+   */
+  expression = "";
+
+  constructor(data?: PartialMessage<InlineMeasure>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.InlineMeasure";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InlineMeasure {
+    return new InlineMeasure().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): InlineMeasure {
+    return new InlineMeasure().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): InlineMeasure {
+    return new InlineMeasure().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: InlineMeasure | PlainMessage<InlineMeasure> | undefined, b: InlineMeasure | PlainMessage<InlineMeasure> | undefined): boolean {
+    return proto3.util.equals(InlineMeasure, a, b);
   }
 }
 

@@ -21,7 +21,6 @@
             jwt: data?.jwt,
           };
         },
-        placeholderData: undefined,
       },
     }
   );

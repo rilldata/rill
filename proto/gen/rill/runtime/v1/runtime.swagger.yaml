@@ -600,6 +600,11 @@ paths:
                 type: array
                 items:
                   type: string
+              inlineMeasures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -652,6 +657,11 @@ paths:
                 type: array
                 items:
                   type: string
+              inlineMeasures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -711,6 +721,11 @@ paths:
                 type: array
                 items:
                   type: string
+              inlineMeasures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -1767,6 +1782,14 @@ definitions:
       - HISTOGRAM_METHOD_FD
       - HISTOGRAM_METHOD_DIAGNOSTIC
     default: HISTOGRAM_METHOD_UNSPECIFIED
+  v1InlineMeasure:
+    type: object
+    properties:
+      name:
+        type: string
+      expression:
+        type: string
+    title: InlineMeasure is a measure to inject in a metrics view query that is not defined in the underlying MetricsView
   v1Instance:
     type: object
     properties:

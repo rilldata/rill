@@ -11,7 +11,7 @@
       case "primary-outline":
         return "border-blue-300 text-blue-600 hover:bg-slate-100 hover:border-gray-100";
       case "secondary":
-        return "border-gray-300 text-gray-600 hover:bg-slate-100";
+        return "text-slate-600 border-slate-300 hover:bg-slate-100";
     }
   }
 
@@ -27,7 +27,7 @@
 </script>
 
 <button
-  class="text-sm w-full max-w-[400px] h-10 border rounded-sm {getVariantClass(
+  class="text-sm font-medium w-full max-w-[400px] h-10 border rounded-sm {getVariantClass(
     variant
   )} {disabled && disabledClasses}"
   on:click={handleClick}

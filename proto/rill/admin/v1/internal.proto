@@ -1,0 +1,6 @@
+syntax = "proto3";
+package rill.admin.v1;
+
+message StringPageToken {
+    string val = 1;
+}
