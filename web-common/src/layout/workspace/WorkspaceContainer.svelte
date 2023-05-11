@@ -98,6 +98,7 @@
 </div>
 <div
   class="box-border fixed {bgClass}"
+  style:height="100%"
   style:top
   style:left="{($navigationWidth || 0) * (1 - $navVisibilityTween)}px"
   style:padding-left="{$navVisibilityTween * SIDE_PAD}px"
