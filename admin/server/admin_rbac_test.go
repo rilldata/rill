@@ -3,10 +3,11 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/rilldata/rill/admin/server/cookies"
 	"net"
 	"strconv"
 	"testing"
+
+	"github.com/rilldata/rill/admin/server/cookies"
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
@@ -58,7 +59,7 @@ func TestAdmin_RBAC(t *testing.T) {
 	require.NoError(t, err)
 	emailClient := email.New(sender, "")
 
-	github := admin.NewMockGithubClient()
+	github := admin.NewMockGithub()
 
 	issuer, err := runtimeauth.NewEphemeralIssuer("")
 	require.NoError(t, err)
