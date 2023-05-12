@@ -5,7 +5,7 @@
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
     "generate:runtime-client": "orval",
-    "test": "jest",
+    "test": "vitest run",
     "test:watch": "npm run test -- --watch"
   },
   "devDependencies": {

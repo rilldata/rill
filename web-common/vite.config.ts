@@ -1,3 +1,4 @@
+import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
@@ -8,5 +9,6 @@ export default defineConfig({
       "@rilldata/web-common": "/../web-common/src",
     },
   },
+  plugins: [svelte()],
   test: {},
 });
