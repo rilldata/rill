@@ -9,7 +9,9 @@
 <button
   {disabled}
   class:bg-gray-200={active}
-  class="px-3 py-2 rounded grid gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 items-center"
+  class="px-3 py-2 rounded grid gap-x-2 {active
+    ? 'hover:bg-gray-200'
+    : ''} {active ? 'hover:dark:bg-gray-600' : ''} items-center"
   style:grid-template-columns="{$$slots["icon"] ? "max-content" : ""}
   max-content
   {$$slots["context"] ? "max-content" : ""}
