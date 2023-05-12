@@ -1,5 +1,5 @@
 import { Duration, Interval } from "luxon";
-import { transformDate } from "../transforms";
+import { getTimeWidth, transformDate } from "../transforms";
 import {
   RelativeTimeTransformation,
   TimeComparisonOption,
@@ -82,11 +82,41 @@ export function isRangeLargerThanDuration(
   );
 }
 
+// Checks if last period is a duplicate comparison.
+function isComparisonDuplicate(
+  start: Date,
+  end: Date,
+  comparison: TimeComparisonOption
+) {
+  if (comparison === TimeComparisonOption.CONTIGUOUS) {
+    const lastPeriod = getComparisonRange(
+      start,
+      end,
+      TimeComparisonOption.CONTIGUOUS
+    );
+
+    const lastPeriodWidth = getTimeWidth(lastPeriod.start, lastPeriod.end);
+
+    const comparisonOptions = [...Object.values(TimeComparisonOption)].filter(
+      (option) =>
+        option !== TimeComparisonOption.CUSTOM &&
+        option !== TimeComparisonOption.CONTIGUOUS
+    );
+
+    return comparisonOptions.some(
+      (option) => Duration.fromISO(option).toMillis() - lastPeriodWidth === 0
+    );
+  } else {
+    return false;
+  }
+}
+
 /** get the available comparison options for a selected time range + the boundary range.
  * This is used to populate the comparison dropdown.
  * We need to check boundary conditions on all sides, but ultimately the two checks per comparison option are:
  * 1. is the comparison range inside the bounds?
  * 2. is the comparison range larger than the selected time range?
+ * 3. is the last period a duplicate?
  */
 export function getAvailableComparisonsForTimeRange(
   // the earliest and latest possible Dates for this data set
@@ -115,7 +145,8 @@ export function getAvailableComparisonsForTimeRange(
         // treat a custom comparison as contiguous.
         comparison
       ) &&
-        !isRangeLargerThanDuration(start, end, comparison))
+        !isRangeLargerThanDuration(start, end, comparison) &&
+        !isComparisonDuplicate(start, end, comparison))
     );
   });
   return comparisons;
