@@ -818,6 +818,40 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 
 	// no validation rules for DimensionName
 
+	for idx, item := range m.GetInlineMeasures() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewComparisonToplistRequestValidationError{
+					field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if all {
 		switch v := interface{}(m.GetBaseTimeRange()).(type) {
 		case interface{ ValidateAll() error }:

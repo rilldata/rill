@@ -16,6 +16,7 @@ type MetricsViewComparisonToplist struct {
 	MetricsViewName     string                                 `json:"metrics_view_name,omitempty"`
 	DimensionName       string                                 `json:"dimension_name,omitempty"`
 	MeasureNames        []string                               `json:"measure_names,omitempty"`
+	InlineMeasures      []*runtimev1.InlineMeasure             `json:"inline_measures,omitempty"`
 	BaseTimeRange       *runtimev1.TimeRange                   `json:"base_time_range,omitempty"`
 	ComparisonTimeRange *runtimev1.TimeRange                   `json:"comparison_time_range,omitempty"`
 	Limit               int64                                  `json:"limit,omitempty"`
@@ -227,26 +228,21 @@ func timeRangeClause(timeRange *runtimev1.TimeRange, td string, args *[]any) str
 }
 
 func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
+	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
+	if err != nil {
+		return "", nil, err
+	}
+
 	dimName := safeName(q.DimensionName)
 	selectCols := []string{dimName}
 	measureMap := make(map[string]int)
-	for i, n := range q.MeasureNames {
-		measureMap[n] = i
-		found := false
-		for _, m := range mv.Measures {
-			if m.Name == n {
-				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
-				selectCols = append(selectCols, expr)
-				found = true
-				break
-			}
-		}
-		if !found {
-			return "", nil, fmt.Errorf("measure does not exist: '%s'", n)
-		}
+	for i, m := range ms {
+		measureMap[m.Name] = i
+		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+		selectCols = append(selectCols, expr)
 	}
-	selectClause := strings.Join(selectCols, ", ")
 
+	selectClause := strings.Join(selectCols, ", ")
 	baseWhereClause := "1=1"
 
 	args := []any{}
@@ -297,32 +293,28 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 }
 
 func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
+	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
+	if err != nil {
+		return "", nil, err
+	}
+
 	dimName := safeName(q.DimensionName)
 	selectCols := []string{dimName}
 	finalSelectCols := []string{}
 	measureMap := make(map[string]int)
-	for i, n := range q.MeasureNames {
-		measureMap[n] = i
-		found := false
-		for _, m := range mv.Measures {
-			if m.Name == n {
-				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
-				selectCols = append(selectCols, expr)
-				finalSelectCols = append(
-					finalSelectCols,
-					fmt.Sprintf(
-						"base.%[1]s, comparison.%[1]s, comparison.%[1]s - base.%[1]s, (comparison.%[1]s - base.%[1]s)/base.%[1]s::DOUBLE",
-						m.Name,
-					),
-				)
-				found = true
-				break
-			}
-		}
-		if !found {
-			return "", nil, fmt.Errorf("measure does not exist: '%s'", n)
-		}
+	for i, m := range ms {
+		measureMap[m.Name] = i
+		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+		selectCols = append(selectCols, expr)
+		finalSelectCols = append(
+			finalSelectCols,
+			fmt.Sprintf(
+				"base.%[1]s, comparison.%[1]s, comparison.%[1]s - base.%[1]s, (comparison.%[1]s - base.%[1]s)/base.%[1]s::DOUBLE",
+				m.Name,
+			),
+		)
 	}
+
 	subSelectClause := strings.Join(selectCols, ", ")
 	finalSelectClause := strings.Join(finalSelectCols, ", ")
 

@@ -371,37 +371,42 @@ export class MetricsViewComparisonToplistRequest extends Message<MetricsViewComp
   measureNames: string[] = [];
 
   /**
-   * @generated from field: rill.runtime.v1.TimeRange base_time_range = 5;
+   * @generated from field: repeated rill.runtime.v1.InlineMeasure inline_measures = 5;
+   */
+  inlineMeasures: InlineMeasure[] = [];
+
+  /**
+   * @generated from field: rill.runtime.v1.TimeRange base_time_range = 6;
    */
   baseTimeRange?: TimeRange;
 
   /**
-   * @generated from field: rill.runtime.v1.TimeRange comparison_time_range = 6;
+   * @generated from field: rill.runtime.v1.TimeRange comparison_time_range = 7;
    */
   comparisonTimeRange?: TimeRange;
 
   /**
-   * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonSort sort = 7;
+   * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonSort sort = 8;
    */
   sort: MetricsViewComparisonSort[] = [];
 
   /**
-   * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 8;
+   * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 9;
    */
   filter?: MetricsViewFilter;
 
   /**
-   * @generated from field: int64 limit = 9;
+   * @generated from field: int64 limit = 10;
    */
   limit = protoInt64.zero;
 
   /**
-   * @generated from field: int64 offset = 10;
+   * @generated from field: int64 offset = 11;
    */
   offset = protoInt64.zero;
 
   /**
-   * @generated from field: int32 priority = 11;
+   * @generated from field: int32 priority = 12;
    */
   priority = 0;
 
@@ -417,13 +422,14 @@ export class MetricsViewComparisonToplistRequest extends Message<MetricsViewComp
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "dimension_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 5, name: "base_time_range", kind: "message", T: TimeRange },
-    { no: 6, name: "comparison_time_range", kind: "message", T: TimeRange },
-    { no: 7, name: "sort", kind: "message", T: MetricsViewComparisonSort, repeated: true },
-    { no: 8, name: "filter", kind: "message", T: MetricsViewFilter },
-    { no: 9, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 10, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "inline_measures", kind: "message", T: InlineMeasure, repeated: true },
+    { no: 6, name: "base_time_range", kind: "message", T: TimeRange },
+    { no: 7, name: "comparison_time_range", kind: "message", T: TimeRange },
+    { no: 8, name: "sort", kind: "message", T: MetricsViewComparisonSort, repeated: true },
+    { no: 9, name: "filter", kind: "message", T: MetricsViewFilter },
+    { no: 10, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 11, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 12, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonToplistRequest {

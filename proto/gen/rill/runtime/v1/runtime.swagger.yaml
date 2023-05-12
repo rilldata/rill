@@ -546,6 +546,11 @@ paths:
                 type: array
                 items:
                   type: string
+              inlineMeasures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1InlineMeasure'
               baseTimeRange:
                 $ref: '#/definitions/v1TimeRange'
               comparisonTimeRange:

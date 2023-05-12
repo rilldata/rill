@@ -47,10 +47,16 @@ func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev
 		return nil, ErrForbidden
 	}
 
+	err := validateInlineMeasures(req.InlineMeasures)
+	if err != nil {
+		return nil, err
+	}
+
 	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName:     req.MetricsViewName,
 		DimensionName:       req.DimensionName,
 		MeasureNames:        req.MeasureNames,
+		InlineMeasures:      req.InlineMeasures,
 		BaseTimeRange:       req.BaseTimeRange,
 		ComparisonTimeRange: req.ComparisonTimeRange,
 		Limit:               req.Limit,
@@ -58,7 +64,7 @@ func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev
 		Sort:                req.Sort,
 		Filter:              req.Filter,
 	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}

@@ -137,6 +137,7 @@ export type QueryServiceMetricsViewRowsBody = {
 export type QueryServiceMetricsViewComparisonToplistBody = {
   dimensionName?: string;
   measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
   baseTimeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
   sort?: V1MetricsViewComparisonSort[];
