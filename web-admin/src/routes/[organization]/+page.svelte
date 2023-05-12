@@ -12,7 +12,7 @@
 
   $: org = createAdminServiceGetOrganization(orgName);
   $: projs = createAdminServiceListProjectsForOrganization(orgName, undefined, {
-    query: { enabled: !!$org.data.organization },
+    query: { enabled: !!$org.data?.organization },
   });
 </script>
 
