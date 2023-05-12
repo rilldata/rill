@@ -177,7 +177,9 @@
       </span>
     </MenuItem>
     {#if latestWindowTimeRanges}
-      <Divider />
+      {#if latestWindowTimeRanges?.length}
+        <Divider />
+      {/if}
 
       {#each latestWindowTimeRanges as timeRange}
         <MenuItem

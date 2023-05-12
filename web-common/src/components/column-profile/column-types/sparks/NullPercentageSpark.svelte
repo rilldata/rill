@@ -12,10 +12,10 @@
   export let type: string;
   export let nullCount: number;
   export let totalRows: number;
-  export let isFetching: boolean;
 
   let percentage: number;
-  $: if (!isFetching) percentage = nullCount / totalRows;
+  $: if (nullCount !== undefined && totalRows !== undefined)
+    percentage = nullCount / totalRows;
   $: innerType = isNested(type) ? "STRUCT" : type;
 </script>
 

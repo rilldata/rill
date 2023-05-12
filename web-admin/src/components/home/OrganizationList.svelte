@@ -9,7 +9,11 @@
   <ol>
     {#each $orgs.data.organizations as org}
       <li class="mb-3">
-        <h2 class="text-base leading-6 font-light mb-1">{org.name}</h2>
+        <a
+          href="/{org.name}"
+          class="text-base leading-6 font-light mb-1 text-gray-700 hover:underline"
+          >{org.name}</a
+        >
         <div class="py-2 px-1.5">
           <ProjectList organization={org.name} />
         </div>
