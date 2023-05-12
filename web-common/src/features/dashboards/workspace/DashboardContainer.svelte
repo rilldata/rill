@@ -48,7 +48,7 @@
 
 <style>
   section {
-    height: 100vh;
+    height: 100%;
     overflow-x: auto;
     overflow-y: hidden;
   }

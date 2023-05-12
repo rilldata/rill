@@ -158,7 +158,22 @@ const config = {
       {
         id: 'GTM-TH485ZV',
       }
-    ]
+    ],
+    [
+      '@docusaurus/plugin-client-redirects',
+      {
+        redirects: [
+          {
+            to: '/connectors/s3',
+            from: '/reference/connectors/s3',
+          },
+          {
+            to: '/connectors/gcs',
+            from: '/reference/connectors/gcs',
+          },
+        ],
+      },
+    ],
   ]
 };
 

@@ -368,7 +368,7 @@
 <div class="h-full w-full overflow-x-auto" use:listenToNodeResize>
   <div
     bind:this={editorContainer}
-    class="editor-container  h-full w-full overflow-x-auto"
+    class="editor-container h-full w-full overflow-x-auto"
   >
     <div
       class="w-full overflow-x-auto h-full"

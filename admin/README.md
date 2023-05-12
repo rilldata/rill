@@ -52,12 +52,12 @@ go run ./cli admin start
 ```
 4. Ping the server:
 ```bash
-go run ./cli admin ping --base-url http://localhost:9090
+go run ./cli admin ping --url http://localhost:9090
 ```
 
 You can now call the local admin server from the CLI by overriding the admin API URL. For example:
 ```bash
-go run ./cli org create foo --api-url http://localhost:9090
+go run ./cli org create --api-url http://localhost:9090
 ```
 
 ## Adding endpoints
@@ -89,11 +89,11 @@ smee --port 8080 --path /github/webhook --url https://smee.io/IDENTIFIER
 
 ## CLI login/logout
 
-For trying out CLI login add api-url parameter to point to local admin HTTP server like this:
+For trying out CLI login add api-url parameter to point to local admin server like this:
 ```
-go run ./cli auth login --api-url http://localhost:8080/
+go run ./cli login --api-url http://localhost:9090/
 ```
-For trying out CLI logout add api-url parameter to point to local admin gRPC server like this:
+For trying out CLI logout add api-url parameter to point to local admin server like this:
 ```
-go run ./cli auth logout --api-url http://localhost:9090/
+go run ./cli logout --api-url http://localhost:9090/
 ```

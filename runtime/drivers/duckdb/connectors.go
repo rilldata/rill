@@ -44,11 +44,7 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) (*drivers.IngestionSummary, error) {
 	// Driver-specific overrides
 	if source.Connector == "local_file" {
-		err := c.ingestLocalFiles(ctx, env, source)
-		if err != nil {
-			return nil, err
-		}
-		return &drivers.IngestionSummary{}, nil
+		return c.ingestLocalFiles(ctx, env, source)
 	}
 
 	iterator, err := connectors.ConsumeAsIterator(ctx, env, source)
@@ -92,34 +88,39 @@ func (c *connection) ingestIteratorFiles(ctx context.Context, source *connectors
 }
 
 // local files
-func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
+func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) (*drivers.IngestionSummary, error) {
 	conf, err := localfile.ParseConfig(source.Properties)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	path, err := resolveLocalPath(env, conf.Path, source.Name)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// get all files in case glob passed
 	localPaths, err := doublestar.FilepathGlob(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(localPaths) == 0 {
-		return fmt.Errorf("file does not exist at %s", conf.Path)
+		return nil, fmt.Errorf("file does not exist at %s", conf.Path)
 	}
 
+	// Ingest data
 	from, err := sourceReader(localPaths, source.Properties)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (SELECT * FROM %s)", source.Name, from)
+	err = c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
+	if err != nil {
+		return nil, err
 	}
 
-	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (SELECT * FROM %s)", source.Name, from)
-
-	return c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
+	bytesIngested := fileSize(localPaths)
+	return &drivers.IngestionSummary{BytesIngested: bytesIngested}, nil
 }
 
 func fileSize(paths []string) int64 {
@@ -192,8 +193,13 @@ func containsAny(s string, targets []string) bool {
 }
 
 func generateReadCsvStatement(paths []string, properties map[string]any) (string, error) {
+	ingestionProps := copyMap(properties)
+	// set sample_size to 200000 by default
+	if _, sampleSizeDefined := ingestionProps["sample_size"]; !sampleSizeDefined {
+		ingestionProps["sample_size"] = 200000
+	}
 	// auto_detect (enables auto-detection of parameters) is true by default, it takes care of params/schema
-	return fmt.Sprintf("read_csv_auto(%s)", convertToStatementParamsStr(paths, properties)), nil
+	return fmt.Sprintf("read_csv_auto(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
 }
 
 func generateReadParquetStatement(paths []string, properties map[string]any) (string, error) {
@@ -211,6 +217,10 @@ func generateReadJSONStatement(paths []string, properties map[string]any) (strin
 	// if columns are defined then DuckDB turns the auto-detection off so no need to check this case here
 	if _, autoDetectDefined := ingestionProps["auto_detect"]; !autoDetectDefined {
 		ingestionProps["auto_detect"] = true
+	}
+	// set sample_size to 200000 by default
+	if _, sampleSizeDefined := ingestionProps["sample_size"]; !sampleSizeDefined {
+		ingestionProps["sample_size"] = 200000
 	}
 	return fmt.Sprintf("read_json(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
 }

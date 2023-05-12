@@ -8,13 +8,16 @@
   import OrganizationList from "../components/home/OrganizationList.svelte";
   import WelcomeMessage from "../components/home/WelcomeMessage.svelte";
 
-  const user = createAdminServiceGetCurrentUser();
+  import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
 
-  const orgs = createAdminServiceListOrganizations(undefined, {
-    query: {
-      placeholderData: undefined,
-    },
-  });
+  const user = createAdminServiceGetCurrentUser();
+  const orgs = createAdminServiceListOrganizations();
+
+  $: hasAnOrganization = $orgs.data?.organizations?.length > 0;
+
+  function getFirstNameFromDisplayName(displayName: string) {
+    return displayName.split(" ")[0];
+  }
 </script>
 
 <svelte:head>
@@ -22,26 +25,30 @@
 </svelte:head>
 
 <AuthRedirect>
-  <section class="flex flex-col w-4/5 mx-auto h-2/5">
-    <h1 class="text-4xl leading-10 font-light mb-2 my-auto">
-      Hi {$user.data.user.displayName}!
-    </h1>
-    <div class="flex flex-row">
-      <div class="w-2/3">
-        {#if $orgs.isSuccess}
-          {#if $orgs.data.organizations.length === 0}
-            <WelcomeMessage />
-          {:else}
-            <h3 class="text-base leading-6 font-normal text-gray-500 mb-2">
-              Check out your dashboards below.
-            </h3>
-            <OrganizationList />
+  <VerticalScrollContainer>
+    <section
+      class="flex flex-col mx-8 my-8 sm:my-16 sm:mx-16 lg:mx-32 lg:my-24 2xl:mx-64 mx-auto"
+    >
+      <h1 class="text-4xl leading-10 font-light mb-2">
+        Hi {getFirstNameFromDisplayName($user.data.user.displayName)}!
+      </h1>
+      <div class="flex flex-row gap-x-7 flex-wrap">
+        <div class="md:w-1/2">
+          {#if $orgs.isSuccess}
+            {#if !hasAnOrganization}
+              <WelcomeMessage />
+            {:else}
+              <h3 class="text-base leading-6 font-normal text-gray-500 mb-3">
+                Check out your dashboards below.
+              </h3>
+              <OrganizationList />
+            {/if}
           {/if}
+        </div>
+        {#if hasAnOrganization}
+          <HomeShareCTA />
         {/if}
       </div>
-      <div class="w-1/3">
-        <HomeShareCTA />
-      </div>
-    </div>
-  </section>
+    </section>
+  </VerticalScrollContainer>
 </AuthRedirect>

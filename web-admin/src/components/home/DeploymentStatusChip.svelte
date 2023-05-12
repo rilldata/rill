@@ -1,8 +1,11 @@
 <script lang="ts">
-  import { V1DeploymentStatus } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceGetProject,
+    V1DeploymentStatus,
+  } from "@rilldata/web-admin/client";
   import { getDashboardsForProject } from "@rilldata/web-admin/components/projects/dashboards";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/components/projects/invalidations";
-  import { useProject } from "@rilldata/web-admin/components/projects/use-project";
+  import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/selectors";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
@@ -20,19 +23,25 @@
   export let project: string;
   export let iconOnly = false;
 
-  $: proj = useProject(organization, project);
+  $: proj = createAdminServiceGetProject(organization, project);
+  // Poll specifically for the project's deployment status
+  $: projectDeploymentStatus = useProjectDeploymentStatus(
+    organization,
+    project
+  );
   let deploymentStatus: V1DeploymentStatus;
   $: currentStatusDisplay =
     !!deploymentStatus && statusDisplays[deploymentStatus];
 
   const queryClient = useQueryClient();
 
-  $: if ($proj.data?.prodDeployment?.status) {
+  $: if ($projectDeploymentStatus.data) {
     const prevStatus = deploymentStatus;
 
-    deploymentStatus = $proj.data?.prodDeployment?.status;
+    deploymentStatus = $projectDeploymentStatus.data;
 
     if (
+      prevStatus &&
       prevStatus !== V1DeploymentStatus.DEPLOYMENT_STATUS_OK &&
       deploymentStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_OK
     ) {
@@ -111,10 +120,12 @@
 
 {#if deploymentStatus && deploymentStatus !== V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED}
   {#if iconOnly}
-    <svelte:component
-      this={currentStatusDisplay.icon}
-      {...currentStatusDisplay.iconProps}
-    />
+    <div class="pb-0.5">
+      <svelte:component
+        this={currentStatusDisplay.icon}
+        {...currentStatusDisplay.iconProps}
+      />
+    </div>
   {:else}
     <div
       class="flex space-x-1 items-center px-2 border rounded rounded-[20px] w-fit {currentStatusDisplay.wrapperClass} {iconOnly &&

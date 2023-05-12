@@ -8,7 +8,7 @@
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { createRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { appQueryStatusStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
