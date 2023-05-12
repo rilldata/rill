@@ -1,6 +1,9 @@
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import { removeIfExists } from "@rilldata/web-common/lib/arrayUtils";
+import {
+  getMapFromArray,
+  removeIfExists,
+} from "@rilldata/web-common/lib/arrayUtils";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import type {
   V1MetricsView,
@@ -177,6 +180,26 @@ const metricViewReducers = {
         metricsExplorer.visibleDimensionKeys = new Set(
           metricsView.dimensions.map((dim) => dim.name)
         );
+
+        const dimensionsMap = getMapFromArray(
+          metricsView.dimensions,
+          (dimension) => dimension.name
+        );
+        metricsExplorer.filters.include =
+          metricsExplorer.filters.include.filter((filter) =>
+            dimensionsMap.has(filter.name)
+          );
+        metricsExplorer.filters.exclude =
+          metricsExplorer.filters.exclude.filter((filter) =>
+            dimensionsMap.has(filter.name)
+          );
+
+        if (
+          metricsExplorer.selectedDimensionName &&
+          !dimensionsMap.has(metricsExplorer.selectedDimensionName)
+        ) {
+          metricsExplorer.selectedDimensionName = undefined;
+        }
       },
       () => ({
         name,

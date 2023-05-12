@@ -25,6 +25,25 @@ export const TestTimeConstants = {
   LastDay: new Date(Date.now() - Hour * 24),
 };
 
+export const DeletedDimensionAdBids = {
+  name: "AdBids",
+  measures: [
+    {
+      name: AdBidsImpressionsMeasure,
+      expression: "count(*)",
+    },
+    {
+      name: AdBidsBidPriceMeasure,
+      expression: "sum(bid_price)",
+    },
+  ],
+  dimensions: [
+    {
+      name: AdBidsPublisherDimension,
+    },
+  ],
+};
+
 export function createAdBidsInStore() {
   metricsExplorerStore.sync(AdBidsName, {
     name: "AdBids",

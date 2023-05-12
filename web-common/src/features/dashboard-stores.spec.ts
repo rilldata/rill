@@ -1,10 +1,12 @@
-import { describe, it } from "vitest";
+import { get } from "svelte/store";
+import { describe, it, expect } from "vitest";
 import {
   AdBidsBaseFilter,
   AdBidsBidPriceMeasure,
   AdBidsClearedFilter,
   AdBidsDomainDimension,
   AdBidsExcludedFilter,
+  AdBidsImpressionsMeasure,
   AdBidsMirrorName,
   AdBidsName,
   AdBidsPublisherDimension,
@@ -13,6 +15,7 @@ import {
   createAdBidsInStore,
   createAdBidsMirrorInStore,
   CustomTestControls,
+  DeletedDimensionAdBids,
   Last6HoursTestControls,
   Last6HoursTestParsedControls,
 } from "@rilldata/web-common/features/dashboard-stores-test-data";
@@ -135,5 +138,89 @@ describe("dashboard-stores", () => {
       AllTimeParsedTestControls,
       AdBidsBidPriceMeasure
     );
+  });
+
+  describe("Restore invalid state", () => {
+    it("Restore invalid filter", () => {
+      createAdBidsInStore();
+      metricsExplorerStore.toggleFilter(
+        AdBidsName,
+        AdBidsPublisherDimension,
+        "Facebook"
+      );
+      metricsExplorerStore.toggleFilter(
+        AdBidsName,
+        AdBidsDomainDimension,
+        "google.com"
+      );
+
+      // create a mirror from state
+      createAdBidsMirrorInStore();
+      // update the mirrored dashboard mimicking meta query update
+      metricsExplorerStore.sync(AdBidsMirrorName, DeletedDimensionAdBids);
+      // assert that the filter for removed dimension is not present anymore
+      assertMetricsView(
+        AdBidsMirrorName,
+        {
+          include: [
+            {
+              name: AdBidsPublisherDimension,
+              in: ["Facebook"],
+            },
+          ],
+          exclude: [],
+        },
+        AllTimeParsedTestControls
+      );
+    });
+
+    it("Restore invalid leaderboard measure", () => {
+      createAdBidsInStore();
+      metricsExplorerStore.setLeaderboardMeasureName(
+        AdBidsName,
+        AdBidsBidPriceMeasure
+      );
+
+      // create a mirror from state
+      createAdBidsMirrorInStore();
+      // update the mirrored dashboard mimicking meta query update
+      metricsExplorerStore.sync(AdBidsMirrorName, {
+        name: "AdBids",
+        measures: [
+          {
+            name: AdBidsImpressionsMeasure,
+            expression: "count(*)",
+          },
+        ],
+        dimensions: [
+          {
+            name: AdBidsPublisherDimension,
+          },
+        ],
+      });
+      // assert that the selected measure is reset to the 1st available one
+      expect(
+        get(metricsExplorerStore).entities[AdBidsMirrorName]
+          .leaderboardMeasureName
+      ).toBe(AdBidsImpressionsMeasure);
+    });
+
+    it("Restore invalid selected dimension", () => {
+      createAdBidsInStore();
+      metricsExplorerStore.setMetricDimensionName(
+        AdBidsName,
+        AdBidsDomainDimension
+      );
+
+      // create a mirror from state
+      createAdBidsMirrorInStore();
+      // update the mirrored dashboard mimicking meta query update
+      metricsExplorerStore.sync(AdBidsMirrorName, DeletedDimensionAdBids);
+      // assert that the selected dimension is cleared
+      expect(
+        get(metricsExplorerStore).entities[AdBidsMirrorName]
+          .selectedDimensionName
+      ).toBeUndefined();
+    });
   });
 });
