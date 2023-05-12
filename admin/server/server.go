@@ -24,6 +24,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -170,6 +171,9 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
 	s.registerGithubEndpoints(mux)
+
+	// Add temporary internal endpoint for refreshing sources
+	mux.Handle("/internal/projects/trigger-refresh", otelhttp.WithRouteTag("/internal/projects/trigger-refresh", http.HandlerFunc(s.triggerRefreshSourcesInternal)))
 
 	// Build CORS options for admin server
 
