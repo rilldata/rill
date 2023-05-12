@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/google/uuid"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/stretchr/testify/require"
@@ -32,19 +33,21 @@ func TestConnectionCache(t *testing.T) {
 }
 
 func TestNilValues(t *testing.T) {
-	qc := newQueryCache(10)
+	qc := newQueryCache(int64(datasize.MB * 10))
 
-	qc.add(queryCacheKey{"1", "1", "1"}, "value")
-	v, ok := qc.get(queryCacheKey{"1", "1", "1"})
+	qc.add(queryCacheKey{"1", "1", "1"}.String(), "value")
+	qc.cache.Wait()
+	v, ok := qc.get(queryCacheKey{"1", "1", "1"}.String())
 	require.Equal(t, "value", v)
 	require.True(t, ok)
 
-	qc.add(queryCacheKey{"1", "1", "1"}, nil)
-	v, ok = qc.get(queryCacheKey{"1", "1", "1"})
+	qc.add(queryCacheKey{"1", "1", "1"}.String(), nil)
+	qc.cache.Wait()
+	v, ok = qc.get(queryCacheKey{"1", "1", "1"}.String())
 	require.Nil(t, v)
 	require.True(t, ok)
 
-	v, ok = qc.get(queryCacheKey{"nosuch", "nosuch", "nosuch"})
+	v, ok = qc.get(queryCacheKey{"nosuch", "nosuch", "nosuch"}.String())
 	require.Nil(t, v)
 	require.False(t, ok)
 }

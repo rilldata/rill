@@ -1,15 +1,22 @@
 package runtime
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"errors"
+	"fmt"
+	"runtime"
 	"sync"
 
-	lru "github.com/hashicorp/golang-lru"
+	"github.com/dgraph-io/ristretto"
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/singleflight"
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 var errConnectionCacheClosed = errors.New("connectionCache: closed")
@@ -143,21 +150,73 @@ func (c *migrationMetaCache) evict(ctx context.Context, instID string) {
 }
 
 type queryCache struct {
-	cache *lru.Cache
+	cache *ristretto.Cache
+	group singleflight.Group
 }
 
-func newQueryCache(size int) *queryCache {
-	cache, err := lru.New(size)
+func newQueryCache(sizeInBytes int64) *queryCache {
+	if sizeInBytes <= 0 {
+		panic(fmt.Sprintf("invalid cache size should be greater than 0 : %v", sizeInBytes))
+	}
+	cache, err := ristretto.NewCache(&ristretto.Config{
+		// Use 5% of cache memory for storing counters. Each counter takes roughly 3 bytes.
+		// Recommended value is 10x the number of items in cache when full.
+		// Tune this again based on metrics.
+		NumCounters: int64(float64(sizeInBytes) * 0.05 / 3),
+		MaxCost:     int64(float64(sizeInBytes) * 0.95),
+		BufferItems: 64,
+		Metrics:     false,
+		Cost: func(val interface{}) int64 {
+			defer func() {
+				if r := recover(); r != nil {
+					buf := make([]byte, 4096)
+					n := runtime.Stack(buf, false)
+					fmt.Printf("Panic: %v\n%s", r, buf[:n])
+				}
+			}()
+
+			if val == nil {
+				return 0
+			}
+			if protoMsg, ok := val.(protoreflect.ProtoMessage); ok {
+				bytes, err := proto.Marshal(protoMsg)
+				if err != nil {
+					panic(err)
+				}
+				return int64(len(bytes))
+			}
+
+			b := new(bytes.Buffer)
+			if err := gob.NewEncoder(b).Encode(val); err != nil {
+				panic(err)
+			}
+			return int64(b.Len())
+		},
+	})
 	if err != nil {
 		panic(err)
 	}
 	return &queryCache{cache: cache}
 }
 
-func (c *queryCache) get(key queryCacheKey) (any, bool) {
-	return c.cache.Get(key)
+func (c *queryCache) getOrLoad(key any, loadFn func() (any, error)) (any, bool, error) {
+	if val, ok := c.cache.Get(key); ok {
+		return val, true, nil
+	}
+
+	val, err := c.group.Do(key, loadFn)
+	if err != nil {
+		return nil, false, err
+	}
+
+	c.cache.Set(key, val, 0)
+	return val, false, nil
 }
 
-func (c *queryCache) add(key queryCacheKey, value any) bool {
-	return c.cache.Add(key, value)
+func (c *queryCache) add(key any, val any) bool {
+	return c.cache.Set(key, val, 0)
+}
+
+func (c *queryCache) get(key any) (any, bool) {
+	return c.cache.Get(key)
 }
