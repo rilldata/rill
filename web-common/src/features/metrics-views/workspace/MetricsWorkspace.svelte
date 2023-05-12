@@ -3,7 +3,6 @@
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appStore } from "@rilldata/web-common/layout/app-store";
-  import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
     createRuntimeServiceGetCatalogEntry,
     createRuntimeServicePutFileAndReconcile,
@@ -152,9 +151,9 @@
   let validDimensionSelectorOption = [];
   $: if (model) {
     const selectedMetricsDefModelProfile = model?.schema?.fields ?? [];
-    validDimensionSelectorOption = selectedMetricsDefModelProfile
-      .filter((column) => CATEGORICALS.has(column.type.code as string))
-      .map((column) => ({ label: column.name, value: column.name }));
+    validDimensionSelectorOption = selectedMetricsDefModelProfile.map(
+      (column) => ({ label: column.name, value: column.name })
+    );
   } else {
     validDimensionSelectorOption = [];
   }

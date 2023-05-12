@@ -4,7 +4,7 @@
     <h2>Surfaces</h2>
     <div class="flex flex-col gap-y-4">
       <div
-        class="ui-copy surface-bg swatch  dark:border-gray-200 border-gray-500"
+        class="ui-copy surface-bg swatch dark:border-gray-200 border-gray-500"
       >
         <code class="font-bold">surface-bg</code>
         light mode
@@ -12,7 +12,7 @@
 
       <div class="dark">
         <div
-          class="ui-copy surface-bg swatch  dark:border-gray-200 border-gray-500"
+          class="ui-copy surface-bg swatch dark:border-gray-200 border-gray-500"
         >
           <code class="font-bold">dark surface-bg</code>
           dark mode

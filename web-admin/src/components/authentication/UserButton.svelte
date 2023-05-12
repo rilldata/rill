@@ -9,11 +9,18 @@
     window.location.href = `${ADMIN_URL}/auth/logout?redirect=${window.location.origin}${window.location.pathname}`;
   }
 
+  function handleDocumentation() {
+    window.open("https://docs.rilldata.com", "_blank");
+  }
+
   const isDev = process.env.NODE_ENV === "development";
 </script>
 
 <SimpleActionMenu
-  options={[{ main: "Logout", callback: handleLogOut }]}
+  options={[
+    { main: "Logout", callback: handleLogOut },
+    { main: "Documentation", callback: handleDocumentation },
+  ]}
   let:toggleMenu
   minWidth="0px"
   distance={4}
