@@ -133,15 +133,19 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}
 			emailClient := email.New(sender, conf.FrontendURL)
 
+			// Init github client
+			gh, err := admin.NewGithub(conf.GithubAppID, conf.GithubAppPrivateKey)
+			if err != nil {
+				logger.Fatal("error creating github client", zap.Error(err))
+			}
+
 			// Init admin service
 			admOpts := &admin.Options{
-				DatabaseDriver:      conf.DatabaseDriver,
-				DatabaseDSN:         conf.DatabaseURL,
-				GithubAppID:         conf.GithubAppID,
-				GithubAppPrivateKey: conf.GithubAppPrivateKey,
-				ProvisionerSpec:     conf.ProvisionerSpec,
+				DatabaseDriver:  conf.DatabaseDriver,
+				DatabaseDSN:     conf.DatabaseURL,
+				ProvisionerSpec: conf.ProvisionerSpec,
 			}
-			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient)
+			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}
