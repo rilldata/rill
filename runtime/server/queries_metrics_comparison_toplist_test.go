@@ -82,16 +82,11 @@ func TestServer_MetricsViewComparisonToplist(t *testing.T) {
 	require.Equal(t, 1, len(rows))
 	require.Equal(t, "cars", rows[0].DimensionValue.GetStringValue())
 
-	require.Equal(t, 2, len(rows[0].MeasureValues))
+	require.Equal(t, 1, len(rows[0].MeasureValues))
 
-	require.Equal(t, 1.0, rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, 2.0, rows[0].MeasureValues[0].BaseValue.GetNumberValue())
 	require.Equal(t, 1.0, rows[0].MeasureValues[0].ComparisonValue.GetNumberValue())
-	require.Equal(t, 0.0, rows[0].MeasureValues[0].DeltaAbs.GetNumberValue())
-	require.Equal(t, 0.0, rows[0].MeasureValues[0].DeltaRel.GetNumberValue())
-
-	require.Equal(t, 2.0, rows[0].MeasureValues[1].BaseValue.GetNumberValue())
-	require.Equal(t, 1.0, rows[0].MeasureValues[1].ComparisonValue.GetNumberValue())
-	require.Equal(t, -1.0, rows[0].MeasureValues[1].DeltaAbs.GetNumberValue())
+	require.Equal(t, -1.0, rows[0].MeasureValues[0].DeltaAbs.GetNumberValue())
 	require.Equal(t, -0.5, rows[0].MeasureValues[0].DeltaRel.GetNumberValue())
 }
 
