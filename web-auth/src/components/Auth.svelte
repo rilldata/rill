@@ -74,28 +74,32 @@
 
   function handleEmailSubmit(email: string, password: string) {
     errorText = "";
-    if (isLoginPage) {
-      webAuth.login(
-        {
-          realm: databaseConnection,
-          username: email,
-          password: password,
-        },
-        (err) => {
-          if (err) displayError(err);
-        }
-      );
-    } else {
-      webAuth.redirect.signupAndLogin(
-        {
-          connection: databaseConnection,
-          email: email,
-          password: password,
-        },
-        (err) => {
-          if (err) displayError(err);
-        }
-      );
+    try {
+      if (isLoginPage) {
+        webAuth.login(
+          {
+            realm: databaseConnection,
+            username: email,
+            password: password,
+          },
+          (err) => {
+            if (err) displayError({ message: err?.description });
+          }
+        );
+      } else {
+        webAuth.redirect.signupAndLogin(
+          {
+            connection: databaseConnection,
+            email: email,
+            password: password,
+          },
+          (err) => {
+            if (err) displayError({ message: err?.description });
+          }
+        );
+      }
+    } catch (err) {
+      displayError({ message: err?.description || err?.message });
     }
   }
 
@@ -119,7 +123,7 @@
         email: email,
       },
       (err, resp) => {
-        if (err) displayError(err);
+        if (err) displayError({ message: err?.description });
         else alert(resp);
       }
     );
@@ -162,7 +166,7 @@
     </div>
 
     {#if errorText}
-      <div class="text-red-500 text-sm mt-2">{errorText}</div>
+      <div class="text-red-500 text-sm mt-2 max-w-[400px]">{errorText}</div>
     {/if}
 
     <Disclaimer />
