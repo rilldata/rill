@@ -18,8 +18,8 @@
   const cloudClientIDsArr = cloudClientIDs.split(",");
   const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
 
-  // By default show the SignUp page
-  let isLoginPage = false;
+  // By default show the LogIn page
+  let isLoginPage = true;
   let errorText = "";
 
   let webAuth: WebAuth;
