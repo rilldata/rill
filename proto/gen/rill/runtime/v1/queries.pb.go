@@ -226,6 +226,7 @@ type MetricsViewToplistRequest struct {
 	MetricsViewName string                 `protobuf:"bytes,2,opt,name=metrics_view_name,json=metricsViewName,proto3" json:"metrics_view_name,omitempty"`
 	DimensionName   string                 `protobuf:"bytes,3,opt,name=dimension_name,json=dimensionName,proto3" json:"dimension_name,omitempty"`
 	MeasureNames    []string               `protobuf:"bytes,4,rep,name=measure_names,json=measureNames,proto3" json:"measure_names,omitempty"`
+	InlineMeasures  []*InlineMeasure       `protobuf:"bytes,12,rep,name=inline_measures,json=inlineMeasures,proto3" json:"inline_measures,omitempty"`
 	TimeStart       *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=time_start,json=timeStart,proto3" json:"time_start,omitempty"`
 	TimeEnd         *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=time_end,json=timeEnd,proto3" json:"time_end,omitempty"`
 	Limit           int64                  `protobuf:"varint,7,opt,name=limit,proto3" json:"limit,omitempty"`
@@ -291,6 +292,13 @@ func (x *MetricsViewToplistRequest) GetDimensionName() string {
 func (x *MetricsViewToplistRequest) GetMeasureNames() []string {
 	if x != nil {
 		return x.MeasureNames
+	}
+	return nil
+}
+
+func (x *MetricsViewToplistRequest) GetInlineMeasures() []*InlineMeasure {
+	if x != nil {
+		return x.InlineMeasures
 	}
 	return nil
 }
@@ -409,6 +417,7 @@ type MetricsViewTimeSeriesRequest struct {
 	InstanceId      string                 `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
 	MetricsViewName string                 `protobuf:"bytes,2,opt,name=metrics_view_name,json=metricsViewName,proto3" json:"metrics_view_name,omitempty"`
 	MeasureNames    []string               `protobuf:"bytes,3,rep,name=measure_names,json=measureNames,proto3" json:"measure_names,omitempty"`
+	InlineMeasures  []*InlineMeasure       `protobuf:"bytes,9,rep,name=inline_measures,json=inlineMeasures,proto3" json:"inline_measures,omitempty"`
 	TimeStart       *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=time_start,json=timeStart,proto3" json:"time_start,omitempty"`
 	TimeEnd         *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=time_end,json=timeEnd,proto3" json:"time_end,omitempty"`
 	TimeGranularity TimeGrain              `protobuf:"varint,6,opt,name=time_granularity,json=timeGranularity,proto3,enum=rill.runtime.v1.TimeGrain" json:"time_granularity,omitempty"`
@@ -465,6 +474,13 @@ func (x *MetricsViewTimeSeriesRequest) GetMetricsViewName() string {
 func (x *MetricsViewTimeSeriesRequest) GetMeasureNames() []string {
 	if x != nil {
 		return x.MeasureNames
+	}
+	return nil
+}
+
+func (x *MetricsViewTimeSeriesRequest) GetInlineMeasures() []*InlineMeasure {
+	if x != nil {
+		return x.InlineMeasures
 	}
 	return nil
 }
@@ -569,6 +585,7 @@ type MetricsViewTotalsRequest struct {
 	InstanceId      string                 `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
 	MetricsViewName string                 `protobuf:"bytes,2,opt,name=metrics_view_name,json=metricsViewName,proto3" json:"metrics_view_name,omitempty"`
 	MeasureNames    []string               `protobuf:"bytes,3,rep,name=measure_names,json=measureNames,proto3" json:"measure_names,omitempty"`
+	InlineMeasures  []*InlineMeasure       `protobuf:"bytes,9,rep,name=inline_measures,json=inlineMeasures,proto3" json:"inline_measures,omitempty"`
 	TimeStart       *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=time_start,json=timeStart,proto3" json:"time_start,omitempty"`
 	TimeEnd         *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=time_end,json=timeEnd,proto3" json:"time_end,omitempty"`
 	Filter          *MetricsViewFilter     `protobuf:"bytes,7,opt,name=filter,proto3" json:"filter,omitempty"`
@@ -624,6 +641,13 @@ func (x *MetricsViewTotalsRequest) GetMetricsViewName() string {
 func (x *MetricsViewTotalsRequest) GetMeasureNames() []string {
 	if x != nil {
 		return x.MeasureNames
+	}
+	return nil
+}
+
+func (x *MetricsViewTotalsRequest) GetInlineMeasures() []*InlineMeasure {
+	if x != nil {
+		return x.InlineMeasures
 	}
 	return nil
 }
@@ -1056,6 +1080,62 @@ func (x *MetricsViewColumn) GetNullable() bool {
 	return false
 }
 
+// InlineMeasure is a measure to inject in a metrics view query that is not defined in the underlying MetricsView
+type InlineMeasure struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name       string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Expression string `protobuf:"bytes,2,opt,name=expression,proto3" json:"expression,omitempty"`
+}
+
+func (x *InlineMeasure) Reset() {
+	*x = InlineMeasure{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[13]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *InlineMeasure) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InlineMeasure) ProtoMessage() {}
+
+func (x *InlineMeasure) ProtoReflect() protoreflect.Message {
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[13]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InlineMeasure.ProtoReflect.Descriptor instead.
+func (*InlineMeasure) Descriptor() ([]byte, []int) {
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *InlineMeasure) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *InlineMeasure) GetExpression() string {
+	if x != nil {
+		return x.Expression
+	}
+	return ""
+}
+
 type ColumnRollupIntervalRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1070,7 +1150,7 @@ type ColumnRollupIntervalRequest struct {
 func (x *ColumnRollupIntervalRequest) Reset() {
 	*x = ColumnRollupIntervalRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[13]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1083,7 +1163,7 @@ func (x *ColumnRollupIntervalRequest) String() string {
 func (*ColumnRollupIntervalRequest) ProtoMessage() {}
 
 func (x *ColumnRollupIntervalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[13]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1096,7 +1176,7 @@ func (x *ColumnRollupIntervalRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnRollupIntervalRequest.ProtoReflect.Descriptor instead.
 func (*ColumnRollupIntervalRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{13}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ColumnRollupIntervalRequest) GetInstanceId() string {
@@ -1140,7 +1220,7 @@ type ColumnRollupIntervalResponse struct {
 func (x *ColumnRollupIntervalResponse) Reset() {
 	*x = ColumnRollupIntervalResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[14]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1153,7 +1233,7 @@ func (x *ColumnRollupIntervalResponse) String() string {
 func (*ColumnRollupIntervalResponse) ProtoMessage() {}
 
 func (x *ColumnRollupIntervalResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[14]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1166,7 +1246,7 @@ func (x *ColumnRollupIntervalResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnRollupIntervalResponse.ProtoReflect.Descriptor instead.
 func (*ColumnRollupIntervalResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{14}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ColumnRollupIntervalResponse) GetStart() *timestamppb.Timestamp {
@@ -1207,7 +1287,7 @@ type ColumnTopKRequest struct {
 func (x *ColumnTopKRequest) Reset() {
 	*x = ColumnTopKRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[15]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1220,7 +1300,7 @@ func (x *ColumnTopKRequest) String() string {
 func (*ColumnTopKRequest) ProtoMessage() {}
 
 func (x *ColumnTopKRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[15]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1233,7 +1313,7 @@ func (x *ColumnTopKRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnTopKRequest.ProtoReflect.Descriptor instead.
 func (*ColumnTopKRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{15}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ColumnTopKRequest) GetInstanceId() string {
@@ -1289,7 +1369,7 @@ type ColumnTopKResponse struct {
 func (x *ColumnTopKResponse) Reset() {
 	*x = ColumnTopKResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[16]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1302,7 +1382,7 @@ func (x *ColumnTopKResponse) String() string {
 func (*ColumnTopKResponse) ProtoMessage() {}
 
 func (x *ColumnTopKResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[16]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1315,7 +1395,7 @@ func (x *ColumnTopKResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnTopKResponse.ProtoReflect.Descriptor instead.
 func (*ColumnTopKResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{16}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ColumnTopKResponse) GetCategoricalSummary() *CategoricalSummary {
@@ -1341,7 +1421,7 @@ type CategoricalSummary struct {
 func (x *CategoricalSummary) Reset() {
 	*x = CategoricalSummary{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[17]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1354,7 +1434,7 @@ func (x *CategoricalSummary) String() string {
 func (*CategoricalSummary) ProtoMessage() {}
 
 func (x *CategoricalSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[17]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1367,7 +1447,7 @@ func (x *CategoricalSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CategoricalSummary.ProtoReflect.Descriptor instead.
 func (*CategoricalSummary) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{17}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{18}
 }
 
 func (m *CategoricalSummary) GetCase() isCategoricalSummary_Case {
@@ -1418,7 +1498,7 @@ type TopK struct {
 func (x *TopK) Reset() {
 	*x = TopK{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[18]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1431,7 +1511,7 @@ func (x *TopK) String() string {
 func (*TopK) ProtoMessage() {}
 
 func (x *TopK) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[18]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1444,7 +1524,7 @@ func (x *TopK) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TopK.ProtoReflect.Descriptor instead.
 func (*TopK) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{18}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *TopK) GetEntries() []*TopK_Entry {
@@ -1469,7 +1549,7 @@ type ColumnNullCountRequest struct {
 func (x *ColumnNullCountRequest) Reset() {
 	*x = ColumnNullCountRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[19]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1482,7 +1562,7 @@ func (x *ColumnNullCountRequest) String() string {
 func (*ColumnNullCountRequest) ProtoMessage() {}
 
 func (x *ColumnNullCountRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[19]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1495,7 +1575,7 @@ func (x *ColumnNullCountRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnNullCountRequest.ProtoReflect.Descriptor instead.
 func (*ColumnNullCountRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{19}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ColumnNullCountRequest) GetInstanceId() string {
@@ -1538,7 +1618,7 @@ type ColumnNullCountResponse struct {
 func (x *ColumnNullCountResponse) Reset() {
 	*x = ColumnNullCountResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[20]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1551,7 +1631,7 @@ func (x *ColumnNullCountResponse) String() string {
 func (*ColumnNullCountResponse) ProtoMessage() {}
 
 func (x *ColumnNullCountResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[20]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1564,7 +1644,7 @@ func (x *ColumnNullCountResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnNullCountResponse.ProtoReflect.Descriptor instead.
 func (*ColumnNullCountResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{20}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ColumnNullCountResponse) GetCount() float64 {
@@ -1589,7 +1669,7 @@ type ColumnDescriptiveStatisticsRequest struct {
 func (x *ColumnDescriptiveStatisticsRequest) Reset() {
 	*x = ColumnDescriptiveStatisticsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[21]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1602,7 +1682,7 @@ func (x *ColumnDescriptiveStatisticsRequest) String() string {
 func (*ColumnDescriptiveStatisticsRequest) ProtoMessage() {}
 
 func (x *ColumnDescriptiveStatisticsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[21]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1615,7 +1695,7 @@ func (x *ColumnDescriptiveStatisticsRequest) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use ColumnDescriptiveStatisticsRequest.ProtoReflect.Descriptor instead.
 func (*ColumnDescriptiveStatisticsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{21}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *ColumnDescriptiveStatisticsRequest) GetInstanceId() string {
@@ -1657,7 +1737,7 @@ type ColumnDescriptiveStatisticsResponse struct {
 func (x *ColumnDescriptiveStatisticsResponse) Reset() {
 	*x = ColumnDescriptiveStatisticsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[22]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[23]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1670,7 +1750,7 @@ func (x *ColumnDescriptiveStatisticsResponse) String() string {
 func (*ColumnDescriptiveStatisticsResponse) ProtoMessage() {}
 
 func (x *ColumnDescriptiveStatisticsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[22]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[23]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1683,7 +1763,7 @@ func (x *ColumnDescriptiveStatisticsResponse) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use ColumnDescriptiveStatisticsResponse.ProtoReflect.Descriptor instead.
 func (*ColumnDescriptiveStatisticsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{22}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ColumnDescriptiveStatisticsResponse) GetNumericSummary() *NumericSummary {
@@ -1711,7 +1791,7 @@ type NumericSummary struct {
 func (x *NumericSummary) Reset() {
 	*x = NumericSummary{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[23]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[24]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1724,7 +1804,7 @@ func (x *NumericSummary) String() string {
 func (*NumericSummary) ProtoMessage() {}
 
 func (x *NumericSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[23]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[24]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1737,7 +1817,7 @@ func (x *NumericSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NumericSummary.ProtoReflect.Descriptor instead.
 func (*NumericSummary) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{23}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{24}
 }
 
 func (m *NumericSummary) GetCase() isNumericSummary_Case {
@@ -1801,7 +1881,7 @@ type NumericHistogramBins struct {
 func (x *NumericHistogramBins) Reset() {
 	*x = NumericHistogramBins{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[24]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[25]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1814,7 +1894,7 @@ func (x *NumericHistogramBins) String() string {
 func (*NumericHistogramBins) ProtoMessage() {}
 
 func (x *NumericHistogramBins) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[24]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[25]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1827,7 +1907,7 @@ func (x *NumericHistogramBins) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NumericHistogramBins.ProtoReflect.Descriptor instead.
 func (*NumericHistogramBins) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{24}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *NumericHistogramBins) GetBins() []*NumericHistogramBins_Bin {
@@ -1855,7 +1935,7 @@ type NumericStatistics struct {
 func (x *NumericStatistics) Reset() {
 	*x = NumericStatistics{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[25]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1868,7 +1948,7 @@ func (x *NumericStatistics) String() string {
 func (*NumericStatistics) ProtoMessage() {}
 
 func (x *NumericStatistics) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[25]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1881,7 +1961,7 @@ func (x *NumericStatistics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NumericStatistics.ProtoReflect.Descriptor instead.
 func (*NumericStatistics) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{25}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *NumericStatistics) GetMin() float64 {
@@ -1944,7 +2024,7 @@ type NumericOutliers struct {
 func (x *NumericOutliers) Reset() {
 	*x = NumericOutliers{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[26]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[27]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1957,7 +2037,7 @@ func (x *NumericOutliers) String() string {
 func (*NumericOutliers) ProtoMessage() {}
 
 func (x *NumericOutliers) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[26]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[27]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1970,7 +2050,7 @@ func (x *NumericOutliers) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NumericOutliers.ProtoReflect.Descriptor instead.
 func (*NumericOutliers) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{26}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *NumericOutliers) GetOutliers() []*NumericOutliers_Outlier {
@@ -1995,7 +2075,7 @@ type ColumnTimeGrainRequest struct {
 func (x *ColumnTimeGrainRequest) Reset() {
 	*x = ColumnTimeGrainRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[27]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[28]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2008,7 +2088,7 @@ func (x *ColumnTimeGrainRequest) String() string {
 func (*ColumnTimeGrainRequest) ProtoMessage() {}
 
 func (x *ColumnTimeGrainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[27]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[28]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2021,7 +2101,7 @@ func (x *ColumnTimeGrainRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnTimeGrainRequest.ProtoReflect.Descriptor instead.
 func (*ColumnTimeGrainRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{27}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *ColumnTimeGrainRequest) GetInstanceId() string {
@@ -2064,7 +2144,7 @@ type ColumnTimeGrainResponse struct {
 func (x *ColumnTimeGrainResponse) Reset() {
 	*x = ColumnTimeGrainResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[28]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[29]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2077,7 +2157,7 @@ func (x *ColumnTimeGrainResponse) String() string {
 func (*ColumnTimeGrainResponse) ProtoMessage() {}
 
 func (x *ColumnTimeGrainResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[28]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[29]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2090,7 +2170,7 @@ func (x *ColumnTimeGrainResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnTimeGrainResponse.ProtoReflect.Descriptor instead.
 func (*ColumnTimeGrainResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{28}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *ColumnTimeGrainResponse) GetTimeGrain() TimeGrain {
@@ -2116,7 +2196,7 @@ type ColumnNumericHistogramRequest struct {
 func (x *ColumnNumericHistogramRequest) Reset() {
 	*x = ColumnNumericHistogramRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[29]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[30]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2129,7 +2209,7 @@ func (x *ColumnNumericHistogramRequest) String() string {
 func (*ColumnNumericHistogramRequest) ProtoMessage() {}
 
 func (x *ColumnNumericHistogramRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[29]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[30]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2142,7 +2222,7 @@ func (x *ColumnNumericHistogramRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnNumericHistogramRequest.ProtoReflect.Descriptor instead.
 func (*ColumnNumericHistogramRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{29}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ColumnNumericHistogramRequest) GetInstanceId() string {
@@ -2192,7 +2272,7 @@ type ColumnNumericHistogramResponse struct {
 func (x *ColumnNumericHistogramResponse) Reset() {
 	*x = ColumnNumericHistogramResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[30]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[31]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2205,7 +2285,7 @@ func (x *ColumnNumericHistogramResponse) String() string {
 func (*ColumnNumericHistogramResponse) ProtoMessage() {}
 
 func (x *ColumnNumericHistogramResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[30]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[31]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2218,7 +2298,7 @@ func (x *ColumnNumericHistogramResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnNumericHistogramResponse.ProtoReflect.Descriptor instead.
 func (*ColumnNumericHistogramResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{30}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ColumnNumericHistogramResponse) GetNumericSummary() *NumericSummary {
@@ -2243,7 +2323,7 @@ type ColumnRugHistogramRequest struct {
 func (x *ColumnRugHistogramRequest) Reset() {
 	*x = ColumnRugHistogramRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[31]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[32]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2256,7 +2336,7 @@ func (x *ColumnRugHistogramRequest) String() string {
 func (*ColumnRugHistogramRequest) ProtoMessage() {}
 
 func (x *ColumnRugHistogramRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[31]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[32]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2269,7 +2349,7 @@ func (x *ColumnRugHistogramRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnRugHistogramRequest.ProtoReflect.Descriptor instead.
 func (*ColumnRugHistogramRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{31}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *ColumnRugHistogramRequest) GetInstanceId() string {
@@ -2311,7 +2391,7 @@ type ColumnRugHistogramResponse struct {
 func (x *ColumnRugHistogramResponse) Reset() {
 	*x = ColumnRugHistogramResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[32]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[33]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2324,7 +2404,7 @@ func (x *ColumnRugHistogramResponse) String() string {
 func (*ColumnRugHistogramResponse) ProtoMessage() {}
 
 func (x *ColumnRugHistogramResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[32]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[33]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2337,7 +2417,7 @@ func (x *ColumnRugHistogramResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnRugHistogramResponse.ProtoReflect.Descriptor instead.
 func (*ColumnRugHistogramResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{32}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *ColumnRugHistogramResponse) GetNumericSummary() *NumericSummary {
@@ -2362,7 +2442,7 @@ type ColumnTimeRangeRequest struct {
 func (x *ColumnTimeRangeRequest) Reset() {
 	*x = ColumnTimeRangeRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[33]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[34]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2375,7 +2455,7 @@ func (x *ColumnTimeRangeRequest) String() string {
 func (*ColumnTimeRangeRequest) ProtoMessage() {}
 
 func (x *ColumnTimeRangeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[33]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[34]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2388,7 +2468,7 @@ func (x *ColumnTimeRangeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnTimeRangeRequest.ProtoReflect.Descriptor instead.
 func (*ColumnTimeRangeRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{33}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *ColumnTimeRangeRequest) GetInstanceId() string {
@@ -2430,7 +2510,7 @@ type ColumnTimeRangeResponse struct {
 func (x *ColumnTimeRangeResponse) Reset() {
 	*x = ColumnTimeRangeResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[34]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[35]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2443,7 +2523,7 @@ func (x *ColumnTimeRangeResponse) String() string {
 func (*ColumnTimeRangeResponse) ProtoMessage() {}
 
 func (x *ColumnTimeRangeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[34]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[35]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2456,7 +2536,7 @@ func (x *ColumnTimeRangeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnTimeRangeResponse.ProtoReflect.Descriptor instead.
 func (*ColumnTimeRangeResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{34}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *ColumnTimeRangeResponse) GetTimeRangeSummary() *TimeRangeSummary {
@@ -2479,7 +2559,7 @@ type TimeRangeSummary struct {
 func (x *TimeRangeSummary) Reset() {
 	*x = TimeRangeSummary{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[35]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[36]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2492,7 +2572,7 @@ func (x *TimeRangeSummary) String() string {
 func (*TimeRangeSummary) ProtoMessage() {}
 
 func (x *TimeRangeSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[35]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[36]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2505,7 +2585,7 @@ func (x *TimeRangeSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimeRangeSummary.ProtoReflect.Descriptor instead.
 func (*TimeRangeSummary) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{35}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *TimeRangeSummary) GetMin() *timestamppb.Timestamp {
@@ -2544,7 +2624,7 @@ type ColumnCardinalityRequest struct {
 func (x *ColumnCardinalityRequest) Reset() {
 	*x = ColumnCardinalityRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[36]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[37]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2557,7 +2637,7 @@ func (x *ColumnCardinalityRequest) String() string {
 func (*ColumnCardinalityRequest) ProtoMessage() {}
 
 func (x *ColumnCardinalityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[36]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[37]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2570,7 +2650,7 @@ func (x *ColumnCardinalityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnCardinalityRequest.ProtoReflect.Descriptor instead.
 func (*ColumnCardinalityRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{36}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *ColumnCardinalityRequest) GetInstanceId() string {
@@ -2612,7 +2692,7 @@ type ColumnCardinalityResponse struct {
 func (x *ColumnCardinalityResponse) Reset() {
 	*x = ColumnCardinalityResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[37]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[38]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2625,7 +2705,7 @@ func (x *ColumnCardinalityResponse) String() string {
 func (*ColumnCardinalityResponse) ProtoMessage() {}
 
 func (x *ColumnCardinalityResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[37]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[38]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2638,7 +2718,7 @@ func (x *ColumnCardinalityResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnCardinalityResponse.ProtoReflect.Descriptor instead.
 func (*ColumnCardinalityResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{37}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *ColumnCardinalityResponse) GetCategoricalSummary() *CategoricalSummary {
@@ -2667,7 +2747,7 @@ type ColumnTimeSeriesRequest struct {
 func (x *ColumnTimeSeriesRequest) Reset() {
 	*x = ColumnTimeSeriesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[38]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[39]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2680,7 +2760,7 @@ func (x *ColumnTimeSeriesRequest) String() string {
 func (*ColumnTimeSeriesRequest) ProtoMessage() {}
 
 func (x *ColumnTimeSeriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[38]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[39]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2693,7 +2773,7 @@ func (x *ColumnTimeSeriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnTimeSeriesRequest.ProtoReflect.Descriptor instead.
 func (*ColumnTimeSeriesRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{38}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *ColumnTimeSeriesRequest) GetInstanceId() string {
@@ -2770,7 +2850,7 @@ type ColumnTimeSeriesResponse struct {
 func (x *ColumnTimeSeriesResponse) Reset() {
 	*x = ColumnTimeSeriesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[39]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[40]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2783,7 +2863,7 @@ func (x *ColumnTimeSeriesResponse) String() string {
 func (*ColumnTimeSeriesResponse) ProtoMessage() {}
 
 func (x *ColumnTimeSeriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[39]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[40]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2796,7 +2876,7 @@ func (x *ColumnTimeSeriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnTimeSeriesResponse.ProtoReflect.Descriptor instead.
 func (*ColumnTimeSeriesResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{39}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *ColumnTimeSeriesResponse) GetRollup() *TimeSeriesResponse {
@@ -2819,7 +2899,7 @@ type TimeSeriesTimeRange struct {
 func (x *TimeSeriesTimeRange) Reset() {
 	*x = TimeSeriesTimeRange{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[40]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[41]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2832,7 +2912,7 @@ func (x *TimeSeriesTimeRange) String() string {
 func (*TimeSeriesTimeRange) ProtoMessage() {}
 
 func (x *TimeSeriesTimeRange) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[40]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[41]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2845,7 +2925,7 @@ func (x *TimeSeriesTimeRange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimeSeriesTimeRange.ProtoReflect.Descriptor instead.
 func (*TimeSeriesTimeRange) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{40}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *TimeSeriesTimeRange) GetStart() *timestamppb.Timestamp {
@@ -2883,7 +2963,7 @@ type TimeSeriesResponse struct {
 func (x *TimeSeriesResponse) Reset() {
 	*x = TimeSeriesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[41]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[42]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2896,7 +2976,7 @@ func (x *TimeSeriesResponse) String() string {
 func (*TimeSeriesResponse) ProtoMessage() {}
 
 func (x *TimeSeriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[41]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[42]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2909,7 +2989,7 @@ func (x *TimeSeriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimeSeriesResponse.ProtoReflect.Descriptor instead.
 func (*TimeSeriesResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{41}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *TimeSeriesResponse) GetResults() []*TimeSeriesValue {
@@ -2953,7 +3033,7 @@ type TimeSeriesValue struct {
 func (x *TimeSeriesValue) Reset() {
 	*x = TimeSeriesValue{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[42]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[43]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2966,7 +3046,7 @@ func (x *TimeSeriesValue) String() string {
 func (*TimeSeriesValue) ProtoMessage() {}
 
 func (x *TimeSeriesValue) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[42]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[43]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2979,7 +3059,7 @@ func (x *TimeSeriesValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimeSeriesValue.ProtoReflect.Descriptor instead.
 func (*TimeSeriesValue) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{42}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *TimeSeriesValue) GetTs() *timestamppb.Timestamp {
@@ -3016,7 +3096,7 @@ type TableCardinalityRequest struct {
 func (x *TableCardinalityRequest) Reset() {
 	*x = TableCardinalityRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[43]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[44]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3029,7 +3109,7 @@ func (x *TableCardinalityRequest) String() string {
 func (*TableCardinalityRequest) ProtoMessage() {}
 
 func (x *TableCardinalityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[43]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[44]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3042,7 +3122,7 @@ func (x *TableCardinalityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableCardinalityRequest.ProtoReflect.Descriptor instead.
 func (*TableCardinalityRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{43}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *TableCardinalityRequest) GetInstanceId() string {
@@ -3077,7 +3157,7 @@ type TableCardinalityResponse struct {
 func (x *TableCardinalityResponse) Reset() {
 	*x = TableCardinalityResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[44]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[45]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3090,7 +3170,7 @@ func (x *TableCardinalityResponse) String() string {
 func (*TableCardinalityResponse) ProtoMessage() {}
 
 func (x *TableCardinalityResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[44]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[45]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3103,7 +3183,7 @@ func (x *TableCardinalityResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableCardinalityResponse.ProtoReflect.Descriptor instead.
 func (*TableCardinalityResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{44}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *TableCardinalityResponse) GetCardinality() int64 {
@@ -3126,7 +3206,7 @@ type TableColumnsRequest struct {
 func (x *TableColumnsRequest) Reset() {
 	*x = TableColumnsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[45]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[46]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3139,7 +3219,7 @@ func (x *TableColumnsRequest) String() string {
 func (*TableColumnsRequest) ProtoMessage() {}
 
 func (x *TableColumnsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[45]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[46]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3152,7 +3232,7 @@ func (x *TableColumnsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableColumnsRequest.ProtoReflect.Descriptor instead.
 func (*TableColumnsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{45}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *TableColumnsRequest) GetInstanceId() string {
@@ -3187,7 +3267,7 @@ type TableColumnsResponse struct {
 func (x *TableColumnsResponse) Reset() {
 	*x = TableColumnsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[46]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[47]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3200,7 +3280,7 @@ func (x *TableColumnsResponse) String() string {
 func (*TableColumnsResponse) ProtoMessage() {}
 
 func (x *TableColumnsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[46]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[47]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3213,7 +3293,7 @@ func (x *TableColumnsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableColumnsResponse.ProtoReflect.Descriptor instead.
 func (*TableColumnsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{46}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *TableColumnsResponse) GetProfileColumns() []*ProfileColumn {
@@ -3236,7 +3316,7 @@ type ProfileColumn struct {
 func (x *ProfileColumn) Reset() {
 	*x = ProfileColumn{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[47]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[48]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3249,7 +3329,7 @@ func (x *ProfileColumn) String() string {
 func (*ProfileColumn) ProtoMessage() {}
 
 func (x *ProfileColumn) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[47]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[48]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3262,7 +3342,7 @@ func (x *ProfileColumn) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProfileColumn.ProtoReflect.Descriptor instead.
 func (*ProfileColumn) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{47}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *ProfileColumn) GetName() string {
@@ -3300,7 +3380,7 @@ type TableRowsRequest struct {
 func (x *TableRowsRequest) Reset() {
 	*x = TableRowsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[48]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[49]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3313,7 +3393,7 @@ func (x *TableRowsRequest) String() string {
 func (*TableRowsRequest) ProtoMessage() {}
 
 func (x *TableRowsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[48]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[49]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3326,7 +3406,7 @@ func (x *TableRowsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableRowsRequest.ProtoReflect.Descriptor instead.
 func (*TableRowsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{48}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *TableRowsRequest) GetInstanceId() string {
@@ -3368,7 +3448,7 @@ type TableRowsResponse struct {
 func (x *TableRowsResponse) Reset() {
 	*x = TableRowsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[49]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[50]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3381,7 +3461,7 @@ func (x *TableRowsResponse) String() string {
 func (*TableRowsResponse) ProtoMessage() {}
 
 func (x *TableRowsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[49]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[50]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3394,7 +3474,7 @@ func (x *TableRowsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableRowsResponse.ProtoReflect.Descriptor instead.
 func (*TableRowsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{49}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *TableRowsResponse) GetData() []*structpb.Struct {
@@ -3417,7 +3497,7 @@ type MetricsViewFilter_Cond struct {
 func (x *MetricsViewFilter_Cond) Reset() {
 	*x = MetricsViewFilter_Cond{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[50]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[51]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3430,7 +3510,7 @@ func (x *MetricsViewFilter_Cond) String() string {
 func (*MetricsViewFilter_Cond) ProtoMessage() {}
 
 func (x *MetricsViewFilter_Cond) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[50]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[51]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3479,7 +3559,7 @@ type TopK_Entry struct {
 func (x *TopK_Entry) Reset() {
 	*x = TopK_Entry{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[51]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[52]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3492,7 +3572,7 @@ func (x *TopK_Entry) String() string {
 func (*TopK_Entry) ProtoMessage() {}
 
 func (x *TopK_Entry) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[51]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[52]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3505,7 +3585,7 @@ func (x *TopK_Entry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TopK_Entry.ProtoReflect.Descriptor instead.
 func (*TopK_Entry) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{18, 0}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{19, 0}
 }
 
 func (x *TopK_Entry) GetValue() *structpb.Value {
@@ -3537,7 +3617,7 @@ type NumericHistogramBins_Bin struct {
 func (x *NumericHistogramBins_Bin) Reset() {
 	*x = NumericHistogramBins_Bin{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[52]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[53]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3550,7 +3630,7 @@ func (x *NumericHistogramBins_Bin) String() string {
 func (*NumericHistogramBins_Bin) ProtoMessage() {}
 
 func (x *NumericHistogramBins_Bin) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[52]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[53]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3563,7 +3643,7 @@ func (x *NumericHistogramBins_Bin) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NumericHistogramBins_Bin.ProtoReflect.Descriptor instead.
 func (*NumericHistogramBins_Bin) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{24, 0}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{25, 0}
 }
 
 func (x *NumericHistogramBins_Bin) GetBucket() int32 {
@@ -3616,7 +3696,7 @@ type NumericOutliers_Outlier struct {
 func (x *NumericOutliers_Outlier) Reset() {
 	*x = NumericOutliers_Outlier{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[53]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[54]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3629,7 +3709,7 @@ func (x *NumericOutliers_Outlier) String() string {
 func (*NumericOutliers_Outlier) ProtoMessage() {}
 
 func (x *NumericOutliers_Outlier) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[53]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[54]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3642,7 +3722,7 @@ func (x *NumericOutliers_Outlier) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NumericOutliers_Outlier.ProtoReflect.Descriptor instead.
 func (*NumericOutliers_Outlier) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{26, 0}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{27, 0}
 }
 
 func (x *NumericOutliers_Outlier) GetBucket() int32 {
@@ -3693,7 +3773,7 @@ type TimeRangeSummary_Interval struct {
 func (x *TimeRangeSummary_Interval) Reset() {
 	*x = TimeRangeSummary_Interval{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[54]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[55]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3706,7 +3786,7 @@ func (x *TimeRangeSummary_Interval) String() string {
 func (*TimeRangeSummary_Interval) ProtoMessage() {}
 
 func (x *TimeRangeSummary_Interval) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[54]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[55]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3719,7 +3799,7 @@ func (x *TimeRangeSummary_Interval) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimeRangeSummary_Interval.ProtoReflect.Descriptor instead.
 func (*TimeRangeSummary_Interval) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{35, 0}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{36, 0}
 }
 
 func (x *TimeRangeSummary_Interval) GetMonths() int32 {
@@ -3758,7 +3838,7 @@ type ColumnTimeSeriesRequest_BasicMeasure struct {
 func (x *ColumnTimeSeriesRequest_BasicMeasure) Reset() {
 	*x = ColumnTimeSeriesRequest_BasicMeasure{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_queries_proto_msgTypes[55]
+		mi := &file_rill_runtime_v1_queries_proto_msgTypes[56]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3771,7 +3851,7 @@ func (x *ColumnTimeSeriesRequest_BasicMeasure) String() string {
 func (*ColumnTimeSeriesRequest_BasicMeasure) ProtoMessage() {}
 
 func (x *ColumnTimeSeriesRequest_BasicMeasure) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_queries_proto_msgTypes[55]
+	mi := &file_rill_runtime_v1_queries_proto_msgTypes[56]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3784,7 +3864,7 @@ func (x *ColumnTimeSeriesRequest_BasicMeasure) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use ColumnTimeSeriesRequest_BasicMeasure.ProtoReflect.Descriptor instead.
 func (*ColumnTimeSeriesRequest_BasicMeasure) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{38, 0}
+	return file_rill_runtime_v1_queries_proto_rawDescGZIP(), []int{39, 0}
 }
 
 func (x *ColumnTimeSeriesRequest_BasicMeasure) GetId() string {
@@ -3844,7 +3924,7 @@ var file_rill_runtime_v1_queries_proto_rawDesc = []byte{
 	0x6d, 0x65, 0x74, 0x61, 0x12, 0x2b, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x03,
 	0x28, 0x0b, 0x32, 0x17, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74,
 	0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x52, 0x04, 0x64, 0x61, 0x74,
-	0x61, 0x22, 0xe2, 0x03, 0x0a, 0x19, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65,
+	0x61, 0x22, 0xab, 0x04, 0x0a, 0x19, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65,
 	0x77, 0x54, 0x6f, 0x70, 0x6c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12,
 	0x1f, 0x0a, 0x0b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x49, 0x64,
@@ -3855,158 +3935,176 @@ var file_rill_runtime_v1_queries_proto_rawDesc = []byte{
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x0d, 0x64, 0x69, 0x6d, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x4e,
 	0x61, 0x6d, 0x65, 0x12, 0x23, 0x0a, 0x0d, 0x6d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x5f, 0x6e,
 	0x61, 0x6d, 0x65, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0c, 0x6d, 0x65, 0x61, 0x73,
-	0x75, 0x72, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x12, 0x39, 0x0a, 0x0a, 0x74, 0x69, 0x6d, 0x65,
-	0x5f, 0x73, 0x74, 0x61, 0x72, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67,
+	0x75, 0x72, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x12, 0x47, 0x0a, 0x0f, 0x69, 0x6e, 0x6c, 0x69,
+	0x6e, 0x65, 0x5f, 0x6d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x73, 0x18, 0x0c, 0x20, 0x03, 0x28,
+	0x0b, 0x32, 0x1e, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65,
+	0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x6c, 0x69, 0x6e, 0x65, 0x4d, 0x65, 0x61, 0x73, 0x75, 0x72,
+	0x65, 0x52, 0x0e, 0x69, 0x6e, 0x6c, 0x69, 0x6e, 0x65, 0x4d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65,
+	0x73, 0x12, 0x39, 0x0a, 0x0a, 0x74, 0x69, 0x6d, 0x65, 0x5f, 0x73, 0x74, 0x61, 0x72, 0x74, 0x18,
+	0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d,
+	0x70, 0x52, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x72, 0x74, 0x12, 0x35, 0x0a, 0x08,
+	0x74, 0x69, 0x6d, 0x65, 0x5f, 0x65, 0x6e, 0x64, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a,
+	0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66,
+	0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x07, 0x74, 0x69, 0x6d, 0x65,
+	0x45, 0x6e, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18, 0x07, 0x20, 0x01,
+	0x28, 0x03, 0x52, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x6f, 0x66, 0x66,
+	0x73, 0x65, 0x74, 0x18, 0x08, 0x20, 0x01, 0x28, 0x03, 0x52, 0x06, 0x6f, 0x66, 0x66, 0x73, 0x65,
+	0x74, 0x12, 0x34, 0x0a, 0x04, 0x73, 0x6f, 0x72, 0x74, 0x18, 0x09, 0x20, 0x03, 0x28, 0x0b, 0x32,
+	0x20, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76,
+	0x31, 0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x53, 0x6f, 0x72,
+	0x74, 0x52, 0x04, 0x73, 0x6f, 0x72, 0x74, 0x12, 0x3a, 0x0a, 0x06, 0x66, 0x69, 0x6c, 0x74, 0x65,
+	0x72, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72,
+	0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63,
+	0x73, 0x56, 0x69, 0x65, 0x77, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x52, 0x06, 0x66, 0x69, 0x6c,
+	0x74, 0x65, 0x72, 0x12, 0x1a, 0x0a, 0x08, 0x70, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x18,
+	0x0b, 0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x70, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x22,
+	0x81, 0x01, 0x0a, 0x1a, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x54,
+	0x6f, 0x70, 0x6c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x36,
+	0x0a, 0x04, 0x6d, 0x65, 0x74, 0x61, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x72,
+	0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d,
+	0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e,
+	0x52, 0x04, 0x6d, 0x65, 0x74, 0x61, 0x12, 0x2b, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x02,
+	0x20, 0x03, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x52, 0x04, 0x64,
+	0x61, 0x74, 0x61, 0x22, 0xea, 0x03, 0x0a, 0x1c, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56,
+	0x69, 0x65, 0x77, 0x54, 0x69, 0x6d, 0x65, 0x53, 0x65, 0x72, 0x69, 0x65, 0x73, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65,
+	0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61,
+	0x6e, 0x63, 0x65, 0x49, 0x64, 0x12, 0x2a, 0x0a, 0x11, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73,
+	0x5f, 0x76, 0x69, 0x65, 0x77, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x0f, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x4e, 0x61, 0x6d,
+	0x65, 0x12, 0x23, 0x0a, 0x0d, 0x6d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x5f, 0x6e, 0x61, 0x6d,
+	0x65, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0c, 0x6d, 0x65, 0x61, 0x73, 0x75, 0x72,
+	0x65, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x12, 0x47, 0x0a, 0x0f, 0x69, 0x6e, 0x6c, 0x69, 0x6e, 0x65,
+	0x5f, 0x6d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x73, 0x18, 0x09, 0x20, 0x03, 0x28, 0x0b, 0x32,
+	0x1e, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76,
+	0x31, 0x2e, 0x49, 0x6e, 0x6c, 0x69, 0x6e, 0x65, 0x4d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x52,
+	0x0e, 0x69, 0x6e, 0x6c, 0x69, 0x6e, 0x65, 0x4d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x73, 0x12,
+	0x39, 0x0a, 0x0a, 0x74, 0x69, 0x6d, 0x65, 0x5f, 0x73, 0x74, 0x61, 0x72, 0x74, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52,
+	0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x72, 0x74, 0x12, 0x35, 0x0a, 0x08, 0x74, 0x69,
+	0x6d, 0x65, 0x5f, 0x65, 0x6e, 0x64, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67,
+	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54,
+	0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x07, 0x74, 0x69, 0x6d, 0x65, 0x45, 0x6e,
+	0x64, 0x12, 0x45, 0x0a, 0x10, 0x74, 0x69, 0x6d, 0x65, 0x5f, 0x67, 0x72, 0x61, 0x6e, 0x75, 0x6c,
+	0x61, 0x72, 0x69, 0x74, 0x79, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x1a, 0x2e, 0x72, 0x69,
+	0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x69,
+	0x6d, 0x65, 0x47, 0x72, 0x61, 0x69, 0x6e, 0x52, 0x0f, 0x74, 0x69, 0x6d, 0x65, 0x47, 0x72, 0x61,
+	0x6e, 0x75, 0x6c, 0x61, 0x72, 0x69, 0x74, 0x79, 0x12, 0x3a, 0x0a, 0x06, 0x66, 0x69, 0x6c, 0x74,
+	0x65, 0x72, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e,
+	0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69,
+	0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x52, 0x06, 0x66, 0x69,
+	0x6c, 0x74, 0x65, 0x72, 0x12, 0x1a, 0x0a, 0x08, 0x70, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79,
+	0x18, 0x08, 0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x70, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79,
+	0x22, 0x8d, 0x01, 0x0a, 0x1d, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77,
+	0x54, 0x69, 0x6d, 0x65, 0x53, 0x65, 0x72, 0x69, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x12, 0x36, 0x0a, 0x04, 0x6d, 0x65, 0x74, 0x61, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b,
+	0x32, 0x22, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e,
+	0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x43, 0x6f,
+	0x6c, 0x75, 0x6d, 0x6e, 0x52, 0x04, 0x6d, 0x65, 0x74, 0x61, 0x12, 0x34, 0x0a, 0x04, 0x64, 0x61,
+	0x74, 0x61, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e,
+	0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x53,
+	0x65, 0x72, 0x69, 0x65, 0x73, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61,
+	0x22, 0x9f, 0x03, 0x0a, 0x18, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77,
+	0x54, 0x6f, 0x74, 0x61, 0x6c, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1f, 0x0a,
+	0x0b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x49, 0x64, 0x12, 0x2a,
+	0x0a, 0x11, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x5f, 0x76, 0x69, 0x65, 0x77, 0x5f, 0x6e,
+	0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0f, 0x6d, 0x65, 0x74, 0x72, 0x69,
+	0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x23, 0x0a, 0x0d, 0x6d, 0x65,
+	0x61, 0x73, 0x75, 0x72, 0x65, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28,
+	0x09, 0x52, 0x0c, 0x6d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x12,
+	0x47, 0x0a, 0x0f, 0x69, 0x6e, 0x6c, 0x69, 0x6e, 0x65, 0x5f, 0x6d, 0x65, 0x61, 0x73, 0x75, 0x72,
+	0x65, 0x73, 0x18, 0x09, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e,
+	0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x6c, 0x69, 0x6e,
+	0x65, 0x4d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x52, 0x0e, 0x69, 0x6e, 0x6c, 0x69, 0x6e, 0x65,
+	0x4d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x73, 0x12, 0x39, 0x0a, 0x0a, 0x74, 0x69, 0x6d, 0x65,
+	0x5f, 0x73, 0x74, 0x61, 0x72, 0x74, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67,
 	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54,
 	0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74,
 	0x61, 0x72, 0x74, 0x12, 0x35, 0x0a, 0x08, 0x74, 0x69, 0x6d, 0x65, 0x5f, 0x65, 0x6e, 0x64, 0x18,
-	0x06, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70,
+	0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70,
 	0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d,
-	0x70, 0x52, 0x07, 0x74, 0x69, 0x6d, 0x65, 0x45, 0x6e, 0x64, 0x12, 0x14, 0x0a, 0x05, 0x6c, 0x69,
-	0x6d, 0x69, 0x74, 0x18, 0x07, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74,
-	0x12, 0x16, 0x0a, 0x06, 0x6f, 0x66, 0x66, 0x73, 0x65, 0x74, 0x18, 0x08, 0x20, 0x01, 0x28, 0x03,
-	0x52, 0x06, 0x6f, 0x66, 0x66, 0x73, 0x65, 0x74, 0x12, 0x34, 0x0a, 0x04, 0x73, 0x6f, 0x72, 0x74,
-	0x18, 0x09, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75,
-	0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73,
-	0x56, 0x69, 0x65, 0x77, 0x53, 0x6f, 0x72, 0x74, 0x52, 0x04, 0x73, 0x6f, 0x72, 0x74, 0x12, 0x3a,
-	0x0a, 0x06, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22,
-	0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31,
-	0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x46, 0x69, 0x6c, 0x74,
-	0x65, 0x72, 0x52, 0x06, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x12, 0x1a, 0x0a, 0x08, 0x70, 0x72,
-	0x69, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x18, 0x0b, 0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x70, 0x72,
-	0x69, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x22, 0x81, 0x01, 0x0a, 0x1a, 0x4d, 0x65, 0x74, 0x72, 0x69,
-	0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x54, 0x6f, 0x70, 0x6c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x36, 0x0a, 0x04, 0x6d, 0x65, 0x74, 0x61, 0x18, 0x01, 0x20,
-	0x03, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69,
-	0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65,
-	0x77, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x52, 0x04, 0x6d, 0x65, 0x74, 0x61, 0x12, 0x2b, 0x0a,
-	0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x67, 0x6f,
-	0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53, 0x74,
-	0x72, 0x75, 0x63, 0x74, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0xa1, 0x03, 0x0a, 0x1c, 0x4d,
-	0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x54, 0x69, 0x6d, 0x65, 0x53, 0x65,
-	0x72, 0x69, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x69,
-	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x49, 0x64, 0x12, 0x2a, 0x0a, 0x11,
-	0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x5f, 0x76, 0x69, 0x65, 0x77, 0x5f, 0x6e, 0x61, 0x6d,
-	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0f, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73,
-	0x56, 0x69, 0x65, 0x77, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x23, 0x0a, 0x0d, 0x6d, 0x65, 0x61, 0x73,
-	0x75, 0x72, 0x65, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x09, 0x52,
-	0x0c, 0x6d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x12, 0x39, 0x0a,
-	0x0a, 0x74, 0x69, 0x6d, 0x65, 0x5f, 0x73, 0x74, 0x61, 0x72, 0x74, 0x18, 0x04, 0x20, 0x01, 0x28,
-	0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x09, 0x74,
-	0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x72, 0x74, 0x12, 0x35, 0x0a, 0x08, 0x74, 0x69, 0x6d, 0x65,
-	0x5f, 0x65, 0x6e, 0x64, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f,
-	0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d,
-	0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x07, 0x74, 0x69, 0x6d, 0x65, 0x45, 0x6e, 0x64, 0x12,
-	0x45, 0x0a, 0x10, 0x74, 0x69, 0x6d, 0x65, 0x5f, 0x67, 0x72, 0x61, 0x6e, 0x75, 0x6c, 0x61, 0x72,
-	0x69, 0x74, 0x79, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x1a, 0x2e, 0x72, 0x69, 0x6c, 0x6c,
-	0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x69, 0x6d, 0x65,
-	0x47, 0x72, 0x61, 0x69, 0x6e, 0x52, 0x0f, 0x74, 0x69, 0x6d, 0x65, 0x47, 0x72, 0x61, 0x6e, 0x75,
-	0x6c, 0x61, 0x72, 0x69, 0x74, 0x79, 0x12, 0x3a, 0x0a, 0x06, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72,
-	0x18, 0x07, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75,
-	0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73,
-	0x56, 0x69, 0x65, 0x77, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x52, 0x06, 0x66, 0x69, 0x6c, 0x74,
-	0x65, 0x72, 0x12, 0x1a, 0x0a, 0x08, 0x70, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x18, 0x08,
-	0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x70, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x22, 0x8d,
-	0x01, 0x0a, 0x1d, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x54, 0x69,
-	0x6d, 0x65, 0x53, 0x65, 0x72, 0x69, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x70, 0x52, 0x07, 0x74, 0x69, 0x6d, 0x65, 0x45, 0x6e, 0x64, 0x12, 0x3a, 0x0a, 0x06, 0x66, 0x69,
+	0x6c, 0x74, 0x65, 0x72, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x72, 0x69, 0x6c,
+	0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74,
+	0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x52, 0x06,
+	0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x12, 0x1a, 0x0a, 0x08, 0x70, 0x72, 0x69, 0x6f, 0x72, 0x69,
+	0x74, 0x79, 0x18, 0x08, 0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x70, 0x72, 0x69, 0x6f, 0x72, 0x69,
+	0x74, 0x79, 0x22, 0x80, 0x01, 0x0a, 0x19, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69,
+	0x65, 0x77, 0x54, 0x6f, 0x74, 0x61, 0x6c, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
 	0x12, 0x36, 0x0a, 0x04, 0x6d, 0x65, 0x74, 0x61, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x22,
 	0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31,
 	0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x43, 0x6f, 0x6c, 0x75,
-	0x6d, 0x6e, 0x52, 0x04, 0x6d, 0x65, 0x74, 0x61, 0x12, 0x34, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61,
-	0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75,
-	0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x53, 0x65, 0x72,
-	0x69, 0x65, 0x73, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0xd6,
-	0x02, 0x0a, 0x18, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x54, 0x6f,
-	0x74, 0x61, 0x6c, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x69,
-	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x49, 0x64, 0x12, 0x2a, 0x0a, 0x11,
-	0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x5f, 0x76, 0x69, 0x65, 0x77, 0x5f, 0x6e, 0x61, 0x6d,
-	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0f, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73,
-	0x56, 0x69, 0x65, 0x77, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x23, 0x0a, 0x0d, 0x6d, 0x65, 0x61, 0x73,
-	0x75, 0x72, 0x65, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x09, 0x52,
-	0x0c, 0x6d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x73, 0x12, 0x39, 0x0a,
-	0x0a, 0x74, 0x69, 0x6d, 0x65, 0x5f, 0x73, 0x74, 0x61, 0x72, 0x74, 0x18, 0x04, 0x20, 0x01, 0x28,
+	0x6d, 0x6e, 0x52, 0x04, 0x6d, 0x65, 0x74, 0x61, 0x12, 0x2b, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x52,
+	0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0x93, 0x03, 0x0a, 0x16, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63,
+	0x73, 0x56, 0x69, 0x65, 0x77, 0x52, 0x6f, 0x77, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x12, 0x1f, 0x0a, 0x0b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x49,
+	0x64, 0x12, 0x2a, 0x0a, 0x11, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x5f, 0x76, 0x69, 0x65,
+	0x77, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0f, 0x6d, 0x65,
+	0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x39, 0x0a,
+	0x0a, 0x74, 0x69, 0x6d, 0x65, 0x5f, 0x73, 0x74, 0x61, 0x72, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28,
 	0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 	0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x09, 0x74,
 	0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x72, 0x74, 0x12, 0x35, 0x0a, 0x08, 0x74, 0x69, 0x6d, 0x65,
-	0x5f, 0x65, 0x6e, 0x64, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f,
+	0x5f, 0x65, 0x6e, 0x64, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f,
 	0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d,
 	0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x07, 0x74, 0x69, 0x6d, 0x65, 0x45, 0x6e, 0x64, 0x12,
-	0x3a, 0x0a, 0x06, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x3a, 0x0a, 0x06, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32,
 	0x22, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76,
 	0x31, 0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x46, 0x69, 0x6c,
-	0x74, 0x65, 0x72, 0x52, 0x06, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x12, 0x1a, 0x0a, 0x08, 0x70,
-	0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x18, 0x08, 0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x70,
-	0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x22, 0x80, 0x01, 0x0a, 0x19, 0x4d, 0x65, 0x74, 0x72,
-	0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x54, 0x6f, 0x74, 0x61, 0x6c, 0x73, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x36, 0x0a, 0x04, 0x6d, 0x65, 0x74, 0x61, 0x18, 0x01, 0x20,
-	0x03, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69,
-	0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65,
-	0x77, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x52, 0x04, 0x6d, 0x65, 0x74, 0x61, 0x12, 0x2b, 0x0a,
-	0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x67, 0x6f,
-	0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53, 0x74,
-	0x72, 0x75, 0x63, 0x74, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0x93, 0x03, 0x0a, 0x16, 0x4d,
-	0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x52, 0x6f, 0x77, 0x73, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63,
-	0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74,
-	0x61, 0x6e, 0x63, 0x65, 0x49, 0x64, 0x12, 0x2a, 0x0a, 0x11, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63,
-	0x73, 0x5f, 0x76, 0x69, 0x65, 0x77, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x0f, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x4e, 0x61,
-	0x6d, 0x65, 0x12, 0x39, 0x0a, 0x0a, 0x74, 0x69, 0x6d, 0x65, 0x5f, 0x73, 0x74, 0x61, 0x72, 0x74,
-	0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61,
-	0x6d, 0x70, 0x52, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x53, 0x74, 0x61, 0x72, 0x74, 0x12, 0x35, 0x0a,
-	0x08, 0x74, 0x69, 0x6d, 0x65, 0x5f, 0x65, 0x6e, 0x64, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32,
-	0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75,
-	0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x07, 0x74, 0x69, 0x6d,
-	0x65, 0x45, 0x6e, 0x64, 0x12, 0x3a, 0x0a, 0x06, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x18, 0x05,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74,
-	0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69,
-	0x65, 0x77, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x52, 0x06, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72,
-	0x12, 0x34, 0x0a, 0x04, 0x73, 0x6f, 0x72, 0x74, 0x18, 0x06, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x20,
-	0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31,
-	0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x53, 0x6f, 0x72, 0x74,
-	0x52, 0x04, 0x73, 0x6f, 0x72, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18,
-	0x07, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x12, 0x16, 0x0a, 0x06,
-	0x6f, 0x66, 0x66, 0x73, 0x65, 0x74, 0x18, 0x08, 0x20, 0x01, 0x28, 0x03, 0x52, 0x06, 0x6f, 0x66,
-	0x66, 0x73, 0x65, 0x74, 0x12, 0x1a, 0x0a, 0x08, 0x70, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79,
-	0x18, 0x09, 0x20, 0x01, 0x28, 0x05, 0x52, 0x08, 0x70, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79,
-	0x22, 0x7e, 0x0a, 0x17, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x52,
-	0x6f, 0x77, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x36, 0x0a, 0x04, 0x6d,
-	0x65, 0x74, 0x61, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x72, 0x69, 0x6c, 0x6c,
+	0x74, 0x65, 0x72, 0x52, 0x06, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x12, 0x34, 0x0a, 0x04, 0x73,
+	0x6f, 0x72, 0x74, 0x18, 0x06, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x72, 0x69, 0x6c, 0x6c,
 	0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74, 0x72,
-	0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x52, 0x04, 0x6d,
-	0x65, 0x74, 0x61, 0x12, 0x2b, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x03, 0x28,
-	0x0b, 0x32, 0x17, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x62, 0x75, 0x66, 0x2e, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61,
-	0x22, 0x43, 0x0a, 0x0f, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x53,
-	0x6f, 0x72, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x1c, 0x0a, 0x09, 0x61, 0x73, 0x63, 0x65, 0x6e,
-	0x64, 0x69, 0x6e, 0x67, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x09, 0x61, 0x73, 0x63, 0x65,
-	0x6e, 0x64, 0x69, 0x6e, 0x67, 0x22, 0xf1, 0x01, 0x0a, 0x11, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63,
-	0x73, 0x56, 0x69, 0x65, 0x77, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x12, 0x41, 0x0a, 0x07, 0x69,
-	0x6e, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x27, 0x2e, 0x72,
-	0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d,
-	0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72,
-	0x2e, 0x43, 0x6f, 0x6e, 0x64, 0x52, 0x07, 0x69, 0x6e, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x12, 0x41,
-	0x0a, 0x07, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32,
-	0x27, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76,
-	0x31, 0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x46, 0x69, 0x6c,
-	0x74, 0x65, 0x72, 0x2e, 0x43, 0x6f, 0x6e, 0x64, 0x52, 0x07, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x64,
-	0x65, 0x1a, 0x56, 0x0a, 0x04, 0x43, 0x6f, 0x6e, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d,
-	0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x26, 0x0a,
-	0x02, 0x69, 0x6e, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67,
-	0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x56, 0x61, 0x6c, 0x75,
-	0x65, 0x52, 0x02, 0x69, 0x6e, 0x12, 0x12, 0x0a, 0x04, 0x6c, 0x69, 0x6b, 0x65, 0x18, 0x03, 0x20,
-	0x03, 0x28, 0x09, 0x52, 0x04, 0x6c, 0x69, 0x6b, 0x65, 0x22, 0x57, 0x0a, 0x11, 0x4d, 0x65, 0x74,
-	0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x12, 0x12,
+	0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x53, 0x6f, 0x72, 0x74, 0x52, 0x04, 0x73, 0x6f, 0x72,
+	0x74, 0x12, 0x14, 0x0a, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18, 0x07, 0x20, 0x01, 0x28, 0x05,
+	0x52, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x12, 0x16, 0x0a, 0x06, 0x6f, 0x66, 0x66, 0x73, 0x65,
+	0x74, 0x18, 0x08, 0x20, 0x01, 0x28, 0x03, 0x52, 0x06, 0x6f, 0x66, 0x66, 0x73, 0x65, 0x74, 0x12,
+	0x1a, 0x0a, 0x08, 0x70, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x18, 0x09, 0x20, 0x01, 0x28,
+	0x05, 0x52, 0x08, 0x70, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x22, 0x7e, 0x0a, 0x17, 0x4d,
+	0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x52, 0x6f, 0x77, 0x73, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x36, 0x0a, 0x04, 0x6d, 0x65, 0x74, 0x61, 0x18, 0x01,
+	0x20, 0x03, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74,
+	0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69,
+	0x65, 0x77, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x52, 0x04, 0x6d, 0x65, 0x74, 0x61, 0x12, 0x2b,
+	0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x67,
+	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53,
+	0x74, 0x72, 0x75, 0x63, 0x74, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0x43, 0x0a, 0x0f, 0x4d,
+	0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x53, 0x6f, 0x72, 0x74, 0x12, 0x12,
 	0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61,
-	0x6d, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x1a, 0x0a, 0x08, 0x6e, 0x75, 0x6c, 0x6c, 0x61, 0x62,
-	0x6c, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x52, 0x08, 0x6e, 0x75, 0x6c, 0x6c, 0x61, 0x62,
-	0x6c, 0x65, 0x22, 0x9a, 0x01, 0x0a, 0x1b, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x52, 0x6f, 0x6c,
+	0x6d, 0x65, 0x12, 0x1c, 0x0a, 0x09, 0x61, 0x73, 0x63, 0x65, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x09, 0x61, 0x73, 0x63, 0x65, 0x6e, 0x64, 0x69, 0x6e, 0x67,
+	0x22, 0xf1, 0x01, 0x0a, 0x11, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77,
+	0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x12, 0x41, 0x0a, 0x07, 0x69, 0x6e, 0x63, 0x6c, 0x75, 0x64,
+	0x65, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x27, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72,
+	0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63,
+	0x73, 0x56, 0x69, 0x65, 0x77, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x2e, 0x43, 0x6f, 0x6e, 0x64,
+	0x52, 0x07, 0x69, 0x6e, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x12, 0x41, 0x0a, 0x07, 0x65, 0x78, 0x63,
+	0x6c, 0x75, 0x64, 0x65, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x27, 0x2e, 0x72, 0x69, 0x6c,
+	0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74,
+	0x72, 0x69, 0x63, 0x73, 0x56, 0x69, 0x65, 0x77, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x2e, 0x43,
+	0x6f, 0x6e, 0x64, 0x52, 0x07, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x1a, 0x56, 0x0a, 0x04,
+	0x43, 0x6f, 0x6e, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x26, 0x0a, 0x02, 0x69, 0x6e, 0x18, 0x02,
+	0x20, 0x03, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x02, 0x69, 0x6e,
+	0x12, 0x12, 0x0a, 0x04, 0x6c, 0x69, 0x6b, 0x65, 0x18, 0x03, 0x20, 0x03, 0x28, 0x09, 0x52, 0x04,
+	0x6c, 0x69, 0x6b, 0x65, 0x22, 0x57, 0x0a, 0x11, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x56,
+	0x69, 0x65, 0x77, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d,
+	0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x12, 0x0a,
+	0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x74, 0x79, 0x70,
+	0x65, 0x12, 0x1a, 0x0a, 0x08, 0x6e, 0x75, 0x6c, 0x6c, 0x61, 0x62, 0x6c, 0x65, 0x18, 0x03, 0x20,
+	0x01, 0x28, 0x08, 0x52, 0x08, 0x6e, 0x75, 0x6c, 0x6c, 0x61, 0x62, 0x6c, 0x65, 0x22, 0x43, 0x0a,
+	0x0d, 0x49, 0x6e, 0x6c, 0x69, 0x6e, 0x65, 0x4d, 0x65, 0x61, 0x73, 0x75, 0x72, 0x65, 0x12, 0x12,
+	0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61,
+	0x6d, 0x65, 0x12, 0x1e, 0x0a, 0x0a, 0x65, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x65, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73, 0x69,
+	0x6f, 0x6e, 0x22, 0x9a, 0x01, 0x0a, 0x1b, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x52, 0x6f, 0x6c,
 	0x6c, 0x75, 0x70, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x76, 0x61, 0x6c, 0x52, 0x65, 0x71, 0x75, 0x65,
 	0x73, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69,
 	0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63,
@@ -4610,7 +4708,7 @@ func file_rill_runtime_v1_queries_proto_rawDescGZIP() []byte {
 }
 
 var file_rill_runtime_v1_queries_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_rill_runtime_v1_queries_proto_msgTypes = make([]protoimpl.MessageInfo, 56)
+var file_rill_runtime_v1_queries_proto_msgTypes = make([]protoimpl.MessageInfo, 57)
 var file_rill_runtime_v1_queries_proto_goTypes = []interface{}{
 	(HistogramMethod)(0),                         // 0: rill.runtime.v1.HistogramMethod
 	(*QueryRequest)(nil),                         // 1: rill.runtime.v1.QueryRequest
@@ -4626,162 +4724,166 @@ var file_rill_runtime_v1_queries_proto_goTypes = []interface{}{
 	(*MetricsViewSort)(nil),                      // 11: rill.runtime.v1.MetricsViewSort
 	(*MetricsViewFilter)(nil),                    // 12: rill.runtime.v1.MetricsViewFilter
 	(*MetricsViewColumn)(nil),                    // 13: rill.runtime.v1.MetricsViewColumn
-	(*ColumnRollupIntervalRequest)(nil),          // 14: rill.runtime.v1.ColumnRollupIntervalRequest
-	(*ColumnRollupIntervalResponse)(nil),         // 15: rill.runtime.v1.ColumnRollupIntervalResponse
-	(*ColumnTopKRequest)(nil),                    // 16: rill.runtime.v1.ColumnTopKRequest
-	(*ColumnTopKResponse)(nil),                   // 17: rill.runtime.v1.ColumnTopKResponse
-	(*CategoricalSummary)(nil),                   // 18: rill.runtime.v1.CategoricalSummary
-	(*TopK)(nil),                                 // 19: rill.runtime.v1.TopK
-	(*ColumnNullCountRequest)(nil),               // 20: rill.runtime.v1.ColumnNullCountRequest
-	(*ColumnNullCountResponse)(nil),              // 21: rill.runtime.v1.ColumnNullCountResponse
-	(*ColumnDescriptiveStatisticsRequest)(nil),   // 22: rill.runtime.v1.ColumnDescriptiveStatisticsRequest
-	(*ColumnDescriptiveStatisticsResponse)(nil),  // 23: rill.runtime.v1.ColumnDescriptiveStatisticsResponse
-	(*NumericSummary)(nil),                       // 24: rill.runtime.v1.NumericSummary
-	(*NumericHistogramBins)(nil),                 // 25: rill.runtime.v1.NumericHistogramBins
-	(*NumericStatistics)(nil),                    // 26: rill.runtime.v1.NumericStatistics
-	(*NumericOutliers)(nil),                      // 27: rill.runtime.v1.NumericOutliers
-	(*ColumnTimeGrainRequest)(nil),               // 28: rill.runtime.v1.ColumnTimeGrainRequest
-	(*ColumnTimeGrainResponse)(nil),              // 29: rill.runtime.v1.ColumnTimeGrainResponse
-	(*ColumnNumericHistogramRequest)(nil),        // 30: rill.runtime.v1.ColumnNumericHistogramRequest
-	(*ColumnNumericHistogramResponse)(nil),       // 31: rill.runtime.v1.ColumnNumericHistogramResponse
-	(*ColumnRugHistogramRequest)(nil),            // 32: rill.runtime.v1.ColumnRugHistogramRequest
-	(*ColumnRugHistogramResponse)(nil),           // 33: rill.runtime.v1.ColumnRugHistogramResponse
-	(*ColumnTimeRangeRequest)(nil),               // 34: rill.runtime.v1.ColumnTimeRangeRequest
-	(*ColumnTimeRangeResponse)(nil),              // 35: rill.runtime.v1.ColumnTimeRangeResponse
-	(*TimeRangeSummary)(nil),                     // 36: rill.runtime.v1.TimeRangeSummary
-	(*ColumnCardinalityRequest)(nil),             // 37: rill.runtime.v1.ColumnCardinalityRequest
-	(*ColumnCardinalityResponse)(nil),            // 38: rill.runtime.v1.ColumnCardinalityResponse
-	(*ColumnTimeSeriesRequest)(nil),              // 39: rill.runtime.v1.ColumnTimeSeriesRequest
-	(*ColumnTimeSeriesResponse)(nil),             // 40: rill.runtime.v1.ColumnTimeSeriesResponse
-	(*TimeSeriesTimeRange)(nil),                  // 41: rill.runtime.v1.TimeSeriesTimeRange
-	(*TimeSeriesResponse)(nil),                   // 42: rill.runtime.v1.TimeSeriesResponse
-	(*TimeSeriesValue)(nil),                      // 43: rill.runtime.v1.TimeSeriesValue
-	(*TableCardinalityRequest)(nil),              // 44: rill.runtime.v1.TableCardinalityRequest
-	(*TableCardinalityResponse)(nil),             // 45: rill.runtime.v1.TableCardinalityResponse
-	(*TableColumnsRequest)(nil),                  // 46: rill.runtime.v1.TableColumnsRequest
-	(*TableColumnsResponse)(nil),                 // 47: rill.runtime.v1.TableColumnsResponse
-	(*ProfileColumn)(nil),                        // 48: rill.runtime.v1.ProfileColumn
-	(*TableRowsRequest)(nil),                     // 49: rill.runtime.v1.TableRowsRequest
-	(*TableRowsResponse)(nil),                    // 50: rill.runtime.v1.TableRowsResponse
-	(*MetricsViewFilter_Cond)(nil),               // 51: rill.runtime.v1.MetricsViewFilter.Cond
-	(*TopK_Entry)(nil),                           // 52: rill.runtime.v1.TopK.Entry
-	(*NumericHistogramBins_Bin)(nil),             // 53: rill.runtime.v1.NumericHistogramBins.Bin
-	(*NumericOutliers_Outlier)(nil),              // 54: rill.runtime.v1.NumericOutliers.Outlier
-	(*TimeRangeSummary_Interval)(nil),            // 55: rill.runtime.v1.TimeRangeSummary.Interval
-	(*ColumnTimeSeriesRequest_BasicMeasure)(nil), // 56: rill.runtime.v1.ColumnTimeSeriesRequest.BasicMeasure
-	(*structpb.Value)(nil),                       // 57: google.protobuf.Value
-	(*StructType)(nil),                           // 58: rill.runtime.v1.StructType
-	(*structpb.Struct)(nil),                      // 59: google.protobuf.Struct
-	(*timestamppb.Timestamp)(nil),                // 60: google.protobuf.Timestamp
-	(TimeGrain)(0),                               // 61: rill.runtime.v1.TimeGrain
+	(*InlineMeasure)(nil),                        // 14: rill.runtime.v1.InlineMeasure
+	(*ColumnRollupIntervalRequest)(nil),          // 15: rill.runtime.v1.ColumnRollupIntervalRequest
+	(*ColumnRollupIntervalResponse)(nil),         // 16: rill.runtime.v1.ColumnRollupIntervalResponse
+	(*ColumnTopKRequest)(nil),                    // 17: rill.runtime.v1.ColumnTopKRequest
+	(*ColumnTopKResponse)(nil),                   // 18: rill.runtime.v1.ColumnTopKResponse
+	(*CategoricalSummary)(nil),                   // 19: rill.runtime.v1.CategoricalSummary
+	(*TopK)(nil),                                 // 20: rill.runtime.v1.TopK
+	(*ColumnNullCountRequest)(nil),               // 21: rill.runtime.v1.ColumnNullCountRequest
+	(*ColumnNullCountResponse)(nil),              // 22: rill.runtime.v1.ColumnNullCountResponse
+	(*ColumnDescriptiveStatisticsRequest)(nil),   // 23: rill.runtime.v1.ColumnDescriptiveStatisticsRequest
+	(*ColumnDescriptiveStatisticsResponse)(nil),  // 24: rill.runtime.v1.ColumnDescriptiveStatisticsResponse
+	(*NumericSummary)(nil),                       // 25: rill.runtime.v1.NumericSummary
+	(*NumericHistogramBins)(nil),                 // 26: rill.runtime.v1.NumericHistogramBins
+	(*NumericStatistics)(nil),                    // 27: rill.runtime.v1.NumericStatistics
+	(*NumericOutliers)(nil),                      // 28: rill.runtime.v1.NumericOutliers
+	(*ColumnTimeGrainRequest)(nil),               // 29: rill.runtime.v1.ColumnTimeGrainRequest
+	(*ColumnTimeGrainResponse)(nil),              // 30: rill.runtime.v1.ColumnTimeGrainResponse
+	(*ColumnNumericHistogramRequest)(nil),        // 31: rill.runtime.v1.ColumnNumericHistogramRequest
+	(*ColumnNumericHistogramResponse)(nil),       // 32: rill.runtime.v1.ColumnNumericHistogramResponse
+	(*ColumnRugHistogramRequest)(nil),            // 33: rill.runtime.v1.ColumnRugHistogramRequest
+	(*ColumnRugHistogramResponse)(nil),           // 34: rill.runtime.v1.ColumnRugHistogramResponse
+	(*ColumnTimeRangeRequest)(nil),               // 35: rill.runtime.v1.ColumnTimeRangeRequest
+	(*ColumnTimeRangeResponse)(nil),              // 36: rill.runtime.v1.ColumnTimeRangeResponse
+	(*TimeRangeSummary)(nil),                     // 37: rill.runtime.v1.TimeRangeSummary
+	(*ColumnCardinalityRequest)(nil),             // 38: rill.runtime.v1.ColumnCardinalityRequest
+	(*ColumnCardinalityResponse)(nil),            // 39: rill.runtime.v1.ColumnCardinalityResponse
+	(*ColumnTimeSeriesRequest)(nil),              // 40: rill.runtime.v1.ColumnTimeSeriesRequest
+	(*ColumnTimeSeriesResponse)(nil),             // 41: rill.runtime.v1.ColumnTimeSeriesResponse
+	(*TimeSeriesTimeRange)(nil),                  // 42: rill.runtime.v1.TimeSeriesTimeRange
+	(*TimeSeriesResponse)(nil),                   // 43: rill.runtime.v1.TimeSeriesResponse
+	(*TimeSeriesValue)(nil),                      // 44: rill.runtime.v1.TimeSeriesValue
+	(*TableCardinalityRequest)(nil),              // 45: rill.runtime.v1.TableCardinalityRequest
+	(*TableCardinalityResponse)(nil),             // 46: rill.runtime.v1.TableCardinalityResponse
+	(*TableColumnsRequest)(nil),                  // 47: rill.runtime.v1.TableColumnsRequest
+	(*TableColumnsResponse)(nil),                 // 48: rill.runtime.v1.TableColumnsResponse
+	(*ProfileColumn)(nil),                        // 49: rill.runtime.v1.ProfileColumn
+	(*TableRowsRequest)(nil),                     // 50: rill.runtime.v1.TableRowsRequest
+	(*TableRowsResponse)(nil),                    // 51: rill.runtime.v1.TableRowsResponse
+	(*MetricsViewFilter_Cond)(nil),               // 52: rill.runtime.v1.MetricsViewFilter.Cond
+	(*TopK_Entry)(nil),                           // 53: rill.runtime.v1.TopK.Entry
+	(*NumericHistogramBins_Bin)(nil),             // 54: rill.runtime.v1.NumericHistogramBins.Bin
+	(*NumericOutliers_Outlier)(nil),              // 55: rill.runtime.v1.NumericOutliers.Outlier
+	(*TimeRangeSummary_Interval)(nil),            // 56: rill.runtime.v1.TimeRangeSummary.Interval
+	(*ColumnTimeSeriesRequest_BasicMeasure)(nil), // 57: rill.runtime.v1.ColumnTimeSeriesRequest.BasicMeasure
+	(*structpb.Value)(nil),                       // 58: google.protobuf.Value
+	(*StructType)(nil),                           // 59: rill.runtime.v1.StructType
+	(*structpb.Struct)(nil),                      // 60: google.protobuf.Struct
+	(*timestamppb.Timestamp)(nil),                // 61: google.protobuf.Timestamp
+	(TimeGrain)(0),                               // 62: rill.runtime.v1.TimeGrain
 }
 var file_rill_runtime_v1_queries_proto_depIdxs = []int32{
-	57, // 0: rill.runtime.v1.QueryRequest.args:type_name -> google.protobuf.Value
-	58, // 1: rill.runtime.v1.QueryResponse.meta:type_name -> rill.runtime.v1.StructType
-	59, // 2: rill.runtime.v1.QueryResponse.data:type_name -> google.protobuf.Struct
-	60, // 3: rill.runtime.v1.MetricsViewToplistRequest.time_start:type_name -> google.protobuf.Timestamp
-	60, // 4: rill.runtime.v1.MetricsViewToplistRequest.time_end:type_name -> google.protobuf.Timestamp
-	11, // 5: rill.runtime.v1.MetricsViewToplistRequest.sort:type_name -> rill.runtime.v1.MetricsViewSort
-	12, // 6: rill.runtime.v1.MetricsViewToplistRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
-	13, // 7: rill.runtime.v1.MetricsViewToplistResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
-	59, // 8: rill.runtime.v1.MetricsViewToplistResponse.data:type_name -> google.protobuf.Struct
-	60, // 9: rill.runtime.v1.MetricsViewTimeSeriesRequest.time_start:type_name -> google.protobuf.Timestamp
-	60, // 10: rill.runtime.v1.MetricsViewTimeSeriesRequest.time_end:type_name -> google.protobuf.Timestamp
-	61, // 11: rill.runtime.v1.MetricsViewTimeSeriesRequest.time_granularity:type_name -> rill.runtime.v1.TimeGrain
-	12, // 12: rill.runtime.v1.MetricsViewTimeSeriesRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
-	13, // 13: rill.runtime.v1.MetricsViewTimeSeriesResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
-	43, // 14: rill.runtime.v1.MetricsViewTimeSeriesResponse.data:type_name -> rill.runtime.v1.TimeSeriesValue
-	60, // 15: rill.runtime.v1.MetricsViewTotalsRequest.time_start:type_name -> google.protobuf.Timestamp
-	60, // 16: rill.runtime.v1.MetricsViewTotalsRequest.time_end:type_name -> google.protobuf.Timestamp
-	12, // 17: rill.runtime.v1.MetricsViewTotalsRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
-	13, // 18: rill.runtime.v1.MetricsViewTotalsResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
-	59, // 19: rill.runtime.v1.MetricsViewTotalsResponse.data:type_name -> google.protobuf.Struct
-	60, // 20: rill.runtime.v1.MetricsViewRowsRequest.time_start:type_name -> google.protobuf.Timestamp
-	60, // 21: rill.runtime.v1.MetricsViewRowsRequest.time_end:type_name -> google.protobuf.Timestamp
-	12, // 22: rill.runtime.v1.MetricsViewRowsRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
-	11, // 23: rill.runtime.v1.MetricsViewRowsRequest.sort:type_name -> rill.runtime.v1.MetricsViewSort
-	13, // 24: rill.runtime.v1.MetricsViewRowsResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
-	59, // 25: rill.runtime.v1.MetricsViewRowsResponse.data:type_name -> google.protobuf.Struct
-	51, // 26: rill.runtime.v1.MetricsViewFilter.include:type_name -> rill.runtime.v1.MetricsViewFilter.Cond
-	51, // 27: rill.runtime.v1.MetricsViewFilter.exclude:type_name -> rill.runtime.v1.MetricsViewFilter.Cond
-	60, // 28: rill.runtime.v1.ColumnRollupIntervalResponse.start:type_name -> google.protobuf.Timestamp
-	60, // 29: rill.runtime.v1.ColumnRollupIntervalResponse.end:type_name -> google.protobuf.Timestamp
-	61, // 30: rill.runtime.v1.ColumnRollupIntervalResponse.interval:type_name -> rill.runtime.v1.TimeGrain
-	18, // 31: rill.runtime.v1.ColumnTopKResponse.categorical_summary:type_name -> rill.runtime.v1.CategoricalSummary
-	19, // 32: rill.runtime.v1.CategoricalSummary.top_k:type_name -> rill.runtime.v1.TopK
-	52, // 33: rill.runtime.v1.TopK.entries:type_name -> rill.runtime.v1.TopK.Entry
-	24, // 34: rill.runtime.v1.ColumnDescriptiveStatisticsResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
-	25, // 35: rill.runtime.v1.NumericSummary.numeric_histogram_bins:type_name -> rill.runtime.v1.NumericHistogramBins
-	26, // 36: rill.runtime.v1.NumericSummary.numeric_statistics:type_name -> rill.runtime.v1.NumericStatistics
-	27, // 37: rill.runtime.v1.NumericSummary.numeric_outliers:type_name -> rill.runtime.v1.NumericOutliers
-	53, // 38: rill.runtime.v1.NumericHistogramBins.bins:type_name -> rill.runtime.v1.NumericHistogramBins.Bin
-	54, // 39: rill.runtime.v1.NumericOutliers.outliers:type_name -> rill.runtime.v1.NumericOutliers.Outlier
-	61, // 40: rill.runtime.v1.ColumnTimeGrainResponse.time_grain:type_name -> rill.runtime.v1.TimeGrain
-	0,  // 41: rill.runtime.v1.ColumnNumericHistogramRequest.histogram_method:type_name -> rill.runtime.v1.HistogramMethod
-	24, // 42: rill.runtime.v1.ColumnNumericHistogramResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
-	24, // 43: rill.runtime.v1.ColumnRugHistogramResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
-	36, // 44: rill.runtime.v1.ColumnTimeRangeResponse.time_range_summary:type_name -> rill.runtime.v1.TimeRangeSummary
-	60, // 45: rill.runtime.v1.TimeRangeSummary.min:type_name -> google.protobuf.Timestamp
-	60, // 46: rill.runtime.v1.TimeRangeSummary.max:type_name -> google.protobuf.Timestamp
-	55, // 47: rill.runtime.v1.TimeRangeSummary.interval:type_name -> rill.runtime.v1.TimeRangeSummary.Interval
-	18, // 48: rill.runtime.v1.ColumnCardinalityResponse.categorical_summary:type_name -> rill.runtime.v1.CategoricalSummary
-	56, // 49: rill.runtime.v1.ColumnTimeSeriesRequest.measures:type_name -> rill.runtime.v1.ColumnTimeSeriesRequest.BasicMeasure
-	41, // 50: rill.runtime.v1.ColumnTimeSeriesRequest.time_range:type_name -> rill.runtime.v1.TimeSeriesTimeRange
-	12, // 51: rill.runtime.v1.ColumnTimeSeriesRequest.filters:type_name -> rill.runtime.v1.MetricsViewFilter
-	42, // 52: rill.runtime.v1.ColumnTimeSeriesResponse.rollup:type_name -> rill.runtime.v1.TimeSeriesResponse
-	60, // 53: rill.runtime.v1.TimeSeriesTimeRange.start:type_name -> google.protobuf.Timestamp
-	60, // 54: rill.runtime.v1.TimeSeriesTimeRange.end:type_name -> google.protobuf.Timestamp
-	61, // 55: rill.runtime.v1.TimeSeriesTimeRange.interval:type_name -> rill.runtime.v1.TimeGrain
-	43, // 56: rill.runtime.v1.TimeSeriesResponse.results:type_name -> rill.runtime.v1.TimeSeriesValue
-	43, // 57: rill.runtime.v1.TimeSeriesResponse.spark:type_name -> rill.runtime.v1.TimeSeriesValue
-	41, // 58: rill.runtime.v1.TimeSeriesResponse.time_range:type_name -> rill.runtime.v1.TimeSeriesTimeRange
-	60, // 59: rill.runtime.v1.TimeSeriesValue.ts:type_name -> google.protobuf.Timestamp
-	59, // 60: rill.runtime.v1.TimeSeriesValue.records:type_name -> google.protobuf.Struct
-	48, // 61: rill.runtime.v1.TableColumnsResponse.profile_columns:type_name -> rill.runtime.v1.ProfileColumn
-	59, // 62: rill.runtime.v1.TableRowsResponse.data:type_name -> google.protobuf.Struct
-	57, // 63: rill.runtime.v1.MetricsViewFilter.Cond.in:type_name -> google.protobuf.Value
-	57, // 64: rill.runtime.v1.TopK.Entry.value:type_name -> google.protobuf.Value
-	1,  // 65: rill.runtime.v1.QueryService.Query:input_type -> rill.runtime.v1.QueryRequest
-	3,  // 66: rill.runtime.v1.QueryService.MetricsViewToplist:input_type -> rill.runtime.v1.MetricsViewToplistRequest
-	5,  // 67: rill.runtime.v1.QueryService.MetricsViewTimeSeries:input_type -> rill.runtime.v1.MetricsViewTimeSeriesRequest
-	7,  // 68: rill.runtime.v1.QueryService.MetricsViewTotals:input_type -> rill.runtime.v1.MetricsViewTotalsRequest
-	9,  // 69: rill.runtime.v1.QueryService.MetricsViewRows:input_type -> rill.runtime.v1.MetricsViewRowsRequest
-	14, // 70: rill.runtime.v1.QueryService.ColumnRollupInterval:input_type -> rill.runtime.v1.ColumnRollupIntervalRequest
-	16, // 71: rill.runtime.v1.QueryService.ColumnTopK:input_type -> rill.runtime.v1.ColumnTopKRequest
-	20, // 72: rill.runtime.v1.QueryService.ColumnNullCount:input_type -> rill.runtime.v1.ColumnNullCountRequest
-	22, // 73: rill.runtime.v1.QueryService.ColumnDescriptiveStatistics:input_type -> rill.runtime.v1.ColumnDescriptiveStatisticsRequest
-	28, // 74: rill.runtime.v1.QueryService.ColumnTimeGrain:input_type -> rill.runtime.v1.ColumnTimeGrainRequest
-	30, // 75: rill.runtime.v1.QueryService.ColumnNumericHistogram:input_type -> rill.runtime.v1.ColumnNumericHistogramRequest
-	32, // 76: rill.runtime.v1.QueryService.ColumnRugHistogram:input_type -> rill.runtime.v1.ColumnRugHistogramRequest
-	34, // 77: rill.runtime.v1.QueryService.ColumnTimeRange:input_type -> rill.runtime.v1.ColumnTimeRangeRequest
-	37, // 78: rill.runtime.v1.QueryService.ColumnCardinality:input_type -> rill.runtime.v1.ColumnCardinalityRequest
-	39, // 79: rill.runtime.v1.QueryService.ColumnTimeSeries:input_type -> rill.runtime.v1.ColumnTimeSeriesRequest
-	44, // 80: rill.runtime.v1.QueryService.TableCardinality:input_type -> rill.runtime.v1.TableCardinalityRequest
-	46, // 81: rill.runtime.v1.QueryService.TableColumns:input_type -> rill.runtime.v1.TableColumnsRequest
-	49, // 82: rill.runtime.v1.QueryService.TableRows:input_type -> rill.runtime.v1.TableRowsRequest
-	2,  // 83: rill.runtime.v1.QueryService.Query:output_type -> rill.runtime.v1.QueryResponse
-	4,  // 84: rill.runtime.v1.QueryService.MetricsViewToplist:output_type -> rill.runtime.v1.MetricsViewToplistResponse
-	6,  // 85: rill.runtime.v1.QueryService.MetricsViewTimeSeries:output_type -> rill.runtime.v1.MetricsViewTimeSeriesResponse
-	8,  // 86: rill.runtime.v1.QueryService.MetricsViewTotals:output_type -> rill.runtime.v1.MetricsViewTotalsResponse
-	10, // 87: rill.runtime.v1.QueryService.MetricsViewRows:output_type -> rill.runtime.v1.MetricsViewRowsResponse
-	15, // 88: rill.runtime.v1.QueryService.ColumnRollupInterval:output_type -> rill.runtime.v1.ColumnRollupIntervalResponse
-	17, // 89: rill.runtime.v1.QueryService.ColumnTopK:output_type -> rill.runtime.v1.ColumnTopKResponse
-	21, // 90: rill.runtime.v1.QueryService.ColumnNullCount:output_type -> rill.runtime.v1.ColumnNullCountResponse
-	23, // 91: rill.runtime.v1.QueryService.ColumnDescriptiveStatistics:output_type -> rill.runtime.v1.ColumnDescriptiveStatisticsResponse
-	29, // 92: rill.runtime.v1.QueryService.ColumnTimeGrain:output_type -> rill.runtime.v1.ColumnTimeGrainResponse
-	31, // 93: rill.runtime.v1.QueryService.ColumnNumericHistogram:output_type -> rill.runtime.v1.ColumnNumericHistogramResponse
-	33, // 94: rill.runtime.v1.QueryService.ColumnRugHistogram:output_type -> rill.runtime.v1.ColumnRugHistogramResponse
-	35, // 95: rill.runtime.v1.QueryService.ColumnTimeRange:output_type -> rill.runtime.v1.ColumnTimeRangeResponse
-	38, // 96: rill.runtime.v1.QueryService.ColumnCardinality:output_type -> rill.runtime.v1.ColumnCardinalityResponse
-	40, // 97: rill.runtime.v1.QueryService.ColumnTimeSeries:output_type -> rill.runtime.v1.ColumnTimeSeriesResponse
-	45, // 98: rill.runtime.v1.QueryService.TableCardinality:output_type -> rill.runtime.v1.TableCardinalityResponse
-	47, // 99: rill.runtime.v1.QueryService.TableColumns:output_type -> rill.runtime.v1.TableColumnsResponse
-	50, // 100: rill.runtime.v1.QueryService.TableRows:output_type -> rill.runtime.v1.TableRowsResponse
-	83, // [83:101] is the sub-list for method output_type
-	65, // [65:83] is the sub-list for method input_type
-	65, // [65:65] is the sub-list for extension type_name
-	65, // [65:65] is the sub-list for extension extendee
-	0,  // [0:65] is the sub-list for field type_name
+	58, // 0: rill.runtime.v1.QueryRequest.args:type_name -> google.protobuf.Value
+	59, // 1: rill.runtime.v1.QueryResponse.meta:type_name -> rill.runtime.v1.StructType
+	60, // 2: rill.runtime.v1.QueryResponse.data:type_name -> google.protobuf.Struct
+	14, // 3: rill.runtime.v1.MetricsViewToplistRequest.inline_measures:type_name -> rill.runtime.v1.InlineMeasure
+	61, // 4: rill.runtime.v1.MetricsViewToplistRequest.time_start:type_name -> google.protobuf.Timestamp
+	61, // 5: rill.runtime.v1.MetricsViewToplistRequest.time_end:type_name -> google.protobuf.Timestamp
+	11, // 6: rill.runtime.v1.MetricsViewToplistRequest.sort:type_name -> rill.runtime.v1.MetricsViewSort
+	12, // 7: rill.runtime.v1.MetricsViewToplistRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
+	13, // 8: rill.runtime.v1.MetricsViewToplistResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
+	60, // 9: rill.runtime.v1.MetricsViewToplistResponse.data:type_name -> google.protobuf.Struct
+	14, // 10: rill.runtime.v1.MetricsViewTimeSeriesRequest.inline_measures:type_name -> rill.runtime.v1.InlineMeasure
+	61, // 11: rill.runtime.v1.MetricsViewTimeSeriesRequest.time_start:type_name -> google.protobuf.Timestamp
+	61, // 12: rill.runtime.v1.MetricsViewTimeSeriesRequest.time_end:type_name -> google.protobuf.Timestamp
+	62, // 13: rill.runtime.v1.MetricsViewTimeSeriesRequest.time_granularity:type_name -> rill.runtime.v1.TimeGrain
+	12, // 14: rill.runtime.v1.MetricsViewTimeSeriesRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
+	13, // 15: rill.runtime.v1.MetricsViewTimeSeriesResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
+	44, // 16: rill.runtime.v1.MetricsViewTimeSeriesResponse.data:type_name -> rill.runtime.v1.TimeSeriesValue
+	14, // 17: rill.runtime.v1.MetricsViewTotalsRequest.inline_measures:type_name -> rill.runtime.v1.InlineMeasure
+	61, // 18: rill.runtime.v1.MetricsViewTotalsRequest.time_start:type_name -> google.protobuf.Timestamp
+	61, // 19: rill.runtime.v1.MetricsViewTotalsRequest.time_end:type_name -> google.protobuf.Timestamp
+	12, // 20: rill.runtime.v1.MetricsViewTotalsRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
+	13, // 21: rill.runtime.v1.MetricsViewTotalsResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
+	60, // 22: rill.runtime.v1.MetricsViewTotalsResponse.data:type_name -> google.protobuf.Struct
+	61, // 23: rill.runtime.v1.MetricsViewRowsRequest.time_start:type_name -> google.protobuf.Timestamp
+	61, // 24: rill.runtime.v1.MetricsViewRowsRequest.time_end:type_name -> google.protobuf.Timestamp
+	12, // 25: rill.runtime.v1.MetricsViewRowsRequest.filter:type_name -> rill.runtime.v1.MetricsViewFilter
+	11, // 26: rill.runtime.v1.MetricsViewRowsRequest.sort:type_name -> rill.runtime.v1.MetricsViewSort
+	13, // 27: rill.runtime.v1.MetricsViewRowsResponse.meta:type_name -> rill.runtime.v1.MetricsViewColumn
+	60, // 28: rill.runtime.v1.MetricsViewRowsResponse.data:type_name -> google.protobuf.Struct
+	52, // 29: rill.runtime.v1.MetricsViewFilter.include:type_name -> rill.runtime.v1.MetricsViewFilter.Cond
+	52, // 30: rill.runtime.v1.MetricsViewFilter.exclude:type_name -> rill.runtime.v1.MetricsViewFilter.Cond
+	61, // 31: rill.runtime.v1.ColumnRollupIntervalResponse.start:type_name -> google.protobuf.Timestamp
+	61, // 32: rill.runtime.v1.ColumnRollupIntervalResponse.end:type_name -> google.protobuf.Timestamp
+	62, // 33: rill.runtime.v1.ColumnRollupIntervalResponse.interval:type_name -> rill.runtime.v1.TimeGrain
+	19, // 34: rill.runtime.v1.ColumnTopKResponse.categorical_summary:type_name -> rill.runtime.v1.CategoricalSummary
+	20, // 35: rill.runtime.v1.CategoricalSummary.top_k:type_name -> rill.runtime.v1.TopK
+	53, // 36: rill.runtime.v1.TopK.entries:type_name -> rill.runtime.v1.TopK.Entry
+	25, // 37: rill.runtime.v1.ColumnDescriptiveStatisticsResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
+	26, // 38: rill.runtime.v1.NumericSummary.numeric_histogram_bins:type_name -> rill.runtime.v1.NumericHistogramBins
+	27, // 39: rill.runtime.v1.NumericSummary.numeric_statistics:type_name -> rill.runtime.v1.NumericStatistics
+	28, // 40: rill.runtime.v1.NumericSummary.numeric_outliers:type_name -> rill.runtime.v1.NumericOutliers
+	54, // 41: rill.runtime.v1.NumericHistogramBins.bins:type_name -> rill.runtime.v1.NumericHistogramBins.Bin
+	55, // 42: rill.runtime.v1.NumericOutliers.outliers:type_name -> rill.runtime.v1.NumericOutliers.Outlier
+	62, // 43: rill.runtime.v1.ColumnTimeGrainResponse.time_grain:type_name -> rill.runtime.v1.TimeGrain
+	0,  // 44: rill.runtime.v1.ColumnNumericHistogramRequest.histogram_method:type_name -> rill.runtime.v1.HistogramMethod
+	25, // 45: rill.runtime.v1.ColumnNumericHistogramResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
+	25, // 46: rill.runtime.v1.ColumnRugHistogramResponse.numeric_summary:type_name -> rill.runtime.v1.NumericSummary
+	37, // 47: rill.runtime.v1.ColumnTimeRangeResponse.time_range_summary:type_name -> rill.runtime.v1.TimeRangeSummary
+	61, // 48: rill.runtime.v1.TimeRangeSummary.min:type_name -> google.protobuf.Timestamp
+	61, // 49: rill.runtime.v1.TimeRangeSummary.max:type_name -> google.protobuf.Timestamp
+	56, // 50: rill.runtime.v1.TimeRangeSummary.interval:type_name -> rill.runtime.v1.TimeRangeSummary.Interval
+	19, // 51: rill.runtime.v1.ColumnCardinalityResponse.categorical_summary:type_name -> rill.runtime.v1.CategoricalSummary
+	57, // 52: rill.runtime.v1.ColumnTimeSeriesRequest.measures:type_name -> rill.runtime.v1.ColumnTimeSeriesRequest.BasicMeasure
+	42, // 53: rill.runtime.v1.ColumnTimeSeriesRequest.time_range:type_name -> rill.runtime.v1.TimeSeriesTimeRange
+	12, // 54: rill.runtime.v1.ColumnTimeSeriesRequest.filters:type_name -> rill.runtime.v1.MetricsViewFilter
+	43, // 55: rill.runtime.v1.ColumnTimeSeriesResponse.rollup:type_name -> rill.runtime.v1.TimeSeriesResponse
+	61, // 56: rill.runtime.v1.TimeSeriesTimeRange.start:type_name -> google.protobuf.Timestamp
+	61, // 57: rill.runtime.v1.TimeSeriesTimeRange.end:type_name -> google.protobuf.Timestamp
+	62, // 58: rill.runtime.v1.TimeSeriesTimeRange.interval:type_name -> rill.runtime.v1.TimeGrain
+	44, // 59: rill.runtime.v1.TimeSeriesResponse.results:type_name -> rill.runtime.v1.TimeSeriesValue
+	44, // 60: rill.runtime.v1.TimeSeriesResponse.spark:type_name -> rill.runtime.v1.TimeSeriesValue
+	42, // 61: rill.runtime.v1.TimeSeriesResponse.time_range:type_name -> rill.runtime.v1.TimeSeriesTimeRange
+	61, // 62: rill.runtime.v1.TimeSeriesValue.ts:type_name -> google.protobuf.Timestamp
+	60, // 63: rill.runtime.v1.TimeSeriesValue.records:type_name -> google.protobuf.Struct
+	49, // 64: rill.runtime.v1.TableColumnsResponse.profile_columns:type_name -> rill.runtime.v1.ProfileColumn
+	60, // 65: rill.runtime.v1.TableRowsResponse.data:type_name -> google.protobuf.Struct
+	58, // 66: rill.runtime.v1.MetricsViewFilter.Cond.in:type_name -> google.protobuf.Value
+	58, // 67: rill.runtime.v1.TopK.Entry.value:type_name -> google.protobuf.Value
+	1,  // 68: rill.runtime.v1.QueryService.Query:input_type -> rill.runtime.v1.QueryRequest
+	3,  // 69: rill.runtime.v1.QueryService.MetricsViewToplist:input_type -> rill.runtime.v1.MetricsViewToplistRequest
+	5,  // 70: rill.runtime.v1.QueryService.MetricsViewTimeSeries:input_type -> rill.runtime.v1.MetricsViewTimeSeriesRequest
+	7,  // 71: rill.runtime.v1.QueryService.MetricsViewTotals:input_type -> rill.runtime.v1.MetricsViewTotalsRequest
+	9,  // 72: rill.runtime.v1.QueryService.MetricsViewRows:input_type -> rill.runtime.v1.MetricsViewRowsRequest
+	15, // 73: rill.runtime.v1.QueryService.ColumnRollupInterval:input_type -> rill.runtime.v1.ColumnRollupIntervalRequest
+	17, // 74: rill.runtime.v1.QueryService.ColumnTopK:input_type -> rill.runtime.v1.ColumnTopKRequest
+	21, // 75: rill.runtime.v1.QueryService.ColumnNullCount:input_type -> rill.runtime.v1.ColumnNullCountRequest
+	23, // 76: rill.runtime.v1.QueryService.ColumnDescriptiveStatistics:input_type -> rill.runtime.v1.ColumnDescriptiveStatisticsRequest
+	29, // 77: rill.runtime.v1.QueryService.ColumnTimeGrain:input_type -> rill.runtime.v1.ColumnTimeGrainRequest
+	31, // 78: rill.runtime.v1.QueryService.ColumnNumericHistogram:input_type -> rill.runtime.v1.ColumnNumericHistogramRequest
+	33, // 79: rill.runtime.v1.QueryService.ColumnRugHistogram:input_type -> rill.runtime.v1.ColumnRugHistogramRequest
+	35, // 80: rill.runtime.v1.QueryService.ColumnTimeRange:input_type -> rill.runtime.v1.ColumnTimeRangeRequest
+	38, // 81: rill.runtime.v1.QueryService.ColumnCardinality:input_type -> rill.runtime.v1.ColumnCardinalityRequest
+	40, // 82: rill.runtime.v1.QueryService.ColumnTimeSeries:input_type -> rill.runtime.v1.ColumnTimeSeriesRequest
+	45, // 83: rill.runtime.v1.QueryService.TableCardinality:input_type -> rill.runtime.v1.TableCardinalityRequest
+	47, // 84: rill.runtime.v1.QueryService.TableColumns:input_type -> rill.runtime.v1.TableColumnsRequest
+	50, // 85: rill.runtime.v1.QueryService.TableRows:input_type -> rill.runtime.v1.TableRowsRequest
+	2,  // 86: rill.runtime.v1.QueryService.Query:output_type -> rill.runtime.v1.QueryResponse
+	4,  // 87: rill.runtime.v1.QueryService.MetricsViewToplist:output_type -> rill.runtime.v1.MetricsViewToplistResponse
+	6,  // 88: rill.runtime.v1.QueryService.MetricsViewTimeSeries:output_type -> rill.runtime.v1.MetricsViewTimeSeriesResponse
+	8,  // 89: rill.runtime.v1.QueryService.MetricsViewTotals:output_type -> rill.runtime.v1.MetricsViewTotalsResponse
+	10, // 90: rill.runtime.v1.QueryService.MetricsViewRows:output_type -> rill.runtime.v1.MetricsViewRowsResponse
+	16, // 91: rill.runtime.v1.QueryService.ColumnRollupInterval:output_type -> rill.runtime.v1.ColumnRollupIntervalResponse
+	18, // 92: rill.runtime.v1.QueryService.ColumnTopK:output_type -> rill.runtime.v1.ColumnTopKResponse
+	22, // 93: rill.runtime.v1.QueryService.ColumnNullCount:output_type -> rill.runtime.v1.ColumnNullCountResponse
+	24, // 94: rill.runtime.v1.QueryService.ColumnDescriptiveStatistics:output_type -> rill.runtime.v1.ColumnDescriptiveStatisticsResponse
+	30, // 95: rill.runtime.v1.QueryService.ColumnTimeGrain:output_type -> rill.runtime.v1.ColumnTimeGrainResponse
+	32, // 96: rill.runtime.v1.QueryService.ColumnNumericHistogram:output_type -> rill.runtime.v1.ColumnNumericHistogramResponse
+	34, // 97: rill.runtime.v1.QueryService.ColumnRugHistogram:output_type -> rill.runtime.v1.ColumnRugHistogramResponse
+	36, // 98: rill.runtime.v1.QueryService.ColumnTimeRange:output_type -> rill.runtime.v1.ColumnTimeRangeResponse
+	39, // 99: rill.runtime.v1.QueryService.ColumnCardinality:output_type -> rill.runtime.v1.ColumnCardinalityResponse
+	41, // 100: rill.runtime.v1.QueryService.ColumnTimeSeries:output_type -> rill.runtime.v1.ColumnTimeSeriesResponse
+	46, // 101: rill.runtime.v1.QueryService.TableCardinality:output_type -> rill.runtime.v1.TableCardinalityResponse
+	48, // 102: rill.runtime.v1.QueryService.TableColumns:output_type -> rill.runtime.v1.TableColumnsResponse
+	51, // 103: rill.runtime.v1.QueryService.TableRows:output_type -> rill.runtime.v1.TableRowsResponse
+	86, // [86:104] is the sub-list for method output_type
+	68, // [68:86] is the sub-list for method input_type
+	68, // [68:68] is the sub-list for extension type_name
+	68, // [68:68] is the sub-list for extension extendee
+	0,  // [0:68] is the sub-list for field type_name
 }
 
 func init() { file_rill_runtime_v1_queries_proto_init() }
@@ -4949,7 +5051,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnRollupIntervalRequest); i {
+			switch v := v.(*InlineMeasure); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4961,7 +5063,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnRollupIntervalResponse); i {
+			switch v := v.(*ColumnRollupIntervalRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4973,7 +5075,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnTopKRequest); i {
+			switch v := v.(*ColumnRollupIntervalResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4985,7 +5087,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnTopKResponse); i {
+			switch v := v.(*ColumnTopKRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4997,7 +5099,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CategoricalSummary); i {
+			switch v := v.(*ColumnTopKResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5009,7 +5111,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TopK); i {
+			switch v := v.(*CategoricalSummary); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5021,7 +5123,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnNullCountRequest); i {
+			switch v := v.(*TopK); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5033,7 +5135,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnNullCountResponse); i {
+			switch v := v.(*ColumnNullCountRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5045,7 +5147,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnDescriptiveStatisticsRequest); i {
+			switch v := v.(*ColumnNullCountResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5057,7 +5159,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnDescriptiveStatisticsResponse); i {
+			switch v := v.(*ColumnDescriptiveStatisticsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5069,7 +5171,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[23].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NumericSummary); i {
+			switch v := v.(*ColumnDescriptiveStatisticsResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5081,7 +5183,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[24].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NumericHistogramBins); i {
+			switch v := v.(*NumericSummary); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5093,7 +5195,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[25].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NumericStatistics); i {
+			switch v := v.(*NumericHistogramBins); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5105,7 +5207,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[26].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NumericOutliers); i {
+			switch v := v.(*NumericStatistics); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5117,7 +5219,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[27].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnTimeGrainRequest); i {
+			switch v := v.(*NumericOutliers); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5129,7 +5231,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[28].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnTimeGrainResponse); i {
+			switch v := v.(*ColumnTimeGrainRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5141,7 +5243,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[29].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnNumericHistogramRequest); i {
+			switch v := v.(*ColumnTimeGrainResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5153,7 +5255,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[30].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnNumericHistogramResponse); i {
+			switch v := v.(*ColumnNumericHistogramRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5165,7 +5267,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[31].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnRugHistogramRequest); i {
+			switch v := v.(*ColumnNumericHistogramResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5177,7 +5279,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[32].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnRugHistogramResponse); i {
+			switch v := v.(*ColumnRugHistogramRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5189,7 +5291,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[33].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnTimeRangeRequest); i {
+			switch v := v.(*ColumnRugHistogramResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5201,7 +5303,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[34].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnTimeRangeResponse); i {
+			switch v := v.(*ColumnTimeRangeRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5213,7 +5315,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[35].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TimeRangeSummary); i {
+			switch v := v.(*ColumnTimeRangeResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5225,7 +5327,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[36].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnCardinalityRequest); i {
+			switch v := v.(*TimeRangeSummary); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5237,7 +5339,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[37].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnCardinalityResponse); i {
+			switch v := v.(*ColumnCardinalityRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5249,7 +5351,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[38].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnTimeSeriesRequest); i {
+			switch v := v.(*ColumnCardinalityResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5261,7 +5363,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[39].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnTimeSeriesResponse); i {
+			switch v := v.(*ColumnTimeSeriesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5273,7 +5375,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[40].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TimeSeriesTimeRange); i {
+			switch v := v.(*ColumnTimeSeriesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5285,7 +5387,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[41].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TimeSeriesResponse); i {
+			switch v := v.(*TimeSeriesTimeRange); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5297,7 +5399,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[42].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TimeSeriesValue); i {
+			switch v := v.(*TimeSeriesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5309,7 +5411,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[43].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TableCardinalityRequest); i {
+			switch v := v.(*TimeSeriesValue); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5321,7 +5423,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[44].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TableCardinalityResponse); i {
+			switch v := v.(*TableCardinalityRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5333,7 +5435,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[45].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TableColumnsRequest); i {
+			switch v := v.(*TableCardinalityResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5345,7 +5447,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[46].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TableColumnsResponse); i {
+			switch v := v.(*TableColumnsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5357,7 +5459,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[47].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProfileColumn); i {
+			switch v := v.(*TableColumnsResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5369,7 +5471,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[48].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TableRowsRequest); i {
+			switch v := v.(*ProfileColumn); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5381,7 +5483,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[49].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TableRowsResponse); i {
+			switch v := v.(*TableRowsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5393,7 +5495,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[50].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MetricsViewFilter_Cond); i {
+			switch v := v.(*TableRowsResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5405,7 +5507,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[51].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TopK_Entry); i {
+			switch v := v.(*MetricsViewFilter_Cond); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5417,7 +5519,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[52].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NumericHistogramBins_Bin); i {
+			switch v := v.(*TopK_Entry); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5429,7 +5531,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[53].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*NumericOutliers_Outlier); i {
+			switch v := v.(*NumericHistogramBins_Bin); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5441,7 +5543,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[54].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TimeRangeSummary_Interval); i {
+			switch v := v.(*NumericOutliers_Outlier); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5453,6 +5555,18 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_queries_proto_msgTypes[55].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TimeRangeSummary_Interval); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rill_runtime_v1_queries_proto_msgTypes[56].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ColumnTimeSeriesRequest_BasicMeasure); i {
 			case 0:
 				return &v.state
@@ -5465,11 +5579,11 @@ func file_rill_runtime_v1_queries_proto_init() {
 			}
 		}
 	}
-	file_rill_runtime_v1_queries_proto_msgTypes[17].OneofWrappers = []interface{}{
+	file_rill_runtime_v1_queries_proto_msgTypes[18].OneofWrappers = []interface{}{
 		(*CategoricalSummary_TopK)(nil),
 		(*CategoricalSummary_Cardinality)(nil),
 	}
-	file_rill_runtime_v1_queries_proto_msgTypes[23].OneofWrappers = []interface{}{
+	file_rill_runtime_v1_queries_proto_msgTypes[24].OneofWrappers = []interface{}{
 		(*NumericSummary_NumericHistogramBins)(nil),
 		(*NumericSummary_NumericStatistics)(nil),
 		(*NumericSummary_NumericOutliers)(nil),
@@ -5480,7 +5594,7 @@ func file_rill_runtime_v1_queries_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_rill_runtime_v1_queries_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   56,
+			NumMessages:   57,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

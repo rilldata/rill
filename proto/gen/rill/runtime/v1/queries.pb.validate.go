@@ -378,6 +378,40 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 
 	// no validation rules for DimensionName
 
+	for idx, item := range m.GetInlineMeasures() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewToplistRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewToplistRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewToplistRequestValidationError{
+					field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if all {
 		switch v := interface{}(m.GetTimeStart()).(type) {
 		case interface{ ValidateAll() error }:
@@ -781,6 +815,40 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 
 	// no validation rules for MetricsViewName
 
+	for idx, item := range m.GetInlineMeasures() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewTimeSeriesRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewTimeSeriesRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewTimeSeriesRequestValidationError{
+					field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if all {
 		switch v := interface{}(m.GetTimeStart()).(type) {
 		case interface{ ValidateAll() error }:
@@ -1149,6 +1217,40 @@ func (m *MetricsViewTotalsRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	// no validation rules for MetricsViewName
+
+	for idx, item := range m.GetInlineMeasures() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewTotalsRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewTotalsRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewTotalsRequestValidationError{
+					field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	if all {
 		switch v := interface{}(m.GetTimeStart()).(type) {
@@ -2268,6 +2370,110 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewColumnValidationError{}
+
+// Validate checks the field values on InlineMeasure with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *InlineMeasure) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on InlineMeasure with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in InlineMeasureMultiError, or
+// nil if none found.
+func (m *InlineMeasure) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *InlineMeasure) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for Expression
+
+	if len(errors) > 0 {
+		return InlineMeasureMultiError(errors)
+	}
+
+	return nil
+}
+
+// InlineMeasureMultiError is an error wrapping multiple validation errors
+// returned by InlineMeasure.ValidateAll() if the designated constraints
+// aren't met.
+type InlineMeasureMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m InlineMeasureMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m InlineMeasureMultiError) AllErrors() []error { return m }
+
+// InlineMeasureValidationError is the validation error returned by
+// InlineMeasure.Validate if the designated constraints aren't met.
+type InlineMeasureValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e InlineMeasureValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e InlineMeasureValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e InlineMeasureValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e InlineMeasureValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e InlineMeasureValidationError) ErrorName() string { return "InlineMeasureValidationError" }
+
+// Error satisfies the builtin error interface
+func (e InlineMeasureValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sInlineMeasure.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = InlineMeasureValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = InlineMeasureValidationError{}
 
 // Validate checks the field values on ColumnRollupIntervalRequest with the
 // rules defined in the proto definition for this message. If any rules are

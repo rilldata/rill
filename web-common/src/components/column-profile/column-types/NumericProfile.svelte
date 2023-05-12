@@ -6,9 +6,9 @@
     isFloat,
   } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
+    QueryServiceColumnNumericHistogramHistogramMethod,
     createQueryServiceColumnDescriptiveStatistics,
     createQueryServiceColumnRugHistogram,
-    QueryServiceColumnNumericHistogramHistogramMethod,
   } from "@rilldata/web-common/runtime-client";
   import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
   import { derived } from "svelte/store";
@@ -164,7 +164,6 @@
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
   <NumericSpark {type} {compact} data={histogramData} slot="summary" />
   <NullPercentageSpark
-    isFetching={fetchingSummaries}
     nullCount={$nulls?.nullCount}
     slot="nullity"
     totalRows={$nulls?.totalRows}

@@ -794,8 +794,12 @@ func (c *connection) FindOrganizationInvite(ctx context.Context, orgID, userEmai
 	return res, nil
 }
 
-func (c *connection) InsertOrganizationInvite(ctx context.Context, email, orgID, roleID, invitedByID string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id) VALUES ($1, $2, $3, $4)", email, invitedByID, orgID, roleID)
+func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *database.InsertOrganizationInviteOptions) error {
+	if err := database.Validate(opts); err != nil {
+		return err
+	}
+
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id) VALUES ($1, $2, $3, $4)", opts.Email, opts.InviterID, opts.OrgID, opts.RoleID)
 	if err != nil {
 		return parseErr("org invite", err)
 	}
@@ -860,8 +864,12 @@ func (c *connection) FindProjectInvite(ctx context.Context, projectID, userEmail
 	return res, nil
 }
 
-func (c *connection) InsertProjectInvite(ctx context.Context, email, projectID, roleID, invitedByID string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO project_invites (email, invited_by_user_id, project_id, project_role_id) VALUES ($1, $2, $3, $4)", email, invitedByID, projectID, roleID)
+func (c *connection) InsertProjectInvite(ctx context.Context, opts *database.InsertProjectInviteOptions) error {
+	if err := database.Validate(opts); err != nil {
+		return err
+	}
+
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO project_invites (email, invited_by_user_id, project_id, project_role_id) VALUES ($1, $2, $3, $4)", opts.Email, opts.InviterID, opts.ProjectID, opts.RoleID)
 	if err != nil {
 		return parseErr("project invite", err)
 	}
