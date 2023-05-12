@@ -2,6 +2,13 @@
 
 This folder contains the log in and sign up which is used for Rill Cloud and Rill Enterprise. It's implemented with TypeScript and [SvelteKit](https://kit.svelte.dev). Rollup is used for bundling the template.
 
+
+### Project Details
+
+The template is being used for both Rill Cloud and Rill Enterprise login. For cloud only two login options are activated, Google and windows. For Enterprise we additionally support Pingfed and Okta. The configuration of this is decided by the environment variables we pass in.
+
+The forgot password/reset password feature is disabled for certain domains. These domains are mentioned through `VITE_DISABLE_FORGOT_PASS_DOMAINS`. 
+
 ## Running in development
 
 1. Run `npm install -w web-auth`
