@@ -82,10 +82,72 @@ func TestServer_MetricsViewComparisonToplist(t *testing.T) {
 	require.Equal(t, 1, len(rows))
 	require.Equal(t, "cars", rows[0].DimensionValue.GetStringValue())
 
-	require.Equal(t, 2.0, rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, 2, len(rows[0].MeasureValues))
+
+	require.Equal(t, 1.0, rows[0].MeasureValues[0].BaseValue.GetNumberValue())
 	require.Equal(t, 1.0, rows[0].MeasureValues[0].ComparisonValue.GetNumberValue())
-	require.Equal(t, -1.0, rows[0].MeasureValues[0].DeltaAbs.GetNumberValue())
+	require.Equal(t, 0.0, rows[0].MeasureValues[0].DeltaAbs.GetNumberValue())
+	require.Equal(t, 0.0, rows[0].MeasureValues[0].DeltaRel.GetNumberValue())
+
+	require.Equal(t, 2.0, rows[0].MeasureValues[1].BaseValue.GetNumberValue())
+	require.Equal(t, 1.0, rows[0].MeasureValues[1].ComparisonValue.GetNumberValue())
+	require.Equal(t, -1.0, rows[0].MeasureValues[1].DeltaAbs.GetNumberValue())
 	require.Equal(t, -0.5, rows[0].MeasureValues[0].DeltaRel.GetNumberValue())
+}
+
+/*
+|domain                  |base |comparison|delta|rel    |base |comparison|delta|rel    |
+|------------------------|-----|----------|-----|-------|-----|----------|-----|-------|
+|msn.com                 |1    |1         |0    |0      |2    |1         | -1  |-0.5   |
+|yahoo.com               |1    |1         |0    |0      |1    |2         |1    |1      |
+*/
+func TestServer_MetricsViewComparisonToplist_inline_measures(t *testing.T) {
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "ad words",
+		MeasureNames:    []string{"tmp_measure", "measure_2"},
+		InlineMeasures: []*runtimev1.InlineMeasure{
+			{
+				Name:       "tmp_measure",
+				Expression: "count(*)",
+			},
+		},
+		BaseTimeRange: &runtimev1.TimeRange{
+			Start: parseTime(t, "2022-01-01T00:00:00Z"),
+			End:   parseTime(t, "2022-01-01T23:59:00Z"),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: parseTime(t, "2022-01-02T00:00:00Z"),
+			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_2",
+				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Ascending:   true,
+			},
+		},
+	})
+
+	rows := tr.Rows
+	require.NoError(t, err)
+	require.Equal(t, 1, len(rows))
+	require.Equal(t, "cars", rows[0].DimensionValue.GetStringValue())
+
+	require.Equal(t, 2, len(rows[0].MeasureValues))
+
+	require.Equal(t, 1.0, rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, 1.0, rows[0].MeasureValues[0].ComparisonValue.GetNumberValue())
+	require.Equal(t, 0.0, rows[0].MeasureValues[0].DeltaAbs.GetNumberValue())
+	require.Equal(t, 0.0, rows[0].MeasureValues[0].DeltaRel.GetNumberValue())
+
+	require.Equal(t, 2.0, rows[0].MeasureValues[1].BaseValue.GetNumberValue())
+	require.Equal(t, 1.0, rows[0].MeasureValues[1].ComparisonValue.GetNumberValue())
+	require.Equal(t, -1.0, rows[0].MeasureValues[1].DeltaAbs.GetNumberValue())
+	require.Equal(t, -0.5, rows[0].MeasureValues[1].DeltaRel.GetNumberValue())
 }
 
 func TestServer_MetricsViewComparisonToplist_nulls(t *testing.T) {
