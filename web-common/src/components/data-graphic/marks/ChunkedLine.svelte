@@ -50,7 +50,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   let lineFunction;
   let areaFunction;
 
-  $: curveType = data?.length < 10 ? "curveStep" : "curveLinear";
+  $: curveType = data?.length < 10 ? "curveStepExtended" : "curveLinear";
 
   // FIXME:
   $: if ($xScale && $yScale) {
@@ -131,7 +131,6 @@ Over time, we'll make this the default Line implementation, but it's not quite t
         d={dt}
         id="segments-line"
         fill="none"
-        style="clip-path: url(#path-segments-{id})"
       />
     </WithTween>
     {#if area}
@@ -144,11 +143,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
         }}
         let:output={at}
       >
-        <path
-          d={at}
-          fill="url(#gradient-{id})"
-          style="clip-path: url(#path-segments-{id})"
-        />
+        <path d={at} fill="url(#gradient-{id})" />
       </WithTween>
     {/if}
     <!-- clip rects for segments -->
