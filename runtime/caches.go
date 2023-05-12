@@ -15,11 +15,20 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/singleflight"
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 var errConnectionCacheClosed = errors.New("connectionCache: closed")
+
+// init registers the protobuf types with gob so they can be encoded.
+func init() {
+	gob.Register(structpb.Value_BoolValue{})
+	gob.Register(structpb.Value_NumberValue{})
+	gob.Register(structpb.Value_StringValue{})
+	gob.Register(structpb.Value_NullValue{})
+	gob.Register(structpb.Value_ListValue{})
+	gob.Register(structpb.Value_StructValue{})
+}
 
 // cache for instance specific connections only
 // all instance specific connections should be opened via connection cache only
@@ -178,14 +187,6 @@ func newQueryCache(sizeInBytes int64) *queryCache {
 			if val == nil {
 				return 0
 			}
-			if protoMsg, ok := val.(protoreflect.ProtoMessage); ok {
-				bytes, err := proto.Marshal(protoMsg)
-				if err != nil {
-					panic(err)
-				}
-				return int64(len(bytes))
-			}
-
 			b := new(bytes.Buffer)
 			if err := gob.NewEncoder(b).Encode(val); err != nil {
 				panic(err)
@@ -213,10 +214,12 @@ func (c *queryCache) getOrLoad(key any, loadFn func() (any, error)) (any, bool, 
 	return val, false, nil
 }
 
-func (c *queryCache) add(key any, val any) bool {
+// nolint:unused // use in tests
+func (c *queryCache) add(key, val any) bool {
 	return c.cache.Set(key, val, 0)
 }
 
+// nolint:unused // use in tests
 func (c *queryCache) get(key any) (any, bool) {
 	return c.cache.Get(key)
 }

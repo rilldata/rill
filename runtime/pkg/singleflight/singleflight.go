@@ -22,7 +22,7 @@ type Group struct {
 // sure that only one execution is in-flight for a given key at a
 // time. If a duplicate comes in, the duplicate caller waits for the
 // original to complete and receives the same results.
-func (g *Group) Do(key any, fn func() (interface{}, int64, error)) (interface{}, error) {
+func (g *Group) Do(key any, fn func() (interface{}, error)) (interface{}, error) {
 	g.mu.Lock()
 	if g.m == nil {
 		g.m = make(map[any]*call)

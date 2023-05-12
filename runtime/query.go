@@ -37,6 +37,10 @@ type queryCacheKey struct {
 	dependencyKey string
 }
 
+func (q queryCacheKey) String() string {
+	return fmt.Sprintf("InstanceID:%sQueryKey:%sDependencyKey:%s", q.instanceID, q.queryKey, q.dependencyKey)
+}
+
 func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, priority int) error {
 	// If key is empty, skip caching
 	qk := query.Key()
@@ -76,18 +80,22 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		dependencyKey: depKey,
 	}
 
-	val, ok := r.queryCache.get(key)
-	if ok {
-		queryCacheHitsCounter.Add(ctx, 1)
-		return query.UnmarshalResult(val)
-	}
-	queryCacheMissesCounter.Add(ctx, 1)
-
-	// Cache miss. Run the query.
-	err := query.Resolve(ctx, r, instanceID, priority)
+	val, ok, err := r.queryCache.getOrLoad(key.String(), func() (any, error) {
+		err := query.Resolve(ctx, r, instanceID, priority)
+		if err != nil {
+			return nil, err
+		}
+		return query.MarshalResult(), nil
+	})
 	if err != nil {
 		return err
 	}
-	r.queryCache.add(key, query.MarshalResult())
+
+	if ok {
+		queryCacheHitsCounter.Add(ctx, 1)
+		// cache hit
+		return query.UnmarshalResult(val)
+	}
+	queryCacheMissesCounter.Add(ctx, 1)
 	return nil
 }
