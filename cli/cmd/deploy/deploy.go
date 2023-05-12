@@ -113,6 +113,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
+			userLoginSuccess := false
 			silentGitFlow := false
 			// If user is not authenticated, run login flow
 			if !cfg.IsAuthenticated() {
@@ -140,13 +141,23 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 					}
 					return fmt.Errorf("login failed: %w", err)
 				}
-				tel.Emit(telemetry.ActionLoginSuccess)
+				userLoginSuccess = true
 				fmt.Println("")
 			}
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
+			}
+			user, err := client.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+			if err == nil {
+				tel.WithUserID(user.GetUser().GetId())
+				// ignore error from get user
+			}
+
+			if userLoginSuccess {
+				// fire this after we potentially get the user id
+				tel.Emit(telemetry.ActionLoginSuccess)
 			}
 
 			// Run flow for access to the Github remote (if necessary)
