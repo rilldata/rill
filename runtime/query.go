@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 	"strings"
-
-	"github.com/rilldata/rill/runtime/pkg/observability"
-	"go.opentelemetry.io/otel/metric/global"
 )
 
-var (
-	meter                   = global.Meter("runtime")
-	queryCacheHitsCounter   = observability.Must(meter.Int64Counter("query_cache.hits"))
-	queryCacheMissesCounter = observability.Must(meter.Int64Counter("query_cache.misses"))
-)
+type CacheObject struct {
+	Result      any
+	SizeInBytes int64
+}
 
 type Query interface {
 	// Key should return a cache key that uniquely identifies the query
@@ -21,9 +17,8 @@ type Query interface {
 	// Deps should return the source and model names that the query targets.
 	// It's used to invalidate cached queries when the underlying data changes.
 	Deps() []string
-	// MarshalResult should return the query result for caching.
-	// TODO: Also return estimated cost in bytes.
-	MarshalResult() any
+	// MarshalResult should return the query result and estimated cost in bytes for caching
+	MarshalResult() *CacheObject
 	// UnmarshalResult should populate a query with a cached result
 	UnmarshalResult(v any) error
 	// Resolve should execute the query against the instance's infra.
@@ -92,10 +87,7 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	}
 
 	if ok {
-		queryCacheHitsCounter.Add(ctx, 1)
-		// cache hit
 		return query.UnmarshalResult(val)
 	}
-	queryCacheMissesCounter.Add(ctx, 1)
 	return nil
 }

@@ -35,13 +35,13 @@ func TestConnectionCache(t *testing.T) {
 func TestNilValues(t *testing.T) {
 	qc := newQueryCache(int64(datasize.MB * 10))
 
-	qc.add(queryCacheKey{"1", "1", "1"}.String(), "value")
+	qc.add(queryCacheKey{"1", "1", "1"}.String(), "value", 1)
 	qc.cache.Wait()
 	v, ok := qc.get(queryCacheKey{"1", "1", "1"}.String())
 	require.Equal(t, "value", v)
 	require.True(t, ok)
 
-	qc.add(queryCacheKey{"1", "1", "1"}.String(), nil)
+	qc.add(queryCacheKey{"1", "1", "1"}.String(), nil, 1)
 	qc.cache.Wait()
 	v, ok = qc.get(queryCacheKey{"1", "1", "1"}.String())
 	require.Nil(t, v)

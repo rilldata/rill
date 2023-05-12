@@ -47,7 +47,7 @@ type Config struct {
 	AuthAudienceURL       string                 `default:"" split_words:"true"`
 	SafeSourceRefresh     bool                   `default:"false" split_words:"true"`
 	ConnectionCacheSize   int                    `default:"100" split_words:"true"`
-	QueryCacheSizeInBytes int64                  `default:"1024*1024*10" split_words:"true"` // 10MB by default
+	QueryCacheSizeInBytes int64                  `default:"10485760" split_words:"true"` // 10MB by default
 	// AllowHostAccess controls whether instance can use host credentials and
 	// local_file sources can access directory outside repo
 	AllowHostAccess bool `default:"false" split_words:"true"`

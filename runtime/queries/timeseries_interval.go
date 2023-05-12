@@ -24,8 +24,11 @@ func (q *RollupInterval) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *RollupInterval) MarshalResult() any {
-	return q.Result
+func (q *RollupInterval) MarshalResult() *runtime.CacheObject {
+	return &runtime.CacheObject{
+		Result:      q.Result,
+		SizeInBytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *RollupInterval) UnmarshalResult(v any) error {

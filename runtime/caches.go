@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"bytes"
 	"context"
 	"encoding/gob"
 	"errors"
@@ -11,13 +10,24 @@ import (
 	"github.com/dgraph-io/ristretto"
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/singleflight"
 	"github.com/rilldata/rill/runtime/services/catalog"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/global"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 var errConnectionCacheClosed = errors.New("connectionCache: closed")
+
+var (
+	meter                    = global.Meter("runtime")
+	queryCacheHitsCounter    = observability.Must(meter.Int64ObservableCounter("query_cache.hits"))
+	queryCacheMissesCounter  = observability.Must(meter.Int64ObservableCounter("query_cache.misses"))
+	queryCacheItemCountGauge = observability.Must(meter.Int64ObservableGauge("query_cache.item_count"))
+	queryCacheSizeBytesGauge = observability.Must(meter.Int64ObservableGauge("query_cache.size_bytes"))
+)
 
 // init registers the protobuf types with gob so they can be encoded.
 func init() {
@@ -173,22 +183,23 @@ func newQueryCache(sizeInBytes int64) *queryCache {
 		NumCounters: int64(float64(sizeInBytes) * 0.05 / 3),
 		MaxCost:     int64(float64(sizeInBytes) * 0.95),
 		BufferItems: 64,
-		Metrics:     false,
-		Cost: func(val interface{}) int64 {
-			if val == nil {
-				return 0
-			}
-			b := new(bytes.Buffer)
-			if err := gob.NewEncoder(b).Encode(val); err != nil {
-				panic(err)
-			}
-			return int64(b.Len())
-		},
+		Metrics:     true,
 	})
 	if err != nil {
 		panic(err)
 	}
-	return &queryCache{cache: cache}
+
+	observability.Must(meter.RegisterCallback(func(ctx context.Context, observer metric.Observer) error {
+		observer.ObserveInt64(queryCacheHitsCounter, int64(cache.Metrics.Hits()))
+		observer.ObserveInt64(queryCacheMissesCounter, int64(cache.Metrics.Misses()))
+		observer.ObserveInt64(queryCacheItemCountGauge, int64(cache.Metrics.KeysAdded()-cache.Metrics.KeysEvicted()))
+		observer.ObserveInt64(queryCacheSizeBytesGauge, int64(cache.Metrics.CostAdded()-cache.Metrics.CostEvicted()))
+		return nil
+	}, queryCacheHitsCounter, queryCacheMissesCounter, queryCacheItemCountGauge, queryCacheSizeBytesGauge))
+	return &queryCache{
+		cache: cache,
+		group: &singleflight.Group{},
+	}
 }
 
 // getOrLoad gets the key from cache if present. If absent, it looks up the key using the loadFn and puts it into cache before returning value.
@@ -203,13 +214,14 @@ func (c *queryCache) getOrLoad(key any, loadFn func() (any, error)) (any, bool, 
 		return nil, false, err
 	}
 
-	c.cache.Set(key, val, 0)
-	return val, false, nil
+	cachedObject := val.(*CacheObject)
+	c.cache.Set(key, cachedObject.Result, cachedObject.SizeInBytes)
+	return cachedObject.Result, false, nil
 }
 
 // nolint:unused // use in tests
-func (c *queryCache) add(key, val any) bool {
-	return c.cache.Set(key, val, 0)
+func (c *queryCache) add(key, val any, cost int64) bool {
+	return c.cache.Set(key, val, cost)
 }
 
 // nolint:unused // use in tests

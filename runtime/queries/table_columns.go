@@ -24,8 +24,16 @@ func (q *TableColumns) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *TableColumns) MarshalResult() any {
-	return q.Result
+func (q *TableColumns) MarshalResult() *runtime.CacheObject {
+	var size int64
+	if len(q.Result) > 0 {
+		// approx
+		size = sizeProtoMessage(q.Result[0]) * int64(len(q.Result))
+	}
+	return &runtime.CacheObject{
+		Result:      q.Result,
+		SizeInBytes: size,
+	}
 }
 
 func (q *TableColumns) UnmarshalResult(v any) error {

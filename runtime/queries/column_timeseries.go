@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -51,8 +52,11 @@ func (q *ColumnTimeseries) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnTimeseries) MarshalResult() any {
-	return q.Result
+func (q *ColumnTimeseries) MarshalResult() *runtime.CacheObject {
+	return &runtime.CacheObject{
+		Result:      q.Result,
+		SizeInBytes: approxSize(q.Result),
+	}
 }
 
 func (q *ColumnTimeseries) UnmarshalResult(v any) error {
@@ -476,4 +480,20 @@ func normaliseMeasures(measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasur
 	}
 
 	return measures
+}
+
+func approxSize(c *ColumnTimeseriesResult) int64 {
+	var size int64
+	if len(c.Meta) > 0 {
+		size += sizeProtoMessage(c.Meta[0]) * int64(len(c.Meta))
+	}
+	if len(c.Results) > 0 {
+		size += sizeProtoMessage(c.Results[0]) * int64(len(c.Meta))
+	}
+	if len(c.Spark) > 0 {
+		size += sizeProtoMessage(c.Spark[0]) * int64(len(c.Meta))
+	}
+	size += sizeProtoMessage(c.TimeRange)
+	size += int64(reflect.TypeOf(c.SampleSize).Size())
+	return size
 }

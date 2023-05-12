@@ -28,8 +28,11 @@ func (q *ColumnTopK) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnTopK) MarshalResult() any {
-	return q.Result
+func (q *ColumnTopK) MarshalResult() *runtime.CacheObject {
+	return &runtime.CacheObject{
+		Result:      q.Result,
+		SizeInBytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *ColumnTopK) UnmarshalResult(v any) error {

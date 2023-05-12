@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -23,8 +24,11 @@ func (q *TableCardinality) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *TableCardinality) MarshalResult() any {
-	return q.Result
+func (q *TableCardinality) MarshalResult() *runtime.CacheObject {
+	return &runtime.CacheObject{
+		Result:      q.Result,
+		SizeInBytes: int64(reflect.TypeOf(q.Result).Size()),
+	}
 }
 
 func (q *TableCardinality) UnmarshalResult(v any) error {
