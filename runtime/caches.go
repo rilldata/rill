@@ -6,7 +6,6 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"runtime"
 	"sync"
 
 	"github.com/dgraph-io/ristretto"
@@ -160,7 +159,7 @@ func (c *migrationMetaCache) evict(ctx context.Context, instID string) {
 
 type queryCache struct {
 	cache *ristretto.Cache
-	group singleflight.Group
+	group *singleflight.Group
 }
 
 func newQueryCache(sizeInBytes int64) *queryCache {
@@ -176,14 +175,6 @@ func newQueryCache(sizeInBytes int64) *queryCache {
 		BufferItems: 64,
 		Metrics:     false,
 		Cost: func(val interface{}) int64 {
-			defer func() {
-				if r := recover(); r != nil {
-					buf := make([]byte, 4096)
-					n := runtime.Stack(buf, false)
-					fmt.Printf("Panic: %v\n%s", r, buf[:n])
-				}
-			}()
-
 			if val == nil {
 				return 0
 			}
@@ -200,6 +191,8 @@ func newQueryCache(sizeInBytes int64) *queryCache {
 	return &queryCache{cache: cache}
 }
 
+// getOrLoad gets the key from cache if present. If absent, it looks up the key using the loadFn and puts it into cache before returning value.
+// NOTE:: Due to limitation of the underlying caching library, key can only be one of int(signed/unsgined),string or byte array.
 func (c *queryCache) getOrLoad(key any, loadFn func() (any, error)) (any, bool, error) {
 	if val, ok := c.cache.Get(key); ok {
 		return val, true, nil
