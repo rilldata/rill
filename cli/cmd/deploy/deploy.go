@@ -67,6 +67,12 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			tel := telemetry.New(cfg.Version)
+			if cfg.IsAuthenticated() {
+				userID, err := cmdutil.FetchUserID(ctx, cfg)
+				if err == nil {
+					tel.WithUserID(userID)
+				}
+			}
 			tel.Emit(telemetry.ActionDeployStart)
 			defer func() {
 				// give 5s for emitting events over the parent context.
@@ -149,10 +155,11 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			user, err := client.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
-			if err == nil {
-				tel.WithUserID(user.GetUser().GetId())
-				// ignore error from get user
+			if tel.UserID == "" {
+				user, err := client.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+				if err == nil {
+					tel.WithUserID(user.GetUser().GetId())
+				}
 			}
 
 			if userLoginSuccess {

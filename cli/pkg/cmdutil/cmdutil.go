@@ -375,3 +375,16 @@ func DefaultProjectName() string {
 
 	return ""
 }
+
+func FetchUserID(ctx context.Context, cfg *config.Config) (string, error) {
+	c, err := Client(cfg)
+	if err != nil {
+		return "", err
+	}
+	defer c.Close()
+	user, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+	if err != nil {
+		return "", err
+	}
+	return user.GetUser().GetId(), nil
+}

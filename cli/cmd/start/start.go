@@ -1,6 +1,7 @@
 package start
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -112,7 +113,12 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 				return fmt.Errorf("reconcile project: %w", err)
 			}
 
-			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly)
+			userID := ""
+			if cfg.IsAuthenticated() {
+				userID, _ = cmdutil.FetchUserID(context.Background(), cfg)
+			}
+
+			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly, userID)
 			if err != nil {
 				return fmt.Errorf("serve: %w", err)
 			}
