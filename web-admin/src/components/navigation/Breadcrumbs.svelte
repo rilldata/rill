@@ -58,7 +58,7 @@
     {#if $organization.data?.organization}
       <BreadcrumbItem
         label={orgName}
-        isCurrentPage={isOrganizationPage}
+        href={`/${orgName}`}
         menuOptions={$organizations.data?.organizations?.length > 1 &&
           $organizations.data.organizations.map((org) => ({
             key: org.name,
@@ -66,6 +66,7 @@
           }))}
         menuKey={orgName}
         onSelectMenuOption={(organization) => goto(`/${organization}`)}
+        isCurrentPage={isOrganizationPage}
       >
         <OrganizationAvatar organization={orgName} slot="icon" />
       </BreadcrumbItem>
@@ -74,7 +75,7 @@
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
         label={projectName}
-        isCurrentPage={isProjectPage}
+        href={`/${orgName}/${projectName}`}
         menuOptions={$projects.data?.projects?.length > 1 &&
           $projects.data.projects.map((proj) => ({
             key: proj.name,
@@ -82,14 +83,19 @@
           }))}
         menuKey={projectName}
         onSelectMenuOption={(project) =>
-          goto(`/${orgName}/${project}/-/redirect`)}
+          goto(
+            isDashboardPage
+              ? `/${orgName}/${project}/-/redirect`
+              : `/${orgName}/${project}`
+          )}
+        isCurrentPage={isProjectPage}
       />
     {/if}
     {#if currentDashboard}
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
         label={currentDashboard?.title || currentDashboard.name}
-        isCurrentPage={isDashboardPage}
+        href={`/${orgName}/${projectName}/${currentDashboard.name}`}
         menuOptions={$dashboardListItems?.items?.length > 1 &&
           $dashboardListItems.items.map((listing) => {
             return {
@@ -100,6 +106,7 @@
         menuKey={currentDashboard.name}
         onSelectMenuOption={(dashboard) =>
           goto(`/${orgName}/${projectName}/${dashboard}`)}
+        isCurrentPage={isDashboardPage}
       />
     {/if}
   </ol>
