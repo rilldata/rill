@@ -208,7 +208,6 @@
       {/each}
       <Divider />
     {/if}
-    {#if}
     <CustomTimeRangeMenuItem
       on:select={() => {
         isCustomRangeOpen = !isCustomRangeOpen;
