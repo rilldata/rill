@@ -53,6 +53,7 @@
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
   $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
   $: showComparison = $dashboardStore?.showComparison;
+  $: interval = $dashboardStore?.selectedTimeRange?.interval;
 
   let totalsQuery: CreateQueryResult<V1MetricsViewTotalsResponse, Error>;
 
