@@ -22,7 +22,7 @@
   $: organization = createAdminServiceGetOrganization(orgName);
   $: organizations = createAdminServiceListOrganizations(undefined, {
     query: {
-      enabled: !!$user.data.user,
+      enabled: !!$user.data?.user,
     },
   });
   $: isOrganizationPage = $page.route.id === "/[organization]";
@@ -36,7 +36,7 @@
     undefined,
     {
       query: {
-        enabled: !!$organization.data.organization,
+        enabled: !!$organization.data?.organization,
       },
     }
   );
@@ -55,7 +55,7 @@
 
 <nav>
   <ol class="flex flex-row items-center">
-    {#if $organization.data.organization}
+    {#if $organization.data?.organization}
       <BreadcrumbItem
         label={orgName}
         href={`/${orgName}`}
@@ -71,7 +71,7 @@
         <OrganizationAvatar organization={orgName} slot="icon" />
       </BreadcrumbItem>
     {/if}
-    {#if $project.data.project}
+    {#if $project.data?.project}
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
         label={projectName}
