@@ -23,6 +23,15 @@
 
   export let leftMargin = undefined;
 
+  // This has to be at the beginning to make sure we get the state from the URL
+  $: stateSyncManager = new StateSyncManager(metricViewName);
+  $: if ($metricsExplorer) {
+    stateSyncManager.handleStateChange($metricsExplorer);
+  }
+  $: if ($page) {
+    stateSyncManager.handleUrlChange();
+  }
+
   const switchToMetrics = async (metricViewName: string) => {
     if (!metricViewName) return;
 
@@ -46,14 +55,6 @@
   let exploreContainerWidth;
 
   $: metricsExplorer = useDashboardStore(metricViewName);
-
-  $: stateSyncManager = new StateSyncManager(metricViewName);
-  $: if ($metricsExplorer) {
-    stateSyncManager.handleStateChange($metricsExplorer);
-  }
-  $: if ($page) {
-    stateSyncManager.handleUrlChange();
-  }
 
   $: selectedDimensionName = $metricsExplorer?.selectedDimensionName;
   $: metricTimeSeries = useModelHasTimeSeries(
