@@ -58,7 +58,7 @@ func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.Trigger
 	return &adminv1.TriggerRefreshSourcesResponse{}, nil
 }
 
-func (s *Server) refreshSourcesInternal(w http.ResponseWriter, r *http.Request) {
+func (s *Server) triggerRefreshSourcesInternal(w http.ResponseWriter, r *http.Request) {
 	orgName := r.URL.Query().Get("organization")
 	projectName := r.URL.Query().Get("project")
 	if orgName == "" || projectName == "" {

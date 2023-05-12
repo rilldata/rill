@@ -173,7 +173,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	s.registerGithubEndpoints(mux)
 
 	// Add temporary internal endpoint for refreshing sources
-	mux.Handle("/internal/refresh", otelhttp.WithRouteTag("/internal/refresh", http.HandlerFunc(s.refreshSourcesInternal)))
+	mux.Handle("/internal/projects/trigger-refresh", otelhttp.WithRouteTag("/internal/projects/trigger-refresh", http.HandlerFunc(s.triggerRefreshSourcesInternal)))
 
 	// Build CORS options for admin server
 
