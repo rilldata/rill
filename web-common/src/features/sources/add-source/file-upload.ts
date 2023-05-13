@@ -5,9 +5,9 @@ import {
   incrementedNameGetter,
 } from "@rilldata/web-common/features/sources/add-source/duplicateNameUtils";
 import {
-  fileHasValidExtension,
   PossibleFileExtensions,
   PossibleZipExtensions,
+  fileHasValidExtension,
 } from "@rilldata/web-common/features/sources/add-source/possible-file-extensions";
 import { importOverlayVisible } from "@rilldata/web-common/layout/overlay-store";
 import { runtimeServiceFileUpload } from "@rilldata/web-common/runtime-client/manual-clients";
@@ -139,8 +139,9 @@ export async function uploadFile(
 
 function reportFileErrors(invalidFiles: File[]) {
   notifications.send({
-    message: `${invalidFiles.length} file${invalidFiles.length !== 1 ? "s are" : " is"
-      } invalid: \n${invalidFiles.map((file) => file.name).join("\n")}`,
+    message: `${invalidFiles.length} file${
+      invalidFiles.length !== 1 ? "s are" : " is"
+    } invalid: \n${invalidFiles.map((file) => file.name).join("\n")}`,
     detail:
       "Only .parquet, .csv, .tsv, .json, and .ndjson files are supported, along with their gzipped (.gz) counterparts",
     options: {
