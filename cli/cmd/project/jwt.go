@@ -62,7 +62,7 @@ func JwtCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	jwtCmd.Flags().SortFlags = false
-	jwtCmd.Flags().StringVar(&name, "project", "", "Name")
+	jwtCmd.Flags().StringVar(&name, "project", "", "Project Name")
 
 	return jwtCmd
 }

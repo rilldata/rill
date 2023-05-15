@@ -73,7 +73,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	statusCmd.Flags().StringVar(&name, "project", "", "Name")
+	statusCmd.Flags().StringVar(&name, "project", "", "Project Name")
 	statusCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 
 	return statusCmd

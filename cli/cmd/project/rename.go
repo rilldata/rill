@@ -37,9 +37,8 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				name = cmdutil.SelectPrompt("Select project to rename", projectNames, "")
 			}
 
-			if !cmd.Flags().Changed("new-name") && cfg.Interactive {
-				// Get the new project name from user if not provided in the flag, passing current name as default
-				newName, err = cmdutil.InputPrompt("Rename to", name)
+			if cfg.Interactive {
+				err = cmdutil.SetFlagsByInputPrompts(*cmd, "new-name")
 				if err != nil {
 					return err
 				}

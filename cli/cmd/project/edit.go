@@ -1,10 +1,6 @@
 package project
 
 import (
-	"fmt"
-
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/fatih/color"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -50,29 +46,9 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			proj := resp.Project
 
 			if cfg.Interactive {
-				if !cmd.Flags().Changed("description") {
-					description, err = cmdutil.InputPrompt("Enter the project description", proj.Description)
-					if err != nil {
-						return err
-					}
-				}
-
-				if !cmd.Flags().Changed("prod-branch") {
-					prodBranch, err = cmdutil.InputPrompt("Enter the production branch", proj.ProdBranch)
-					if err != nil {
-						return err
-					}
-				}
-
-				if !cmd.Flags().Changed("public") {
-					prompt := &survey.Confirm{
-						Message: fmt.Sprintf("Do you want the project \"%s\" to public?", color.YellowString(name)),
-					}
-
-					err = survey.AskOne(prompt, &public)
-					if err != nil {
-						return err
-					}
+				err = cmdutil.SetFlagsByInputPrompts(*cmd, "description", "prod-branch", "public")
+				if err != nil {
+					return err
 				}
 			}
 
@@ -98,10 +74,10 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	editCmd.Flags().SortFlags = false
-	editCmd.Flags().StringVar(&name, "project", "", "Name")
-	editCmd.Flags().StringVar(&description, "description", "", "Description")
+	editCmd.Flags().StringVar(&name, "project", "", "Project Name")
+	editCmd.Flags().StringVar(&description, "description", "", "Project Description")
 	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "noname", "Production branch name")
-	editCmd.Flags().BoolVar(&public, "public", false, "Public")
+	editCmd.Flags().BoolVar(&public, "public", false, "Public Branch")
 	editCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 
 	return editCmd

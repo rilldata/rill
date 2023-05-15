@@ -69,7 +69,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 
 	deleteCmd.Flags().SortFlags = false
 	deleteCmd.Flags().BoolVar(&force, "force", false, "Delete forcefully, skips the confirmation")
-	deleteCmd.Flags().StringVar(&name, "project", "", "Name")
+	deleteCmd.Flags().StringVar(&name, "project", "", "Project Name")
 	deleteCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 
 	return deleteCmd

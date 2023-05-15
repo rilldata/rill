@@ -39,9 +39,8 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				orgName = cmdutil.SelectPrompt("Select org to edit", orgNames, cfg.Org)
 			}
 
-			if !cmd.Flags().Changed("description") && cfg.Interactive {
-				// Get the new org description from user if not provided in the flag
-				description, err = cmdutil.InputPrompt("Enter the org description", description)
+			if cfg.Interactive {
+				err = cmdutil.SetFlagsByInputPrompts(*cmd, "description")
 				if err != nil {
 					return err
 				}

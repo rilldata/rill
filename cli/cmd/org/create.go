@@ -29,9 +29,8 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("name") && len(args) == 0 && cfg.Interactive {
-				// Get the new org name from user if not provided in the flag
-				name, err = cmdutil.InputPrompt("Enter the org name", "")
+			if len(args) == 0 && cfg.Interactive {
+				err = cmdutil.SetFlagsByInputPrompts(*cmd, "name")
 				if err != nil {
 					return err
 				}
@@ -62,7 +61,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 	createCmd.Flags().SortFlags = false
-	createCmd.Flags().StringVar(&name, "name", "", "Name")
+	createCmd.Flags().StringVar(&name, "name", "", "Organization Name")
 	createCmd.Flags().StringVar(&description, "description", "", "Description")
 	return createCmd
 }

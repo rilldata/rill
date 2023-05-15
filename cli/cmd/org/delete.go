@@ -30,9 +30,8 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("name") && len(args) == 0 && cfg.Interactive {
-				// Get the new org name from user if not provided in the flag
-				name, err = cmdutil.InputPrompt("Enter the org name", "")
+			if len(args) == 0 && cfg.Interactive {
+				err = cmdutil.SetFlagsByInputPrompts(*cmd, "name")
 				if err != nil {
 					return err
 				}
@@ -96,7 +95,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 	deleteCmd.Flags().SortFlags = false
-	deleteCmd.Flags().StringVar(&name, "name", cfg.Org, "Name")
+	deleteCmd.Flags().StringVar(&name, "name", cfg.Org, "Organization Name")
 	deleteCmd.Flags().BoolVar(&force, "force", false, "Delete forcefully, skips the confirmation")
 
 	return deleteCmd
