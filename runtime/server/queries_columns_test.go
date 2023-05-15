@@ -12,7 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestServer_GetTopK_HugeInt(t *testing.T) {
@@ -427,8 +427,8 @@ func TestServer_GetTimeRangeSummary(t *testing.T) {
 	res, err := server.ColumnTimeRange(testCtx(), &runtimev1.ColumnTimeRangeRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	require.Equal(t, parseTime(t, "2022-11-01T00:00:00Z"), res.TimeRangeSummary.Min)
-	require.Equal(t, parseTime(t, "2022-11-03T00:00:00Z"), res.TimeRangeSummary.Max)
+	require.Equal(t, parseTime(t, "2022-11-01T00:00:00Z"), res.TimeRangeSummary.Min.AsTime())
+	require.Equal(t, parseTime(t, "2022-11-03T00:00:00Z"), res.TimeRangeSummary.Max.AsTime())
 	require.Equal(t, int32(0), res.TimeRangeSummary.Interval.Months)
 	require.Equal(t, int32(2), res.TimeRangeSummary.Interval.Days)
 	require.Equal(t, int64(0), res.TimeRangeSummary.Interval.Micros)
@@ -453,17 +453,23 @@ func TestServer_GetTimeRangeSummary_Date_Column(t *testing.T) {
 	res, err := server.ColumnTimeRange(testCtx(), &runtimev1.ColumnTimeRangeRequest{InstanceId: instanceId, TableName: "test", ColumnName: "dates"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	require.Equal(t, parseTime(t, "2007-04-01T00:00:00Z"), res.TimeRangeSummary.Min)
-	require.Equal(t, parseTime(t, "2011-06-30T00:00:00Z"), res.TimeRangeSummary.Max)
+	require.Equal(t, parseTime(t, "2007-04-01T00:00:00Z"), res.TimeRangeSummary.Min.AsTime())
+	require.Equal(t, parseTime(t, "2011-06-30T00:00:00Z"), res.TimeRangeSummary.Max.AsTime())
 	require.Equal(t, int32(0), res.TimeRangeSummary.Interval.Months)
 	require.Equal(t, int32(1551), res.TimeRangeSummary.Interval.Days)
 	require.Equal(t, int64(0), res.TimeRangeSummary.Interval.Micros)
 }
 
-func parseTime(tst *testing.T, t string) *timestamppb.Timestamp {
+func parseTimeToProtoTimeStamps(tst *testing.T, t string) *timestamppb.Timestamp {
 	ts, err := time.Parse(time.RFC3339, t)
 	require.NoError(tst, err)
 	return timestamppb.New(ts)
+}
+
+func parseTime(tst *testing.T, t string) time.Time {
+	ts, err := time.Parse(time.RFC3339, t)
+	require.NoError(tst, err)
+	return ts
 }
 
 func TestServer_GetCardinalityOfColumn(t *testing.T) {

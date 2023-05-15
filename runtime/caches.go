@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"context"
-	"encoding/gob"
 	"errors"
 	"fmt"
 	"sync"
@@ -16,7 +15,6 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 var errConnectionCacheClosed = errors.New("connectionCache: closed")
@@ -28,16 +26,6 @@ var (
 	queryCacheItemCountGauge = observability.Must(meter.Int64ObservableGauge("query_cache.item_count"))
 	queryCacheSizeBytesGauge = observability.Must(meter.Int64ObservableGauge("query_cache.size_bytes"))
 )
-
-// init registers the protobuf types with gob so they can be encoded.
-func init() {
-	gob.Register(structpb.Value_BoolValue{})
-	gob.Register(structpb.Value_NumberValue{})
-	gob.Register(structpb.Value_StringValue{})
-	gob.Register(structpb.Value_NullValue{})
-	gob.Register(structpb.Value_ListValue{})
-	gob.Register(structpb.Value_StructValue{})
-}
 
 // cache for instance specific connections only
 // all instance specific connections should be opened via connection cache only

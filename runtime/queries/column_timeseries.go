@@ -488,10 +488,10 @@ func approxSize(c *ColumnTimeseriesResult) int64 {
 		size += sizeProtoMessage(c.Meta[0]) * int64(len(c.Meta))
 	}
 	if len(c.Results) > 0 {
-		size += sizeProtoMessage(c.Results[0]) * int64(len(c.Meta))
+		size += sizeProtoMessage(c.Results[0]) * int64(len(c.Results))
 	}
 	if len(c.Spark) > 0 {
-		size += sizeProtoMessage(c.Spark[0]) * int64(len(c.Meta))
+		size += sizeProtoMessage(c.Spark[0]) * int64(len(c.Spark))
 	}
 	size += sizeProtoMessage(c.TimeRange)
 	size += int64(reflect.TypeOf(c.SampleSize).Size())

@@ -47,8 +47,8 @@ func TestServer_Timeseries(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
-			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
-			End:      parseTime(t, "2019-12-02T00:00:00Z"),
+			Start:    parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
+			End:      parseTimeToProtoTimeStamps(t, "2019-12-02T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
 		Filters: &runtimev1.MetricsViewFilter{
@@ -100,8 +100,8 @@ func TestServer_Timeseries_nulls_for_empty_intervals(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
-			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
-			End:      parseTime(t, "2019-01-01T02:00:00Z"),
+			Start:    parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
+			End:      parseTimeToProtoTimeStamps(t, "2019-01-01T02:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
 		},
 	})
@@ -460,8 +460,8 @@ func TestServer_Timeseries_Empty_Filter(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
-			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
-			End:      parseTime(t, "2019-12-01T00:00:00Z"),
+			Start:    parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
+			End:      parseTimeToProtoTimeStamps(t, "2019-12-01T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
 		Filters: new(runtimev1.MetricsViewFilter),
@@ -487,8 +487,8 @@ func TestServer_Timeseries_TimeEnd_exclusive(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
-			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
-			End:      parseTime(t, "2019-01-02T00:00:00Z"),
+			Start:    parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
+			End:      parseTimeToProtoTimeStamps(t, "2019-01-02T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		},
 		Filters: new(runtimev1.MetricsViewFilter),
@@ -509,8 +509,8 @@ func TestServer_Timeseries_No_Measures(t *testing.T) {
 		Measures:            []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{},
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
-			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
-			End:      parseTime(t, "2019-12-01T00:00:00Z"),
+			Start:    parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
+			End:      parseTimeToProtoTimeStamps(t, "2019-12-01T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
 		Filters: new(runtimev1.MetricsViewFilter),
@@ -530,8 +530,8 @@ func TestServer_Timeseries_Nil_Measures(t *testing.T) {
 		TableName:           "timeseries",
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
-			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
-			End:      parseTime(t, "2019-12-01T00:00:00Z"),
+			Start:    parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
+			End:      parseTimeToProtoTimeStamps(t, "2019-12-01T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
 		Filters: new(runtimev1.MetricsViewFilter),
@@ -563,8 +563,8 @@ func TestServer_Timeseries_2measures(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
-			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
-			End:      parseTime(t, "2019-12-01T00:00:00Z"),
+			Start:    parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
+			End:      parseTimeToProtoTimeStamps(t, "2019-12-01T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
 		Filters: &runtimev1.MetricsViewFilter{
@@ -599,8 +599,8 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
-			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
-			End:      parseTime(t, "2019-12-01T00:00:00Z"),
+			Start:    parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
+			End:      parseTimeToProtoTimeStamps(t, "2019-12-01T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		},
 		Filters: &runtimev1.MetricsViewFilter{
@@ -807,8 +807,8 @@ func TestServer_Timeseries_no_measures(t *testing.T) {
 		TableName:           "timeseries",
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
-			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
-			End:      parseTime(t, "2019-01-03T00:00:00Z"),
+			Start:    parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
+			End:      parseTimeToProtoTimeStamps(t, "2019-01-03T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		},
 	})
@@ -834,8 +834,8 @@ func TestServer_Timeseries_1day(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
-			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
-			End:      parseTime(t, "2019-01-03T00:00:00Z"),
+			Start:    parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
+			End:      parseTimeToProtoTimeStamps(t, "2019-01-03T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		},
 		Filters: &runtimev1.MetricsViewFilter{
@@ -868,8 +868,8 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 		},
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
-			Start:    parseTime(t, "2019-01-01T00:00:00Z"),
-			End:      parseTime(t, "2019-01-03T00:00:00Z"),
+			Start:    parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
+			End:      parseTimeToProtoTimeStamps(t, "2019-01-03T00:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		},
 		Filters: &runtimev1.MetricsViewFilter{
@@ -928,7 +928,7 @@ func TestServer_Timeseries_Spark(t *testing.T) {
 	for i, v := range response.GetRollup().Results {
 		fmt.Printf("i: %d, ts: %v\n", i, v.Ts.AsTime())
 	}
-	require.Equal(t, parseTime(t, "2019-01-10T00:00:00Z").AsTime(), response.GetRollup().TimeRange.End.AsTime())
+	require.Equal(t, parseTime(t, "2019-01-10T00:00:00Z"), response.GetRollup().TimeRange.End.AsTime())
 	results := response.GetRollup().Results
 	require.Equal(t, 9, len(results))
 	require.Equal(t, 12, len(response.Rollup.Spark))
@@ -1017,8 +1017,8 @@ func TestServer_EstimateRollupInterval_timestamp(t *testing.T) {
 		Priority:   1,
 	})
 	require.NoError(t, err)
-	require.Equal(t, parseTime(t, "2019-01-01T00:00:00.000Z"), r.Start)
-	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
+	require.Equal(t, parseTime(t, "2019-01-01T00:00:00.000Z"), r.Start.AsTime())
+	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End.AsTime())
 	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_HOUR, r.Interval)
 }
 
@@ -1032,7 +1032,7 @@ func TestServer_EstimateRollupInterval_date(t *testing.T) {
 		Priority:   1,
 	})
 	require.NoError(t, err)
-	require.Equal(t, parseTime(t, "2019-01-01T00:00:00.000Z"), r.Start)
-	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End)
+	require.Equal(t, parseTime(t, "2019-01-01T00:00:00.000Z"), r.Start.AsTime())
+	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End.AsTime())
 	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_HOUR, r.Interval)
 }
