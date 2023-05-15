@@ -148,13 +148,14 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 		q.Limit = 100
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s GROUP BY %s %s LIMIT %d",
+	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s GROUP BY %s %s LIMIT %d OFFSET %d",
 		strings.Join(selectCols, ", "),
 		mv.Model,
 		whereClause,
 		dimName,
 		orderClause,
 		q.Limit,
+		q.Offset,
 	)
 
 	return sql, args, nil
