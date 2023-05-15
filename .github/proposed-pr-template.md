@@ -2,6 +2,7 @@
 - [ ] Manual verification
 - [ ] Unit test coverage
 - [ ] E2E test coverage
+- [ ] Needs manual QA?
 
 ## Summary
 #### Issue addressed: 
