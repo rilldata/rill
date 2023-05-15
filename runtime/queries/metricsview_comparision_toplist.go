@@ -104,7 +104,7 @@ func (q *MetricsViewComparisonToplist) executeToplist(ctx context.Context, olap 
 		if err != nil {
 			return err
 		}
-		measureValues := make([]*runtimev1.MetricsViewComparisonValue, len(q.MeasureNames))
+		measureValues := make([]*runtimev1.MetricsViewComparisonValue, 0, len(q.MeasureNames))
 
 		for i, name := range q.MeasureNames {
 			v, err := pbutil.ToValue(values[1+i])
