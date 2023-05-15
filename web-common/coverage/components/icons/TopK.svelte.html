@@ -1,0 +1,325 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for components/icons/TopK.svelte</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">components/icons</a> TopK.svelte</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>0/80</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>0/80</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input oninput="onInput()" type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >&lt;script&gt;</span></span></span>
+<span class="cstat-no" title="statement not covered" >  export let size = "1em";</span>
+<span class="cstat-no" title="statement not covered" >  export let color = "currentColor";</span>
+<span class="cstat-no" title="statement not covered" >&lt;/script&gt;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >&lt;svg</span>
+<span class="cstat-no" title="statement not covered" >  height={size}</span>
+<span class="cstat-no" title="statement not covered" >  viewBox="0 0 24 24"</span>
+<span class="cstat-no" title="statement not covered" >  fill="none"</span>
+<span class="cstat-no" title="statement not covered" >  xmlns="http://www.w3.org/2000/svg"</span>
+<span class="cstat-no" title="statement not covered" >&gt;</span>
+<span class="cstat-no" title="statement not covered" >  &lt;path</span>
+<span class="cstat-no" title="statement not covered" >    d="M3 5.42803C3 5.19164 3.20147 5 3.45 5H20.55C20.7985 5 21 5.19164 21 5.42803V8.42424C21 8.66064 20.7985 8.85227 20.55 8.85227H3.45C3.20147 8.85227 3 8.66064 3 8.42424V5.42803Z"</span>
+<span class="cstat-no" title="statement not covered" >    fill="url(#paint0_linear_3105_19211)"</span>
+<span class="cstat-no" title="statement not covered" >  /&gt;</span>
+<span class="cstat-no" title="statement not covered" >  &lt;path</span>
+<span class="cstat-no" title="statement not covered" >    fill-rule="evenodd"</span>
+<span class="cstat-no" title="statement not covered" >    clip-rule="evenodd"</span>
+<span class="cstat-no" title="statement not covered" >    d="M4.475 6.28409C4.40596 6.28409 4.35 6.34006 4.35 6.40909V7.44318C4.35 7.51222 4.40596 7.56818 4.475 7.56818H19.525C19.594 7.56818 19.65 7.51222 19.65 7.44318V6.40909C19.65 6.34006 19.594 6.28409 19.525 6.28409H4.475ZM3.45 5C3.20147 5 3 5.19164 3 5.42803V8.42424C3 8.66064 3.20147 8.85227 3.45 8.85227H20.55C20.7985 8.85227 21 8.66064 21 8.42424V5.42803C21 5.19164 20.7985 5 20.55 5H3.45Z"</span>
+<span class="cstat-no" title="statement not covered" >    fill={color}</span>
+<span class="cstat-no" title="statement not covered" >  /&gt;</span>
+<span class="cstat-no" title="statement not covered" >  &lt;path</span>
+<span class="cstat-no" title="statement not covered" >    d="M3 10.5644C3 10.328 3.20147 10.1364 3.45 10.1364H13.35C13.5985 10.1364 13.8 10.328 13.8 10.5644V13.5606C13.8 13.797 13.5985 13.9886 13.35 13.9886H3.45C3.20147 13.9886 3 13.797 3 13.5606V10.5644Z"</span>
+<span class="cstat-no" title="statement not covered" >    fill="url(#paint1_linear_3105_19211)"</span>
+<span class="cstat-no" title="statement not covered" >  /&gt;</span>
+<span class="cstat-no" title="statement not covered" >  &lt;path</span>
+<span class="cstat-no" title="statement not covered" >    fill-rule="evenodd"</span>
+<span class="cstat-no" title="statement not covered" >    clip-rule="evenodd"</span>
+<span class="cstat-no" title="statement not covered" >    d="M4.475 11.4204C4.40596 11.4204 4.35 11.4764 4.35 11.5454V12.5795C4.35 12.6486 4.40596 12.7045 4.475 12.7045H12.325C12.394 12.7045 12.45 12.6486 12.45 12.5795V11.5454C12.45 11.4764 12.394 11.4204 12.325 11.4204H4.475ZM3.45 10.1364C3.20147 10.1364 3 10.328 3 10.5644V13.5606C3 13.797 3.20147 13.9886 3.45 13.9886H13.35C13.5985 13.9886 13.8 13.797 13.8 13.5606V10.5644C13.8 10.328 13.5985 10.1364 13.35 10.1364H3.45Z"</span>
+<span class="cstat-no" title="statement not covered" >    fill={color}</span>
+<span class="cstat-no" title="statement not covered" >  /&gt;</span>
+<span class="cstat-no" title="statement not covered" >  &lt;path</span>
+<span class="cstat-no" title="statement not covered" >    fill-rule="evenodd"</span>
+<span class="cstat-no" title="statement not covered" >    clip-rule="evenodd"</span>
+<span class="cstat-no" title="statement not covered" >    d="M4.475 16.5568C4.40596 16.5568 4.35 16.6128 4.35 16.6818V17.7159C4.35 17.7849 4.40596 17.8409 4.475 17.8409H6.925C6.99404 17.8409 7.05 17.7849 7.05 17.7159V16.6818C7.05 16.6128 6.99404 16.5568 6.925 16.5568H4.475ZM3.45 15.2727C3.20147 15.2727 3 15.4643 3 15.7007V18.6969C3 18.9333 3.20147 19.125 3.45 19.125H7.95C8.19853 19.125 8.4 18.9333 8.4 18.6969V15.7007C8.4 15.4643 8.19853 15.2727 7.95 15.2727H3.45Z"</span>
+<span class="cstat-no" title="statement not covered" >    fill={color}</span>
+<span class="cstat-no" title="statement not covered" >  /&gt;</span>
+<span class="cstat-no" title="statement not covered" >  &lt;path</span>
+<span class="cstat-no" title="statement not covered" >    d="M3 15.7007C3 15.4643 3.20147 15.2727 3.45 15.2727H7.95C8.19853 15.2727 8.4 15.4643 8.4 15.7007V18.6969C8.4 18.9333 8.19853 19.125 7.95 19.125H3.45C3.20147 19.125 3 18.9333 3 18.6969V15.7007Z"</span>
+<span class="cstat-no" title="statement not covered" >    fill="url(#paint2_linear_3105_19211)"</span>
+<span class="cstat-no" title="statement not covered" >  /&gt;</span>
+<span class="cstat-no" title="statement not covered" >  &lt;defs&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;linearGradient</span>
+<span class="cstat-no" title="statement not covered" >      id="paint0_linear_3105_19211"</span>
+<span class="cstat-no" title="statement not covered" >      x1="3"</span>
+<span class="cstat-no" title="statement not covered" >      y1="7.56818"</span>
+<span class="cstat-no" title="statement not covered" >      x2="21"</span>
+<span class="cstat-no" title="statement not covered" >      y2="7.56818"</span>
+<span class="cstat-no" title="statement not covered" >      gradientUnits="userSpaceOnUse"</span>
+<span class="cstat-no" title="statement not covered" >    &gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;stop stop-opacity="0.3" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;stop offset="1" stop-opacity="0.19" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;stop offset="1" stop-opacity="0" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;/linearGradient&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;linearGradient</span>
+<span class="cstat-no" title="statement not covered" >      id="paint1_linear_3105_19211"</span>
+<span class="cstat-no" title="statement not covered" >      x1="3"</span>
+<span class="cstat-no" title="statement not covered" >      y1="12.7045"</span>
+<span class="cstat-no" title="statement not covered" >      x2="21"</span>
+<span class="cstat-no" title="statement not covered" >      y2="12.7045"</span>
+<span class="cstat-no" title="statement not covered" >      gradientUnits="userSpaceOnUse"</span>
+<span class="cstat-no" title="statement not covered" >    &gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;stop stop-opacity="0.3" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;stop offset="1" stop-opacity="0.19" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;stop offset="1" stop-opacity="0" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;/linearGradient&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;linearGradient</span>
+<span class="cstat-no" title="statement not covered" >      id="paint2_linear_3105_19211"</span>
+<span class="cstat-no" title="statement not covered" >      x1="3"</span>
+<span class="cstat-no" title="statement not covered" >      y1="17.8409"</span>
+<span class="cstat-no" title="statement not covered" >      x2="21"</span>
+<span class="cstat-no" title="statement not covered" >      y2="17.8409"</span>
+<span class="cstat-no" title="statement not covered" >      gradientUnits="userSpaceOnUse"</span>
+<span class="cstat-no" title="statement not covered" >    &gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;stop stop-opacity="0.3" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;stop offset="1" stop-opacity="0.19" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;stop offset="1" stop-opacity="0" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;/linearGradient&gt;</span>
+<span class="cstat-no" title="statement not covered" >  &lt;/defs&gt;</span>
+<span class="cstat-no" title="statement not covered" >&lt;/svg&gt;</span>
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at Mon May 15 2023 10:19:40 GMT-0400 (Eastern Daylight Time)
+            </div>
+        <script src="../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../sorter.js"></script>
+        <script src="../../block-navigation.js"></script>
+    </body>
+</html>
+    

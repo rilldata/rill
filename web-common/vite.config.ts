@@ -10,5 +10,11 @@ export default defineConfig({
     },
   },
   plugins: [svelte()],
-  test: {},
+  test: {
+    coverage: {
+      provider: "c8",
+      src: ["./src"],
+      all: true
+    }
+  },
 });
