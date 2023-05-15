@@ -5,9 +5,9 @@ import {
   incrementedNameGetter,
 } from "@rilldata/web-common/features/sources/add-source/duplicateNameUtils";
 import {
-  fileHasValidExtension,
   PossibleFileExtensions,
   PossibleZipExtensions,
+  fileHasValidExtension,
 } from "@rilldata/web-common/features/sources/add-source/possible-file-extensions";
 import { importOverlayVisible } from "@rilldata/web-common/layout/overlay-store";
 import { runtimeServiceFileUpload } from "@rilldata/web-common/runtime-client/manual-clients";
@@ -183,7 +183,6 @@ export function openFileUploadDialog(multiple = true) {
     const focusHandler = () => {
       window.removeEventListener("focus", focusHandler);
       setTimeout(() => {
-        console.log("focus timeout");
         resolve([]);
       }, 1000);
     };
@@ -192,7 +191,6 @@ export function openFileUploadDialog(multiple = true) {
     input.accept = [...PossibleFileExtensions, ...PossibleZipExtensions].join(
       ","
     );
-    console.log(input);
     input.click();
   });
 }

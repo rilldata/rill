@@ -36,9 +36,7 @@ You can also add labels, descriptions, and your choice of number formatting to c
 
 ### Dimensions
 
-Dimensions are used for exploring segments and filtering the dashboard. Valid dimensions must be "categorical" columns of type `BOOLEAN`, `BOOL`, `LOGICAL`, `BYTE_ARRAY`, `VARCHAR`, `CHAR`, `BPCHAR`, `TEXT`, or `STRING`. If you have a column that is not formatted correctly to be a dimension, try creating categorical columns in the data model using SQL [`CASE`](https://duckdb.org/docs/sql/expressions/case#:~:text=DuckDB%20%2D%20Case%20Statement&text=The%20CASE%20statement%20performs%20a,a%20%3A%20b%20) statements.
-
-You can also add labels and descriptions to your dimensions to customize how they are shown in the dashboard.
+Dimensions are used for exploring segments and filtering the dashboard. Valid dimensions can be any type and are selected using the drop down menu. You can also add labels and descriptions to your dimensions to customize how they are shown in the dashboard.
 
 
 ## Using the UI

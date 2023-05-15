@@ -14,7 +14,12 @@
 <CtaLayoutContainer>
   <CtaContentContainer>
     <div class="h-36">
-      <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
+      <Spinner
+        bg="linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)"
+        status={EntityStatus.Running}
+        size="7rem"
+        duration={725}
+      />
     </div>
     <CtaHeader variant="bold"
       >Hang tight! We're building your dashboard...</CtaHeader

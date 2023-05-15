@@ -299,7 +299,7 @@ func (a *App) ReconcileSource(sourcePath string) error {
 	return nil
 }
 
-func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool) error {
+func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool, userID string) error {
 	// Get analytics info
 	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {
@@ -312,6 +312,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		GRPCPort:         grpcPort,
 		InstallID:        installID,
 		ProjectPath:      a.ProjectPath,
+		UserID:           userID,
 		Version:          a.Version.Number,
 		BuildCommit:      a.Version.Commit,
 		BuildTime:        a.Version.Timestamp,
@@ -411,6 +412,7 @@ type localInfo struct {
 	InstanceID       string `json:"instance_id"`
 	GRPCPort         int    `json:"grpc_port"`
 	InstallID        string `json:"install_id"`
+	UserID           string `json:"user_id"`
 	ProjectPath      string `json:"project_path"`
 	Version          string `json:"version"`
 	BuildCommit      string `json:"build_commit"`
