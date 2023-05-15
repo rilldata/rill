@@ -1,5 +1,10 @@
 name: Deploy Druid image for tests
 
+on:
+  pull_request:
+    paths:
+      - "drivers/druid/Dockerfile"
+
 jobs:
   release:
     name: 
