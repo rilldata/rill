@@ -71,7 +71,7 @@ func TestServer_MetricsViewComparisonToplist(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				MeasureName: "measure_2",
-				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
 				Ascending:   true,
 			},
 		},
@@ -121,7 +121,7 @@ func TestServer_MetricsViewComparisonToplist_inline_measures(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				MeasureName: "measure_2",
-				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
 				Ascending:   true,
 			},
 		},
@@ -164,7 +164,7 @@ func TestServer_MetricsViewComparisonToplist_nulls(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				MeasureName: "measure_2",
-				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
 				Ascending:   true,
 			},
 		},
@@ -223,7 +223,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				MeasureName: "measure_2",
-				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
 				Ascending:   false,
 			},
 		},
@@ -273,7 +273,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_comparison(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				MeasureName: "measure_2",
-				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
+				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
 				Ascending:   false,
 			},
 		},
@@ -324,7 +324,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_abs_delta(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				MeasureName: "measure_1",
-				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
 				Ascending:   false,
 			},
 		},
@@ -374,7 +374,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_rel_delta(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				MeasureName: "measure_1",
-				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_REL_DELTA,
+				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA,
 				Ascending:   false,
 			},
 		},
@@ -416,7 +416,7 @@ func TestServer_MetricsViewComparisonToplist_sort_error(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				MeasureName: "measure_1",
-				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
 				Ascending:   false,
 			},
 		},
@@ -451,7 +451,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_delta_limit_1(t *testing.T)
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				MeasureName: "measure_2",
-				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
 				Ascending:   false,
 			},
 		},
@@ -488,7 +488,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base_limit_1(t *testing.T) 
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				MeasureName: "measure_2",
-				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
 				Ascending:   false,
 			},
 		},
@@ -525,7 +525,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base_filter(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				MeasureName: "measure_2",
-				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
 				Ascending:   false,
 			},
 		},
@@ -586,7 +586,7 @@ func TestServer_MetricsViewComparisonToplist_2_measures(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				MeasureName: "measure_2",
-				Type:        runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
 				Ascending:   false,
 			},
 		},
