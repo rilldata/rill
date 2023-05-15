@@ -149,7 +149,7 @@ func (a *Authenticator) handleUserCodeConfirmation(w http.ResponseWriter, r *htt
 	userID := claims.OwnerID()
 
 	// Remove "-" from user code
-	dbUserCode := userCode[:4] + userCode[5:]
+	dbUserCode := strings.ReplaceAll(userCode, "-", "")
 	authCode, err := a.admin.DB.FindPendingDeviceAuthCodeByUserCode(r.Context(), dbUserCode)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
