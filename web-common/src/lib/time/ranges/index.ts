@@ -6,15 +6,22 @@
  * - we need tests for this.
  */
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { DEFAULT_TIME_RANGES } from "../config";
+import { DEFAULT_TIME_RANGES, TIME_GRAIN } from "../config";
 import {
   durationToMillis,
   getAllowedTimeGrains,
   isGrainBigger,
 } from "../grains";
-import { getTimeWidth, relativePointInTimeToAbsolute } from "../transforms";
+import {
+  getEndOfPeriod,
+  getOffset,
+  getStartOfPeriod,
+  getTimeWidth,
+  relativePointInTimeToAbsolute,
+} from "../transforms";
 import {
   RangePresetType,
+  TimeOffsetType,
   TimeRange,
   TimeRangeMeta,
   TimeRangeOption,
@@ -258,3 +265,40 @@ export const prettyFormatTimeRange = (start: Date, end: Date): string => {
     dateFormatOptions
   )} - ${end.toLocaleDateString(undefined, dateFormatOptions)}`;
 };
+
+/** Get extra data points for extrapolating the chart on both ends */
+export function getAdjustedFetchTime(
+  startTime: Date,
+  endTime: Date,
+  interval: V1TimeGrain
+) {
+  if (!startTime || !endTime) return undefined;
+  const offsetedStartTime = getOffset(
+    startTime,
+    TIME_GRAIN[interval].duration,
+    TimeOffsetType.SUBTRACT
+  );
+
+  // the data point previous to the first date inside the chart.
+  const trucatedOffsetedStartTime = getStartOfPeriod(
+    offsetedStartTime,
+    TIME_GRAIN[interval].duration
+  );
+
+  const offsetedEndTime = getOffset(
+    endTime,
+    TIME_GRAIN[interval].duration,
+    TimeOffsetType.ADD
+  );
+
+  // the data point after the last complete date.
+  const trucatedOffsetedEndTime = getStartOfPeriod(
+    offsetedEndTime,
+    TIME_GRAIN[interval].duration
+  );
+
+  return {
+    start: trucatedOffsetedStartTime.toISOString(),
+    end: trucatedOffsetedEndTime.toISOString(),
+  };
+}

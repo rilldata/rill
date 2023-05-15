@@ -22,19 +22,16 @@
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import {
-    getOffset,
-    getStartOfPeriod,
-  } from "@rilldata/web-common/lib/time/transforms";
-  import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
-  import {
     createQueryServiceMetricsViewTimeSeries,
     createQueryServiceMetricsViewTotals,
     V1MetricsViewTimeSeriesResponse,
     V1MetricsViewTotalsResponse,
-    V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
-  import { isRangeInsideOther } from "../../../lib/time/ranges";
+  import {
+    getAdjustedFetchTime,
+    isRangeInsideOther,
+  } from "../../../lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -80,24 +77,6 @@
     V1MetricsViewTotalsResponse,
     Error
   >;
-
-  /** Get extra data point for interpolating the chart for the first point*/
-  function getAdjustedStartTime(date: Date, interval: V1TimeGrain) {
-    if (!date) return undefined;
-    const offsetedDate = getOffset(
-      date,
-      TIME_GRAIN[interval].duration,
-      TimeOffsetType.SUBTRACT
-    );
-
-    // the data point previous to the first date inside the chart.
-    const trucatedOffsetedDate = getStartOfPeriod(
-      offsetedDate,
-      TIME_GRAIN[interval].duration
-    );
-
-    return trucatedOffsetedDate.toISOString();
-  }
 
   let isComparisonRangeAvailable = false;
   let displayComparison = false;
@@ -168,33 +147,39 @@
     !$metaQuery.isRefetching &&
     $dashboardStore?.selectedTimeRange?.start
   ) {
+    const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
+      $dashboardStore.selectedTimeRange?.start,
+      $dashboardStore.selectedTimeRange?.end,
+      interval
+    );
+
     timeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
       instanceId,
       metricViewName,
       {
         measureNames: selectedMeasureNames,
         filter: $dashboardStore?.filters,
-        timeStart: getAdjustedStartTime(
-          $dashboardStore.selectedTimeRange?.start,
-          interval
-        ),
-        timeEnd: $dashboardStore.selectedTimeRange?.end.toISOString(),
+        timeStart: adjustedStart,
+        timeEnd: adjustedEnd,
         timeGranularity: interval,
       }
     );
     if (displayComparison) {
+      const { start: compAdjustedStart, end: compAdjustedEnd } =
+        getAdjustedFetchTime(
+          $dashboardStore.selectedComparisonTimeRange?.start,
+          $dashboardStore.selectedComparisonTimeRange?.end,
+          interval
+        );
+
       timeSeriesComparisonQuery = createQueryServiceMetricsViewTimeSeries(
         instanceId,
         metricViewName,
         {
           measureNames: selectedMeasureNames,
           filter: $dashboardStore?.filters,
-          timeStart: getAdjustedStartTime(
-            $dashboardStore?.selectedComparisonTimeRange?.start,
-            interval
-          ),
-          timeEnd:
-            $dashboardStore?.selectedComparisonTimeRange?.end.toISOString(),
+          timeStart: compAdjustedStart,
+          timeEnd: compAdjustedEnd,
           timeGranularity: interval,
         }
       );
@@ -221,6 +206,7 @@
       dataComparisonCopy,
       TIME_GRAIN[interval].duration
     );
+    console.log(formattedData);
   }
 
   let mouseoverValue = undefined;
