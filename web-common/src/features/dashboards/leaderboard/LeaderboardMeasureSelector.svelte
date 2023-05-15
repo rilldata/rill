@@ -9,11 +9,7 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";
-  import {
-    selectBestDimensionStrings,
-    selectDimensionKeys,
-    useMetaQuery,
-  } from "../selectors";
+  import { useMetaQuery } from "../selectors";
 
   export let metricViewName;
 
@@ -69,28 +65,29 @@
   /** set the selection only if measures is not undefined */
   $: selection = measures ? activeLeaderboardMeasure : [];
 
-  $: availableDimensionLabels = selectBestDimensionStrings($metaQuery);
-  $: availableDimensionKeys = selectDimensionKeys($metaQuery);
-  $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
-  $: visibleDimensionsBitmask = availableDimensionKeys.map((k) =>
-    visibleDimensionKeys.has(k)
-  );
+  // FIXME: this is pending the remaining state work for show/hide measures and dimensions
+  // $: availableDimensionLabels = selectBestDimensionStrings($metaQuery);
+  // $: availableDimensionKeys = selectDimensionKeys($metaQuery);
+  // $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
+  // $: visibleDimensionsBitmask = availableDimensionKeys.map((k) =>
+  //   visibleDimensionKeys.has(k)
+  // );
 
-  const toggleDimensionVisibility = (e) => {
-    metricsExplorerStore.toggleDimensionVisibilityByKey(
-      metricViewName,
-      availableDimensionKeys[e.detail.index]
-    );
-  };
-  const setAllDimensionsNotVisible = () => {
-    metricsExplorerStore.hideAllDimensions(metricViewName);
-  };
-  const setAllDimensionsVisible = () => {
-    metricsExplorerStore.setMultipleDimensionsVisible(
-      metricViewName,
-      availableDimensionKeys
-    );
-  };
+  // const toggleDimensionVisibility = (e) => {
+  //   metricsExplorerStore.toggleDimensionVisibilityByKey(
+  //     metricViewName,
+  //     availableDimensionKeys[e.detail.index]
+  //   );
+  // };
+  // const setAllDimensionsNotVisible = () => {
+  //   metricsExplorerStore.hideAllDimensions(metricViewName);
+  // };
+  // const setAllDimensionsVisible = () => {
+  //   metricsExplorerStore.setMultipleDimensionsVisible(
+  //     metricViewName,
+  //     availableDimensionKeys
+  //   );
+  // };
 </script>
 
 <div>
@@ -102,8 +99,7 @@
       in:send={{ key: "leaderboard-metric" }}
       style:max-width="450px"
     >
-      <!-- FIXME: this is pending the remaining state work -->
-
+      <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
       <!-- <SeachableFilterButton
         selectableItems={availableDimensionLabels}
         selectedItems={visibleDimensionsBitmask}

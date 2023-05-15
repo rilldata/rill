@@ -2,18 +2,13 @@
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
-  import {
-    metricsExplorerStore,
-    useDashboardStore,
-  } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import {
     NicelyFormattedTypes,
     humanizeDataType,
     nicelyFormattedTypesToNumberKind,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import {
-    selectBestMeasureStrings,
-    selectMeasureKeys,
     useMetaQuery,
     useModelAllTimeRange,
   } from "@rilldata/web-common/features/dashboards/selectors";
@@ -217,35 +212,36 @@
     endValue = removeTimezoneOffset(endValue);
   }
 
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  // FIXME: this is pending the remaining state work for show/hide measures and dimensions
+  // $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  $: availableMeasureLabels = selectBestMeasureStrings($metaQuery);
-  $: availableMeasureKeys = selectMeasureKeys($metaQuery);
-  $: visibleMeasureKeys = metricsExplorer?.visibleMeasureKeys;
-  $: visibleMeasuresBitmask = availableMeasureKeys.map((k) =>
-    visibleMeasureKeys.has(k)
-  );
+  // $: availableMeasureLabels = selectBestMeasureStrings($metaQuery);
+  // $: availableMeasureKeys = selectMeasureKeys($metaQuery);
+  // $: visibleMeasureKeys = metricsExplorer?.visibleMeasureKeys;
+  // $: visibleMeasuresBitmask = availableMeasureKeys.map((k) =>
+  //   visibleMeasureKeys.has(k)
+  // );
 
-  const toggleMeasureVisibility = (e) => {
-    metricsExplorerStore.toggleMeasureVisibilityByKey(
-      metricViewName,
-      availableMeasureKeys[e.detail.index]
-    );
-  };
-  const setAllMeasuresNotVisible = () => {
-    metricsExplorerStore.hideAllMeasures(metricViewName);
-  };
-  const setAllMeasuresVisible = () => {
-    metricsExplorerStore.setMultipleMeasuresVisible(
-      metricViewName,
-      availableMeasureKeys
-    );
-  };
+  // const toggleMeasureVisibility = (e) => {
+  //   metricsExplorerStore.toggleMeasureVisibilityByKey(
+  //     metricViewName,
+  //     availableMeasureKeys[e.detail.index]
+  //   );
+  // };
+  // const setAllMeasuresNotVisible = () => {
+  //   metricsExplorerStore.hideAllMeasures(metricViewName);
+  // };
+  // const setAllMeasuresVisible = () => {
+  //   metricsExplorerStore.setMultipleMeasuresVisible(
+  //     metricViewName,
+  //     availableMeasureKeys
+  //   );
+  // };
 </script>
 
 <TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
   <div class="bg-white sticky top-0" style="z-index:100">
-    <!-- FIXME: this is pending the remaining state work -->
+    <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
     <!-- <SeachableFilterButton
       selectableItems={availableMeasureLabels}
       selectedItems={visibleMeasuresBitmask}
