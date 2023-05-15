@@ -132,7 +132,7 @@ type DB interface {
 	FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*Invite, error)
 	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
 	FindOrganizationInvite(ctx context.Context, orgID, userEmail string) (*OrganizationInvite, error)
-	InsertOrganizationInvite(ctx context.Context, email, orgID, roleID, invitedByID string) error
+	InsertOrganizationInvite(ctx context.Context, opts *InsertOrganizationInviteOptions) error
 	DeleteOrganizationInvite(ctx context.Context, id string) error
 	CountInvitesForOrganization(ctx context.Context, orgID string) (int, error)
 	UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error
@@ -140,7 +140,7 @@ type DB interface {
 	FindProjectInvites(ctx context.Context, projectID, afterEmail string, limit int) ([]*Invite, error)
 	FindProjectInvitesByEmail(ctx context.Context, userEmail string) ([]*ProjectInvite, error)
 	FindProjectInvite(ctx context.Context, projectID, userEmail string) (*ProjectInvite, error)
-	InsertProjectInvite(ctx context.Context, email, projectID, roleID, invitedByID string) error
+	InsertProjectInvite(ctx context.Context, opts *InsertProjectInviteOptions) error
 	DeleteProjectInvite(ctx context.Context, id string) error
 	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
 }
@@ -503,3 +503,17 @@ const (
 	DefaultQuotaOutstandingInvites = 200
 	DefaultQuotaSingleuserOrgs     = 3
 )
+
+type InsertOrganizationInviteOptions struct {
+	Email     string `validate:"email"`
+	InviterID string
+	OrgID     string `validate:"required"`
+	RoleID    string `validate:"required"`
+}
+
+type InsertProjectInviteOptions struct {
+	Email     string `validate:"email"`
+	InviterID string
+	ProjectID string `validate:"required"`
+	RoleID    string `validate:"required"`
+}

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { sanitizeQuery } from "./sanitize-query";
 
 describe("sanitizeQuery", () => {

@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v50/github"
+	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -22,6 +24,66 @@ var (
 	ErrGithubInstallationNotFound = fmt.Errorf("github installation not found")
 )
 
+// Github exposes the features we require from the Github API.
+type Github interface {
+	AppClient() *github.Client
+	InstallationClient(installationID int64) (*github.Client, error)
+}
+
+// githubClient implements the Github interface.
+type githubClient struct {
+	appID         int64
+	appPrivateKey string
+	appClient     *github.Client
+
+	cacheMu           sync.Mutex
+	installationCache *simplelru.LRU
+}
+
+// NewGithub returns a new client for connecting to Github.
+func NewGithub(appID int64, appPrivateKey string) (Github, error) {
+	atr, err := ghinstallation.NewAppsTransport(http.DefaultTransport, appID, []byte(appPrivateKey))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create github app transport: %w", err)
+	}
+	appClient := github.NewClient(&http.Client{Transport: atr})
+
+	lru, err := simplelru.NewLRU(100, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	return &githubClient{
+		appID:             appID,
+		appPrivateKey:     appPrivateKey,
+		appClient:         appClient,
+		installationCache: lru,
+	}, nil
+}
+
+func (g *githubClient) AppClient() *github.Client {
+	return g.appClient
+}
+
+func (g *githubClient) InstallationClient(installationID int64) (*github.Client, error) {
+	g.cacheMu.Lock()
+	defer g.cacheMu.Unlock()
+
+	val, ok := g.installationCache.Get(installationID)
+	if ok {
+		return val.(*github.Client), nil
+	}
+
+	itr, err := ghinstallation.New(http.DefaultTransport, g.appID, installationID, []byte(g.appPrivateKey))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create github installation transport: %w", err)
+	}
+	installationClient := github.NewClient(&http.Client{Transport: itr})
+
+	g.installationCache.Add(installationID, installationClient)
+	return installationClient, nil
+}
+
 // GetGithubInstallation returns a non zero Github installation ID iff the Github App is installed on the repository.
 // The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
 func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (int64, error) {
@@ -31,7 +93,7 @@ func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (
 	}
 
 	// TODO :: handle suspended case
-	installation, resp, err := s.github.Apps.FindRepositoryInstallation(ctx, account, repo)
+	installation, resp, err := s.github.AppClient().Apps.FindRepositoryInstallation(ctx, account, repo)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
 			// We don't have an installation on the repo
@@ -62,7 +124,7 @@ func (s *Service) LookupGithubRepoForUser(ctx context.Context, installationID in
 		return nil, fmt.Errorf("invalid gitUsername %q", gitUsername)
 	}
 
-	gh, err := s.githubInstallationClient(installationID)
+	gh, err := s.github.InstallationClient(installationID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github installation client: %w", err)
 	}
@@ -165,14 +227,4 @@ func (s *Service) processGithubInstallationEvent(ctx context.Context, event *git
 func (s *Service) processGithubInstallationRepositoriesEvent(ctx context.Context, event *github.InstallationRepositoriesEvent) error {
 	// We can access event.RepositoriesAdded and event.RepositoriesRemoved
 	return nil
-}
-
-// githubInstallationClient makes a Github client that authenticates as a specific installation.
-// (As opposed to s.github, which authenticates as the Git App, and cannot access the contents of an installation.)
-func (s *Service) githubInstallationClient(installationID int64) (*github.Client, error) {
-	itr, err := ghinstallation.New(http.DefaultTransport, s.opts.GithubAppID, installationID, []byte(s.opts.GithubAppPrivateKey))
-	if err != nil {
-		return nil, err
-	}
-	return github.NewClient(&http.Client{Transport: itr}), nil
 }

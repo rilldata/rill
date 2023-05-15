@@ -4,6 +4,7 @@ on:
     paths:
       - ".github/workflows/web-test.yml"
       - "web-admin/**"
+      - "web-auth/**"
       - "web-common/**"
       - "web-local/**"
 jobs:
@@ -21,6 +22,9 @@ jobs:
             admin:
               - ".github/workflows/web-test.yml"
               - "web-admin/**"
+            auth:
+              - ".github/workflows/web-test.yml"
+              - "web-auth/**"
             local:
               - ".github/workflows/web-test.yml"
               - "web-local/**"
@@ -76,6 +80,17 @@ jobs:
           npx prettier --check "web-admin/**/*"
           npx eslint web-admin --quiet
           npx svelte-check --workspace web-admin --no-tsconfig
+
+      - name: Prettier checks and lint for web auth
+        if: steps.filter.outputs.auth == 'true'
+        run: |-
+          npx prettier --check "web-auth/**/*"
+          npx eslint web-auth --quiet
+          npx svelte-check --workspace web-auth --no-tsconfig
+
+      - name: Test web common
+        if: steps.filter.outputs.common == 'true'
+        run: npm run test -w web-common
 
       - name: Build & Test the web local
         if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}

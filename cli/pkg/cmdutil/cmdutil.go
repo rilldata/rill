@@ -292,11 +292,9 @@ func ProjectNamesByGithubURL(ctx context.Context, c *client.Client, org, githubU
 	}
 
 	names := make([]string, 0)
-	i := 0
 	for _, p := range resp.Projects {
 		if strings.EqualFold(p.GithubUrl, githubURL) {
-			names[i] = p.Name
-			i++
+			names = append(names, p.Name)
 		}
 	}
 
@@ -413,4 +411,17 @@ func SetFlagsByInputPrompts(cmd cobra.Command, flags ...string) error {
 	})
 
 	return err
+}
+
+func FetchUserID(ctx context.Context, cfg *config.Config) (string, error) {
+	c, err := Client(cfg)
+	if err != nil {
+		return "", err
+	}
+	defer c.Close()
+	user, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+	if err != nil {
+		return "", err
+	}
+	return user.GetUser().GetId(), nil
 }
