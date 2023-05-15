@@ -235,10 +235,8 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 
 	dimName := safeName(q.DimensionName)
 	selectCols := []string{dimName}
-	measureMap := make(map[string]int)
-	for i, m := range ms {
-		measureMap[m.Name] = i
-		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+	for _, m := range ms {
+		expr := fmt.Sprintf(`%s as %s`, m.Expression, safeName(m.Name))
 		selectCols = append(selectCols, expr)
 	}
 
@@ -261,12 +259,8 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 
 	orderClause := "true"
 	for _, s := range q.Sort {
-		i, ok := measureMap[s.MeasureName]
-		if !ok {
-			return "", nil, fmt.Errorf("Metrics view '%s' doesn't contain '%s' sort column", q.MetricsViewName, s.MeasureName)
-		}
 		orderClause += ", "
-		orderClause += fmt.Sprint(i + 2)
+		orderClause += safeName(s.MeasureName)
 		if !s.Ascending {
 			orderClause += " DESC"
 		}
@@ -359,13 +353,13 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		orderClause += ", "
 		var pos int
 		switch s.Type {
-		case runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_BASE_VALUE:
+		case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE:
 			pos = 2 + i*4
-		case runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_COMPARISON_VALUE:
+		case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE:
 			pos = 3 + i*4
-		case runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_ABS_DELTA:
+		case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA:
 			pos = 4 + i*4
-		case runtimev1.ComparisonSortType_COMPARISON_SORT_TYPE_REL_DELTA:
+		case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA:
 			pos = 5 + i*4
 		default:
 			return "", nil, fmt.Errorf("undefined sort type for measure %s", s.MeasureName)
