@@ -10,12 +10,10 @@
     metricsExplorerStore,
   } from "../dashboard-stores";
   import {
-    useMetaQuery,
     selectBestDimensionStrings,
     selectDimensionKeys,
+    useMetaQuery,
   } from "../selectors";
-
-  import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
 
   export let metricViewName;
 
@@ -104,7 +102,9 @@
       in:send={{ key: "leaderboard-metric" }}
       style:max-width="450px"
     >
-      <SeachableFilterButton
+      <!-- FIXME: this is pending the remaining state work -->
+
+      <!-- <SeachableFilterButton
         selectableItems={availableDimensionLabels}
         selectedItems={visibleDimensionsBitmask}
         on:item-clicked={toggleDimensionVisibility}
@@ -112,7 +112,7 @@
         on:select-all={setAllDimensionsVisible}
         label="Dimensions"
         tooltipText="Choose dimensions to display"
-      />
+      /> -->
 
       <div class="whitespace-nowrap">showing top values by</div>
 

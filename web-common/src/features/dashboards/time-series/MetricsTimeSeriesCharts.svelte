@@ -2,14 +2,13 @@
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
-  import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
   import {
     metricsExplorerStore,
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import {
-    humanizeDataType,
     NicelyFormattedTypes,
+    humanizeDataType,
     nicelyFormattedTypesToNumberKind,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import {
@@ -24,10 +23,10 @@
   import { getOffset } from "@rilldata/web-common/lib/time/transforms";
   import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import {
-    createQueryServiceMetricsViewTimeSeries,
-    createQueryServiceMetricsViewTotals,
     V1MetricsViewTimeSeriesResponse,
     V1MetricsViewTotalsResponse,
+    createQueryServiceMetricsViewTimeSeries,
+    createQueryServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { isRangeInsideOther } from "../../../lib/time/ranges";
@@ -246,7 +245,8 @@
 
 <TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
   <div class="bg-white sticky top-0" style="z-index:100">
-    <SeachableFilterButton
+    <!-- FIXME: this is pending the remaining state work -->
+    <!-- <SeachableFilterButton
       selectableItems={availableMeasureLabels}
       selectedItems={visibleMeasuresBitmask}
       on:item-clicked={toggleMeasureVisibility}
@@ -254,7 +254,7 @@
       on:select-all={setAllMeasuresVisible}
       label="Measures"
       tooltipText="Choose measures to display"
-    />
+    /> -->
   </div>
   <div class="bg-white sticky left-0 top-0">
     <div style:padding-left="24px" style:height="20px" />
