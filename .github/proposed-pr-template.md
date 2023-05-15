@@ -1,6 +1,7 @@
 ## Checklist
-- [ ] Unit test coverage
 - [ ] Manual verification
+- [ ] Unit test coverage
+- [ ] E2E test coverage
 
 ## Summary
 #### Issue addressed: 
