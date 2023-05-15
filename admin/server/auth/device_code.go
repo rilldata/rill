@@ -82,7 +82,10 @@ func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	qry := map[string]string{"user_code": authCode.UserCode}
+	// add a "-" after the 4th character
+	readableUserCode := authCode.UserCode[:4] + "-" + authCode.UserCode[4:]
+
+	qry := map[string]string{"user_code": readableUserCode}
 	if values.Get("redirect") != "" {
 		qry["redirect"] = values.Get("redirect")
 	}
@@ -95,7 +98,7 @@ func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.R
 
 	resp := DeviceCodeResponse{
 		DeviceCode:              authCode.DeviceCode,
-		UserCode:                authCode.UserCode,
+		UserCode:                readableUserCode,
 		VerificationURI:         verificationURI,
 		VerificationCompleteURI: verificationCompleteURI,
 		ExpiresIn:               int(admin.DeviceAuthCodeTTL.Seconds()),
@@ -145,7 +148,9 @@ func (a *Authenticator) handleUserCodeConfirmation(w http.ResponseWriter, r *htt
 	}
 	userID := claims.OwnerID()
 
-	authCode, err := a.admin.DB.FindPendingDeviceAuthCodeByUserCode(r.Context(), userCode)
+	// Remove "-" from user code
+	dbUserCode := userCode[:4] + userCode[5:]
+	authCode, err := a.admin.DB.FindPendingDeviceAuthCodeByUserCode(r.Context(), dbUserCode)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			http.Error(w, fmt.Sprintf("no such user code: %s found", userCode), http.StatusBadRequest)

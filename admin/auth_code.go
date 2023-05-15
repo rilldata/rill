@@ -63,7 +63,5 @@ func generateUserCode() (string, error) {
 	} else if len(userCode) > 8 {
 		userCode = userCode[:8]
 	}
-	// add a "-" after the 4th character
-	userCode = userCode[:4] + "-" + userCode[4:]
 	return userCode, nil
 }
