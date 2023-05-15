@@ -1,5 +1,6 @@
 import { PerRangeFormatter } from "./per-range";
 import { defaultPercentOptions } from "./per-range-default-options";
+import { describe, it, expect } from "vitest";
 
 const defaultGenericNumTestCases: [number, string][] = [
   // integers
