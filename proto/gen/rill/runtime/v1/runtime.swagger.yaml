@@ -1714,15 +1714,6 @@ definitions:
     properties:
       categoricalSummary:
         $ref: '#/definitions/v1CategoricalSummary'
-  v1ComparisonSortType:
-    type: string
-    enum:
-      - COMPARISON_SORT_TYPE_UNSPECIFIED
-      - COMPARISON_SORT_TYPE_BASE_VALUE
-      - COMPARISON_SORT_TYPE_COMPARISON_VALUE
-      - COMPARISON_SORT_TYPE_ABS_DELTA
-      - COMPARISON_SORT_TYPE_REL_DELTA
-    default: COMPARISON_SORT_TYPE_UNSPECIFIED
   v1Connector:
     type: object
     properties:
@@ -2015,7 +2006,16 @@ definitions:
       ascending:
         type: boolean
       type:
-        $ref: '#/definitions/v1ComparisonSortType'
+        $ref: '#/definitions/v1MetricsViewComparisonSortType'
+  v1MetricsViewComparisonSortType:
+    type: string
+    enum:
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA
+    default: METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED
   v1MetricsViewComparisonToplistResponse:
     type: object
     properties:

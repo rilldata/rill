@@ -550,12 +550,22 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
+export interface V1MetricsViewTimeSeriesResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1TimeSeriesValue[];
+}
+
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
 }
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
 
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
@@ -570,10 +580,27 @@ export interface V1MetricsViewComparisonValue {
   deltaRel?: unknown;
 }
 
+export type V1MetricsViewComparisonSortType =
+  typeof V1MetricsViewComparisonSortType[keyof typeof V1MetricsViewComparisonSortType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1MetricsViewComparisonSortType = {
+  METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED",
+  METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE",
+  METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE",
+  METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA",
+  METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
+} as const;
+
 export interface V1MetricsViewComparisonSort {
   measureName?: string;
   ascending?: boolean;
-  type?: V1ComparisonSortType;
+  type?: V1MetricsViewComparisonSortType;
 }
 
 export interface V1MetricsViewComparisonRow {
@@ -589,16 +616,6 @@ export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
-}
-
-export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1TimeSeriesValue[];
-}
-
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
 }
 
 export interface V1MetricsView {
@@ -753,19 +770,6 @@ export interface V1Connector {
   description?: string;
   properties?: ConnectorProperty[];
 }
-
-export type V1ComparisonSortType =
-  typeof V1ComparisonSortType[keyof typeof V1ComparisonSortType];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1ComparisonSortType = {
-  COMPARISON_SORT_TYPE_UNSPECIFIED: "COMPARISON_SORT_TYPE_UNSPECIFIED",
-  COMPARISON_SORT_TYPE_BASE_VALUE: "COMPARISON_SORT_TYPE_BASE_VALUE",
-  COMPARISON_SORT_TYPE_COMPARISON_VALUE:
-    "COMPARISON_SORT_TYPE_COMPARISON_VALUE",
-  COMPARISON_SORT_TYPE_ABS_DELTA: "COMPARISON_SORT_TYPE_ABS_DELTA",
-  COMPARISON_SORT_TYPE_REL_DELTA: "COMPARISON_SORT_TYPE_REL_DELTA",
-} as const;
 
 export interface V1ColumnTopKResponse {
   categoricalSummary?: V1CategoricalSummary;

@@ -9,41 +9,41 @@ import { StructType } from "./schema_pb.js";
 import { TimeGrain } from "./catalog_pb.js";
 
 /**
- * @generated from enum rill.runtime.v1.ComparisonSortType
+ * @generated from enum rill.runtime.v1.MetricsViewComparisonSortType
  */
-export enum ComparisonSortType {
+export enum MetricsViewComparisonSortType {
   /**
-   * @generated from enum value: COMPARISON_SORT_TYPE_UNSPECIFIED = 0;
+   * @generated from enum value: METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: COMPARISON_SORT_TYPE_BASE_VALUE = 1;
+   * @generated from enum value: METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE = 1;
    */
   BASE_VALUE = 1,
 
   /**
-   * @generated from enum value: COMPARISON_SORT_TYPE_COMPARISON_VALUE = 2;
+   * @generated from enum value: METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE = 2;
    */
   COMPARISON_VALUE = 2,
 
   /**
-   * @generated from enum value: COMPARISON_SORT_TYPE_ABS_DELTA = 3;
+   * @generated from enum value: METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA = 3;
    */
   ABS_DELTA = 3,
 
   /**
-   * @generated from enum value: COMPARISON_SORT_TYPE_REL_DELTA = 4;
+   * @generated from enum value: METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA = 4;
    */
   REL_DELTA = 4,
 }
-// Retrieve enum metadata with: proto3.getEnumType(ComparisonSortType)
-proto3.util.setEnumType(ComparisonSortType, "rill.runtime.v1.ComparisonSortType", [
-  { no: 0, name: "COMPARISON_SORT_TYPE_UNSPECIFIED" },
-  { no: 1, name: "COMPARISON_SORT_TYPE_BASE_VALUE" },
-  { no: 2, name: "COMPARISON_SORT_TYPE_COMPARISON_VALUE" },
-  { no: 3, name: "COMPARISON_SORT_TYPE_ABS_DELTA" },
-  { no: 4, name: "COMPARISON_SORT_TYPE_REL_DELTA" },
+// Retrieve enum metadata with: proto3.getEnumType(MetricsViewComparisonSortType)
+proto3.util.setEnumType(MetricsViewComparisonSortType, "rill.runtime.v1.MetricsViewComparisonSortType", [
+  { no: 0, name: "METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED" },
+  { no: 1, name: "METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE" },
+  { no: 2, name: "METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE" },
+  { no: 3, name: "METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA" },
+  { no: 4, name: "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA" },
 ]);
 
 /**
@@ -546,9 +546,9 @@ export class MetricsViewComparisonSort extends Message<MetricsViewComparisonSort
   ascending = false;
 
   /**
-   * @generated from field: rill.runtime.v1.ComparisonSortType type = 3;
+   * @generated from field: rill.runtime.v1.MetricsViewComparisonSortType type = 3;
    */
-  type = ComparisonSortType.UNSPECIFIED;
+  type = MetricsViewComparisonSortType.UNSPECIFIED;
 
   constructor(data?: PartialMessage<MetricsViewComparisonSort>) {
     super();
@@ -560,7 +560,7 @@ export class MetricsViewComparisonSort extends Message<MetricsViewComparisonSort
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "measure_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "ascending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "type", kind: "enum", T: proto3.getEnumType(ComparisonSortType) },
+    { no: 3, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewComparisonSortType) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonSort {

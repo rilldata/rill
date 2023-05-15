@@ -215,18 +215,18 @@ message TimeRange {
   google.protobuf.Timestamp end = 2;
 }
 
-enum ComparisonSortType {
-  COMPARISON_SORT_TYPE_UNSPECIFIED = 0;
-  COMPARISON_SORT_TYPE_BASE_VALUE = 1;
-  COMPARISON_SORT_TYPE_COMPARISON_VALUE = 2;
-  COMPARISON_SORT_TYPE_ABS_DELTA = 3;
-  COMPARISON_SORT_TYPE_REL_DELTA = 4;
+enum MetricsViewComparisonSortType {
+  METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED = 0;
+  METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE = 1;
+  METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE = 2;
+  METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA = 3;
+  METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA = 4;
 }
 
 message MetricsViewComparisonSort {
   string measure_name = 1;
   bool ascending = 2;
-  ComparisonSortType type = 3;
+  MetricsViewComparisonSortType type = 3;
 }
 
 message MetricsViewComparisonRow {
