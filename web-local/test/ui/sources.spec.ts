@@ -16,40 +16,36 @@ describe("sources", () => {
   it.only("Import sources", async () => {
     const { page } = testBrowser;
 
-    // const bids = waitForAdBids(page, "AdBids");
+    const bids = waitForAdBids(page, "AdBids");
     await uploadFile(page, "AdBids.csv");
-    // await bids;
+    await bids;
 
-    await asyncWait(5000);
-
-    // const impressions = waitForAdImpressions(page, "AdImpressions");
+    const impressions = waitForAdImpressions(page, "AdImpressions");
     await uploadFile(page, "AdImpressions.tsv");
-    // await impressions;
+    await impressions;
 
-    await asyncWait(10000);
+    await Promise.all([
+      waitForAdBids(page, "AdBids"),
+      uploadFile(page, "AdBids.csv"),
+    ]);
 
-    // await Promise.all([
-    //   waitForAdBids(page, "AdBids"),
-    //   uploadFile(page, "AdBids.csv"),
-    // ]);
-
-    // await Promise.all([
-    //   waitForAdImpressions(page, "AdImpressions"),
-    //   uploadFile(page, "AdImpressions.tsv"),
-    // ]);
+    await Promise.all([
+      waitForAdImpressions(page, "AdImpressions"),
+      uploadFile(page, "AdImpressions.tsv"),
+    ]);
 
 
 
-    // // upload existing table and keep both
-    // await Promise.all([
-    //   waitForEntity(page, TestEntityType.Source, "AdBids", false),
-    //   waitForAdBids(page, "AdBids_1"),
-    //   uploadFile(page, "AdBids.csv", true, true),
-    // ]);
+    // upload existing table and keep both
+    await Promise.all([
+      waitForEntity(page, TestEntityType.Source, "AdBids", false),
+      waitForAdBids(page, "AdBids_1"),
+      uploadFile(page, "AdBids.csv", true, true),
+    ]);
 
-    // // upload existing table and replace
-    // await uploadFile(page, "AdBids.csv", true, false);
-    // await entityNotPresent(page, "AdBids_2");
+    // upload existing table and replace
+    await uploadFile(page, "AdBids.csv", true, false);
+    await entityNotPresent(page, "AdBids_2");
   });
 
   it("Rename and delete sources", async () => {
