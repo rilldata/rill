@@ -13,7 +13,6 @@ import {
   isGrainBigger,
 } from "../grains";
 import {
-  getEndOfPeriod,
   getOffset,
   getStartOfPeriod,
   getTimeWidth,
