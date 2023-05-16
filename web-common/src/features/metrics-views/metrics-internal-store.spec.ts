@@ -33,7 +33,8 @@ smallest_time_grain: ""
 timeseries: ""
 measures: []
 dimensions:
-  - label: ""
+  - name: dimension
+    label: ""
     property: ""
     description: ""
 `);
@@ -49,7 +50,8 @@ smallest_time_grain: ""
 timeseries: ""
 measures: []
 dimensions:
-  - label: Publisher
+  - name: dimension
+    label: Publisher
     property: publisher
     description: ""
 `);
