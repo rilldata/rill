@@ -206,7 +206,6 @@
       dataComparisonCopy,
       TIME_GRAIN[interval].duration
     );
-    console.log(formattedData);
   }
 
   let mouseoverValue = undefined;
@@ -322,6 +321,7 @@
             bind:mouseoverValue
             data={formattedData}
             xAccessor="ts_position"
+            labelAccessor="ts"
             timeGrain={interval}
             yAccessor={measure.name}
             xMin={startValue}

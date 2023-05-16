@@ -31,6 +31,7 @@
   export let showComparison = false;
   export let data;
   export let xAccessor = "ts";
+  export let labelAccessor = "label";
   export let yAccessor = "value";
   export let mouseoverValue;
   export let hovered = false;
@@ -155,6 +156,7 @@
             {data}
             {xAccessor}
             yAccessor="comparison.{yAccessor}"
+            {timeGrain}
           />
         </g>
       {/if}
@@ -164,6 +166,7 @@
         {data}
         {xAccessor}
         {yAccessor}
+        {timeGrain}
       />
     {/key}
     <line
@@ -196,7 +199,7 @@
             x={config.plotLeft + config.bodyBuffer + 6}
             y={config.plotTop + 10 + config.bodyBuffer}
           >
-            {mouseoverTimeFormat(point["ts"])}
+            {mouseoverTimeFormat(point[labelAccessor])}
           </text>
           {#if showComparison}
             <text
@@ -207,7 +210,7 @@
               x={config.plotLeft + config.bodyBuffer + 6}
               y={config.plotTop + 24 + config.bodyBuffer}
             >
-              {mouseoverTimeFormat(point["comparison.ts"])} prev.
+              {mouseoverTimeFormat(point[`comparison.${labelAccessor}`])} prev.
             </text>
           {/if}
         </g>
