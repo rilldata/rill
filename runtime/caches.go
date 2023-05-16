@@ -10,11 +10,11 @@ import (
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/pkg/singleflight"
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.uber.org/zap"
+	"golang.org/x/sync/singleflight"
 )
 
 var errConnectionCacheClosed = errors.New("connectionCache: closed")
@@ -192,13 +192,13 @@ func newQueryCache(sizeInBytes int64) *queryCache {
 
 // getOrLoad gets the key from cache if present. If absent, it looks up the key using the loadFn and puts it into cache before returning value.
 // NOTE:: Due to limitation of the underlying caching library, key can only be one of int(signed/unsgined),string or byte array.
-func (c *queryCache) getOrLoad(key any, loadFn func() (any, error)) (any, bool, error) {
+func (c *queryCache) getOrLoad(key string, loadFn func() (any, error)) (any, bool, error) {
 	if val, ok := c.cache.Get(key); ok {
 		return val, true, nil
 	}
 
 	cached := true
-	val, err := c.group.Do(key, func() (interface{}, error) {
+	val, err, _ := c.group.Do(key, func() (interface{}, error) {
 		// check the cache again
 		if val, ok := c.cache.Get(key); ok {
 			return val, nil
