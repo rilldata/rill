@@ -1,1 +1,0 @@
-./rill-e2e-test start --no-open --port 8081 --port-grpc 9081 ../temp/sources
