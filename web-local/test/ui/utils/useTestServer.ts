@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach } from "@jest/globals";
 import { isPortOpen } from "@rilldata/web-local/lib/util/isPortOpen";
 import { asyncWaitUntil } from "@rilldata/web-local/lib/util/waitUtils";
+import axios from "axios";
 import { rmSync } from "fs";
 import type { ChildProcess } from "node:child_process";
 import { spawn } from "node:child_process";
@@ -35,7 +36,18 @@ export function useTestServer(port: number, dir: string) {
       }
     );
     childProcess.on("error", console.log);
-    await asyncWaitUntil(() => isPortOpen(port));
+    await asyncWaitUntil(
+      async () => {
+        try {
+          await axios(`http://localhost:${port}/v1/ping`);
+          return true;
+        } catch (err) {
+          return false;
+        }
+      },
+      -1,
+      1000
+    );
   });
 
   afterEach(async () => {
