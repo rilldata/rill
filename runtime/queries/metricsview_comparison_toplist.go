@@ -274,13 +274,14 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 	}
 
 	sql := fmt.Sprintf(
-		` SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s LIMIT %[6]d `,
+		`SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s LIMIT %[6]d OFFSET %[7]d`,
 		selectClause,    // 1
 		dimName,         // 2
 		mv.Model,        // 3
 		baseWhereClause, // 4
 		orderClause,     // 5
 		q.Limit,         // 6
+		q.Offset,        // 7
 	)
 
 	return sql, args, nil
@@ -298,7 +299,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 	measureMap := make(map[string]int)
 	for i, m := range ms {
 		measureMap[m.Name] = i
-		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+		expr := fmt.Sprintf(`%s as %s`, m.Expression, safeName(m.Name))
 		selectCols = append(selectCols, expr)
 		finalSelectCols = append(
 			finalSelectCols,
@@ -378,7 +379,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 	}
 
 	sql := fmt.Sprintf(`
-		SELECT COALESCE(base.%[2]s, comparison.%[2]s), %[8]s FROM 
+		SELECT COALESCE(base.%[2]s, comparison.%[2]s), %[9]s FROM 
 			(
 				SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s
 			) base
@@ -392,6 +393,8 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			%[6]s
 		LIMIT
 			%[7]d
+		OFFSET
+			%[8]d
 		`,
 		subSelectClause,       // 1
 		dimName,               // 2
@@ -400,7 +403,8 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		comparisonWhereClause, // 5
 		orderClause,           // 6
 		q.Limit,               // 7
-		finalSelectClause,     // 8
+		q.Offset,              // 8
+		finalSelectClause,     // 9
 	)
 
 	return sql, args, nil
