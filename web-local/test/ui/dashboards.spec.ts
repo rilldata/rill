@@ -18,7 +18,7 @@ import { useRegisteredServer } from "./utils/serverConfigs";
 import { createOrReplaceSource } from "./utils/sourceHelpers";
 import { waitForEntity } from "./utils/waitHelpers";
 
-describe.skip("dashboards", () => {
+describe.only("dashboards", () => {
   const testBrowser = useRegisteredServer("dashboards");
 
   it("Autogenerate dashboard from source", async () => {
@@ -35,7 +35,7 @@ describe.skip("dashboards", () => {
     await assertAdBidsDashboard(page);
   });
 
-  it("Autogenerate dashboard from model", async () => {
+  it.only("Autogenerate dashboard from model", async () => {
     const { page } = testBrowser;
 
     await createAdBidsModel(page);

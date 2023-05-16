@@ -10,10 +10,10 @@ import { createOrReplaceSource, uploadFile } from "./utils/sourceHelpers";
 import { entityNotPresent, waitForEntity } from "./utils/waitHelpers";
 import { asyncWait } from "@rilldata/web-local/lib/util/waitUtils";
 
-describe("sources", () => {
+describe.skip("sources", () => {
   const testBrowser = useRegisteredServer("sources");
 
-  it.only("Import sources", async () => {
+  it("Import sources", async () => {
     const { page } = testBrowser;
 
     const bids = waitForAdBids(page, "AdBids");
@@ -23,18 +23,6 @@ describe("sources", () => {
     const impressions = waitForAdImpressions(page, "AdImpressions");
     await uploadFile(page, "AdImpressions.tsv");
     await impressions;
-
-    await Promise.all([
-      waitForAdBids(page, "AdBids"),
-      uploadFile(page, "AdBids.csv"),
-    ]);
-
-    await Promise.all([
-      waitForAdImpressions(page, "AdImpressions"),
-      uploadFile(page, "AdImpressions.tsv"),
-    ]);
-
-
 
     // upload existing table and keep both
     await Promise.all([

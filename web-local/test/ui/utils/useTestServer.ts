@@ -1,12 +1,16 @@
 import { afterAll, afterEach, beforeAll, beforeEach } from "@jest/globals";
 import { isPortOpen } from "@rilldata/web-local/lib/util/isPortOpen";
-import { asyncWaitUntil } from "@rilldata/web-local/lib/util/waitUtils";
+import { asyncWait, asyncWaitUntil } from "@rilldata/web-local/lib/util/waitUtils";
 import { rmSync } from "fs";
 import type { ChildProcess } from "node:child_process";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { Browser, chromium, Page } from "playwright";
 import treeKill from "tree-kill";
+import axios from "axios";
+
+
+
 
 export function useTestServer(port: number, dir: string) {
   let childProcess: ChildProcess;
@@ -34,7 +38,18 @@ export function useTestServer(port: number, dir: string) {
       }
     );
     childProcess.on("error", console.log);
-    await asyncWaitUntil(() => isPortOpen(port));
+
+    // Ping runtime until it's ready
+    await asyncWaitUntil(async () => {
+      try {
+        const response = await axios.get(`http://localhost:${port}/v1/ping`);
+        return response.status === 200;
+      }
+      catch (err) {
+        return false;
+      }
+    });
+
   });
 
   afterEach(async () => {
@@ -53,8 +68,8 @@ export function useTestBrowser(port: number) {
 
   beforeAll(async () => {
     browser = await chromium.launch({
-      // headless: false,
-      // slowMo: 100
+      headless: false,
+      slowMo: 1000
       // devtools: true,
     });
   });
