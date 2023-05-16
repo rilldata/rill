@@ -1,0 +1,33 @@
+name: Build Druid image for tests
+
+on:
+  pull_request:
+    paths:
+      - "drivers/druid/Dockerfile"
+
+jobs:
+  release:
+    name: 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Authenticate GCloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: "${{ secrets.RILL_BINARY_SA }}"
+
+      - name: Set up GCloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Build & Publish Rill docker image
+        run: |-
+          cd drivers/druid
+
+          gcloud auth configure-docker
+
+          docker build -t gcr.io/rilldata/test-druid:${GITHUB_SHA} .
+          docker tag gcr.io/rilldata/test-druid:${GITHUB_SHA} gcr.io/rilldata/test-druid
+          docker push gcr.io/rilldata/test-druid:${GITHUB_SHA}
+          docker push gcr.io/rilldata/test-druid
