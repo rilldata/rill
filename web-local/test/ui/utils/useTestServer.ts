@@ -18,16 +18,15 @@ export function useTestServer(port: number, dir: string) {
     });
 
     childProcess = spawn(
-      path.join(__dirname, "../../../..", "rill"),
+      path.join(__dirname, "../../../.jest/rill-e2e-test"),
       [
         "start",
         "--no-open",
-        "--port",
-        port + "",
-        "--port-grpc",
-        port + 1000 + "",
-        "--project",
-        dir,
+        `--port`,
+        port.toString(),
+        `--port-grpc`,
+        (port + 1000).toString(),
+        dir
       ],
       {
         stdio: "inherit",
