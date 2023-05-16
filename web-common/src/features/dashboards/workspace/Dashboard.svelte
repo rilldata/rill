@@ -1,7 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
-  import { StateSyncManager } from "@rilldata/web-common/features/dashboards/proto-state/StateSyncManager";
   import {
     useMetaQuery,
     useModelHasTimeSeries,
@@ -22,15 +20,6 @@
   export let hasTitle: boolean;
 
   export let leftMargin = undefined;
-
-  // This has to be at the beginning to make sure we get the state from the URL
-  $: stateSyncManager = new StateSyncManager(metricViewName);
-  $: if ($metricsExplorer) {
-    stateSyncManager.handleStateChange($metricsExplorer);
-  }
-  $: if ($page) {
-    stateSyncManager.handleUrlChange();
-  }
 
   const switchToMetrics = async (metricViewName: string) => {
     if (!metricViewName) return;
