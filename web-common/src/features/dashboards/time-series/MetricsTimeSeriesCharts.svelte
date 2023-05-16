@@ -15,7 +15,10 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import { getOffset } from "@rilldata/web-common/lib/time/transforms";
+  import {
+    getOffset,
+    getStartOfPeriod,
+  } from "@rilldata/web-common/lib/time/transforms";
   import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import {
     V1MetricsViewTimeSeriesResponse,
@@ -73,7 +76,19 @@
   let isComparisonRangeAvailable = false;
   let displayComparison = false;
 
+  /** note: we need to add an additional timegrain's duration to this
+   * in order to get all data up to the latest point.
+   */
+  $: endRangeTimestampForAPI = getOffset(
+    $dashboardStore.selectedTimeRange?.end,
+    TIME_GRAIN[$dashboardStore?.selectedTimeRange?.interval]?.duration,
+    TimeOffsetType.ADD
+  );
+
   /** Generate the totals & big number comparison query */
+  // conditions: dashboard store exists
+  // name exists?
+
   $: if (
     name &&
     $dashboardStore &&
@@ -95,7 +110,7 @@
       measureNames: selectedMeasureNames,
       filter: $dashboardStore?.filters,
       timeStart: $dashboardStore.selectedTimeRange?.start.toISOString(),
-      timeEnd: $dashboardStore.selectedTimeRange?.end.toISOString(),
+      timeEnd: endRangeTimestampForAPI.toISOString(),
     };
 
     totalsQuery = createQueryServiceMetricsViewTotals(
@@ -146,7 +161,8 @@
         measureNames: selectedMeasureNames,
         filter: $dashboardStore?.filters,
         timeStart: $dashboardStore.selectedTimeRange?.start.toISOString(),
-        timeEnd: $dashboardStore.selectedTimeRange?.end.toISOString(),
+        // note: we add an additional time grain here so the API will return the last otherwise-excluded point.
+        timeEnd: endRangeTimestampForAPI.toISOString(),
         timeGranularity: $dashboardStore.selectedTimeRange?.interval,
       }
     );
@@ -159,8 +175,14 @@
           filter: $dashboardStore?.filters,
           timeStart:
             $dashboardStore?.selectedComparisonTimeRange?.start.toISOString(),
-          timeEnd:
-            $dashboardStore?.selectedComparisonTimeRange?.end.toISOString(),
+
+          // note: we must add an additional time grain worth of time to the end of the comparison range
+          // so the API will return the last otherwise-excluded point.
+          timeEnd: getOffset(
+            $dashboardStore?.selectedComparisonTimeRange?.end,
+            TIME_GRAIN[$dashboardStore?.selectedTimeRange?.interval]?.duration,
+            TimeOffsetType.ADD
+          ).toISOString(),
           timeGranularity: $dashboardStore.selectedTimeRange?.interval,
         }
       );
@@ -193,20 +215,18 @@
   // FIXME: move this logic to a function + write tests.
   $: if (
     $dashboardStore?.selectedTimeRange &&
-    $dashboardStore?.selectedTimeRange?.start
+    $dashboardStore?.selectedTimeRange?.start &&
+    $dashboardStore?.selectedTimeRange?.interval
   ) {
     startValue = removeTimezoneOffset(
       new Date($dashboardStore?.selectedTimeRange?.start)
     );
 
-    // selectedTimeRange.end is exclusive and rounded to the time grain ("interval").
-    // Since values are grouped with DATE_TRUNC, we subtract one grain to get the (inclusive) axis end.
+    // flatten the last point back down to the start of the period.
     endValue = new Date($dashboardStore?.selectedTimeRange?.end);
-
-    endValue = getOffset(
-      new Date($dashboardStore?.selectedTimeRange?.end),
-      TIME_GRAIN[$dashboardStore?.selectedTimeRange?.interval].duration,
-      TimeOffsetType.SUBTRACT
+    endValue = getStartOfPeriod(
+      endValue,
+      TIME_GRAIN[$dashboardStore?.selectedTimeRange?.interval]?.duration
     );
 
     endValue = removeTimezoneOffset(endValue);
