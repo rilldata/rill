@@ -26,7 +26,7 @@ export function useTestServer(port: number, dir: string) {
         port + "",
         "--port-grpc",
         port + 1000 + "",
-        "--project",
+        "--verbose",
         dir,
       ],
       {
