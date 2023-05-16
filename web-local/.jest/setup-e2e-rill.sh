@@ -1,10 +1,9 @@
 #!/bin/bash
 skipUIBuild=false;
 
-while getopts "su" arg; do
+while getopts "s" arg; do
   case $arg in
-    s) # Specify p value.
-      skipUIBuild=true;;
+    s) skipUIBuild=true;;
   esac
 done
 

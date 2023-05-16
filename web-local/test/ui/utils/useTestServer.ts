@@ -68,8 +68,7 @@ export function useTestBrowser(port: number) {
 
   beforeAll(async () => {
     browser = await chromium.launch({
-      headless: false,
-      slowMo: 1000
+      // headless: false,
       // devtools: true,
     });
   });
