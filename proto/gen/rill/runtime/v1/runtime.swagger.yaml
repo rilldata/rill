@@ -513,6 +513,67 @@ paths:
           format: int32
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
+    post:
+      operationId: QueryService_MetricsViewComparisonToplist
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewComparisonToplistResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              dimensionName:
+                type: string
+              measureNames:
+                type: array
+                items:
+                  type: string
+              inlineMeasures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1InlineMeasure'
+              baseTimeRange:
+                $ref: '#/definitions/v1TimeRange'
+              comparisonTimeRange:
+                $ref: '#/definitions/v1TimeRange'
+              sort:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewComparisonSort'
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              limit:
+                type: string
+                format: int64
+              offset:
+                type: string
+                format: int64
+              priority:
+                type: integer
+                format: int32
+            title: Request message for QueryService.MetricsViewComparisonToplist
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/rows:
     post:
       summary: MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
@@ -1930,6 +1991,51 @@ definitions:
       nullable:
         type: boolean
     title: MetricsViewColumn represents a column in a metrics view
+  v1MetricsViewComparisonRow:
+    type: object
+    properties:
+      dimensionValue: {}
+      measureValues:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewComparisonValue'
+  v1MetricsViewComparisonSort:
+    type: object
+    properties:
+      measureName:
+        type: string
+      ascending:
+        type: boolean
+      type:
+        $ref: '#/definitions/v1MetricsViewComparisonSortType'
+  v1MetricsViewComparisonSortType:
+    type: string
+    enum:
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA
+    default: METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED
+  v1MetricsViewComparisonToplistResponse:
+    type: object
+    properties:
+      rows:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewComparisonRow'
+    title: Response message for QueryService.MetricsViewComparisonToplist
+  v1MetricsViewComparisonValue:
+    type: object
+    properties:
+      measureName:
+        type: string
+      baseValue: {}
+      comparisonValue: {}
+      deltaAbs: {}
+      deltaRel: {}
   v1MetricsViewFilter:
     type: object
     properties:
@@ -2409,6 +2515,15 @@ definitions:
       - TIME_GRAIN_MONTH
       - TIME_GRAIN_YEAR
     default: TIME_GRAIN_UNSPECIFIED
+  v1TimeRange:
+    type: object
+    properties:
+      start:
+        type: string
+        format: date-time
+      end:
+        type: string
+        format: date-time
   v1TimeRangeSummary:
     type: object
     properties:
