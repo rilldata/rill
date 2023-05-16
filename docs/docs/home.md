@@ -1,5 +1,5 @@
 ---
-title: Rill Developer (tech preview)
+title: Rill Developer
 slug: /
 sidebar_label: What is Rill?
 sidebar_position: 10
