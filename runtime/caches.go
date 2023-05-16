@@ -23,8 +23,8 @@ var (
 	meter                    = global.Meter("runtime")
 	queryCacheHitsCounter    = observability.Must(meter.Int64ObservableCounter("query_cache.hits"))
 	queryCacheMissesCounter  = observability.Must(meter.Int64ObservableCounter("query_cache.misses"))
-	queryCacheItemCountGauge = observability.Must(meter.Int64ObservableGauge("query_cache.item_count"))
-	queryCacheSizeBytesGauge = observability.Must(meter.Int64ObservableGauge("query_cache.size_bytes"))
+	queryCacheItemCountGauge = observability.Must(meter.Int64ObservableGauge("query_cache.items"))
+	queryCacheSizeBytesGauge = observability.Must(meter.Int64ObservableGauge("query_cache.size", metric.WithUnit("bytes")))
 )
 
 // cache for instance specific connections only
@@ -161,8 +161,8 @@ type queryCache struct {
 }
 
 func newQueryCache(sizeInBytes int64) *queryCache {
-	if sizeInBytes <= 0 {
-		panic(fmt.Sprintf("invalid cache size should be greater than 0 : %v", sizeInBytes))
+	if sizeInBytes <= 100 {
+		panic(fmt.Sprintf("invalid cache size should be greater than 100: %v", sizeInBytes))
 	}
 	cache, err := ristretto.NewCache(&ristretto.Config{
 		// Use 5% of cache memory for storing counters. Each counter takes roughly 3 bytes.
@@ -197,14 +197,29 @@ func (c *queryCache) getOrLoad(key any, loadFn func() (any, error)) (any, bool, 
 		return val, true, nil
 	}
 
-	val, err := c.group.Do(key, loadFn)
+	cached := true
+	val, err := c.group.Do(key, func() (interface{}, error) {
+		// check the cache again
+		if val, ok := c.cache.Get(key); ok {
+			return val, nil
+		}
+
+		val, err := loadFn()
+		if err != nil {
+			return nil, err
+		}
+
+		// only one caller of load gets this return value
+		cached = false
+		cachedObject := val.(*QueryResult)
+		c.cache.Set(key, cachedObject.Value, cachedObject.Bytes)
+		return cachedObject.Value, nil
+	})
 	if err != nil {
 		return nil, false, err
 	}
 
-	cachedObject := val.(*CacheObject)
-	c.cache.Set(key, cachedObject.Result, cachedObject.SizeInBytes)
-	return cachedObject.Result, false, nil
+	return val, cached, nil
 }
 
 // nolint:unused // use in tests

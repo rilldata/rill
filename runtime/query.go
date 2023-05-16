@@ -4,12 +4,18 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 )
 
-type CacheObject struct {
-	Result      any
-	SizeInBytes int64
+type QueryResult struct {
+	Value any
+	Bytes int64
 }
+
+var queryCacheEntrySizeHistogram = observability.Must(meter.Int64Histogram("query_cache.entry_size", metric.WithUnit("bytes")))
 
 type Query interface {
 	// Key should return a cache key that uniquely identifies the query
@@ -18,7 +24,7 @@ type Query interface {
 	// It's used to invalidate cached queries when the underlying data changes.
 	Deps() []string
 	// MarshalResult should return the query result and estimated cost in bytes for caching
-	MarshalResult() *CacheObject
+	MarshalResult() *QueryResult
 	// UnmarshalResult should populate a query with a cached result
 	UnmarshalResult(v any) error
 	// Resolve should execute the query against the instance's infra.
@@ -80,7 +86,13 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		if err != nil {
 			return nil, err
 		}
-		return query.MarshalResult(), nil
+
+		res := query.MarshalResult()
+		attrs := attribute.NewSet(
+			attribute.String("query", queryName(query)),
+		)
+		queryCacheEntrySizeHistogram.Record(ctx, res.Bytes, metric.WithAttributeSet(attrs))
+		return res, nil
 	})
 	if err != nil {
 		return err
@@ -90,4 +102,10 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		return query.UnmarshalResult(val)
 	}
 	return nil
+}
+
+func queryName(q Query) string {
+	nameWithPkg := fmt.Sprintf("%T", q)
+	_, after, _ := strings.Cut(nameWithPkg, ".")
+	return after
 }

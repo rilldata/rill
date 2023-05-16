@@ -33,7 +33,7 @@ func TestConnectionCache(t *testing.T) {
 }
 
 func TestNilValues(t *testing.T) {
-	qc := newQueryCache(int64(datasize.MB * 10))
+	qc := newQueryCache(int64(datasize.MB * 100))
 
 	qc.add(queryCacheKey{"1", "1", "1"}.String(), "value", 1)
 	qc.cache.Wait()

@@ -25,15 +25,15 @@ func (q *ColumnRugHistogram) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnRugHistogram) MarshalResult() *runtime.CacheObject {
+func (q *ColumnRugHistogram) MarshalResult() *runtime.QueryResult {
 	var size int64
 	if len(q.Result) > 0 {
 		// approx
 		size = sizeProtoMessage(q.Result[0]) * int64(len(q.Result))
 	}
-	return &runtime.CacheObject{
-		Result:      q.Result,
-		SizeInBytes: size,
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: size,
 	}
 }
 

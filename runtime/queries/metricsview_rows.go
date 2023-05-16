@@ -38,10 +38,10 @@ func (q *MetricsViewRows) Deps() []string {
 	return []string{q.MetricsViewName}
 }
 
-func (q *MetricsViewRows) MarshalResult() *runtime.CacheObject {
-	return &runtime.CacheObject{
-		Result:      q.Result,
-		SizeInBytes: sizeProtoMessage(q.Result),
+func (q *MetricsViewRows) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
 	}
 }
 

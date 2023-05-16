@@ -10,12 +10,12 @@ import (
 )
 
 type Options struct {
-	ConnectionCacheSize   int
-	MetastoreDriver       string
-	MetastoreDSN          string
-	QueryCacheSizeInBytes int64
-	AllowHostAccess       bool
-	SafeSourceRefresh     bool
+	ConnectionCacheSize int
+	MetastoreDriver     string
+	MetastoreDSN        string
+	QueryCacheSizeBytes int64
+	AllowHostAccess     bool
+	SafeSourceRefresh   bool
 }
 
 type Runtime struct {
@@ -50,7 +50,7 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 		logger:             logger,
 		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger),
 		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
-		queryCache:         newQueryCache(opts.QueryCacheSizeInBytes),
+		queryCache:         newQueryCache(opts.QueryCacheSizeBytes),
 	}, nil
 }
 

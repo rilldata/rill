@@ -26,10 +26,10 @@ func (q *ColumnDescriptiveStatistics) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnDescriptiveStatistics) MarshalResult() *runtime.CacheObject {
-	return &runtime.CacheObject{
-		Result:      q.Result,
-		SizeInBytes: sizeProtoMessage(q.Result),
+func (q *ColumnDescriptiveStatistics) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
 	}
 }
 

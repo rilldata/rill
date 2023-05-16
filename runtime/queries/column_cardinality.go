@@ -26,10 +26,10 @@ func (q *ColumnCardinality) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnCardinality) MarshalResult() *runtime.CacheObject {
-	return &runtime.CacheObject{
-		Result:      q.Result,
-		SizeInBytes: int64(reflect.TypeOf(q.Result).Size()),
+func (q *ColumnCardinality) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: int64(reflect.TypeOf(q.Result).Size()),
 	}
 }
 

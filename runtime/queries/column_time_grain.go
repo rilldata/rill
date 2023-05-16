@@ -27,10 +27,10 @@ func (q *ColumnTimeGrain) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnTimeGrain) MarshalResult() *runtime.CacheObject {
-	return &runtime.CacheObject{
-		Result:      q.Result,
-		SizeInBytes: int64(reflect.TypeOf(q.Result).Size()),
+func (q *ColumnTimeGrain) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: int64(reflect.TypeOf(q.Result).Size()),
 	}
 }
 

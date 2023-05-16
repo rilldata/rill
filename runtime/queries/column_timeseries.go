@@ -52,10 +52,10 @@ func (q *ColumnTimeseries) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnTimeseries) MarshalResult() *runtime.CacheObject {
-	return &runtime.CacheObject{
-		Result:      q.Result,
-		SizeInBytes: approxSize(q.Result),
+func (q *ColumnTimeseries) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: approxSize(q.Result),
 	}
 }
 
