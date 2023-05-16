@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -84,7 +85,8 @@ func (g *githubClient) InstallationClient(installationID int64) (*github.Client,
 	return installationClient, nil
 }
 
-// GetGithubInstallation returns a non zero Github installation ID iff the Github App is installed on the repository.
+// GetGithubInstallation returns a non zero Github installation ID if the Github App is installed on the repository
+// and is not in suspended state
 // The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
 func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (int64, error) {
 	account, repo, ok := gitutil.SplitGithubURL(githubURL)
@@ -92,7 +94,6 @@ func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (
 		return 0, fmt.Errorf("invalid Github URL %q", githubURL)
 	}
 
-	// TODO :: handle suspended case
 	installation, resp, err := s.github.AppClient().Apps.FindRepositoryInstallation(ctx, account, repo)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
@@ -100,6 +101,10 @@ func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (
 			return 0, ErrGithubInstallationNotFound
 		}
 		return 0, fmt.Errorf("failed to lookup repo info: %w", err)
+	}
+
+	if installation.SuspendedAt != nil {
+		return 0, ErrGithubInstallationNotFound
 	}
 
 	installationID := installation.GetID()
@@ -216,15 +221,88 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 
 func (s *Service) processGithubInstallationEvent(ctx context.Context, event *github.InstallationEvent) error {
 	switch event.GetAction() {
-	case "created", "unsuspend", "suspend", "new_permissions_accepted":
+	case "created", "unsuspend", "new_permissions_accepted":
 		// TODO: Should we do anything for unsuspend?
-	case "deleted":
-	}
+	case "deleted", "suspend":
+		// github APIs don't return list of repos for suspend
+		installation := event.GetInstallation()
+		if installation == nil {
+			return fmt.Errorf("nil installation")
+		}
 
+		if err := s.deleteDeploymentForInstallation(ctx, installation.GetID()); err != nil {
+			s.logger.Error("failed to delete deployment for installation", zap.Int64("installation_id", installation.GetID()), zap.Error(err))
+			return err
+		}
+	}
 	return nil
 }
 
 func (s *Service) processGithubInstallationRepositoriesEvent(ctx context.Context, event *github.InstallationRepositoriesEvent) error {
 	// We can access event.RepositoriesAdded and event.RepositoriesRemoved
+	switch event.GetAction() {
+	case "added":
+		// no handling as of now
+	case "removed":
+		var multiErr error
+		for _, repo := range event.RepositoriesRemoved {
+			if err := s.deleteDeploymentForRepo(ctx, repo); err != nil {
+				multiErr = multierr.Combine(multiErr, err)
+				s.logger.Error("failed to delete deployment for repo", zap.Error(err))
+			}
+		}
+		return multiErr
+	}
 	return nil
+}
+
+func (s *Service) deleteDeploymentForInstallation(ctx context.Context, id int64) error {
+	// Find Rill project for installationID
+	projects, err := s.DB.FindProjectsByGithubInstallationID(ctx, id)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			// App is removed from repo not currently deployed. Do nothing.
+			return nil
+		}
+		return err
+	}
+
+	var multiErr error
+	for _, p := range projects {
+		err := s.deleteDeployments(ctx, p)
+		if err != nil {
+			if !errors.Is(err, database.ErrNotFound) {
+				multiErr = multierr.Combine(multiErr, err)
+				s.logger.Error("unable to delete deployements for project", zap.String("project_id", p.ID), zap.Error(err))
+			}
+			continue
+		}
+	}
+	return multiErr
+}
+
+func (s *Service) deleteDeploymentForRepo(ctx context.Context, repo *github.Repository) error {
+	// Find Rill project matching the repo that was pushed to
+	githubURL := *repo.HTMLURL
+	projects, err := s.DB.FindProjectsByGithubURL(ctx, githubURL)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			// App is removed from repo not currently deployed. Do nothing.
+			return nil
+		}
+		return err
+	}
+
+	var multiErr error
+	for _, p := range projects {
+		err := s.deleteDeployments(ctx, p)
+		if err != nil {
+			if !errors.Is(err, database.ErrNotFound) {
+				multiErr = multierr.Combine(multiErr, err)
+				s.logger.Error("unable to delete deployements for project", zap.String("project_id", p.ID), zap.Error(err))
+			}
+			continue
+		}
+	}
+	return multiErr
 }

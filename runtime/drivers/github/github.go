@@ -10,10 +10,10 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
-	"github.com/eapache/go-resiliency/retrier"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -46,45 +46,28 @@ func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, err
 		return nil, err
 	}
 
-	var c *connection
-
-	r := retrier.New(retrier.ExponentialBackoff(retryN, retryWait), nil)
-	err = r.Run(func() error {
-		tempdir, err := os.MkdirTemp("", "github_repo_driver")
-		if err != nil {
-			return err
-		}
-
-		tempdir, err = filepath.Abs(tempdir)
-		if err != nil {
-			return err
-		}
-
-		projectDir := tempdir
-		if dsn.Subpath != "" {
-			projectDir = filepath.Join(tempdir, dsn.Subpath)
-		}
-
-		c = &connection{
-			dsnStr:     dsnStr,
-			dsn:        dsn,
-			tempdir:    tempdir,
-			projectdir: projectDir,
-		}
-
-		err = c.clone(context.Background())
-		if err != nil {
-			_ = os.RemoveAll(tempdir)
-			return err
-		}
-
-		return nil
-	})
+	tempdir, err := os.MkdirTemp("", "github_repo_driver")
 	if err != nil {
 		return nil, err
 	}
 
-	return c, nil
+	tempdir, err = filepath.Abs(tempdir)
+	if err != nil {
+		return nil, err
+	}
+
+	projectDir := tempdir
+	if dsn.Subpath != "" {
+		projectDir = filepath.Join(tempdir, dsn.Subpath)
+	}
+
+	// NOTE :: project isn't cloned yet
+	return &connection{
+		dsnStr:     dsnStr,
+		dsn:        dsn,
+		tempdir:    tempdir,
+		projectdir: projectDir,
+	}, nil
 }
 
 type connection struct {
@@ -95,6 +78,7 @@ type connection struct {
 	projectdir          string
 	cloneURLWithToken   string
 	cloneURLRefreshedOn time.Time
+	once                sync.Once
 }
 
 // Close implements drivers.Connection.
@@ -137,27 +121,23 @@ func (c *connection) MigrationStatus(ctx context.Context) (current, desired int,
 	return 0, 0, nil
 }
 
-// clone runs the initial clone of the repo.
-func (c *connection) clone(ctx context.Context) error {
-	cloneURL, err := c.cloneURL(ctx)
-	if err != nil {
-		return err
-	}
-
-	_, err = git.PlainClone(c.tempdir, false, &git.CloneOptions{
-		URL:           cloneURL,
-		ReferenceName: plumbing.NewBranchReferenceName(c.dsn.Branch),
-		SingleBranch:  true,
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // pull pulls changes from the repo. It must have been successfully cloned already.
 func (c *connection) pull(ctx context.Context) error {
+	var cloneErr error
+	cloned := false
+	c.once.Do(func() {
+		cloned = true
+		cloneErr = c.clone(ctx)
+	})
+	if cloneErr != nil {
+		return cloneErr
+	}
+
+	// no need to pull again if just cloned
+	if cloned {
+		return nil
+	}
+
 	cloneURL, err := c.cloneURL(ctx)
 	if err != nil {
 		return err
@@ -181,6 +161,21 @@ func (c *connection) pull(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// clone runs the initial clone of the repo.
+func (c *connection) clone(ctx context.Context) error {
+	cloneURL, err := c.cloneURL(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = git.PlainClone(c.tempdir, false, &git.CloneOptions{
+		URL:           cloneURL,
+		ReferenceName: plumbing.NewBranchReferenceName(c.dsn.Branch),
+		SingleBranch:  true,
+	})
+	return err
 }
 
 const cloneURLTTL = 30 * time.Minute

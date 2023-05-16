@@ -277,6 +277,15 @@ func (c *connection) FindProjectsByGithubURL(ctx context.Context, githubURL stri
 	return result, nil
 }
 
+func (c *connection) FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*database.Project, error) {
+	result := make([]*database.Project, 0)
+	err := c.getDB(ctx).SelectContext(ctx, &result, "SELECT p.* FROM projects p WHERE p.github_installation_id=$1", id)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return result, nil
+}
+
 func (c *connection) FindProject(ctx context.Context, id string) (*database.Project, error) {
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM projects WHERE id=$1", id).StructScan(res)
