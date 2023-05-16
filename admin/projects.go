@@ -346,36 +346,3 @@ func (s *Service) endReconcile(ctx context.Context, depl *database.Deployment, r
 	depl.Logs = updatedDepl.Logs
 	return nil
 }
-
-// deleteDeployments deletes all deployments for the project
-func (s *Service) deleteDeployments(ctx context.Context, proj *database.Project) error {
-	ds, err := s.DB.FindDeployments(ctx, proj.ID)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil
-		}
-		return err
-	}
-
-	for _, d := range ds {
-		err := s.teardownDeployment(ctx, proj, d)
-		if err != nil {
-			return err
-		}
-	}
-
-	_, err = s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
-		Name:                 proj.Name,
-		Description:          proj.Description,
-		Public:               proj.Public,
-		GithubURL:            proj.GithubURL,
-		GithubInstallationID: proj.GithubInstallationID,
-		ProdBranch:           proj.ProdBranch,
-		ProdVariables:        proj.ProdVariables,
-		ProdDeploymentID:     nil,
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}

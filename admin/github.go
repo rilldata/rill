@@ -223,14 +223,14 @@ func (s *Service) processGithubInstallationEvent(ctx context.Context, event *git
 	switch event.GetAction() {
 	case "created", "unsuspend", "new_permissions_accepted":
 		// TODO: Should we do anything for unsuspend?
-	case "deleted", "suspend":
-		// github APIs don't return list of repos for suspend
+	case "suspend", "deleted":
+		// the github installation ID will change if user re-installs the app deleting the project for now
 		installation := event.GetInstallation()
 		if installation == nil {
 			return fmt.Errorf("nil installation")
 		}
 
-		if err := s.deleteDeploymentForInstallation(ctx, installation.GetID()); err != nil {
+		if err := s.deleteProjectsForInstallation(ctx, installation.GetID()); err != nil {
 			s.logger.Error("failed to delete deployment for installation", zap.Int64("installation_id", installation.GetID()), zap.Error(err))
 			return err
 		}
@@ -246,9 +246,9 @@ func (s *Service) processGithubInstallationRepositoriesEvent(ctx context.Context
 	case "removed":
 		var multiErr error
 		for _, repo := range event.RepositoriesRemoved {
-			if err := s.deleteDeploymentForRepo(ctx, repo); err != nil {
+			if err := s.deleteProjectsForRepo(ctx, repo); err != nil {
 				multiErr = multierr.Combine(multiErr, err)
-				s.logger.Error("failed to delete deployment for repo", zap.Error(err))
+				s.logger.Error("failed to delete project for repo", zap.String("repo", *repo.HTMLURL), zap.Error(err))
 			}
 		}
 		return multiErr
@@ -256,7 +256,7 @@ func (s *Service) processGithubInstallationRepositoriesEvent(ctx context.Context
 	return nil
 }
 
-func (s *Service) deleteDeploymentForInstallation(ctx context.Context, id int64) error {
+func (s *Service) deleteProjectsForInstallation(ctx context.Context, id int64) error {
 	// Find Rill project for installationID
 	projects, err := s.DB.FindProjectsByGithubInstallationID(ctx, id)
 	if err != nil {
@@ -269,11 +269,11 @@ func (s *Service) deleteDeploymentForInstallation(ctx context.Context, id int64)
 
 	var multiErr error
 	for _, p := range projects {
-		err := s.deleteDeployments(ctx, p)
+		err := s.TeardownProject(ctx, p)
 		if err != nil {
 			if !errors.Is(err, database.ErrNotFound) {
 				multiErr = multierr.Combine(multiErr, err)
-				s.logger.Error("unable to delete deployements for project", zap.String("project_id", p.ID), zap.Error(err))
+				s.logger.Error("unable to delete project", zap.String("project_id", p.ID), zap.Error(err))
 			}
 			continue
 		}
@@ -281,7 +281,7 @@ func (s *Service) deleteDeploymentForInstallation(ctx context.Context, id int64)
 	return multiErr
 }
 
-func (s *Service) deleteDeploymentForRepo(ctx context.Context, repo *github.Repository) error {
+func (s *Service) deleteProjectsForRepo(ctx context.Context, repo *github.Repository) error {
 	// Find Rill project matching the repo that was pushed to
 	githubURL := *repo.HTMLURL
 	projects, err := s.DB.FindProjectsByGithubURL(ctx, githubURL)
@@ -295,11 +295,11 @@ func (s *Service) deleteDeploymentForRepo(ctx context.Context, repo *github.Repo
 
 	var multiErr error
 	for _, p := range projects {
-		err := s.deleteDeployments(ctx, p)
+		err := s.TeardownProject(ctx, p)
 		if err != nil {
 			if !errors.Is(err, database.ErrNotFound) {
 				multiErr = multierr.Combine(multiErr, err)
-				s.logger.Error("unable to delete deployements for project", zap.String("project_id", p.ID), zap.Error(err))
+				s.logger.Error("unable to delete project", zap.String("project_id", p.ID), zap.Error(err))
 			}
 			continue
 		}
