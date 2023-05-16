@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
@@ -79,7 +80,7 @@ type connection struct {
 	cloneURLWithToken   string
 	cloneURLRefreshedOn time.Time
 	// cloned is set to true once github repo has been cloned successfully.
-	cloned bool
+	cloned atomic.Bool
 	mu     sync.Mutex
 }
 
@@ -127,16 +128,16 @@ func (c *connection) MigrationStatus(ctx context.Context) (current, desired int,
 func (c *connection) pull(ctx context.Context) error {
 	cloneTried := false
 	var cloneErr error
-	if !c.cloned {
+	if !c.cloned.Load() {
 		func() {
 			c.mu.Lock()
 			defer c.mu.Unlock()
 			// check again in case cloned already by concurrent request
-			if !c.cloned {
+			if !c.cloned.Load() {
 				cloneTried = true
 				cloneErr = c.clone(ctx)
 				if cloneErr == nil {
-					c.cloned = true
+					c.cloned.Store(true)
 				}
 			}
 		}()
