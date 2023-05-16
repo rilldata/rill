@@ -1,8 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach } from "@jest/globals";
 import { isPortOpen } from "@rilldata/web-local/lib/util/isPortOpen";
-import {
-  asyncWaitUntil,
-} from "@rilldata/web-local/lib/util/waitUtils";
+import { asyncWaitUntil } from "@rilldata/web-local/lib/util/waitUtils";
 import { rmSync } from "fs";
 import type { ChildProcess } from "node:child_process";
 import { spawn } from "node:child_process";
