@@ -149,8 +149,8 @@ func (a *Authenticator) handleUserCodeConfirmation(w http.ResponseWriter, r *htt
 	userID := claims.OwnerID()
 
 	// Remove "-" from user code
-	dbUserCode := strings.ReplaceAll(userCode, "-", "")
-	authCode, err := a.admin.DB.FindPendingDeviceAuthCodeByUserCode(r.Context(), dbUserCode)
+	userCode = strings.ReplaceAll(userCode, "-", "")
+	authCode, err := a.admin.DB.FindPendingDeviceAuthCodeByUserCode(r.Context(), userCode)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			http.Error(w, fmt.Sprintf("no such user code: %s found", userCode), http.StatusBadRequest)
