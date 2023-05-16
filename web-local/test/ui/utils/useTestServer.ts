@@ -18,19 +18,17 @@ export function useTestServer(port: number, dir: string) {
     });
 
     childProcess = spawn(
-      // path.join(__dirname, "../../../..", "rill"),
-      "go",
+      path.join(__dirname, "../../../.jest/rill-e2e-test"),
       [
         "run",
         path.join(__dirname, "../../../..", "cli/main.go"),
         "start",
         "--no-open",
-        "--port",
-        port + "",
-        "--port-grpc",
-        port + 1000 + "",
-        // "--project",
-        dir,
+        `--port`,
+        port.toString(),
+        `--port-grpc`,
+        (port + 1000).toString(),
+        dir
       ],
       {
         stdio: "inherit",
@@ -57,8 +55,8 @@ export function useTestBrowser(port: number) {
 
   beforeAll(async () => {
     browser = await chromium.launch({
-      headless: false,
-      slowMo: 100
+      // headless: false,
+      // slowMo: 100
       // devtools: true,
     });
   });
