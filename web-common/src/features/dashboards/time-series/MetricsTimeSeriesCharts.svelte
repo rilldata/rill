@@ -161,7 +161,6 @@
         measureNames: selectedMeasureNames,
         filter: $dashboardStore?.filters,
         timeStart: $dashboardStore.selectedTimeRange?.start.toISOString(),
-        // note: we add an additional time grain here so the API will return the last otherwise-excluded point.
         timeEnd: endRangeTimestampForAPI.toISOString(),
         timeGranularity: $dashboardStore.selectedTimeRange?.interval,
       }

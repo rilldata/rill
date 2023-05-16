@@ -22,11 +22,7 @@ import {
  * anchored to the latest data point in the dataset with a conceptually-fixed
  * lookback window. For example, the "Last 6 Hours" time range is anchored to
  * the latest data point in the dataset, and then looks back 6 hours from that
- * point.
- *
- * This description is not 100% accurate, of course, since the latest data point
- * may be during an incomplete period. For now, we are truncating to a reasonable
- * periodicity (e.g. to the start of the hour) and then applying the offset.
+ * point, while truncating that start time to the beginning of the hour.
  */
 export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   LAST_SIX_HOURS: {
@@ -41,7 +37,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
           period: Period.HOUR, //TODO: How to handle user selected timegrains?
           truncationType: TimeTruncationType.START_OF_PERIOD,
         }, // truncation
-        // then offset that by 6 hours
+        // then offset that by 5 hours.
         { duration: "PT6H", operationType: TimeOffsetType.SUBTRACT }, // operation
       ],
     },

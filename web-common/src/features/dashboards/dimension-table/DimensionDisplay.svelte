@@ -14,34 +14,38 @@
     useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getOffset } from "@rilldata/web-common/lib/time/transforms";
   import {
-    createQueryServiceMetricsViewToplist,
-    createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
     MetricsViewFilterCond,
     V1MetricsViewToplistResponse,
+    createQueryServiceMetricsViewToplist,
+    createQueryServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getTimeComparisonParametersForComponent } from "../../../lib/time/comparisons";
-  import { DEFAULT_TIME_RANGES } from "../../../lib/time/config";
-  import type { TimeComparisonOption } from "../../../lib/time/types";
+  import { DEFAULT_TIME_RANGES, TIME_GRAIN } from "../../../lib/time/config";
+  import {
+    TimeComparisonOption,
+    TimeOffsetType,
+  } from "../../../lib/time/types";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";
   import {
-    humanizeGroupByColumns,
     NicelyFormattedTypes,
+    humanizeGroupByColumns,
   } from "../humanize-numbers";
+  import DimensionHeader from "./DimensionHeader.svelte";
+  import DimensionTable from "./DimensionTable.svelte";
   import {
     computeComparisonValues,
     getComparisonProperties,
     getFilterForComparisonTable,
     updateFilterOnSearch,
   } from "./dimension-table-utils";
-  import DimensionHeader from "./DimensionHeader.svelte";
-  import DimensionTable from "./DimensionTable.svelte";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -137,7 +141,11 @@
         ...topListParams,
         ...{
           timeStart: metricsExplorer.selectedTimeRange?.start,
-          timeEnd: metricsExplorer.selectedTimeRange?.end,
+          timeEnd: getOffset(
+            metricsExplorer.selectedTimeRange?.end,
+            TIME_GRAIN[metricsExplorer.selectedTimeRange?.interval]?.duration,
+            TimeOffsetType.ADD
+          ), //metricsExplorer.selectedTimeRange?.end,
         },
       };
     }
@@ -219,7 +227,14 @@
 
         ...{
           timeStart: displayComparison ? start : undefined,
-          timeEnd: displayComparison ? end : undefined,
+          timeEnd: displayComparison
+            ? getOffset(
+                end,
+                TIME_GRAIN[metricsExplorer.selectedTimeRange?.interval]
+                  ?.duration,
+                TimeOffsetType.ADD
+              )
+            : undefined,
         },
       };
     }

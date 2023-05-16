@@ -16,10 +16,13 @@
     useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import { getOffset } from "@rilldata/web-common/lib/time/transforms";
+  import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import {
-    createQueryServiceMetricsViewToplist,
     MetricsViewDimension,
     MetricsViewMeasure,
+    createQueryServiceMetricsViewToplist,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
@@ -151,7 +154,11 @@
         ...topListParams,
         ...{
           timeStart: $dashboardStore.selectedTimeRange?.start,
-          timeEnd: $dashboardStore.selectedTimeRange?.end,
+          timeEnd: getOffset(
+            $dashboardStore.selectedTimeRange?.end,
+            TIME_GRAIN[$dashboardStore.selectedTimeRange?.interval]?.duration,
+            TimeOffsetType.ADD
+          ),
         },
       };
     }
