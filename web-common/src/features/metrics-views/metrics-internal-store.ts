@@ -5,8 +5,8 @@ import type {
   V1Model,
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
-import { readable, Subscriber } from "svelte/store";
-import { Document, ParsedNode, parseDocument, YAMLMap } from "yaml";
+import { Subscriber, readable } from "svelte/store";
+import { Document, ParsedNode, YAMLMap, parseDocument } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
 import { selectTimestampColumnFromSchema } from "./column-selectors";
 
@@ -182,7 +182,7 @@ export class MetricsInternalRepresentation {
   addNewMeasure() {
     const newName = getName(
       "measure",
-      this.internalRepresentation.measures.map((measure) => measure.name)
+      this.internalRepresentation.measures.map((measure) => measure?.name || "")
     );
 
     const measureNode = this.internalRepresentationDocument.createNode({
