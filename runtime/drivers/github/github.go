@@ -78,7 +78,9 @@ type connection struct {
 	projectdir          string
 	cloneURLWithToken   string
 	cloneURLRefreshedOn time.Time
-	once                sync.Once
+	// cloned is set to true once github repo has been cloned successfully.
+	cloned bool
+	mu     sync.Mutex
 }
 
 // Close implements drivers.Connection.
@@ -121,26 +123,27 @@ func (c *connection) MigrationStatus(ctx context.Context) (current, desired int,
 	return 0, 0, nil
 }
 
-// pull pulls changes from the repo. It must have been successfully cloned already.
+// pull pulls changes from the repo. It also clones the repo first time.
 func (c *connection) pull(ctx context.Context) error {
+	cloneTried := false
 	var cloneErr error
-	cloned := false
-	c.once.Do(func() {
-		cloned = true
-		cloneErr = c.clone(ctx)
-	})
-	if cloneErr != nil {
+	if !c.cloned {
+		func() {
+			c.mu.Lock()
+			defer c.mu.Unlock()
+			// check again in case cloned already by concurrent request
+			if !c.cloned {
+				cloneTried = true
+				cloneErr = c.clone(ctx)
+				if cloneErr == nil {
+					c.cloned = true
+				}
+			}
+		}()
+	}
+	// no need to pull again if clone tried within same request
+	if cloneTried {
 		return cloneErr
-	}
-
-	// no need to pull again if just cloned
-	if cloned {
-		return nil
-	}
-
-	cloneURL, err := c.cloneURL(ctx)
-	if err != nil {
-		return err
 	}
 
 	repo, err := git.PlainOpen(c.tempdir)
@@ -149,6 +152,11 @@ func (c *connection) pull(ctx context.Context) error {
 	}
 
 	wt, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	cloneURL, err := c.cloneURL(ctx)
 	if err != nil {
 		return err
 	}

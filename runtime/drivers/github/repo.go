@@ -116,4 +116,4 @@ func (c *connection) Sync(ctx context.Context, instID string) error {
 	return nil
 }
 
-var errUnauthorized = fmt.Errorf("github app does not have access to the resource. Re-install the github app on the repository")
+var errUnauthorized = fmt.Errorf("github app does not have access to the resource. Re-deploy the project")
