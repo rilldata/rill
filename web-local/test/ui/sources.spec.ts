@@ -17,12 +17,12 @@ describe("sources", () => {
 
     await Promise.all([
       waitForAdBids(page, "AdBids"),
-      uploadFile(page, "AdBids.csv")
+      uploadFile(page, "AdBids.csv"),
     ]);
 
     await Promise.all([
       waitForAdImpressions(page, "AdImpressions"),
-      uploadFile(page, "AdImpressions.tsv")
+      uploadFile(page, "AdImpressions.tsv"),
     ]);
 
     // upload existing table and keep both

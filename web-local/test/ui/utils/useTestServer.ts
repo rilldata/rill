@@ -1,6 +1,8 @@
 import { afterAll, afterEach, beforeAll, beforeEach } from "@jest/globals";
 import { isPortOpen } from "@rilldata/web-local/lib/util/isPortOpen";
-import { asyncWait, asyncWaitUntil } from "@rilldata/web-local/lib/util/waitUtils";
+import {
+  asyncWaitUntil,
+} from "@rilldata/web-local/lib/util/waitUtils";
 import { rmSync } from "fs";
 import type { ChildProcess } from "node:child_process";
 import { spawn } from "node:child_process";
@@ -8,9 +10,6 @@ import path from "node:path";
 import { Browser, chromium, Page } from "playwright";
 import treeKill from "tree-kill";
 import axios from "axios";
-
-
-
 
 export function useTestServer(port: number, dir: string) {
   let childProcess: ChildProcess;
@@ -30,7 +29,7 @@ export function useTestServer(port: number, dir: string) {
         port.toString(),
         `--port-grpc`,
         (port + 1000).toString(),
-        dir
+        dir,
       ],
       {
         stdio: "inherit",
@@ -44,12 +43,10 @@ export function useTestServer(port: number, dir: string) {
       try {
         const response = await axios.get(`http://localhost:${port}/v1/ping`);
         return response.status === 200;
-      }
-      catch (err) {
+      } catch (err) {
         return false;
       }
     });
-
   });
 
   afterEach(async () => {
