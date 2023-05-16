@@ -1,5 +1,6 @@
 import { PerRangeFormatter } from "./per-range";
 import { defaultDollarOptions } from "./per-range-default-options";
+import { describe, it, expect } from "vitest";
 
 const defaultDollarTestCases: [number, string][] = [
   // integers

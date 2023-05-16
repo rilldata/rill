@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@jest/globals";
+import { describe, it, expect } from "vitest";
 import {
   initBlankDashboardYAML,
   MetricsInternalRepresentation,
@@ -26,7 +26,7 @@ describe("Metrics Internal Store", () => {
     expect(internalRepresentation.internalYAML)
       .toEqual(`# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-display_name: "AdBids"
+title: "AdBids"
 model: ""
 default_time_range: ""
 smallest_time_grain: ""
@@ -42,7 +42,7 @@ dimensions:
     expect(internalRepresentation.internalYAML)
       .toEqual(`# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-display_name: "AdBids"
+title: "AdBids"
 model: ""
 default_time_range: ""
 smallest_time_grain: ""
@@ -62,7 +62,7 @@ dimensions:
     expect(internalRepresentation.internalYAML)
       .toEqual(`# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-display_name: "AdBids"
+title: "AdBids"
 model: ""
 default_time_range: ""
 smallest_time_grain: ""
@@ -82,7 +82,7 @@ dimensions: []
     expect(internalRepresentation.internalYAML)
       .toEqual(`# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-display_name: "AdBids"
+title: "AdBids"
 model: ""
 default_time_range: ""
 smallest_time_grain: ""
@@ -100,7 +100,7 @@ dimensions: []
     expect(internalRepresentation.internalYAML)
       .toEqual(`# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-display_name: "AdBids"
+title: "AdBids"
 model: ""
 default_time_range: ""
 smallest_time_grain: ""
@@ -123,7 +123,7 @@ dimensions: []
     expect(internalRepresentation.internalYAML)
       .toEqual(`# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-display_name: "AdBids"
+title: "AdBids"
 model: ""
 default_time_range: ""
 smallest_time_grain: ""
@@ -152,7 +152,7 @@ dimensions: []
     expect(internalRepresentation.internalYAML)
       .toEqual(`# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-display_name: "AdBids"
+title: "AdBids"
 model: ""
 default_time_range: ""
 smallest_time_grain: ""
