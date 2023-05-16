@@ -103,6 +103,10 @@
     return value;
   }
 
+  function inBounds(min, max, value) {
+    return value >= min && value <= max;
+  }
+
   $: if (scrubbing) {
     scrubEnd = alwaysBetween(internalXMin, internalXMax, mouseoverValue);
   }
@@ -190,40 +194,42 @@
         value={roundedValue}
         let:point
       >
-        <g transition:fly|local={{ duration: 100, x: -4 }}>
-          <text
-            class="fill-gray-600"
-            style:paint-order="stroke"
-            stroke="white"
-            stroke-width="3px"
-            x={config.plotLeft + config.bodyBuffer + 6}
-            y={config.plotTop + 10 + config.bodyBuffer}
-          >
-            {mouseoverTimeFormat(point[labelAccessor])}
-          </text>
-          {#if showComparison}
+        {#if inBounds(internalXMin, internalXMax, point[xAccessor])}
+          <g transition:fly|local={{ duration: 100, x: -4 }}>
             <text
+              class="fill-gray-600"
               style:paint-order="stroke"
               stroke="white"
               stroke-width="3px"
-              class="fill-gray-400"
               x={config.plotLeft + config.bodyBuffer + 6}
-              y={config.plotTop + 24 + config.bodyBuffer}
+              y={config.plotTop + 10 + config.bodyBuffer}
             >
-              {mouseoverTimeFormat(point[`comparison.${labelAccessor}`])} prev.
+              {mouseoverTimeFormat(point[labelAccessor])}
             </text>
-          {/if}
-        </g>
-        <g transition:fly|local={{ duration: 100, x: -4 }}>
-          <MeasureValueMouseover
-            {point}
-            {xAccessor}
-            {yAccessor}
-            {showComparison}
-            {mouseoverFormat}
-            {numberKind}
-          />
-        </g>
+            {#if showComparison}
+              <text
+                style:paint-order="stroke"
+                stroke="white"
+                stroke-width="3px"
+                class="fill-gray-400"
+                x={config.plotLeft + config.bodyBuffer + 6}
+                y={config.plotTop + 24 + config.bodyBuffer}
+              >
+                {mouseoverTimeFormat(point[`comparison.${labelAccessor}`])} prev.
+              </text>
+            {/if}
+          </g>
+          <g transition:fly|local={{ duration: 100, x: -4 }}>
+            <MeasureValueMouseover
+              {point}
+              {xAccessor}
+              {yAccessor}
+              {showComparison}
+              {mouseoverFormat}
+              {numberKind}
+            />
+          </g>
+        {/if}
       </WithBisector>
     </WithRoundToTimegrain>
   {/if}
