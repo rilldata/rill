@@ -11,15 +11,16 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-func GenerateCmd(rootCmd *cobra.Command) *cobra.Command {
+func GenerateCmd(rootCmd *cobra.Command, cfg *config.Config) *cobra.Command {
 	docsCmd := &cobra.Command{
 		Use:    "generate",
 		Short:  "Generate CLI documentation",
 		Args:   cobra.ExactArgs(1),
-		Hidden: true,
+		Hidden: !cfg.IsDev(),
 		Run: func(cmd *cobra.Command, args []string) {
 			dir := args[0]
 			rootCmd.DisableAutoGenTag = true

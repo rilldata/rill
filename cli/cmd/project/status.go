@@ -17,7 +17,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 	var name, path string
 
 	statusCmd := &cobra.Command{
-		Use:   "status <project-name>",
+		Use:   "status [<project-name>]",
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Project deployment status",
 		RunE: func(cmd *cobra.Command, args []string) error {

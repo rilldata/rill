@@ -12,7 +12,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	var public bool
 
 	editCmd := &cobra.Command{
-		Use:   "edit <project-name>",
+		Use:   "edit [<project-name>]",
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Edit the project details",
 		RunE: func(cmd *cobra.Command, args []string) error {

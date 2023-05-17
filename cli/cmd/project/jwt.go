@@ -14,7 +14,7 @@ func JwtCmd(cfg *config.Config) *cobra.Command {
 	var name string
 
 	jwtCmd := &cobra.Command{
-		Use:    "jwt <project-name>",
+		Use:    "jwt [<project-name>]",
 		Args:   cobra.MaximumNArgs(1),
 		Short:  "Generate the token for connecting directly to the deployment",
 		Hidden: !cfg.IsDev(),

@@ -16,7 +16,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 	var name string
 
 	deleteCmd := &cobra.Command{
-		Use:   "delete <org-name>",
+		Use:   "delete [<org-name>]",
 		Short: "Delete organization",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -64,7 +64,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				if org != name {
-					return fmt.Errorf("Entered incorrect name : %q, expected value is %q", org, name)
+					return fmt.Errorf("Entered incorrect name: %q, expected value is %q", org, name)
 				}
 			}
 

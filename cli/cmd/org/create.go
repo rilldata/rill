@@ -15,7 +15,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 	var name, description string
 
 	createCmd := &cobra.Command{
-		Use:   "create <org-name>",
+		Use:   "create [<org-name>]",
 		Short: "Create organization",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

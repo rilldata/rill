@@ -15,7 +15,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 	var force bool
 
 	deleteCmd := &cobra.Command{
-		Use:   "delete <project-name>",
+		Use:   "delete [<project-name>]",
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Delete the project",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -37,7 +37,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if name == "" {
-				return fmt.Errorf("please provide valid project name, Run `rill project list` for available projects")
+				return fmt.Errorf("please provide a valid project name. Run `rill project list` to see the available projects")
 			}
 
 			if !force {

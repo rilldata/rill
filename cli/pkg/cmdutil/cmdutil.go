@@ -391,7 +391,7 @@ func SetFlagsByInputPrompts(cmd cobra.Command, flags ...string) error {
 			if f.Value.Type() == "bool" {
 				var public bool
 				prompt := &survey.Confirm{
-					Message: fmt.Sprintf("Confirm \"%s\"?", color.YellowString(f.Usage)),
+					Message: fmt.Sprintf("Confirm \"%s\"?", f.Usage),
 				}
 
 				err = survey.AskOne(prompt, &public)

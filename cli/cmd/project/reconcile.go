@@ -15,7 +15,7 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 	var refreshSources []string
 
 	reconcileCmd := &cobra.Command{
-		Use:               "reconcile <project-name>",
+		Use:               "reconcile [<project-name>]",
 		Args:              cobra.MaximumNArgs(1),
 		Short:             "Send trigger to deployment",
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),

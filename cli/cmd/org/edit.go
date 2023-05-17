@@ -15,7 +15,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	var orgName, description string
 
 	editCmd := &cobra.Command{
-		Use:   "edit <org-name>",
+		Use:   "edit [<org-name>]",
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Edit organization details",
 		RunE: func(cmd *cobra.Command, args []string) error {

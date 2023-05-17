@@ -13,7 +13,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 	var name, path string
 
 	showCmd := &cobra.Command{
-		Use:   "show <project-name>",
+		Use:   "show [<project-name>]",
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Show project details",
 		RunE: func(cmd *cobra.Command, args []string) error {
