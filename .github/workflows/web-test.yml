@@ -88,6 +88,10 @@ jobs:
           npx eslint web-auth --quiet
           npx svelte-check --workspace web-auth --no-tsconfig
 
+      - name: Test web common
+        if: steps.filter.outputs.common == 'true'
+        run: npm run test -w web-common
+
       - name: Build & Test the web local
         if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}
         run: |-
