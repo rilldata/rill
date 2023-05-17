@@ -230,10 +230,12 @@ func (s *Service) processGithubInstallationEvent(ctx context.Context, event *git
 			return fmt.Errorf("nil installation")
 		}
 
+		s.logger.Info("github webhook: started processing", zap.String("action", event.GetAction()), zap.Int64("installation_id", installation.GetID()), observability.ZapCtx(ctx))
 		if err := s.deleteProjectsForInstallation(ctx, installation.GetID()); err != nil {
-			s.logger.Error("failed to delete project for installation", zap.Int64("installation_id", installation.GetID()), zap.Error(err))
+			s.logger.Error("github webhook: failed to delete project for installation", zap.Int64("installation_id", installation.GetID()), zap.Error(err), observability.ZapCtx(ctx))
 			return err
 		}
+		s.logger.Info("github webhook: processed successfully", zap.String("action", event.GetAction()), zap.Int64("installation_id", installation.GetID()), observability.ZapCtx(ctx))
 	}
 	return nil
 }
@@ -245,12 +247,14 @@ func (s *Service) processGithubInstallationRepositoriesEvent(ctx context.Context
 		// no handling as of now
 	case "removed":
 		var multiErr error
+		s.logger.Info("github webhook: processing removed repositories", observability.ZapCtx(ctx))
 		for _, repo := range event.RepositoriesRemoved {
 			if err := s.deleteProjectsForRepo(ctx, repo); err != nil {
 				multiErr = multierr.Combine(multiErr, err)
-				s.logger.Error("failed to delete project for repo", zap.String("repo", *repo.HTMLURL), zap.Error(err))
+				s.logger.Error("github webhook: failed to delete projects for repo", zap.String("repo", *repo.HTMLURL), zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}
+		s.logger.Info("github webhook: processing removed repositories completed", observability.ZapCtx(ctx))
 		return multiErr
 	}
 	return nil
@@ -260,10 +264,6 @@ func (s *Service) deleteProjectsForInstallation(ctx context.Context, id int64) e
 	// Find Rill project for installationID
 	projects, err := s.DB.FindProjectsByGithubInstallationID(ctx, id)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			// App is removed from repo not currently deployed. Do nothing.
-			return nil
-		}
 		return err
 	}
 
@@ -271,10 +271,7 @@ func (s *Service) deleteProjectsForInstallation(ctx context.Context, id int64) e
 	for _, p := range projects {
 		err := s.TeardownProject(ctx, p)
 		if err != nil {
-			if !errors.Is(err, database.ErrNotFound) {
-				multiErr = multierr.Combine(multiErr, err)
-				s.logger.Error("unable to delete project", zap.String("project_id", p.ID), zap.Error(err))
-			}
+			multiErr = multierr.Combine(multiErr, fmt.Errorf("unable to delete project %q: %w", p.ID, err))
 			continue
 		}
 	}
@@ -286,10 +283,6 @@ func (s *Service) deleteProjectsForRepo(ctx context.Context, repo *github.Reposi
 	githubURL := *repo.HTMLURL
 	projects, err := s.DB.FindProjectsByGithubURL(ctx, githubURL)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			// App is removed from repo not currently deployed. Do nothing.
-			return nil
-		}
 		return err
 	}
 
@@ -297,10 +290,7 @@ func (s *Service) deleteProjectsForRepo(ctx context.Context, repo *github.Reposi
 	for _, p := range projects {
 		err := s.TeardownProject(ctx, p)
 		if err != nil {
-			if !errors.Is(err, database.ErrNotFound) {
-				multiErr = multierr.Combine(multiErr, err)
-				s.logger.Error("unable to delete project", zap.String("project_id", p.ID), zap.Error(err))
-			}
+			multiErr = multierr.Combine(multiErr, fmt.Errorf("unable to delete project %q: %w", p.ID, err))
 			continue
 		}
 	}

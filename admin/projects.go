@@ -103,9 +103,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 func (s *Service) TeardownProject(ctx context.Context, p *database.Project) error {
 	ds, err := s.DB.FindDeployments(ctx, p.ID)
 	if err != nil {
-		if !errors.Is(err, database.ErrNotFound) {
-			return err
-		}
+		return err
 	}
 
 	for _, d := range ds {

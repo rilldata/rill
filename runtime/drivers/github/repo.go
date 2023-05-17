@@ -101,19 +101,24 @@ func (c *connection) Delete(ctx context.Context, instID, filePath string) error 
 
 // Sync implements drivers.RepoStore.
 func (c *connection) Sync(ctx context.Context, instID string) error {
-	r := retrier.New(retrier.ExponentialBackoff(retryN, retryWait), retrier.BlacklistClassifier{errUnauthorized})
-	err := r.Run(func() error {
-		err := c.pull(ctx)
-		ghinstallationErr := &ghinstallation.HTTPError{}
-		if errors.As(err, &ghinstallationErr) && ghinstallationErr.Response != nil && ghinstallationErr.Response.StatusCode == 404 {
-			return errUnauthorized
-		}
-		return err
-	})
+	r := retrier.New(retrier.ExponentialBackoff(retryN, retryWait), errClassifier{})
+	err := r.Run(func() error { return c.pull(ctx) })
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-var errUnauthorized = fmt.Errorf("github app does not have access to the resource. Re-deploy the project")
+type errClassifier struct{}
+
+func (errClassifier) Classify(err error) retrier.Action {
+	ghinstallationErr := &ghinstallation.HTTPError{}
+	if errors.As(err, &ghinstallationErr) && ghinstallationErr.Response != nil {
+		statusCode := ghinstallationErr.Response.StatusCode
+		if statusCode/100 == 4 && statusCode != 429 {
+			// Any error apart from 429 is non retryable
+			return retrier.Fail
+		}
+	}
+	return retrier.Retry
+}
