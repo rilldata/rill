@@ -19,7 +19,7 @@ export function useTestServer(port: number, dir: string) {
     });
 
     childProcess = spawn(
-      path.join(__dirname, "../../../.jest/rill-e2e-test"),
+      path.join(__dirname, "../../rill-e2e-test"),
       [
         "start",
         "--no-open",

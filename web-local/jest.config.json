@@ -29,7 +29,5 @@
     "<rootDir>/web-admin/"
   ],
   "testEnvironment": "node",
-  "testTimeout": 250000,
-  "globalSetup": "<rootDir>/.jest/setup.js",
-  "globalTeardown": "<rootDir>/.jest/teardown.js"
+  "testTimeout": 250000
 }

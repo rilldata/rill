@@ -96,7 +96,7 @@ jobs:
         if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}
         run: |-
           npm run build -w web-local
-          npm run test -w web-local
+          SKIP_UI_BUILD=true npm run test
 
       - name: Build & Test the web admin
         if: ${{ steps.filter.outputs.admin == 'true' || steps.filter.outputs.common == 'true' }}
