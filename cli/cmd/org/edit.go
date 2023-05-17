@@ -30,7 +30,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			if len(args) > 0 {
 				orgName = args[0]
 			}
-			if !cmd.Flags().Changed("name") && len(args) == 0 && cfg.Interactive {
+			if !cmd.Flags().Changed("org") && len(args) == 0 && cfg.Interactive {
 				orgNames, err := cmdutil.OrgNames(ctx, client)
 				if err != nil {
 					return err
@@ -75,7 +75,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 	editCmd.Flags().SortFlags = false
-	editCmd.Flags().StringVar(&orgName, "name", cfg.Org, "Organization name")
+	editCmd.Flags().StringVar(&orgName, "org", cfg.Org, "Organization name")
 	editCmd.Flags().StringVar(&description, "description", "", "Description")
 
 	return editCmd

@@ -377,11 +377,11 @@ func DefaultProjectName() string {
 
 func SetFlagsByInputPrompts(cmd cobra.Command, flags ...string) error {
 	var err error
-	var value string
+	var val string
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed && slices.Contains(flags, f.Name) {
 			if f.Value.Type() == "string" {
-				value, err = InputPrompt(fmt.Sprintf("Enter the %s", f.Usage), "")
+				val, err = InputPrompt(fmt.Sprintf("Enter the %s", f.Usage), "")
 				if err != nil {
 					fmt.Println("error while input prompt, error:", err)
 					return
@@ -399,10 +399,10 @@ func SetFlagsByInputPrompts(cmd cobra.Command, flags ...string) error {
 					return
 				}
 
-				value = fmt.Sprintf("%t", public)
+				val = fmt.Sprintf("%t", public)
 			}
 
-			err = f.Value.Set(value)
+			err = f.Value.Set(val)
 			if err != nil {
 				fmt.Println("error while setting values, error:", err)
 				return

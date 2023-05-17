@@ -29,7 +29,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 
 			fmt.Println("Warn: Renaming an org would invalidate dashboard URLs")
 
-			if !cmd.Flags().Changed("name") && cfg.Interactive {
+			if !cmd.Flags().Changed("org") && cfg.Interactive {
 				orgNames, err := cmdutil.OrgNames(ctx, client)
 				if err != nil {
 					return err
@@ -80,7 +80,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 	renameCmd.Flags().SortFlags = false
-	renameCmd.Flags().StringVar(&name, "name", cfg.Org, "Current Org Name")
+	renameCmd.Flags().StringVar(&name, "org", cfg.Org, "Current Org Name")
 	renameCmd.Flags().StringVar(&newName, "new-name", "", "New Org Name")
 
 	return renameCmd
