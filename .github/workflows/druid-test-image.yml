@@ -28,8 +28,9 @@ jobs:
 
           gcloud auth configure-docker
 
-          DRUID_VERSION=0.23.0
-          docker build -f test-druid-micro.dockerfile --build-arg DRUID_VERSION=${DRUID_VERSION} -t gcr.io/rilldata/test-druid-micro:${GITHUB_SHA} .
-          docker tag gcr.io/rilldata/test-druid-micro:${DRUID_VERSION} gcr.io/rilldata/test-druid-micro
-          docker push gcr.io/rilldata/test-druid-micro:${DRUID_VERSION}
+          docker build -f test-druid-micro.dockerfile --build-arg DRUID_VERSION=${{ env.DRUID_VERSION }} -t gcr.io/rilldata/test-druid-micro:${GITHUB_SHA} .
+          docker tag gcr.io/rilldata/test-druid-micro:${{ env.DRUID_VERSION }} gcr.io/rilldata/test-druid-micro
+          docker push gcr.io/rilldata/test-druid-micro:${{ env.DRUID_VERSION }}
           docker push gcr.io/rilldata/test-druid-micro
+        env:
+          DRUID_VERSION: 25.0.0
