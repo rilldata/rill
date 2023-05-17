@@ -10,10 +10,9 @@ import (
 )
 
 func AddCmd(cfg *config.Config) *cobra.Command {
-	var email string
 	addCmd := &cobra.Command{
 		Use:   "add <email>",
-		Args:  cobra.MaximumNArgs(1),
+		Args:  cobra.ExactArgs(1),
 		Short: "invite users as superuser",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -24,31 +23,19 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if len(args) > 0 {
-				email = args[0]
-			}
-
-			cmdutil.WarnPrinter(fmt.Sprintf("Warn: Super user inviting will give all access to the %q", email))
-			if !cmdutil.ConfirmPrompt("Do you want to continue", "", false) {
-				cmdutil.WarnPrinter("Aborted")
-				return nil
-			}
-
-			_, err = client.AddSuperUser(ctx, &adminv1.AddSuperUserRequest{
-				Email: email,
+			_, err = client.SetSuperuser(ctx, &adminv1.SetSuperuserRequest{
+				Email:     args[0],
+				Superuser: true,
 			})
 			if err != nil {
 				return err
 			}
 
-			cmdutil.SuccessPrinter(fmt.Sprintf("Updated role of user %q as superuser", email))
+			cmdutil.SuccessPrinter(fmt.Sprintf("Updated role of user %q as superuser", args[0]))
 
 			return nil
 		},
 	}
-
-	addCmd.Flags().SortFlags = false
-	addCmd.Flags().StringVar(&email, "email", "", "Superuser Email")
 
 	return addCmd
 }

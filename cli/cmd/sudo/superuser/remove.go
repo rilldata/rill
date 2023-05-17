@@ -10,10 +10,9 @@ import (
 )
 
 func RemoveCmd(cfg *config.Config) *cobra.Command {
-	var email string
 	removeCmd := &cobra.Command{
 		Use:   "remove <email>",
-		Args:  cobra.MaximumNArgs(1),
+		Args:  cobra.ExactArgs(1),
 		Short: "remove access as superuser",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -24,31 +23,19 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if len(args) > 0 {
-				email = args[0]
-			}
-
-			cmdutil.WarnPrinter(fmt.Sprintf("Warn: Super user removing will revoke all superuser access for %q", email))
-			if !cmdutil.ConfirmPrompt("Do you want to continue", "", false) {
-				cmdutil.WarnPrinter("Aborted")
-				return nil
-			}
-
-			_, err = client.RemoveSuperUser(ctx, &adminv1.RemoveSuperUserRequest{
-				Email: email,
+			_, err = client.SetSuperuser(ctx, &adminv1.SetSuperuserRequest{
+				Email:     args[0],
+				Superuser: false,
 			})
 			if err != nil {
 				return err
 			}
 
-			cmdutil.SuccessPrinter(fmt.Sprintf("Removed superuser role for %q", email))
+			cmdutil.SuccessPrinter(fmt.Sprintf("Removed superuser role for %q", args[0]))
 
 			return nil
 		},
 	}
-
-	removeCmd.Flags().SortFlags = false
-	removeCmd.Flags().StringVar(&email, "email", "", "Superuser Email")
 
 	return removeCmd
 }

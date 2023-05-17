@@ -213,17 +213,12 @@ service AdminService {
     option (google.api.http) = {get: "/v1/superuser/members"};
   }
 
-  // AddSuperUser adds a superuser
-  rpc AddSuperUser(AddSuperUserRequest) returns (AddSuperUserResponse) {
+  // SetSuperuser adds/remove a superuser
+  rpc SetSuperuser(SetSuperuserRequest) returns (SetSuperuserResponse) {
     option (google.api.http) = {
       post: "/v1/superuser/members",
       body: "*"
     };
-  }
-
-  // RemoveSuperUser removes superuser
-  rpc RemoveSuperUser(RemoveSuperUserRequest) returns (RemoveSuperUserResponse) {
-    option (google.api.http) = {delete: "/v1/superuser/{email}"};
   }
 
 }
@@ -440,17 +435,12 @@ message ListSuperUsersResponse {
   repeated User users = 1;
 }
 
-message AddSuperUserRequest {
+message SetSuperuserRequest {
   string email = 1 [(validate.rules).string.email = true];
+  bool superuser = 2;
 }
 
-message AddSuperUserResponse {}
-
-message RemoveSuperUserRequest {
-  string email = 1 [(validate.rules).string.email = true];
-}
-
-message RemoveSuperUserResponse {}
+message SetSuperuserResponse {}
 
 message ListProjectMembersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];

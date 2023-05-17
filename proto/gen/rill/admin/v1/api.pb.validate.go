@@ -5702,22 +5702,22 @@ var _ interface {
 	ErrorName() string
 } = ListSuperUsersResponseValidationError{}
 
-// Validate checks the field values on AddSuperUserRequest with the rules
+// Validate checks the field values on SetSuperuserRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *AddSuperUserRequest) Validate() error {
+func (m *SetSuperuserRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on AddSuperUserRequest with the rules
+// ValidateAll checks the field values on SetSuperuserRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// AddSuperUserRequestMultiError, or nil if none found.
-func (m *AddSuperUserRequest) ValidateAll() error {
+// SetSuperuserRequestMultiError, or nil if none found.
+func (m *SetSuperuserRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *AddSuperUserRequest) validate(all bool) error {
+func (m *SetSuperuserRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -5725,7 +5725,7 @@ func (m *AddSuperUserRequest) validate(all bool) error {
 	var errors []error
 
 	if err := m._validateEmail(m.GetEmail()); err != nil {
-		err = AddSuperUserRequestValidationError{
+		err = SetSuperuserRequestValidationError{
 			field:  "Email",
 			reason: "value must be a valid email address",
 			cause:  err,
@@ -5736,14 +5736,16 @@ func (m *AddSuperUserRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Superuser
+
 	if len(errors) > 0 {
-		return AddSuperUserRequestMultiError(errors)
+		return SetSuperuserRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-func (m *AddSuperUserRequest) _validateHostname(host string) error {
+func (m *SetSuperuserRequest) _validateHostname(host string) error {
 	s := strings.ToLower(strings.TrimSuffix(host, "."))
 
 	if len(host) > 253 {
@@ -5773,7 +5775,7 @@ func (m *AddSuperUserRequest) _validateHostname(host string) error {
 	return nil
 }
 
-func (m *AddSuperUserRequest) _validateEmail(addr string) error {
+func (m *SetSuperuserRequest) _validateEmail(addr string) error {
 	a, err := mail.ParseAddress(addr)
 	if err != nil {
 		return err
@@ -5793,13 +5795,13 @@ func (m *AddSuperUserRequest) _validateEmail(addr string) error {
 	return m._validateHostname(parts[1])
 }
 
-// AddSuperUserRequestMultiError is an error wrapping multiple validation
-// errors returned by AddSuperUserRequest.ValidateAll() if the designated
+// SetSuperuserRequestMultiError is an error wrapping multiple validation
+// errors returned by SetSuperuserRequest.ValidateAll() if the designated
 // constraints aren't met.
-type AddSuperUserRequestMultiError []error
+type SetSuperuserRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m AddSuperUserRequestMultiError) Error() string {
+func (m SetSuperuserRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -5808,11 +5810,11 @@ func (m AddSuperUserRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m AddSuperUserRequestMultiError) AllErrors() []error { return m }
+func (m SetSuperuserRequestMultiError) AllErrors() []error { return m }
 
-// AddSuperUserRequestValidationError is the validation error returned by
-// AddSuperUserRequest.Validate if the designated constraints aren't met.
-type AddSuperUserRequestValidationError struct {
+// SetSuperuserRequestValidationError is the validation error returned by
+// SetSuperuserRequest.Validate if the designated constraints aren't met.
+type SetSuperuserRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -5820,24 +5822,24 @@ type AddSuperUserRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e AddSuperUserRequestValidationError) Field() string { return e.field }
+func (e SetSuperuserRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e AddSuperUserRequestValidationError) Reason() string { return e.reason }
+func (e SetSuperuserRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e AddSuperUserRequestValidationError) Cause() error { return e.cause }
+func (e SetSuperuserRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e AddSuperUserRequestValidationError) Key() bool { return e.key }
+func (e SetSuperuserRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e AddSuperUserRequestValidationError) ErrorName() string {
-	return "AddSuperUserRequestValidationError"
+func (e SetSuperuserRequestValidationError) ErrorName() string {
+	return "SetSuperuserRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e AddSuperUserRequestValidationError) Error() string {
+func (e SetSuperuserRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -5849,14 +5851,14 @@ func (e AddSuperUserRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sAddSuperUserRequest.%s: %s%s",
+		"invalid %sSetSuperuserRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = AddSuperUserRequestValidationError{}
+var _ error = SetSuperuserRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -5864,24 +5866,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = AddSuperUserRequestValidationError{}
+} = SetSuperuserRequestValidationError{}
 
-// Validate checks the field values on AddSuperUserResponse with the rules
+// Validate checks the field values on SetSuperuserResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *AddSuperUserResponse) Validate() error {
+func (m *SetSuperuserResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on AddSuperUserResponse with the rules
+// ValidateAll checks the field values on SetSuperuserResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// AddSuperUserResponseMultiError, or nil if none found.
-func (m *AddSuperUserResponse) ValidateAll() error {
+// SetSuperuserResponseMultiError, or nil if none found.
+func (m *SetSuperuserResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *AddSuperUserResponse) validate(all bool) error {
+func (m *SetSuperuserResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -5889,19 +5891,19 @@ func (m *AddSuperUserResponse) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return AddSuperUserResponseMultiError(errors)
+		return SetSuperuserResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// AddSuperUserResponseMultiError is an error wrapping multiple validation
-// errors returned by AddSuperUserResponse.ValidateAll() if the designated
+// SetSuperuserResponseMultiError is an error wrapping multiple validation
+// errors returned by SetSuperuserResponse.ValidateAll() if the designated
 // constraints aren't met.
-type AddSuperUserResponseMultiError []error
+type SetSuperuserResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m AddSuperUserResponseMultiError) Error() string {
+func (m SetSuperuserResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -5910,11 +5912,11 @@ func (m AddSuperUserResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m AddSuperUserResponseMultiError) AllErrors() []error { return m }
+func (m SetSuperuserResponseMultiError) AllErrors() []error { return m }
 
-// AddSuperUserResponseValidationError is the validation error returned by
-// AddSuperUserResponse.Validate if the designated constraints aren't met.
-type AddSuperUserResponseValidationError struct {
+// SetSuperuserResponseValidationError is the validation error returned by
+// SetSuperuserResponse.Validate if the designated constraints aren't met.
+type SetSuperuserResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -5922,24 +5924,24 @@ type AddSuperUserResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e AddSuperUserResponseValidationError) Field() string { return e.field }
+func (e SetSuperuserResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e AddSuperUserResponseValidationError) Reason() string { return e.reason }
+func (e SetSuperuserResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e AddSuperUserResponseValidationError) Cause() error { return e.cause }
+func (e SetSuperuserResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e AddSuperUserResponseValidationError) Key() bool { return e.key }
+func (e SetSuperuserResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e AddSuperUserResponseValidationError) ErrorName() string {
-	return "AddSuperUserResponseValidationError"
+func (e SetSuperuserResponseValidationError) ErrorName() string {
+	return "SetSuperuserResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e AddSuperUserResponseValidationError) Error() string {
+func (e SetSuperuserResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -5951,14 +5953,14 @@ func (e AddSuperUserResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sAddSuperUserResponse.%s: %s%s",
+		"invalid %sSetSuperuserResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = AddSuperUserResponseValidationError{}
+var _ error = SetSuperuserResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -5966,273 +5968,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = AddSuperUserResponseValidationError{}
-
-// Validate checks the field values on RemoveSuperUserRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *RemoveSuperUserRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on RemoveSuperUserRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// RemoveSuperUserRequestMultiError, or nil if none found.
-func (m *RemoveSuperUserRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *RemoveSuperUserRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if err := m._validateEmail(m.GetEmail()); err != nil {
-		err = RemoveSuperUserRequestValidationError{
-			field:  "Email",
-			reason: "value must be a valid email address",
-			cause:  err,
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return RemoveSuperUserRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-func (m *RemoveSuperUserRequest) _validateHostname(host string) error {
-	s := strings.ToLower(strings.TrimSuffix(host, "."))
-
-	if len(host) > 253 {
-		return errors.New("hostname cannot exceed 253 characters")
-	}
-
-	for _, part := range strings.Split(s, ".") {
-		if l := len(part); l == 0 || l > 63 {
-			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
-		}
-
-		if part[0] == '-' {
-			return errors.New("hostname parts cannot begin with hyphens")
-		}
-
-		if part[len(part)-1] == '-' {
-			return errors.New("hostname parts cannot end with hyphens")
-		}
-
-		for _, r := range part {
-			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
-				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
-			}
-		}
-	}
-
-	return nil
-}
-
-func (m *RemoveSuperUserRequest) _validateEmail(addr string) error {
-	a, err := mail.ParseAddress(addr)
-	if err != nil {
-		return err
-	}
-	addr = a.Address
-
-	if len(addr) > 254 {
-		return errors.New("email addresses cannot exceed 254 characters")
-	}
-
-	parts := strings.SplitN(addr, "@", 2)
-
-	if len(parts[0]) > 64 {
-		return errors.New("email address local phrase cannot exceed 64 characters")
-	}
-
-	return m._validateHostname(parts[1])
-}
-
-// RemoveSuperUserRequestMultiError is an error wrapping multiple validation
-// errors returned by RemoveSuperUserRequest.ValidateAll() if the designated
-// constraints aren't met.
-type RemoveSuperUserRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m RemoveSuperUserRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m RemoveSuperUserRequestMultiError) AllErrors() []error { return m }
-
-// RemoveSuperUserRequestValidationError is the validation error returned by
-// RemoveSuperUserRequest.Validate if the designated constraints aren't met.
-type RemoveSuperUserRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e RemoveSuperUserRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e RemoveSuperUserRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e RemoveSuperUserRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e RemoveSuperUserRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e RemoveSuperUserRequestValidationError) ErrorName() string {
-	return "RemoveSuperUserRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e RemoveSuperUserRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sRemoveSuperUserRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = RemoveSuperUserRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = RemoveSuperUserRequestValidationError{}
-
-// Validate checks the field values on RemoveSuperUserResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *RemoveSuperUserResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on RemoveSuperUserResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// RemoveSuperUserResponseMultiError, or nil if none found.
-func (m *RemoveSuperUserResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *RemoveSuperUserResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if len(errors) > 0 {
-		return RemoveSuperUserResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// RemoveSuperUserResponseMultiError is an error wrapping multiple validation
-// errors returned by RemoveSuperUserResponse.ValidateAll() if the designated
-// constraints aren't met.
-type RemoveSuperUserResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m RemoveSuperUserResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m RemoveSuperUserResponseMultiError) AllErrors() []error { return m }
-
-// RemoveSuperUserResponseValidationError is the validation error returned by
-// RemoveSuperUserResponse.Validate if the designated constraints aren't met.
-type RemoveSuperUserResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e RemoveSuperUserResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e RemoveSuperUserResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e RemoveSuperUserResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e RemoveSuperUserResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e RemoveSuperUserResponseValidationError) ErrorName() string {
-	return "RemoveSuperUserResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e RemoveSuperUserResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sRemoveSuperUserResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = RemoveSuperUserResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = RemoveSuperUserResponseValidationError{}
+} = SetSuperuserResponseValidationError{}
 
 // Validate checks the field values on ListProjectMembersRequest with the rules
 // defined in the proto definition for this message. If any rules are

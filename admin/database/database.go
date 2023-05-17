@@ -88,17 +88,15 @@ type DB interface {
 
 	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
 
-	CheckUsersEmpty(ctx context.Context) (bool, error)
-	FindSuperUsers(ctx context.Context) ([]*User, error)
-	AddSuperUser(ctx context.Context, id string) error
-	RemoveSuperUser(ctx context.Context, id string) error
-
 	FindUsers(ctx context.Context) ([]*User, error)
 	FindUser(ctx context.Context, id string) (*User, error)
 	FindUserByEmail(ctx context.Context, email string) (*User, error)
 	InsertUser(ctx context.Context, opts *InsertUserOptions) (*User, error)
 	DeleteUser(ctx context.Context, id string) error
 	UpdateUser(ctx context.Context, id string, opts *UpdateUserOptions) (*User, error)
+	CheckUsersEmpty(ctx context.Context) (bool, error)
+	FindSuperUsers(ctx context.Context) ([]*User, error)
+	SetSuperuser(ctx context.Context, userID string, superuser bool) error
 
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
 	InsertUsergroupMember(ctx context.Context, groupID, userID string) error

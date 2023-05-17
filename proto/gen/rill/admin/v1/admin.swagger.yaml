@@ -843,26 +843,6 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
-  /v1/superuser/{email}:
-    delete:
-      summary: RemoveSuperUser removes superuser
-      operationId: AdminService_RemoveSuperUser
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1RemoveSuperUserResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: email
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
   /v1/superuser/members:
     get:
       summary: ListSuperUsers lists all the superusers
@@ -879,13 +859,13 @@ paths:
       tags:
         - AdminService
     post:
-      summary: AddSuperUser adds a superuser
-      operationId: AdminService_AddSuperUser
+      summary: SetSuperuser adds/remove a superuser
+      operationId: AdminService_SetSuperuser
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1AddSuperUserResponse'
+            $ref: '#/definitions/v1SetSuperuserResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -895,7 +875,7 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/v1AddSuperUserRequest'
+            $ref: '#/definitions/v1SetSuperuserRequest'
       tags:
         - AdminService
   /v1/tokens/current:
@@ -958,13 +938,6 @@ definitions:
     properties:
       pendingSignup:
         type: boolean
-  v1AddSuperUserRequest:
-    type: object
-    properties:
-      email:
-        type: string
-  v1AddSuperUserResponse:
-    type: object
   v1CreateAutoinviteDomainResponse:
     type: object
   v1CreateOrganizationRequest:
@@ -1260,8 +1233,6 @@ definitions:
     type: object
   v1RemoveProjectMemberResponse:
     type: object
-  v1RemoveSuperUserResponse:
-    type: object
   v1RevokeCurrentAuthTokenResponse:
     type: object
     properties:
@@ -1270,6 +1241,15 @@ definitions:
   v1SetOrganizationMemberRoleResponse:
     type: object
   v1SetProjectMemberRoleResponse:
+    type: object
+  v1SetSuperuserRequest:
+    type: object
+    properties:
+      email:
+        type: string
+      superuser:
+        type: boolean
+  v1SetSuperuserResponse:
     type: object
   v1TriggerReconcileResponse:
     type: object

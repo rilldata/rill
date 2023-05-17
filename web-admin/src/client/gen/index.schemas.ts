@@ -142,6 +142,15 @@ export interface V1TriggerReconcileResponse {
   [key: string]: any;
 }
 
+export interface V1SetSuperuserResponse {
+  [key: string]: any;
+}
+
+export interface V1SetSuperuserRequest {
+  email?: string;
+  superuser?: boolean;
+}
+
 export interface V1SetProjectMemberRoleResponse {
   [key: string]: any;
 }
@@ -152,10 +161,6 @@ export interface V1SetOrganizationMemberRoleResponse {
 
 export interface V1RevokeCurrentAuthTokenResponse {
   tokenId?: string;
-}
-
-export interface V1RemoveSuperUserResponse {
-  [key: string]: any;
 }
 
 export interface V1RemoveProjectMemberResponse {
@@ -279,6 +284,13 @@ export interface V1GetProjectVariablesResponse {
   variables?: V1GetProjectVariablesResponseVariables;
 }
 
+export interface V1GetProjectResponse {
+  project?: V1Project;
+  prodDeployment?: V1Deployment;
+  jwt?: string;
+  projectPermissions?: V1ProjectPermissions;
+}
+
 export interface V1GetOrganizationResponse {
   organization?: V1Organization;
   permissions?: V1OrganizationPermissions;
@@ -319,13 +331,6 @@ export interface V1Deployment {
   updatedOn?: string;
 }
 
-export interface V1GetProjectResponse {
-  project?: V1Project;
-  prodDeployment?: V1Deployment;
-  jwt?: string;
-  projectPermissions?: V1ProjectPermissions;
-}
-
 export interface V1DeleteProjectResponse {
   [key: string]: any;
 }
@@ -349,14 +354,6 @@ export interface V1CreateOrganizationRequest {
 
 export interface V1CreateAutoinviteDomainResponse {
   [key: string]: any;
-}
-
-export interface V1AddSuperUserResponse {
-  [key: string]: any;
-}
-
-export interface V1AddSuperUserRequest {
-  email?: string;
 }
 
 export interface V1AddProjectMemberResponse {

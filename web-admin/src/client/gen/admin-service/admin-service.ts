@@ -63,10 +63,9 @@ import type {
   V1UpdateProjectVariablesResponse,
   AdminServiceUpdateProjectVariablesBody,
   V1PingResponse,
-  V1RemoveSuperUserResponse,
   V1ListSuperUsersResponse,
-  V1AddSuperUserResponse,
-  V1AddSuperUserRequest,
+  V1SetSuperuserResponse,
+  V1SetSuperuserRequest,
   V1RevokeCurrentAuthTokenResponse,
   V1GetCurrentUserResponse,
 } from "../index.schemas";
@@ -1825,51 +1824,6 @@ export const createAdminServicePing = <
 };
 
 /**
- * @summary RemoveSuperUser removes superuser
- */
-export const adminServiceRemoveSuperUser = (email: string) => {
-  return httpClient<V1RemoveSuperUserResponse>({
-    url: `/v1/superuser/${email}`,
-    method: "delete",
-  });
-};
-
-export type AdminServiceRemoveSuperUserMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceRemoveSuperUser>>
->;
-
-export type AdminServiceRemoveSuperUserMutationError = RpcStatus;
-
-export const createAdminServiceRemoveSuperUser = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRemoveSuperUser>>,
-    TError,
-    { email: string },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceRemoveSuperUser>>,
-    { email: string }
-  > = (props) => {
-    const { email } = props ?? {};
-
-    return adminServiceRemoveSuperUser(email);
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof adminServiceRemoveSuperUser>>,
-    TError,
-    { email: string },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
  * @summary ListSuperUsers lists all the superusers
  */
 export const adminServiceListSuperUsers = (signal?: AbortSignal) => {
@@ -1922,51 +1876,51 @@ export const createAdminServiceListSuperUsers = <
 };
 
 /**
- * @summary AddSuperUser adds a superuser
+ * @summary SetSuperuser adds/remove a superuser
  */
-export const adminServiceAddSuperUser = (
-  v1AddSuperUserRequest: V1AddSuperUserRequest
+export const adminServiceSetSuperuser = (
+  v1SetSuperuserRequest: V1SetSuperuserRequest
 ) => {
-  return httpClient<V1AddSuperUserResponse>({
+  return httpClient<V1SetSuperuserResponse>({
     url: `/v1/superuser/members`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: v1AddSuperUserRequest,
+    data: v1SetSuperuserRequest,
   });
 };
 
-export type AdminServiceAddSuperUserMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceAddSuperUser>>
+export type AdminServiceSetSuperuserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSetSuperuser>>
 >;
-export type AdminServiceAddSuperUserMutationBody = V1AddSuperUserRequest;
-export type AdminServiceAddSuperUserMutationError = RpcStatus;
+export type AdminServiceSetSuperuserMutationBody = V1SetSuperuserRequest;
+export type AdminServiceSetSuperuserMutationError = RpcStatus;
 
-export const createAdminServiceAddSuperUser = <
+export const createAdminServiceSetSuperuser = <
   TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceAddSuperUser>>,
+    Awaited<ReturnType<typeof adminServiceSetSuperuser>>,
     TError,
-    { data: V1AddSuperUserRequest },
+    { data: V1SetSuperuserRequest },
     TContext
   >;
 }) => {
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceAddSuperUser>>,
-    { data: V1AddSuperUserRequest }
+    Awaited<ReturnType<typeof adminServiceSetSuperuser>>,
+    { data: V1SetSuperuserRequest }
   > = (props) => {
     const { data } = props ?? {};
 
-    return adminServiceAddSuperUser(data);
+    return adminServiceSetSuperuser(data);
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof adminServiceAddSuperUser>>,
+    Awaited<ReturnType<typeof adminServiceSetSuperuser>>,
     TError,
-    { data: V1AddSuperUserRequest },
+    { data: V1SetSuperuserRequest },
     TContext
   >(mutationFn, mutationOptions);
 };

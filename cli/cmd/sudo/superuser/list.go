@@ -26,7 +26,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintSuperUsers(res.Users)
+			cmdutil.PrintUsers(res.Users)
 
 			return nil
 		},

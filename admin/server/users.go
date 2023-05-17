@@ -16,14 +16,11 @@ import (
 func (s *Server) ListSuperUsers(ctx context.Context, req *adminv1.ListSuperUsersRequest) (*adminv1.ListSuperUsersResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can add autoinvite domain")
+		return nil, status.Error(codes.PermissionDenied, "only superusers can list superusers")
 	}
 
 	users, err := s.admin.DB.FindSuperUsers(ctx)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Errorf(codes.NotFound, "super user not found")
-		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -35,10 +32,10 @@ func (s *Server) ListSuperUsers(ctx context.Context, req *adminv1.ListSuperUsers
 	return &adminv1.ListSuperUsersResponse{Users: dtos}, nil
 }
 
-func (s *Server) AddSuperUser(ctx context.Context, req *adminv1.AddSuperUserRequest) (*adminv1.AddSuperUserResponse, error) {
+func (s *Server) SetSuperuser(ctx context.Context, req *adminv1.SetSuperuserRequest) (*adminv1.SetSuperuserResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can add autoinvite domain")
+		return nil, status.Error(codes.PermissionDenied, "only superusers can add/remove superuser")
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
@@ -49,34 +46,12 @@ func (s *Server) AddSuperUser(ctx context.Context, req *adminv1.AddSuperUserRequ
 		return nil, err
 	}
 
-	err = s.admin.DB.AddSuperUser(ctx, user.ID)
+	err = s.admin.DB.SetSuperuser(ctx, user.ID, req.Superuser)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.AddSuperUserResponse{}, nil
-}
-
-func (s *Server) RemoveSuperUser(ctx context.Context, req *adminv1.RemoveSuperUserRequest) (*adminv1.RemoveSuperUserResponse, error) {
-	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can add autoinvite domain")
-	}
-
-	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, fmt.Errorf("user not found for email id %s", req.Email)
-		}
-		return nil, err
-	}
-
-	err = s.admin.DB.RemoveSuperUser(ctx, user.ID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return &adminv1.RemoveSuperUserResponse{}, nil
+	return &adminv1.SetSuperuserResponse{}, nil
 }
 
 func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUserRequest) (*adminv1.GetCurrentUserResponse, error) {

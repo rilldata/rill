@@ -202,13 +202,13 @@ func WarnPrinter(str string) {
 	boldYellow.Fprintln(color.Output, str)
 }
 
-func PrintSuperUsers(users []*adminv1.User) {
+func PrintUsers(users []*adminv1.User) {
 	if len(users) == 0 {
-		WarnPrinter("No superusers found")
+		WarnPrinter("No users found")
 		return
 	}
 
-	TablePrinter(toSuperUsersTable(users))
+	TablePrinter(toUsersTable(users))
 }
 
 func PrintMembers(members []*adminv1.Member) {
@@ -230,14 +230,14 @@ func PrintInvites(invites []*adminv1.UserInvite) {
 	TablePrinter(toInvitesTable(invites))
 }
 
-func toSuperUsersTable(users []*adminv1.User) []*superuser {
-	allSuperusers := make([]*superuser, 0, len(users))
+func toUsersTable(users []*adminv1.User) []*user {
+	allUsers := make([]*user, 0, len(users))
 
 	for _, m := range users {
-		allSuperusers = append(allSuperusers, toSuperUserRow(m))
+		allUsers = append(allUsers, toUserRow(m))
 	}
 
-	return allSuperusers
+	return allUsers
 }
 
 func toMemberTable(members []*adminv1.Member) []*member {
@@ -260,8 +260,8 @@ func toMemberRow(m *adminv1.Member) *member {
 	}
 }
 
-func toSuperUserRow(m *adminv1.User) *superuser {
-	return &superuser{
+func toUserRow(m *adminv1.User) *user {
+	return &user{
 		Name:  m.DisplayName,
 		Email: m.Email,
 	}
@@ -275,7 +275,7 @@ type member struct {
 	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_on"`
 }
 
-type superuser struct {
+type user struct {
 	Name  string `header:"name" json:"display_name"`
 	Email string `header:"email" json:"email"`
 }

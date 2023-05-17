@@ -52,8 +52,7 @@ const (
 	AdminService_CreateAutoinviteDomain_FullMethodName      = "/rill.admin.v1.AdminService/CreateAutoinviteDomain"
 	AdminService_RemoveAutoinviteDomain_FullMethodName      = "/rill.admin.v1.AdminService/RemoveAutoinviteDomain"
 	AdminService_ListSuperUsers_FullMethodName              = "/rill.admin.v1.AdminService/ListSuperUsers"
-	AdminService_AddSuperUser_FullMethodName                = "/rill.admin.v1.AdminService/AddSuperUser"
-	AdminService_RemoveSuperUser_FullMethodName             = "/rill.admin.v1.AdminService/RemoveSuperUser"
+	AdminService_SetSuperuser_FullMethodName                = "/rill.admin.v1.AdminService/SetSuperuser"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -127,10 +126,8 @@ type AdminServiceClient interface {
 	RemoveAutoinviteDomain(ctx context.Context, in *RemoveAutoinviteDomainRequest, opts ...grpc.CallOption) (*RemoveAutoinviteDomainResponse, error)
 	// ListSuperUsers lists all the superusers
 	ListSuperUsers(ctx context.Context, in *ListSuperUsersRequest, opts ...grpc.CallOption) (*ListSuperUsersResponse, error)
-	// AddSuperUser adds a superuser
-	AddSuperUser(ctx context.Context, in *AddSuperUserRequest, opts ...grpc.CallOption) (*AddSuperUserResponse, error)
-	// RemoveSuperUser removes superuser
-	RemoveSuperUser(ctx context.Context, in *RemoveSuperUserRequest, opts ...grpc.CallOption) (*RemoveSuperUserResponse, error)
+	// SetSuperuser adds/remove a superuser
+	SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error)
 }
 
 type adminServiceClient struct {
@@ -438,18 +435,9 @@ func (c *adminServiceClient) ListSuperUsers(ctx context.Context, in *ListSuperUs
 	return out, nil
 }
 
-func (c *adminServiceClient) AddSuperUser(ctx context.Context, in *AddSuperUserRequest, opts ...grpc.CallOption) (*AddSuperUserResponse, error) {
-	out := new(AddSuperUserResponse)
-	err := c.cc.Invoke(ctx, AdminService_AddSuperUser_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) RemoveSuperUser(ctx context.Context, in *RemoveSuperUserRequest, opts ...grpc.CallOption) (*RemoveSuperUserResponse, error) {
-	out := new(RemoveSuperUserResponse)
-	err := c.cc.Invoke(ctx, AdminService_RemoveSuperUser_FullMethodName, in, out, opts...)
+func (c *adminServiceClient) SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error) {
+	out := new(SetSuperuserResponse)
+	err := c.cc.Invoke(ctx, AdminService_SetSuperuser_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -527,10 +515,8 @@ type AdminServiceServer interface {
 	RemoveAutoinviteDomain(context.Context, *RemoveAutoinviteDomainRequest) (*RemoveAutoinviteDomainResponse, error)
 	// ListSuperUsers lists all the superusers
 	ListSuperUsers(context.Context, *ListSuperUsersRequest) (*ListSuperUsersResponse, error)
-	// AddSuperUser adds a superuser
-	AddSuperUser(context.Context, *AddSuperUserRequest) (*AddSuperUserResponse, error)
-	// RemoveSuperUser removes superuser
-	RemoveSuperUser(context.Context, *RemoveSuperUserRequest) (*RemoveSuperUserResponse, error)
+	// SetSuperuser adds/remove a superuser
+	SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -637,11 +623,8 @@ func (UnimplementedAdminServiceServer) RemoveAutoinviteDomain(context.Context, *
 func (UnimplementedAdminServiceServer) ListSuperUsers(context.Context, *ListSuperUsersRequest) (*ListSuperUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListSuperUsers not implemented")
 }
-func (UnimplementedAdminServiceServer) AddSuperUser(context.Context, *AddSuperUserRequest) (*AddSuperUserResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddSuperUser not implemented")
-}
-func (UnimplementedAdminServiceServer) RemoveSuperUser(context.Context, *RemoveSuperUserRequest) (*RemoveSuperUserResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RemoveSuperUser not implemented")
+func (UnimplementedAdminServiceServer) SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetSuperuser not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -1250,38 +1233,20 @@ func _AdminService_ListSuperUsers_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_AddSuperUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddSuperUserRequest)
+func _AdminService_SetSuperuser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetSuperuserRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).AddSuperUser(ctx, in)
+		return srv.(AdminServiceServer).SetSuperuser(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_AddSuperUser_FullMethodName,
+		FullMethod: AdminService_SetSuperuser_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).AddSuperUser(ctx, req.(*AddSuperUserRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_RemoveSuperUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RemoveSuperUserRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).RemoveSuperUser(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_RemoveSuperUser_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).RemoveSuperUser(ctx, req.(*RemoveSuperUserRequest))
+		return srv.(AdminServiceServer).SetSuperuser(ctx, req.(*SetSuperuserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1426,12 +1391,8 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_ListSuperUsers_Handler,
 		},
 		{
-			MethodName: "AddSuperUser",
-			Handler:    _AdminService_AddSuperUser_Handler,
-		},
-		{
-			MethodName: "RemoveSuperUser",
-			Handler:    _AdminService_RemoveSuperUser_Handler,
+			MethodName: "SetSuperuser",
+			Handler:    _AdminService_SetSuperuser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

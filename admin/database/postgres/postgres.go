@@ -739,13 +739,8 @@ func (c *connection) FindSuperUsers(ctx context.Context) ([]*database.User, erro
 	return res, nil
 }
 
-func (c *connection) AddSuperUser(ctx context.Context, id string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE users SET superuser=true, updated_on=now() WHERE id=$1`, id)
-	return checkUpdateRow("superuser invite", res, err)
-}
-
-func (c *connection) RemoveSuperUser(ctx context.Context, id string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE users SET superuser=false, updated_on=now() WHERE id=$1`, id)
+func (c *connection) SetSuperuser(ctx context.Context, userID string, superuser bool) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE users SET superuser=$2, updated_on=now() WHERE id=$1`, userID, superuser)
 	return checkUpdateRow("superuser invite", res, err)
 }
 
