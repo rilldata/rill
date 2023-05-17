@@ -63,6 +63,10 @@ import type {
   V1UpdateProjectVariablesResponse,
   AdminServiceUpdateProjectVariablesBody,
   V1PingResponse,
+  V1RemoveSuperUserResponse,
+  V1ListSuperUsersResponse,
+  V1AddSuperUserResponse,
+  V1AddSuperUserRequest,
   V1RevokeCurrentAuthTokenResponse,
   V1GetCurrentUserResponse,
 } from "../index.schemas";
@@ -1820,6 +1824,152 @@ export const createAdminServicePing = <
   return query;
 };
 
+/**
+ * @summary RemoveSuperUser removes superuser
+ */
+export const adminServiceRemoveSuperUser = (email: string) => {
+  return httpClient<V1RemoveSuperUserResponse>({
+    url: `/v1/superuser/${email}`,
+    method: "delete",
+  });
+};
+
+export type AdminServiceRemoveSuperUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRemoveSuperUser>>
+>;
+
+export type AdminServiceRemoveSuperUserMutationError = RpcStatus;
+
+export const createAdminServiceRemoveSuperUser = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRemoveSuperUser>>,
+    TError,
+    { email: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRemoveSuperUser>>,
+    { email: string }
+  > = (props) => {
+    const { email } = props ?? {};
+
+    return adminServiceRemoveSuperUser(email);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceRemoveSuperUser>>,
+    TError,
+    { email: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary ListSuperUsers lists all the superusers
+ */
+export const adminServiceListSuperUsers = (signal?: AbortSignal) => {
+  return httpClient<V1ListSuperUsersResponse>({
+    url: `/v1/superuser/members`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceListSuperUsersQueryKey = () =>
+  [`/v1/superuser/members`] as const;
+
+export type AdminServiceListSuperUsersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListSuperUsers>>
+>;
+export type AdminServiceListSuperUsersQueryError = RpcStatus;
+
+export const createAdminServiceListSuperUsers = <
+  TData = Awaited<ReturnType<typeof adminServiceListSuperUsers>>,
+  TError = RpcStatus
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceListSuperUsers>>,
+    TError,
+    TData
+  >;
+}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceListSuperUsersQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListSuperUsers>>
+  > = ({ signal }) => adminServiceListSuperUsers(signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceListSuperUsers>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary AddSuperUser adds a superuser
+ */
+export const adminServiceAddSuperUser = (
+  v1AddSuperUserRequest: V1AddSuperUserRequest
+) => {
+  return httpClient<V1AddSuperUserResponse>({
+    url: `/v1/superuser/members`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1AddSuperUserRequest,
+  });
+};
+
+export type AdminServiceAddSuperUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceAddSuperUser>>
+>;
+export type AdminServiceAddSuperUserMutationBody = V1AddSuperUserRequest;
+export type AdminServiceAddSuperUserMutationError = RpcStatus;
+
+export const createAdminServiceAddSuperUser = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceAddSuperUser>>,
+    TError,
+    { data: V1AddSuperUserRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceAddSuperUser>>,
+    { data: V1AddSuperUserRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceAddSuperUser(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceAddSuperUser>>,
+    TError,
+    { data: V1AddSuperUserRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary RevokeCurrentAuthToken revoke the current auth token
  */

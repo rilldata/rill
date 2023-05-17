@@ -1907,6 +1907,210 @@ export class SetOrganizationMemberRoleResponse extends Message<SetOrganizationMe
 }
 
 /**
+ * @generated from message rill.admin.v1.ListSuperUsersRequest
+ */
+export class ListSuperUsersRequest extends Message<ListSuperUsersRequest> {
+  constructor(data?: PartialMessage<ListSuperUsersRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListSuperUsersRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListSuperUsersRequest {
+    return new ListSuperUsersRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListSuperUsersRequest {
+    return new ListSuperUsersRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListSuperUsersRequest {
+    return new ListSuperUsersRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListSuperUsersRequest | PlainMessage<ListSuperUsersRequest> | undefined, b: ListSuperUsersRequest | PlainMessage<ListSuperUsersRequest> | undefined): boolean {
+    return proto3.util.equals(ListSuperUsersRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListSuperUsersResponse
+ */
+export class ListSuperUsersResponse extends Message<ListSuperUsersResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.User users = 1;
+   */
+  users: User[] = [];
+
+  constructor(data?: PartialMessage<ListSuperUsersResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListSuperUsersResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "users", kind: "message", T: User, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListSuperUsersResponse {
+    return new ListSuperUsersResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListSuperUsersResponse {
+    return new ListSuperUsersResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListSuperUsersResponse {
+    return new ListSuperUsersResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListSuperUsersResponse | PlainMessage<ListSuperUsersResponse> | undefined, b: ListSuperUsersResponse | PlainMessage<ListSuperUsersResponse> | undefined): boolean {
+    return proto3.util.equals(ListSuperUsersResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.AddSuperUserRequest
+ */
+export class AddSuperUserRequest extends Message<AddSuperUserRequest> {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email = "";
+
+  constructor(data?: PartialMessage<AddSuperUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.AddSuperUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddSuperUserRequest {
+    return new AddSuperUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AddSuperUserRequest {
+    return new AddSuperUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AddSuperUserRequest {
+    return new AddSuperUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AddSuperUserRequest | PlainMessage<AddSuperUserRequest> | undefined, b: AddSuperUserRequest | PlainMessage<AddSuperUserRequest> | undefined): boolean {
+    return proto3.util.equals(AddSuperUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.AddSuperUserResponse
+ */
+export class AddSuperUserResponse extends Message<AddSuperUserResponse> {
+  constructor(data?: PartialMessage<AddSuperUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.AddSuperUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddSuperUserResponse {
+    return new AddSuperUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AddSuperUserResponse {
+    return new AddSuperUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AddSuperUserResponse {
+    return new AddSuperUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AddSuperUserResponse | PlainMessage<AddSuperUserResponse> | undefined, b: AddSuperUserResponse | PlainMessage<AddSuperUserResponse> | undefined): boolean {
+    return proto3.util.equals(AddSuperUserResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RemoveSuperUserRequest
+ */
+export class RemoveSuperUserRequest extends Message<RemoveSuperUserRequest> {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email = "";
+
+  constructor(data?: PartialMessage<RemoveSuperUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RemoveSuperUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveSuperUserRequest {
+    return new RemoveSuperUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveSuperUserRequest {
+    return new RemoveSuperUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveSuperUserRequest {
+    return new RemoveSuperUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RemoveSuperUserRequest | PlainMessage<RemoveSuperUserRequest> | undefined, b: RemoveSuperUserRequest | PlainMessage<RemoveSuperUserRequest> | undefined): boolean {
+    return proto3.util.equals(RemoveSuperUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RemoveSuperUserResponse
+ */
+export class RemoveSuperUserResponse extends Message<RemoveSuperUserResponse> {
+  constructor(data?: PartialMessage<RemoveSuperUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RemoveSuperUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveSuperUserResponse {
+    return new RemoveSuperUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveSuperUserResponse {
+    return new RemoveSuperUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveSuperUserResponse {
+    return new RemoveSuperUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RemoveSuperUserResponse | PlainMessage<RemoveSuperUserResponse> | undefined, b: RemoveSuperUserResponse | PlainMessage<RemoveSuperUserResponse> | undefined): boolean {
+    return proto3.util.equals(RemoveSuperUserResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListProjectMembersRequest
  */
 export class ListProjectMembersRequest extends Message<ListProjectMembersRequest> {

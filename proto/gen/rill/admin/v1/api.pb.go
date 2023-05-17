@@ -2449,6 +2449,261 @@ func (*SetOrganizationMemberRoleResponse) Descriptor() ([]byte, []int) {
 	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{43}
 }
 
+type ListSuperUsersRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *ListSuperUsersRequest) Reset() {
+	*x = ListSuperUsersRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rill_admin_v1_api_proto_msgTypes[44]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ListSuperUsersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListSuperUsersRequest) ProtoMessage() {}
+
+func (x *ListSuperUsersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_rill_admin_v1_api_proto_msgTypes[44]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListSuperUsersRequest.ProtoReflect.Descriptor instead.
+func (*ListSuperUsersRequest) Descriptor() ([]byte, []int) {
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{44}
+}
+
+type ListSuperUsersResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Users []*User `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
+}
+
+func (x *ListSuperUsersResponse) Reset() {
+	*x = ListSuperUsersResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rill_admin_v1_api_proto_msgTypes[45]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ListSuperUsersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListSuperUsersResponse) ProtoMessage() {}
+
+func (x *ListSuperUsersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_rill_admin_v1_api_proto_msgTypes[45]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListSuperUsersResponse.ProtoReflect.Descriptor instead.
+func (*ListSuperUsersResponse) Descriptor() ([]byte, []int) {
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *ListSuperUsersResponse) GetUsers() []*User {
+	if x != nil {
+		return x.Users
+	}
+	return nil
+}
+
+type AddSuperUserRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+}
+
+func (x *AddSuperUserRequest) Reset() {
+	*x = AddSuperUserRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rill_admin_v1_api_proto_msgTypes[46]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AddSuperUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddSuperUserRequest) ProtoMessage() {}
+
+func (x *AddSuperUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_rill_admin_v1_api_proto_msgTypes[46]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddSuperUserRequest.ProtoReflect.Descriptor instead.
+func (*AddSuperUserRequest) Descriptor() ([]byte, []int) {
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{46}
+}
+
+func (x *AddSuperUserRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+type AddSuperUserResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *AddSuperUserResponse) Reset() {
+	*x = AddSuperUserResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rill_admin_v1_api_proto_msgTypes[47]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AddSuperUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddSuperUserResponse) ProtoMessage() {}
+
+func (x *AddSuperUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_rill_admin_v1_api_proto_msgTypes[47]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddSuperUserResponse.ProtoReflect.Descriptor instead.
+func (*AddSuperUserResponse) Descriptor() ([]byte, []int) {
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{47}
+}
+
+type RemoveSuperUserRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+}
+
+func (x *RemoveSuperUserRequest) Reset() {
+	*x = RemoveSuperUserRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rill_admin_v1_api_proto_msgTypes[48]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RemoveSuperUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveSuperUserRequest) ProtoMessage() {}
+
+func (x *RemoveSuperUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_rill_admin_v1_api_proto_msgTypes[48]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveSuperUserRequest.ProtoReflect.Descriptor instead.
+func (*RemoveSuperUserRequest) Descriptor() ([]byte, []int) {
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{48}
+}
+
+func (x *RemoveSuperUserRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+type RemoveSuperUserResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *RemoveSuperUserResponse) Reset() {
+	*x = RemoveSuperUserResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rill_admin_v1_api_proto_msgTypes[49]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RemoveSuperUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveSuperUserResponse) ProtoMessage() {}
+
+func (x *RemoveSuperUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_rill_admin_v1_api_proto_msgTypes[49]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveSuperUserResponse.ProtoReflect.Descriptor instead.
+func (*RemoveSuperUserResponse) Descriptor() ([]byte, []int) {
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{49}
+}
+
 type ListProjectMembersRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2463,7 +2718,7 @@ type ListProjectMembersRequest struct {
 func (x *ListProjectMembersRequest) Reset() {
 	*x = ListProjectMembersRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[44]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[50]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2476,7 +2731,7 @@ func (x *ListProjectMembersRequest) String() string {
 func (*ListProjectMembersRequest) ProtoMessage() {}
 
 func (x *ListProjectMembersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[44]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[50]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2489,7 +2744,7 @@ func (x *ListProjectMembersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProjectMembersRequest.ProtoReflect.Descriptor instead.
 func (*ListProjectMembersRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{44}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *ListProjectMembersRequest) GetOrganization() string {
@@ -2532,7 +2787,7 @@ type ListProjectMembersResponse struct {
 func (x *ListProjectMembersResponse) Reset() {
 	*x = ListProjectMembersResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[45]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[51]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2545,7 +2800,7 @@ func (x *ListProjectMembersResponse) String() string {
 func (*ListProjectMembersResponse) ProtoMessage() {}
 
 func (x *ListProjectMembersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[45]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[51]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2558,7 +2813,7 @@ func (x *ListProjectMembersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProjectMembersResponse.ProtoReflect.Descriptor instead.
 func (*ListProjectMembersResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{45}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *ListProjectMembersResponse) GetMembers() []*Member {
@@ -2589,7 +2844,7 @@ type ListProjectInvitesRequest struct {
 func (x *ListProjectInvitesRequest) Reset() {
 	*x = ListProjectInvitesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[46]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[52]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2602,7 +2857,7 @@ func (x *ListProjectInvitesRequest) String() string {
 func (*ListProjectInvitesRequest) ProtoMessage() {}
 
 func (x *ListProjectInvitesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[46]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[52]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2615,7 +2870,7 @@ func (x *ListProjectInvitesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProjectInvitesRequest.ProtoReflect.Descriptor instead.
 func (*ListProjectInvitesRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{46}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *ListProjectInvitesRequest) GetOrganization() string {
@@ -2658,7 +2913,7 @@ type ListProjectInvitesResponse struct {
 func (x *ListProjectInvitesResponse) Reset() {
 	*x = ListProjectInvitesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[47]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[53]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2671,7 +2926,7 @@ func (x *ListProjectInvitesResponse) String() string {
 func (*ListProjectInvitesResponse) ProtoMessage() {}
 
 func (x *ListProjectInvitesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[47]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[53]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2684,7 +2939,7 @@ func (x *ListProjectInvitesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProjectInvitesResponse.ProtoReflect.Descriptor instead.
 func (*ListProjectInvitesResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{47}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *ListProjectInvitesResponse) GetInvites() []*UserInvite {
@@ -2715,7 +2970,7 @@ type AddProjectMemberRequest struct {
 func (x *AddProjectMemberRequest) Reset() {
 	*x = AddProjectMemberRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[48]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[54]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2728,7 +2983,7 @@ func (x *AddProjectMemberRequest) String() string {
 func (*AddProjectMemberRequest) ProtoMessage() {}
 
 func (x *AddProjectMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[48]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[54]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2741,7 +2996,7 @@ func (x *AddProjectMemberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddProjectMemberRequest.ProtoReflect.Descriptor instead.
 func (*AddProjectMemberRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{48}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *AddProjectMemberRequest) GetOrganization() string {
@@ -2783,7 +3038,7 @@ type AddProjectMemberResponse struct {
 func (x *AddProjectMemberResponse) Reset() {
 	*x = AddProjectMemberResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[49]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[55]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2796,7 +3051,7 @@ func (x *AddProjectMemberResponse) String() string {
 func (*AddProjectMemberResponse) ProtoMessage() {}
 
 func (x *AddProjectMemberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[49]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[55]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2809,7 +3064,7 @@ func (x *AddProjectMemberResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddProjectMemberResponse.ProtoReflect.Descriptor instead.
 func (*AddProjectMemberResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{49}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *AddProjectMemberResponse) GetPendingSignup() bool {
@@ -2832,7 +3087,7 @@ type RemoveProjectMemberRequest struct {
 func (x *RemoveProjectMemberRequest) Reset() {
 	*x = RemoveProjectMemberRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[50]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[56]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2845,7 +3100,7 @@ func (x *RemoveProjectMemberRequest) String() string {
 func (*RemoveProjectMemberRequest) ProtoMessage() {}
 
 func (x *RemoveProjectMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[50]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[56]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2858,7 +3113,7 @@ func (x *RemoveProjectMemberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveProjectMemberRequest.ProtoReflect.Descriptor instead.
 func (*RemoveProjectMemberRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{50}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *RemoveProjectMemberRequest) GetOrganization() string {
@@ -2891,7 +3146,7 @@ type RemoveProjectMemberResponse struct {
 func (x *RemoveProjectMemberResponse) Reset() {
 	*x = RemoveProjectMemberResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[51]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[57]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2904,7 +3159,7 @@ func (x *RemoveProjectMemberResponse) String() string {
 func (*RemoveProjectMemberResponse) ProtoMessage() {}
 
 func (x *RemoveProjectMemberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[51]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[57]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2917,7 +3172,7 @@ func (x *RemoveProjectMemberResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveProjectMemberResponse.ProtoReflect.Descriptor instead.
 func (*RemoveProjectMemberResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{51}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{57}
 }
 
 type SetProjectMemberRoleRequest struct {
@@ -2934,7 +3189,7 @@ type SetProjectMemberRoleRequest struct {
 func (x *SetProjectMemberRoleRequest) Reset() {
 	*x = SetProjectMemberRoleRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[52]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[58]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2947,7 +3202,7 @@ func (x *SetProjectMemberRoleRequest) String() string {
 func (*SetProjectMemberRoleRequest) ProtoMessage() {}
 
 func (x *SetProjectMemberRoleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[52]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[58]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2960,7 +3215,7 @@ func (x *SetProjectMemberRoleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetProjectMemberRoleRequest.ProtoReflect.Descriptor instead.
 func (*SetProjectMemberRoleRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{52}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *SetProjectMemberRoleRequest) GetOrganization() string {
@@ -3000,7 +3255,7 @@ type SetProjectMemberRoleResponse struct {
 func (x *SetProjectMemberRoleResponse) Reset() {
 	*x = SetProjectMemberRoleResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[53]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[59]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3013,7 +3268,7 @@ func (x *SetProjectMemberRoleResponse) String() string {
 func (*SetProjectMemberRoleResponse) ProtoMessage() {}
 
 func (x *SetProjectMemberRoleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[53]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[59]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3026,7 +3281,7 @@ func (x *SetProjectMemberRoleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetProjectMemberRoleResponse.ProtoReflect.Descriptor instead.
 func (*SetProjectMemberRoleResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{53}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{59}
 }
 
 type GetCurrentUserRequest struct {
@@ -3038,7 +3293,7 @@ type GetCurrentUserRequest struct {
 func (x *GetCurrentUserRequest) Reset() {
 	*x = GetCurrentUserRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[54]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[60]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3051,7 +3306,7 @@ func (x *GetCurrentUserRequest) String() string {
 func (*GetCurrentUserRequest) ProtoMessage() {}
 
 func (x *GetCurrentUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[54]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[60]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3064,7 +3319,7 @@ func (x *GetCurrentUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCurrentUserRequest.ProtoReflect.Descriptor instead.
 func (*GetCurrentUserRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{54}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{60}
 }
 
 type GetCurrentUserResponse struct {
@@ -3078,7 +3333,7 @@ type GetCurrentUserResponse struct {
 func (x *GetCurrentUserResponse) Reset() {
 	*x = GetCurrentUserResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[55]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[61]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3091,7 +3346,7 @@ func (x *GetCurrentUserResponse) String() string {
 func (*GetCurrentUserResponse) ProtoMessage() {}
 
 func (x *GetCurrentUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[55]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[61]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3104,7 +3359,7 @@ func (x *GetCurrentUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCurrentUserResponse.ProtoReflect.Descriptor instead.
 func (*GetCurrentUserResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{55}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *GetCurrentUserResponse) GetUser() *User {
@@ -3123,7 +3378,7 @@ type RevokeCurrentAuthTokenRequest struct {
 func (x *RevokeCurrentAuthTokenRequest) Reset() {
 	*x = RevokeCurrentAuthTokenRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[56]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[62]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3136,7 +3391,7 @@ func (x *RevokeCurrentAuthTokenRequest) String() string {
 func (*RevokeCurrentAuthTokenRequest) ProtoMessage() {}
 
 func (x *RevokeCurrentAuthTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[56]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[62]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3149,7 +3404,7 @@ func (x *RevokeCurrentAuthTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeCurrentAuthTokenRequest.ProtoReflect.Descriptor instead.
 func (*RevokeCurrentAuthTokenRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{56}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{62}
 }
 
 type RevokeCurrentAuthTokenResponse struct {
@@ -3163,7 +3418,7 @@ type RevokeCurrentAuthTokenResponse struct {
 func (x *RevokeCurrentAuthTokenResponse) Reset() {
 	*x = RevokeCurrentAuthTokenResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[57]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[63]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3176,7 +3431,7 @@ func (x *RevokeCurrentAuthTokenResponse) String() string {
 func (*RevokeCurrentAuthTokenResponse) ProtoMessage() {}
 
 func (x *RevokeCurrentAuthTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[57]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[63]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3189,7 +3444,7 @@ func (x *RevokeCurrentAuthTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeCurrentAuthTokenResponse.ProtoReflect.Descriptor instead.
 func (*RevokeCurrentAuthTokenResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{57}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *RevokeCurrentAuthTokenResponse) GetTokenId() string {
@@ -3210,7 +3465,7 @@ type GetGithubRepoStatusRequest struct {
 func (x *GetGithubRepoStatusRequest) Reset() {
 	*x = GetGithubRepoStatusRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[58]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[64]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3223,7 +3478,7 @@ func (x *GetGithubRepoStatusRequest) String() string {
 func (*GetGithubRepoStatusRequest) ProtoMessage() {}
 
 func (x *GetGithubRepoStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[58]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[64]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3236,7 +3491,7 @@ func (x *GetGithubRepoStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGithubRepoStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetGithubRepoStatusRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{58}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *GetGithubRepoStatusRequest) GetGithubUrl() string {
@@ -3259,7 +3514,7 @@ type GetGithubRepoStatusResponse struct {
 func (x *GetGithubRepoStatusResponse) Reset() {
 	*x = GetGithubRepoStatusResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[59]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[65]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3272,7 +3527,7 @@ func (x *GetGithubRepoStatusResponse) String() string {
 func (*GetGithubRepoStatusResponse) ProtoMessage() {}
 
 func (x *GetGithubRepoStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[59]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[65]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3285,7 +3540,7 @@ func (x *GetGithubRepoStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGithubRepoStatusResponse.ProtoReflect.Descriptor instead.
 func (*GetGithubRepoStatusResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{59}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *GetGithubRepoStatusResponse) GetHasAccess() bool {
@@ -3322,7 +3577,7 @@ type CreateAutoinviteDomainRequest struct {
 func (x *CreateAutoinviteDomainRequest) Reset() {
 	*x = CreateAutoinviteDomainRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[60]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[66]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3335,7 +3590,7 @@ func (x *CreateAutoinviteDomainRequest) String() string {
 func (*CreateAutoinviteDomainRequest) ProtoMessage() {}
 
 func (x *CreateAutoinviteDomainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[60]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[66]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3348,7 +3603,7 @@ func (x *CreateAutoinviteDomainRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateAutoinviteDomainRequest.ProtoReflect.Descriptor instead.
 func (*CreateAutoinviteDomainRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{60}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *CreateAutoinviteDomainRequest) GetOrganization() string {
@@ -3381,7 +3636,7 @@ type CreateAutoinviteDomainResponse struct {
 func (x *CreateAutoinviteDomainResponse) Reset() {
 	*x = CreateAutoinviteDomainResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[61]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[67]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3394,7 +3649,7 @@ func (x *CreateAutoinviteDomainResponse) String() string {
 func (*CreateAutoinviteDomainResponse) ProtoMessage() {}
 
 func (x *CreateAutoinviteDomainResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[61]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[67]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3407,7 +3662,7 @@ func (x *CreateAutoinviteDomainResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateAutoinviteDomainResponse.ProtoReflect.Descriptor instead.
 func (*CreateAutoinviteDomainResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{61}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{67}
 }
 
 type RemoveAutoinviteDomainRequest struct {
@@ -3422,7 +3677,7 @@ type RemoveAutoinviteDomainRequest struct {
 func (x *RemoveAutoinviteDomainRequest) Reset() {
 	*x = RemoveAutoinviteDomainRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[62]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[68]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3435,7 +3690,7 @@ func (x *RemoveAutoinviteDomainRequest) String() string {
 func (*RemoveAutoinviteDomainRequest) ProtoMessage() {}
 
 func (x *RemoveAutoinviteDomainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[62]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[68]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3448,7 +3703,7 @@ func (x *RemoveAutoinviteDomainRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveAutoinviteDomainRequest.ProtoReflect.Descriptor instead.
 func (*RemoveAutoinviteDomainRequest) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{62}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *RemoveAutoinviteDomainRequest) GetOrganization() string {
@@ -3474,7 +3729,7 @@ type RemoveAutoinviteDomainResponse struct {
 func (x *RemoveAutoinviteDomainResponse) Reset() {
 	*x = RemoveAutoinviteDomainResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[63]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[69]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3487,7 +3742,7 @@ func (x *RemoveAutoinviteDomainResponse) String() string {
 func (*RemoveAutoinviteDomainResponse) ProtoMessage() {}
 
 func (x *RemoveAutoinviteDomainResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[63]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[69]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3500,7 +3755,7 @@ func (x *RemoveAutoinviteDomainResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveAutoinviteDomainResponse.ProtoReflect.Descriptor instead.
 func (*RemoveAutoinviteDomainResponse) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{63}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{69}
 }
 
 type User struct {
@@ -3519,7 +3774,7 @@ type User struct {
 func (x *User) Reset() {
 	*x = User{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[64]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[70]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3532,7 +3787,7 @@ func (x *User) String() string {
 func (*User) ProtoMessage() {}
 
 func (x *User) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[64]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[70]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3545,7 +3800,7 @@ func (x *User) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use User.ProtoReflect.Descriptor instead.
 func (*User) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{64}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{70}
 }
 
 func (x *User) GetId() string {
@@ -3605,7 +3860,7 @@ type Organization struct {
 func (x *Organization) Reset() {
 	*x = Organization{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[65]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[71]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3618,7 +3873,7 @@ func (x *Organization) String() string {
 func (*Organization) ProtoMessage() {}
 
 func (x *Organization) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[65]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[71]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3631,7 +3886,7 @@ func (x *Organization) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Organization.ProtoReflect.Descriptor instead.
 func (*Organization) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{65}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{71}
 }
 
 func (x *Organization) GetId() string {
@@ -3696,7 +3951,7 @@ type Project struct {
 func (x *Project) Reset() {
 	*x = Project{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[66]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[72]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3709,7 +3964,7 @@ func (x *Project) String() string {
 func (*Project) ProtoMessage() {}
 
 func (x *Project) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[66]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[72]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3722,7 +3977,7 @@ func (x *Project) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Project.ProtoReflect.Descriptor instead.
 func (*Project) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{66}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{72}
 }
 
 func (x *Project) GetId() string {
@@ -3864,7 +4119,7 @@ type Deployment struct {
 func (x *Deployment) Reset() {
 	*x = Deployment{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[67]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[73]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3877,7 +4132,7 @@ func (x *Deployment) String() string {
 func (*Deployment) ProtoMessage() {}
 
 func (x *Deployment) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[67]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[73]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3890,7 +4145,7 @@ func (x *Deployment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Deployment.ProtoReflect.Descriptor instead.
 func (*Deployment) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{67}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{73}
 }
 
 func (x *Deployment) GetId() string {
@@ -3980,7 +4235,7 @@ type OrganizationPermissions struct {
 func (x *OrganizationPermissions) Reset() {
 	*x = OrganizationPermissions{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[68]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[74]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3993,7 +4248,7 @@ func (x *OrganizationPermissions) String() string {
 func (*OrganizationPermissions) ProtoMessage() {}
 
 func (x *OrganizationPermissions) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[68]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[74]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4006,7 +4261,7 @@ func (x *OrganizationPermissions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrganizationPermissions.ProtoReflect.Descriptor instead.
 func (*OrganizationPermissions) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{68}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{74}
 }
 
 func (x *OrganizationPermissions) GetReadOrg() bool {
@@ -4078,7 +4333,7 @@ type ProjectPermissions struct {
 func (x *ProjectPermissions) Reset() {
 	*x = ProjectPermissions{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[69]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[75]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4091,7 +4346,7 @@ func (x *ProjectPermissions) String() string {
 func (*ProjectPermissions) ProtoMessage() {}
 
 func (x *ProjectPermissions) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[69]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[75]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4104,7 +4359,7 @@ func (x *ProjectPermissions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProjectPermissions.ProtoReflect.Descriptor instead.
 func (*ProjectPermissions) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{69}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{75}
 }
 
 func (x *ProjectPermissions) GetReadProject() bool {
@@ -4193,7 +4448,7 @@ type Member struct {
 func (x *Member) Reset() {
 	*x = Member{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[70]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[76]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4206,7 +4461,7 @@ func (x *Member) String() string {
 func (*Member) ProtoMessage() {}
 
 func (x *Member) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[70]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[76]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4219,7 +4474,7 @@ func (x *Member) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Member.ProtoReflect.Descriptor instead.
 func (*Member) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{70}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{76}
 }
 
 func (x *Member) GetUserId() string {
@@ -4277,7 +4532,7 @@ type UserInvite struct {
 func (x *UserInvite) Reset() {
 	*x = UserInvite{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_admin_v1_api_proto_msgTypes[71]
+		mi := &file_rill_admin_v1_api_proto_msgTypes[77]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4290,7 +4545,7 @@ func (x *UserInvite) String() string {
 func (*UserInvite) ProtoMessage() {}
 
 func (x *UserInvite) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_admin_v1_api_proto_msgTypes[71]
+	mi := &file_rill_admin_v1_api_proto_msgTypes[77]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4303,7 +4558,7 @@ func (x *UserInvite) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserInvite.ProtoReflect.Descriptor instead.
 func (*UserInvite) Descriptor() ([]byte, []int) {
-	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{71}
+	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{77}
 }
 
 func (x *UserInvite) GetEmail() string {
@@ -4647,6 +4902,22 @@ var file_rill_admin_v1_api_proto_rawDesc = []byte{
 	0x09, 0x42, 0x07, 0xfa, 0x42, 0x04, 0x72, 0x02, 0x10, 0x01, 0x52, 0x04, 0x72, 0x6f, 0x6c, 0x65,
 	0x22, 0x23, 0x0a, 0x21, 0x53, 0x65, 0x74, 0x4f, 0x72, 0x67, 0x61, 0x6e, 0x69, 0x7a, 0x61, 0x74,
 	0x69, 0x6f, 0x6e, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x52, 0x6f, 0x6c, 0x65, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x17, 0x0a, 0x15, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x75, 0x70,
+	0x65, 0x72, 0x55, 0x73, 0x65, 0x72, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x43,
+	0x0a, 0x16, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x75, 0x70, 0x65, 0x72, 0x55, 0x73, 0x65, 0x72, 0x73,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x29, 0x0a, 0x05, 0x75, 0x73, 0x65, 0x72,
+	0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x61,
+	0x64, 0x6d, 0x69, 0x6e, 0x2e, 0x76, 0x31, 0x2e, 0x55, 0x73, 0x65, 0x72, 0x52, 0x05, 0x75, 0x73,
+	0x65, 0x72, 0x73, 0x22, 0x34, 0x0a, 0x13, 0x41, 0x64, 0x64, 0x53, 0x75, 0x70, 0x65, 0x72, 0x55,
+	0x73, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1d, 0x0a, 0x05, 0x65, 0x6d,
+	0x61, 0x69, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x07, 0xfa, 0x42, 0x04, 0x72, 0x02,
+	0x60, 0x01, 0x52, 0x05, 0x65, 0x6d, 0x61, 0x69, 0x6c, 0x22, 0x16, 0x0a, 0x14, 0x41, 0x64, 0x64,
+	0x53, 0x75, 0x70, 0x65, 0x72, 0x55, 0x73, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x22, 0x37, 0x0a, 0x16, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x53, 0x75, 0x70, 0x65, 0x72,
+	0x55, 0x73, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1d, 0x0a, 0x05, 0x65,
+	0x6d, 0x61, 0x69, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x07, 0xfa, 0x42, 0x04, 0x72,
+	0x02, 0x60, 0x01, 0x52, 0x05, 0x65, 0x6d, 0x61, 0x69, 0x6c, 0x22, 0x19, 0x0a, 0x17, 0x52, 0x65,
+	0x6d, 0x6f, 0x76, 0x65, 0x53, 0x75, 0x70, 0x65, 0x72, 0x55, 0x73, 0x65, 0x72, 0x52, 0x65, 0x73,
 	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0xb2, 0x01, 0x0a, 0x19, 0x4c, 0x69, 0x73, 0x74, 0x50, 0x72,
 	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x73, 0x52, 0x65, 0x71, 0x75,
 	0x65, 0x73, 0x74, 0x12, 0x2b, 0x0a, 0x0c, 0x6f, 0x72, 0x67, 0x61, 0x6e, 0x69, 0x7a, 0x61, 0x74,
@@ -4930,7 +5201,7 @@ var file_rill_admin_v1_api_proto_rawDesc = []byte{
 	0x45, 0x4e, 0x54, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x52, 0x45, 0x43, 0x4f, 0x4e,
 	0x43, 0x49, 0x4c, 0x49, 0x4e, 0x47, 0x10, 0x03, 0x12, 0x1b, 0x0a, 0x17, 0x44, 0x45, 0x50, 0x4c,
 	0x4f, 0x59, 0x4d, 0x45, 0x4e, 0x54, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x55, 0x53, 0x5f, 0x45, 0x52,
-	0x52, 0x4f, 0x52, 0x10, 0x04, 0x32, 0xc0, 0x28, 0x0a, 0x0c, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x53,
+	0x52, 0x4f, 0x52, 0x10, 0x04, 0x32, 0xba, 0x2b, 0x0a, 0x0c, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x53,
 	0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x51, 0x0a, 0x04, 0x50, 0x69, 0x6e, 0x67, 0x12, 0x1a,
 	0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x2e, 0x76, 0x31, 0x2e, 0x50,
 	0x69, 0x6e, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x1b, 0x2e, 0x72, 0x69, 0x6c,
@@ -5254,18 +5525,41 @@ var file_rill_admin_v1_api_proto_rawDesc = []byte{
 	0x02, 0x36, 0x2a, 0x34, 0x2f, 0x76, 0x31, 0x2f, 0x6f, 0x72, 0x67, 0x61, 0x6e, 0x69, 0x7a, 0x61,
 	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2f, 0x7b, 0x6f, 0x72, 0x67, 0x61, 0x6e, 0x69, 0x7a, 0x61, 0x74,
 	0x69, 0x6f, 0x6e, 0x7d, 0x2f, 0x61, 0x75, 0x74, 0x6f, 0x69, 0x6e, 0x76, 0x69, 0x74, 0x65, 0x2f,
-	0x7b, 0x64, 0x6f, 0x6d, 0x61, 0x69, 0x6e, 0x7d, 0x42, 0xa3, 0x01, 0x0a, 0x11, 0x63, 0x6f, 0x6d,
-	0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x2e, 0x76, 0x31, 0x42, 0x08,
-	0x41, 0x70, 0x69, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x2e, 0x67, 0x69, 0x74, 0x68,
-	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x72, 0x69, 0x6c, 0x6c, 0x64, 0x61, 0x74, 0x61, 0x2f,
-	0x72, 0x69, 0x6c, 0x6c, 0x2f, 0x72, 0x69, 0x6c, 0x6c, 0x2f, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x2f,
-	0x76, 0x31, 0x3b, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x52, 0x41, 0x58,
-	0xaa, 0x02, 0x0d, 0x52, 0x69, 0x6c, 0x6c, 0x2e, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x2e, 0x56, 0x31,
-	0xca, 0x02, 0x0d, 0x52, 0x69, 0x6c, 0x6c, 0x5c, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x5c, 0x56, 0x31,
-	0xe2, 0x02, 0x19, 0x52, 0x69, 0x6c, 0x6c, 0x5c, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x5c, 0x56, 0x31,
-	0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x0f, 0x52,
-	0x69, 0x6c, 0x6c, 0x3a, 0x3a, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x7b, 0x64, 0x6f, 0x6d, 0x61, 0x69, 0x6e, 0x7d, 0x12, 0x7c, 0x0a, 0x0e, 0x4c, 0x69, 0x73, 0x74,
+	0x53, 0x75, 0x70, 0x65, 0x72, 0x55, 0x73, 0x65, 0x72, 0x73, 0x12, 0x24, 0x2e, 0x72, 0x69, 0x6c,
+	0x6c, 0x2e, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53,
+	0x75, 0x70, 0x65, 0x72, 0x55, 0x73, 0x65, 0x72, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x25, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x2e, 0x76, 0x31,
+	0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x75, 0x70, 0x65, 0x72, 0x55, 0x73, 0x65, 0x72, 0x73, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1d, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x17, 0x12,
+	0x15, 0x2f, 0x76, 0x31, 0x2f, 0x73, 0x75, 0x70, 0x65, 0x72, 0x75, 0x73, 0x65, 0x72, 0x2f, 0x6d,
+	0x65, 0x6d, 0x62, 0x65, 0x72, 0x73, 0x12, 0x79, 0x0a, 0x0c, 0x41, 0x64, 0x64, 0x53, 0x75, 0x70,
+	0x65, 0x72, 0x55, 0x73, 0x65, 0x72, 0x12, 0x22, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x61, 0x64,
+	0x6d, 0x69, 0x6e, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x64, 0x64, 0x53, 0x75, 0x70, 0x65, 0x72, 0x55,
+	0x73, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x23, 0x2e, 0x72, 0x69, 0x6c,
+	0x6c, 0x2e, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x64, 0x64, 0x53, 0x75,
+	0x70, 0x65, 0x72, 0x55, 0x73, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x20, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1a, 0x3a, 0x01, 0x2a, 0x22, 0x15, 0x2f, 0x76, 0x31, 0x2f,
+	0x73, 0x75, 0x70, 0x65, 0x72, 0x75, 0x73, 0x65, 0x72, 0x2f, 0x6d, 0x65, 0x6d, 0x62, 0x65, 0x72,
+	0x73, 0x12, 0x7f, 0x0a, 0x0f, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x53, 0x75, 0x70, 0x65, 0x72,
+	0x55, 0x73, 0x65, 0x72, 0x12, 0x25, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x61, 0x64, 0x6d, 0x69,
+	0x6e, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x53, 0x75, 0x70, 0x65, 0x72,
+	0x55, 0x73, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x72, 0x69,
+	0x6c, 0x6c, 0x2e, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x6d, 0x6f,
+	0x76, 0x65, 0x53, 0x75, 0x70, 0x65, 0x72, 0x55, 0x73, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x22, 0x1d, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x17, 0x2a, 0x15, 0x2f, 0x76, 0x31,
+	0x2f, 0x73, 0x75, 0x70, 0x65, 0x72, 0x75, 0x73, 0x65, 0x72, 0x2f, 0x7b, 0x65, 0x6d, 0x61, 0x69,
+	0x6c, 0x7d, 0x42, 0xa3, 0x01, 0x0a, 0x11, 0x63, 0x6f, 0x6d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e,
+	0x61, 0x64, 0x6d, 0x69, 0x6e, 0x2e, 0x76, 0x31, 0x42, 0x08, 0x41, 0x70, 0x69, 0x50, 0x72, 0x6f,
+	0x74, 0x6f, 0x50, 0x01, 0x5a, 0x2e, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d,
+	0x2f, 0x72, 0x69, 0x6c, 0x6c, 0x64, 0x61, 0x74, 0x61, 0x2f, 0x72, 0x69, 0x6c, 0x6c, 0x2f, 0x72,
+	0x69, 0x6c, 0x6c, 0x2f, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x2f, 0x76, 0x31, 0x3b, 0x61, 0x64, 0x6d,
+	0x69, 0x6e, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x52, 0x41, 0x58, 0xaa, 0x02, 0x0d, 0x52, 0x69, 0x6c,
+	0x6c, 0x2e, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x2e, 0x56, 0x31, 0xca, 0x02, 0x0d, 0x52, 0x69, 0x6c,
+	0x6c, 0x5c, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x19, 0x52, 0x69, 0x6c,
+	0x6c, 0x5c, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65,
+	0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x0f, 0x52, 0x69, 0x6c, 0x6c, 0x3a, 0x3a, 0x41,
+	0x64, 0x6d, 0x69, 0x6e, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -5281,7 +5575,7 @@ func file_rill_admin_v1_api_proto_rawDescGZIP() []byte {
 }
 
 var file_rill_admin_v1_api_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_rill_admin_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 76)
+var file_rill_admin_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 82)
 var file_rill_admin_v1_api_proto_goTypes = []interface{}{
 	(DeploymentStatus)(0),                       // 0: rill.admin.v1.DeploymentStatus
 	(*PingRequest)(nil),                         // 1: rill.admin.v1.PingRequest
@@ -5328,142 +5622,155 @@ var file_rill_admin_v1_api_proto_goTypes = []interface{}{
 	(*LeaveOrganizationResponse)(nil),           // 42: rill.admin.v1.LeaveOrganizationResponse
 	(*SetOrganizationMemberRoleRequest)(nil),    // 43: rill.admin.v1.SetOrganizationMemberRoleRequest
 	(*SetOrganizationMemberRoleResponse)(nil),   // 44: rill.admin.v1.SetOrganizationMemberRoleResponse
-	(*ListProjectMembersRequest)(nil),           // 45: rill.admin.v1.ListProjectMembersRequest
-	(*ListProjectMembersResponse)(nil),          // 46: rill.admin.v1.ListProjectMembersResponse
-	(*ListProjectInvitesRequest)(nil),           // 47: rill.admin.v1.ListProjectInvitesRequest
-	(*ListProjectInvitesResponse)(nil),          // 48: rill.admin.v1.ListProjectInvitesResponse
-	(*AddProjectMemberRequest)(nil),             // 49: rill.admin.v1.AddProjectMemberRequest
-	(*AddProjectMemberResponse)(nil),            // 50: rill.admin.v1.AddProjectMemberResponse
-	(*RemoveProjectMemberRequest)(nil),          // 51: rill.admin.v1.RemoveProjectMemberRequest
-	(*RemoveProjectMemberResponse)(nil),         // 52: rill.admin.v1.RemoveProjectMemberResponse
-	(*SetProjectMemberRoleRequest)(nil),         // 53: rill.admin.v1.SetProjectMemberRoleRequest
-	(*SetProjectMemberRoleResponse)(nil),        // 54: rill.admin.v1.SetProjectMemberRoleResponse
-	(*GetCurrentUserRequest)(nil),               // 55: rill.admin.v1.GetCurrentUserRequest
-	(*GetCurrentUserResponse)(nil),              // 56: rill.admin.v1.GetCurrentUserResponse
-	(*RevokeCurrentAuthTokenRequest)(nil),       // 57: rill.admin.v1.RevokeCurrentAuthTokenRequest
-	(*RevokeCurrentAuthTokenResponse)(nil),      // 58: rill.admin.v1.RevokeCurrentAuthTokenResponse
-	(*GetGithubRepoStatusRequest)(nil),          // 59: rill.admin.v1.GetGithubRepoStatusRequest
-	(*GetGithubRepoStatusResponse)(nil),         // 60: rill.admin.v1.GetGithubRepoStatusResponse
-	(*CreateAutoinviteDomainRequest)(nil),       // 61: rill.admin.v1.CreateAutoinviteDomainRequest
-	(*CreateAutoinviteDomainResponse)(nil),      // 62: rill.admin.v1.CreateAutoinviteDomainResponse
-	(*RemoveAutoinviteDomainRequest)(nil),       // 63: rill.admin.v1.RemoveAutoinviteDomainRequest
-	(*RemoveAutoinviteDomainResponse)(nil),      // 64: rill.admin.v1.RemoveAutoinviteDomainResponse
-	(*User)(nil),                                // 65: rill.admin.v1.User
-	(*Organization)(nil),                        // 66: rill.admin.v1.Organization
-	(*Project)(nil),                             // 67: rill.admin.v1.Project
-	(*Deployment)(nil),                          // 68: rill.admin.v1.Deployment
-	(*OrganizationPermissions)(nil),             // 69: rill.admin.v1.OrganizationPermissions
-	(*ProjectPermissions)(nil),                  // 70: rill.admin.v1.ProjectPermissions
-	(*Member)(nil),                              // 71: rill.admin.v1.Member
-	(*UserInvite)(nil),                          // 72: rill.admin.v1.UserInvite
-	nil,                                         // 73: rill.admin.v1.GetProjectVariablesResponse.VariablesEntry
-	nil,                                         // 74: rill.admin.v1.CreateProjectRequest.VariablesEntry
-	nil,                                         // 75: rill.admin.v1.UpdateProjectVariablesRequest.VariablesEntry
-	nil,                                         // 76: rill.admin.v1.UpdateProjectVariablesResponse.VariablesEntry
-	(*timestamppb.Timestamp)(nil),               // 77: google.protobuf.Timestamp
+	(*ListSuperUsersRequest)(nil),               // 45: rill.admin.v1.ListSuperUsersRequest
+	(*ListSuperUsersResponse)(nil),              // 46: rill.admin.v1.ListSuperUsersResponse
+	(*AddSuperUserRequest)(nil),                 // 47: rill.admin.v1.AddSuperUserRequest
+	(*AddSuperUserResponse)(nil),                // 48: rill.admin.v1.AddSuperUserResponse
+	(*RemoveSuperUserRequest)(nil),              // 49: rill.admin.v1.RemoveSuperUserRequest
+	(*RemoveSuperUserResponse)(nil),             // 50: rill.admin.v1.RemoveSuperUserResponse
+	(*ListProjectMembersRequest)(nil),           // 51: rill.admin.v1.ListProjectMembersRequest
+	(*ListProjectMembersResponse)(nil),          // 52: rill.admin.v1.ListProjectMembersResponse
+	(*ListProjectInvitesRequest)(nil),           // 53: rill.admin.v1.ListProjectInvitesRequest
+	(*ListProjectInvitesResponse)(nil),          // 54: rill.admin.v1.ListProjectInvitesResponse
+	(*AddProjectMemberRequest)(nil),             // 55: rill.admin.v1.AddProjectMemberRequest
+	(*AddProjectMemberResponse)(nil),            // 56: rill.admin.v1.AddProjectMemberResponse
+	(*RemoveProjectMemberRequest)(nil),          // 57: rill.admin.v1.RemoveProjectMemberRequest
+	(*RemoveProjectMemberResponse)(nil),         // 58: rill.admin.v1.RemoveProjectMemberResponse
+	(*SetProjectMemberRoleRequest)(nil),         // 59: rill.admin.v1.SetProjectMemberRoleRequest
+	(*SetProjectMemberRoleResponse)(nil),        // 60: rill.admin.v1.SetProjectMemberRoleResponse
+	(*GetCurrentUserRequest)(nil),               // 61: rill.admin.v1.GetCurrentUserRequest
+	(*GetCurrentUserResponse)(nil),              // 62: rill.admin.v1.GetCurrentUserResponse
+	(*RevokeCurrentAuthTokenRequest)(nil),       // 63: rill.admin.v1.RevokeCurrentAuthTokenRequest
+	(*RevokeCurrentAuthTokenResponse)(nil),      // 64: rill.admin.v1.RevokeCurrentAuthTokenResponse
+	(*GetGithubRepoStatusRequest)(nil),          // 65: rill.admin.v1.GetGithubRepoStatusRequest
+	(*GetGithubRepoStatusResponse)(nil),         // 66: rill.admin.v1.GetGithubRepoStatusResponse
+	(*CreateAutoinviteDomainRequest)(nil),       // 67: rill.admin.v1.CreateAutoinviteDomainRequest
+	(*CreateAutoinviteDomainResponse)(nil),      // 68: rill.admin.v1.CreateAutoinviteDomainResponse
+	(*RemoveAutoinviteDomainRequest)(nil),       // 69: rill.admin.v1.RemoveAutoinviteDomainRequest
+	(*RemoveAutoinviteDomainResponse)(nil),      // 70: rill.admin.v1.RemoveAutoinviteDomainResponse
+	(*User)(nil),                                // 71: rill.admin.v1.User
+	(*Organization)(nil),                        // 72: rill.admin.v1.Organization
+	(*Project)(nil),                             // 73: rill.admin.v1.Project
+	(*Deployment)(nil),                          // 74: rill.admin.v1.Deployment
+	(*OrganizationPermissions)(nil),             // 75: rill.admin.v1.OrganizationPermissions
+	(*ProjectPermissions)(nil),                  // 76: rill.admin.v1.ProjectPermissions
+	(*Member)(nil),                              // 77: rill.admin.v1.Member
+	(*UserInvite)(nil),                          // 78: rill.admin.v1.UserInvite
+	nil,                                         // 79: rill.admin.v1.GetProjectVariablesResponse.VariablesEntry
+	nil,                                         // 80: rill.admin.v1.CreateProjectRequest.VariablesEntry
+	nil,                                         // 81: rill.admin.v1.UpdateProjectVariablesRequest.VariablesEntry
+	nil,                                         // 82: rill.admin.v1.UpdateProjectVariablesResponse.VariablesEntry
+	(*timestamppb.Timestamp)(nil),               // 83: google.protobuf.Timestamp
 }
 var file_rill_admin_v1_api_proto_depIdxs = []int32{
-	77, // 0: rill.admin.v1.PingResponse.time:type_name -> google.protobuf.Timestamp
-	66, // 1: rill.admin.v1.ListOrganizationsResponse.organizations:type_name -> rill.admin.v1.Organization
-	66, // 2: rill.admin.v1.GetOrganizationResponse.organization:type_name -> rill.admin.v1.Organization
-	69, // 3: rill.admin.v1.GetOrganizationResponse.permissions:type_name -> rill.admin.v1.OrganizationPermissions
-	66, // 4: rill.admin.v1.CreateOrganizationResponse.organization:type_name -> rill.admin.v1.Organization
-	66, // 5: rill.admin.v1.UpdateOrganizationResponse.organization:type_name -> rill.admin.v1.Organization
-	67, // 6: rill.admin.v1.ListProjectsForOrganizationResponse.projects:type_name -> rill.admin.v1.Project
-	67, // 7: rill.admin.v1.GetProjectResponse.project:type_name -> rill.admin.v1.Project
-	68, // 8: rill.admin.v1.GetProjectResponse.prod_deployment:type_name -> rill.admin.v1.Deployment
-	70, // 9: rill.admin.v1.GetProjectResponse.project_permissions:type_name -> rill.admin.v1.ProjectPermissions
-	73, // 10: rill.admin.v1.GetProjectVariablesResponse.variables:type_name -> rill.admin.v1.GetProjectVariablesResponse.VariablesEntry
-	74, // 11: rill.admin.v1.CreateProjectRequest.variables:type_name -> rill.admin.v1.CreateProjectRequest.VariablesEntry
-	67, // 12: rill.admin.v1.CreateProjectResponse.project:type_name -> rill.admin.v1.Project
-	67, // 13: rill.admin.v1.UpdateProjectResponse.project:type_name -> rill.admin.v1.Project
-	75, // 14: rill.admin.v1.UpdateProjectVariablesRequest.variables:type_name -> rill.admin.v1.UpdateProjectVariablesRequest.VariablesEntry
-	76, // 15: rill.admin.v1.UpdateProjectVariablesResponse.variables:type_name -> rill.admin.v1.UpdateProjectVariablesResponse.VariablesEntry
-	71, // 16: rill.admin.v1.ListOrganizationMembersResponse.members:type_name -> rill.admin.v1.Member
-	72, // 17: rill.admin.v1.ListOrganizationInvitesResponse.invites:type_name -> rill.admin.v1.UserInvite
-	71, // 18: rill.admin.v1.ListProjectMembersResponse.members:type_name -> rill.admin.v1.Member
-	72, // 19: rill.admin.v1.ListProjectInvitesResponse.invites:type_name -> rill.admin.v1.UserInvite
-	65, // 20: rill.admin.v1.GetCurrentUserResponse.user:type_name -> rill.admin.v1.User
-	77, // 21: rill.admin.v1.User.created_on:type_name -> google.protobuf.Timestamp
-	77, // 22: rill.admin.v1.User.updated_on:type_name -> google.protobuf.Timestamp
-	77, // 23: rill.admin.v1.Organization.created_on:type_name -> google.protobuf.Timestamp
-	77, // 24: rill.admin.v1.Organization.updated_on:type_name -> google.protobuf.Timestamp
-	77, // 25: rill.admin.v1.Project.created_on:type_name -> google.protobuf.Timestamp
-	77, // 26: rill.admin.v1.Project.updated_on:type_name -> google.protobuf.Timestamp
-	0,  // 27: rill.admin.v1.Deployment.status:type_name -> rill.admin.v1.DeploymentStatus
-	77, // 28: rill.admin.v1.Deployment.created_on:type_name -> google.protobuf.Timestamp
-	77, // 29: rill.admin.v1.Deployment.updated_on:type_name -> google.protobuf.Timestamp
-	77, // 30: rill.admin.v1.Member.created_on:type_name -> google.protobuf.Timestamp
-	77, // 31: rill.admin.v1.Member.updated_on:type_name -> google.protobuf.Timestamp
-	1,  // 32: rill.admin.v1.AdminService.Ping:input_type -> rill.admin.v1.PingRequest
-	3,  // 33: rill.admin.v1.AdminService.ListOrganizations:input_type -> rill.admin.v1.ListOrganizationsRequest
-	5,  // 34: rill.admin.v1.AdminService.GetOrganization:input_type -> rill.admin.v1.GetOrganizationRequest
-	7,  // 35: rill.admin.v1.AdminService.CreateOrganization:input_type -> rill.admin.v1.CreateOrganizationRequest
-	9,  // 36: rill.admin.v1.AdminService.DeleteOrganization:input_type -> rill.admin.v1.DeleteOrganizationRequest
-	11, // 37: rill.admin.v1.AdminService.UpdateOrganization:input_type -> rill.admin.v1.UpdateOrganizationRequest
-	13, // 38: rill.admin.v1.AdminService.ListProjectsForOrganization:input_type -> rill.admin.v1.ListProjectsForOrganizationRequest
-	15, // 39: rill.admin.v1.AdminService.GetProject:input_type -> rill.admin.v1.GetProjectRequest
-	17, // 40: rill.admin.v1.AdminService.GetProjectVariables:input_type -> rill.admin.v1.GetProjectVariablesRequest
-	19, // 41: rill.admin.v1.AdminService.CreateProject:input_type -> rill.admin.v1.CreateProjectRequest
-	21, // 42: rill.admin.v1.AdminService.DeleteProject:input_type -> rill.admin.v1.DeleteProjectRequest
-	23, // 43: rill.admin.v1.AdminService.UpdateProject:input_type -> rill.admin.v1.UpdateProjectRequest
-	25, // 44: rill.admin.v1.AdminService.UpdateProjectVariables:input_type -> rill.admin.v1.UpdateProjectVariablesRequest
-	27, // 45: rill.admin.v1.AdminService.TriggerReconcile:input_type -> rill.admin.v1.TriggerReconcileRequest
-	29, // 46: rill.admin.v1.AdminService.TriggerRefreshSources:input_type -> rill.admin.v1.TriggerRefreshSourcesRequest
-	31, // 47: rill.admin.v1.AdminService.TriggerRedeploy:input_type -> rill.admin.v1.TriggerRedeployRequest
-	33, // 48: rill.admin.v1.AdminService.ListOrganizationMembers:input_type -> rill.admin.v1.ListOrganizationMembersRequest
-	35, // 49: rill.admin.v1.AdminService.ListOrganizationInvites:input_type -> rill.admin.v1.ListOrganizationInvitesRequest
-	37, // 50: rill.admin.v1.AdminService.AddOrganizationMember:input_type -> rill.admin.v1.AddOrganizationMemberRequest
-	39, // 51: rill.admin.v1.AdminService.RemoveOrganizationMember:input_type -> rill.admin.v1.RemoveOrganizationMemberRequest
-	41, // 52: rill.admin.v1.AdminService.LeaveOrganization:input_type -> rill.admin.v1.LeaveOrganizationRequest
-	43, // 53: rill.admin.v1.AdminService.SetOrganizationMemberRole:input_type -> rill.admin.v1.SetOrganizationMemberRoleRequest
-	45, // 54: rill.admin.v1.AdminService.ListProjectMembers:input_type -> rill.admin.v1.ListProjectMembersRequest
-	47, // 55: rill.admin.v1.AdminService.ListProjectInvites:input_type -> rill.admin.v1.ListProjectInvitesRequest
-	49, // 56: rill.admin.v1.AdminService.AddProjectMember:input_type -> rill.admin.v1.AddProjectMemberRequest
-	51, // 57: rill.admin.v1.AdminService.RemoveProjectMember:input_type -> rill.admin.v1.RemoveProjectMemberRequest
-	53, // 58: rill.admin.v1.AdminService.SetProjectMemberRole:input_type -> rill.admin.v1.SetProjectMemberRoleRequest
-	55, // 59: rill.admin.v1.AdminService.GetCurrentUser:input_type -> rill.admin.v1.GetCurrentUserRequest
-	57, // 60: rill.admin.v1.AdminService.RevokeCurrentAuthToken:input_type -> rill.admin.v1.RevokeCurrentAuthTokenRequest
-	59, // 61: rill.admin.v1.AdminService.GetGithubRepoStatus:input_type -> rill.admin.v1.GetGithubRepoStatusRequest
-	61, // 62: rill.admin.v1.AdminService.CreateAutoinviteDomain:input_type -> rill.admin.v1.CreateAutoinviteDomainRequest
-	63, // 63: rill.admin.v1.AdminService.RemoveAutoinviteDomain:input_type -> rill.admin.v1.RemoveAutoinviteDomainRequest
-	2,  // 64: rill.admin.v1.AdminService.Ping:output_type -> rill.admin.v1.PingResponse
-	4,  // 65: rill.admin.v1.AdminService.ListOrganizations:output_type -> rill.admin.v1.ListOrganizationsResponse
-	6,  // 66: rill.admin.v1.AdminService.GetOrganization:output_type -> rill.admin.v1.GetOrganizationResponse
-	8,  // 67: rill.admin.v1.AdminService.CreateOrganization:output_type -> rill.admin.v1.CreateOrganizationResponse
-	10, // 68: rill.admin.v1.AdminService.DeleteOrganization:output_type -> rill.admin.v1.DeleteOrganizationResponse
-	12, // 69: rill.admin.v1.AdminService.UpdateOrganization:output_type -> rill.admin.v1.UpdateOrganizationResponse
-	14, // 70: rill.admin.v1.AdminService.ListProjectsForOrganization:output_type -> rill.admin.v1.ListProjectsForOrganizationResponse
-	16, // 71: rill.admin.v1.AdminService.GetProject:output_type -> rill.admin.v1.GetProjectResponse
-	18, // 72: rill.admin.v1.AdminService.GetProjectVariables:output_type -> rill.admin.v1.GetProjectVariablesResponse
-	20, // 73: rill.admin.v1.AdminService.CreateProject:output_type -> rill.admin.v1.CreateProjectResponse
-	22, // 74: rill.admin.v1.AdminService.DeleteProject:output_type -> rill.admin.v1.DeleteProjectResponse
-	24, // 75: rill.admin.v1.AdminService.UpdateProject:output_type -> rill.admin.v1.UpdateProjectResponse
-	26, // 76: rill.admin.v1.AdminService.UpdateProjectVariables:output_type -> rill.admin.v1.UpdateProjectVariablesResponse
-	28, // 77: rill.admin.v1.AdminService.TriggerReconcile:output_type -> rill.admin.v1.TriggerReconcileResponse
-	30, // 78: rill.admin.v1.AdminService.TriggerRefreshSources:output_type -> rill.admin.v1.TriggerRefreshSourcesResponse
-	32, // 79: rill.admin.v1.AdminService.TriggerRedeploy:output_type -> rill.admin.v1.TriggerRedeployResponse
-	34, // 80: rill.admin.v1.AdminService.ListOrganizationMembers:output_type -> rill.admin.v1.ListOrganizationMembersResponse
-	36, // 81: rill.admin.v1.AdminService.ListOrganizationInvites:output_type -> rill.admin.v1.ListOrganizationInvitesResponse
-	38, // 82: rill.admin.v1.AdminService.AddOrganizationMember:output_type -> rill.admin.v1.AddOrganizationMemberResponse
-	40, // 83: rill.admin.v1.AdminService.RemoveOrganizationMember:output_type -> rill.admin.v1.RemoveOrganizationMemberResponse
-	42, // 84: rill.admin.v1.AdminService.LeaveOrganization:output_type -> rill.admin.v1.LeaveOrganizationResponse
-	44, // 85: rill.admin.v1.AdminService.SetOrganizationMemberRole:output_type -> rill.admin.v1.SetOrganizationMemberRoleResponse
-	46, // 86: rill.admin.v1.AdminService.ListProjectMembers:output_type -> rill.admin.v1.ListProjectMembersResponse
-	48, // 87: rill.admin.v1.AdminService.ListProjectInvites:output_type -> rill.admin.v1.ListProjectInvitesResponse
-	50, // 88: rill.admin.v1.AdminService.AddProjectMember:output_type -> rill.admin.v1.AddProjectMemberResponse
-	52, // 89: rill.admin.v1.AdminService.RemoveProjectMember:output_type -> rill.admin.v1.RemoveProjectMemberResponse
-	54, // 90: rill.admin.v1.AdminService.SetProjectMemberRole:output_type -> rill.admin.v1.SetProjectMemberRoleResponse
-	56, // 91: rill.admin.v1.AdminService.GetCurrentUser:output_type -> rill.admin.v1.GetCurrentUserResponse
-	58, // 92: rill.admin.v1.AdminService.RevokeCurrentAuthToken:output_type -> rill.admin.v1.RevokeCurrentAuthTokenResponse
-	60, // 93: rill.admin.v1.AdminService.GetGithubRepoStatus:output_type -> rill.admin.v1.GetGithubRepoStatusResponse
-	62, // 94: rill.admin.v1.AdminService.CreateAutoinviteDomain:output_type -> rill.admin.v1.CreateAutoinviteDomainResponse
-	64, // 95: rill.admin.v1.AdminService.RemoveAutoinviteDomain:output_type -> rill.admin.v1.RemoveAutoinviteDomainResponse
-	64, // [64:96] is the sub-list for method output_type
-	32, // [32:64] is the sub-list for method input_type
-	32, // [32:32] is the sub-list for extension type_name
-	32, // [32:32] is the sub-list for extension extendee
-	0,  // [0:32] is the sub-list for field type_name
+	83, // 0: rill.admin.v1.PingResponse.time:type_name -> google.protobuf.Timestamp
+	72, // 1: rill.admin.v1.ListOrganizationsResponse.organizations:type_name -> rill.admin.v1.Organization
+	72, // 2: rill.admin.v1.GetOrganizationResponse.organization:type_name -> rill.admin.v1.Organization
+	75, // 3: rill.admin.v1.GetOrganizationResponse.permissions:type_name -> rill.admin.v1.OrganizationPermissions
+	72, // 4: rill.admin.v1.CreateOrganizationResponse.organization:type_name -> rill.admin.v1.Organization
+	72, // 5: rill.admin.v1.UpdateOrganizationResponse.organization:type_name -> rill.admin.v1.Organization
+	73, // 6: rill.admin.v1.ListProjectsForOrganizationResponse.projects:type_name -> rill.admin.v1.Project
+	73, // 7: rill.admin.v1.GetProjectResponse.project:type_name -> rill.admin.v1.Project
+	74, // 8: rill.admin.v1.GetProjectResponse.prod_deployment:type_name -> rill.admin.v1.Deployment
+	76, // 9: rill.admin.v1.GetProjectResponse.project_permissions:type_name -> rill.admin.v1.ProjectPermissions
+	79, // 10: rill.admin.v1.GetProjectVariablesResponse.variables:type_name -> rill.admin.v1.GetProjectVariablesResponse.VariablesEntry
+	80, // 11: rill.admin.v1.CreateProjectRequest.variables:type_name -> rill.admin.v1.CreateProjectRequest.VariablesEntry
+	73, // 12: rill.admin.v1.CreateProjectResponse.project:type_name -> rill.admin.v1.Project
+	73, // 13: rill.admin.v1.UpdateProjectResponse.project:type_name -> rill.admin.v1.Project
+	81, // 14: rill.admin.v1.UpdateProjectVariablesRequest.variables:type_name -> rill.admin.v1.UpdateProjectVariablesRequest.VariablesEntry
+	82, // 15: rill.admin.v1.UpdateProjectVariablesResponse.variables:type_name -> rill.admin.v1.UpdateProjectVariablesResponse.VariablesEntry
+	77, // 16: rill.admin.v1.ListOrganizationMembersResponse.members:type_name -> rill.admin.v1.Member
+	78, // 17: rill.admin.v1.ListOrganizationInvitesResponse.invites:type_name -> rill.admin.v1.UserInvite
+	71, // 18: rill.admin.v1.ListSuperUsersResponse.users:type_name -> rill.admin.v1.User
+	77, // 19: rill.admin.v1.ListProjectMembersResponse.members:type_name -> rill.admin.v1.Member
+	78, // 20: rill.admin.v1.ListProjectInvitesResponse.invites:type_name -> rill.admin.v1.UserInvite
+	71, // 21: rill.admin.v1.GetCurrentUserResponse.user:type_name -> rill.admin.v1.User
+	83, // 22: rill.admin.v1.User.created_on:type_name -> google.protobuf.Timestamp
+	83, // 23: rill.admin.v1.User.updated_on:type_name -> google.protobuf.Timestamp
+	83, // 24: rill.admin.v1.Organization.created_on:type_name -> google.protobuf.Timestamp
+	83, // 25: rill.admin.v1.Organization.updated_on:type_name -> google.protobuf.Timestamp
+	83, // 26: rill.admin.v1.Project.created_on:type_name -> google.protobuf.Timestamp
+	83, // 27: rill.admin.v1.Project.updated_on:type_name -> google.protobuf.Timestamp
+	0,  // 28: rill.admin.v1.Deployment.status:type_name -> rill.admin.v1.DeploymentStatus
+	83, // 29: rill.admin.v1.Deployment.created_on:type_name -> google.protobuf.Timestamp
+	83, // 30: rill.admin.v1.Deployment.updated_on:type_name -> google.protobuf.Timestamp
+	83, // 31: rill.admin.v1.Member.created_on:type_name -> google.protobuf.Timestamp
+	83, // 32: rill.admin.v1.Member.updated_on:type_name -> google.protobuf.Timestamp
+	1,  // 33: rill.admin.v1.AdminService.Ping:input_type -> rill.admin.v1.PingRequest
+	3,  // 34: rill.admin.v1.AdminService.ListOrganizations:input_type -> rill.admin.v1.ListOrganizationsRequest
+	5,  // 35: rill.admin.v1.AdminService.GetOrganization:input_type -> rill.admin.v1.GetOrganizationRequest
+	7,  // 36: rill.admin.v1.AdminService.CreateOrganization:input_type -> rill.admin.v1.CreateOrganizationRequest
+	9,  // 37: rill.admin.v1.AdminService.DeleteOrganization:input_type -> rill.admin.v1.DeleteOrganizationRequest
+	11, // 38: rill.admin.v1.AdminService.UpdateOrganization:input_type -> rill.admin.v1.UpdateOrganizationRequest
+	13, // 39: rill.admin.v1.AdminService.ListProjectsForOrganization:input_type -> rill.admin.v1.ListProjectsForOrganizationRequest
+	15, // 40: rill.admin.v1.AdminService.GetProject:input_type -> rill.admin.v1.GetProjectRequest
+	17, // 41: rill.admin.v1.AdminService.GetProjectVariables:input_type -> rill.admin.v1.GetProjectVariablesRequest
+	19, // 42: rill.admin.v1.AdminService.CreateProject:input_type -> rill.admin.v1.CreateProjectRequest
+	21, // 43: rill.admin.v1.AdminService.DeleteProject:input_type -> rill.admin.v1.DeleteProjectRequest
+	23, // 44: rill.admin.v1.AdminService.UpdateProject:input_type -> rill.admin.v1.UpdateProjectRequest
+	25, // 45: rill.admin.v1.AdminService.UpdateProjectVariables:input_type -> rill.admin.v1.UpdateProjectVariablesRequest
+	27, // 46: rill.admin.v1.AdminService.TriggerReconcile:input_type -> rill.admin.v1.TriggerReconcileRequest
+	29, // 47: rill.admin.v1.AdminService.TriggerRefreshSources:input_type -> rill.admin.v1.TriggerRefreshSourcesRequest
+	31, // 48: rill.admin.v1.AdminService.TriggerRedeploy:input_type -> rill.admin.v1.TriggerRedeployRequest
+	33, // 49: rill.admin.v1.AdminService.ListOrganizationMembers:input_type -> rill.admin.v1.ListOrganizationMembersRequest
+	35, // 50: rill.admin.v1.AdminService.ListOrganizationInvites:input_type -> rill.admin.v1.ListOrganizationInvitesRequest
+	37, // 51: rill.admin.v1.AdminService.AddOrganizationMember:input_type -> rill.admin.v1.AddOrganizationMemberRequest
+	39, // 52: rill.admin.v1.AdminService.RemoveOrganizationMember:input_type -> rill.admin.v1.RemoveOrganizationMemberRequest
+	41, // 53: rill.admin.v1.AdminService.LeaveOrganization:input_type -> rill.admin.v1.LeaveOrganizationRequest
+	43, // 54: rill.admin.v1.AdminService.SetOrganizationMemberRole:input_type -> rill.admin.v1.SetOrganizationMemberRoleRequest
+	51, // 55: rill.admin.v1.AdminService.ListProjectMembers:input_type -> rill.admin.v1.ListProjectMembersRequest
+	53, // 56: rill.admin.v1.AdminService.ListProjectInvites:input_type -> rill.admin.v1.ListProjectInvitesRequest
+	55, // 57: rill.admin.v1.AdminService.AddProjectMember:input_type -> rill.admin.v1.AddProjectMemberRequest
+	57, // 58: rill.admin.v1.AdminService.RemoveProjectMember:input_type -> rill.admin.v1.RemoveProjectMemberRequest
+	59, // 59: rill.admin.v1.AdminService.SetProjectMemberRole:input_type -> rill.admin.v1.SetProjectMemberRoleRequest
+	61, // 60: rill.admin.v1.AdminService.GetCurrentUser:input_type -> rill.admin.v1.GetCurrentUserRequest
+	63, // 61: rill.admin.v1.AdminService.RevokeCurrentAuthToken:input_type -> rill.admin.v1.RevokeCurrentAuthTokenRequest
+	65, // 62: rill.admin.v1.AdminService.GetGithubRepoStatus:input_type -> rill.admin.v1.GetGithubRepoStatusRequest
+	67, // 63: rill.admin.v1.AdminService.CreateAutoinviteDomain:input_type -> rill.admin.v1.CreateAutoinviteDomainRequest
+	69, // 64: rill.admin.v1.AdminService.RemoveAutoinviteDomain:input_type -> rill.admin.v1.RemoveAutoinviteDomainRequest
+	45, // 65: rill.admin.v1.AdminService.ListSuperUsers:input_type -> rill.admin.v1.ListSuperUsersRequest
+	47, // 66: rill.admin.v1.AdminService.AddSuperUser:input_type -> rill.admin.v1.AddSuperUserRequest
+	49, // 67: rill.admin.v1.AdminService.RemoveSuperUser:input_type -> rill.admin.v1.RemoveSuperUserRequest
+	2,  // 68: rill.admin.v1.AdminService.Ping:output_type -> rill.admin.v1.PingResponse
+	4,  // 69: rill.admin.v1.AdminService.ListOrganizations:output_type -> rill.admin.v1.ListOrganizationsResponse
+	6,  // 70: rill.admin.v1.AdminService.GetOrganization:output_type -> rill.admin.v1.GetOrganizationResponse
+	8,  // 71: rill.admin.v1.AdminService.CreateOrganization:output_type -> rill.admin.v1.CreateOrganizationResponse
+	10, // 72: rill.admin.v1.AdminService.DeleteOrganization:output_type -> rill.admin.v1.DeleteOrganizationResponse
+	12, // 73: rill.admin.v1.AdminService.UpdateOrganization:output_type -> rill.admin.v1.UpdateOrganizationResponse
+	14, // 74: rill.admin.v1.AdminService.ListProjectsForOrganization:output_type -> rill.admin.v1.ListProjectsForOrganizationResponse
+	16, // 75: rill.admin.v1.AdminService.GetProject:output_type -> rill.admin.v1.GetProjectResponse
+	18, // 76: rill.admin.v1.AdminService.GetProjectVariables:output_type -> rill.admin.v1.GetProjectVariablesResponse
+	20, // 77: rill.admin.v1.AdminService.CreateProject:output_type -> rill.admin.v1.CreateProjectResponse
+	22, // 78: rill.admin.v1.AdminService.DeleteProject:output_type -> rill.admin.v1.DeleteProjectResponse
+	24, // 79: rill.admin.v1.AdminService.UpdateProject:output_type -> rill.admin.v1.UpdateProjectResponse
+	26, // 80: rill.admin.v1.AdminService.UpdateProjectVariables:output_type -> rill.admin.v1.UpdateProjectVariablesResponse
+	28, // 81: rill.admin.v1.AdminService.TriggerReconcile:output_type -> rill.admin.v1.TriggerReconcileResponse
+	30, // 82: rill.admin.v1.AdminService.TriggerRefreshSources:output_type -> rill.admin.v1.TriggerRefreshSourcesResponse
+	32, // 83: rill.admin.v1.AdminService.TriggerRedeploy:output_type -> rill.admin.v1.TriggerRedeployResponse
+	34, // 84: rill.admin.v1.AdminService.ListOrganizationMembers:output_type -> rill.admin.v1.ListOrganizationMembersResponse
+	36, // 85: rill.admin.v1.AdminService.ListOrganizationInvites:output_type -> rill.admin.v1.ListOrganizationInvitesResponse
+	38, // 86: rill.admin.v1.AdminService.AddOrganizationMember:output_type -> rill.admin.v1.AddOrganizationMemberResponse
+	40, // 87: rill.admin.v1.AdminService.RemoveOrganizationMember:output_type -> rill.admin.v1.RemoveOrganizationMemberResponse
+	42, // 88: rill.admin.v1.AdminService.LeaveOrganization:output_type -> rill.admin.v1.LeaveOrganizationResponse
+	44, // 89: rill.admin.v1.AdminService.SetOrganizationMemberRole:output_type -> rill.admin.v1.SetOrganizationMemberRoleResponse
+	52, // 90: rill.admin.v1.AdminService.ListProjectMembers:output_type -> rill.admin.v1.ListProjectMembersResponse
+	54, // 91: rill.admin.v1.AdminService.ListProjectInvites:output_type -> rill.admin.v1.ListProjectInvitesResponse
+	56, // 92: rill.admin.v1.AdminService.AddProjectMember:output_type -> rill.admin.v1.AddProjectMemberResponse
+	58, // 93: rill.admin.v1.AdminService.RemoveProjectMember:output_type -> rill.admin.v1.RemoveProjectMemberResponse
+	60, // 94: rill.admin.v1.AdminService.SetProjectMemberRole:output_type -> rill.admin.v1.SetProjectMemberRoleResponse
+	62, // 95: rill.admin.v1.AdminService.GetCurrentUser:output_type -> rill.admin.v1.GetCurrentUserResponse
+	64, // 96: rill.admin.v1.AdminService.RevokeCurrentAuthToken:output_type -> rill.admin.v1.RevokeCurrentAuthTokenResponse
+	66, // 97: rill.admin.v1.AdminService.GetGithubRepoStatus:output_type -> rill.admin.v1.GetGithubRepoStatusResponse
+	68, // 98: rill.admin.v1.AdminService.CreateAutoinviteDomain:output_type -> rill.admin.v1.CreateAutoinviteDomainResponse
+	70, // 99: rill.admin.v1.AdminService.RemoveAutoinviteDomain:output_type -> rill.admin.v1.RemoveAutoinviteDomainResponse
+	46, // 100: rill.admin.v1.AdminService.ListSuperUsers:output_type -> rill.admin.v1.ListSuperUsersResponse
+	48, // 101: rill.admin.v1.AdminService.AddSuperUser:output_type -> rill.admin.v1.AddSuperUserResponse
+	50, // 102: rill.admin.v1.AdminService.RemoveSuperUser:output_type -> rill.admin.v1.RemoveSuperUserResponse
+	68, // [68:103] is the sub-list for method output_type
+	33, // [33:68] is the sub-list for method input_type
+	33, // [33:33] is the sub-list for extension type_name
+	33, // [33:33] is the sub-list for extension extendee
+	0,  // [0:33] is the sub-list for field type_name
 }
 
 func init() { file_rill_admin_v1_api_proto_init() }
@@ -6001,7 +6308,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[44].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListProjectMembersRequest); i {
+			switch v := v.(*ListSuperUsersRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6013,7 +6320,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[45].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListProjectMembersResponse); i {
+			switch v := v.(*ListSuperUsersResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6025,7 +6332,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[46].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListProjectInvitesRequest); i {
+			switch v := v.(*AddSuperUserRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6037,7 +6344,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[47].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListProjectInvitesResponse); i {
+			switch v := v.(*AddSuperUserResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6049,7 +6356,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[48].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AddProjectMemberRequest); i {
+			switch v := v.(*RemoveSuperUserRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6061,7 +6368,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[49].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AddProjectMemberResponse); i {
+			switch v := v.(*RemoveSuperUserResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6073,7 +6380,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[50].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RemoveProjectMemberRequest); i {
+			switch v := v.(*ListProjectMembersRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6085,7 +6392,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[51].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RemoveProjectMemberResponse); i {
+			switch v := v.(*ListProjectMembersResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6097,7 +6404,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[52].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SetProjectMemberRoleRequest); i {
+			switch v := v.(*ListProjectInvitesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6109,7 +6416,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[53].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SetProjectMemberRoleResponse); i {
+			switch v := v.(*ListProjectInvitesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6121,7 +6428,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[54].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetCurrentUserRequest); i {
+			switch v := v.(*AddProjectMemberRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6133,7 +6440,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[55].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetCurrentUserResponse); i {
+			switch v := v.(*AddProjectMemberResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6145,7 +6452,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[56].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RevokeCurrentAuthTokenRequest); i {
+			switch v := v.(*RemoveProjectMemberRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6157,7 +6464,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[57].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RevokeCurrentAuthTokenResponse); i {
+			switch v := v.(*RemoveProjectMemberResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6169,7 +6476,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[58].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetGithubRepoStatusRequest); i {
+			switch v := v.(*SetProjectMemberRoleRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6181,7 +6488,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[59].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetGithubRepoStatusResponse); i {
+			switch v := v.(*SetProjectMemberRoleResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6193,7 +6500,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[60].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CreateAutoinviteDomainRequest); i {
+			switch v := v.(*GetCurrentUserRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6205,7 +6512,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[61].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CreateAutoinviteDomainResponse); i {
+			switch v := v.(*GetCurrentUserResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6217,7 +6524,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[62].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RemoveAutoinviteDomainRequest); i {
+			switch v := v.(*RevokeCurrentAuthTokenRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6229,7 +6536,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[63].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RemoveAutoinviteDomainResponse); i {
+			switch v := v.(*RevokeCurrentAuthTokenResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6241,7 +6548,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[64].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*User); i {
+			switch v := v.(*GetGithubRepoStatusRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6253,7 +6560,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[65].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Organization); i {
+			switch v := v.(*GetGithubRepoStatusResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6265,7 +6572,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[66].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Project); i {
+			switch v := v.(*CreateAutoinviteDomainRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6277,7 +6584,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[67].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Deployment); i {
+			switch v := v.(*CreateAutoinviteDomainResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6289,7 +6596,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[68].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*OrganizationPermissions); i {
+			switch v := v.(*RemoveAutoinviteDomainRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6301,7 +6608,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[69].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProjectPermissions); i {
+			switch v := v.(*RemoveAutoinviteDomainResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6313,7 +6620,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[70].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Member); i {
+			switch v := v.(*User); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6325,6 +6632,78 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[71].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Organization); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rill_admin_v1_api_proto_msgTypes[72].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Project); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rill_admin_v1_api_proto_msgTypes[73].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Deployment); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rill_admin_v1_api_proto_msgTypes[74].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*OrganizationPermissions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rill_admin_v1_api_proto_msgTypes[75].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ProjectPermissions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rill_admin_v1_api_proto_msgTypes[76].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Member); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rill_admin_v1_api_proto_msgTypes[77].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*UserInvite); i {
 			case 0:
 				return &v.state
@@ -6343,7 +6722,7 @@ func file_rill_admin_v1_api_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_rill_admin_v1_api_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   76,
+			NumMessages:   82,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

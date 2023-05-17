@@ -453,9 +453,18 @@ func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOp
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url, quota_singleuser_orgs) VALUES ($1, $2, $3, $4) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL, opts.QuotaSingleuserOrgs).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url, quota_singleuser_orgs, superuser) VALUES ($1, $2, $3, $4, $5) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL, opts.QuotaSingleuserOrgs, opts.Superuser).StructScan(res)
 	if err != nil {
 		return nil, parseErr("user", err)
+	}
+	return res, nil
+}
+
+func (c *connection) CheckUsersEmpty(ctx context.Context) (bool, error) {
+	var res bool
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT NOT EXISTS (SELECT 1 FROM users limit 1) ").Scan(&res)
+	if err != nil {
+		return false, parseErr("check", err)
 	}
 	return res, nil
 }
@@ -719,6 +728,25 @@ func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, afte
 		return nil, parseErr("project members", err)
 	}
 	return res, nil
+}
+
+func (c *connection) FindSuperUsers(ctx context.Context) ([]*database.User, error) {
+	var res []*database.User
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u WHERE u.superuser = true`)
+	if err != nil {
+		return nil, parseErr("project members", err)
+	}
+	return res, nil
+}
+
+func (c *connection) AddSuperUser(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE users SET superuser=true, updated_on=now() WHERE id=$1`, id)
+	return checkUpdateRow("superuser invite", res, err)
+}
+
+func (c *connection) RemoveSuperUser(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE users SET superuser=false, updated_on=now() WHERE id=$1`, id)
+	return checkUpdateRow("superuser invite", res, err)
 }
 
 func (c *connection) InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error {

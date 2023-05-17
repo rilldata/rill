@@ -207,6 +207,25 @@ service AdminService {
   rpc RemoveAutoinviteDomain(RemoveAutoinviteDomainRequest) returns (RemoveAutoinviteDomainResponse) {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/autoinvite/{domain}"};
   }
+
+  // ListSuperUsers lists all the superusers
+  rpc ListSuperUsers(ListSuperUsersRequest) returns (ListSuperUsersResponse) {
+    option (google.api.http) = {get: "/v1/superuser/members"};
+  }
+
+  // AddSuperUser adds a superuser
+  rpc AddSuperUser(AddSuperUserRequest) returns (AddSuperUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/members",
+      body: "*"
+    };
+  }
+
+  // RemoveSuperUser removes superuser
+  rpc RemoveSuperUser(RemoveSuperUserRequest) returns (RemoveSuperUserResponse) {
+    option (google.api.http) = {delete: "/v1/superuser/{email}"};
+  }
+
 }
 
 message PingRequest {}
@@ -414,6 +433,25 @@ message SetOrganizationMemberRoleRequest {
 }
 
 message SetOrganizationMemberRoleResponse {}
+
+message ListSuperUsersRequest {
+}
+
+message ListSuperUsersResponse {
+  repeated User users = 1;
+}
+
+message AddSuperUserRequest {
+  string email = 1 [(validate.rules).string.email = true];
+}
+
+message AddSuperUserResponse {}
+
+message RemoveSuperUserRequest {
+  string email = 1 [(validate.rules).string.email = true];
+}
+
+message RemoveSuperUserResponse {}
 
 message ListProjectMembersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];

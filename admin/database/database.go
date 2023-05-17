@@ -88,6 +88,11 @@ type DB interface {
 
 	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
 
+	CheckUsersEmpty(ctx context.Context) (bool, error)
+	FindSuperUsers(ctx context.Context) ([]*User, error)
+	AddSuperUser(ctx context.Context, id string) error
+	RemoveSuperUser(ctx context.Context, id string) error
+
 	FindUsers(ctx context.Context) ([]*User, error)
 	FindUser(ctx context.Context, id string) (*User, error)
 	FindUserByEmail(ctx context.Context, email string) (*User, error)
@@ -321,6 +326,7 @@ type InsertUserOptions struct {
 	DisplayName         string
 	PhotoURL            string
 	QuotaSingleuserOrgs int
+	Superuser           bool
 }
 
 // UpdateUserOptions defines options for updating an existing user
