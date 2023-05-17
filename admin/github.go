@@ -231,7 +231,7 @@ func (s *Service) processGithubInstallationEvent(ctx context.Context, event *git
 		}
 
 		if err := s.deleteProjectsForInstallation(ctx, installation.GetID()); err != nil {
-			s.logger.Error("failed to delete deployment for installation", zap.Int64("installation_id", installation.GetID()), zap.Error(err))
+			s.logger.Error("failed to delete project for installation", zap.Int64("installation_id", installation.GetID()), zap.Error(err))
 			return err
 		}
 	}
