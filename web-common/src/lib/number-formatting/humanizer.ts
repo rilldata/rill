@@ -62,3 +62,28 @@ export const humanizedFormatterFactory: FormatterFactory = (
 
   return formatter;
 };
+
+const percentHumanizer = humanizedFormatterFactory([], {
+  strategy: "default",
+  numberKind: NumberKind.PERCENT,
+});
+const countHumanizer = humanizedFormatterFactory([], {
+  strategy: "default",
+  numberKind: NumberKind.ANY,
+});
+const dollarHumanizer = humanizedFormatterFactory([], {
+  strategy: "default",
+  numberKind: NumberKind.DOLLAR,
+});
+
+// Re-exporting the default versions of the most common formatters
+// in functional form. The extra machinery turns out to have been
+// unneeded because we have decided not to use the stateful aspects
+// that we thought would be required to format a sample of numbers
+// in context.
+export const humanizePercent = (value: number) =>
+  percentHumanizer.stringFormat(value);
+export const humanizeCount = (value: number) =>
+  countHumanizer.stringFormat(value);
+export const humanizeDollar = (value: number) =>
+  dollarHumanizer.stringFormat(value);
