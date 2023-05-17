@@ -5,17 +5,17 @@
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import {
     MetricsViewDimension,
     V1MetricsViewTotalsResponse,
     createQueryServiceMetricsViewTotals,
+    QueryServiceMetricsViewTotalsBody,
+    V1InlineMeasure,
   } from "@rilldata/web-common/runtime-client";
   import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
-    LeaderboardValue,
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";
@@ -36,7 +36,13 @@
   $: dimensions = $metaQuery.data?.dimensions;
   $: measures = $metaQuery.data?.measures;
 
-  $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
+  const inline_count_name =
+    "COUNT(*)_inline_55b1a12c-8b5d-47fc-be1c-97c121623424";
+
+  $: selectedMeasureNames = [
+    inline_count_name,
+    ...(metricsExplorer?.selectedMeasureNames ?? []),
+  ];
 
   $: activeMeasure =
     measures &&
@@ -61,7 +67,16 @@
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    let totalsQueryParams = { measureNames: selectedMeasureNames };
+    let inlineMeasures: V1InlineMeasure[] = [
+      {
+        name: inline_count_name,
+        expression: "COUNT(*)",
+      },
+    ];
+    let totalsQueryParams: QueryServiceMetricsViewTotalsBody = {
+      measureNames: selectedMeasureNames,
+      inlineMeasures,
+    };
     if (hasTimeSeries) {
       totalsQueryParams = {
         ...totalsQueryParams,
@@ -82,17 +97,7 @@
   $: if (activeMeasure?.name && $totalsQuery?.data?.data) {
     referenceValue = $totalsQuery.data.data?.[activeMeasure.name];
   }
-
-  const leaderboards = new Map<string, Array<LeaderboardValue>>();
-  $: if (dimensions) {
-    const dimensionNameMap = getMapFromArray(
-      dimensions,
-      (dimension) => dimension.name
-    );
-    [...leaderboards.keys()]
-      .filter((dimensionName) => !dimensionNameMap.has(dimensionName))
-      .forEach((dimensionName) => leaderboards.delete(dimensionName));
-  }
+  $: console.log("$totalsQuery?.data", $totalsQuery?.data);
 
   let leaderboardExpanded;
 
@@ -103,10 +108,6 @@
       item.name,
       event.detail.label
     );
-  }
-
-  function onLeaderboardValues(event) {
-    leaderboards.set(event.detail.dimensionName, event.detail.values);
   }
 
   /** Functionality for resizing the virtual leaderboard */
@@ -177,7 +178,6 @@
           }
         }}
         on:select-item={(event) => onSelectItem(event, item)}
-        on:leaderboard-value={onLeaderboardValues}
         referenceValue={referenceValue || 0}
       />
     </VirtualizedGrid>
