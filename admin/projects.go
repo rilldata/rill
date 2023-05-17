@@ -132,9 +132,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	if impactsDeployments {
 		ds, err := s.DB.FindDeployments(ctx, proj.ID)
 		if err != nil {
-			if !errors.Is(err, database.ErrNotFound) {
-				return nil, err
-			}
+			return nil, err
 		}
 
 		// NOTE: This assumes every deployment (almost always, there's just one) deploys the prod branch.

@@ -78,8 +78,8 @@ type connection struct {
 	projectdir          string
 	cloneURLWithToken   string
 	cloneURLRefreshedOn time.Time
-	mu                  sync.Mutex
 
+	mu sync.Mutex
 	// cloned is set to true once github repo has been cloned successfully.
 	cloned  bool
 	pullErr error

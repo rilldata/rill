@@ -116,7 +116,7 @@ func (errClassifier) Classify(err error) retrier.Action {
 	if errors.As(err, &ghinstallationErr) && ghinstallationErr.Response != nil {
 		statusCode := ghinstallationErr.Response.StatusCode
 		if statusCode/100 == 4 && statusCode != 429 {
-			// Any error apart from 429 is non retryable
+			// Any 4xx error apart from 429 is non retryable
 			return retrier.Fail
 		}
 	}
