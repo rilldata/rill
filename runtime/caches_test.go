@@ -88,7 +88,7 @@ func Test_queryCache_getOrLoad(t *testing.T) {
 			}
 			defer cancel()
 			defer wg.Done()
-			values[i], cached[i], errs[i] = qc.getOrLoad(ctx, "key", f)
+			values[i], cached[i], errs[i] = qc.getOrLoad(ctx, "key", "query", f)
 
 		}(i)
 		time.Sleep(10 * time.Millisecond) // ensure that first goroutine starts the work
