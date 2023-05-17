@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/singleflight"
 	"github.com/rilldata/rill/runtime/services/catalog"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
 	"go.uber.org/zap"
@@ -20,11 +21,12 @@ import (
 var errConnectionCacheClosed = errors.New("connectionCache: closed")
 
 var (
-	meter                    = global.Meter("runtime")
-	queryCacheHitsCounter    = observability.Must(meter.Int64ObservableCounter("query_cache.hits"))
-	queryCacheMissesCounter  = observability.Must(meter.Int64ObservableCounter("query_cache.misses"))
-	queryCacheItemCountGauge = observability.Must(meter.Int64ObservableGauge("query_cache.items"))
-	queryCacheSizeBytesGauge = observability.Must(meter.Int64ObservableGauge("query_cache.size", metric.WithUnit("bytes")))
+	meter                        = global.Meter("runtime")
+	queryCacheHitsCounter        = observability.Must(meter.Int64ObservableCounter("query_cache.hits"))
+	queryCacheMissesCounter      = observability.Must(meter.Int64ObservableCounter("query_cache.misses"))
+	queryCacheItemCountGauge     = observability.Must(meter.Int64ObservableGauge("query_cache.items"))
+	queryCacheSizeBytesGauge     = observability.Must(meter.Int64ObservableGauge("query_cache.size", metric.WithUnit("bytes")))
+	queryCacheEntrySizeHistogram = observability.Must(meter.Int64Histogram("query_cache.entry_size", metric.WithUnit("bytes")))
 )
 
 // cache for instance specific connections only
@@ -191,8 +193,7 @@ func newQueryCache(sizeInBytes int64) *queryCache {
 }
 
 // getOrLoad gets the key from cache if present. If absent, it looks up the key using the loadFn and puts it into cache before returning value.
-// NOTE:: Due to limitation of the underlying caching library, key can only be one of int(signed/unsgined),string or byte array.
-func (c *queryCache) getOrLoad(ctx context.Context, key string, loadFn func(context.Context) (any, error)) (any, bool, error) {
+func (c *queryCache) getOrLoad(ctx context.Context, key, queryName string, loadFn func(context.Context) (any, error)) (any, bool, error) {
 	if val, ok := c.cache.Get(key); ok {
 		return val, true, nil
 	}
@@ -212,6 +213,10 @@ func (c *queryCache) getOrLoad(ctx context.Context, key string, loadFn func(cont
 		// only one caller of load gets this return value
 		cached = false
 		cachedObject := val.(*QueryResult)
+		attrs := attribute.NewSet(
+			attribute.String("query", queryName),
+		)
+		queryCacheEntrySizeHistogram.Record(ctx, cachedObject.Bytes, metric.WithAttributeSet(attrs))
 		c.cache.Set(key, cachedObject.Value, cachedObject.Bytes)
 		return cachedObject.Value, nil
 	})

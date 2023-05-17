@@ -59,14 +59,6 @@ type Group struct {
 	m  map[string]*call // lazily initialized
 }
 
-// Result holds the results of Do, so they can be passed
-// on a channel.
-type Result struct {
-	Val    interface{}
-	Err    error
-	Shared bool
-}
-
 // Do executes and returns the results of the given function, making
 // sure that only one execution is in-flight for a given key at a
 // time. If a duplicate comes in, the duplicate caller waits for the
@@ -78,7 +70,7 @@ func (g *Group) Do(ctx context.Context, key string, fn func(context.Context) (an
 	}
 	c, ok := g.m[key]
 	if !ok {
-		cctx, cancel := withCancelAndParentValues(ctx)
+		cctx, cancel := withCancelAndContextValues(ctx)
 		c = &call{
 			ctx:    cctx,
 			cancel: cancel,
@@ -158,12 +150,12 @@ func (g *Group) doCall(c *call, key string, fn func(ctx context.Context) (interf
 	}
 }
 
-// withCancelAndParentValues returns a context whose done channel is closed when the
+// withCancelAndContextValues returns a context whose done channel is closed when the
 // returned cancel function is called. It inherits the values of the parent context.
 //
 // Canceling this context releases resources associated with it, so code should
 // call cancel as soon as the operations running in this Context complete.
-func withCancelAndParentValues(parent context.Context) (context.Context, context.CancelFunc) {
+func withCancelAndContextValues(parent context.Context) (context.Context, context.CancelFunc) {
 	if parent == nil {
 		panic("cannot create context from nil parent")
 	}

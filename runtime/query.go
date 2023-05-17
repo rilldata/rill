@@ -4,18 +4,12 @@ import (
 	"context"
 	"fmt"
 	"strings"
-
-	"github.com/rilldata/rill/runtime/pkg/observability"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 )
 
 type QueryResult struct {
 	Value any
 	Bytes int64
 }
-
-var queryCacheEntrySizeHistogram = observability.Must(meter.Int64Histogram("query_cache.entry_size", metric.WithUnit("bytes")))
 
 type Query interface {
 	// Key should return a cache key that uniquely identifies the query
@@ -81,17 +75,13 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		dependencyKey: depKey,
 	}
 
-	val, ok, err := r.queryCache.getOrLoad(ctx, key.String(), func(ctx context.Context) (any, error) {
+	val, ok, err := r.queryCache.getOrLoad(ctx, key.String(), queryName(query), func(ctx context.Context) (any, error) {
 		err := query.Resolve(ctx, r, instanceID, priority)
 		if err != nil {
 			return nil, err
 		}
 
 		res := query.MarshalResult()
-		attrs := attribute.NewSet(
-			attribute.String("query", queryName(query)),
-		)
-		queryCacheEntrySizeHistogram.Record(ctx, res.Bytes, metric.WithAttributeSet(attrs))
 		return res, nil
 	})
 	if err != nil {
