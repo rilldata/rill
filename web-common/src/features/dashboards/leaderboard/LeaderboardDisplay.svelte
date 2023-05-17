@@ -2,15 +2,14 @@
   import VirtualizedGrid from "@rilldata/web-common/components/VirtualizedGrid.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
-    selectDimensionKeys,
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import {
-    createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
     V1MetricsViewTotalsResponse,
+    createQueryServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
   import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy, onMount } from "svelte";
@@ -134,14 +133,17 @@
     observer?.disconnect();
   });
 
-  $: availableDimensionKeys = selectDimensionKeys($metaQuery);
-  $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
-  $: visibleDimensionsBitmask = availableDimensionKeys.map((k) =>
-    visibleDimensionKeys.has(k)
-  );
+  // FIXME: this is pending the remaining state work for show/hide measures and dimensions
+  // $: availableDimensionKeys = selectDimensionKeys($metaQuery);
+  // $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
+  // $: visibleDimensionsBitmask = availableDimensionKeys.map((k) =>
+  //   visibleDimensionKeys.has(k)
+  // );
 
-  $: dimensionsShown =
-    dimensions?.filter((_, i) => visibleDimensionsBitmask[i]) ?? [];
+  // $: dimensionsShown =
+  //   dimensions?.filter((_, i) => visibleDimensionsBitmask[i]) ?? [];
+
+  $: dimensionsShown = dimensions ?? [];
 </script>
 
 <svelte:window on:resize={onResize} />
