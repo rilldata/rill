@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
@@ -79,9 +78,11 @@ type connection struct {
 	projectdir          string
 	cloneURLWithToken   string
 	cloneURLRefreshedOn time.Time
+	mu                  sync.Mutex
+
 	// cloned is set to true once github repo has been cloned successfully.
-	cloned atomic.Bool
-	mu     sync.Mutex
+	cloned  bool
+	pullErr error
 }
 
 // Close implements drivers.Connection.
@@ -124,29 +125,34 @@ func (c *connection) MigrationStatus(ctx context.Context) (current, desired int,
 	return 0, 0, nil
 }
 
-// pull pulls changes from the repo. It also clones the repo first time.
+// pull pulls changes from the repo. Also clones the repo if it hasn't been cloned already.
 func (c *connection) pull(ctx context.Context) error {
-	cloneTried := false
-	var cloneErr error
-	if !c.cloned.Load() {
-		func() {
-			c.mu.Lock()
-			defer c.mu.Unlock()
-			// check again in case cloned already by concurrent request
-			if !c.cloned.Load() {
-				cloneTried = true
-				cloneErr = c.clone(ctx)
-				if cloneErr == nil {
-					c.cloned.Store(true)
-				}
-			}
-		}()
+	var deduplicated bool
+	if !c.mu.TryLock() {
+		deduplicated = true
+		c.mu.Lock()
 	}
-	// no need to pull again if clone tried within same request
-	if cloneTried {
-		return cloneErr
+	defer c.mu.Unlock()
+
+	if deduplicated {
+		return c.pullErr
 	}
 
+	if !c.cloned {
+		c.pullErr = c.clone(ctx)
+		if c.pullErr == nil { // cloned successfully
+			c.cloned = true
+		}
+		return c.pullErr
+	}
+
+	c.pullErr = c.pullUnsafe(ctx)
+	return c.pullErr
+}
+
+// pullUnsafe pulls changes from the repo. Requires repo to be cloned already.
+// Unsafe for concurrent use.
+func (c *connection) pullUnsafe(ctx context.Context) error {
 	repo, err := git.PlainOpen(c.tempdir)
 	if err != nil {
 		return err
