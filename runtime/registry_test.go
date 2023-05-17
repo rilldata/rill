@@ -255,6 +255,9 @@ func NewTestRunTime(t *testing.T) *Runtime {
 		AllowHostAccess:     true,
 	}
 	rt, err := New(opts, zap.NewNop())
+	t.Cleanup(func() {
+		rt.Close()
+	})
 	require.NoError(t, err)
 
 	return rt

@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"runtime/debug"
 	"sync"
+	"time"
 )
 
 // errGoexit indicates the runtime.Goexit was called in
@@ -77,7 +78,7 @@ func (g *Group) Do(ctx context.Context, key string, fn func(context.Context) (an
 	}
 	c, ok := g.m[key]
 	if !ok {
-		cctx, cancel := context.WithCancel(context.Background())
+		cctx, cancel := withCancelAndParentValues(ctx)
 		c = &call{
 			ctx:    cctx,
 			cancel: cancel,
@@ -155,4 +156,38 @@ func (g *Group) doCall(c *call, key string, fn func(ctx context.Context) (interf
 	if !normalReturn {
 		recovered = true
 	}
+}
+
+// withCancelAndParentValues returns a context whose done channel is closed when the
+// returned cancel function is called. It inherits the values of the parent context.
+//
+// Canceling this context releases resources associated with it, so code should
+// call cancel as soon as the operations running in this Context complete.
+func withCancelAndParentValues(parent context.Context) (context.Context, context.CancelFunc) {
+	if parent == nil {
+		panic("cannot create context from nil parent")
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	return withCancelAndParentValuesCtx{ctx: ctx, parentCtx: parent}, cancel
+}
+
+type withCancelAndParentValuesCtx struct {
+	ctx       context.Context
+	parentCtx context.Context
+}
+
+func (c withCancelAndParentValuesCtx) Deadline() (deadline time.Time, ok bool) {
+	return c.ctx.Deadline()
+}
+
+func (c withCancelAndParentValuesCtx) Done() <-chan struct{} {
+	return c.ctx.Done()
+}
+
+func (c withCancelAndParentValuesCtx) Err() error {
+	return c.ctx.Err()
+}
+
+func (c withCancelAndParentValuesCtx) Value(key any) any {
+	return c.parentCtx.Value(key)
 }

@@ -24,6 +24,7 @@ type TestingT interface {
 	TempDir() string
 	FailNow()
 	Errorf(format string, args ...interface{})
+	Cleanup(f func())
 }
 
 // New returns a runtime configured for use in tests.
@@ -39,7 +40,9 @@ func New(t TestingT) *runtime.Runtime {
 	}
 	rt, err := runtime.New(opts, nil)
 	require.NoError(t, err)
-
+	t.Cleanup(func() {
+		rt.Close()
+	})
 	return rt
 }
 
