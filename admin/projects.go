@@ -286,10 +286,10 @@ func (s *Service) triggerRefreshSources(ctx context.Context, depl *database.Depl
 
 	res2, err := rt.Reconcile(ctx, &runtimev1.ReconcileRequest{
 		InstanceId:   depl.RuntimeInstanceID,
-		ChangedPaths: paths,
+		ChangedPaths: nil, // Forces it to parse all artifacts, ensuring a complete DAG (TODO: pretty hacky)
 		ForcedPaths:  paths,
 		Dry:          false,
-		Strict:       true,
+		Strict:       false,
 	})
 	return s.endReconcile(ctx, depl, res2, err)
 }
