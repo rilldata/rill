@@ -81,7 +81,7 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		dependencyKey: depKey,
 	}
 
-	val, ok, err := r.queryCache.getOrLoad(key.String(), func() (any, error) {
+	val, ok, err := r.queryCache.getOrLoad(ctx, key.String(), func(ctx context.Context) (any, error) {
 		err := query.Resolve(ctx, r, instanceID, priority)
 		if err != nil {
 			return nil, err

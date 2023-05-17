@@ -2,7 +2,9 @@ package runtime
 
 import (
 	"context"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/google/uuid"
@@ -34,6 +36,7 @@ func TestConnectionCache(t *testing.T) {
 
 func TestNilValues(t *testing.T) {
 	qc := newQueryCache(int64(datasize.MB * 100))
+	defer qc.cache.Close()
 
 	qc.add(queryCacheKey{"1", "1", "1"}.String(), "value", 1)
 	qc.cache.Wait()
@@ -50,4 +53,57 @@ func TestNilValues(t *testing.T) {
 	v, ok = qc.get(queryCacheKey{"nosuch", "nosuch", "nosuch"}.String())
 	require.Nil(t, v)
 	require.False(t, ok)
+}
+
+func Test_queryCache_getOrLoad(t *testing.T) {
+	qc := newQueryCache(int64(datasize.MB))
+	defer qc.cache.Close()
+
+	f := func(ctx context.Context) (interface{}, error) {
+		for {
+			select {
+			case <-ctx.Done():
+				// Handle context cancellation
+				return nil, ctx.Err()
+			case <-time.After(200 * time.Millisecond):
+				// Simulate some work
+				return &QueryResult{Value: "hello"}, nil
+			}
+		}
+	}
+	errs := make([]error, 5)
+	values := make([]interface{}, 5)
+	cached := make([]bool, 5)
+	var wg sync.WaitGroup
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func(i int) {
+			var ctx context.Context
+			var cancel context.CancelFunc
+			if i%2 == 0 {
+				// cancel all even requests
+				ctx, cancel = context.WithTimeout(context.Background(), 100*time.Millisecond)
+			} else {
+				ctx, cancel = context.WithCancel(context.TODO())
+			}
+			defer cancel()
+			defer wg.Done()
+			values[i], cached[i], errs[i] = qc.getOrLoad(ctx, "key", f)
+
+		}(i)
+		time.Sleep(10 * time.Millisecond) // ensure that first goroutine starts the work
+	}
+	wg.Wait()
+
+	require.False(t, cached[0])
+	require.Error(t, errs[0])
+	for i := 1; i < 5; i++ {
+		if i%2 == 0 {
+			require.Error(t, errs[i])
+		} else {
+			require.True(t, cached[i])
+			require.NoError(t, errs[i])
+			require.Equal(t, values[i], "hello")
+		}
+	}
 }

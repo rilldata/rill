@@ -37,8 +37,8 @@ func TestServer_MetricsViewTimeSeries_TimeEnd_exclusive(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-		TimeStart:       parseTime(t, "2022-01-01T00:00:00Z"),
-		TimeEnd:         parseTime(t, "2022-01-02T00:00:00Z"),
+		TimeStart:       parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+		TimeEnd:         parseTimeToProtoTimeStamps(t, "2022-01-02T00:00:00Z"),
 		MeasureNames:    []string{"measure_0", "measure_2"},
 	})
 	require.NoError(t, err)

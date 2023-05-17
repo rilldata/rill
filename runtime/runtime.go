@@ -57,6 +57,7 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 func (r *Runtime) Close() error {
 	err1 := r.metastore.Close()
 	err2 := r.connCache.Close()
+	r.queryCache.cache.Close()
 	if err1 != nil {
 		return err1
 	}
