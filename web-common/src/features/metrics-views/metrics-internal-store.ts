@@ -38,8 +38,10 @@ export interface DimensionEntity {
   __ERROR__?: string;
 }
 
+// This is used to extract the base name from an auto incremented name.
+// EG: "measure_2".replace(NameNumberRegex, "") => "measure"
 const NameNumberRegex = new RegExp(/(\d+)$/);
-const MeasurePrefix = "measure";
+const MeasureNamePrefix = "measure";
 
 export class MetricsInternalRepresentation {
   // All operations are done on the document to preserve comments
@@ -77,7 +79,7 @@ export class MetricsInternalRepresentation {
     this.fillNames(
       (internalRepresentationDoc.get("measures") as Collection)
         ?.items as YAMLMap[],
-      MeasurePrefix
+      MeasureNamePrefix
     );
     // TODO: fill names for dimensions
 
@@ -177,7 +179,7 @@ export class MetricsInternalRepresentation {
 
   addNewMeasure() {
     const newName = getName(
-      MeasurePrefix,
+      MeasureNamePrefix,
       this.internalRepresentation.measures.map((measure) => measure?.name || "")
     );
 

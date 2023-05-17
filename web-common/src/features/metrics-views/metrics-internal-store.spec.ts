@@ -190,7 +190,7 @@ measures:
 `;
     [
       [
-        "From an old project",
+        "From an old project without measure name keys",
         `
   - label: Total Impressions
     expression: count(*)
@@ -218,7 +218,7 @@ measures:
     format_preset: humanize`,
       ],
       [
-        "From an old project with some names",
+        "From an old project with some measure name keys",
         `
   - label: Total Impressions
     name: measure_1
