@@ -7,6 +7,7 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import { Browser, chromium, Page } from "playwright";
 import treeKill from "tree-kill";
+import axios from "axios";
 
 export function useTestServer(port: number, dir: string) {
   let childProcess: ChildProcess;
@@ -18,15 +19,14 @@ export function useTestServer(port: number, dir: string) {
     });
 
     childProcess = spawn(
-      path.join(__dirname, "../../../..", "rill"),
+      path.join(__dirname, "../../rill-e2e-test"),
       [
         "start",
         "--no-open",
-        "--port",
-        port + "",
-        "--port-grpc",
-        port + 1000 + "",
-        "--project",
+        `--port`,
+        port.toString(),
+        `--port-grpc`,
+        (port + 1000).toString(),
         dir,
       ],
       {
@@ -35,7 +35,16 @@ export function useTestServer(port: number, dir: string) {
       }
     );
     childProcess.on("error", console.log);
-    await asyncWaitUntil(() => isPortOpen(port));
+
+    // Ping runtime until it's ready
+    await asyncWaitUntil(async () => {
+      try {
+        const response = await axios.get(`http://localhost:${port}/v1/ping`);
+        return response.status === 200;
+      } catch (err) {
+        return false;
+      }
+    });
   });
 
   afterEach(async () => {
