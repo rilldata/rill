@@ -8,7 +8,7 @@
   fill="none"
   xmlns="http://www.w3.org/2000/svg"
 >
-  <rect width="36" height="36" rx="2" fill="#2563EB" />
+  <rect width="36" height="36" rx="4" fill="#2563EB" />
   <path
     fill-rule="evenodd"
     clip-rule="evenodd"

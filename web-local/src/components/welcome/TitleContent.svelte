@@ -14,7 +14,7 @@
 </script>
 
 <section class="flex flex-col gap-y-6 items-center text-center">
-  <RillLogoSquareNegative size="7em" />
+  <RillLogoSquareNegative size="84px" />
   <RadixH1>Welcome to Rill</RadixH1>
   <div class="flex flex-col gap-y-2">
     <Subheading>
