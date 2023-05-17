@@ -434,8 +434,7 @@ message SetOrganizationMemberRoleRequest {
 
 message SetOrganizationMemberRoleResponse {}
 
-message ListSuperUsersRequest {
-}
+message ListSuperUsersRequest {}
 
 message ListSuperUsersResponse {
   repeated User users = 1;
