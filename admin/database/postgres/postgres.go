@@ -269,12 +269,21 @@ func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID
 }
 
 func (c *connection) FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*database.Project, error) {
-	result := make([]*database.Project, 0)
-	err := c.getDB(ctx).SelectContext(ctx, &result, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) ", githubURL)
+	var res []*database.Project
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) ", githubURL)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return result, nil
+	return res, nil
+}
+
+func (c *connection) FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*database.Project, error) {
+	var res []*database.Project
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.github_installation_id=$1", id)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return res, nil
 }
 
 func (c *connection) FindProject(ctx context.Context, id string) (*database.Project, error) {

@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -10,6 +11,7 @@ import (
 	"path/filepath"
 
 	doublestar "github.com/bmatcuk/doublestar/v4"
+	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/eapache/go-resiliency/retrier"
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -99,10 +101,24 @@ func (c *connection) Delete(ctx context.Context, instID, filePath string) error 
 
 // Sync implements drivers.RepoStore.
 func (c *connection) Sync(ctx context.Context, instID string) error {
-	r := retrier.New(retrier.ExponentialBackoff(retryN, retryWait), nil)
+	r := retrier.New(retrier.ExponentialBackoff(retryN, retryWait), errClassifier{})
 	err := r.Run(func() error { return c.pull(ctx) })
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+type errClassifier struct{}
+
+func (errClassifier) Classify(err error) retrier.Action {
+	ghinstallationErr := &ghinstallation.HTTPError{}
+	if errors.As(err, &ghinstallationErr) && ghinstallationErr.Response != nil {
+		statusCode := ghinstallationErr.Response.StatusCode
+		if statusCode/100 == 4 && statusCode != 429 {
+			// Any 4xx error apart from 429 is non retryable
+			return retrier.Fail
+		}
+	}
+	return retrier.Retry
 }

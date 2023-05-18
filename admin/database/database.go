@@ -71,6 +71,7 @@ type DB interface {
 	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID, afterProjectName string, limit int) ([]*Project, error)
 	FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*Project, error)
+	FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*Project, error)
 	FindProject(ctx context.Context, id string) (*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
