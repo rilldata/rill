@@ -843,6 +843,41 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
+  /v1/superuser/members:
+    get:
+      summary: ListSuperusers lists all the superusers
+      operationId: AdminService_ListSuperusers
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListSuperusersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
+    post:
+      summary: SetSuperuser adds/remove a superuser
+      operationId: AdminService_SetSuperuser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetSuperuserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SetSuperuserRequest'
+      tags:
+        - AdminService
   /v1/tokens/current:
     delete:
       summary: RevokeCurrentAuthToken revoke the current auth token
@@ -1062,6 +1097,14 @@ definitions:
           $ref: '#/definitions/v1Project'
       nextPageToken:
         type: string
+  v1ListSuperusersResponse:
+    type: object
+    properties:
+      users:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1User'
   v1Member:
     type: object
     properties:
@@ -1198,6 +1241,15 @@ definitions:
   v1SetOrganizationMemberRoleResponse:
     type: object
   v1SetProjectMemberRoleResponse:
+    type: object
+  v1SetSuperuserRequest:
+    type: object
+    properties:
+      email:
+        type: string
+      superuser:
+        type: boolean
+  v1SetSuperuserResponse:
     type: object
   v1TriggerReconcileResponse:
     type: object
