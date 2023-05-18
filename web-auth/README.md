@@ -31,16 +31,17 @@ VITE_DISABLE_FORGOT_PASS_DOMAINS="domain1.com,domain2.com,..."
 `VITE_PINGFED_CONNECTION` is the name of the connection set for PingFed
 `VITE_DISABLE_FORGOT_PASS_DOMAINS` is a comma separated list of domains for which reset password functionality has been blocked. This has been ported from the old sign-up template.
 
-These environment variables can be found in Notion on the page `Runbooks -> Rill -> Rill Auth`
+These environment variables can be found in 1Password. The document is named - **Rill Web Auth env**
 
-While developing, to test the login features, deploy the generated template `bundle.html` (steps mentioned below) to Auth0 staging. Verification can be done through Rill Cloud Staging and Dash staging.
+While developing, to test the login features, deploy the generated template `bundle.html` (follow steps mentioned in building for production) to Auth0 staging. Verification can be done through Rill Cloud Staging and Dash staging.
 
 
 ## Building for production
 
 1. Add `.env` file to the workspace
 2. Run `npm run build -w web-auth`
-3. Copy the contents of `bundle.html` and paste it to the Auth0 universal login page
+3. Copy the contents of `bundle.html` 
+4. Paste it in Auth0 login page which can be found at `https://manage.auth0.com/dashboard/us/<tenant-name>/login_page`
 
 The build process uses Rollup extensively to package the template, inject JS inline and replacing the environment variables. 
 
