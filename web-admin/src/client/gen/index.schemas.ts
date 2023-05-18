@@ -240,7 +240,7 @@ export interface V1Member {
   updatedOn?: string;
 }
 
-export interface V1ListSuperUsersResponse {
+export interface V1ListSuperusersResponse {
   users?: V1User[];
 }
 

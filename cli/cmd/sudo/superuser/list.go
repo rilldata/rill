@@ -21,7 +21,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			res, err := client.ListSuperUsers(ctx, &adminv1.ListSuperUsersRequest{})
+			res, err := client.ListSuperusers(ctx, &adminv1.ListSuperusersRequest{})
 			if err != nil {
 				return err
 			}

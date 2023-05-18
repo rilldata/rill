@@ -95,8 +95,8 @@ type DB interface {
 	DeleteUser(ctx context.Context, id string) error
 	UpdateUser(ctx context.Context, id string, opts *UpdateUserOptions) (*User, error)
 	CheckUsersEmpty(ctx context.Context) (bool, error)
-	FindSuperUsers(ctx context.Context) ([]*User, error)
-	SetSuperuser(ctx context.Context, userID string, superuser bool) error
+	FindSuperusers(ctx context.Context) ([]*User, error)
+	UpdateSuperuser(ctx context.Context, userID string, superuser bool) error
 
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
 	InsertUsergroupMember(ctx context.Context, groupID, userID string) error

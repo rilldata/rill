@@ -2449,14 +2449,14 @@ func (*SetOrganizationMemberRoleResponse) Descriptor() ([]byte, []int) {
 	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{43}
 }
 
-type ListSuperUsersRequest struct {
+type ListSuperusersRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 }
 
-func (x *ListSuperUsersRequest) Reset() {
-	*x = ListSuperUsersRequest{}
+func (x *ListSuperusersRequest) Reset() {
+	*x = ListSuperusersRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_rill_admin_v1_api_proto_msgTypes[44]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2464,13 +2464,13 @@ func (x *ListSuperUsersRequest) Reset() {
 	}
 }
 
-func (x *ListSuperUsersRequest) String() string {
+func (x *ListSuperusersRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListSuperUsersRequest) ProtoMessage() {}
+func (*ListSuperusersRequest) ProtoMessage() {}
 
-func (x *ListSuperUsersRequest) ProtoReflect() protoreflect.Message {
+func (x *ListSuperusersRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_rill_admin_v1_api_proto_msgTypes[44]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2482,12 +2482,12 @@ func (x *ListSuperUsersRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListSuperUsersRequest.ProtoReflect.Descriptor instead.
-func (*ListSuperUsersRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListSuperusersRequest.ProtoReflect.Descriptor instead.
+func (*ListSuperusersRequest) Descriptor() ([]byte, []int) {
 	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{44}
 }
 
-type ListSuperUsersResponse struct {
+type ListSuperusersResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -2495,8 +2495,8 @@ type ListSuperUsersResponse struct {
 	Users []*User `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
 }
 
-func (x *ListSuperUsersResponse) Reset() {
-	*x = ListSuperUsersResponse{}
+func (x *ListSuperusersResponse) Reset() {
+	*x = ListSuperusersResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_rill_admin_v1_api_proto_msgTypes[45]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2504,13 +2504,13 @@ func (x *ListSuperUsersResponse) Reset() {
 	}
 }
 
-func (x *ListSuperUsersResponse) String() string {
+func (x *ListSuperusersResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListSuperUsersResponse) ProtoMessage() {}
+func (*ListSuperusersResponse) ProtoMessage() {}
 
-func (x *ListSuperUsersResponse) ProtoReflect() protoreflect.Message {
+func (x *ListSuperusersResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_rill_admin_v1_api_proto_msgTypes[45]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2522,12 +2522,12 @@ func (x *ListSuperUsersResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListSuperUsersResponse.ProtoReflect.Descriptor instead.
-func (*ListSuperUsersResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListSuperusersResponse.ProtoReflect.Descriptor instead.
+func (*ListSuperusersResponse) Descriptor() ([]byte, []int) {
 	return file_rill_admin_v1_api_proto_rawDescGZIP(), []int{45}
 }
 
-func (x *ListSuperUsersResponse) GetUsers() []*User {
+func (x *ListSuperusersResponse) GetUsers() []*User {
 	if x != nil {
 		return x.Users
 	}
@@ -4826,8 +4826,8 @@ var file_rill_admin_v1_api_proto_rawDesc = []byte{
 	0x22, 0x23, 0x0a, 0x21, 0x53, 0x65, 0x74, 0x4f, 0x72, 0x67, 0x61, 0x6e, 0x69, 0x7a, 0x61, 0x74,
 	0x69, 0x6f, 0x6e, 0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x52, 0x6f, 0x6c, 0x65, 0x52, 0x65, 0x73,
 	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x17, 0x0a, 0x15, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x75, 0x70,
-	0x65, 0x72, 0x55, 0x73, 0x65, 0x72, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x43,
-	0x0a, 0x16, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x75, 0x70, 0x65, 0x72, 0x55, 0x73, 0x65, 0x72, 0x73,
+	0x65, 0x72, 0x75, 0x73, 0x65, 0x72, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x43,
+	0x0a, 0x16, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x75, 0x70, 0x65, 0x72, 0x75, 0x73, 0x65, 0x72, 0x73,
 	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x29, 0x0a, 0x05, 0x75, 0x73, 0x65, 0x72,
 	0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x61,
 	0x64, 0x6d, 0x69, 0x6e, 0x2e, 0x76, 0x31, 0x2e, 0x55, 0x73, 0x65, 0x72, 0x52, 0x05, 0x75, 0x73,
@@ -5445,12 +5445,12 @@ var file_rill_admin_v1_api_proto_rawDesc = []byte{
 	0x31, 0x2f, 0x6f, 0x72, 0x67, 0x61, 0x6e, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2f,
 	0x7b, 0x6f, 0x72, 0x67, 0x61, 0x6e, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x7d, 0x2f, 0x61,
 	0x75, 0x74, 0x6f, 0x69, 0x6e, 0x76, 0x69, 0x74, 0x65, 0x2f, 0x7b, 0x64, 0x6f, 0x6d, 0x61, 0x69,
-	0x6e, 0x7d, 0x12, 0x7c, 0x0a, 0x0e, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x75, 0x70, 0x65, 0x72, 0x55,
+	0x6e, 0x7d, 0x12, 0x7c, 0x0a, 0x0e, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x75, 0x70, 0x65, 0x72, 0x75,
 	0x73, 0x65, 0x72, 0x73, 0x12, 0x24, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x61, 0x64, 0x6d, 0x69,
-	0x6e, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x75, 0x70, 0x65, 0x72, 0x55, 0x73,
+	0x6e, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53, 0x75, 0x70, 0x65, 0x72, 0x75, 0x73,
 	0x65, 0x72, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x72, 0x69, 0x6c,
 	0x6c, 0x2e, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x53,
-	0x75, 0x70, 0x65, 0x72, 0x55, 0x73, 0x65, 0x72, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x75, 0x70, 0x65, 0x72, 0x75, 0x73, 0x65, 0x72, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
 	0x65, 0x22, 0x1d, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x17, 0x12, 0x15, 0x2f, 0x76, 0x31, 0x2f, 0x73,
 	0x75, 0x70, 0x65, 0x72, 0x75, 0x73, 0x65, 0x72, 0x2f, 0x6d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x73,
 	0x12, 0x79, 0x0a, 0x0c, 0x53, 0x65, 0x74, 0x53, 0x75, 0x70, 0x65, 0x72, 0x75, 0x73, 0x65, 0x72,
@@ -5534,8 +5534,8 @@ var file_rill_admin_v1_api_proto_goTypes = []interface{}{
 	(*LeaveOrganizationResponse)(nil),           // 42: rill.admin.v1.LeaveOrganizationResponse
 	(*SetOrganizationMemberRoleRequest)(nil),    // 43: rill.admin.v1.SetOrganizationMemberRoleRequest
 	(*SetOrganizationMemberRoleResponse)(nil),   // 44: rill.admin.v1.SetOrganizationMemberRoleResponse
-	(*ListSuperUsersRequest)(nil),               // 45: rill.admin.v1.ListSuperUsersRequest
-	(*ListSuperUsersResponse)(nil),              // 46: rill.admin.v1.ListSuperUsersResponse
+	(*ListSuperusersRequest)(nil),               // 45: rill.admin.v1.ListSuperusersRequest
+	(*ListSuperusersResponse)(nil),              // 46: rill.admin.v1.ListSuperusersResponse
 	(*SetSuperuserRequest)(nil),                 // 47: rill.admin.v1.SetSuperuserRequest
 	(*SetSuperuserResponse)(nil),                // 48: rill.admin.v1.SetSuperuserResponse
 	(*ListProjectMembersRequest)(nil),           // 49: rill.admin.v1.ListProjectMembersRequest
@@ -5591,7 +5591,7 @@ var file_rill_admin_v1_api_proto_depIdxs = []int32{
 	80, // 15: rill.admin.v1.UpdateProjectVariablesResponse.variables:type_name -> rill.admin.v1.UpdateProjectVariablesResponse.VariablesEntry
 	75, // 16: rill.admin.v1.ListOrganizationMembersResponse.members:type_name -> rill.admin.v1.Member
 	76, // 17: rill.admin.v1.ListOrganizationInvitesResponse.invites:type_name -> rill.admin.v1.UserInvite
-	69, // 18: rill.admin.v1.ListSuperUsersResponse.users:type_name -> rill.admin.v1.User
+	69, // 18: rill.admin.v1.ListSuperusersResponse.users:type_name -> rill.admin.v1.User
 	75, // 19: rill.admin.v1.ListProjectMembersResponse.members:type_name -> rill.admin.v1.Member
 	76, // 20: rill.admin.v1.ListProjectInvitesResponse.invites:type_name -> rill.admin.v1.UserInvite
 	69, // 21: rill.admin.v1.GetCurrentUserResponse.user:type_name -> rill.admin.v1.User
@@ -5638,7 +5638,7 @@ var file_rill_admin_v1_api_proto_depIdxs = []int32{
 	63, // 62: rill.admin.v1.AdminService.GetGithubRepoStatus:input_type -> rill.admin.v1.GetGithubRepoStatusRequest
 	65, // 63: rill.admin.v1.AdminService.CreateAutoinviteDomain:input_type -> rill.admin.v1.CreateAutoinviteDomainRequest
 	67, // 64: rill.admin.v1.AdminService.RemoveAutoinviteDomain:input_type -> rill.admin.v1.RemoveAutoinviteDomainRequest
-	45, // 65: rill.admin.v1.AdminService.ListSuperUsers:input_type -> rill.admin.v1.ListSuperUsersRequest
+	45, // 65: rill.admin.v1.AdminService.ListSuperusers:input_type -> rill.admin.v1.ListSuperusersRequest
 	47, // 66: rill.admin.v1.AdminService.SetSuperuser:input_type -> rill.admin.v1.SetSuperuserRequest
 	2,  // 67: rill.admin.v1.AdminService.Ping:output_type -> rill.admin.v1.PingResponse
 	4,  // 68: rill.admin.v1.AdminService.ListOrganizations:output_type -> rill.admin.v1.ListOrganizationsResponse
@@ -5672,7 +5672,7 @@ var file_rill_admin_v1_api_proto_depIdxs = []int32{
 	64, // 96: rill.admin.v1.AdminService.GetGithubRepoStatus:output_type -> rill.admin.v1.GetGithubRepoStatusResponse
 	66, // 97: rill.admin.v1.AdminService.CreateAutoinviteDomain:output_type -> rill.admin.v1.CreateAutoinviteDomainResponse
 	68, // 98: rill.admin.v1.AdminService.RemoveAutoinviteDomain:output_type -> rill.admin.v1.RemoveAutoinviteDomainResponse
-	46, // 99: rill.admin.v1.AdminService.ListSuperUsers:output_type -> rill.admin.v1.ListSuperUsersResponse
+	46, // 99: rill.admin.v1.AdminService.ListSuperusers:output_type -> rill.admin.v1.ListSuperusersResponse
 	48, // 100: rill.admin.v1.AdminService.SetSuperuser:output_type -> rill.admin.v1.SetSuperuserResponse
 	67, // [67:101] is the sub-list for method output_type
 	33, // [33:67] is the sub-list for method input_type
@@ -6216,7 +6216,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[44].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListSuperUsersRequest); i {
+			switch v := v.(*ListSuperusersRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6228,7 +6228,7 @@ func file_rill_admin_v1_api_proto_init() {
 			}
 		}
 		file_rill_admin_v1_api_proto_msgTypes[45].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListSuperUsersResponse); i {
+			switch v := v.(*ListSuperusersResponse); i {
 			case 0:
 				return &v.state
 			case 1:

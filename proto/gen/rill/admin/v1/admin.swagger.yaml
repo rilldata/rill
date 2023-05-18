@@ -845,13 +845,13 @@ paths:
         - AdminService
   /v1/superuser/members:
     get:
-      summary: ListSuperUsers lists all the superusers
-      operationId: AdminService_ListSuperUsers
+      summary: ListSuperusers lists all the superusers
+      operationId: AdminService_ListSuperusers
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListSuperUsersResponse'
+            $ref: '#/definitions/v1ListSuperusersResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1097,7 +1097,7 @@ definitions:
           $ref: '#/definitions/v1Project'
       nextPageToken:
         type: string
-  v1ListSuperUsersResponse:
+  v1ListSuperusersResponse:
     type: object
     properties:
       users:

@@ -1907,70 +1907,70 @@ export class SetOrganizationMemberRoleResponse extends Message<SetOrganizationMe
 }
 
 /**
- * @generated from message rill.admin.v1.ListSuperUsersRequest
+ * @generated from message rill.admin.v1.ListSuperusersRequest
  */
-export class ListSuperUsersRequest extends Message<ListSuperUsersRequest> {
-  constructor(data?: PartialMessage<ListSuperUsersRequest>) {
+export class ListSuperusersRequest extends Message<ListSuperusersRequest> {
+  constructor(data?: PartialMessage<ListSuperusersRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.ListSuperUsersRequest";
+  static readonly typeName = "rill.admin.v1.ListSuperusersRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListSuperUsersRequest {
-    return new ListSuperUsersRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListSuperusersRequest {
+    return new ListSuperusersRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListSuperUsersRequest {
-    return new ListSuperUsersRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListSuperusersRequest {
+    return new ListSuperusersRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListSuperUsersRequest {
-    return new ListSuperUsersRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListSuperusersRequest {
+    return new ListSuperusersRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ListSuperUsersRequest | PlainMessage<ListSuperUsersRequest> | undefined, b: ListSuperUsersRequest | PlainMessage<ListSuperUsersRequest> | undefined): boolean {
-    return proto3.util.equals(ListSuperUsersRequest, a, b);
+  static equals(a: ListSuperusersRequest | PlainMessage<ListSuperusersRequest> | undefined, b: ListSuperusersRequest | PlainMessage<ListSuperusersRequest> | undefined): boolean {
+    return proto3.util.equals(ListSuperusersRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.ListSuperUsersResponse
+ * @generated from message rill.admin.v1.ListSuperusersResponse
  */
-export class ListSuperUsersResponse extends Message<ListSuperUsersResponse> {
+export class ListSuperusersResponse extends Message<ListSuperusersResponse> {
   /**
    * @generated from field: repeated rill.admin.v1.User users = 1;
    */
   users: User[] = [];
 
-  constructor(data?: PartialMessage<ListSuperUsersResponse>) {
+  constructor(data?: PartialMessage<ListSuperusersResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.ListSuperUsersResponse";
+  static readonly typeName = "rill.admin.v1.ListSuperusersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "users", kind: "message", T: User, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListSuperUsersResponse {
-    return new ListSuperUsersResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListSuperusersResponse {
+    return new ListSuperusersResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListSuperUsersResponse {
-    return new ListSuperUsersResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListSuperusersResponse {
+    return new ListSuperusersResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListSuperUsersResponse {
-    return new ListSuperUsersResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListSuperusersResponse {
+    return new ListSuperusersResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ListSuperUsersResponse | PlainMessage<ListSuperUsersResponse> | undefined, b: ListSuperUsersResponse | PlainMessage<ListSuperUsersResponse> | undefined): boolean {
-    return proto3.util.equals(ListSuperUsersResponse, a, b);
+  static equals(a: ListSuperusersResponse | PlainMessage<ListSuperusersResponse> | undefined, b: ListSuperusersResponse | PlainMessage<ListSuperusersResponse> | undefined): boolean {
+    return proto3.util.equals(ListSuperusersResponse, a, b);
   }
 }
 

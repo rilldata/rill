@@ -208,8 +208,8 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/autoinvite/{domain}"};
   }
 
-  // ListSuperUsers lists all the superusers
-  rpc ListSuperUsers(ListSuperUsersRequest) returns (ListSuperUsersResponse) {
+  // ListSuperusers lists all the superusers
+  rpc ListSuperusers(ListSuperusersRequest) returns (ListSuperusersResponse) {
     option (google.api.http) = {get: "/v1/superuser/members"};
   }
 
@@ -429,9 +429,9 @@ message SetOrganizationMemberRoleRequest {
 
 message SetOrganizationMemberRoleResponse {}
 
-message ListSuperUsersRequest {}
+message ListSuperusersRequest {}
 
-message ListSuperUsersResponse {
+message ListSuperusersResponse {
   repeated User users = 1;
 }
 

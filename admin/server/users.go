@@ -13,13 +13,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (s *Server) ListSuperUsers(ctx context.Context, req *adminv1.ListSuperUsersRequest) (*adminv1.ListSuperUsersResponse, error) {
+func (s *Server) ListSuperusers(ctx context.Context, req *adminv1.ListSuperusersRequest) (*adminv1.ListSuperusersResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can list superusers")
 	}
 
-	users, err := s.admin.DB.FindSuperUsers(ctx)
+	users, err := s.admin.DB.FindSuperusers(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -29,7 +29,7 @@ func (s *Server) ListSuperUsers(ctx context.Context, req *adminv1.ListSuperUsers
 		dtos[i] = userToPB(user)
 	}
 
-	return &adminv1.ListSuperUsersResponse{Users: dtos}, nil
+	return &adminv1.ListSuperusersResponse{Users: dtos}, nil
 }
 
 func (s *Server) SetSuperuser(ctx context.Context, req *adminv1.SetSuperuserRequest) (*adminv1.SetSuperuserResponse, error) {
@@ -46,7 +46,7 @@ func (s *Server) SetSuperuser(ctx context.Context, req *adminv1.SetSuperuserRequ
 		return nil, err
 	}
 
-	err = s.admin.DB.SetSuperuser(ctx, user.ID, req.Superuser)
+	err = s.admin.DB.UpdateSuperuser(ctx, user.ID, req.Superuser)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

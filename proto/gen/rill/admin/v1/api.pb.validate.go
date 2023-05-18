@@ -5464,22 +5464,22 @@ var _ interface {
 	ErrorName() string
 } = SetOrganizationMemberRoleResponseValidationError{}
 
-// Validate checks the field values on ListSuperUsersRequest with the rules
+// Validate checks the field values on ListSuperusersRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ListSuperUsersRequest) Validate() error {
+func (m *ListSuperusersRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ListSuperUsersRequest with the rules
+// ValidateAll checks the field values on ListSuperusersRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ListSuperUsersRequestMultiError, or nil if none found.
-func (m *ListSuperUsersRequest) ValidateAll() error {
+// ListSuperusersRequestMultiError, or nil if none found.
+func (m *ListSuperusersRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ListSuperUsersRequest) validate(all bool) error {
+func (m *ListSuperusersRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -5487,19 +5487,19 @@ func (m *ListSuperUsersRequest) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return ListSuperUsersRequestMultiError(errors)
+		return ListSuperusersRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ListSuperUsersRequestMultiError is an error wrapping multiple validation
-// errors returned by ListSuperUsersRequest.ValidateAll() if the designated
+// ListSuperusersRequestMultiError is an error wrapping multiple validation
+// errors returned by ListSuperusersRequest.ValidateAll() if the designated
 // constraints aren't met.
-type ListSuperUsersRequestMultiError []error
+type ListSuperusersRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ListSuperUsersRequestMultiError) Error() string {
+func (m ListSuperusersRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -5508,11 +5508,11 @@ func (m ListSuperUsersRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ListSuperUsersRequestMultiError) AllErrors() []error { return m }
+func (m ListSuperusersRequestMultiError) AllErrors() []error { return m }
 
-// ListSuperUsersRequestValidationError is the validation error returned by
-// ListSuperUsersRequest.Validate if the designated constraints aren't met.
-type ListSuperUsersRequestValidationError struct {
+// ListSuperusersRequestValidationError is the validation error returned by
+// ListSuperusersRequest.Validate if the designated constraints aren't met.
+type ListSuperusersRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -5520,24 +5520,24 @@ type ListSuperUsersRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e ListSuperUsersRequestValidationError) Field() string { return e.field }
+func (e ListSuperusersRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ListSuperUsersRequestValidationError) Reason() string { return e.reason }
+func (e ListSuperusersRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ListSuperUsersRequestValidationError) Cause() error { return e.cause }
+func (e ListSuperusersRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ListSuperUsersRequestValidationError) Key() bool { return e.key }
+func (e ListSuperusersRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ListSuperUsersRequestValidationError) ErrorName() string {
-	return "ListSuperUsersRequestValidationError"
+func (e ListSuperusersRequestValidationError) ErrorName() string {
+	return "ListSuperusersRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ListSuperUsersRequestValidationError) Error() string {
+func (e ListSuperusersRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -5549,14 +5549,14 @@ func (e ListSuperUsersRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sListSuperUsersRequest.%s: %s%s",
+		"invalid %sListSuperusersRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ListSuperUsersRequestValidationError{}
+var _ error = ListSuperusersRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -5564,24 +5564,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ListSuperUsersRequestValidationError{}
+} = ListSuperusersRequestValidationError{}
 
-// Validate checks the field values on ListSuperUsersResponse with the rules
+// Validate checks the field values on ListSuperusersResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ListSuperUsersResponse) Validate() error {
+func (m *ListSuperusersResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ListSuperUsersResponse with the rules
+// ValidateAll checks the field values on ListSuperusersResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ListSuperUsersResponseMultiError, or nil if none found.
-func (m *ListSuperUsersResponse) ValidateAll() error {
+// ListSuperusersResponseMultiError, or nil if none found.
+func (m *ListSuperusersResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ListSuperUsersResponse) validate(all bool) error {
+func (m *ListSuperusersResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -5595,7 +5595,7 @@ func (m *ListSuperUsersResponse) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ListSuperUsersResponseValidationError{
+					errors = append(errors, ListSuperusersResponseValidationError{
 						field:  fmt.Sprintf("Users[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -5603,7 +5603,7 @@ func (m *ListSuperUsersResponse) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, ListSuperUsersResponseValidationError{
+					errors = append(errors, ListSuperusersResponseValidationError{
 						field:  fmt.Sprintf("Users[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -5612,7 +5612,7 @@ func (m *ListSuperUsersResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return ListSuperUsersResponseValidationError{
+				return ListSuperusersResponseValidationError{
 					field:  fmt.Sprintf("Users[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -5623,19 +5623,19 @@ func (m *ListSuperUsersResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ListSuperUsersResponseMultiError(errors)
+		return ListSuperusersResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// ListSuperUsersResponseMultiError is an error wrapping multiple validation
-// errors returned by ListSuperUsersResponse.ValidateAll() if the designated
+// ListSuperusersResponseMultiError is an error wrapping multiple validation
+// errors returned by ListSuperusersResponse.ValidateAll() if the designated
 // constraints aren't met.
-type ListSuperUsersResponseMultiError []error
+type ListSuperusersResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ListSuperUsersResponseMultiError) Error() string {
+func (m ListSuperusersResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -5644,11 +5644,11 @@ func (m ListSuperUsersResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ListSuperUsersResponseMultiError) AllErrors() []error { return m }
+func (m ListSuperusersResponseMultiError) AllErrors() []error { return m }
 
-// ListSuperUsersResponseValidationError is the validation error returned by
-// ListSuperUsersResponse.Validate if the designated constraints aren't met.
-type ListSuperUsersResponseValidationError struct {
+// ListSuperusersResponseValidationError is the validation error returned by
+// ListSuperusersResponse.Validate if the designated constraints aren't met.
+type ListSuperusersResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -5656,24 +5656,24 @@ type ListSuperUsersResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e ListSuperUsersResponseValidationError) Field() string { return e.field }
+func (e ListSuperusersResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ListSuperUsersResponseValidationError) Reason() string { return e.reason }
+func (e ListSuperusersResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ListSuperUsersResponseValidationError) Cause() error { return e.cause }
+func (e ListSuperusersResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ListSuperUsersResponseValidationError) Key() bool { return e.key }
+func (e ListSuperusersResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ListSuperUsersResponseValidationError) ErrorName() string {
-	return "ListSuperUsersResponseValidationError"
+func (e ListSuperusersResponseValidationError) ErrorName() string {
+	return "ListSuperusersResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ListSuperUsersResponseValidationError) Error() string {
+func (e ListSuperusersResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -5685,14 +5685,14 @@ func (e ListSuperUsersResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sListSuperUsersResponse.%s: %s%s",
+		"invalid %sListSuperusersResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ListSuperUsersResponseValidationError{}
+var _ error = ListSuperusersResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -5700,7 +5700,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ListSuperUsersResponseValidationError{}
+} = ListSuperusersResponseValidationError{}
 
 // Validate checks the field values on SetSuperuserRequest with the rules
 // defined in the proto definition for this message. If any rules are

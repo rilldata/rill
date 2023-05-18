@@ -63,7 +63,7 @@ import type {
   V1UpdateProjectVariablesResponse,
   AdminServiceUpdateProjectVariablesBody,
   V1PingResponse,
-  V1ListSuperUsersResponse,
+  V1ListSuperusersResponse,
   V1SetSuperuserResponse,
   V1SetSuperuserRequest,
   V1RevokeCurrentAuthTokenResponse,
@@ -1824,30 +1824,30 @@ export const createAdminServicePing = <
 };
 
 /**
- * @summary ListSuperUsers lists all the superusers
+ * @summary ListSuperusers lists all the superusers
  */
-export const adminServiceListSuperUsers = (signal?: AbortSignal) => {
-  return httpClient<V1ListSuperUsersResponse>({
+export const adminServiceListSuperusers = (signal?: AbortSignal) => {
+  return httpClient<V1ListSuperusersResponse>({
     url: `/v1/superuser/members`,
     method: "get",
     signal,
   });
 };
 
-export const getAdminServiceListSuperUsersQueryKey = () =>
+export const getAdminServiceListSuperusersQueryKey = () =>
   [`/v1/superuser/members`] as const;
 
-export type AdminServiceListSuperUsersQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceListSuperUsers>>
+export type AdminServiceListSuperusersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListSuperusers>>
 >;
-export type AdminServiceListSuperUsersQueryError = RpcStatus;
+export type AdminServiceListSuperusersQueryError = RpcStatus;
 
-export const createAdminServiceListSuperUsers = <
-  TData = Awaited<ReturnType<typeof adminServiceListSuperUsers>>,
+export const createAdminServiceListSuperusers = <
+  TData = Awaited<ReturnType<typeof adminServiceListSuperusers>>,
   TError = RpcStatus
 >(options?: {
   query?: CreateQueryOptions<
-    Awaited<ReturnType<typeof adminServiceListSuperUsers>>,
+    Awaited<ReturnType<typeof adminServiceListSuperusers>>,
     TError,
     TData
   >;
@@ -1855,14 +1855,14 @@ export const createAdminServiceListSuperUsers = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getAdminServiceListSuperUsersQueryKey();
+    queryOptions?.queryKey ?? getAdminServiceListSuperusersQueryKey();
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceListSuperUsers>>
-  > = ({ signal }) => adminServiceListSuperUsers(signal);
+    Awaited<ReturnType<typeof adminServiceListSuperusers>>
+  > = ({ signal }) => adminServiceListSuperusers(signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceListSuperUsers>>,
+    Awaited<ReturnType<typeof adminServiceListSuperusers>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<

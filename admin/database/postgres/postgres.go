@@ -730,7 +730,7 @@ func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, afte
 	return res, nil
 }
 
-func (c *connection) FindSuperUsers(ctx context.Context) ([]*database.User, error) {
+func (c *connection) FindSuperusers(ctx context.Context) ([]*database.User, error) {
 	var res []*database.User
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u WHERE u.superuser = true`)
 	if err != nil {
@@ -739,9 +739,9 @@ func (c *connection) FindSuperUsers(ctx context.Context) ([]*database.User, erro
 	return res, nil
 }
 
-func (c *connection) SetSuperuser(ctx context.Context, userID string, superuser bool) error {
+func (c *connection) UpdateSuperuser(ctx context.Context, userID string, superuser bool) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE users SET superuser=$2, updated_on=now() WHERE id=$1`, userID, superuser)
-	return checkUpdateRow("superuser invite", res, err)
+	return checkUpdateRow("superuser", res, err)
 }
 
 func (c *connection) InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error {
