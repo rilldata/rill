@@ -61,42 +61,59 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 	appendToTable := false
 	summary := &drivers.IngestionSummary{}
 	var tableSchema map[string]string
+
+	// parse required properties from source.Properties
+	allowColAddition, allowColRelaxation, err := schemaRelaxationProperties(source.Properties)
+	if err != nil {
+		return nil, err
+	}
+
+	format, formatDefined := source.Properties["format"].(string)
+	if formatDefined {
+		format = fmt.Sprintf(".%s", format)
+	}
+
+	var ingestionProps map[string]any
+	if duckDBProps, ok := source.Properties["duckdb"].(map[string]any); ok {
+		ingestionProps = duckDBProps
+	} else {
+		ingestionProps = map[string]any{}
+	}
+
 	for iterator.HasNext() {
 		files, err := iterator.NextBatch(_iteratorBatch)
 		if err != nil {
 			return nil, err
 		}
 
-		from, err := sourceReader(files, source.Properties)
+		if !formatDefined {
+			format = fileutil.FullExt(files[0])
+			formatDefined = true
+		}
+
+		from, err := sourceReader(files, format, ingestionProps)
 		if err != nil {
 			return nil, err
 		}
 
 		var query string
 		if appendToTable {
-			srcSchema, newSchema, err := c.updateSchema(ctx, from, files, source, tableSchema)
+			srcSchema, newSchema, err := c.updateSchema(ctx, from, files, source, tableSchema, allowColAddition, allowColRelaxation)
 			if err != nil {
 				return nil, fmt.Errorf("failed to update schema %w", err)
 			}
 
 			tableSchema = newSchema
-			if srcSchema != nil {
+			if !hasKey(ingestionProps, "columns", "types", "dtypes") && format != ".parquet" {
 				// add columns and their datatypes to ensure the datatypes are not inferred again
-				var ingestionProps map[string]any
-				if duckDBProps, ok := source.Properties["duckdb"].(map[string]any); ok {
-					ingestionProps = copyMap(duckDBProps)
-				} else {
-					ingestionProps = map[string]any{}
-				}
-				ingestionProps["columns"] = schemaToDuckDBColumnsProp(srcSchema)
-				from, err = sourceReader(files, ingestionProps)
+				from, err = sourceReader(files, format, addSchemaInference(ingestionProps, srcSchema))
 				if err != nil {
 					return nil, err
 				}
 			}
 
-			// doing a union with existing schema to handle cases when order of columns is changed or count of columns in new csv is less
-			query = fmt.Sprintf("INSERT INTO %q ((SELECT * FROM %s LIMIT 0) UNION ALL BY NAME (SELECT * FROM %s));", source.Name, source.Name, from)
+			colNames := strings.Join(keys(srcSchema), ",")
+			query = fmt.Sprintf("INSERT INTO %q (%s) (SELECT %s FROM %s);", source.Name, colNames, colNames, from)
 		} else {
 			query = fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from)
 		}
@@ -112,26 +129,25 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 
 // updateSchema updates the schema of the table in case new file adds a new column or
 // updates the datatypes of an existing columns with a wider datatype.
-func (c *connection) updateSchema(ctx context.Context, from string, fileNames []string, source *connectors.Source, oldSchema map[string]string) (srcSchema, currentSchema map[string]string, err error) {
-	allowAddition, ok := source.Properties["allow_field_addition"].(bool)
-	if !ok {
-		allowAddition = true
+func (c *connection) updateSchema(ctx context.Context, from string, fileNames []string, source *connectors.Source, oldSchema map[string]string,
+	allowAddition, allowRelaxation bool,
+) (srcSchema, currentSchema map[string]string, err error) {
+	// schema of new files
+	if srcSchema, err = c.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE (SELECT * FROM %s LIMIT 0);", from)); err != nil {
+		return
 	}
 
-	allowRelaxation, ok := source.Properties["allow_field_relaxation"].(bool)
-	if !ok {
-		allowRelaxation = true
-	}
-
+	// combined schema
 	qry := fmt.Sprintf("DESCRIBE ((SELECT * FROM %s limit 0) UNION ALL BY NAME (SELECT * FROM %s limit 0));", source.Name, from)
 	unionSchema, err := c.scanSchemaFromQuery(ctx, qry)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	// current schema
 	currentSchema = oldSchema
 	if currentSchema == nil {
-		currentSchema, err = c.scanSchemaFromQuery(ctx, fmt.Sprintf("Describe %s;", source.Name))
+		currentSchema, err = c.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE %s;", source.Name))
 		if err != nil {
 			return nil, nil, err
 		}
@@ -149,10 +165,6 @@ func (c *connection) updateSchema(ctx context.Context, from string, fileNames []
 	}
 
 	if !allowRelaxation {
-		// infer source schema to check if columns are removed
-		if srcSchema, err = c.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE (SELECT * FROM %s LIMIT 0);", from)); err != nil {
-			return
-		}
 		if len(srcSchema) < len(unionSchema) {
 			c.logger.Error("new files are missing columns and column relaxation not allowed",
 				zap.String("files", strings.Join(names(fileNames), ",")),
@@ -167,6 +179,7 @@ func (c *connection) updateSchema(ctx context.Context, from string, fileNames []
 			return nil, nil, errors.New("new files change datatypes of some columns and column relaxation not allowed")
 		}
 	}
+
 	if len(newCols) != 0 && !allowAddition {
 		c.logger.Error("new files have new columns and column addition not allowed",
 			zap.String("files", strings.Join(names(fileNames), ",")),
@@ -213,7 +226,21 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 		return fmt.Errorf("file does not exist at %s", conf.Path)
 	}
 
-	from, err := sourceReader(localPaths, source.Properties)
+	var format string
+	if conf.Format != "" {
+		format = fmt.Sprintf(".%s", conf.Format)
+	} else {
+		format = fileutil.FullExt(localPaths[0])
+	}
+
+	var ingestionProps map[string]any
+	if duckDBProps, ok := source.Properties["duckdb"].(map[string]any); ok {
+		ingestionProps = duckDBProps
+	} else {
+		ingestionProps = map[string]any{}
+	}
+
+	from, err := sourceReader(localPaths, fmt.Sprintf(".%s", format), ingestionProps)
 	if err != nil {
 		return err
 	}
@@ -241,16 +268,6 @@ func (c *connection) scanSchemaFromQuery(ctx context.Context, qry string) (map[s
 	return schema, nil
 }
 
-func fileSize(paths []string) int64 {
-	var size int64
-	for _, path := range paths {
-		if info, err := os.Stat(path); err == nil { // ignoring error since only error possible is *PathError
-			size += info.Size()
-		}
-	}
-	return size
-}
-
 func resolveLocalPath(env *connectors.Env, path, sourceName string) (string, error) {
 	path, err := fileutil.ExpandHome(path)
 	if err != nil {
@@ -270,21 +287,7 @@ func resolveLocalPath(env *connectors.Env, path, sourceName string) (string, err
 	return finalPath, nil
 }
 
-func sourceReader(paths []string, properties map[string]any) (string, error) {
-	format, formatDefined := properties["format"].(string)
-	if formatDefined {
-		format = fmt.Sprintf(".%s", format)
-	} else {
-		format = fileutil.FullExt(paths[0])
-	}
-
-	var ingestionProps map[string]any
-	if duckDBProps, ok := properties["duckdb"].(map[string]any); ok {
-		ingestionProps = duckDBProps
-	} else {
-		ingestionProps = map[string]any{}
-	}
-
+func sourceReader(paths []string, format string, ingestionProps map[string]any) (string, error) {
 	// Generate a "read" statement
 	if containsAny(format, []string{".csv", ".tsv", ".txt"}) {
 		// CSV reader
@@ -298,16 +301,6 @@ func sourceReader(paths []string, properties map[string]any) (string, error) {
 	} else {
 		return "", fmt.Errorf("file type not supported : %s", format)
 	}
-}
-
-func containsAny(s string, targets []string) bool {
-	source := strings.ToLower(s)
-	for _, target := range targets {
-		if strings.Contains(source, target) {
-			return true
-		}
-	}
-	return false
 }
 
 func generateReadCsvStatement(paths []string, properties map[string]any) (string, error) {
@@ -351,14 +344,6 @@ func generateReadJSONStatement(paths []string, properties map[string]any) (strin
 	return fmt.Sprintf("read_json(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
 }
 
-func copyMap(originalMap map[string]any) map[string]any {
-	newMap := make(map[string]any, len(originalMap))
-	for key, value := range originalMap {
-		newMap[key] = value
-	}
-	return newMap
-}
-
 func convertToStatementParamsStr(paths []string, properties map[string]any) string {
 	ingestionParamsStr := make([]string, 0, len(properties)+1)
 	// The first parameter is a source path
@@ -367,6 +352,73 @@ func convertToStatementParamsStr(paths []string, properties map[string]any) stri
 		ingestionParamsStr = append(ingestionParamsStr, fmt.Sprintf("%s=%v", key, value))
 	}
 	return strings.Join(ingestionParamsStr, ",")
+}
+
+func schemaToDuckDBColumnsProp(schema map[string]string) string {
+	var typeStr strings.Builder
+	typeStr.WriteString("{")
+	i := 0
+	for name, dtype := range schema {
+		typeStr.WriteString(fmt.Sprintf("'%s':'%s'", name, dtype))
+		i++
+		if i != len(schema) {
+			typeStr.WriteString(",")
+		}
+	}
+	typeStr.WriteString("}")
+	return typeStr.String()
+}
+
+type duckDBTableSchemaResult struct {
+	ColumnName string  `db:"column_name"`
+	ColumnType string  `db:"column_type"`
+	Nullable   *string `db:"null"`
+	Key        *string `db:"key"`
+	Default    *string `db:"default"`
+	Extra      *string `db:"extra"`
+}
+
+func schemaRelaxationProperties(prop map[string]interface{}) (allowAddition, allowRelaxation bool, err error) {
+	allowAddition, additionDefined := prop["allow_field_addition"].(bool)
+	allowRelaxation, relaxationDefined := prop["allow_field_relaxation"].(bool)
+
+	val, ok := prop["union_by_name"].(bool)
+	if ok && !val && allowAddition {
+		// if union_by_name is set as false addition can't be done
+		return false, false, fmt.Errorf("if `union_by_name` is set `allow_field_addition` must be disabled")
+	}
+
+	if hasKey(prop, "columns", "types", "dtypes") && allowRelaxation {
+		return false, false, fmt.Errorf("if any of `columns`,`types`,`dtypes` is set `allow_field_relaxation` must be disabled")
+	}
+
+	// set default values
+	if !additionDefined {
+		allowAddition = true
+	}
+
+	if !relaxationDefined {
+		allowRelaxation = true
+	}
+
+	return allowAddition, allowRelaxation, nil
+}
+
+func addSchemaInference(duckDBProps map[string]interface{}, schema map[string]string) map[string]interface{} {
+	// add columns and their datatypes to ensure the datatypes are not inferred again
+	ingestionProps := copyMap(duckDBProps)
+	ingestionProps["columns"] = schemaToDuckDBColumnsProp(schema)
+	return ingestionProps
+}
+
+// utility functions
+func hasKey(m map[string]interface{}, key ...string) bool {
+	for _, k := range key {
+		if _, ok := m[k]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 func missingMapKeys(src, lookup map[string]string) []string {
@@ -395,26 +447,31 @@ func names(filePaths []string) []string {
 	return names
 }
 
-func schemaToDuckDBColumnsProp(schema map[string]string) string {
-	var typeStr strings.Builder
-	typeStr.WriteString("{")
-	i := 0
-	for name, dtype := range schema {
-		typeStr.WriteString(fmt.Sprintf("'%s':'%s'", name, dtype))
-		i++
-		if i != len(schema) {
-			typeStr.WriteString(",")
-		}
+// copyMap does a shallow copy of the map
+func copyMap(originalMap map[string]any) map[string]any {
+	newMap := make(map[string]any, len(originalMap))
+	for key, value := range originalMap {
+		newMap[key] = value
 	}
-	typeStr.WriteString("}")
-	return typeStr.String()
+	return newMap
 }
 
-type duckDBTableSchemaResult struct {
-	ColumnName string  `db:"column_name"`
-	ColumnType string  `db:"column_type"`
-	Nullable   *string `db:"null"`
-	Key        *string `db:"key"`
-	Default    *string `db:"default"`
-	Extra      *string `db:"extra"`
+func containsAny(s string, targets []string) bool {
+	source := strings.ToLower(s)
+	for _, target := range targets {
+		if strings.Contains(source, target) {
+			return true
+		}
+	}
+	return false
+}
+
+func fileSize(paths []string) int64 {
+	var size int64
+	for _, path := range paths {
+		if info, err := os.Stat(path); err == nil { // ignoring error since only error possible is *PathError
+			size += info.Size()
+		}
+	}
+	return size
 }
