@@ -64,8 +64,8 @@ func (s *Service) FindEntry(ctx context.Context, name string) (*drivers.CatalogE
 		return nil, err
 	}
 	s.Meta.lock.RLock()
+	defer s.Meta.lock.RUnlock()
 	s.Meta.fillDAGInEntry(entry)
-	s.Meta.lock.RUnlock()
 	return entry, nil
 }
 
