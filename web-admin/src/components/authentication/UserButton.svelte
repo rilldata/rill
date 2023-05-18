@@ -6,7 +6,8 @@
   const user = createAdminServiceGetCurrentUser();
 
   function handleLogOut() {
-    window.location.href = `${ADMIN_URL}/auth/logout?redirect=${window.location.origin}${window.location.pathname}`;
+    const loginWithRedirect = `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
+    window.location.href = `${ADMIN_URL}/auth/logout?redirect=${loginWithRedirect}`;
   }
 
   function handleDocumentation() {

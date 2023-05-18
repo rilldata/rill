@@ -18,8 +18,8 @@
     getTimeGrainOptions,
   } from "@rilldata/web-common/lib/time/grains";
   import {
-    convertTimeRangePreset,
     ISODurationToTimePreset,
+    convertTimeRangePreset,
     isRangeInsideOther,
   } from "@rilldata/web-common/lib/time/ranges";
   import {
@@ -31,8 +31,8 @@
     TimeRangeType,
   } from "@rilldata/web-common/lib/time/types";
   import {
-    createRuntimeServiceGetCatalogEntry,
     V1TimeGrain,
+    createRuntimeServiceGetCatalogEntry,
   } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -91,10 +91,13 @@
       V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
   }
   $: allTimeRange = $allTimeRangeQuery?.data as TimeRange;
+  $: isDashboardDefined = $dashboardStore !== undefined;
   // Once we have the allTimeRange, set the default time range and time grain.
-  // This reactive statement feels a bit precarious!
-  $: if (allTimeRange && allTimeRange?.start && $dashboardStore !== undefined) {
-    if (!$dashboardStore?.selectedTimeRange) {
+  // This is a temporary workaround with high potential to break. We should refactor this defaulting logic to live with the store, not as part of a component.
+  $: if (allTimeRange && allTimeRange?.start && isDashboardDefined) {
+    const selectedTimeRange = $dashboardStore?.selectedTimeRange;
+
+    if (!selectedTimeRange) {
       setDefaultTimeControls(allTimeRange);
     } else {
       setTimeControlsFromUrl(allTimeRange);

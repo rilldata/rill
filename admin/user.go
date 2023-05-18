@@ -47,13 +47,21 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	// Create user
-	user, err = s.DB.InsertUser(ctx, &database.InsertUserOptions{
+	isFirstUser, err := s.DB.CheckUsersEmpty(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	opts := &database.InsertUserOptions{
 		Email:               email,
 		DisplayName:         name,
 		PhotoURL:            photoURL,
 		QuotaSingleuserOrgs: database.DefaultQuotaSingleuserOrgs,
-	})
+		Superuser:           isFirstUser,
+	}
+
+	// Create user
+	user, err = s.DB.InsertUser(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +167,12 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 
 func (s *Service) InviteUserToOrganization(ctx context.Context, email, inviterID, orgID, roleID, orgName, roleName string) error {
 	// Create invite
-	err := s.DB.InsertOrganizationInvite(ctx, email, orgID, roleID, inviterID)
+	err := s.DB.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
+		Email:     email,
+		InviterID: inviterID,
+		OrgID:     orgID,
+		RoleID:    roleID,
+	})
 	if err != nil {
 		return err
 	}
@@ -175,7 +188,12 @@ func (s *Service) InviteUserToOrganization(ctx context.Context, email, inviterID
 
 func (s *Service) InviteUserToProject(ctx context.Context, email, inviterID, projectID, roleID, projectName, roleName string) error {
 	// Create invite
-	err := s.DB.InsertProjectInvite(ctx, email, projectID, roleID, inviterID)
+	err := s.DB.InsertProjectInvite(ctx, &database.InsertProjectInviteOptions{
+		Email:     email,
+		InviterID: inviterID,
+		ProjectID: projectID,
+		RoleID:    roleID,
+	})
 	if err != nil {
 		return err
 	}

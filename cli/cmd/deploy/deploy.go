@@ -67,6 +67,12 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			tel := telemetry.New(cfg.Version)
+			if cfg.IsAuthenticated() {
+				userID, err := cmdutil.FetchUserID(ctx, cfg)
+				if err == nil {
+					tel.WithUserID(userID)
+				}
+			}
 			tel.Emit(telemetry.ActionDeployStart)
 			defer func() {
 				// give 5s for emitting events over the parent context.
@@ -86,8 +92,8 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				warn.Printf("Directory at %q doesn't contain a valid Rill project.\n\n", fullpath)
-				warn.Printf("Run \"rill deploy\" from a Rill project directory or use \"--path\" to pass a project path.\n")
-				warn.Printf("Run \"rill start\" to initialize a new Rill project.\n")
+				warn.Printf("Run `rill deploy` from a Rill project directory or use `--path` to pass a project path.\n")
+				warn.Printf("Run `rill start` to initialize a new Rill project.\n")
 				return nil
 			}
 
@@ -113,6 +119,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
+			userLoginSuccess := false
 			silentGitFlow := false
 			// If user is not authenticated, run login flow
 			if !cfg.IsAuthenticated() {
@@ -140,13 +147,24 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 					}
 					return fmt.Errorf("login failed: %w", err)
 				}
-				tel.Emit(telemetry.ActionLoginSuccess)
+				userLoginSuccess = true
 				fmt.Println("")
 			}
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
+			}
+			if tel.UserID == "" {
+				user, err := client.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+				if err == nil {
+					tel.WithUserID(user.GetUser().GetId())
+				}
+			}
+
+			if userLoginSuccess {
+				// fire this after we potentially get the user id
+				tel.Emit(telemetry.ActionLoginSuccess)
 			}
 
 			// Run flow for access to the Github remote (if necessary)
@@ -202,7 +220,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("org creation failed with error: %w", err)
 				}
-				success.Printf("Created org %q. Run \"rill org edit\" to change name if required.\n", cfg.Org)
+				success.Printf("Created org %q. Run `rill org edit` to change name if required.\n", cfg.Org)
 			} else {
 				info.Printf("Using org %q.\n", cfg.Org)
 			}
@@ -263,7 +281,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Success!
-			success.Printf("Created project \"%s/%s\". Use \"rill project rename\" to change name if required.\n\n", cfg.Org, res.Project.Name)
+			success.Printf("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", cfg.Org, res.Project.Name)
 			success.Printf("Rill projects deploy continuously when you push changes to Github.\n")
 			if res.Project.FrontendUrl != "" {
 				success.Printf("Your project can be accessed at: %s\n", res.Project.FrontendUrl)
@@ -540,11 +558,15 @@ Follow these steps to push your project to Github.
 	
 	git remote add origin https://github.com/your-account/your-repo.git
 	
-5. Push your repository
+5. Rename master branch to main
+	
+	git branch -M main
+
+6. Push your repository
 	
 	git push -u origin main
 	
-6. Deploy Rill to your repository
+7. Deploy Rill to your repository
 	
 	rill deploy
 	

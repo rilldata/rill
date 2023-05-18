@@ -58,6 +58,7 @@ export class MetricsService
       version: this.localConfig.version,
       is_dev: this.localConfig.is_dev,
       project_id: MD5(projectPathParts[projectPathParts.length - 1]).toString(),
+      user_id: this.localConfig.user_id,
       analytics_enabled: this.localConfig.analytics_enabled,
       mode: this.localConfig.readonly ? "read-only" : "edit",
     };

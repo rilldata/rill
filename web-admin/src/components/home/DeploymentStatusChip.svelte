@@ -88,6 +88,7 @@
     [V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING]: {
       icon: Spinner,
       iconProps: {
+        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
         className: "text-purple-600 hover:text-purple-500",
         status: EntityStatus.Running,
       },
@@ -98,6 +99,7 @@
     [V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING]: {
       icon: Spinner,
       iconProps: {
+        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
         className: "text-purple-600 hover:text-purple-500",
         status: EntityStatus.Running,
       },
@@ -120,10 +122,12 @@
 
 {#if deploymentStatus && deploymentStatus !== V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED}
   {#if iconOnly}
-    <svelte:component
-      this={currentStatusDisplay.icon}
-      {...currentStatusDisplay.iconProps}
-    />
+    <div class="pb-0.5">
+      <svelte:component
+        this={currentStatusDisplay.icon}
+        {...currentStatusDisplay.iconProps}
+      />
+    </div>
   {:else}
     <div
       class="flex space-x-1 items-center px-2 border rounded rounded-[20px] w-fit {currentStatusDisplay.wrapperClass} {iconOnly &&
