@@ -22,6 +22,9 @@
   $: errorText = "";
   $: isRillCloud = false;
 
+  let isSSODisabled = false;
+  let isEmailDisabled = false;
+
   let webAuth: WebAuth;
   const databaseConnection = "Username-Password-Authentication";
 
@@ -56,6 +59,7 @@
   }
 
   function authorize(connection: string) {
+    isSSODisabled = true;
     /**
      * `authorize` will redirect the user to the login page irrespective of the connection name
      * We are using the changePassword API to determine if the connection name exists
@@ -71,6 +75,7 @@
             displayError({
               message: `Company slug ${connection} doesn't exist`,
             });
+            isSSODisabled = false;
           } else {
             webAuth.authorize({ connection });
           }
@@ -80,6 +85,7 @@
   }
 
   function handleEmailSubmit(email: string, password: string) {
+    isEmailDisabled = true;
     errorText = "";
     try {
       if (isLoginPage) {
@@ -91,6 +97,7 @@
           },
           (err) => {
             if (err) displayError({ message: err?.description });
+            isEmailDisabled = false;
           }
         );
       } else {
@@ -102,11 +109,13 @@
           },
           (err) => {
             if (err) displayError({ message: err?.description });
+            isEmailDisabled = false;
           }
         );
       }
     } catch (err) {
       displayError({ message: err?.description || err?.message });
+      isEmailDisabled = false;
     }
   }
 
@@ -164,6 +173,7 @@
 
       {#if !isRillCloud}
         <SSOForm
+          disabled={isSSODisabled}
           on:ssoSubmit={(e) => {
             authorize(e.detail);
           }}
@@ -171,6 +181,7 @@
       {/if}
       <EmailPassForm
         {isLoginPage}
+        disabled={isEmailDisabled}
         on:submit={(e) => {
           handleEmailSubmit(e.detail.email, e.detail.password);
         }}

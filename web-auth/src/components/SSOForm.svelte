@@ -5,6 +5,8 @@
 
   const dispatch = createEventDispatcher();
 
+  export let disabled = false;
+
   let companySlug = "";
   let showForm = false;
 
@@ -41,7 +43,7 @@
     </div>
   {/if}
 
-  <CtaButton variant="secondary" on:click={() => handleSubmit()}>
+  <CtaButton {disabled} variant="secondary" on:click={() => handleSubmit()}>
     <div class="flex justify-center font-medium w-[400px]">
       <div>Continue with SAML SSO</div>
     </div>
