@@ -4,6 +4,8 @@ import {
   isComparisonInsideBounds,
 } from ".";
 import { TimeComparisonOption } from "../types";
+import { describe, it, expect } from "vitest";
+
 const contiguousAndCustomComparisonRanges = [
   // contiguous cases
   {

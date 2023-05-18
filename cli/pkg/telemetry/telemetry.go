@@ -42,6 +42,7 @@ type Telemetry struct {
 	Enabled   bool
 	InstallID string
 	Version   config.Version
+	UserID    string
 	events    [][]byte
 }
 
@@ -57,8 +58,13 @@ func New(ver config.Version) *Telemetry {
 		Enabled:   enabled,
 		InstallID: installID,
 		Version:   ver,
+		UserID:    "",
 		events:    make([][]byte, 0),
 	}
+}
+
+func (t *Telemetry) WithUserID(userID string) {
+	t.UserID = userID
 }
 
 func (t *Telemetry) Emit(action Action) {
@@ -85,6 +91,7 @@ type behaviourEventFields struct {
 	InstallID     string `json:"install_id"`
 	BuildID       string `json:"build_id"`
 	Version       string `json:"version"`
+	UserID        string `json:"user_id"`
 	IsDev         bool   `json:"is_dev"`
 	Mode          string `json:"mode"`
 	Action        string `json:"action"`

@@ -14,6 +14,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
+  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardStateProvider.svelte";
 
   $: metricViewName = $page.params.name;
   $: metricsExplorer = useDashboardStore(metricViewName);
@@ -65,6 +66,8 @@
     bgClass="bg-white"
     inspector={false}
   >
-    <Dashboard {metricViewName} hasTitle slot="body" />
+    <DashboardStateProvider {metricViewName} slot="body">
+      <Dashboard {metricViewName} hasTitle />
+    </DashboardStateProvider>
   </WorkspaceContainer>
 {/if}
