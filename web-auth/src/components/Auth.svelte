@@ -73,7 +73,7 @@
         if (err) {
           if (err?.description === "connection not found") {
             displayError({
-              message: `Company slug ${connection} doesn't exist`,
+              message: `Organization slug ${connection} doesn't exist`,
             });
             isSSODisabled = false;
           } else {
