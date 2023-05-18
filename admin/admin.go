@@ -2,10 +2,7 @@ package admin
 
 import (
 	"context"
-	"net/http"
 
-	"github.com/bradleyfalzon/ghinstallation/v2"
-	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/provisioner"
@@ -14,18 +11,16 @@ import (
 )
 
 type Options struct {
-	DatabaseDriver      string
-	DatabaseDSN         string
-	GithubAppID         int64
-	GithubAppPrivateKey string
-	ProvisionerSpec     string
+	DatabaseDriver  string
+	DatabaseDSN     string
+	ProvisionerSpec string
 }
 
 type Service struct {
 	DB             database.DB
 	opts           *Options
 	logger         *zap.Logger
-	github         *github.Client
+	github         Github
 	provisioner    provisioner.Provisioner
 	issuer         *auth.Issuer
 	closeCtx       context.Context
@@ -33,7 +28,7 @@ type Service struct {
 	Email          *email.Client
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client) (*Service, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github) (*Service, error) {
 	// Init db
 	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN)
 	if err != nil {
@@ -59,13 +54,6 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		logger.Info("database migrated", zap.Int("from_version", v1), zap.Int("to_version", v2))
 	}
 
-	// Create Github client
-	itr, err := ghinstallation.NewAppsTransport(http.DefaultTransport, opts.GithubAppID, []byte(opts.GithubAppPrivateKey))
-	if err != nil {
-		return nil, err
-	}
-	gh := github.NewClient(&http.Client{Transport: itr})
-
 	// Create provisioner
 	prov, err := provisioner.NewStatic(opts.ProvisionerSpec, db)
 	if err != nil {
@@ -79,7 +67,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		DB:             db,
 		opts:           opts,
 		logger:         logger,
-		github:         gh,
+		github:         github,
 		provisioner:    prov,
 		issuer:         issuer,
 		closeCtx:       ctx,

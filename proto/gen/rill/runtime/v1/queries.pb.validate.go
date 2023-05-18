@@ -378,6 +378,40 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 
 	// no validation rules for DimensionName
 
+	for idx, item := range m.GetInlineMeasures() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewToplistRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewToplistRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewToplistRequestValidationError{
+					field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if all {
 		switch v := interface{}(m.GetTimeStart()).(type) {
 		case interface{ ValidateAll() error }:
@@ -755,6 +789,1067 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewToplistResponseValidationError{}
 
+// Validate checks the field values on MetricsViewComparisonToplistRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *MetricsViewComparisonToplistRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewComparisonToplistRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// MetricsViewComparisonToplistRequestMultiError, or nil if none found.
+func (m *MetricsViewComparisonToplistRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for MetricsViewName
+
+	// no validation rules for DimensionName
+
+	for idx, item := range m.GetInlineMeasures() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewComparisonToplistRequestValidationError{
+					field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if all {
+		switch v := interface{}(m.GetBaseTimeRange()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
+					field:  "BaseTimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
+					field:  "BaseTimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetBaseTimeRange()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewComparisonToplistRequestValidationError{
+				field:  "BaseTimeRange",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetComparisonTimeRange()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
+					field:  "ComparisonTimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
+					field:  "ComparisonTimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetComparisonTimeRange()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewComparisonToplistRequestValidationError{
+				field:  "ComparisonTimeRange",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetSort() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
+						field:  fmt.Sprintf("Sort[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
+						field:  fmt.Sprintf("Sort[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewComparisonToplistRequestValidationError{
+					field:  fmt.Sprintf("Sort[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if all {
+		switch v := interface{}(m.GetFilter()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewComparisonToplistRequestValidationError{
+				field:  "Filter",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for Limit
+
+	// no validation rules for Offset
+
+	// no validation rules for Priority
+
+	if len(errors) > 0 {
+		return MetricsViewComparisonToplistRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewComparisonToplistRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// MetricsViewComparisonToplistRequest.ValidateAll() if the designated
+// constraints aren't met.
+type MetricsViewComparisonToplistRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewComparisonToplistRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewComparisonToplistRequestMultiError) AllErrors() []error { return m }
+
+// MetricsViewComparisonToplistRequestValidationError is the validation error
+// returned by MetricsViewComparisonToplistRequest.Validate if the designated
+// constraints aren't met.
+type MetricsViewComparisonToplistRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewComparisonToplistRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewComparisonToplistRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewComparisonToplistRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewComparisonToplistRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewComparisonToplistRequestValidationError) ErrorName() string {
+	return "MetricsViewComparisonToplistRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewComparisonToplistRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewComparisonToplistRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewComparisonToplistRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewComparisonToplistRequestValidationError{}
+
+// Validate checks the field values on MetricsViewComparisonToplistResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *MetricsViewComparisonToplistResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewComparisonToplistResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// MetricsViewComparisonToplistResponseMultiError, or nil if none found.
+func (m *MetricsViewComparisonToplistResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewComparisonToplistResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetRows() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewComparisonToplistResponseValidationError{
+						field:  fmt.Sprintf("Rows[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewComparisonToplistResponseValidationError{
+						field:  fmt.Sprintf("Rows[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewComparisonToplistResponseValidationError{
+					field:  fmt.Sprintf("Rows[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return MetricsViewComparisonToplistResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewComparisonToplistResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// MetricsViewComparisonToplistResponse.ValidateAll() if the designated
+// constraints aren't met.
+type MetricsViewComparisonToplistResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewComparisonToplistResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewComparisonToplistResponseMultiError) AllErrors() []error { return m }
+
+// MetricsViewComparisonToplistResponseValidationError is the validation error
+// returned by MetricsViewComparisonToplistResponse.Validate if the designated
+// constraints aren't met.
+type MetricsViewComparisonToplistResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewComparisonToplistResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewComparisonToplistResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewComparisonToplistResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewComparisonToplistResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewComparisonToplistResponseValidationError) ErrorName() string {
+	return "MetricsViewComparisonToplistResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewComparisonToplistResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewComparisonToplistResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewComparisonToplistResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewComparisonToplistResponseValidationError{}
+
+// Validate checks the field values on TimeRange with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *TimeRange) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on TimeRange with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in TimeRangeMultiError, or nil
+// if none found.
+func (m *TimeRange) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *TimeRange) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetStart()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, TimeRangeValidationError{
+					field:  "Start",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, TimeRangeValidationError{
+					field:  "Start",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetStart()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return TimeRangeValidationError{
+				field:  "Start",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetEnd()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, TimeRangeValidationError{
+					field:  "End",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, TimeRangeValidationError{
+					field:  "End",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetEnd()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return TimeRangeValidationError{
+				field:  "End",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return TimeRangeMultiError(errors)
+	}
+
+	return nil
+}
+
+// TimeRangeMultiError is an error wrapping multiple validation errors returned
+// by TimeRange.ValidateAll() if the designated constraints aren't met.
+type TimeRangeMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m TimeRangeMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m TimeRangeMultiError) AllErrors() []error { return m }
+
+// TimeRangeValidationError is the validation error returned by
+// TimeRange.Validate if the designated constraints aren't met.
+type TimeRangeValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TimeRangeValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TimeRangeValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TimeRangeValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TimeRangeValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TimeRangeValidationError) ErrorName() string { return "TimeRangeValidationError" }
+
+// Error satisfies the builtin error interface
+func (e TimeRangeValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTimeRange.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TimeRangeValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TimeRangeValidationError{}
+
+// Validate checks the field values on MetricsViewComparisonSort with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewComparisonSort) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewComparisonSort with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MetricsViewComparisonSortMultiError, or nil if none found.
+func (m *MetricsViewComparisonSort) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewComparisonSort) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for MeasureName
+
+	// no validation rules for Ascending
+
+	// no validation rules for Type
+
+	if len(errors) > 0 {
+		return MetricsViewComparisonSortMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewComparisonSortMultiError is an error wrapping multiple validation
+// errors returned by MetricsViewComparisonSort.ValidateAll() if the
+// designated constraints aren't met.
+type MetricsViewComparisonSortMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewComparisonSortMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewComparisonSortMultiError) AllErrors() []error { return m }
+
+// MetricsViewComparisonSortValidationError is the validation error returned by
+// MetricsViewComparisonSort.Validate if the designated constraints aren't met.
+type MetricsViewComparisonSortValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewComparisonSortValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewComparisonSortValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewComparisonSortValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewComparisonSortValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewComparisonSortValidationError) ErrorName() string {
+	return "MetricsViewComparisonSortValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewComparisonSortValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewComparisonSort.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewComparisonSortValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewComparisonSortValidationError{}
+
+// Validate checks the field values on MetricsViewComparisonRow with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewComparisonRow) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewComparisonRow with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MetricsViewComparisonRowMultiError, or nil if none found.
+func (m *MetricsViewComparisonRow) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewComparisonRow) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetDimensionValue()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewComparisonRowValidationError{
+					field:  "DimensionValue",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewComparisonRowValidationError{
+					field:  "DimensionValue",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDimensionValue()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewComparisonRowValidationError{
+				field:  "DimensionValue",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetMeasureValues() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewComparisonRowValidationError{
+						field:  fmt.Sprintf("MeasureValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewComparisonRowValidationError{
+						field:  fmt.Sprintf("MeasureValues[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewComparisonRowValidationError{
+					field:  fmt.Sprintf("MeasureValues[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return MetricsViewComparisonRowMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewComparisonRowMultiError is an error wrapping multiple validation
+// errors returned by MetricsViewComparisonRow.ValidateAll() if the designated
+// constraints aren't met.
+type MetricsViewComparisonRowMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewComparisonRowMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewComparisonRowMultiError) AllErrors() []error { return m }
+
+// MetricsViewComparisonRowValidationError is the validation error returned by
+// MetricsViewComparisonRow.Validate if the designated constraints aren't met.
+type MetricsViewComparisonRowValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewComparisonRowValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewComparisonRowValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewComparisonRowValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewComparisonRowValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewComparisonRowValidationError) ErrorName() string {
+	return "MetricsViewComparisonRowValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewComparisonRowValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewComparisonRow.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewComparisonRowValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewComparisonRowValidationError{}
+
+// Validate checks the field values on MetricsViewComparisonValue with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewComparisonValue) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewComparisonValue with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MetricsViewComparisonValueMultiError, or nil if none found.
+func (m *MetricsViewComparisonValue) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewComparisonValue) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for MeasureName
+
+	if all {
+		switch v := interface{}(m.GetBaseValue()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewComparisonValueValidationError{
+					field:  "BaseValue",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewComparisonValueValidationError{
+					field:  "BaseValue",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetBaseValue()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewComparisonValueValidationError{
+				field:  "BaseValue",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetComparisonValue()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewComparisonValueValidationError{
+					field:  "ComparisonValue",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewComparisonValueValidationError{
+					field:  "ComparisonValue",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetComparisonValue()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewComparisonValueValidationError{
+				field:  "ComparisonValue",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetDeltaAbs()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewComparisonValueValidationError{
+					field:  "DeltaAbs",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewComparisonValueValidationError{
+					field:  "DeltaAbs",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDeltaAbs()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewComparisonValueValidationError{
+				field:  "DeltaAbs",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetDeltaRel()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewComparisonValueValidationError{
+					field:  "DeltaRel",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewComparisonValueValidationError{
+					field:  "DeltaRel",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDeltaRel()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewComparisonValueValidationError{
+				field:  "DeltaRel",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return MetricsViewComparisonValueMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewComparisonValueMultiError is an error wrapping multiple
+// validation errors returned by MetricsViewComparisonValue.ValidateAll() if
+// the designated constraints aren't met.
+type MetricsViewComparisonValueMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewComparisonValueMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewComparisonValueMultiError) AllErrors() []error { return m }
+
+// MetricsViewComparisonValueValidationError is the validation error returned
+// by MetricsViewComparisonValue.Validate if the designated constraints aren't met.
+type MetricsViewComparisonValueValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewComparisonValueValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewComparisonValueValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewComparisonValueValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewComparisonValueValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewComparisonValueValidationError) ErrorName() string {
+	return "MetricsViewComparisonValueValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewComparisonValueValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewComparisonValue.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewComparisonValueValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewComparisonValueValidationError{}
+
 // Validate checks the field values on MetricsViewTimeSeriesRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -780,6 +1875,40 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	// no validation rules for MetricsViewName
+
+	for idx, item := range m.GetInlineMeasures() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewTimeSeriesRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewTimeSeriesRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewTimeSeriesRequestValidationError{
+					field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	if all {
 		switch v := interface{}(m.GetTimeStart()).(type) {
@@ -1149,6 +2278,40 @@ func (m *MetricsViewTotalsRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	// no validation rules for MetricsViewName
+
+	for idx, item := range m.GetInlineMeasures() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewTotalsRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewTotalsRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewTotalsRequestValidationError{
+					field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	if all {
 		switch v := interface{}(m.GetTimeStart()).(type) {
@@ -2268,6 +3431,110 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewColumnValidationError{}
+
+// Validate checks the field values on InlineMeasure with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *InlineMeasure) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on InlineMeasure with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in InlineMeasureMultiError, or
+// nil if none found.
+func (m *InlineMeasure) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *InlineMeasure) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for Expression
+
+	if len(errors) > 0 {
+		return InlineMeasureMultiError(errors)
+	}
+
+	return nil
+}
+
+// InlineMeasureMultiError is an error wrapping multiple validation errors
+// returned by InlineMeasure.ValidateAll() if the designated constraints
+// aren't met.
+type InlineMeasureMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m InlineMeasureMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m InlineMeasureMultiError) AllErrors() []error { return m }
+
+// InlineMeasureValidationError is the validation error returned by
+// InlineMeasure.Validate if the designated constraints aren't met.
+type InlineMeasureValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e InlineMeasureValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e InlineMeasureValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e InlineMeasureValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e InlineMeasureValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e InlineMeasureValidationError) ErrorName() string { return "InlineMeasureValidationError" }
+
+// Error satisfies the builtin error interface
+func (e InlineMeasureValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sInlineMeasure.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = InlineMeasureValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = InlineMeasureValidationError{}
 
 // Validate checks the field values on ColumnRollupIntervalRequest with the
 // rules defined in the proto definition for this message. If any rules are

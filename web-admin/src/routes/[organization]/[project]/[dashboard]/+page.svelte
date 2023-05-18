@@ -1,13 +1,16 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { V1DeploymentStatus } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceGetProject,
+    V1DeploymentStatus,
+  } from "@rilldata/web-admin/client";
   import {
     DashboardListItem,
     getDashboardsForProject,
     useDashboardListItems,
   } from "@rilldata/web-admin/components/projects/dashboards";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/components/projects/invalidations";
-  import { useProject } from "@rilldata/web-admin/components/projects/use-project";
+  import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/selectors";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import {
     getRuntimeServiceListCatalogEntriesQueryKey,
@@ -18,6 +21,7 @@
   import { errorStore } from "../../../../components/errors/error-store";
   import ProjectBuilding from "../../../../components/projects/ProjectBuilding.svelte";
   import ProjectErrored from "../../../../components/projects/ProjectErrored.svelte";
+  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardStateProvider.svelte";
 
   const queryClient = useQueryClient();
 
@@ -27,23 +31,23 @@
   $: projectName = $page.params.project;
   $: dashboardName = $page.params.dashboard;
 
-  // Poll for project status
-  $: project = useProject(orgName, projectName);
+  $: project = createAdminServiceGetProject(orgName, projectName);
+  // Poll specifically for the project's deployment status
+  $: projectDeploymentStatus = useProjectDeploymentStatus(orgName, projectName); // polls
 
   let isProjectBuilding: boolean;
   let isProjectOK: boolean;
 
-  $: if ($project.data?.prodDeployment?.status) {
+  $: if ($projectDeploymentStatus.data) {
     const projectWasNotOk = !isProjectOK;
 
     isProjectBuilding =
-      $project.data?.prodDeployment?.status ===
+      $projectDeploymentStatus.data ===
         V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
-      $project.data?.prodDeployment?.status ===
+      $projectDeploymentStatus.data ===
         V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING;
     isProjectOK =
-      $project.data?.prodDeployment?.status ===
-      V1DeploymentStatus.DEPLOYMENT_STATUS_OK;
+      $projectDeploymentStatus.data === V1DeploymentStatus.DEPLOYMENT_STATUS_OK;
 
     if (projectWasNotOk && isProjectOK) {
       getDashboardsAndInvalidate();
@@ -71,7 +75,7 @@
   // We avoid calling `GetCatalogEntry` to check for dashboard validity because that would trigger a 404 page.
   $: dashboardListItems = useDashboardListItems(
     instanceId,
-    $project.data.prodDeployment?.status
+    $projectDeploymentStatus.data
   );
   let currentDashboard: DashboardListItem;
   $: if ($dashboardListItems.isSuccess) {
@@ -101,9 +105,11 @@
 {:else if currentDashboard && !currentDashboard.isValid}
   <ProjectErrored organization={orgName} project={projectName} />
 {:else}
-  <Dashboard
-    leftMargin={"48px"}
-    hasTitle={false}
-    metricViewName={dashboardName}
-  />
+  <DashboardStateProvider metricViewName={dashboardName}>
+    <Dashboard
+      leftMargin={"48px"}
+      hasTitle={false}
+      metricViewName={dashboardName}
+    />
+  </DashboardStateProvider>
 {/if}

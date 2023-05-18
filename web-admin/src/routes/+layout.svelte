@@ -24,7 +24,6 @@
         refetchOnReconnect: false,
         refetchOnWindowFocus: false,
         retry: false,
-        placeholderData: {}, // there's an issue somewhere in the Leaderboard components that depends on this setting
       },
     },
   });
@@ -41,16 +40,14 @@
 
 <RillTheme>
   <QueryClientProvider client={queryClient}>
-    <div class="flex flex-col h-screen">
-      <main class="flex-grow flex flex-col">
-        <TopNavigationBar />
-        <div class="flex-grow overflow-auto">
-          <ErrorBoundary>
-            <slot />
-          </ErrorBoundary>
-        </div>
-      </main>
-    </div>
+    <main class="flex flex-col h-screen">
+      <TopNavigationBar />
+      <div class="flex-grow overflow-hidden">
+        <ErrorBoundary>
+          <slot />
+        </ErrorBoundary>
+      </div>
+    </main>
   </QueryClientProvider>
 
   <NotificationCenter />

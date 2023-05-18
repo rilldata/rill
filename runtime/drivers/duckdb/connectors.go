@@ -45,11 +45,7 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) (*drivers.IngestionSummary, error) {
 	// Driver-specific overrides
 	if source.Connector == "local_file" {
-		err := c.ingestLocalFiles(ctx, env, source)
-		if err != nil {
-			return nil, err
-		}
-		return &drivers.IngestionSummary{}, nil
+		return c.ingestLocalFiles(ctx, env, source)
 	}
 
 	iterator, err := connectors.ConsumeAsIterator(ctx, env, source)
@@ -206,24 +202,24 @@ func (c *connection) updateSchema(ctx context.Context, from string, fileNames []
 }
 
 // local files
-func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) error {
+func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, source *connectors.Source) (*drivers.IngestionSummary, error) {
 	conf, err := localfile.ParseConfig(source.Properties)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	path, err := resolveLocalPath(env, conf.Path, source.Name)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// get all files in case glob passed
 	localPaths, err := doublestar.FilepathGlob(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(localPaths) == 0 {
-		return fmt.Errorf("file does not exist at %s", conf.Path)
+		return nil, fmt.Errorf("file does not exist at %s", conf.Path)
 	}
 
 	var format string
@@ -240,14 +236,19 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 		ingestionProps = map[string]any{}
 	}
 
+	// Ingest data
 	from, err := sourceReader(localPaths, fmt.Sprintf(".%s", format), ingestionProps)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (SELECT * FROM %s)", source.Name, from)
+	err = c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
+	if err != nil {
+		return nil, err
 	}
 
-	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (SELECT * FROM %s)", source.Name, from)
-
-	return c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
+	bytesIngested := fileSize(localPaths)
+	return &drivers.IngestionSummary{BytesIngested: bytesIngested}, nil
 }
 
 func (c *connection) scanSchemaFromQuery(ctx context.Context, qry string) (map[string]string, error) {

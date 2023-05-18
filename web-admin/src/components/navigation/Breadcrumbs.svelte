@@ -1,11 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { useProject } from "@rilldata/web-admin/components/projects/use-project";
+  import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceGetOrganization,
+    createAdminServiceGetProject,
     createAdminServiceListOrganizations,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
@@ -21,19 +22,21 @@
   $: organization = createAdminServiceGetOrganization(orgName);
   $: organizations = createAdminServiceListOrganizations(undefined, {
     query: {
-      enabled: !!$user.data.user,
+      enabled: !!$user.data?.user,
     },
   });
   $: isOrganizationPage = $page.route.id === "/[organization]";
 
   $: projectName = $page.params.project;
-  $: project = useProject(orgName, projectName);
+  $: project = createAdminServiceGetProject(orgName, projectName);
+  // Poll specifically for the project's deployment status
+  $: projectDeploymentStatus = useProjectDeploymentStatus(orgName, projectName);
   $: projects = createAdminServiceListProjectsForOrganization(
     orgName,
     undefined,
     {
       query: {
-        enabled: !!$organization.data.organization,
+        enabled: !!$organization.data?.organization,
       },
     }
   );
@@ -41,7 +44,7 @@
 
   $: dashboardListItems = useDashboardListItems(
     instanceId,
-    $project.data.prodDeployment?.status
+    $projectDeploymentStatus.data
   );
   $: currentDashboard = $dashboardListItems?.items?.find(
     (listing) => listing.name === $page.params.dashboard
@@ -52,10 +55,10 @@
 
 <nav>
   <ol class="flex flex-row items-center">
-    {#if $organization.data.organization}
+    {#if $organization.data?.organization}
       <BreadcrumbItem
         label={orgName}
-        isCurrentPage={isOrganizationPage}
+        href={`/${orgName}`}
         menuOptions={$organizations.data?.organizations?.length > 1 &&
           $organizations.data.organizations.map((org) => ({
             key: org.name,
@@ -63,15 +66,16 @@
           }))}
         menuKey={orgName}
         onSelectMenuOption={(organization) => goto(`/${organization}`)}
+        isCurrentPage={isOrganizationPage}
       >
         <OrganizationAvatar organization={orgName} slot="icon" />
       </BreadcrumbItem>
     {/if}
-    {#if $project.data.project}
+    {#if $project.data?.project}
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
         label={projectName}
-        isCurrentPage={isProjectPage}
+        href={`/${orgName}/${projectName}`}
         menuOptions={$projects.data?.projects?.length > 1 &&
           $projects.data.projects.map((proj) => ({
             key: proj.name,
@@ -79,14 +83,19 @@
           }))}
         menuKey={projectName}
         onSelectMenuOption={(project) =>
-          goto(`/${orgName}/${project}/-/redirect`)}
+          goto(
+            isDashboardPage
+              ? `/${orgName}/${project}/-/redirect`
+              : `/${orgName}/${project}`
+          )}
+        isCurrentPage={isProjectPage}
       />
     {/if}
     {#if currentDashboard}
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
         label={currentDashboard?.title || currentDashboard.name}
-        isCurrentPage={isDashboardPage}
+        href={`/${orgName}/${projectName}/${currentDashboard.name}`}
         menuOptions={$dashboardListItems?.items?.length > 1 &&
           $dashboardListItems.items.map((listing) => {
             return {
@@ -97,6 +106,7 @@
         menuKey={currentDashboard.name}
         onSelectMenuOption={(dashboard) =>
           goto(`/${orgName}/${projectName}/${dashboard}`)}
+        isCurrentPage={isDashboardPage}
       />
     {/if}
   </ol>
