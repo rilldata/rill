@@ -94,6 +94,9 @@ type DB interface {
 	InsertUser(ctx context.Context, opts *InsertUserOptions) (*User, error)
 	DeleteUser(ctx context.Context, id string) error
 	UpdateUser(ctx context.Context, id string, opts *UpdateUserOptions) (*User, error)
+	CheckUsersEmpty(ctx context.Context) (bool, error)
+	FindSuperusers(ctx context.Context) ([]*User, error)
+	UpdateSuperuser(ctx context.Context, userID string, superuser bool) error
 
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
 	InsertUsergroupMember(ctx context.Context, groupID, userID string) error
@@ -321,6 +324,7 @@ type InsertUserOptions struct {
 	DisplayName         string
 	PhotoURL            string
 	QuotaSingleuserOrgs int
+	Superuser           bool
 }
 
 // UpdateUserOptions defines options for updating an existing user

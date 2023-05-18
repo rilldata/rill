@@ -23,7 +23,6 @@
     MetricsViewMeasure,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { createEventDispatcher } from "svelte";
   import { isRangeInsideOther } from "../../../lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
@@ -48,7 +47,6 @@
   let slice = 7;
 
   const queryClient = useQueryClient();
-  const dispatch = createEventDispatcher();
 
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
@@ -109,13 +107,6 @@
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
-  function setLeaderboardValues(values) {
-    dispatch("leaderboard-value", {
-      dimensionName,
-      values,
-    });
-  }
-
   function toggleFilterMode() {
     cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
@@ -174,7 +165,6 @@
         value: val[measure?.name],
         label: val[dimension?.column],
       })) ?? [];
-    setLeaderboardValues(values);
   }
 
   // get all values that are selected but not visible.

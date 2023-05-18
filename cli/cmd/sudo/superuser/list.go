@@ -1,8 +1,6 @@
-package project
+package superuser
 
 import (
-	"context"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -10,34 +8,28 @@ import (
 )
 
 func ListCmd(cfg *config.Config) *cobra.Command {
-	listCmd := &cobra.Command{
+	addCmd := &cobra.Command{
 		Use:   "list",
-		Short: "List all the projects",
+		Args:  cobra.NoArgs,
+		Short: "List all superusers",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
 
-			res, err := client.ListProjectsForOrganization(context.Background(), &adminv1.ListProjectsForOrganizationRequest{
-				OrganizationName: cfg.Org,
-			})
+			res, err := client.ListSuperusers(ctx, &adminv1.ListSuperusersRequest{})
 			if err != nil {
 				return err
 			}
 
-			if len(res.Projects) == 0 {
-				cmdutil.WarnPrinter("No projects found")
-				return nil
-			}
-
-			cmdutil.SuccessPrinter("Projects list")
-			cmdutil.TablePrinter(toTable(res.Projects))
+			cmdutil.PrintUsers(res.Users)
 
 			return nil
 		},
 	}
-
-	return listCmd
+	return addCmd
 }
