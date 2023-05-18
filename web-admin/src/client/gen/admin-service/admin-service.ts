@@ -63,6 +63,9 @@ import type {
   V1UpdateProjectVariablesResponse,
   AdminServiceUpdateProjectVariablesBody,
   V1PingResponse,
+  V1ListSuperusersResponse,
+  V1SetSuperuserResponse,
+  V1SetSuperuserRequest,
   V1RevokeCurrentAuthTokenResponse,
   V1GetCurrentUserResponse,
 } from "../index.schemas";
@@ -1820,6 +1823,107 @@ export const createAdminServicePing = <
   return query;
 };
 
+/**
+ * @summary ListSuperusers lists all the superusers
+ */
+export const adminServiceListSuperusers = (signal?: AbortSignal) => {
+  return httpClient<V1ListSuperusersResponse>({
+    url: `/v1/superuser/members`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceListSuperusersQueryKey = () =>
+  [`/v1/superuser/members`] as const;
+
+export type AdminServiceListSuperusersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListSuperusers>>
+>;
+export type AdminServiceListSuperusersQueryError = RpcStatus;
+
+export const createAdminServiceListSuperusers = <
+  TData = Awaited<ReturnType<typeof adminServiceListSuperusers>>,
+  TError = RpcStatus
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceListSuperusers>>,
+    TError,
+    TData
+  >;
+}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceListSuperusersQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListSuperusers>>
+  > = ({ signal }) => adminServiceListSuperusers(signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceListSuperusers>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary SetSuperuser adds/remove a superuser
+ */
+export const adminServiceSetSuperuser = (
+  v1SetSuperuserRequest: V1SetSuperuserRequest
+) => {
+  return httpClient<V1SetSuperuserResponse>({
+    url: `/v1/superuser/members`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1SetSuperuserRequest,
+  });
+};
+
+export type AdminServiceSetSuperuserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSetSuperuser>>
+>;
+export type AdminServiceSetSuperuserMutationBody = V1SetSuperuserRequest;
+export type AdminServiceSetSuperuserMutationError = RpcStatus;
+
+export const createAdminServiceSetSuperuser = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSetSuperuser>>,
+    TError,
+    { data: V1SetSuperuserRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSetSuperuser>>,
+    { data: V1SetSuperuserRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSetSuperuser(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceSetSuperuser>>,
+    TError,
+    { data: V1SetSuperuserRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary RevokeCurrentAuthToken revoke the current auth token
  */

@@ -109,6 +109,11 @@ func SetDefaultOrg(orgName string) error {
 	return Set(ConfigFilename, DefaultOrgConfigKey, orgName)
 }
 
+// SetDefaultAdminURL loads the default admin URL (if set)
+func SetDefaultAdminURL(url string) error {
+	return Set(ConfigFilename, DefaultAdminURLConfigKey, url)
+}
+
 // GetDefaultAdminURL loads the default admin URL (if set)
 func GetDefaultAdminURL() (string, error) {
 	return Get(ConfigFilename, DefaultAdminURLConfigKey)
