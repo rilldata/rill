@@ -13,9 +13,9 @@
 <Tooltip distance={8} suppress={message === undefined}>
   <div
     class="grid justify-between pr-2"
-    style:grid-template-columns="[icon] 24px [line-number] auto"
-    class:bg-red-200={level === "error" && !active}
-    class:bg-red-300={level === "error" && active}
+    style:grid-template-columns="[icon] 24px [line-number] auto [code-fold] 8px"
+    class:bg-red-50={level === "error" && !active}
+    class:bg-red-100={level === "error" && active}
     class:text-red-600={level === "error" && !active}
     class:text-red-700={level === "error" && active}
     class:bg-yellow-200={level === "warning" && !active}
@@ -44,7 +44,10 @@
     <div class="text-right" style:grid-column="line-number">
       {line}
     </div>
+    <!-- for code folding -->
+    <div />
   </div>
+
   <TooltipContent maxWidth="200px" slot="tooltip-content"
     >{message}</TooltipContent
   >

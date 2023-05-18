@@ -14,21 +14,8 @@ class IndentGuideWidget extends WidgetType {
     element.style.position = "absolute";
     element.style.width = "1px";
     element.style.height = "17px";
-    // element.style.height = "17px";
     new IndentGuide({ target: element });
-    // return element;
     return element;
-    // FIXME: gthis shoudl be taken from teh veiw.
-    // const lineHeight = "17px";
-
-    // element.className = "indent-guide";
-    // FIXME we need this to be read by tailwind!
-    // element.classList.add("border-left");
-    // element.classList.add("border-slate-300");
-    // element.style.display = "inline-block";
-    // element.style.height = lineHeight;
-    // element.style.position = "absolute";
-    // return element;
   }
 }
 
@@ -50,28 +37,6 @@ export const indentGuide = ViewPlugin.fromClass(
         this.decorations = this.createDecorations();
       }
     }
-
-    /** v1, not so great */
-    // decorationsFromLine(lineNumber) {
-
-    //   const indent = /^\s*/.exec(this.view.state.doc.line(lineNumber).text)[0];
-    //   const indentSize = indent.length;
-    //   const decorations = [];
-
-    //   for (let i = 0; i < indentSize; i++) {
-    //     if (indent[i] === " " || indent[i] === "\t") {
-    //       const guidePos = this.view.state.doc.line(lineNumber).from + i;
-    //       decorations.push(
-    //         Decoration.widget({
-    //           widget: new IndentGuideWidget(),
-    //           side: -1,
-    //         }).range(guidePos)
-    //       );
-    //     }
-    //   }
-
-    //   return decorations;
-    // }
 
     /** Creates a Monaco-like indent */
     decorationsFromLine(lineNumber) {

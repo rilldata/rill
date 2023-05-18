@@ -9,12 +9,21 @@ export const editorTheme = () =>
         outline: "none",
       },
     },
-    ".cm-line.cm-line-level": {
-      backgroundColor: "hsl(1,90%,94%)",
+    ".cm-line.cm-line-error": {
+      // this is tailwind bg-red-50
+      backgroundColor: "#FEF2F2",
+    },
+    ".cm-line-error .ͼc, .cm-line-error .ͼe, ": {
+      // this is tailwind text-red-900
+      color: "#7F1D1D",
     },
     ".cm-line-level.cm-activeLine": {
       backgroundColor: "hsl(1,90%,80%)",
       color: "blue",
+    },
+    ".cm-line.cm-line-error.cm-activeLine": {
+      // tailwind bg-red-200
+      backgroundColor: "#FEE2E2",
     },
     "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
       { backgroundColor: "rgb(65 99 255 / 25%)" },

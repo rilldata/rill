@@ -61,8 +61,12 @@ export const createStatusLineGutter = () =>
         currentLine === thisLine
       );
     },
-    initialSpacer: () =>
-      new StatusGutterMarker(90, "error", "no message needed."),
+    initialSpacer: (view) =>
+      new StatusGutterMarker(
+        view.state.doc.lines,
+        "error",
+        "no message needed."
+      ),
 
     lineMarkerChange(update) {
       return update.transactions.some((tr) => {

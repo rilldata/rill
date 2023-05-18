@@ -1,34 +1,27 @@
 import { RangeSetBuilder } from "@codemirror/rangeset";
 import {
   Decoration,
-  DecorationSet,
+  EditorView,
   ViewPlugin,
   ViewUpdate,
 } from "@codemirror/view";
-import { levels, lineStatusesStateField } from "../line-status";
+import { lineStatusesStateField, updateLineStatuses } from "../line-status";
 
-function backgroundColorDecoration(view) {
+const lineBackground = (level) =>
+  Decoration.line({
+    class: `cm-line-${level}`,
+    // attributes: { style: "background-color: #FEF2F2" },
+  });
+
+function errorLinesDecoration(view) {
   const lineStatuses = view.state.field(lineStatusesStateField);
 
   const builder = new RangeSetBuilder<Decoration>();
 
-  // reset all line statuses.
   for (const { line, level } of lineStatuses) {
-    if (line !== null && line !== 0 && view.state.doc.length) {
-      const startPos = view.state.doc.line(line).from;
-      const { to, from } = view.state.doc.lineAt(startPos);
-
-      builder.add(
-        from,
-        to,
-        Decoration.mark({
-          attributes: {
-            style: `background-color: ${
-              levels?.[level]?.bgColor || levels.error.bgColor
-            }`,
-          },
-        })
-      );
+    if (line !== null && line > 0 && line <= view.state.doc.lines) {
+      const from = view.state.doc.line(line).from;
+      builder.add(from, from, lineBackground(level));
     }
   }
   return builder.finish();
@@ -37,16 +30,22 @@ function backgroundColorDecoration(view) {
 export function createLineStatusHighlighter() {
   return ViewPlugin.fromClass(
     class {
-      decorations: DecorationSet;
-      hints: DecorationSet;
+      decorations;
 
-      constructor(view) {
-        this.decorations = backgroundColorDecoration(view);
+      constructor(view: EditorView) {
+        this.decorations = errorLinesDecoration(view);
       }
 
       update(update: ViewUpdate) {
-        this.decorations = backgroundColorDecoration(update.view);
+        if (
+          update.transactions.some((tr) => {
+            return tr.effects.some((effect) => effect.is(updateLineStatuses));
+          })
+        ) {
+          this.decorations = errorLinesDecoration(update.view);
+        }
       }
-    }
+    },
+    { decorations: (v) => v.decorations }
   );
 }

@@ -35,6 +35,7 @@
     "d3-selection": "^3.0.0"
   },
   "devDependencies": {
-    "@codemirror/legacy-modes": "^6.3.2"
+    "@codemirror/legacy-modes": "^6.3.2",
+    "@codemirror/rangeset": "^0.19.9"
   }
 }

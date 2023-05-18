@@ -8,7 +8,7 @@
     V1PutFileAndReconcileResponse,
     createRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
