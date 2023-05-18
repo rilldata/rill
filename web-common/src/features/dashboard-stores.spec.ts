@@ -1,5 +1,5 @@
 import { get } from "svelte/store";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import {
   AdBidsBaseFilter,
   AdBidsBidPriceMeasure,
@@ -12,6 +12,7 @@ import {
   AdBidsPublisherDimension,
   AllTimeParsedTestControls,
   assertMetricsView,
+  clearMetricsExplorerStore,
   createAdBidsInStore,
   createAdBidsMirrorInStore,
   CustomTestControls,
@@ -22,6 +23,10 @@ import {
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 
 describe("dashboard-stores", () => {
+  beforeEach(() => {
+    clearMetricsExplorerStore();
+  });
+
   it("Toggle filters", () => {
     createAdBidsInStore();
     assertMetricsView(AdBidsName);

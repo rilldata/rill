@@ -418,6 +418,13 @@ const metricViewReducers = {
       metricsExplorer.defaultsSelected = true;
     });
   },
+
+  remove(name: string) {
+    update((state) => {
+      delete state.entities[name];
+      return state;
+    });
+  },
 };
 
 export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &

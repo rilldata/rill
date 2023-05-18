@@ -44,6 +44,11 @@ export const DeletedDimensionAdBids = {
   ],
 };
 
+export function clearMetricsExplorerStore() {
+  metricsExplorerStore.remove(AdBidsName);
+  metricsExplorerStore.remove(AdBidsMirrorName);
+}
+
 export function createAdBidsInStore() {
   metricsExplorerStore.sync(AdBidsName, {
     name: "AdBids",
