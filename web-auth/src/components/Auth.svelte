@@ -68,7 +68,9 @@
       (err) => {
         if (err) {
           if (err?.description === "connection not found") {
-            displayError({ message: "Company slug doesn't exist" });
+            displayError({
+              message: `Company slug ${connection} doesn't exist`,
+            });
           } else {
             webAuth.authorize({ connection });
           }
