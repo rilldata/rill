@@ -1,7 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
-  import { StateSyncManager } from "@rilldata/web-common/features/dashboards/proto-state/StateSyncManager";
   import {
     useMetaQuery,
     useModelHasTimeSeries,
@@ -46,14 +44,6 @@
   let exploreContainerWidth;
 
   $: metricsExplorer = useDashboardStore(metricViewName);
-
-  $: stateSyncManager = new StateSyncManager(metricViewName);
-  $: if ($metricsExplorer) {
-    stateSyncManager.handleStateChange($metricsExplorer);
-  }
-  $: if ($page) {
-    stateSyncManager.handleUrlChange();
-  }
 
   $: selectedDimensionName = $metricsExplorer?.selectedDimensionName;
   $: metricTimeSeries = useModelHasTimeSeries(

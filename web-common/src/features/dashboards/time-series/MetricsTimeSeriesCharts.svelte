@@ -2,19 +2,13 @@
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
-  import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
+  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import {
-    metricsExplorerStore,
-    useDashboardStore,
-  } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-  import {
-    humanizeDataType,
     NicelyFormattedTypes,
+    humanizeDataType,
     nicelyFormattedTypesToNumberKind,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import {
-    selectBestMeasureStrings,
-    selectMeasureKeys,
     useMetaQuery,
     useModelAllTimeRange,
   } from "@rilldata/web-common/features/dashboards/selectors";
@@ -24,10 +18,10 @@
   import { getOffset } from "@rilldata/web-common/lib/time/transforms";
   import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import {
-    createQueryServiceMetricsViewTimeSeries,
-    createQueryServiceMetricsViewTotals,
     V1MetricsViewTimeSeriesResponse,
     V1MetricsViewTotalsResponse,
+    createQueryServiceMetricsViewTimeSeries,
+    createQueryServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { isRangeInsideOther } from "../../../lib/time/ranges";
@@ -218,35 +212,37 @@
     endValue = removeTimezoneOffset(endValue);
   }
 
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  // FIXME: this is pending the remaining state work for show/hide measures and dimensions
+  // $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  $: availableMeasureLabels = selectBestMeasureStrings($metaQuery);
-  $: availableMeasureKeys = selectMeasureKeys($metaQuery);
-  $: visibleMeasureKeys = metricsExplorer?.visibleMeasureKeys;
-  $: visibleMeasuresBitmask = availableMeasureKeys.map((k) =>
-    visibleMeasureKeys.has(k)
-  );
+  // $: availableMeasureLabels = selectBestMeasureStrings($metaQuery);
+  // $: availableMeasureKeys = selectMeasureKeys($metaQuery);
+  // $: visibleMeasureKeys = metricsExplorer?.visibleMeasureKeys;
+  // $: visibleMeasuresBitmask = availableMeasureKeys.map((k) =>
+  //   visibleMeasureKeys.has(k)
+  // );
 
-  const toggleMeasureVisibility = (e) => {
-    metricsExplorerStore.toggleMeasureVisibilityByKey(
-      metricViewName,
-      availableMeasureKeys[e.detail.index]
-    );
-  };
-  const setAllMeasuresNotVisible = () => {
-    metricsExplorerStore.hideAllMeasures(metricViewName);
-  };
-  const setAllMeasuresVisible = () => {
-    metricsExplorerStore.setMultipleMeasuresVisible(
-      metricViewName,
-      availableMeasureKeys
-    );
-  };
+  // const toggleMeasureVisibility = (e) => {
+  //   metricsExplorerStore.toggleMeasureVisibilityByKey(
+  //     metricViewName,
+  //     availableMeasureKeys[e.detail.index]
+  //   );
+  // };
+  // const setAllMeasuresNotVisible = () => {
+  //   metricsExplorerStore.hideAllMeasures(metricViewName);
+  // };
+  // const setAllMeasuresVisible = () => {
+  //   metricsExplorerStore.setMultipleMeasuresVisible(
+  //     metricViewName,
+  //     availableMeasureKeys
+  //   );
+  // };
 </script>
 
 <TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
   <div class="bg-white sticky top-0" style="z-index:100">
-    <SeachableFilterButton
+    <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
+    <!-- <SeachableFilterButton
       selectableItems={availableMeasureLabels}
       selectedItems={visibleMeasuresBitmask}
       on:item-clicked={toggleMeasureVisibility}
@@ -254,7 +250,7 @@
       on:select-all={setAllMeasuresVisible}
       label="Measures"
       tooltipText="Choose measures to display"
-    />
+    /> -->
   </div>
   <div class="bg-white sticky left-0 top-0">
     <div style:padding-left="24px" style:height="20px" />
@@ -274,7 +270,9 @@
   </div>
   <!-- bignumbers and line charts -->
   {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
-    {#each $metaQuery.data?.measures.filter((_, i) => visibleMeasuresBitmask[i]) as measure, index (measure.name)}
+    <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
+    <!-- {#each $metaQuery.data?.measures.filter((_, i) => visibleMeasuresBitmask[i]) as measure, index (measure.name)} -->
+    {#each $metaQuery.data?.measures as measure, index (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
       {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
       {@const showComparison = displayComparison}

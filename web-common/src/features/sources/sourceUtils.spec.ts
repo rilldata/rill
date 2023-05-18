@@ -1,4 +1,4 @@
-import { describe, expect } from "@jest/globals";
+import { describe, it, expect } from "vitest";
 import { inferSourceName } from "./sourceUtils";
 
 const gcsTests = [
