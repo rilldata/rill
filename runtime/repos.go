@@ -12,21 +12,11 @@ func (r *Runtime) ListFiles(ctx context.Context, instanceID, glob string) ([]str
 		return nil, err
 	}
 
-	err = repo.Sync(ctx, instanceID)
-	if err != nil {
-		return nil, err
-	}
-
 	return repo.ListRecursive(ctx, instanceID, glob)
 }
 
 func (r *Runtime) GetFile(ctx context.Context, instanceID, path string) (string, time.Time, error) {
 	repo, err := r.Repo(ctx, instanceID)
-	if err != nil {
-		return "", time.Time{}, err
-	}
-
-	err = repo.Sync(ctx, instanceID)
 	if err != nil {
 		return "", time.Time{}, err
 	}

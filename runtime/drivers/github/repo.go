@@ -2,7 +2,6 @@ package github
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -11,8 +10,6 @@ import (
 	"path/filepath"
 
 	doublestar "github.com/bmatcuk/doublestar/v4"
-	"github.com/bradleyfalzon/ghinstallation/v2"
-	"github.com/eapache/go-resiliency/retrier"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -30,11 +27,16 @@ func (c *connection) Root() string {
 
 // ListRecursive implements drivers.RepoStore.
 func (c *connection) ListRecursive(ctx context.Context, instID, glob string) ([]string, error) {
+	err := c.cloneOrPull(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+
 	fsRoot := os.DirFS(c.projectdir)
 	glob = path.Clean(path.Join("./", glob))
 
 	var paths []string
-	err := doublestar.GlobWalk(fsRoot, glob, func(p string, d fs.DirEntry) error {
+	err = doublestar.GlobWalk(fsRoot, glob, func(p string, d fs.DirEntry) error {
 		// Don't track directories
 		if d.IsDir() {
 			return nil
@@ -60,6 +62,11 @@ func (c *connection) ListRecursive(ctx context.Context, instID, glob string) ([]
 
 // Get implements drivers.RepoStore.
 func (c *connection) Get(ctx context.Context, instID, filePath string) (string, error) {
+	err := c.cloneOrPull(ctx, true)
+	if err != nil {
+		return "", err
+	}
+
 	filePath = filepath.Join(c.projectdir, filePath)
 
 	b, err := os.ReadFile(filePath)
@@ -72,6 +79,11 @@ func (c *connection) Get(ctx context.Context, instID, filePath string) (string, 
 
 // Stat implements drivers.RepoStore.
 func (c *connection) Stat(ctx context.Context, instID, filePath string) (*drivers.RepoObjectStat, error) {
+	err := c.cloneOrPull(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+
 	filePath = filepath.Join(c.projectdir, filePath)
 
 	info, err := os.Stat(filePath)
@@ -101,24 +113,5 @@ func (c *connection) Delete(ctx context.Context, instID, filePath string) error 
 
 // Sync implements drivers.RepoStore.
 func (c *connection) Sync(ctx context.Context, instID string) error {
-	r := retrier.New(retrier.ExponentialBackoff(retryN, retryWait), errClassifier{})
-	err := r.Run(func() error { return c.pull(ctx) })
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type errClassifier struct{}
-
-func (errClassifier) Classify(err error) retrier.Action {
-	ghinstallationErr := &ghinstallation.HTTPError{}
-	if errors.As(err, &ghinstallationErr) && ghinstallationErr.Response != nil {
-		statusCode := ghinstallationErr.Response.StatusCode
-		if statusCode/100 == 4 && statusCode != 429 {
-			// Any 4xx error apart from 429 is non retryable
-			return retrier.Fail
-		}
-	}
-	return retrier.Retry
+	return c.cloneOrPull(ctx, false)
 }
