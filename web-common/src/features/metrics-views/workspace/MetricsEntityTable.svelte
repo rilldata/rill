@@ -39,6 +39,7 @@
     <EditableTable
       {rows}
       {columnNames}
+      {label}
       on:change={updateEntityHandler}
       on:delete={deleteEntityHandler}
       on:tableResize={(evt) =>

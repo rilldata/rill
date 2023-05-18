@@ -116,8 +116,8 @@ This component needs to do the following:
     : NO_COMPARISON_LABEL;
 </script>
 
-<Tooltip distance={8}>
-  <WithTogglableFloatingElement let:toggleFloatingElement let:active>
+<WithTogglableFloatingElement let:toggleFloatingElement let:active>
+  <Tooltip distance={8} suppress={active}>
     <SelectorButton
       {active}
       disabled={!isComparisonRangeAvailable}
@@ -135,81 +135,81 @@ This component needs to do the following:
         {/if}
       </span>
     </SelectorButton>
-    <Menu
-      slot="floating-element"
-      on:escape={toggleFloatingElement}
-      on:click-outside={() => onClickOutside(toggleFloatingElement)}
+    <TooltipContent slot="tooltip-content" maxWidth="220px">
+      {#if isComparisonRangeAvailable}
+        Select a time range to compare to the selected time range
+      {:else}
+        Select a shorter or more recent time range to enable comparisons.
+      {/if}
+    </TooltipContent>
+  </Tooltip>
+  <Menu
+    slot="floating-element"
+    on:escape={toggleFloatingElement}
+    on:click-outside={() => onClickOutside(toggleFloatingElement)}
+  >
+    <MenuItem
+      selected={!showComparison}
+      on:before-select={() => {
+        intermediateSelection = NO_COMPARISON_LABEL;
+      }}
+      on:select={() => {
+        dispatch("disable-comparison");
+        toggleFloatingElement();
+      }}
     >
+      <span class:font-bold={intermediateSelection === NO_COMPARISON_LABEL}>
+        {NO_COMPARISON_LABEL}
+      </span>
+    </MenuItem>
+    <Divider />
+    {#each options as option}
+      {@const preset = TIME_COMPARISON[option.name]}
       <MenuItem
-        selected={!showComparison}
+        selected={option.name === intermediateSelection}
         on:before-select={() => {
-          intermediateSelection = NO_COMPARISON_LABEL;
+          intermediateSelection = option.name;
         }}
         on:select={() => {
-          dispatch("disable-comparison");
+          onCompareRangeSelect(option.name);
           toggleFloatingElement();
         }}
       >
-        <span class:font-bold={intermediateSelection === NO_COMPARISON_LABEL}>
-          {NO_COMPARISON_LABEL}
+        <span class:font-bold={intermediateSelection === option.name}>
+          {preset?.label || option.name}
         </span>
       </MenuItem>
-      <Divider />
-      {#each options as option}
-        {@const preset = TIME_COMPARISON[option.name]}
-        <MenuItem
-          selected={option.name === intermediateSelection}
-          on:before-select={() => {
-            intermediateSelection = option.name;
-          }}
-          on:select={() => {
-            onCompareRangeSelect(option.name);
-            toggleFloatingElement();
-          }}
-        >
-          <span class:font-bold={intermediateSelection === option.name}>
-            {preset?.label || option.name}
-          </span>
-        </MenuItem>
-        {#if option.name === TimeComparisonOption.CONTIGUOUS && options.length > 2}
-          <Divider />
-        {/if}
-      {/each}
-      {#if options.length >= 1}
+      {#if option.name === TimeComparisonOption.CONTIGUOUS && options.length > 2}
         <Divider />
       {/if}
-
-      <CustomTimeRangeMenuItem
-        on:select={() => {
-          isCustomRangeOpen = !isCustomRangeOpen;
-        }}
-        open={isCustomRangeOpen}
-      />
-      {#if isCustomRangeOpen}
-        <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-          <CustomTimeRangeInput
-            {boundaryStart}
-            {boundaryEnd}
-            defaultDate={selectedComparison}
-            {minTimeGrain}
-            on:apply={(e) => {
-              onSelectCustomComparisonRange(
-                e.detail.startDate,
-                e.detail.endDate,
-                toggleFloatingElement
-              );
-            }}
-            on:close-calendar={onCalendarClose}
-          />
-        </div>
-      {/if}
-    </Menu>
-  </WithTogglableFloatingElement>
-  <TooltipContent slot="tooltip-content" maxWidth="220px">
-    {#if isComparisonRangeAvailable}
-      Select a time range to compare to the selected time range
-    {:else}
-      Select a shorter or more recent time range to enable comparisons.
+    {/each}
+    {#if options.length >= 1}
+      <Divider />
     {/if}
-  </TooltipContent>
-</Tooltip>
+
+    <CustomTimeRangeMenuItem
+      on:select={() => {
+        isCustomRangeOpen = !isCustomRangeOpen;
+      }}
+      open={isCustomRangeOpen}
+    />
+    {#if isCustomRangeOpen}
+      <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+        <CustomTimeRangeInput
+          {boundaryStart}
+          {boundaryEnd}
+          defaultDate={selectedComparison}
+          {minTimeGrain}
+          on:apply={(e) => {
+            onSelectCustomComparisonRange(
+              e.detail.startDate,
+              e.detail.endDate,
+              toggleFloatingElement
+            );
+          }}
+          on:close-calendar={onCalendarClose}
+        />
+      </div>
+    {/if}
+  </Menu>
+</WithTogglableFloatingElement>

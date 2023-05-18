@@ -18,6 +18,7 @@ import { TestEntityType, wrapRetryAssertion } from "./utils/helpers";
 import { useRegisteredServer } from "./utils/serverConfigs";
 import { createOrReplaceSource } from "./utils/sourceHelpers";
 import { waitForEntity } from "./utils/waitHelpers";
+import { asyncWait } from "@rilldata/web-local/lib/util/waitUtils";
 
 describe.only("dashboards", () => {
   const testBrowser = useRegisteredServer("dashboards");
@@ -209,35 +210,139 @@ describe.only("dashboards", () => {
     ).toBeVisible();
 
     // Change time range to last 6 hours
+    // await page
+    //   .getByRole("button", { name: "All Time January 1 - March 30, 2022" })
+    //   .click();
+    // await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+
+    // Check that the data is updated for last 6 hours
+    // TODO
+
+    // Change time range back to all time
+    // TODO
+
+    // Open Edit Metrics
+    await page.getByRole("button", { name: "Edit Metrics" }).click();
+
+    // Get the dashboard name field and change it
+    await page.getByLabel("Display name").fill("AdBids_model_dashboard_rename");
+    await page.getByLabel("Display name").blur();
+    // TODO: change model?
+
+    // await asyncWait(3000);
+
+    // Remove timestamp column
+    await page.getByLabel("Remove timestamp column").click();
+
+    // await asyncWait(3000);
+
+    await page.getByRole("button", { name: "Go to Dashboard" }).click();
+
+    // await asyncWait(100000);
+
+    // Assert that name changed
+    await playwrightExpect(
+      page.getByText("AdBids_model_dashboard_rename")
+    ).toBeVisible();
+
+    // Assert that no time dimension specified
+    await playwrightExpect(
+      page.getByText("No time dimension specified")
+    ).toBeVisible();
+
+    // Open Edit Metrics
+    await page.getByRole("button", { name: "Edit Metrics" }).click();
+
+    // Add timestamp column back
+    await page.getByRole("button", { name: "Select a time column" }).click();
+    await page.getByRole("menuitem", { name: "timestamp" }).click();
+
+    // Change smallest grain
     await page
-      .getByRole("button", { name: "All Time January 1 - March 30, 2022" })
+      .getByRole("button", { name: "Change smallest time grain" })
       .click();
-    await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+    await page.getByRole("menuitem", { name: "week" }).click();
+
+    // Go to dashboard
+    await page.getByRole("button", { name: "Go to Dashboard" }).click();
+
+    // Assert that time dimension is now week
+    await playwrightExpect(
+      page.getByRole("button", { name: "Metric trends by week" })
+    ).toBeVisible();
+
+    // Open Edit Metrics
+    await page.getByRole("button", { name: "Edit Metrics" }).click();
+
+    // Delete the only measure
+    const measuresTable = await page.getByRole("table", { name: "Measures" });
+    const firstRow = await measuresTable.getByRole("row").nth(1);
+    await firstRow.hover();
+    await firstRow.getByRole("button", { name: "More" }).click();
+    await page.getByRole("menuitem", { name: "Delete row" }).click();
+
+    // Check warning message appears, Go to Dashboard is disabled
+    await playwrightExpect(
+      page.getByText("at least one measure should be present")
+    ).toBeVisible();
+
+    await playwrightExpect(
+      page.getByRole("button", { name: "Go to dashboard" })
+    ).toBeDisabled();
+
+    // Add total rows measure back
+
+    // Check Quick Metrics button visible
+
+    // Add Avg Bid Price metric, first without a definition
+
+    // Check that Go to Dashboard is disabled
+
+    // Add a definition and pick a format
+
+    // Remove all dimensions
+
+    // Check that Go to Dashboard is disabled
+
+    // Add Published, Domain back to dashboard
+
+    // Go to dashboard
+
+    // Check Avg Bid Price
+
+    // Change the leaderboard metric
+
+    // Check domain and sample value in leaderboard
+
+    // Open the Publisher details table
+
+    // Check the first table row?
+
+    // Change sort direction
+
+    // Check new sort direction worked in first table row
+
+    // Change the sort column to total rows
+
+    // Check that first table row again
+
+    // Click a table value to filter
+
+    // Check that filter was applied
+
+    // Check that details table can exclude
+
+    // Add search criteria
+
+    // Check that table got search
+
+    // Clear search
+
+    // Go back to leaderboard
+
+    // Check that selected metric is total rows
 
     // Change the leaderboard metric to avg bid price
-    await page.getByRole("button", { name: "Total records" }).click();
-
-    return;
-    await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
-
-    // Check leaderboard entry for comparison
-    await playwrightExpect(
-      page.getByText("Facebook 3.02 → 3.37 11%", { exact: true })
-    ).toBeVisible();
-    // await page
-    //   .getByRole("button", { name: "Facebook 3.02 → 3.37 11%" })
-    //   .click();
-    // await page
-    //   .getByRole("button", { name: "Publisher Facebook" })
-    //   .getByRole("button")
-    //   .click();
-
-    // // Open the leaderboard details
-    // await page.getByRole("button", { name: "Publisher" }).click();
-
-    // // TODO, add more here
-
-    // // Go back
-    // await page.getByRole("button", { name: "All Dimensions" }).click();
+    // await page.getByRole("button", { name: "Total records" }).click();
   });
 });
