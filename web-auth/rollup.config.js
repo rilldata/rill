@@ -18,8 +18,6 @@ const production = !process.env.ROLLUP_WATCH;
 
 const environmentVars = [
   "VITE_RILL_CLOUD_AUTH0_CLIENT_IDS",
-  "VITE_OKTA_CONNECTION",
-  "VITE_PINGFED_CONNECTION",
   "VITE_DISABLE_FORGOT_PASS_DOMAINS",
 ];
 
@@ -76,7 +74,7 @@ function serve() {
 }
 
 export default {
-  input: "src/exporter.js",
+  input: "src/exporter.ts",
   output: {
     sourcemap: false,
     format: "iife",
@@ -113,6 +111,7 @@ export default {
       browser: true,
       dedupe: ["svelte"],
       exportConditions: ["svelte"],
+      extensions: [".js", ".svelte", ".ts"]
     }),
     commonjs(),
 

@@ -7,8 +7,6 @@ const app = new Auth({
     configParams: "@@config@@",
     // This gets populated by RollUp and env variables
     cloudClientIDs: "%%VITE_RILL_CLOUD_AUTH0_CLIENT_IDS%%",
-    oktaName: "%%VITE_OKTA_CONNECTION%%",
-    pingFedName: "%%VITE_PINGFED_CONNECTION%%",
     disableForgotPassDomains: "%%VITE_DISABLE_FORGOT_PASS_DOMAINS%%",
   },
 });

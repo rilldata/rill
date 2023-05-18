@@ -8,33 +8,22 @@
   import Disclaimer from "./Disclaimer.svelte";
   import EmailPassForm from "./EmailPassForm.svelte";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
+  import SSOForm from "./SSOForm.svelte";
 
   export let configParams: string;
   export let cloudClientIDs = "";
-  export let oktaName = "";
-  export let pingFedName = "";
   export let disableForgotPassDomains = "";
 
   const cloudClientIDsArr = cloudClientIDs.split(",");
   const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
 
   // By default show the LogIn page
-  let isLoginPage = true;
-  let errorText = "";
+  $: isLoginPage = true;
+  $: errorText = "";
+  $: isRillCloud = false;
 
   let webAuth: WebAuth;
   const databaseConnection = "Username-Password-Authentication";
-
-  $: loginOptions = LOGIN_OPTIONS;
-
-  $: loginOptions.forEach((option) => {
-    if (option.name === "Okta") {
-      option.connection = oktaName;
-    }
-    if (option.name === "Pingfed") {
-      option.connection = pingFedName;
-    }
-  });
 
   function initConfig() {
     const config = JSON.parse(
@@ -42,9 +31,7 @@
     );
 
     if (cloudClientIDsArr.includes(config?.clientID)) {
-      loginOptions = loginOptions.filter(
-        (option) => !["Okta", "Pingfed"].includes(option.name)
-      );
+      isRillCloud = true;
     }
 
     const params = Object.assign(
@@ -141,7 +128,7 @@
       {isLoginPage ? "Log in to Rill" : "Create your Rill account"}
     </div>
     <div class="flex flex-col gap-y-4" style:width="400px">
-      {#each loginOptions as { label, icon, style, connection }}
+      {#each LOGIN_OPTIONS as { label, icon, style, connection }}
         <CtaButton
           variant={style === "primary" ? "primary" : "secondary"}
           on:click={() => authorize(connection)}
@@ -154,6 +141,14 @@
           </div>
         </CtaButton>
       {/each}
+
+      {#if !isRillCloud}
+        <SSOForm
+          on:ssoSubmit={(e) => {
+            authorize(e.detail);
+          }}
+        />
+      {/if}
       <EmailPassForm
         {isLoginPage}
         on:submit={(e) => {
