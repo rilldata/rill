@@ -354,7 +354,11 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		args = append(args, clauseArgs...)
 	}
 
-	validateSort(q.Sort)
+	err = validateSort(q.Sort)
+	if err != nil {
+		return "", nil, err
+	}
+
 	orderClause := "true"
 	subQueryOrderClause := "true"
 	for _, s := range q.Sort {
