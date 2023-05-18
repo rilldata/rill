@@ -1,8 +1,6 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
   import { createEventDispatcher } from "svelte";
-  import EyeInvisible from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
-  import Eye from "@rilldata/web-common/components/icons/Eye.svelte";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
 
   const dispatch = createEventDispatcher();
