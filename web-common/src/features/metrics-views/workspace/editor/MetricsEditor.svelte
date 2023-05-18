@@ -3,6 +3,7 @@
   import { indentGuide } from "@rilldata/web-common/components/editor/indent-guide";
   import { createLineStatusSystem } from "@rilldata/web-common/components/editor/plugins/line-status-decoration";
   import { editorTheme } from "@rilldata/web-common/components/editor/theme";
+  import { tooltipPlugin } from "@rilldata/web-common/components/editor/tooltip";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { parseDocument } from "yaml";
   import {
@@ -138,7 +139,13 @@
         cursor = event.detail;
       }}
       bind:hasFocus
-      plugins={[editorTheme(), placeholder, lineStatusExtensions, indentGuide]}
+      plugins={[
+        editorTheme(),
+        placeholder,
+        lineStatusExtensions,
+        indentGuide,
+        tooltipPlugin,
+      ]}
       stateFieldUpdaters={[updateLineStatus]}
     />
   </div>

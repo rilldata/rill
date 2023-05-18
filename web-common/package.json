@@ -10,6 +10,7 @@
     "test:watch": "npm run test -- --watch"
   },
   "devDependencies": {
+    "@codemirror/tooltip": "^0.19.16",
     "@tanstack/svelte-query": "^4.27.0",
     "@typescript-eslint/eslint-plugin": "^5.27.0",
     "@typescript-eslint/parser": "^5.27.0",
