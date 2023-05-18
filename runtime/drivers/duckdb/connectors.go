@@ -237,7 +237,7 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 	}
 
 	// Ingest data
-	from, err := sourceReader(localPaths, fmt.Sprintf(".%s", format), ingestionProps)
+	from, err := sourceReader(localPaths, format, ingestionProps)
 	if err != nil {
 		return nil, err
 	}
