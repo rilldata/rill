@@ -16,6 +16,8 @@ import (
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -76,7 +78,7 @@ func Spinner(prefix string) *spinner.Spinner {
 func TablePrinter(v interface{}) {
 	var b strings.Builder
 	tableprinter.Print(&b, v)
-	fmt.Fprintln(os.Stdout, b.String())
+	fmt.Fprint(os.Stdout, b.String())
 }
 
 func SuccessPrinter(str string) {
@@ -146,7 +148,7 @@ func InputPrompt(msg, def string) (string, error) {
 		fmt.Printf("Prompt failed %v\n", err)
 		return "", err
 	}
-	return result, nil
+	return strings.TrimSpace(result), nil
 }
 
 func StringPromptIfEmpty(input *string, msg string) {
@@ -208,7 +210,6 @@ func PrintMembers(members []*adminv1.Member) {
 		return
 	}
 
-	SuccessPrinter("Members list")
 	TablePrinter(toMemberTable(members))
 }
 
@@ -244,7 +245,7 @@ func toMemberRow(m *adminv1.Member) *member {
 type member struct {
 	Name      string `header:"name" json:"display_name"`
 	Email     string `header:"email" json:"email"`
-	RoleName  string `header:"role_name" json:"role_name"`
+	RoleName  string `header:"role" json:"role_name"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
 	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_on"`
 }
@@ -268,7 +269,7 @@ func toInviteRow(i *adminv1.UserInvite) *userInvite {
 
 type userInvite struct {
 	Email     string `header:"email" json:"email"`
-	RoleName  string `header:"role_name" json:"role_name"`
+	RoleName  string `header:"role" json:"role_name"`
 	InvitedBy string `header:"invited_by" json:"invited_by"`
 }
 
@@ -372,6 +373,44 @@ func DefaultProjectName() string {
 	}
 
 	return ""
+}
+
+func SetFlagsByInputPrompts(cmd cobra.Command, flags ...string) error {
+	var err error
+	var val string
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		if !f.Changed && slices.Contains(flags, f.Name) {
+			if f.Value.Type() == "string" {
+				val, err = InputPrompt(fmt.Sprintf("Enter the %s", f.Usage), "")
+				if err != nil {
+					fmt.Println("error while input prompt, error:", err)
+					return
+				}
+			}
+
+			if f.Value.Type() == "bool" {
+				var public bool
+				prompt := &survey.Confirm{
+					Message: fmt.Sprintf("Confirm \"%s\"?", f.Usage),
+				}
+
+				err = survey.AskOne(prompt, &public)
+				if err != nil {
+					return
+				}
+
+				val = fmt.Sprintf("%t", public)
+			}
+
+			err = f.Value.Set(val)
+			if err != nil {
+				fmt.Println("error while setting values, error:", err)
+				return
+			}
+		}
+	})
+
+	return err
 }
 
 func FetchUserID(ctx context.Context, cfg *config.Config) (string, error) {

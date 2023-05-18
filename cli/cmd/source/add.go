@@ -75,7 +75,7 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 			sourcePath, err := c.PutSource(cmd.Context(), repo, app.Instance.ID, src, force)
 			if err != nil {
 				if os.IsExist(err) {
-					return fmt.Errorf("source already exists (pass --force to overwrite)")
+					return fmt.Errorf("source already exists (pass `--force` to overwrite)")
 				}
 				return fmt.Errorf("write source: %w", err)
 			}
