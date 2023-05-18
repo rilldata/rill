@@ -131,11 +131,12 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect
 		q.Limit = 100
 	}
 
-	sql := fmt.Sprintf("SELECT * FROM %q WHERE %s %s LIMIT %d",
+	sql := fmt.Sprintf("SELECT * FROM %q WHERE %s %s LIMIT %d OFFSET %d",
 		mv.Model,
 		whereClause,
 		orderClause,
 		q.Limit,
+		q.Offset,
 	)
 
 	return sql, args, nil

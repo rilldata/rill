@@ -142,6 +142,15 @@ export interface V1TriggerReconcileResponse {
   [key: string]: any;
 }
 
+export interface V1SetSuperuserResponse {
+  [key: string]: any;
+}
+
+export interface V1SetSuperuserRequest {
+  email?: string;
+  superuser?: boolean;
+}
+
 export interface V1SetProjectMemberRoleResponse {
   [key: string]: any;
 }
@@ -229,6 +238,10 @@ export interface V1Member {
   roleName?: string;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export interface V1ListSuperusersResponse {
+  users?: V1User[];
 }
 
 export interface V1ListProjectsForOrganizationResponse {

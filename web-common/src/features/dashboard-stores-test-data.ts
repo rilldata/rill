@@ -1,4 +1,4 @@
-import { expect } from "@jest/globals";
+import { expect } from "vitest";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
