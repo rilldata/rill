@@ -111,7 +111,7 @@ export default {
       browser: true,
       dedupe: ["svelte"],
       exportConditions: ["svelte"],
-      extensions: [".js", ".svelte", ".ts"]
+      extensions: [".js", ".svelte", ".ts"],
     }),
     commonjs(),
 
