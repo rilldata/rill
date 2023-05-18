@@ -260,4 +260,74 @@ measures:
       });
     });
   });
+
+  describe("Dimension Name backwards compatibility", () => {
+    const MetricsYAML = `title: "AdBids"
+model: ""
+default_time_range: ""
+smallest_time_grain: ""
+timeseries: ""
+measures: []
+dimensions:
+`;
+    [
+      [
+        "From an old project without dimension name keys",
+        `
+  - label: Publisher
+    property: publisher
+    description: ""
+  - label: Domain
+    property: domain
+    description: ""`,
+        `
+  - label: Publisher
+    property: publisher
+    description: ""
+    name: dimension
+  - label: Domain
+    property: domain
+    description: ""
+    name: dimension_1
+  - name: dimension_2
+    label: ""
+    property: ""
+    description: ""`,
+      ],
+      [
+        "From an old project with some dimension name keys",
+        `
+  - name: dimension_1
+    label: Publisher
+    property: publisher
+    description: ""
+  - label: Domain
+    property: domain
+    description: ""`,
+        `
+  - name: dimension_1
+    label: Publisher
+    property: publisher
+    description: ""
+  - label: Domain
+    property: domain
+    description: ""
+    name: dimension
+  - name: dimension_2
+    label: ""
+    property: ""
+    description: ""`,
+      ],
+    ].forEach(([title, original, expected]) => {
+      it(title, () => {
+        const internalRepresentation = createInternalRepresentation(
+          MetricsYAML + original
+        );
+        internalRepresentation.addNewDimension();
+        expect(internalRepresentation.internalYAML).toEqual(
+          MetricsYAML + expected + "\n"
+        );
+      });
+    });
+  });
 });

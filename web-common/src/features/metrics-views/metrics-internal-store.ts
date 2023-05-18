@@ -43,6 +43,7 @@ export interface DimensionEntity {
 // EG: "measure_2".replace(NameNumberRegex, "") => "measure"
 const NameNumberRegex = new RegExp(/(\d+)$/);
 const MeasureNamePrefix = "measure";
+const DimensionNamePrefix = "dimension";
 
 export class MetricsInternalRepresentation {
   // All operations are done on the document to preserve comments
@@ -82,7 +83,11 @@ export class MetricsInternalRepresentation {
         ?.items as YAMLMap[],
       MeasureNamePrefix
     );
-    // TODO: fill names for dimensions
+    this.fillNames(
+      (internalRepresentationDoc.get("dimensions") as Collection)
+        ?.items as YAMLMap[],
+      DimensionNamePrefix
+    );
 
     this.internalRepresentationDocument = internalRepresentationDoc;
 
@@ -214,7 +219,7 @@ export class MetricsInternalRepresentation {
 
   addNewDimension() {
     const newName = getName(
-      "dimension",
+      DimensionNamePrefix,
       this.internalRepresentation.dimensions.map((dimension) => dimension.name)
     );
 
