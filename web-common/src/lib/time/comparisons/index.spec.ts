@@ -148,7 +148,7 @@ describe("isComparisonInsideBounds", () => {
 const getAvailableComparisonsForTimeRangeTests = [
   {
     description:
-      "should return all comparison points for a 1 day range over years",
+      "should remove duplicate comparison and return all comparison points for a 1 day range over years",
     input: {
       start: new Date("2023-03-04T00:00:00.000Z"),
       end: new Date("2023-03-05T00:00:00.000Z"),
@@ -156,7 +156,6 @@ const getAvailableComparisonsForTimeRangeTests = [
       boundEnd: new Date("2023-03-05T00:00:00.000Z"),
     },
     output: [
-      TimeComparisonOption.CONTIGUOUS,
       TimeComparisonOption.DAY,
       TimeComparisonOption.WEEK,
       TimeComparisonOption.MONTH,
