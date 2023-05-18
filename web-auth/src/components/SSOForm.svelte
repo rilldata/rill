@@ -22,7 +22,6 @@
     }
 
     if (!companySlug) {
-      //Todo
       return;
     }
 

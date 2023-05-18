@@ -56,7 +56,25 @@
   }
 
   function authorize(connection: string) {
-    webAuth.authorize({ connection });
+    /**
+     * `authorize` will redirect the user to the login page irrespective of the connection name
+     * We are using the changePassword API to determine if the connection name exists
+     */
+    webAuth.changePassword(
+      {
+        connection: connection,
+        email: "testConnection@email.com",
+      },
+      (err) => {
+        if (err) {
+          if (err?.description === "connection not found") {
+            displayError({ message: "Company slug doesn't exist" });
+          } else {
+            webAuth.authorize({ connection });
+          }
+        }
+      }
+    );
   }
 
   function handleEmailSubmit(email: string, password: string) {
