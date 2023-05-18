@@ -27,6 +27,42 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 	return obj.GetMetricsView(), nil
 }
 
+// resolveMeasures returns the selected measures
+func resolveMeasures(mv *runtimev1.MetricsView, inlines []*runtimev1.InlineMeasure, selectedNames []string) ([]*runtimev1.MetricsView_Measure, error) {
+	// Build combined measures
+	ms := make([]*runtimev1.MetricsView_Measure, len(selectedNames))
+	for i, n := range selectedNames {
+		found := false
+		// Search in the inlines (take precedence)
+		for _, m := range inlines {
+			if m.Name == n {
+				ms[i] = &runtimev1.MetricsView_Measure{
+					Name:       m.Name,
+					Expression: m.Expression,
+				}
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+		// Search in the metrics view
+		for _, m := range mv.Measures {
+			if m.Name == n {
+				ms[i] = m
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("measure does not exist: '%s'", n)
+		}
+	}
+
+	return ms, nil
+}
+
 func metricsQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql string, args []any) ([]*runtimev1.MetricsViewColumn, []*structpb.Struct, error) {
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    sql,

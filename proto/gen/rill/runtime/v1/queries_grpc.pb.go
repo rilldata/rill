@@ -19,23 +19,25 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	QueryService_Query_FullMethodName                       = "/rill.runtime.v1.QueryService/Query"
-	QueryService_MetricsViewToplist_FullMethodName          = "/rill.runtime.v1.QueryService/MetricsViewToplist"
-	QueryService_MetricsViewTimeSeries_FullMethodName       = "/rill.runtime.v1.QueryService/MetricsViewTimeSeries"
-	QueryService_MetricsViewTotals_FullMethodName           = "/rill.runtime.v1.QueryService/MetricsViewTotals"
-	QueryService_ColumnRollupInterval_FullMethodName        = "/rill.runtime.v1.QueryService/ColumnRollupInterval"
-	QueryService_ColumnTopK_FullMethodName                  = "/rill.runtime.v1.QueryService/ColumnTopK"
-	QueryService_ColumnNullCount_FullMethodName             = "/rill.runtime.v1.QueryService/ColumnNullCount"
-	QueryService_ColumnDescriptiveStatistics_FullMethodName = "/rill.runtime.v1.QueryService/ColumnDescriptiveStatistics"
-	QueryService_ColumnTimeGrain_FullMethodName             = "/rill.runtime.v1.QueryService/ColumnTimeGrain"
-	QueryService_ColumnNumericHistogram_FullMethodName      = "/rill.runtime.v1.QueryService/ColumnNumericHistogram"
-	QueryService_ColumnRugHistogram_FullMethodName          = "/rill.runtime.v1.QueryService/ColumnRugHistogram"
-	QueryService_ColumnTimeRange_FullMethodName             = "/rill.runtime.v1.QueryService/ColumnTimeRange"
-	QueryService_ColumnCardinality_FullMethodName           = "/rill.runtime.v1.QueryService/ColumnCardinality"
-	QueryService_ColumnTimeSeries_FullMethodName            = "/rill.runtime.v1.QueryService/ColumnTimeSeries"
-	QueryService_TableCardinality_FullMethodName            = "/rill.runtime.v1.QueryService/TableCardinality"
-	QueryService_TableColumns_FullMethodName                = "/rill.runtime.v1.QueryService/TableColumns"
-	QueryService_TableRows_FullMethodName                   = "/rill.runtime.v1.QueryService/TableRows"
+	QueryService_Query_FullMethodName                        = "/rill.runtime.v1.QueryService/Query"
+	QueryService_MetricsViewToplist_FullMethodName           = "/rill.runtime.v1.QueryService/MetricsViewToplist"
+	QueryService_MetricsViewComparisonToplist_FullMethodName = "/rill.runtime.v1.QueryService/MetricsViewComparisonToplist"
+	QueryService_MetricsViewTimeSeries_FullMethodName        = "/rill.runtime.v1.QueryService/MetricsViewTimeSeries"
+	QueryService_MetricsViewTotals_FullMethodName            = "/rill.runtime.v1.QueryService/MetricsViewTotals"
+	QueryService_MetricsViewRows_FullMethodName              = "/rill.runtime.v1.QueryService/MetricsViewRows"
+	QueryService_ColumnRollupInterval_FullMethodName         = "/rill.runtime.v1.QueryService/ColumnRollupInterval"
+	QueryService_ColumnTopK_FullMethodName                   = "/rill.runtime.v1.QueryService/ColumnTopK"
+	QueryService_ColumnNullCount_FullMethodName              = "/rill.runtime.v1.QueryService/ColumnNullCount"
+	QueryService_ColumnDescriptiveStatistics_FullMethodName  = "/rill.runtime.v1.QueryService/ColumnDescriptiveStatistics"
+	QueryService_ColumnTimeGrain_FullMethodName              = "/rill.runtime.v1.QueryService/ColumnTimeGrain"
+	QueryService_ColumnNumericHistogram_FullMethodName       = "/rill.runtime.v1.QueryService/ColumnNumericHistogram"
+	QueryService_ColumnRugHistogram_FullMethodName           = "/rill.runtime.v1.QueryService/ColumnRugHistogram"
+	QueryService_ColumnTimeRange_FullMethodName              = "/rill.runtime.v1.QueryService/ColumnTimeRange"
+	QueryService_ColumnCardinality_FullMethodName            = "/rill.runtime.v1.QueryService/ColumnCardinality"
+	QueryService_ColumnTimeSeries_FullMethodName             = "/rill.runtime.v1.QueryService/ColumnTimeSeries"
+	QueryService_TableCardinality_FullMethodName             = "/rill.runtime.v1.QueryService/TableCardinality"
+	QueryService_TableColumns_FullMethodName                 = "/rill.runtime.v1.QueryService/TableColumns"
+	QueryService_TableRows_FullMethodName                    = "/rill.runtime.v1.QueryService/TableRows"
 )
 
 // QueryServiceClient is the client API for QueryService service.
@@ -47,12 +49,15 @@ type QueryServiceClient interface {
 	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(ctx context.Context, in *MetricsViewToplistRequest, opts ...grpc.CallOption) (*MetricsViewToplistResponse, error)
+	MetricsViewComparisonToplist(ctx context.Context, in *MetricsViewComparisonToplistRequest, opts ...grpc.CallOption) (*MetricsViewComparisonToplistResponse, error)
 	// MetricsViewTimeSeries returns time series for the measures in the metrics view.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTimeSeries(ctx context.Context, in *MetricsViewTimeSeriesRequest, opts ...grpc.CallOption) (*MetricsViewTimeSeriesResponse, error)
 	// MetricsViewTotals returns totals over a time period for the measures in a metrics view.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTotals(ctx context.Context, in *MetricsViewTotalsRequest, opts ...grpc.CallOption) (*MetricsViewTotalsResponse, error)
+	// MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+	MetricsViewRows(ctx context.Context, in *MetricsViewRowsRequest, opts ...grpc.CallOption) (*MetricsViewRowsResponse, error)
 	// ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
 	ColumnRollupInterval(ctx context.Context, in *ColumnRollupIntervalRequest, opts ...grpc.CallOption) (*ColumnRollupIntervalResponse, error)
 	// Get TopK elements from a table for a column given an agg function
@@ -108,6 +113,15 @@ func (c *queryServiceClient) MetricsViewToplist(ctx context.Context, in *Metrics
 	return out, nil
 }
 
+func (c *queryServiceClient) MetricsViewComparisonToplist(ctx context.Context, in *MetricsViewComparisonToplistRequest, opts ...grpc.CallOption) (*MetricsViewComparisonToplistResponse, error) {
+	out := new(MetricsViewComparisonToplistResponse)
+	err := c.cc.Invoke(ctx, QueryService_MetricsViewComparisonToplist_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *queryServiceClient) MetricsViewTimeSeries(ctx context.Context, in *MetricsViewTimeSeriesRequest, opts ...grpc.CallOption) (*MetricsViewTimeSeriesResponse, error) {
 	out := new(MetricsViewTimeSeriesResponse)
 	err := c.cc.Invoke(ctx, QueryService_MetricsViewTimeSeries_FullMethodName, in, out, opts...)
@@ -120,6 +134,15 @@ func (c *queryServiceClient) MetricsViewTimeSeries(ctx context.Context, in *Metr
 func (c *queryServiceClient) MetricsViewTotals(ctx context.Context, in *MetricsViewTotalsRequest, opts ...grpc.CallOption) (*MetricsViewTotalsResponse, error) {
 	out := new(MetricsViewTotalsResponse)
 	err := c.cc.Invoke(ctx, QueryService_MetricsViewTotals_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryServiceClient) MetricsViewRows(ctx context.Context, in *MetricsViewRowsRequest, opts ...grpc.CallOption) (*MetricsViewRowsResponse, error) {
+	out := new(MetricsViewRowsResponse)
+	err := c.cc.Invoke(ctx, QueryService_MetricsViewRows_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -252,12 +275,15 @@ type QueryServiceServer interface {
 	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(context.Context, *MetricsViewToplistRequest) (*MetricsViewToplistResponse, error)
+	MetricsViewComparisonToplist(context.Context, *MetricsViewComparisonToplistRequest) (*MetricsViewComparisonToplistResponse, error)
 	// MetricsViewTimeSeries returns time series for the measures in the metrics view.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTimeSeries(context.Context, *MetricsViewTimeSeriesRequest) (*MetricsViewTimeSeriesResponse, error)
 	// MetricsViewTotals returns totals over a time period for the measures in a metrics view.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewTotals(context.Context, *MetricsViewTotalsRequest) (*MetricsViewTotalsResponse, error)
+	// MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+	MetricsViewRows(context.Context, *MetricsViewRowsRequest) (*MetricsViewRowsResponse, error)
 	// ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
 	ColumnRollupInterval(context.Context, *ColumnRollupIntervalRequest) (*ColumnRollupIntervalResponse, error)
 	// Get TopK elements from a table for a column given an agg function
@@ -298,11 +324,17 @@ func (UnimplementedQueryServiceServer) Query(context.Context, *QueryRequest) (*Q
 func (UnimplementedQueryServiceServer) MetricsViewToplist(context.Context, *MetricsViewToplistRequest) (*MetricsViewToplistResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewToplist not implemented")
 }
+func (UnimplementedQueryServiceServer) MetricsViewComparisonToplist(context.Context, *MetricsViewComparisonToplistRequest) (*MetricsViewComparisonToplistResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewComparisonToplist not implemented")
+}
 func (UnimplementedQueryServiceServer) MetricsViewTimeSeries(context.Context, *MetricsViewTimeSeriesRequest) (*MetricsViewTimeSeriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewTimeSeries not implemented")
 }
 func (UnimplementedQueryServiceServer) MetricsViewTotals(context.Context, *MetricsViewTotalsRequest) (*MetricsViewTotalsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewTotals not implemented")
+}
+func (UnimplementedQueryServiceServer) MetricsViewRows(context.Context, *MetricsViewRowsRequest) (*MetricsViewRowsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewRows not implemented")
 }
 func (UnimplementedQueryServiceServer) ColumnRollupInterval(context.Context, *ColumnRollupIntervalRequest) (*ColumnRollupIntervalResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ColumnRollupInterval not implemented")
@@ -392,6 +424,24 @@ func _QueryService_MetricsViewToplist_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _QueryService_MetricsViewComparisonToplist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MetricsViewComparisonToplistRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServiceServer).MetricsViewComparisonToplist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueryService_MetricsViewComparisonToplist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServiceServer).MetricsViewComparisonToplist(ctx, req.(*MetricsViewComparisonToplistRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _QueryService_MetricsViewTimeSeries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MetricsViewTimeSeriesRequest)
 	if err := dec(in); err != nil {
@@ -424,6 +474,24 @@ func _QueryService_MetricsViewTotals_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServiceServer).MetricsViewTotals(ctx, req.(*MetricsViewTotalsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueryService_MetricsViewRows_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MetricsViewRowsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServiceServer).MetricsViewRows(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueryService_MetricsViewRows_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServiceServer).MetricsViewRows(ctx, req.(*MetricsViewRowsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -678,12 +746,20 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _QueryService_MetricsViewToplist_Handler,
 		},
 		{
+			MethodName: "MetricsViewComparisonToplist",
+			Handler:    _QueryService_MetricsViewComparisonToplist_Handler,
+		},
+		{
 			MethodName: "MetricsViewTimeSeries",
 			Handler:    _QueryService_MetricsViewTimeSeries_Handler,
 		},
 		{
 			MethodName: "MetricsViewTotals",
 			Handler:    _QueryService_MetricsViewTotals_Handler,
+		},
+		{
+			MethodName: "MetricsViewRows",
+			Handler:    _QueryService_MetricsViewRows_Handler,
 		},
 		{
 			MethodName: "ColumnRollupInterval",

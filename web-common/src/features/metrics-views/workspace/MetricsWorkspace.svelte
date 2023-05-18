@@ -2,12 +2,12 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { appStore } from "@rilldata/web-common/layout/app-store";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
     V1PutFileAndReconcileResponse,
     createRuntimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
   import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { setContext } from "svelte";
@@ -68,6 +68,35 @@
     const { content } = event.detail;
     callReconcileAndUpdateYaml(content);
   }
+
+  // let validDimensionSelectorOption = [];
+  // $: if (model) {
+  //   const selectedMetricsDefModelProfile = model?.schema?.fields ?? [];
+  //   validDimensionSelectorOption = selectedMetricsDefModelProfile.map(
+  //     (column) => ({ label: column.name, value: column.name })
+  //   );
+  // } else {
+  //   validDimensionSelectorOption = [];
+  // }
+
+  // $: MeasuresColumns = initMeasuresColumns(
+  //   handleUpdateMeasure,
+  //   handleMeasureExpressionValidation
+  // );
+  // $: DimensionColumns = initDimensionColumns(
+  //   handleUpdateDimension,
+  //   validDimensionSelectorOption
+  // );
+
+  // let errors: Array<V1ReconcileError>;
+  // $: errors =
+  //   $fileArtifactsStore.entities[
+  //     getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
+  //   ]?.errors;
+
+  // $: metricsSourceSelectionError = nonStandardError
+  //   ? nonStandardError
+  //   : MetricsSourceSelectionError(errors);
 </script>
 
 <WorkspaceContainer inspector={true} assetID={`${metricsDefName}-config`}>

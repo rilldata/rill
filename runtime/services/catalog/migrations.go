@@ -141,7 +141,12 @@ func (s *Service) collectMigrationItems(
 		}
 	}
 
-	for name, item := range migrationMap {
+	for _, name := range tempDag.TopologicalSort() {
+		item, ok := migrationMap[name]
+		if !ok {
+			continue
+		}
+
 		if item.Type == MigrationNoChange {
 			if update[name] {
 				// items identified as to created/updated because a parent changed
@@ -184,6 +189,7 @@ func (s *Service) collectMigrationItems(
 				tempDag.GetDeepChildren(strings.ToLower(item.FromNormalizedName))...,
 			))...)
 		}
+
 		for _, child := range children {
 			i, ok := visited[child]
 			if !ok {
@@ -196,6 +202,7 @@ func (s *Service) collectMigrationItems(
 
 			var childItem *MigrationItem
 			// if a child was already visited push to the end
+			// this can happen when there is a rename and the new DAG wont have the old order
 			visited[child] = len(migrationItems)
 			if i != -1 {
 				childItem = migrationItems[i]

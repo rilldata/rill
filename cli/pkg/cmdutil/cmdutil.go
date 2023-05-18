@@ -283,22 +283,24 @@ func contains(vals []string, key string) bool {
 
 // ProjectNames returns names of all the projects in org deployed from githubURL
 func ProjectNamesByGithubURL(ctx context.Context, c *client.Client, org, githubURL string) ([]string, error) {
-	resp, err := c.ListProjectsForOrganizationAndGithubURL(ctx, &adminv1.ListProjectsForOrganizationAndGithubURLRequest{
+	resp, err := c.ListProjectsForOrganization(ctx, &adminv1.ListProjectsForOrganizationRequest{
 		OrganizationName: org,
-		GithubUrl:        githubURL,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if len(resp.Projects) == 0 {
+	names := make([]string, 0)
+	for _, p := range resp.Projects {
+		if strings.EqualFold(p.GithubUrl, githubURL) {
+			names = append(names, p.Name)
+		}
+	}
+
+	if len(names) == 0 {
 		return nil, fmt.Errorf("No project with githubURL %q exist in org %q", githubURL, org)
 	}
 
-	names := make([]string, len(resp.Projects))
-	for i, p := range resp.Projects {
-		names[i] = p.Name
-	}
 	return names, nil
 }
 
@@ -370,4 +372,17 @@ func DefaultProjectName() string {
 	}
 
 	return ""
+}
+
+func FetchUserID(ctx context.Context, cfg *config.Config) (string, error) {
+	c, err := Client(cfg)
+	if err != nil {
+		return "", err
+	}
+	defer c.Close()
+	user, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+	if err != nil {
+		return "", err
+	}
+	return user.GetUser().GetId(), nil
 }

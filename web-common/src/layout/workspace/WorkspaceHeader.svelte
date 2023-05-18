@@ -62,7 +62,7 @@
     {#if titleInput !== undefined && titleInput !== null}
       <h1
         style:font-size="16px"
-        class="w-full  overflow-x-hidden  grid grid-flow-col justify-start items-center gap-x-1"
+        class="w-full overflow-x-hidden grid grid-flow-col justify-start items-center gap-x-1"
       >
         <Tooltip
           distance={8}

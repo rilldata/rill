@@ -5,8 +5,8 @@ import type {
   V1Model,
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
-import { readable, Subscriber } from "svelte/store";
-import { Document, ParsedNode, parseDocument, YAMLMap } from "yaml";
+import { Subscriber, readable } from "svelte/store";
+import { Document, ParsedNode, YAMLMap, parseDocument } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
 import { selectTimestampColumnFromSchema } from "./column-selectors";
 
@@ -37,6 +37,11 @@ export interface DimensionEntity {
   description?: string;
   __ERROR__?: string;
 }
+
+// This is used to extract the base name from an auto incremented name.
+// EG: "measure_2".replace(NameNumberRegex, "") => "measure"
+const NameNumberRegex = new RegExp(/(\d+)$/);
+const MeasureNamePrefix = "measure";
 
 export class MetricsInternalRepresentation {
   // All operations are done on the document to preserve comments
@@ -70,20 +75,13 @@ export class MetricsInternalRepresentation {
 
   decorateInternalRepresentation(yamlString: string) {
     const internalRepresentationDoc = parseDocument(yamlString);
-    const numberOfMeasures =
-      (internalRepresentationDoc.get("measures") as Collection)?.items
-        ?.length || 0;
 
-    Array(numberOfMeasures)
-      .fill(0)
-      .map((_, i) => {
-        const measure = internalRepresentationDoc.getIn([
-          "measures",
-          i,
-        ]) as YAMLMap;
-
-        measure.add({ key: "__GUID__", value: guidGenerator() });
-      });
+    this.fillNames(
+      (internalRepresentationDoc.get("measures") as Collection)
+        ?.items as YAMLMap[],
+      MeasureNamePrefix
+    );
+    // TODO: fill names for dimensions
 
     this.internalRepresentationDocument = internalRepresentationDoc;
 
@@ -181,8 +179,8 @@ export class MetricsInternalRepresentation {
 
   addNewMeasure() {
     const newName = getName(
-      "measure",
-      this.internalRepresentation.measures.map((measure) => measure.name)
+      MeasureNamePrefix,
+      this.internalRepresentation.measures.map((measure) => measure?.name || "")
     );
 
     const measureNode = this.internalRepresentationDocument.createNode({
@@ -236,6 +234,38 @@ export class MetricsInternalRepresentation {
     this.internalRepresentationDocument.deleteIn(["dimensions", index]);
     this.regenerateInternalYAML();
   }
+
+  fillNames(entities: Array<YAMLMap>, namePrefix: string) {
+    const numberOfEntities = entities?.length || 0;
+    const availableNames = new Array<number>(numberOfEntities).fill(1);
+    let missingName = false;
+
+    for (let i = 0; i < numberOfEntities; i++) {
+      if (entities[i].has("name")) {
+        const name = entities[i].get("name") as string;
+        const baseName = name.toLowerCase().replace(NameNumberRegex, "");
+        if (baseName === namePrefix) {
+          availableNames[i] = 0;
+        }
+      } else {
+        missingName = true;
+      }
+    }
+
+    // skip the following loop if all measures have names
+    if (!missingName) return;
+
+    for (let i = 0, nameCur = 0; i < numberOfEntities; i++) {
+      if (entities[i].has("name")) continue;
+      while (availableNames[nameCur] === 0) {
+        nameCur++;
+      }
+
+      const newName = nameCur === 0 ? namePrefix : `${namePrefix}_${nameCur}`;
+      entities[i].add({ key: "name", value: newName });
+      nameCur++;
+    }
+  }
 }
 
 export function createInternalRepresentation(yamlString, updateRuntime) {
@@ -255,7 +285,7 @@ const capitalize = (s) => s && s[0].toUpperCase() + s.slice(1);
 
 export function initBlankDashboardYAML(dashboardName: string) {
   const metricsTemplate = `
-# Visit https://docs.rilldata.com/references/project-files to learn more about Rill project files.
+# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
 title: ""
 model: ""

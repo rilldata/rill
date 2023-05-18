@@ -7,6 +7,7 @@ export type V1RuntimeGetConfig = {
   grpc_port: number;
   install_id: string;
   project_path: string;
+  user_id: string;
   version: string;
   build_commit: string;
   is_dev: boolean;

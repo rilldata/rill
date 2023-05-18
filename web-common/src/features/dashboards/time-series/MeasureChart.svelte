@@ -9,8 +9,8 @@
   } from "@rilldata/web-common/components/data-graphic/guides";
   import { ChunkedLine } from "@rilldata/web-common/components/data-graphic/marks";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+  import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { previousValueStore } from "@rilldata/web-local/lib/store-utils";
   import { extent } from "d3-array";
   import { cubicOut } from "svelte/easing";
   import { writable } from "svelte/store";

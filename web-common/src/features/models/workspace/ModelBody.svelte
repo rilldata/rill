@@ -16,7 +16,9 @@
   } from "@rilldata/web-common/features/models/utils/get-table-references";
   import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import {
+    createQueryServiceTableRows,
     createRuntimeServiceGetFile,
     createRuntimeServicePutFileAndReconcile,
     getRuntimeServiceGetFileQueryKey,
@@ -26,9 +28,8 @@
   import {
     invalidateAfterReconcile,
     isProfilingQuery,
-  } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  } from "@rilldata/web-common/runtime-client/invalidation";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
-  import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
@@ -52,6 +53,14 @@
 
   $: runtimeInstanceId = $runtime.instanceId;
   const updateModel = createRuntimeServicePutFileAndReconcile();
+
+  const limit = 150;
+
+  $: tableQuery = createQueryServiceTableRows(runtimeInstanceId, modelName, {
+    limit,
+  });
+
+  $: runtimeError = ($tableQuery.error as any)?.response.data;
 
   // track innerHeight to calculate the size of the editor element.
   let innerHeight: number;
@@ -167,6 +176,14 @@
     from: selection?.referenceIndex,
     to: selection?.referenceIndex + selection?.reference?.length,
   })) as SelectionRange[];
+
+  let errors = [];
+  $: {
+    errors = [];
+    if (embeddedSourceErrors?.length) errors.push(...embeddedSourceErrors);
+    if (modelError) errors.push(modelError);
+    if (runtimeError) errors.push(runtimeError.message);
+  }
 </script>
 
 <svelte:window bind:innerHeight />
@@ -177,7 +194,7 @@
       $outputVisibilityTween}px - var(--header-height))"
   >
     {#if hasModelSql}
-      <div class="h-full  p-5  grid overflow-auto">
+      <div class="h-full p-5 grid overflow-auto">
         {#key modelName}
           <Editor
             {modelName}
@@ -225,13 +242,13 @@
           'hidden'}"
       >
         <div
-          style="{modelError ? 'filter: brightness(.9);' : ''}
+          style="{modelError || runtimeError ? 'filter: brightness(.9);' : ''}
             transition: filter 200ms;
           "
           class="relative h-full"
         >
           {#if !$modelEmpty?.data}
-            <ConnectedPreviewTable objectName={modelName} />
+            <ConnectedPreviewTable objectName={modelName} {limit} />
           {/if}
         </div>
         <!--TODO {:else}-->
@@ -242,18 +259,14 @@
         <!--  </div>-->
         <!--{/if}-->
       </div>
-      {#if embeddedSourceErrors?.length || modelError}
+      {#if errors.length > 0}
         <div
-          transition:slide={{ duration: 200 }}
-          class="error break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100"
+          transition:slide|local={{ duration: 200 }}
+          class="error break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100 flex flex-col gap-2"
         >
-          {#if embeddedSourceErrors?.length}
-            {#each embeddedSourceErrors as embeddedSourceError}
-              {embeddedSourceError}<br />
-            {/each}
-          {:else}
-            {modelError}
-          {/if}
+          {#each errors as error}
+            <div>{error}</div>
+          {/each}
         </div>
       {/if}
     </div>

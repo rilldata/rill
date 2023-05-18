@@ -10,7 +10,7 @@ import {
 import { PerRangeFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/per-range";
 
 const shortHandSymbols = ["Q", "T", "B", "M", "k", "none"] as const;
-export type ShortHandSymbols = typeof shortHandSymbols[number];
+export type ShortHandSymbols = (typeof shortHandSymbols)[number];
 
 interface HumanizeOptions {
   scale?: ShortHandSymbols;
