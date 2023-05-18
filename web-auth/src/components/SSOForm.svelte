@@ -25,7 +25,7 @@
       return;
     }
 
-    dispatch("ssoSubmit", companySlug);
+    dispatch("ssoSubmit", companySlug.toLowerCase());
   }
 </script>
 
