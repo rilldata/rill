@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/connectors/localfile"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"go.uber.org/zap"
 )
 
 const (
@@ -35,6 +36,7 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 
 	summary, err := c.ingest(ctxWithTimeout, env, source)
 	if err != nil && errors.Is(err, context.DeadlineExceeded) {
+		c.logger.Error("ingestion timeout exceeded", zap.String("source", source.Name), zap.Duration("timeout", timeout))
 		return nil, fmt.Errorf("ingestion timeout exceeded (source=%q, timeout=%s)", source.Name, timeout.String())
 	}
 
@@ -61,11 +63,15 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 			return nil, err
 		}
 
+		st := time.Now()
+		c.logger.Info("ingesting files", zap.Strings("files", files))
 		if err := c.ingestIteratorFiles(ctx, source, files, appendToTable); err != nil {
 			return nil, err
 		}
 
-		summary.BytesIngested += fileSize(files)
+		size := fileSize(files)
+		summary.BytesIngested += size
+		c.logger.Info("ingested files", zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Float64("time_taken", time.Since(st).Seconds()))
 		appendToTable = true
 	}
 	return summary, nil
@@ -84,6 +90,7 @@ func (c *connection) ingestIteratorFiles(ctx context.Context, source *connectors
 	} else {
 		query = fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from)
 	}
+	c.logger.Debug("generated query", zap.String("query", query))
 	return c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }
 
