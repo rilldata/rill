@@ -118,6 +118,30 @@ function includeExcludeModeFromFilters(filters: V1MetricsViewFilter) {
   return map;
 }
 
+function removeNonExistentDimensions(
+  metricsView: V1MetricsView,
+  metricsExplorer: MetricsExplorerEntity
+) {
+  // Having a map here improves the lookup for existing dimension name
+  const dimensionsMap = getMapFromArray(
+    metricsView.dimensions,
+    (dimension) => dimension.name
+  );
+  metricsExplorer.filters.include = metricsExplorer.filters.include.filter(
+    (filter) => dimensionsMap.has(filter.name)
+  );
+  metricsExplorer.filters.exclude = metricsExplorer.filters.exclude.filter(
+    (filter) => dimensionsMap.has(filter.name)
+  );
+
+  if (
+    metricsExplorer.selectedDimensionName &&
+    !dimensionsMap.has(metricsExplorer.selectedDimensionName)
+  ) {
+    metricsExplorer.selectedDimensionName = undefined;
+  }
+}
+
 const metricViewReducers = {
   syncFromUrl(name: string, url: URL) {
     // not all data for MetricsExplorerEntity will be filled out here.
@@ -169,10 +193,12 @@ const metricViewReducers = {
         } else if (!metricsView.measures.length) {
           metricsExplorer.leaderboardMeasureName = undefined;
         }
+        // TODO: how does this differ from visibleMeasureKeys?
         metricsExplorer.selectedMeasureNames = metricsView.measures.map(
           (measure) => measure.name
         );
 
+        // visible measure and dimensions sync
         metricsExplorer.visibleMeasureKeys = new Set(
           metricsView.measures.map((measure) => measure.expression)
         );
@@ -181,25 +207,8 @@ const metricViewReducers = {
           metricsView.dimensions.map((dim) => dim.name)
         );
 
-        const dimensionsMap = getMapFromArray(
-          metricsView.dimensions,
-          (dimension) => dimension.name
-        );
-        metricsExplorer.filters.include =
-          metricsExplorer.filters.include.filter((filter) =>
-            dimensionsMap.has(filter.name)
-          );
-        metricsExplorer.filters.exclude =
-          metricsExplorer.filters.exclude.filter((filter) =>
-            dimensionsMap.has(filter.name)
-          );
-
-        if (
-          metricsExplorer.selectedDimensionName &&
-          !dimensionsMap.has(metricsExplorer.selectedDimensionName)
-        ) {
-          metricsExplorer.selectedDimensionName = undefined;
-        }
+        // remove references to non existent dimensions
+        removeNonExistentDimensions(metricsView, metricsExplorer);
       },
       () => ({
         name,
