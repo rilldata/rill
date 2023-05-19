@@ -510,7 +510,10 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 		MaxAge:     30, // days
 		Compress:   true,
 	}
-	fileCore := zapcore.NewCore(zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()), zapcore.AddSync(luLogger), logLevel)
+	cfg := zap.NewProductionEncoderConfig()
+	// hide logger name like `console`
+	cfg.NameKey = zapcore.OmitKey
+	fileCore := zapcore.NewCore(zapcore.NewJSONEncoder(cfg), zapcore.AddSync(luLogger), logLevel)
 
 	var consoleEncoder zapcore.Encoder
 	opts := make([]zap.Option, 0)

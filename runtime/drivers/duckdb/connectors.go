@@ -36,7 +36,6 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 
 	summary, err := c.ingest(ctxWithTimeout, env, source)
 	if err != nil && errors.Is(err, context.DeadlineExceeded) {
-		c.logger.Error("ingestion timeout exceeded", zap.String("source", source.Name), zap.Duration("timeout", timeout))
 		return nil, fmt.Errorf("ingestion timeout exceeded (source=%q, timeout=%s)", source.Name, timeout.String())
 	}
 
@@ -49,7 +48,7 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 		return c.ingestLocalFiles(ctx, env, source)
 	}
 
-	iterator, err := connectors.ConsumeAsIterator(ctx, env, source)
+	iterator, err := connectors.ConsumeAsIterator(ctx, env, source, c.logger)
 	if err != nil {
 		return nil, err
 	}
@@ -64,14 +63,14 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 		}
 
 		st := time.Now()
-		c.logger.Info("ingesting files", zap.Strings("files", files))
+		c.logger.Info("ingesting files", zap.String("source", source.Name), zap.Strings("files", files))
 		if err := c.ingestIteratorFiles(ctx, source, files, appendToTable); err != nil {
 			return nil, err
 		}
 
 		size := fileSize(files)
 		summary.BytesIngested += size
-		c.logger.Info("ingested files", zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Float64("time_taken", time.Since(st).Seconds()))
+		c.logger.Info("ingested files", zap.String("source", source.Name), zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Float64("took_seconds", time.Since(st).Seconds()))
 		appendToTable = true
 	}
 	return summary, nil

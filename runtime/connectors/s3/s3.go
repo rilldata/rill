@@ -16,6 +16,7 @@ import (
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
+	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/s3blob"
 	"gocloud.dev/gcerrors"
@@ -119,7 +120,7 @@ func (c connector) Spec() connectors.Spec {
 //   - AWS_SESSION_TOKEN
 //
 // Additionally in case env.AllowHostCredentials is true it looks for credentials stored on host machine as well
-func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
+func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source, logger *zap.Logger) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -146,7 +147,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		StorageLimitInBytes:   env.StorageLimitInBytes,
 	}
 
-	it, err := rillblob.NewIterator(ctx, bucketObj, opts)
+	it, err := rillblob.NewIterator(ctx, bucketObj, opts, logger)
 	if err != nil {
 		// s3 throws error (possibly inconsistent) in case we are trying to access public buckets and passing some credentials
 		// go cdk wraps some s3's errors into gcerrors.Unknown
@@ -158,7 +159,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 			if bucketErr != nil {
 				return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, bucketErr)
 			}
-			it, err = rillblob.NewIterator(ctx, bucketObj, opts)
+			it, err = rillblob.NewIterator(ctx, bucketObj, opts, logger)
 		}
 
 		// aws returns StatusForbidden in cases like no creds passed, wrong creds passed and incorrect bucket

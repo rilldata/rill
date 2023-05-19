@@ -13,6 +13,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	"golang.org/x/sync/errgroup"
 )
@@ -44,6 +45,7 @@ type blobIterator struct {
 	// all localfiles are created in this dir
 	tempDir string
 	opts    *Options
+	logger  *zap.Logger
 }
 
 type Options struct {
@@ -96,13 +98,14 @@ func (opts *Options) validateLimits(size int64, matchCount int, fetched int64) e
 // the iterator keeps list of blob objects eagerly planned as per user's glob pattern and extract policies
 // clients should call close once done to release all resources like closing the bucket
 // the iterator takes responsibility of closing the bucket
-func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options) (connectors.FileIterator, error) {
+func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.Logger) (connectors.FileIterator, error) {
 	opts.validate()
 
 	it := &blobIterator{
 		ctx:    ctx,
 		bucket: bucket,
 		opts:   &opts,
+		logger: l,
 	}
 
 	tempDir, err := os.MkdirTemp(os.TempDir(), "blob_ingestion")
@@ -182,11 +185,13 @@ func (it *blobIterator) NextBatch(n int) ([]string, error) {
 			// Collect metrics of download size and time
 			startTime := time.Now()
 			defer func() {
+				duration := time.Since(startTime)
+				it.logger.Info("download complete", zap.String("object", obj.obj.Key), zap.Float64("took_seconds", duration.Seconds()))
 				connectors.RecordDownloadMetrics(grpCtx, &connectors.DownloadMetrics{
 					Connector: "blob",
 					Ext:       ext,
 					Partial:   !downloadFull,
-					Duration:  time.Since(startTime),
+					Duration:  duration,
 					Size:      obj.obj.Size,
 				})
 			}()
@@ -233,6 +238,8 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 		return nil, err
 	}
 
+	it.logger.Info("started planner", zap.String("glob", it.opts.GlobPattern))
+
 	listOpts := listOptions(it.opts.GlobPattern)
 	token := blob.FirstPageToken
 	for token != nil && !planner.done() {
@@ -256,6 +263,8 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 			return nil, err
 		}
 	}
+
+	it.logger.Info("planning complete", zap.String("glob", it.opts.GlobPattern), zap.Int64("listed_objects", fetched), zap.Int("matched", matchCount), zap.Int64("bytes_matched", size))
 
 	items := planner.items()
 	if len(items) == 0 {
