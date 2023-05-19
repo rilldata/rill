@@ -8,7 +8,7 @@ import type {
   SourceConnectionType,
   SourceErrorCodes,
   SourceFileType,
-} from "./service/ErrorEventFactory";
+} from "./service/SourceEventTypes";
 
 export class SourceErrorEventHandler {
   public constructor(
