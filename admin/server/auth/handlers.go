@@ -121,6 +121,11 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 		http.Error(w, "claim 'email' not found", http.StatusInternalServerError)
 		return
 	}
+	emailVerified, ok := profile["email_verified"].(bool)
+	if !ok {
+		http.Error(w, "claim 'email_verified' not found", http.StatusInternalServerError)
+		return
+	}
 	name, ok := profile["name"].(string)
 	if !ok {
 		http.Error(w, "claim 'name' not found", http.StatusInternalServerError)
@@ -129,6 +134,12 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	photoURL, ok := profile["picture"].(string)
 	if !ok {
 		http.Error(w, "claim 'picture' not found", http.StatusInternalServerError)
+		return
+	}
+
+	// Check that the user's email is verified
+	if !emailVerified {
+		http.Error(w, "email not verified", http.StatusUnauthorized)
 		return
 	}
 
