@@ -57,7 +57,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 					}
 
 					projectPath = currentDir
-					msg := fmt.Sprintf("Please confirm the project path as current working directory: %q", projectPath)
+					msg := fmt.Sprintf("please confirm the project path: %q", projectPath)
 					confirm := cmdutil.ConfirmPrompt(msg, "", false)
 					if !confirm {
 						cmdutil.WarnPrinter("Aborted")
