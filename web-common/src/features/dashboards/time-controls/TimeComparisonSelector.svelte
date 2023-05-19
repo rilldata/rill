@@ -147,6 +147,7 @@ This component needs to do the following:
     slot="floating-element"
     on:escape={toggleFloatingElement}
     on:click-outside={() => onClickOutside(toggleFloatingElement)}
+    label="Time comparison selector"
   >
     <MenuItem
       selected={!showComparison}
