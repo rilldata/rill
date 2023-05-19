@@ -1,5 +1,4 @@
 <script lang="ts">
-  import CtaButtonShort from "@rilldata/web-common/components/calls-to-action/CTAButtonShort.svelte";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
   import RadixH1 from "@rilldata/web-common/components/typography/RadixH1.svelte";
@@ -30,10 +29,17 @@
     </Subheading>
     <Subheading>Let’s get started.</Subheading>
   </div>
-  <CtaButtonShort on:click={openShowAddSourceModal} variant="primary">
-    <Add className="text-white" slot="icon" />
-    Add data
-  </CtaButtonShort>
+  <button
+    class="pl-2 pr-4 py-2 rounded-sm bg-gradient-to-b from-[#4680FF] to-[#2563EB] hover:from-blue-500 hover:to-blue-500"
+    on:click={openShowAddSourceModal}
+  >
+    <div
+      class="flex flex-row gap-x-1 items-center text-sm font-medium text-white"
+    >
+      <Add className="text-white" />
+      Add data
+    </div>
+  </button>
   <a href="/" class="px-2 font-medium text-xs hover:text-blue-400"
     >Or start with an empty project</a
   >
