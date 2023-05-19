@@ -24,9 +24,10 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 	var variables []string
 
 	initCmd := &cobra.Command{
-		Use:   "init [<path>]",
-		Short: "Initialize a new project",
-		Args:  cobra.MaximumNArgs(1),
+		Use:    "init [<path>]",
+		Short:  "Initialize a new project",
+		Args:   cobra.MaximumNArgs(1),
+		Hidden: !cfg.IsDev(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				projectPath = args[0]

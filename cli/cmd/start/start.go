@@ -3,9 +3,9 @@ package start
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
@@ -50,27 +50,18 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 					return fmt.Errorf("required arg <path> missing")
 				}
 
-				fmt.Println("No existing project found. Enter name to initialize a new Rill project.")
-				questions := []*survey.Question{
-					{
-						Name: "name",
-						Prompt: &survey.Input{
-							Message: "Enter project name",
-							Default: cmdutil.DefaultProjectName(),
-						},
-						Validate: func(any interface{}) error {
-							name := any.(string)
-							if name == "" {
-								return fmt.Errorf("empty name")
-							}
-							return nil
-						},
-					},
-				}
-
 				if !cmd.Flags().Changed("example") {
-					if err := survey.Ask(questions, &projectPath); err != nil {
+					currentDir, err := filepath.Abs("")
+					if err != nil {
 						return err
+					}
+
+					projectPath = currentDir
+					msg := fmt.Sprintf("Please confirm the project path as current working directory: %q", projectPath)
+					confirm := cmdutil.ConfirmPrompt(msg, "", false)
+					if !confirm {
+						cmdutil.WarnPrinter("Aborted")
+						return nil
 					}
 				} else {
 					projectPath = exampleName
