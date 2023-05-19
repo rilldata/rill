@@ -13,7 +13,7 @@ func (w *Worker) checkSlots(ctx context.Context) error {
 	}
 
 	var slotsTotal, slotsUsed int
-	var minPctUsed float64
+	minPctUsed := 1.0
 
 	for _, spec := range w.admin.Provisioner.Spec.Runtimes {
 		slotsTotal += spec.Slots
@@ -21,7 +21,7 @@ func (w *Worker) checkSlots(ctx context.Context) error {
 			if spec.Host == status.RuntimeHost {
 				slotsUsed += status.SlotsUsed
 				pctUsed := float64(status.SlotsUsed) / float64(spec.Slots)
-				if pctUsed > minPctUsed {
+				if pctUsed < minPctUsed {
 					minPctUsed = pctUsed
 				}
 			}
