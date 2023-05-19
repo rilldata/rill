@@ -6,14 +6,14 @@ title: rill project delete
 Delete the project
 
 ```
-rill project delete [flags]
+rill project delete [<project-name>] [flags]
 ```
 
 ### Flags
 
 ```
       --force            Delete forcefully, skips the confirmation
-      --project string   Name
+      --project string   Project Name
       --path string      Project directory (default ".")
 ```
 
@@ -21,6 +21,7 @@ rill project delete [flags]
 
 ```
       --api-token string   Token for authenticating with the admin API
+      --api-url string     Base URL for the admin API (default "https://admin.rilldata.com")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
       --org string         Organization Name

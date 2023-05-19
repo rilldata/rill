@@ -1,19 +1,18 @@
 ---
-title: rill project show
+title: rill project jwt
 ---
-## rill project show
+## rill project jwt
 
-Show project details
+Generate the token for connecting directly to the deployment
 
 ```
-rill project show [<project-name>] [flags]
+rill project jwt [<project-name>] [flags]
 ```
 
 ### Flags
 
 ```
-      --project string   Name
-      --path string      Project directory (default ".")
+      --project string   Project Name
 ```
 
 ### Global flags

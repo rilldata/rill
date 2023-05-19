@@ -13,6 +13,7 @@ rill env configure [flags]
 
 ```
       --path string      Project directory (default ".")
+      --subpath string   Project path to sub directory of a larger repository
       --project string   
       --redeploy         Redeploy project
 ```
@@ -21,6 +22,7 @@ rill env configure [flags]
 
 ```
       --api-token string   Token for authenticating with the admin API
+      --api-url string     Base URL for the admin API (default "https://admin.rilldata.com")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
 ```

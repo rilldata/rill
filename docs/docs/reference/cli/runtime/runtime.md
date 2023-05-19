@@ -1,9 +1,9 @@
 ---
-title: rill source
+title: rill runtime
 ---
-## rill source
+## rill runtime
 
-Create or drop a source
+Manage stand-alone runtimes
 
 ### Global flags
 
@@ -15,6 +15,6 @@ Create or drop a source
 ### SEE ALSO
 
 * [rill](../cli.md)	 - Rill CLI
-* [rill source add](add.md)	 - Add a local file source
-* [rill source drop](drop.md)	 - Drop a source
+* [rill runtime ping](ping.md)	 - Ping
+* [rill runtime start](start.md)	 - Start stand-alone runtime server
 

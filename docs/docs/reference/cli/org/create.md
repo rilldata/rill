@@ -6,13 +6,13 @@ title: rill org create
 Create organization
 
 ```
-rill org create [flags]
+rill org create [<org-name>] [flags]
 ```
 
 ### Flags
 
 ```
-      --name string          Name
+      --name string          Organization Name
       --description string   Description
 ```
 
@@ -20,6 +20,7 @@ rill org create [flags]
 
 ```
       --api-token string   Token for authenticating with the admin API
+      --api-url string     Base URL for the admin API (default "https://admin.rilldata.com")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
 ```

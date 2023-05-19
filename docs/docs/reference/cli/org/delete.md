@@ -6,19 +6,21 @@ title: rill org delete
 Delete organization
 
 ```
-rill org delete <org-name> [flags]
+rill org delete [<org-name>] [flags]
 ```
 
 ### Flags
 
 ```
-      --force   Delete forcefully, skips the confirmation
+      --org string   Organization Name
+      --force        Delete forcefully, skips the confirmation
 ```
 
 ### Global flags
 
 ```
       --api-token string   Token for authenticating with the admin API
+      --api-url string     Base URL for the admin API (default "https://admin.rilldata.com")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
 ```
