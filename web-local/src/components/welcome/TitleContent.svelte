@@ -15,7 +15,13 @@
 
 <section class="flex flex-col gap-y-6 items-center text-center">
   <RillLogoSquareNegative size="84px" />
-  <RadixH1>Welcome to Rill</RadixH1>
+  <RadixH1>
+    <span
+      class="bg-gradient-to-r from-[#4D488C] to-[#515F9D] text-transparent bg-clip-text"
+    >
+      Welcome to Rill
+    </span>
+  </RadixH1>
   <div class="flex flex-col gap-y-2">
     <Subheading>
       A Rill project lets you build an <span class="text-base font-semibold"
