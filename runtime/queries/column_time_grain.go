@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -107,8 +108,9 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	}
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    estimateSQL,
-		Priority: priority,
+		Query:            estimateSQL,
+		Priority:         priority,
+		ExecutionTimeout: time.Minute * 2,
 	})
 	if err != nil {
 		return err

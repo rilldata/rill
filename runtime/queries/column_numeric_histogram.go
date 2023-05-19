@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"math"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -73,8 +74,9 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 	)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    querySQL,
-		Priority: priority,
+		Query:            querySQL,
+		Priority:         priority,
+		ExecutionTimeout: time.Minute * 2,
 	})
 	if err != nil {
 		return 0, err
@@ -192,8 +194,9 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	)
 
 	histogramRows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    histogramSQL,
-		Priority: priority,
+		Query:            histogramSQL,
+		Priority:         priority,
+		ExecutionTimeout: time.Minute * 2,
 	})
 	if err != nil {
 		return err
@@ -245,8 +248,9 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 	)
 
 	minMaxRow, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    minMaxSQL,
-		Priority: priority,
+		Query:            minMaxSQL,
+		Priority:         priority,
+		ExecutionTimeout: time.Minute * 2,
 	})
 	if err != nil {
 		return err
@@ -341,8 +345,9 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 	)
 
 	histogramRows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    histogramSQL,
-		Priority: priority,
+		Query:            histogramSQL,
+		Priority:         priority,
+		ExecutionTimeout: time.Minute * 2,
 	})
 	if err != nil {
 		return err

@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -51,8 +52,9 @@ func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	}
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    countSQL,
-		Priority: priority,
+		Query:            countSQL,
+		Priority:         priority,
+		ExecutionTimeout: time.Minute * 2,
 	})
 	if err != nil {
 		return err

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -51,8 +52,9 @@ func (q *ColumnCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	requestSQL := fmt.Sprintf("SELECT approx_count_distinct(%s) as count from %s", safeName(q.ColumnName), safeName(q.TableName))
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    requestSQL,
-		Priority: priority,
+		Query:            requestSQL,
+		Priority:         priority,
+		ExecutionTimeout: time.Minute * 2,
 	})
 	if err != nil {
 		return err

@@ -43,6 +43,11 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		return nil, prepared.Close()
 	}
 
+	if stmt.ExecutionTimeout != 0 {
+		cx, cancel := context.WithTimeout(ctx, stmt.ExecutionTimeout)
+		defer cancel()
+		ctx = cx
+	}
 	rows, err := c.db.QueryxContext(ctx, stmt.Query, stmt.Args...)
 	if err != nil {
 		return nil, err

@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -53,8 +54,9 @@ func (q *ColumnNullCount) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    nullCountSQL,
-		Priority: priority,
+		Query:            nullCountSQL,
+		Priority:         priority,
+		ExecutionTimeout: time.Minute * 2,
 	})
 	if err != nil {
 		return err

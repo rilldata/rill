@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -64,8 +65,9 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 
 	// Run query
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    qry,
-		Priority: priority,
+		Query:            qry,
+		Priority:         priority,
+		ExecutionTimeout: time.Minute * 2,
 	})
 	if err != nil {
 		return err

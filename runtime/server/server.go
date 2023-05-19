@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
@@ -88,10 +89,21 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 	return resp, nil
 }
 
+func TimeoutSelector(service, method string) time.Duration {
+	if method == "TriggerReconcile" {
+		return time.Minute * 30
+	}
+	if service == "QueryService" {
+		return time.Minute * 5
+	}
+	return time.Second * 30
+}
+
 // ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
+			DeadlineStreamServerInterceptor(TimeoutSelector),
 			observability.TracingStreamServerInterceptor(),
 			observability.LoggingStreamServerInterceptor(s.logger),
 			errorMappingStreamServerInterceptor(),
@@ -99,6 +111,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			auth.StreamServerInterceptor(s.aud),
 		),
 		grpc.ChainUnaryInterceptor(
+			DeadlineUnaryServerInterceptor(TimeoutSelector),
 			observability.TracingUnaryServerInterceptor(),
 			observability.LoggingUnaryServerInterceptor(s.logger),
 			errorMappingUnaryServerInterceptor(),
@@ -245,4 +258,75 @@ func mapGRPCError(err error) error {
 		return status.Error(codes.Canceled, err.Error())
 	}
 	return err
+}
+
+type serverStream struct {
+	grpc.ServerStream
+	ctx context.Context
+}
+
+func (w *serverStream) Context() context.Context {
+	return w.ctx
+}
+
+func wrapServerStream(ctx context.Context, ss grpc.ServerStream) *serverStream {
+	return &serverStream{
+		ServerStream: ss,
+		ctx:          ctx,
+	}
+}
+
+func ParseFullMethod(fullMethod string) (string, string, error) {
+	name := strings.TrimLeft(fullMethod, "/")
+	parts := strings.SplitN(name, "/", 2)
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("Invalid format, %s does not follow `/package.service/method`", name)
+	}
+	return parts[0], parts[1], nil
+}
+
+func DeadlineStreamServerInterceptor(fn func(service, method string) time.Duration) grpc.StreamServerInterceptor {
+	return func(
+		srv interface{},
+		ss grpc.ServerStream,
+		info *grpc.StreamServerInfo,
+		handler grpc.StreamHandler,
+	) error {
+		duration := time.Minute * 2
+		if fn != nil {
+			service, method, err := ParseFullMethod(info.FullMethod)
+			if err != nil {
+				return err
+			}
+
+			duration = fn(service, method)
+		}
+
+		ctx, cancel := context.WithTimeout(ss.Context(), duration)
+		defer cancel()
+		return handler(srv, wrapServerStream(ctx, ss))
+	}
+}
+
+func DeadlineUnaryServerInterceptor(fn func(service, method string) time.Duration) grpc.UnaryServerInterceptor {
+	return func(
+		ctx context.Context,
+		req interface{},
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler,
+	) (interface{}, error) {
+		duration := time.Minute * 2
+		if fn != nil {
+			service, method, err := ParseFullMethod(info.FullMethod)
+			if err != nil {
+				return nil, err
+			}
+
+			duration = fn(service, method)
+		}
+
+		ctx, cancel := context.WithTimeout(ctx, duration)
+		defer cancel()
+		return handler(ctx, req)
+	}
 }

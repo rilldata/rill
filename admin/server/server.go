@@ -22,6 +22,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	runtimeserver "github.com/rilldata/rill/runtime/server"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -106,6 +107,7 @@ func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimea
 func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
+			runtimeserver.DeadlineStreamServerInterceptor(runtimeserver.TimeoutSelector),
 			observability.TracingStreamServerInterceptor(),
 			observability.LoggingStreamServerInterceptor(s.logger),
 			errorMappingStreamServerInterceptor(),
@@ -114,6 +116,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			s.authenticator.StreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
+			runtimeserver.DeadlineUnaryServerInterceptor(runtimeserver.TimeoutSelector),
 			observability.TracingUnaryServerInterceptor(),
 			observability.LoggingUnaryServerInterceptor(s.logger),
 			errorMappingUnaryServerInterceptor(),

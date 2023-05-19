@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -114,8 +115,9 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	  WHERE present=true`, selectColumn, sanitizedColumnName, safeName(q.TableName), outlierPseudoBucketSize)
 
 	outlierResults, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    rugSQL,
-		Priority: priority,
+		Query:            rugSQL,
+		Priority:         priority,
+		ExecutionTimeout: time.Minute * 2,
 	})
 	if err != nil {
 		return err

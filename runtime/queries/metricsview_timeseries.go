@@ -136,9 +136,10 @@ func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.O
 	}
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    sql,
-		Args:     args,
-		Priority: priority,
+		Query:            sql,
+		Args:             args,
+		Priority:         priority,
+		ExecutionTimeout: time.Minute * 2,
 	})
 	if err != nil {
 		return err
