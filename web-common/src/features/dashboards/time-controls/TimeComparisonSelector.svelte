@@ -19,6 +19,7 @@ This component needs to do the following:
     NO_COMPARISON_LABEL,
     TIME_COMPARISON,
   } from "@rilldata/web-common/lib/time/config";
+  import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
@@ -169,6 +170,9 @@ This component needs to do the following:
         >
           <span class:font-bold={intermediateSelection === option.name}>
             {preset?.label || option.name}
+          </span>
+          <span slot="description">
+            {prettyFormatTimeRange(option.start, option.end)}
           </span>
         </MenuItem>
         {#if option.name === TimeComparisonOption.CONTIGUOUS && options.length > 2}
