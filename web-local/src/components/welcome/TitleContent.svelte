@@ -28,6 +28,9 @@
     <Add className="text-white" slot="icon" />
     Add data
   </CtaButtonShort>
+  <a href="/" class="px-2 font-medium text-xs hover:text-blue-400"
+    >Or start with an empty project</a
+  >
   {#if showAddSourceModal}
     <AddSourceModal
       on:close={() => {
