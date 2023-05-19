@@ -14,7 +14,7 @@
 </script>
 
 <section class="flex flex-col gap-y-6 items-center text-center">
-  <RillLogoSquareNegative size="84px" />
+  <RillLogoSquareNegative />
   <RadixH1>
     <span
       class="bg-gradient-to-r from-[#4D488C] to-[#515F9D] text-transparent bg-clip-text"

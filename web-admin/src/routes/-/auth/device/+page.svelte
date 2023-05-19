@@ -82,7 +82,7 @@
 
 {#if $user.data && $user.data.user}
   <div class="flex flex-col justify-center items-center h-4/5 gap-y-6">
-    <RillLogoSquareNegative size="84px" />
+    <RillLogoSquareNegative />
     <h1 class="text-xl font-normal text-gray-800">Authorize Rill CLI</h1>
     <p class="text-base text-gray-500 text-center">
       You are authenticating into Rill as <span
