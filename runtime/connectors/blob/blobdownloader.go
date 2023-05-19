@@ -238,7 +238,7 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 		return nil, err
 	}
 
-	it.logger.Info("started planner", zap.String("glob", it.opts.GlobPattern))
+	it.logger.Info("planner started", zap.String("glob", it.opts.GlobPattern))
 
 	listOpts := listOptions(it.opts.GlobPattern)
 	token := blob.FirstPageToken
@@ -264,7 +264,7 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 		}
 	}
 
-	it.logger.Info("planning complete", zap.String("glob", it.opts.GlobPattern), zap.Int64("listed_objects", fetched), zap.Int("matched", matchCount), zap.Int64("bytes_matched", size))
+	it.logger.Info("planner completed", zap.String("glob", it.opts.GlobPattern), zap.Int64("listed_objects", fetched), zap.Int("matched", matchCount), zap.Int64("bytes_matched", size))
 
 	items := planner.items()
 	if len(items) == 0 {

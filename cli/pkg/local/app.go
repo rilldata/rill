@@ -520,6 +520,7 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 	switch logFormat {
 	case LogFormatJSON:
 		cfg := zap.NewProductionEncoderConfig()
+		cfg.NameKey = zapcore.OmitKey
 		// never
 		opts = append(opts, zap.AddStacktrace(zapcore.InvalidLevel))
 		consoleEncoder = zapcore.NewJSONEncoder(cfg)
