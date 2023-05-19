@@ -32,6 +32,9 @@ export enum MetricsEventScreenName {
   Model = "model",
   Dashboard = "dashboard",
   MetricsDefinition = "metrics-definition",
+  CLI = "cli",
+  Splash = "splash",
+  Home = "home",
 }
 
 export const EntityTypeToScreenMap = {
