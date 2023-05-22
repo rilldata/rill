@@ -139,7 +139,13 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 
 	// Check that the user's email is verified
 	if !emailVerified {
-		http.Error(w, "email not verified", http.StatusUnauthorized)
+		errorRedirect, err := url.JoinPath(a.opts.FrontendURL, "/-/auth/verify-email")
+		if err != nil {
+			internalServerError(w, fmt.Errorf("failed to email verify uri: %w", err))
+			return
+		}
+
+		http.Redirect(w, r, errorRedirect, http.StatusTemporaryRedirect)
 		return
 	}
 
