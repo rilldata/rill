@@ -173,7 +173,6 @@
 
   /** replace data after fetched. */
   $: if (!$topListQuery?.isFetching) {
-    // console.log("topListQuery", $topListQuery);
     values =
       $topListQuery?.data?.data.map((val) => ({
         value: val[measure?.name],
