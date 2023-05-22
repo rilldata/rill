@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
+  import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { getContext, setContext } from "svelte";
   import { tweened } from "svelte/motion";
@@ -98,6 +98,7 @@
 </div>
 <div
   class="box-border fixed {bgClass}"
+  style:height="100%"
   style:top
   style:left="{($navigationWidth || 0) * (1 - $navVisibilityTween)}px"
   style:padding-left="{$navVisibilityTween * SIDE_PAD}px"

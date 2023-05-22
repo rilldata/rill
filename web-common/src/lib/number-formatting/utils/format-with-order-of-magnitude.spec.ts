@@ -3,6 +3,7 @@ import {
   formatNumWithOrderOfMag,
   orderOfMagnitudeEng,
 } from "./format-with-order-of-magnitude";
+import { describe, it, expect } from "vitest";
 
 type TestArgs = [number, number, number, boolean, boolean?, boolean?];
 

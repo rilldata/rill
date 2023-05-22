@@ -76,7 +76,6 @@
     {type}
   />
   <NullPercentageSpark
-    isFetching={fetchingSummaries}
     nullCount={$nulls?.nullCount}
     slot="nullity"
     totalRows={$nulls?.totalRows}

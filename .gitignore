@@ -72,3 +72,5 @@ rill-binary-sa.json
 !runtime/testdata/**
 sysroot/
 latest.txt
+/web-common/coverage
+/web-local/.jest/rill-e2e-test

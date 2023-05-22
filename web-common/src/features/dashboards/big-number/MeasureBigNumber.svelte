@@ -85,7 +85,7 @@
               <div class="flex items-baseline gap-x-3">
                 {#if comparisonValue != null}
                   <div
-                    class="w-max text-sm ui-copy-inactive "
+                    class="w-max text-sm ui-copy-inactive"
                     class:font-semibold={isComparisonPositive}
                   >
                     <WithTween
@@ -110,7 +110,7 @@
                 {/if}
                 {#if comparisonPercChange != null && !noChange && !measureIsPercentage}
                   <div
-                    class="w-max text-sm 
+                    class="w-max text-sm
               {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
                   >
                     <WithTween

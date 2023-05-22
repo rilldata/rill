@@ -1,60 +1,65 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { V1DeploymentStatus } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceGetProject,
+    V1DeploymentStatus,
+  } from "@rilldata/web-admin/client";
   import {
     DashboardListItem,
-    getDashboardListItemsFromFilesAndCatalogEntries,
     getDashboardsForProject,
+    useDashboardListItems,
   } from "@rilldata/web-admin/components/projects/dashboards";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/components/projects/invalidations";
-  import { useProject } from "@rilldata/web-admin/components/projects/use-project";
+  import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/selectors";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import {
-    createRuntimeServiceListCatalogEntries,
-    createRuntimeServiceListFiles,
     getRuntimeServiceListCatalogEntriesQueryKey,
     getRuntimeServiceListFilesQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { errorStore } from "../../../../components/errors/error-store";
   import ProjectBuilding from "../../../../components/projects/ProjectBuilding.svelte";
   import ProjectErrored from "../../../../components/projects/ProjectErrored.svelte";
+  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardStateProvider.svelte";
 
   const queryClient = useQueryClient();
+
+  $: instanceId = $runtime?.instanceId;
 
   $: orgName = $page.params.organization;
   $: projectName = $page.params.project;
   $: dashboardName = $page.params.dashboard;
 
-  // Poll for project status
-  $: project = useProject(orgName, projectName);
+  $: project = createAdminServiceGetProject(orgName, projectName);
+  // Poll specifically for the project's deployment status
+  $: projectDeploymentStatus = useProjectDeploymentStatus(orgName, projectName); // polls
 
   let isProjectBuilding: boolean;
   let isProjectOK: boolean;
 
-  $: if ($project.data?.prodDeployment?.status) {
+  $: if ($projectDeploymentStatus.data) {
     const projectWasNotOk = !isProjectOK;
 
     isProjectBuilding =
-      $project.data?.prodDeployment?.status ===
+      $projectDeploymentStatus.data ===
         V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
-      $project.data?.prodDeployment?.status ===
+      $projectDeploymentStatus.data ===
         V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING;
     isProjectOK =
-      $project.data?.prodDeployment?.status ===
-      V1DeploymentStatus.DEPLOYMENT_STATUS_OK;
+      $projectDeploymentStatus.data === V1DeploymentStatus.DEPLOYMENT_STATUS_OK;
 
     if (projectWasNotOk && isProjectOK) {
       getDashboardsAndInvalidate();
 
       // Invalidate the queries used to assess dashboard validity
       queryClient.invalidateQueries(
-        getRuntimeServiceListFilesQueryKey($runtime?.instanceId, {
+        getRuntimeServiceListFilesQueryKey(instanceId, {
           glob: "dashboards/*.yaml",
         })
       );
       queryClient.invalidateQueries(
-        getRuntimeServiceListCatalogEntriesQueryKey($runtime?.instanceId, {
+        getRuntimeServiceListCatalogEntriesQueryKey(instanceId, {
           type: "OBJECT_TYPE_METRICS_VIEW",
         })
       );
@@ -67,45 +72,25 @@
     return invalidateDashboardsQueries(queryClient, dashboardNames);
   }
 
-  // Here we check to see if a dashboard is valid by looking at `DashboardListItem.isValid`
-  // As is the case in `Breadcrumbs.svelte`, there are two queries we compose to get the dashboard list items,
-  // and we should hide this complexity in a custom hook.
   // We avoid calling `GetCatalogEntry` to check for dashboard validity because that would trigger a 404 page.
-  $: dashboardFiles = createRuntimeServiceListFiles(
-    $runtime?.instanceId,
-    {
-      glob: "dashboards/*.yaml",
-    },
-    {
-      query: {
-        placeholderData: undefined,
-        enabled: !!project && !!$runtime?.instanceId,
-      },
-    }
+  $: dashboardListItems = useDashboardListItems(
+    instanceId,
+    $projectDeploymentStatus.data
   );
-  $: dashboardCatalogEntries = createRuntimeServiceListCatalogEntries(
-    $runtime?.instanceId,
-    {
-      type: "OBJECT_TYPE_METRICS_VIEW",
-    },
-    {
-      query: {
-        placeholderData: undefined,
-        enabled: !!project && !!$runtime?.instanceId,
-      },
-    }
-  );
-  let dashboardListItems: DashboardListItem[];
   let currentDashboard: DashboardListItem;
-  $: if ($dashboardFiles.isSuccess && $dashboardCatalogEntries.isSuccess) {
-    dashboardListItems = getDashboardListItemsFromFilesAndCatalogEntries(
-      $dashboardFiles.data?.paths,
-      $dashboardCatalogEntries.data?.entries
-    );
-
-    currentDashboard = dashboardListItems?.find(
+  $: if ($dashboardListItems.isSuccess) {
+    currentDashboard = $dashboardListItems?.items?.find(
       (listing) => listing.name === $page.params.dashboard
     );
+
+    // If no dashboard is found, show a 404 page
+    if (!currentDashboard) {
+      errorStore.set({
+        statusCode: 404,
+        header: "Dashboard not found",
+        body: `The dashboard you requested could not be found. Please check that you have provided a valid dashboard name.`,
+      });
+    }
   }
 </script>
 
@@ -120,9 +105,11 @@
 {:else if currentDashboard && !currentDashboard.isValid}
   <ProjectErrored organization={orgName} project={projectName} />
 {:else}
-  <Dashboard
-    leftMargin={"48px"}
-    hasTitle={false}
-    metricViewName={dashboardName}
-  />
+  <DashboardStateProvider metricViewName={dashboardName}>
+    <Dashboard
+      leftMargin={"48px"}
+      hasTitle={false}
+      metricViewName={dashboardName}
+    />
+  </DashboardStateProvider>
 {/if}

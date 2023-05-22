@@ -47,11 +47,6 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects"};
   }
 
-  // ListProjectsForOrganizationAndGithubURL lists all the project for org deployed from githubURL
-  rpc ListProjectsForOrganizationAndGithubURL(ListProjectsForOrganizationAndGithubURLRequest) returns (ListProjectsForOrganizationAndGithubURLResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects_by_github_url"};
-  }
-
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}"};
@@ -120,6 +115,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization}/members"};
   }
 
+  // ListOrganizationInvites lists all the org invites
+  rpc ListOrganizationInvites(ListOrganizationInvitesRequest) returns (ListOrganizationInvitesResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/invites"};
+  }
+
   // AddOrganizationMember lists all the org members
   rpc AddOrganizationMember(AddOrganizationMemberRequest) returns (AddOrganizationMemberResponse) {
     option (google.api.http) = {
@@ -149,6 +149,11 @@ service AdminService {
   // ListProjectMembers lists all the project members
   rpc ListProjectMembers(ListProjectMembersRequest) returns (ListProjectMembersResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/members"};
+  }
+
+  // ListProjectInvites lists all the project invites
+  rpc ListProjectInvites(ListProjectInvitesRequest) returns (ListProjectInvitesResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/invites"};
   }
 
   // AddProjectMember adds a member to the project
@@ -189,6 +194,33 @@ service AdminService {
   rpc GetGithubRepoStatus(GetGithubRepoStatusRequest) returns (GetGithubRepoStatusResponse) {
     option (google.api.http) = {get: "/v1/github/repositories"};
   }
+
+  // CreateAutoinviteDomain adds a domain to the autoinvite list
+  rpc CreateAutoinviteDomain(CreateAutoinviteDomainRequest) returns (CreateAutoinviteDomainResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/autoinvite",
+      body: "*"
+    };
+  }
+
+  // RemoveAutoinviteDomain removes a domain from the autoinvite list
+  rpc RemoveAutoinviteDomain(RemoveAutoinviteDomainRequest) returns (RemoveAutoinviteDomainResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/autoinvite/{domain}"};
+  }
+
+  // ListSuperusers lists all the superusers
+  rpc ListSuperusers(ListSuperusersRequest) returns (ListSuperusersResponse) {
+    option (google.api.http) = {get: "/v1/superuser/members"};
+  }
+
+  // SetSuperuser adds/remove a superuser
+  rpc SetSuperuser(SetSuperuserRequest) returns (SetSuperuserResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/members",
+      body: "*"
+    };
+  }
+
 }
 
 message PingRequest {}
@@ -199,7 +231,7 @@ message PingResponse {
 }
 
 message ListOrganizationsRequest {
-  uint32 page_size = 1;
+  uint32 page_size = 1 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   string page_token = 2;
 }
 
@@ -244,23 +276,11 @@ message UpdateOrganizationResponse {
 
 message ListProjectsForOrganizationRequest {
   string organization_name = 1 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 2;
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   string page_token = 3;
 }
 
 message ListProjectsForOrganizationResponse {
-  repeated Project projects = 1;
-  string next_page_token = 2;
-}
-
-message ListProjectsForOrganizationAndGithubURLRequest {
-  string organization_name = 1 [(validate.rules).string.min_len = 1];
-  string github_url = 2 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 3;
-  string page_token = 4;
-}
-
-message ListProjectsForOrganizationAndGithubURLResponse {
   repeated Project projects = 1;
   string next_page_token = 2;
 }
@@ -295,6 +315,7 @@ message CreateProjectRequest {
   string prod_olap_driver = 6;
   string prod_olap_dsn = 7;
   int64 prod_slots = 8;
+  string subpath = 12;
   string prod_branch = 9;
   string github_url = 10;
   map<string, string> variables = 11;
@@ -356,13 +377,23 @@ message TriggerRedeployResponse {}
 
 message ListOrganizationMembersRequest {
   string organization = 1;
-  uint32 page_size = 2;
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   string page_token = 3;
 }
 
 message ListOrganizationMembersResponse {
   repeated Member members = 1;
-  repeated UserInvite invites = 3;
+  string next_page_token = 2;
+}
+
+message ListOrganizationInvitesRequest {
+  string organization = 1;
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 3;
+}
+
+message ListOrganizationInvitesResponse {
+  repeated UserInvite invites = 1;
   string next_page_token = 2;
 }
 
@@ -398,16 +429,40 @@ message SetOrganizationMemberRoleRequest {
 
 message SetOrganizationMemberRoleResponse {}
 
+message ListSuperusersRequest {}
+
+message ListSuperusersResponse {
+  repeated User users = 1;
+}
+
+message SetSuperuserRequest {
+  string email = 1 [(validate.rules).string.email = true];
+  bool superuser = 2;
+}
+
+message SetSuperuserResponse {}
+
 message ListProjectMembersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 3;
-  string page_token = 4;
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 4 ;
 }
 
 message ListProjectMembersResponse {
   repeated Member members = 1;
-  repeated UserInvite invites = 3;
+  string next_page_token = 2;
+}
+
+message ListProjectInvitesRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 4;
+}
+
+message ListProjectInvitesResponse {
+  repeated UserInvite invites = 1;
   string next_page_token = 2;
 }
 
@@ -461,6 +516,21 @@ message GetGithubRepoStatusResponse {
   string default_branch = 3;
 }
 
+message CreateAutoinviteDomainRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string domain = 2 [(validate.rules).string.min_len = 1];
+  string role = 3 [(validate.rules).string.min_len = 1];
+}
+
+message CreateAutoinviteDomainResponse {}
+
+message RemoveAutoinviteDomainRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string domain = 2 [(validate.rules).string.min_len = 1];
+}
+
+message RemoveAutoinviteDomainResponse {}
+
 message User {
   string id = 1;
   string email = 2;
@@ -487,6 +557,7 @@ message Project {
   bool public = 6;
   string region = 7;
   string github_url = 8;
+  string subpath = 17;
   string prod_branch = 9;
   string prod_olap_driver = 10;
   string prod_olap_dsn = 11;

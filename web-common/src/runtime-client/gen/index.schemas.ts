@@ -94,6 +94,7 @@ export type QueryServiceColumnNullCountParams = {
 
 export type QueryServiceMetricsViewTotalsBody = {
   measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   filter?: V1MetricsViewFilter;
@@ -103,6 +104,7 @@ export type QueryServiceMetricsViewTotalsBody = {
 export type QueryServiceMetricsViewToplistBody = {
   dimensionName?: string;
   measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   limit?: string;
@@ -114,10 +116,34 @@ export type QueryServiceMetricsViewToplistBody = {
 
 export type QueryServiceMetricsViewTimeSeriesBody = {
   measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
+  priority?: number;
+};
+
+export type QueryServiceMetricsViewRowsBody = {
+  timeStart?: string;
+  timeEnd?: string;
+  filter?: V1MetricsViewFilter;
+  sort?: V1MetricsViewSort[];
+  limit?: number;
+  offset?: string;
+  priority?: number;
+};
+
+export type QueryServiceMetricsViewComparisonToplistBody = {
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  baseTimeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  sort?: V1MetricsViewComparisonSort[];
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
   priority?: number;
 };
 
@@ -266,6 +292,11 @@ export interface V1TimeRangeSummary {
   interval?: TimeRangeSummaryInterval;
 }
 
+export interface V1TimeRange {
+  start?: string;
+  end?: string;
+}
+
 export type V1TimeGrain = typeof V1TimeGrain[keyof typeof V1TimeGrain];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
@@ -327,16 +358,7 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
-export interface V1RenameFileAndReconcileRequest {
-  instanceId?: string;
-  fromPath?: string;
-  toPath?: string;
-  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
-  dry?: boolean;
-  strict?: boolean;
-}
-
-export interface V1RefreshAndReconcileResponse {
+export interface V1RenameFileAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
   errors?: V1ReconcileError[];
@@ -344,6 +366,15 @@ affected_paths without an error can be assumed to have been reconciled succesful
 executing the reconciliation. If changed_paths was empty, this will include all
 code artifacts in the repo. */
   affectedPaths?: string[];
+}
+
+export interface V1RenameFileAndReconcileRequest {
+  instanceId?: string;
+  fromPath?: string;
+  toPath?: string;
+  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
+  dry?: boolean;
+  strict?: boolean;
 }
 
 export interface V1RefreshAndReconcileRequest {
@@ -393,7 +424,7 @@ Only applicable if file_path is set. */
   endLocation?: ReconcileErrorCharLocation;
 }
 
-export interface V1RenameFileAndReconcileResponse {
+export interface V1RefreshAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
   errors?: V1ReconcileError[];
@@ -529,9 +560,56 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
+export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewComparisonValue {
+  measureName?: string;
+  baseValue?: unknown;
+  comparisonValue?: unknown;
+  deltaAbs?: unknown;
+  deltaRel?: unknown;
+}
+
+export type V1MetricsViewComparisonSortType =
+  typeof V1MetricsViewComparisonSortType[keyof typeof V1MetricsViewComparisonSortType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1MetricsViewComparisonSortType = {
+  METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED",
+  METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE",
+  METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE",
+  METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA",
+  METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
+} as const;
+
+export interface V1MetricsViewComparisonSort {
+  measureName?: string;
+  ascending?: boolean;
+  type?: V1MetricsViewComparisonSortType;
+}
+
+export interface V1MetricsViewComparisonRow {
+  dimensionValue?: unknown;
+  measureValues?: V1MetricsViewComparisonValue[];
+}
+
+export interface V1MetricsViewComparisonToplistResponse {
+  rows?: V1MetricsViewComparisonRow[];
 }
 
 export interface V1MetricsViewColumn {
@@ -601,6 +679,11 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
   variables?: V1InstanceVariables;
   projectVariables?: V1InstanceProjectVariables;
   ingestionLimitBytes?: string;
+}
+
+export interface V1InlineMeasure {
+  name?: string;
+  expression?: string;
 }
 
 export type V1HistogramMethod =

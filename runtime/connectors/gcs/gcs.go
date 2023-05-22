@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
@@ -46,7 +47,7 @@ var spec = connectors.Spec{
 			Description: "GCP credentials inferred from your local environment.",
 			Type:        connectors.InformationalPropertyType,
 			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
-			Href:        "https://docs.rilldata.com/using-rill/import-data#setting-google-gcs-credentials",
+			Href:        "https://docs.rilldata.com/develop/import-data#setting-local-credentials-for-gcs",
 		},
 	},
 	ConnectorVariables: []connectors.VariableSchema{
@@ -212,7 +213,15 @@ func resolvedCredentials(ctx context.Context, env *connectors.Env) (*google.Cred
 	// GOOGLE_APPLICATION_CREDENTIALS is not set
 	if env.AllowHostAccess {
 		// use host credentials
-		return gcp.DefaultCredentials(ctx)
+		creds, err := gcp.DefaultCredentials(ctx)
+		if err != nil {
+			if strings.Contains(err.Error(), "google: could not find default credentials") {
+				return nil, errNoCredentials
+			}
+
+			return nil, err
+		}
+		return creds, nil
 	}
 	return nil, errNoCredentials
 }

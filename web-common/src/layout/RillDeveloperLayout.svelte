@@ -8,13 +8,13 @@
     addReconcilingOverlay,
     syncFileSystemPeriodically,
   } from "@rilldata/web-common/features/entity-management/sync-file-system";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import DuplicateSource from "@rilldata/web-common/features/sources/add-source/DuplicateSource.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/add-source/FileDrop.svelte";
   import { duplicateSourceName } from "@rilldata/web-common/features/sources/sources-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
-  import { featureFlags } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
   import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
-  import { initMetrics } from "@rilldata/web-local/lib/metrics/initMetrics";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";

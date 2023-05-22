@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/runtime"
 	"github.com/rilldata/rill/cli/cmd/source"
 	"github.com/rilldata/rill/cli/cmd/start"
+	"github.com/rilldata/rill/cli/cmd/sudo"
 	"github.com/rilldata/rill/cli/cmd/user"
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -32,7 +33,7 @@ func init() {
 
 // defaultAdminURL is the default admin server URL.
 // Users can override it with the "--api-url" flag or by setting "api-url" in ~/.rill/config.yaml.
-const defaultAdminURL = "https://admin.rilldata.io"
+const defaultAdminURL = "https://admin.rilldata.com"
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
@@ -52,7 +53,7 @@ func Execute(ctx context.Context, ver config.Version) {
 		} else if strings.Contains(errMsg, "project not found") {
 			fmt.Println("Project not found. Run `rill project list` to check the list of projects.")
 		} else if strings.Contains(errMsg, "auth token not found") {
-			fmt.Println("Auth token is invalid/expired. Run `rill logout` and login again with `rill login`.")
+			fmt.Println("Auth token is invalid/expired. Login again with `rill login`.")
 		} else if strings.Contains(errMsg, "not authenticated as a user") {
 			fmt.Println("Please log in or sign up for Rill with `rill login`.")
 		} else {
@@ -133,6 +134,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		env.EnvCmd(cfg),
 		auth.LoginCmd(cfg),
 		auth.LogoutCmd(cfg),
+		sudo.SudoCmd(cfg),
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")

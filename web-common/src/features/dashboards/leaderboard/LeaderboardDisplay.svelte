@@ -2,22 +2,18 @@
   import VirtualizedGrid from "@rilldata/web-common/components/VirtualizedGrid.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
-    selectDimensionKeys,
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import {
-    createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
     V1MetricsViewTotalsResponse,
+    createQueryServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
-  import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
-
   import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
-    LeaderboardValue,
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";
@@ -85,17 +81,6 @@
     referenceValue = $totalsQuery.data.data?.[activeMeasure.name];
   }
 
-  const leaderboards = new Map<string, Array<LeaderboardValue>>();
-  $: if (dimensions) {
-    const dimensionNameMap = getMapFromArray(
-      dimensions,
-      (dimension) => dimension.name
-    );
-    [...leaderboards.keys()]
-      .filter((dimensionName) => !dimensionNameMap.has(dimensionName))
-      .forEach((dimensionName) => leaderboards.delete(dimensionName));
-  }
-
   let leaderboardExpanded;
 
   function onSelectItem(event, item: MetricsViewDimension) {
@@ -105,10 +90,6 @@
       item.name,
       event.detail.label
     );
-  }
-
-  function onLeaderboardValues(event) {
-    leaderboards.set(event.detail.dimensionName, event.detail.values);
   }
 
   /** Functionality for resizing the virtual leaderboard */
@@ -135,14 +116,17 @@
     observer?.disconnect();
   });
 
-  $: availableDimensionKeys = selectDimensionKeys($metaQuery);
-  $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
-  $: visibleDimensionsBitmask = availableDimensionKeys.map((k) =>
-    visibleDimensionKeys.has(k)
-  );
+  // FIXME: this is pending the remaining state work for show/hide measures and dimensions
+  // $: availableDimensionKeys = selectDimensionKeys($metaQuery);
+  // $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
+  // $: visibleDimensionsBitmask = availableDimensionKeys.map((k) =>
+  //   visibleDimensionKeys.has(k)
+  // );
 
-  $: dimensionsShown =
-    dimensions?.filter((_, i) => visibleDimensionsBitmask[i]) ?? [];
+  // $: dimensionsShown =
+  //   dimensions?.filter((_, i) => visibleDimensionsBitmask[i]) ?? [];
+
+  $: dimensionsShown = dimensions ?? [];
 </script>
 
 <svelte:window on:resize={onResize} />
@@ -176,7 +160,6 @@
           }
         }}
         on:select-item={(event) => onSelectItem(event, item)}
-        on:leaderboard-value={onLeaderboardValues}
         referenceValue={referenceValue || 0}
       />
     </VirtualizedGrid>

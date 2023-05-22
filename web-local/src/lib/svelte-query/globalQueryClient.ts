@@ -11,7 +11,6 @@ export function createQueryClient() {
         refetchOnReconnect: false,
         refetchOnWindowFocus: false,
         retry: false,
-        placeholderData: {},
       },
     },
   });

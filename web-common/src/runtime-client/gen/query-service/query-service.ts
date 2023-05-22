@@ -21,6 +21,10 @@ import type {
   QueryServiceTableColumnsParams,
   V1ColumnDescriptiveStatisticsResponse,
   QueryServiceColumnDescriptiveStatisticsParams,
+  V1MetricsViewComparisonToplistResponse,
+  QueryServiceMetricsViewComparisonToplistBody,
+  V1MetricsViewRowsResponse,
+  QueryServiceMetricsViewRowsBody,
   V1MetricsViewTimeSeriesResponse,
   QueryServiceMetricsViewTimeSeriesBody,
   V1MetricsViewToplistResponse,
@@ -272,6 +276,153 @@ export const createQueryServiceColumnDescriptiveStatistics = <
     queryKey,
     queryFn,
     enabled: !!(instanceId && tableName),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+export const queryServiceMetricsViewComparisonToplist = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewComparisonToplistBody: QueryServiceMetricsViewComparisonToplistBody
+) => {
+  return httpClient<V1MetricsViewComparisonToplistResponse>({
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/compare-toplist`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceMetricsViewComparisonToplistBody,
+  });
+};
+
+export type QueryServiceMetricsViewComparisonToplistMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>
+  >;
+export type QueryServiceMetricsViewComparisonToplistMutationBody =
+  QueryServiceMetricsViewComparisonToplistBody;
+export type QueryServiceMetricsViewComparisonToplistMutationError = RpcStatus;
+
+export const createQueryServiceMetricsViewComparisonToplist = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>,
+    TError,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewComparisonToplistBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewComparisonToplistBody;
+    }
+  > = (props) => {
+    const { instanceId, metricsViewName, data } = props ?? {};
+
+    return queryServiceMetricsViewComparisonToplist(
+      instanceId,
+      metricsViewName,
+      data
+    );
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>,
+    TError,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewComparisonToplistBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+ */
+export const queryServiceMetricsViewRows = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewRowsBody: QueryServiceMetricsViewRowsBody
+) => {
+  return httpClient<V1MetricsViewRowsResponse>({
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/rows`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceMetricsViewRowsBody,
+  });
+};
+
+export const getQueryServiceMetricsViewRowsQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewRowsBody: QueryServiceMetricsViewRowsBody
+) =>
+  [
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/rows`,
+    queryServiceMetricsViewRowsBody,
+  ] as const;
+
+export type QueryServiceMetricsViewRowsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceMetricsViewRows>>
+>;
+export type QueryServiceMetricsViewRowsQueryError = RpcStatus;
+
+export const createQueryServiceMetricsViewRows = <
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewRowsBody: QueryServiceMetricsViewRowsBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceMetricsViewRowsQueryKey(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewRowsBody
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewRows>>
+  > = () =>
+    queryServiceMetricsViewRows(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewRowsBody
+    );
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && metricsViewName),
     ...queryOptions,
   }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
 

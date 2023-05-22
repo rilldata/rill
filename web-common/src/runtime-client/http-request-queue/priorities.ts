@@ -12,6 +12,7 @@ export const QueryPriorities = {
   "table-cardinality": 35,
   "column-cardinality": 35,
   "numeric-histogram": 30,
+  timeseries: 30,
   topk: 10,
   "rug-histogram": 10,
   "descriptive-statistics": 10,

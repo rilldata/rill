@@ -38,7 +38,7 @@
     }
   }
 
-  $: setDefaultConnector($connectors.data.connectors);
+  $: setDefaultConnector($connectors.data?.connectors);
 </script>
 
 <Dialog

@@ -1,139 +1,252 @@
-import { describe, it } from "@jest/globals";
+import { get } from "svelte/store";
+import { describe, it, expect, beforeEach } from "vitest";
 import {
-  AdBidsBaseFilter,
-  AdBidsBidPriceMeasure,
-  AdBidsClearedFilter,
-  AdBidsDomainDimension,
-  AdBidsExcludedFilter,
-  AdBidsMirrorName,
-  AdBidsName,
-  AdBidsPublisherDimension,
-  AllTimeParsedTestControls,
+  AD_BIDS_BASE_FILTER,
+  AD_BIDS_BID_PRICE_MEASURE,
+  AD_BIDS_CLEARED_FILTER,
+  AD_BIDS_DOMAIN_DIMENSION,
+  AD_BIDS_EXCLUDE_FILTER,
+  AD_BIDS_IMPRESSIONS_MEASURE,
+  AD_BIDS_MIRROR_NAME,
+  AD_BIDS_NAME,
+  AD_BIDS_PUBLISHER_DIMENSION,
+  ALL_TIME_PARSED_TEST_CONTROLS,
   assertMetricsView,
+  clearMetricsExplorerStore,
   createAdBidsInStore,
   createAdBidsMirrorInStore,
-  CustomTestControls,
-  Last6HoursTestControls,
-  Last6HoursTestParsedControls,
+  CUSTOM_TEST_CONTROLS,
+  AD_BIDS_WITH_DELETED_DIMENSION,
+  LAST_6_HOURS_TEST_CONTROLS,
+  LAST_6_HOURS_TEST_PARSED_CONTROLS,
 } from "@rilldata/web-common/features/dashboard-stores-test-data";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 
 describe("dashboard-stores", () => {
+  beforeEach(() => {
+    clearMetricsExplorerStore();
+  });
+
   it("Toggle filters", () => {
     createAdBidsInStore();
-    assertMetricsView(AdBidsName);
+    assertMetricsView(AD_BIDS_NAME);
 
     // add filters
     metricsExplorerStore.toggleFilter(
-      AdBidsName,
-      AdBidsPublisherDimension,
+      AD_BIDS_NAME,
+      AD_BIDS_PUBLISHER_DIMENSION,
       "Google"
     );
     metricsExplorerStore.toggleFilter(
-      AdBidsName,
-      AdBidsPublisherDimension,
+      AD_BIDS_NAME,
+      AD_BIDS_PUBLISHER_DIMENSION,
       "Facebook"
     );
     metricsExplorerStore.toggleFilter(
-      AdBidsName,
-      AdBidsDomainDimension,
+      AD_BIDS_NAME,
+      AD_BIDS_DOMAIN_DIMENSION,
       "google.com"
     );
-    assertMetricsView(AdBidsName, AdBidsBaseFilter);
+    assertMetricsView(AD_BIDS_NAME, AD_BIDS_BASE_FILTER);
 
     // create a mirror using the proto and assert that the filters are persisted
     createAdBidsMirrorInStore();
     assertMetricsView(
-      AdBidsMirrorName,
-      AdBidsBaseFilter,
-      AllTimeParsedTestControls
+      AD_BIDS_MIRROR_NAME,
+      AD_BIDS_BASE_FILTER,
+      ALL_TIME_PARSED_TEST_CONTROLS
     );
 
     // toggle to exclude
-    metricsExplorerStore.toggleFilterMode(AdBidsName, AdBidsPublisherDimension);
-    assertMetricsView(AdBidsName, AdBidsExcludedFilter);
+    metricsExplorerStore.toggleFilterMode(
+      AD_BIDS_NAME,
+      AD_BIDS_PUBLISHER_DIMENSION
+    );
+    assertMetricsView(AD_BIDS_NAME, AD_BIDS_EXCLUDE_FILTER);
 
     // create a mirror using the proto and assert that the filters are persisted
     createAdBidsMirrorInStore();
     assertMetricsView(
-      AdBidsMirrorName,
-      AdBidsExcludedFilter,
-      AllTimeParsedTestControls
+      AD_BIDS_MIRROR_NAME,
+      AD_BIDS_EXCLUDE_FILTER,
+      ALL_TIME_PARSED_TEST_CONTROLS
     );
 
     // clear for Domain
     metricsExplorerStore.clearFilterForDimension(
-      AdBidsName,
-      AdBidsDomainDimension,
+      AD_BIDS_NAME,
+      AD_BIDS_DOMAIN_DIMENSION,
       true
     );
-    assertMetricsView(AdBidsName, AdBidsClearedFilter);
+    assertMetricsView(AD_BIDS_NAME, AD_BIDS_CLEARED_FILTER);
 
     // create a mirror using the proto and assert that the filters are persisted
     createAdBidsMirrorInStore();
     assertMetricsView(
-      AdBidsMirrorName,
-      AdBidsClearedFilter,
-      AllTimeParsedTestControls
+      AD_BIDS_MIRROR_NAME,
+      AD_BIDS_CLEARED_FILTER,
+      ALL_TIME_PARSED_TEST_CONTROLS
     );
 
     // clear
-    metricsExplorerStore.clearFilters(AdBidsName);
-    assertMetricsView(AdBidsName);
+    metricsExplorerStore.clearFilters(AD_BIDS_NAME);
+    assertMetricsView(AD_BIDS_NAME);
 
     // create a mirror using the proto and assert that the filters are persisted
     createAdBidsMirrorInStore();
-    assertMetricsView(AdBidsMirrorName, undefined, AllTimeParsedTestControls);
+    assertMetricsView(
+      AD_BIDS_MIRROR_NAME,
+      undefined,
+      ALL_TIME_PARSED_TEST_CONTROLS
+    );
   });
 
   it("Update time selections", () => {
     createAdBidsInStore();
-    assertMetricsView(AdBidsName);
+    assertMetricsView(AD_BIDS_NAME);
 
     // select a different time
     metricsExplorerStore.setSelectedTimeRange(
-      AdBidsName,
-      Last6HoursTestControls
+      AD_BIDS_NAME,
+      LAST_6_HOURS_TEST_CONTROLS
     );
-    assertMetricsView(AdBidsName, undefined, Last6HoursTestControls);
+    assertMetricsView(AD_BIDS_NAME, undefined, LAST_6_HOURS_TEST_CONTROLS);
 
     // create a mirror using the proto and assert that the time controls are persisted
     createAdBidsMirrorInStore();
     // start and end are not persisted
     assertMetricsView(
-      AdBidsMirrorName,
+      AD_BIDS_MIRROR_NAME,
       undefined,
-      Last6HoursTestParsedControls
+      LAST_6_HOURS_TEST_PARSED_CONTROLS
     );
 
     // select custom time
-    metricsExplorerStore.setSelectedTimeRange(AdBidsName, CustomTestControls);
-    assertMetricsView(AdBidsName, undefined, CustomTestControls);
+    metricsExplorerStore.setSelectedTimeRange(
+      AD_BIDS_NAME,
+      CUSTOM_TEST_CONTROLS
+    );
+    assertMetricsView(AD_BIDS_NAME, undefined, CUSTOM_TEST_CONTROLS);
 
     // create a mirror using the proto and assert that the time controls are persisted
     createAdBidsMirrorInStore();
     // start and end are persisted for custom
-    assertMetricsView(AdBidsMirrorName, undefined, CustomTestControls);
+    assertMetricsView(AD_BIDS_MIRROR_NAME, undefined, CUSTOM_TEST_CONTROLS);
   });
 
   it("Select different measure", () => {
     createAdBidsInStore();
-    assertMetricsView(AdBidsName);
+    assertMetricsView(AD_BIDS_NAME);
 
     // select a different leaderboard measure
     metricsExplorerStore.setLeaderboardMeasureName(
-      AdBidsName,
-      AdBidsBidPriceMeasure
+      AD_BIDS_NAME,
+      AD_BIDS_BID_PRICE_MEASURE
     );
-    assertMetricsView(AdBidsName, undefined, undefined, AdBidsBidPriceMeasure);
+    assertMetricsView(
+      AD_BIDS_NAME,
+      undefined,
+      undefined,
+      AD_BIDS_BID_PRICE_MEASURE
+    );
 
     // create a mirror using the proto and assert that the leaderboard measure is persisted
     createAdBidsMirrorInStore();
     assertMetricsView(
-      AdBidsMirrorName,
+      AD_BIDS_MIRROR_NAME,
       undefined,
-      AllTimeParsedTestControls,
-      AdBidsBidPriceMeasure
+      ALL_TIME_PARSED_TEST_CONTROLS,
+      AD_BIDS_BID_PRICE_MEASURE
     );
+  });
+
+  describe("Restore invalid state", () => {
+    it("Restore invalid filter", () => {
+      createAdBidsInStore();
+      metricsExplorerStore.toggleFilter(
+        AD_BIDS_NAME,
+        AD_BIDS_PUBLISHER_DIMENSION,
+        "Facebook"
+      );
+      metricsExplorerStore.toggleFilter(
+        AD_BIDS_NAME,
+        AD_BIDS_DOMAIN_DIMENSION,
+        "google.com"
+      );
+
+      // create a mirror from state
+      createAdBidsMirrorInStore();
+      // update the mirrored dashboard mimicking meta query update
+      metricsExplorerStore.sync(
+        AD_BIDS_MIRROR_NAME,
+        AD_BIDS_WITH_DELETED_DIMENSION
+      );
+      // assert that the filter for removed dimension is not present anymore
+      assertMetricsView(
+        AD_BIDS_MIRROR_NAME,
+        {
+          include: [
+            {
+              name: AD_BIDS_PUBLISHER_DIMENSION,
+              in: ["Facebook"],
+            },
+          ],
+          exclude: [],
+        },
+        ALL_TIME_PARSED_TEST_CONTROLS
+      );
+    });
+
+    it("Restore invalid leaderboard measure", () => {
+      createAdBidsInStore();
+      metricsExplorerStore.setLeaderboardMeasureName(
+        AD_BIDS_NAME,
+        AD_BIDS_BID_PRICE_MEASURE
+      );
+
+      // create a mirror from state
+      createAdBidsMirrorInStore();
+      // update the mirrored dashboard mimicking meta query update
+      metricsExplorerStore.sync(AD_BIDS_MIRROR_NAME, {
+        name: "AdBids",
+        measures: [
+          {
+            name: AD_BIDS_IMPRESSIONS_MEASURE,
+            expression: "count(*)",
+          },
+        ],
+        dimensions: [
+          {
+            name: AD_BIDS_PUBLISHER_DIMENSION,
+          },
+        ],
+      });
+      // assert that the selected measure is reset to the 1st available one
+      expect(
+        get(metricsExplorerStore).entities[AD_BIDS_MIRROR_NAME]
+          .leaderboardMeasureName
+      ).toBe(AD_BIDS_IMPRESSIONS_MEASURE);
+    });
+
+    it("Restore invalid selected dimension", () => {
+      createAdBidsInStore();
+      metricsExplorerStore.setMetricDimensionName(
+        AD_BIDS_NAME,
+        AD_BIDS_DOMAIN_DIMENSION
+      );
+
+      // create a mirror from state
+      createAdBidsMirrorInStore();
+      // update the mirrored dashboard mimicking meta query update
+      metricsExplorerStore.sync(
+        AD_BIDS_MIRROR_NAME,
+        AD_BIDS_WITH_DELETED_DIMENSION
+      );
+      // assert that the selected dimension is cleared
+      expect(
+        get(metricsExplorerStore).entities[AD_BIDS_MIRROR_NAME]
+          .selectedDimensionName
+      ).toBeUndefined();
+    });
   });
 });

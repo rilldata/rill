@@ -1,4 +1,4 @@
-import { expect } from "@jest/globals";
+import { expect } from "vitest";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
@@ -8,60 +8,84 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 
-export const AdBidsName = "AdBids";
-export const AdBidsMirrorName = "AdBids_mirror";
+export const AD_BIDS_NAME = "AdBids";
+export const AD_BIDS_MIRROR_NAME = "AdBids_mirror";
 
-export const AdBidsImpressionsMeasure = "impressions";
-export const AdBidsBidPriceMeasure = "bid_price";
-export const AdBidsPublisherDimension = "publisher";
-export const AdBidsDomainDimension = "domain";
+export const AD_BIDS_IMPRESSIONS_MEASURE = "impressions";
+export const AD_BIDS_BID_PRICE_MEASURE = "bid_price";
+export const AD_BIDS_PUBLISHER_DIMENSION = "publisher";
+export const AD_BIDS_DOMAIN_DIMENSION = "domain";
 
 const Hour = 1000 * 60 * 60;
 export const TestTimeConstants = {
-  Now: new Date(),
-  Last6Hours: new Date(Date.now() - Hour * 6),
-  Last12Hours: new Date(Date.now() - Hour * 12),
-  Last18Hours: new Date(Date.now() - Hour * 18),
-  LastDay: new Date(Date.now() - Hour * 24),
+  NOW: new Date(),
+  LAST_6_HOURS: new Date(Date.now() - Hour * 6),
+  LAST_12_HOURS: new Date(Date.now() - Hour * 12),
+  LAST_18_HOURS: new Date(Date.now() - Hour * 18),
+  LAST_DAY: new Date(Date.now() - Hour * 24),
 };
 
+export const AD_BIDS_WITH_DELETED_DIMENSION = {
+  name: "AdBids",
+  measures: [
+    {
+      name: AD_BIDS_IMPRESSIONS_MEASURE,
+      expression: "count(*)",
+    },
+    {
+      name: AD_BIDS_BID_PRICE_MEASURE,
+      expression: "sum(bid_price)",
+    },
+  ],
+  dimensions: [
+    {
+      name: AD_BIDS_PUBLISHER_DIMENSION,
+    },
+  ],
+};
+
+export function clearMetricsExplorerStore() {
+  metricsExplorerStore.remove(AD_BIDS_NAME);
+  metricsExplorerStore.remove(AD_BIDS_MIRROR_NAME);
+}
+
 export function createAdBidsInStore() {
-  metricsExplorerStore.sync(AdBidsName, {
+  metricsExplorerStore.sync(AD_BIDS_NAME, {
     name: "AdBids",
     measures: [
       {
-        name: AdBidsImpressionsMeasure,
+        name: AD_BIDS_IMPRESSIONS_MEASURE,
         expression: "count(*)",
       },
       {
-        name: AdBidsBidPriceMeasure,
+        name: AD_BIDS_BID_PRICE_MEASURE,
         expression: "sum(bid_price)",
       },
     ],
     dimensions: [
       {
-        name: AdBidsPublisherDimension,
+        name: AD_BIDS_PUBLISHER_DIMENSION,
       },
       {
-        name: AdBidsDomainDimension,
+        name: AD_BIDS_DOMAIN_DIMENSION,
       },
     ],
   });
   // clear everything if already created
-  metricsExplorerStore.clearFilters(AdBidsName);
-  metricsExplorerStore.setSelectedTimeRange(AdBidsName, {
+  metricsExplorerStore.clearFilters(AD_BIDS_NAME);
+  metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
     name: TimeRangePreset.ALL_TIME,
     interval: V1TimeGrain.TIME_GRAIN_MINUTE,
-    start: TestTimeConstants.LastDay,
-    end: TestTimeConstants.Now,
+    start: TestTimeConstants.LAST_DAY,
+    end: TestTimeConstants.NOW,
   });
 }
 
 export function createAdBidsMirrorInStore() {
-  const proto = get(metricsExplorerStore).entities[AdBidsName].proto;
+  const proto = get(metricsExplorerStore).entities[AD_BIDS_NAME].proto;
   // actual url is not relevant here
   metricsExplorerStore.syncFromUrl(
-    AdBidsMirrorName,
+    AD_BIDS_MIRROR_NAME,
     new URL(`http://localhost/dashboard?state=${proto}`)
   );
 }
@@ -75,10 +99,10 @@ export function assertMetricsView(
   timeRange: DashboardTimeControls = {
     name: TimeRangePreset.ALL_TIME,
     interval: V1TimeGrain.TIME_GRAIN_MINUTE,
-    start: TestTimeConstants.LastDay,
-    end: TestTimeConstants.Now,
+    start: TestTimeConstants.LAST_DAY,
+    end: TestTimeConstants.NOW,
   },
-  selectedMeasure = AdBidsImpressionsMeasure
+  selectedMeasure = AD_BIDS_IMPRESSIONS_MEASURE
 ) {
   const metricsView = get(metricsExplorerStore).entities[name];
   expect(metricsView.filters).toEqual(filters);
@@ -86,67 +110,67 @@ export function assertMetricsView(
   expect(metricsView.leaderboardMeasureName).toEqual(selectedMeasure);
 }
 
-export const AdBidsBaseFilter = {
+export const AD_BIDS_BASE_FILTER = {
   include: [
     {
-      name: AdBidsPublisherDimension,
+      name: AD_BIDS_PUBLISHER_DIMENSION,
       in: ["Google", "Facebook"],
     },
     {
-      name: AdBidsDomainDimension,
+      name: AD_BIDS_DOMAIN_DIMENSION,
       in: ["google.com"],
     },
   ],
   exclude: [],
 };
 
-export const AdBidsExcludedFilter = {
+export const AD_BIDS_EXCLUDE_FILTER = {
   include: [
     {
-      name: AdBidsDomainDimension,
+      name: AD_BIDS_DOMAIN_DIMENSION,
       in: ["google.com"],
     },
   ],
   exclude: [
     {
-      name: AdBidsPublisherDimension,
+      name: AD_BIDS_PUBLISHER_DIMENSION,
       in: ["Google", "Facebook"],
     },
   ],
 };
 
-export const AdBidsClearedFilter = {
+export const AD_BIDS_CLEARED_FILTER = {
   include: [],
   exclude: [
     {
-      name: AdBidsPublisherDimension,
+      name: AD_BIDS_PUBLISHER_DIMENSION,
       in: ["Google", "Facebook"],
     },
   ],
 };
 
 // parsed time controls won't have start & end
-export const AllTimeParsedTestControls = {
+export const ALL_TIME_PARSED_TEST_CONTROLS = {
   name: TimeRangePreset.ALL_TIME,
   interval: V1TimeGrain.TIME_GRAIN_MINUTE,
 } as DashboardTimeControls;
 
-export const Last6HoursTestControls = {
+export const LAST_6_HOURS_TEST_CONTROLS = {
   name: TimeRangePreset.LAST_SIX_HOURS,
   interval: V1TimeGrain.TIME_GRAIN_HOUR,
-  start: TestTimeConstants.Last6Hours,
-  end: TestTimeConstants.Now,
+  start: TestTimeConstants.LAST_6_HOURS,
+  end: TestTimeConstants.NOW,
 } as DashboardTimeControls;
 
 // parsed time controls won't have start & end
-export const Last6HoursTestParsedControls = {
+export const LAST_6_HOURS_TEST_PARSED_CONTROLS = {
   name: TimeRangePreset.LAST_SIX_HOURS,
   interval: V1TimeGrain.TIME_GRAIN_HOUR,
 } as DashboardTimeControls;
 
-export const CustomTestControls = {
+export const CUSTOM_TEST_CONTROLS = {
   name: TimeRangePreset.CUSTOM,
   interval: V1TimeGrain.TIME_GRAIN_MINUTE,
-  start: TestTimeConstants.Last18Hours,
-  end: TestTimeConstants.Last12Hours,
+  start: TestTimeConstants.LAST_18_HOURS,
+  end: TestTimeConstants.LAST_12_HOURS,
 } as DashboardTimeControls;

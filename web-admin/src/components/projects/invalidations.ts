@@ -1,4 +1,4 @@
-import { invalidationForMetricsViewData } from "@rilldata/web-local/lib/svelte-query/invalidation";
+import { invalidationForMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation";
 import type { QueryClient } from "@tanstack/svelte-query";
 
 export async function invalidateDashboardsQueries(

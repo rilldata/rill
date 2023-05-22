@@ -19,7 +19,7 @@ import (
 )
 
 func ConfigureCmd(cfg *config.Config) *cobra.Command {
-	var projectPath, projectName string
+	var projectPath, projectName, subPath string
 	var redploy bool
 
 	configureCommand := &cobra.Command{
@@ -35,15 +35,20 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
+			fullProjectPath := projectPath
+			if subPath != "" {
+				fullProjectPath = filepath.Join(projectPath, subPath)
+			}
+
 			// Verify that the projectPath contains a Rill project
-			if !rillv1beta.HasRillProject(projectPath) {
-				fullpath, err := filepath.Abs(projectPath)
+			if !rillv1beta.HasRillProject(fullProjectPath) {
+				fullpath, err := filepath.Abs(fullProjectPath)
 				if err != nil {
 					return err
 				}
 
 				warn.Printf("Directory at %q doesn't contain a valid Rill project.\n\n", fullpath)
-				warn.Printf("Run \"rill env configure\" from a Rill project directory or use \"--path\" to pass a project path.\n")
+				warn.Printf("Run `rill env configure` from a Rill project directory or use `--path` to pass a project path.\n")
 				return nil
 			}
 
@@ -76,7 +81,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			variables, err := VariablesFlow(ctx, projectPath, nil)
+			variables, err := VariablesFlow(ctx, fullProjectPath, nil)
 			if err != nil {
 				return fmt.Errorf("failed to get variables %w", err)
 			}
@@ -132,6 +137,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 
 	configureCommand.Flags().SortFlags = false
 	configureCommand.Flags().StringVar(&projectPath, "path", ".", "Project directory")
+	configureCommand.Flags().StringVar(&subPath, "subpath", "", "Project path to sub directory of a larger repository")
 	configureCommand.Flags().StringVar(&projectName, "project", "", "")
 	configureCommand.Flags().BoolVar(&redploy, "redeploy", false, "Redeploy project")
 

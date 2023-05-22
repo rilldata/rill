@@ -1,4 +1,4 @@
-import { convertTimestampPreviewFcn } from "@rilldata/web-local/lib/util/convertTimestampPreview";
+import { convertTimestampPreviewFcn } from "@rilldata/web-common/lib/convertTimestampPreview";
 
 /** sets extents to 0 if it makes sense; otherwise, inflates each extent component */
 export function niceMeasureExtents(

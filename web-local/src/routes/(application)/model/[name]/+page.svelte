@@ -2,12 +2,12 @@
   import { page } from "$app/stores";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { ModelWorkspace } from "@rilldata/web-common/features/models";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
   import { onMount } from "svelte";
-  import { featureFlags } from "../../../../lib/application-state-stores/application-store";
 
   $: modelName = $page.params.name;
 

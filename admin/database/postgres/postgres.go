@@ -46,16 +46,16 @@ func (c *connection) Close() error {
 	return c.db.Close()
 }
 
-func (c *connection) FindOrganizations(ctx context.Context) ([]*database.Organization, error) {
+func (c *connection) FindOrganizations(ctx context.Context, afterName string, limit int) ([]*database.Organization, error) {
 	var res []*database.Organization
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs ORDER BY lower(name)")
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs WHERE lower(name) > $1 ORDER BY lower(name) LIMIT $2", afterName, limit)
 	if err != nil {
 		return nil, parseErr("orgs", err)
 	}
 	return res, nil
 }
 
-func (c *connection) FindOrganizationsForUser(ctx context.Context, userID string) ([]*database.Organization, error) {
+func (c *connection) FindOrganizationsForUser(ctx context.Context, userID, afterName string, limit int) ([]*database.Organization, error) {
 	var res []*database.Organization
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT u.* FROM (SELECT o.* FROM orgs o JOIN users_orgs_roles uor ON o.id = uor.org_id
@@ -67,8 +67,9 @@ func (c *connection) FindOrganizationsForUser(ctx context.Context, userID string
 		UNION
 		SELECT o.* FROM orgs o JOIN projects p ON o.id = p.org_id
 		JOIN users_projects_roles upr ON p.id = upr.project_id
-		WHERE upr.user_id = $1) u order by u.name
-	`, userID)
+		WHERE upr.user_id = $1) u 
+		WHERE lower(u.name) > $2 ORDER BY lower(u.name) LIMIT $3
+	`, userID, afterName, limit)
 	if err != nil {
 		return nil, parseErr("orgs", err)
 	}
@@ -164,6 +165,51 @@ func (c *connection) FindAllProjects(ctx context.Context) ([]*database.Project, 
 	return res, nil
 }
 
+func (c *connection) FindOrganizationAutoinviteDomainsForOrganization(ctx context.Context, orgID string) ([]*database.OrganizationAutoinviteDomain, error) {
+	var res []*database.OrganizationAutoinviteDomain
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs_autoinvite_domains WHERE org_id=$1", orgID)
+	if err != nil {
+		return nil, parseErr("org autoinvite domains", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindOrganizationAutoinviteDomainsForDomain(ctx context.Context, domain string) ([]*database.OrganizationAutoinviteDomain, error) {
+	var res []*database.OrganizationAutoinviteDomain
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs_autoinvite_domains WHERE lower(domain)=lower($1)", domain)
+	if err != nil {
+		return nil, parseErr("org autoinvite domains", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindOrganizationAutoinviteDomain(ctx context.Context, orgID, domain string) (*database.OrganizationAutoinviteDomain, error) {
+	res := &database.OrganizationAutoinviteDomain{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM orgs_autoinvite_domains WHERE org_id=$1 AND lower(domain)=lower($2)", orgID, domain).StructScan(res)
+	if err != nil {
+		return nil, parseErr("org autoinvite domain", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertOrganizationAutoinviteDomain(ctx context.Context, opts *database.InsertOrganizationAutoinviteDomainOptions) (*database.OrganizationAutoinviteDomain, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.OrganizationAutoinviteDomain{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs_autoinvite_domains(org_id, org_role_id, domain) VALUES ($1, $2, $3) RETURNING *`, opts.OrgID, opts.OrgRoleID, opts.Domain).StructScan(res)
+	if err != nil {
+		return nil, parseErr("org autoinvite domain", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteOrganizationAutoinviteDomain(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM orgs_autoinvite_domains WHERE id=$1", id)
+	return checkDeleteRow("org autoinvite domain", res, err)
+}
+
 func (c *connection) FindProjects(ctx context.Context, orgName string) ([]*database.Project, error) {
 	var res []*database.Project
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p JOIN orgs o ON p.org_id = o.id WHERE lower(o.name)=lower($1) ORDER BY lower(p.name)", orgName)
@@ -189,34 +235,42 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 	return res, nil
 }
 
-func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID string) ([]*database.Project, error) {
+func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
 	var res []*database.Project
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.org_id=$1 ORDER BY lower(p.name)", orgID)
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT p.* FROM projects p 
+		WHERE p.org_id=$1 AND lower(p.name) > $2 
+		ORDER BY lower(p.name) LIMIT $3
+	`, orgID, afterProjectName, limit)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
 	return res, nil
 }
 
-func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID string) ([]*database.Project, error) {
+func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID, afterProjectName string, limit int) ([]*database.Project, error) {
 	var res []*database.Project
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT p.* FROM projects p
-		WHERE p.org_id = $1 AND p.id IN (
-			SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $2
+		WHERE p.org_id = $1 AND lower(p.name) > $2 AND (p.public = true OR p.id IN (
+			SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $3
 			UNION
-			SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $2
-		)
-	`, orgID, userID)
+			SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $3
+		))  ORDER BY lower(p.name) LIMIT $4
+	`, orgID, afterProjectName, userID, limit)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
 	return res, nil
 }
 
-func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID string) ([]*database.Project, error) {
+func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
 	var res []*database.Project
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.org_id = $1 AND p.public = true", orgID)
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT p.* FROM projects p 
+		WHERE p.org_id = $1 AND p.public = true AND lower(p.name) > $2 
+		ORDER BY lower(p.name) LIMIT $3
+	`, orgID, afterProjectName, limit)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
@@ -224,21 +278,21 @@ func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID
 }
 
 func (c *connection) FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*database.Project, error) {
-	result := make([]*database.Project, 0)
-	err := c.getDB(ctx).SelectContext(ctx, &result, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) ", githubURL)
+	var res []*database.Project
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) ", githubURL)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return result, nil
+	return res, nil
 }
 
-func (c *connection) FindProjectsByOrgAndGithubURL(ctx context.Context, orgID, githubURL string) ([]*database.Project, error) {
-	result := make([]*database.Project, 0)
-	err := c.getDB(ctx).SelectContext(ctx, &result, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) AND org_id=$2", githubURL, orgID)
+func (c *connection) FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*database.Project, error) {
+	var res []*database.Project
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.github_installation_id=$1", id)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return result, nil
+	return res, nil
 }
 
 func (c *connection) FindProject(ctx context.Context, id string) (*database.Project, error) {
@@ -266,9 +320,9 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, region, prod_olap_driver, prod_olap_dsn, prod_slots, prod_branch, prod_variables, github_url, github_installation_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.Region, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID,
+		INSERT INTO projects (org_id, name, description, public, region, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, github_url, github_installation_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.Region, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -426,9 +480,18 @@ func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOp
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url, quota_singleuser_orgs) VALUES ($1, $2, $3, $4) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL, opts.QuotaSingleuserOrgs).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url, quota_singleuser_orgs, superuser) VALUES ($1, $2, $3, $4, $5) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL, opts.QuotaSingleuserOrgs, opts.Superuser).StructScan(res)
 	if err != nil {
 		return nil, parseErr("user", err)
+	}
+	return res, nil
+}
+
+func (c *connection) CheckUsersEmpty(ctx context.Context) (bool, error) {
+	var res bool
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT NOT EXISTS (SELECT 1 FROM users limit 1) ").Scan(&res)
+	if err != nil {
+		return false, parseErr("check", err)
 	}
 	return res, nil
 }
@@ -614,11 +677,15 @@ func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, pro
 	return res, nil
 }
 
-func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID string) ([]*database.Member, error) {
+func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, afterEmail string, limit int) ([]*database.Member, error) {
 	var res []*database.Member
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u 
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u 
     	JOIN users_orgs_roles uor ON u.id = uor.user_id
-		JOIN org_roles r ON r.id = uor.org_role_id WHERE uor.org_id=$1`, orgID)
+		JOIN org_roles r ON r.id = uor.org_role_id 
+		WHERE uor.org_id=$1 AND lower(u.email) > $2 
+		ORDER BY lower(u.email) LIMIT $3
+	`, orgID, afterEmail, limit)
 	if err != nil {
 		return nil, parseErr("org members", err)
 	}
@@ -675,15 +742,33 @@ func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Conte
 	return count, nil
 }
 
-func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID string) ([]*database.Member, error) {
+func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.Member, error) {
 	var res []*database.Member
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u 
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u 
     	JOIN users_projects_roles upr ON u.id = upr.user_id
-		JOIN project_roles r ON r.id = upr.project_role_id WHERE upr.project_id=$1`, projectID)
+		JOIN project_roles r ON r.id = upr.project_role_id 
+		WHERE upr.project_id=$1 AND lower(u.email) > $2 
+		ORDER BY lower(u.email) LIMIT $3
+	`, projectID, afterEmail, limit)
 	if err != nil {
 		return nil, parseErr("project members", err)
 	}
 	return res, nil
+}
+
+func (c *connection) FindSuperusers(ctx context.Context) ([]*database.User, error) {
+	var res []*database.User
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u WHERE u.superuser = true`)
+	if err != nil {
+		return nil, parseErr("project members", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateSuperuser(ctx context.Context, userID string, superuser bool) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE users SET superuser=$2, updated_on=now() WHERE id=$1`, userID, superuser)
+	return checkUpdateRow("superuser", res, err)
 }
 
 func (c *connection) InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error {
@@ -727,11 +812,14 @@ func (c *connection) UpdateProjectMemberUserRole(ctx context.Context, projectID,
 	return checkUpdateRow("project member", res, err)
 }
 
-func (c *connection) FindOrganizationInvites(ctx context.Context, orgID string) ([]*database.Invite, error) {
+func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*database.Invite, error) {
 	var res []*database.Invite
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-			SELECT uoi.email, ur.name as role, u.email as invited_by 
-			FROM org_invites uoi JOIN org_roles ur ON uoi.org_role_id = ur.id JOIN users u ON uoi.invited_by_user_id = u.id WHERE uoi.org_id = $1`, orgID)
+		SELECT uoi.email, ur.name as role, u.email as invited_by 
+		FROM org_invites uoi JOIN org_roles ur ON uoi.org_role_id = ur.id JOIN users u ON uoi.invited_by_user_id = u.id 
+		WHERE uoi.org_id = $1 AND lower(uoi.email) > $2 
+		ORDER BY lower(uoi.email) LIMIT $3
+	`, orgID, afterEmail, limit)
 	if err != nil {
 		return nil, parseErr("org invites", err)
 	}
@@ -756,8 +844,12 @@ func (c *connection) FindOrganizationInvite(ctx context.Context, orgID, userEmai
 	return res, nil
 }
 
-func (c *connection) InsertOrganizationInvite(ctx context.Context, email, orgID, roleID, invitedByID string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id) VALUES ($1, $2, $3, $4)", email, invitedByID, orgID, roleID)
+func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *database.InsertOrganizationInviteOptions) error {
+	if err := database.Validate(opts); err != nil {
+		return err
+	}
+
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id) VALUES ($1, $2, $3, $4)", opts.Email, opts.InviterID, opts.OrgID, opts.RoleID)
 	if err != nil {
 		return parseErr("org invite", err)
 	}
@@ -790,11 +882,14 @@ func (c *connection) UpdateOrganizationInviteRole(ctx context.Context, id, roleI
 	return checkUpdateRow("org invite", res, err)
 }
 
-func (c *connection) FindProjectInvites(ctx context.Context, projectID string) ([]*database.Invite, error) {
+func (c *connection) FindProjectInvites(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.Invite, error) {
 	var res []*database.Invite
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 			SELECT upi.email, ur.name as role, u.email as invited_by 
-			FROM project_invites upi JOIN project_roles ur ON upi.project_role_id = ur.id JOIN users u ON upi.invited_by_user_id = u.id WHERE upi.project_id = $1`, projectID)
+			FROM project_invites upi JOIN project_roles ur ON upi.project_role_id = ur.id JOIN users u ON upi.invited_by_user_id = u.id 
+			WHERE upi.project_id = $1 AND lower(upi.email) > $2 
+			ORDER BY lower(upi.email) LIMIT $3
+	`, projectID, afterEmail, limit)
 	if err != nil {
 		return nil, parseErr("project invites", err)
 	}
@@ -819,8 +914,12 @@ func (c *connection) FindProjectInvite(ctx context.Context, projectID, userEmail
 	return res, nil
 }
 
-func (c *connection) InsertProjectInvite(ctx context.Context, email, projectID, roleID, invitedByID string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO project_invites (email, invited_by_user_id, project_id, project_role_id) VALUES ($1, $2, $3, $4)", email, invitedByID, projectID, roleID)
+func (c *connection) InsertProjectInvite(ctx context.Context, opts *database.InsertProjectInviteOptions) error {
+	if err := database.Validate(opts); err != nil {
+		return err
+	}
+
+	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO project_invites (email, invited_by_user_id, project_id, project_role_id) VALUES ($1, $2, $3, $4)", opts.Email, opts.InviterID, opts.ProjectID, opts.RoleID)
 	if err != nil {
 		return parseErr("project invite", err)
 	}
@@ -915,6 +1014,8 @@ func parseErr(target string, err error) error {
 			return newAlreadyExistsErr("email has already been invited to the org")
 		case "project_invites_email_project_idx":
 			return newAlreadyExistsErr("email has already been invited to the project")
+		case "orgs_autoinvite_domains_org_id_domain_idx":
+			return newAlreadyExistsErr("domain has already been added for the org")
 		default:
 			if target == "" {
 				return database.ErrNotUnique

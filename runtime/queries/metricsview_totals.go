@@ -15,6 +15,7 @@ import (
 type MetricsViewTotals struct {
 	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
 	MeasureNames    []string                     `json:"measure_names,omitempty"`
+	InlineMeasures  []*runtimev1.InlineMeasure   `json:"inline_measures,omitempty"`
 	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
 	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
 	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
@@ -36,8 +37,11 @@ func (q *MetricsViewTotals) Deps() []string {
 	return []string{q.MetricsViewName}
 }
 
-func (q *MetricsViewTotals) MarshalResult() any {
-	return q.Result
+func (q *MetricsViewTotals) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *MetricsViewTotals) UnmarshalResult(v any) error {
@@ -91,20 +95,15 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 }
 
 func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
+	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
+	if err != nil {
+		return "", nil, err
+	}
+
 	selectCols := []string{}
-	for _, n := range q.MeasureNames {
-		found := false
-		for _, m := range mv.Measures {
-			if m.Name == n {
-				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
-				selectCols = append(selectCols, expr)
-				found = true
-				break
-			}
-		}
-		if !found {
-			return "", nil, fmt.Errorf("measure does not exist: '%s'", n)
-		}
+	for _, m := range ms {
+		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+		selectCols = append(selectCols, expr)
 	}
 
 	whereClause := "1=1"

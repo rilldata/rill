@@ -5,25 +5,26 @@
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
     "generate:runtime-client": "orval",
-    "test": "jest",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "test:watch": "npm run test -- --watch"
   },
   "devDependencies": {
+    "@tanstack/svelte-query": "^4.27.0",
     "@typescript-eslint/eslint-plugin": "^5.27.0",
     "@typescript-eslint/parser": "^5.27.0",
+    "@vitest/coverage-c8": "^0.31.0",
+    "axios": "^0.27.2",
     "eslint": "^8.16.0",
     "eslint-config-prettier": "^8.3.0",
     "jest": "^27.5.1",
+    "match-sorter": "^6.3.1",
     "orval": "^6.12.0",
     "prettier": "^2.6.2",
+    "svelte": "^3.48.0",
     "svelte-preprocess": "^5.0.0",
-    "typescript": "^4.7.4"
+    "typescript": "^4.7.4",
+    "vitest": "^0.31.0"
   },
-  "type": "module",
-  "dependencies": {
-    "@tanstack/svelte-query": "^4.27.0",
-    "axios": "^0.27.2",
-    "match-sorter": "^6.3.1",
-    "svelte": "^3.48.0"
-  }
+  "type": "module"
 }

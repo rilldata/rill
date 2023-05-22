@@ -1,5 +1,5 @@
 ---
-title: Rill Developer (tech preview)
+title: Rill Developer
 slug: /
 sidebar_label: What is Rill?
 sidebar_position: 10
@@ -22,10 +22,10 @@ curl -s https://cdn.rilldata.com/install.sh | bash
 rill start
 ```
 
-After installation, launch the application by running `rill start` or try an example project:
+Or try an example project:
 ```
 rill init --example
-rill start
+cd default && rill start
 ```
 
 ![home-demo](https://user-images.githubusercontent.com/5587788/180313797-ef50ec6e-fc2d-4072-bb77-b2acf59205d7.gif "770784519")

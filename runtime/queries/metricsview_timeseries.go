@@ -17,6 +17,7 @@ import (
 type MetricsViewTimeSeries struct {
 	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
 	MeasureNames    []string                     `json:"measure_names,omitempty"`
+	InlineMeasures  []*runtimev1.InlineMeasure   `json:"inline_measures,omitempty"`
 	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
 	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
 	Limit           int64                        `json:"limit,omitempty"`
@@ -42,8 +43,11 @@ func (q *MetricsViewTimeSeries) Deps() []string {
 	return []string{q.MetricsViewName}
 }
 
-func (q *MetricsViewTimeSeries) MarshalResult() any {
-	return q.Result
+func (q *MetricsViewTimeSeries) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *MetricsViewTimeSeries) UnmarshalResult(v any) error {
@@ -81,7 +85,12 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 }
 
 func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsView, priority int) error {
-	measures, err := toColumnTimeseriesMeasures(mv.Measures, q.MeasureNames)
+	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
+	if err != nil {
+		return err
+	}
+
+	measures, err := toColumnTimeseriesMeasures(ms)
 	if err != nil {
 		return err
 	}
@@ -112,21 +121,12 @@ func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.R
 	return nil
 }
 
-func toColumnTimeseriesMeasures(measures []*runtimev1.MetricsView_Measure, measureNames []string) ([]*runtimev1.ColumnTimeSeriesRequest_BasicMeasure, error) {
-	var res []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure
-	for _, n := range measureNames {
-		found := false
-		for _, m := range measures {
-			if m.Name == n {
-				res = append(res, &runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
-					SqlName:    m.Name,
-					Expression: m.Expression,
-				})
-				found = true
-			}
-		}
-		if !found {
-			return nil, fmt.Errorf("measure does not exist: '%s'", n)
+func toColumnTimeseriesMeasures(measures []*runtimev1.MetricsView_Measure) ([]*runtimev1.ColumnTimeSeriesRequest_BasicMeasure, error) {
+	res := make([]*runtimev1.ColumnTimeSeriesRequest_BasicMeasure, len(measures))
+	for i, m := range measures {
+		res[i] = &runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
+			SqlName:    m.Name,
+			Expression: m.Expression,
 		}
 	}
 	return res, nil
@@ -187,20 +187,15 @@ func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.O
 }
 
 func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.MetricsView) (string, string, []any, error) {
+	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
+	if err != nil {
+		return "", "", nil, err
+	}
+
 	selectCols := []string{}
-	for _, n := range q.MeasureNames {
-		found := false
-		for _, m := range mv.Measures {
-			if m.Name == n {
-				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
-				selectCols = append(selectCols, expr)
-				found = true
-				break
-			}
-		}
-		if !found {
-			return "", "", nil, fmt.Errorf("measure does not exist: '%s'", n)
-		}
+	for _, m := range ms {
+		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+		selectCols = append(selectCols, expr)
 	}
 
 	whereClause := "1=1"

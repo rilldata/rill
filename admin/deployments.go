@@ -20,20 +20,18 @@ import (
 	"go.uber.org/zap"
 )
 
-const hibernateTTL = 30 * 24 * time.Hour
-
 func (s *Service) createDeployment(ctx context.Context, proj *database.Project) (*database.Deployment, error) {
 	// We require Github info on project to create a deployment
 	if proj.GithubURL == nil || proj.GithubInstallationID == nil || proj.ProdBranch == "" {
 		return nil, fmt.Errorf("cannot create project without github info")
 	}
-	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*proj.GithubURL, *proj.GithubInstallationID, proj.ProdBranch)
+	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*proj.GithubURL, *proj.GithubInstallationID, proj.Subpath, proj.ProdBranch)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get a runtime with capacity for the deployment
-	alloc, err := s.provisioner.Provision(ctx, &provisioner.ProvisionOptions{
+	alloc, err := s.Provisioner.Provision(ctx, &provisioner.ProvisionOptions{
 		OLAPDriver: proj.ProdOLAPDriver,
 		Slots:      proj.ProdSlots,
 		Region:     proj.Region,
@@ -109,6 +107,7 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 type updateDeploymentOptions struct {
 	GithubURL            *string
 	GithubInstallationID *int64
+	Subpath              string
 	Branch               string
 	Variables            map[string]string
 	Reconcile            bool
@@ -118,7 +117,8 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 	if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.Branch == "" {
 		return fmt.Errorf("cannot update deployment without github info")
 	}
-	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*opts.GithubURL, *opts.GithubInstallationID, opts.Branch)
+
+	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*opts.GithubURL, *opts.GithubInstallationID, opts.Subpath, opts.Branch)
 	if err != nil {
 		return err
 	}
@@ -258,10 +258,11 @@ func (s *Service) openRuntimeClient(host, audience string) (*client.Client, erro
 	return rt, nil
 }
 
-func githubRepoInfoForRuntime(githubURL string, installationID int64, branch string) (string, string, error) {
+func githubRepoInfoForRuntime(githubURL string, installationID int64, subPath, branch string) (string, string, error) {
 	dsn, err := json.Marshal(github.DSN{
 		GithubURL:      githubURL,
 		InstallationID: installationID,
+		Subpath:        subPath,
 		Branch:         branch,
 	})
 	if err != nil {

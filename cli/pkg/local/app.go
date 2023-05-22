@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
@@ -106,7 +107,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		ConnectionCacheSize: 100,
 		MetastoreDriver:     "sqlite",
 		MetastoreDSN:        "file:rill?mode=memory&cache=shared",
-		QueryCacheSize:      10000,
+		QueryCacheSizeBytes: int64(datasize.MB * 100),
 		AllowHostAccess:     true,
 	}
 	rt, err := runtime.New(rtOpts, logger)
@@ -298,7 +299,7 @@ func (a *App) ReconcileSource(sourcePath string) error {
 	return nil
 }
 
-func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool) error {
+func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool, userID string) error {
 	// Get analytics info
 	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {
@@ -311,6 +312,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		GRPCPort:         grpcPort,
 		InstallID:        installID,
 		ProjectPath:      a.ProjectPath,
+		UserID:           userID,
 		Version:          a.Version.Number,
 		BuildCommit:      a.Version.Commit,
 		BuildTime:        a.Version.Timestamp,
@@ -410,6 +412,7 @@ type localInfo struct {
 	InstanceID       string `json:"instance_id"`
 	GRPCPort         int    `json:"grpc_port"`
 	InstallID        string `json:"install_id"`
+	UserID           string `json:"user_id"`
 	ProjectPath      string `json:"project_path"`
 	Version          string `json:"version"`
 	BuildCommit      string `json:"build_commit"`

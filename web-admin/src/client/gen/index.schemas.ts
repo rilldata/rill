@@ -4,12 +4,6 @@
  * rill/admin/v1/api.proto
  * OpenAPI spec version: version not set
  */
-export type AdminServiceListProjectsForOrganizationAndGithubURLParams = {
-  githubUrl?: string;
-  pageSize?: number;
-  pageToken?: string;
-};
-
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
   [key: string]: string;
 };
@@ -36,6 +30,7 @@ export type AdminServiceCreateProjectBody = {
   prodOlapDriver?: string;
   prodOlapDsn?: string;
   prodSlots?: string;
+  subpath?: string;
   prodBranch?: string;
   githubUrl?: string;
   variables?: AdminServiceCreateProjectBodyVariables;
@@ -51,6 +46,11 @@ export type AdminServiceListProjectMembersParams = {
   pageToken?: string;
 };
 
+export type AdminServiceListProjectInvitesParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceRemoveOrganizationMemberParams = {
   keepProjectRoles?: boolean;
 };
@@ -58,6 +58,16 @@ export type AdminServiceRemoveOrganizationMemberParams = {
 export type AdminServiceListOrganizationMembersParams = {
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceListOrganizationInvitesParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceCreateAutoinviteDomainBody = {
+  domain?: string;
+  role?: string;
 };
 
 export type AdminServiceUpdateOrganizationBody = {
@@ -132,6 +142,15 @@ export interface V1TriggerReconcileResponse {
   [key: string]: any;
 }
 
+export interface V1SetSuperuserResponse {
+  [key: string]: any;
+}
+
+export interface V1SetSuperuserRequest {
+  email?: string;
+  superuser?: boolean;
+}
+
 export interface V1SetProjectMemberRoleResponse {
   [key: string]: any;
 }
@@ -149,6 +168,10 @@ export interface V1RemoveProjectMemberResponse {
 }
 
 export interface V1RemoveOrganizationMemberResponse {
+  [key: string]: any;
+}
+
+export interface V1RemoveAutoinviteDomainResponse {
   [key: string]: any;
 }
 
@@ -174,6 +197,7 @@ export interface V1Project {
   public?: boolean;
   region?: string;
   githubUrl?: string;
+  subpath?: string;
   prodBranch?: string;
   prodOlapDriver?: string;
   prodOlapDsn?: string;
@@ -216,18 +240,21 @@ export interface V1Member {
   updatedOn?: string;
 }
 
-export interface V1ListProjectsForOrganizationResponse {
-  projects?: V1Project[];
-  nextPageToken?: string;
+export interface V1ListSuperusersResponse {
+  users?: V1User[];
 }
 
-export interface V1ListProjectsForOrganizationAndGithubURLResponse {
+export interface V1ListProjectsForOrganizationResponse {
   projects?: V1Project[];
   nextPageToken?: string;
 }
 
 export interface V1ListProjectMembersResponse {
   members?: V1Member[];
+  nextPageToken?: string;
+}
+
+export interface V1ListProjectInvitesResponse {
   invites?: V1UserInvite[];
   nextPageToken?: string;
 }
@@ -239,6 +266,10 @@ export interface V1ListOrganizationsResponse {
 
 export interface V1ListOrganizationMembersResponse {
   members?: V1Member[];
+  nextPageToken?: string;
+}
+
+export interface V1ListOrganizationInvitesResponse {
   invites?: V1UserInvite[];
   nextPageToken?: string;
 }
@@ -319,6 +350,10 @@ export interface V1CreateOrganizationResponse {
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
+}
+
+export interface V1CreateAutoinviteDomainResponse {
+  [key: string]: any;
 }
 
 export interface V1AddProjectMemberResponse {

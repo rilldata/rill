@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v50/github"
+	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -22,7 +25,68 @@ var (
 	ErrGithubInstallationNotFound = fmt.Errorf("github installation not found")
 )
 
-// GetGithubInstallation returns a non zero Github installation ID iff the Github App is installed on the repository.
+// Github exposes the features we require from the Github API.
+type Github interface {
+	AppClient() *github.Client
+	InstallationClient(installationID int64) (*github.Client, error)
+}
+
+// githubClient implements the Github interface.
+type githubClient struct {
+	appID         int64
+	appPrivateKey string
+	appClient     *github.Client
+
+	cacheMu           sync.Mutex
+	installationCache *simplelru.LRU
+}
+
+// NewGithub returns a new client for connecting to Github.
+func NewGithub(appID int64, appPrivateKey string) (Github, error) {
+	atr, err := ghinstallation.NewAppsTransport(http.DefaultTransport, appID, []byte(appPrivateKey))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create github app transport: %w", err)
+	}
+	appClient := github.NewClient(&http.Client{Transport: atr})
+
+	lru, err := simplelru.NewLRU(100, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	return &githubClient{
+		appID:             appID,
+		appPrivateKey:     appPrivateKey,
+		appClient:         appClient,
+		installationCache: lru,
+	}, nil
+}
+
+func (g *githubClient) AppClient() *github.Client {
+	return g.appClient
+}
+
+func (g *githubClient) InstallationClient(installationID int64) (*github.Client, error) {
+	g.cacheMu.Lock()
+	defer g.cacheMu.Unlock()
+
+	val, ok := g.installationCache.Get(installationID)
+	if ok {
+		return val.(*github.Client), nil
+	}
+
+	itr, err := ghinstallation.New(http.DefaultTransport, g.appID, installationID, []byte(g.appPrivateKey))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create github installation transport: %w", err)
+	}
+	installationClient := github.NewClient(&http.Client{Transport: itr})
+
+	g.installationCache.Add(installationID, installationClient)
+	return installationClient, nil
+}
+
+// GetGithubInstallation returns a non zero Github installation ID if the Github App is installed on the repository
+// and is not in suspended state
 // The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
 func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (int64, error) {
 	account, repo, ok := gitutil.SplitGithubURL(githubURL)
@@ -30,14 +94,17 @@ func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (
 		return 0, fmt.Errorf("invalid Github URL %q", githubURL)
 	}
 
-	// TODO :: handle suspended case
-	installation, resp, err := s.github.Apps.FindRepositoryInstallation(ctx, account, repo)
+	installation, resp, err := s.github.AppClient().Apps.FindRepositoryInstallation(ctx, account, repo)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
 			// We don't have an installation on the repo
 			return 0, ErrGithubInstallationNotFound
 		}
 		return 0, fmt.Errorf("failed to lookup repo info: %w", err)
+	}
+
+	if installation.SuspendedAt != nil {
+		return 0, ErrGithubInstallationNotFound
 	}
 
 	installationID := installation.GetID()
@@ -62,7 +129,7 @@ func (s *Service) LookupGithubRepoForUser(ctx context.Context, installationID in
 		return nil, fmt.Errorf("invalid gitUsername %q", gitUsername)
 	}
 
-	gh, err := s.githubInstallationClient(installationID)
+	gh, err := s.github.InstallationClient(installationID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github installation client: %w", err)
 	}
@@ -154,25 +221,78 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 
 func (s *Service) processGithubInstallationEvent(ctx context.Context, event *github.InstallationEvent) error {
 	switch event.GetAction() {
-	case "created", "unsuspend", "suspend", "new_permissions_accepted":
+	case "created", "unsuspend", "new_permissions_accepted":
 		// TODO: Should we do anything for unsuspend?
-	case "deleted":
-	}
+	case "suspend", "deleted":
+		// the github installation ID will change if user re-installs the app deleting the project for now
+		installation := event.GetInstallation()
+		if installation == nil {
+			return fmt.Errorf("nil installation")
+		}
 
+		s.logger.Info("github webhook: started processing", zap.String("action", event.GetAction()), zap.Int64("installation_id", installation.GetID()), observability.ZapCtx(ctx))
+		if err := s.deleteProjectsForInstallation(ctx, installation.GetID()); err != nil {
+			s.logger.Error("github webhook: failed to delete project for installation", zap.Int64("installation_id", installation.GetID()), zap.Error(err), observability.ZapCtx(ctx))
+			return err
+		}
+		s.logger.Info("github webhook: processed successfully", zap.String("action", event.GetAction()), zap.Int64("installation_id", installation.GetID()), observability.ZapCtx(ctx))
+	}
 	return nil
 }
 
 func (s *Service) processGithubInstallationRepositoriesEvent(ctx context.Context, event *github.InstallationRepositoriesEvent) error {
 	// We can access event.RepositoriesAdded and event.RepositoriesRemoved
+	switch event.GetAction() {
+	case "added":
+		// no handling as of now
+	case "removed":
+		var multiErr error
+		s.logger.Info("github webhook: processing removed repositories", observability.ZapCtx(ctx))
+		for _, repo := range event.RepositoriesRemoved {
+			if err := s.deleteProjectsForRepo(ctx, repo); err != nil {
+				multiErr = multierr.Combine(multiErr, err)
+				s.logger.Error("github webhook: failed to delete projects for repo", zap.String("repo", *repo.HTMLURL), zap.Error(err), observability.ZapCtx(ctx))
+			}
+		}
+		s.logger.Info("github webhook: processing removed repositories completed", observability.ZapCtx(ctx))
+		return multiErr
+	}
 	return nil
 }
 
-// githubInstallationClient makes a Github client that authenticates as a specific installation.
-// (As opposed to s.github, which authenticates as the Git App, and cannot access the contents of an installation.)
-func (s *Service) githubInstallationClient(installationID int64) (*github.Client, error) {
-	itr, err := ghinstallation.New(http.DefaultTransport, s.opts.GithubAppID, installationID, []byte(s.opts.GithubAppPrivateKey))
+func (s *Service) deleteProjectsForInstallation(ctx context.Context, id int64) error {
+	// Find Rill project for installationID
+	projects, err := s.DB.FindProjectsByGithubInstallationID(ctx, id)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return github.NewClient(&http.Client{Transport: itr}), nil
+
+	var multiErr error
+	for _, p := range projects {
+		err := s.TeardownProject(ctx, p)
+		if err != nil {
+			multiErr = multierr.Combine(multiErr, fmt.Errorf("unable to delete project %q: %w", p.ID, err))
+			continue
+		}
+	}
+	return multiErr
+}
+
+func (s *Service) deleteProjectsForRepo(ctx context.Context, repo *github.Repository) error {
+	// Find Rill project matching the repo that was pushed to
+	githubURL := *repo.HTMLURL
+	projects, err := s.DB.FindProjectsByGithubURL(ctx, githubURL)
+	if err != nil {
+		return err
+	}
+
+	var multiErr error
+	for _, p := range projects {
+		err := s.TeardownProject(ctx, p)
+		if err != nil {
+			multiErr = multierr.Combine(multiErr, fmt.Errorf("unable to delete project %q: %w", p.ID, err))
+			continue
+		}
+	}
+	return multiErr
 }
