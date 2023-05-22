@@ -1,3 +1,7 @@
-<h2 class="text-base font-normal text-slate-600">
+<script lang="ts">
+  export let twColor = "text-gray-500";
+</script>
+
+<p class="text-base font-normal {twColor}">
   <slot />
-</h2>
+</p>

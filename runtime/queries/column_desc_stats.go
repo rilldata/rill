@@ -26,8 +26,11 @@ func (q *ColumnDescriptiveStatistics) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnDescriptiveStatistics) MarshalResult() any {
-	return q.Result
+func (q *ColumnDescriptiveStatistics) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *ColumnDescriptiveStatistics) UnmarshalResult(v any) error {

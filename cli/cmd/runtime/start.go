@@ -47,7 +47,7 @@ type Config struct {
 	AuthAudienceURL     string                 `default:"" split_words:"true"`
 	SafeSourceRefresh   bool                   `default:"false" split_words:"true"`
 	ConnectionCacheSize int                    `default:"100" split_words:"true"`
-	QueryCacheSize      int                    `default:"10000" split_words:"true"`
+	QueryCacheSizeBytes int64                  `default:"104857600" split_words:"true"` // 100MB by default
 	// AllowHostAccess controls whether instance can use host credentials and
 	// local_file sources can access directory outside repo
 	AllowHostAccess bool `default:"false" split_words:"true"`
@@ -104,7 +104,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				ConnectionCacheSize: conf.ConnectionCacheSize,
 				MetastoreDriver:     conf.MetastoreDriver,
 				MetastoreDSN:        conf.MetastoreURL,
-				QueryCacheSize:      conf.QueryCacheSize,
+				QueryCacheSizeBytes: conf.QueryCacheSizeBytes,
 				AllowHostAccess:     conf.AllowHostAccess,
 				SafeSourceRefresh:   conf.SafeSourceRefresh,
 			}

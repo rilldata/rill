@@ -21,11 +21,11 @@ func TestServer_MetricsViewTimeSeries(t *testing.T) {
 	require.Equal(t, 2, len(tr.Data))
 	require.Equal(t, 2, len(tr.Data[0].Records.Fields))
 
-	require.Equal(t, parseTime(t, "2022-01-01T00:00:00Z"), tr.Data[0].Ts)
+	require.Equal(t, parseTime(t, "2022-01-01T00:00:00Z"), tr.Data[0].Ts.AsTime())
 	require.Equal(t, 1.0, tr.Data[0].Records.Fields["measure_0"].GetNumberValue())
 	require.Equal(t, 2.0, tr.Data[0].Records.Fields["measure_2"].GetNumberValue())
 
-	require.Equal(t, parseTime(t, "2022-01-02T00:00:00Z"), tr.Data[1].Ts)
+	require.Equal(t, parseTime(t, "2022-01-02T00:00:00Z"), tr.Data[1].Ts.AsTime())
 	require.Equal(t, 1.0, tr.Data[1].Records.Fields["measure_0"].GetNumberValue())
 	require.Equal(t, 1.0, tr.Data[1].Records.Fields["measure_2"].GetNumberValue())
 }
@@ -37,15 +37,15 @@ func TestServer_MetricsViewTimeSeries_TimeEnd_exclusive(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-		TimeStart:       parseTime(t, "2022-01-01T00:00:00Z"),
-		TimeEnd:         parseTime(t, "2022-01-02T00:00:00Z"),
+		TimeStart:       parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+		TimeEnd:         parseTimeToProtoTimeStamps(t, "2022-01-02T00:00:00Z"),
 		MeasureNames:    []string{"measure_0", "measure_2"},
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tr.Data))
 	require.Equal(t, 2, len(tr.Data[0].Records.Fields))
 
-	require.Equal(t, parseTime(t, "2022-01-01T00:00:00Z"), tr.Data[0].Ts)
+	require.Equal(t, parseTime(t, "2022-01-01T00:00:00Z"), tr.Data[0].Ts.AsTime())
 	require.Equal(t, 1.0, tr.Data[0].Records.Fields["measure_0"].GetNumberValue())
 	require.Equal(t, 2.0, tr.Data[0].Records.Fields["measure_2"].GetNumberValue())
 }
@@ -73,7 +73,7 @@ func TestServer_MetricsViewTimeSeries_complete_source_sanity_test(t *testing.T) 
 	require.NoError(t, err)
 	require.True(t, len(tr.Data) > 0)
 	require.Equal(t, 2, len(tr.Data[0].Records.Fields))
-	require.NotEmpty(t, tr.Data[0].Ts)
+	require.NotEmpty(t, tr.Data[0].Ts.AsTime())
 	require.True(t, tr.Data[0].Records.Fields["measure_0"].GetNumberValue() > 0)
 	require.True(t, tr.Data[0].Records.Fields["measure_1"].GetNumberValue() > 0)
 }

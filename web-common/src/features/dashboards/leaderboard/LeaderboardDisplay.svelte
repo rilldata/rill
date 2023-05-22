@@ -5,7 +5,6 @@
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import {
     MetricsViewDimension,
     V1MetricsViewTotalsResponse,
@@ -15,7 +14,6 @@
   import { onDestroy, onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
-    LeaderboardValue,
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";
@@ -83,17 +81,6 @@
     referenceValue = $totalsQuery.data.data?.[activeMeasure.name];
   }
 
-  const leaderboards = new Map<string, Array<LeaderboardValue>>();
-  $: if (dimensions) {
-    const dimensionNameMap = getMapFromArray(
-      dimensions,
-      (dimension) => dimension.name
-    );
-    [...leaderboards.keys()]
-      .filter((dimensionName) => !dimensionNameMap.has(dimensionName))
-      .forEach((dimensionName) => leaderboards.delete(dimensionName));
-  }
-
   let leaderboardExpanded;
 
   function onSelectItem(event, item: MetricsViewDimension) {
@@ -103,10 +90,6 @@
       item.name,
       event.detail.label
     );
-  }
-
-  function onLeaderboardValues(event) {
-    leaderboards.set(event.detail.dimensionName, event.detail.values);
   }
 
   /** Functionality for resizing the virtual leaderboard */
@@ -177,7 +160,6 @@
           }
         }}
         on:select-item={(event) => onSelectItem(event, item)}
-        on:leaderboard-value={onLeaderboardValues}
         referenceValue={referenceValue || 0}
       />
     </VirtualizedGrid>

@@ -29,8 +29,11 @@ func (q *ColumnTimeRange) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnTimeRange) MarshalResult() any {
-	return q.Result
+func (q *ColumnTimeRange) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *ColumnTimeRange) UnmarshalResult(v any) error {

@@ -18,14 +18,14 @@ type Options struct {
 
 type Service struct {
 	DB             database.DB
+	Provisioner    *provisioner.StaticProvisioner
+	Email          *email.Client
 	opts           *Options
 	logger         *zap.Logger
 	github         Github
-	provisioner    provisioner.Provisioner
 	issuer         *auth.Issuer
 	closeCtx       context.Context
 	closeCtxCancel context.CancelFunc
-	Email          *email.Client
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github) (*Service, error) {
@@ -65,14 +65,14 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 
 	return &Service{
 		DB:             db,
+		Provisioner:    prov,
+		Email:          emailClient,
 		opts:           opts,
 		logger:         logger,
 		github:         github,
-		provisioner:    prov,
 		issuer:         issuer,
 		closeCtx:       ctx,
 		closeCtxCancel: cancel,
-		Email:          emailClient,
 	}, nil
 }
 
