@@ -48,6 +48,21 @@ paths:
             $ref: '#/definitions/v1DeleteFileAndReconcileRequest'
       tags:
         - RuntimeService
+  /v1/examples:
+    get:
+      summary: ListExamples lists all the examples embedded into binary
+      operationId: RuntimeService_ListExamples
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListExamplesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - RuntimeService
   /v1/instances:
     get:
       summary: ListInstances lists all the instances currently managed by the runtime
@@ -1815,6 +1830,15 @@ definitions:
       instance:
         $ref: '#/definitions/v1Instance'
     title: Response message for RuntimeService.EditInstance
+  v1Example:
+    type: object
+    properties:
+      name:
+        type: string
+      title:
+        type: string
+      description:
+        type: string
   v1GetCatalogEntryResponse:
     type: object
     properties:
@@ -1915,6 +1939,15 @@ definitions:
           type: object
           $ref: '#/definitions/v1Connector'
     title: Response message for RuntimeService.ListConnectors
+  v1ListExamplesResponse:
+    type: object
+    properties:
+      examples:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Example'
+    title: Response message for RuntimeService.ListExamples
   v1ListFilesResponse:
     type: object
     properties:
