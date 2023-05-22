@@ -9,6 +9,8 @@
     MetricsViewDimension,
     V1MetricsViewTotalsResponse,
     createQueryServiceMetricsViewTotals,
+    QueryServiceMetricsViewTotalsBody,
+    V1InlineMeasure,
   } from "@rilldata/web-common/runtime-client";
   import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy, onMount } from "svelte";
@@ -34,7 +36,20 @@
   $: dimensions = $metaQuery.data?.dimensions;
   $: measures = $metaQuery.data?.measures;
 
-  $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
+  export const ROW_COUNT_INLINE_COL_NAME =
+    "COUNT(*)_inline_55b1a12c-8b5d-47fc-be1c-97c121623424";
+  export const ROW_COUNT_INLINE_COL_EXPRESSION = "COUNT(*)";
+
+  let inlineMeasures: V1InlineMeasure[] = [
+    {
+      name: ROW_COUNT_INLINE_COL_NAME,
+      expression: ROW_COUNT_INLINE_COL_EXPRESSION,
+    },
+  ];
+  $: selectedMeasureNames = [
+    ROW_COUNT_INLINE_COL_NAME,
+    ...(metricsExplorer?.selectedMeasureNames ?? []),
+  ];
 
   $: activeMeasure =
     measures &&
@@ -53,13 +68,21 @@
     NicelyFormattedTypes.HUMANIZE;
 
   let totalsQuery: CreateQueryResult<V1MetricsViewTotalsResponse, Error>;
+  let totalsQueryFiltered: CreateQueryResult<
+    V1MetricsViewTotalsResponse,
+    Error
+  >;
+
   $: if (
     metricsExplorer &&
     metaQuery &&
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching
   ) {
-    let totalsQueryParams = { measureNames: selectedMeasureNames };
+    let totalsQueryParams: QueryServiceMetricsViewTotalsBody = {
+      measureNames: selectedMeasureNames,
+      inlineMeasures,
+    };
     if (hasTimeSeries) {
       totalsQueryParams = {
         ...totalsQueryParams,
@@ -74,12 +97,28 @@
       metricViewName,
       totalsQueryParams
     );
+
+    let totalsQueryFilteredParams = {
+      ...totalsQueryParams,
+      filter: metricsExplorer?.filters,
+    };
+
+    totalsQueryFiltered = createQueryServiceMetricsViewTotals(
+      $runtime.instanceId,
+      metricViewName,
+      totalsQueryFilteredParams
+    );
   }
 
   let referenceValue: number;
   $: if (activeMeasure?.name && $totalsQuery?.data?.data) {
     referenceValue = $totalsQuery.data.data?.[activeMeasure.name];
   }
+
+  $: totalFilteredRowCount =
+    $totalsQueryFiltered?.data?.data?.[ROW_COUNT_INLINE_COL_NAME] ?? 0;
+
+  $: console.log("totalFilteredRowCount", totalFilteredRowCount);
 
   let leaderboardExpanded;
 
