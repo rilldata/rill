@@ -4,8 +4,7 @@ on:
     tags:
       - "*"
     branches:
-      - main
-      - headers
+      - "main"
     paths:
       - ".github/workflows/cloud-admin.yml"
       - "web-admin/**"
