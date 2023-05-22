@@ -234,7 +234,7 @@ func TestServer_MetricsViewTotals_timestamp_name_with_spaces(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics_garbled",
 		MeasureNames:    []string{"measure_0"},
-		TimeEnd:         parseTime(t, "2022-01-02T00:00:00Z"),
+		TimeEnd:         parseTimeToProtoTimeStamps(t, "2022-01-02T00:00:00Z"),
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tr.Data.Fields))
@@ -275,7 +275,7 @@ func TestServer_MetricsViewTotals_TimeStart(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		TimeStart:       parseTime(t, "2022-01-02T00:00:00Z"),
+		TimeStart:       parseTimeToProtoTimeStamps(t, "2022-01-02T00:00:00Z"),
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tr.Data.Fields))
@@ -289,7 +289,7 @@ func TestServer_MetricsViewTotals_TimeEnd(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		TimeEnd:         parseTime(t, "2022-01-02T00:00:00Z"),
+		TimeEnd:         parseTimeToProtoTimeStamps(t, "2022-01-02T00:00:00Z"),
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tr.Data.Fields))
@@ -303,8 +303,8 @@ func TestServer_MetricsViewTotals_TimeStart_TimeEnd(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		TimeStart:       parseTime(t, "2022-01-01T00:00:00Z"),
-		TimeEnd:         parseTime(t, "2022-01-02T00:00:00Z"),
+		TimeStart:       parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+		TimeEnd:         parseTimeToProtoTimeStamps(t, "2022-01-02T00:00:00Z"),
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tr.Data.Fields))

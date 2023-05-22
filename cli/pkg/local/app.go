@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
@@ -106,7 +107,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		ConnectionCacheSize: 100,
 		MetastoreDriver:     "sqlite",
 		MetastoreDSN:        "file:rill?mode=memory&cache=shared",
-		QueryCacheSize:      10000,
+		QueryCacheSizeBytes: int64(datasize.MB * 100),
 		AllowHostAccess:     true,
 	}
 	rt, err := runtime.New(rtOpts, logger)
