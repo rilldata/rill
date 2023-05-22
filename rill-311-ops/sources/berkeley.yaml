@@ -1,0 +1,5 @@
+# Visit https://docs.rilldata.com/ to learn more about Rill code artifacts.
+
+type: "https"
+uri: "https://data.cityofberkeley.info/api/views/bscu-qpbu/rows.csv?accessType=DOWNLOAD"
+sample_size: -1

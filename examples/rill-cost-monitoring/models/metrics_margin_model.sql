@@ -1,0 +1,1 @@
+select * from metrics_margin_monitoring ORDER BY 1 DESC

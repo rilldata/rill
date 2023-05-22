@@ -4,6 +4,7 @@ info:
   version: version not set
 tags:
   - name: RuntimeService
+  - name: ConnectorService
   - name: QueryService
 consumes:
   - application/json
@@ -48,6 +49,81 @@ paths:
             $ref: '#/definitions/v1DeleteFileAndReconcileRequest'
       tags:
         - RuntimeService
+  /v1/examples:
+    get:
+      summary: ListExamples lists all the examples embedded into binary
+      operationId: RuntimeService_ListExamples
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListExamplesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - RuntimeService
+  /v1/gcs/bucket/{bucketName}/objects:
+    get:
+      operationId: ConnectorService_ListGCSBucketObjects
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListGCSBucketObjectsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: bucketName
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+        - name: prefix
+          in: query
+          required: false
+          type: string
+        - name: startOffset
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/gcs/buckets:
+    get:
+      operationId: ConnectorService_ListGCSBuckets
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListGCSBucketsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
   /v1/instances:
     get:
       summary: ListInstances lists all the instances currently managed by the runtime
@@ -1366,6 +1442,66 @@ paths:
             $ref: '#/definitions/v1RenameFileAndReconcileRequest'
       tags:
         - RuntimeService
+  /v1/s3/bucket/{bucketName}/objects:
+    get:
+      operationId: ConnectorService_ListS3BucketObjects
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListS3BucketObjectsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: bucketName
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+        - name: prefix
+          in: query
+          required: false
+          type: string
+        - name: startOffset
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/s3/buckets:
+    get:
+      operationId: ConnectorService_ListS3Buckets
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListS3BucketsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
 definitions:
   ColumnTimeSeriesRequestBasicMeasure:
     type: object
@@ -1815,6 +1951,28 @@ definitions:
       instance:
         $ref: '#/definitions/v1Instance'
     title: Response message for RuntimeService.EditInstance
+  v1Example:
+    type: object
+    properties:
+      name:
+        type: string
+      title:
+        type: string
+      description:
+        type: string
+  v1GCSObject:
+    type: object
+    properties:
+      name:
+        type: string
+      modifiedOn:
+        type: string
+        format: date-time
+      size:
+        type: string
+        format: int64
+      isDir:
+        type: boolean
   v1GetCatalogEntryResponse:
     type: object
     properties:
@@ -1915,6 +2073,15 @@ definitions:
           type: object
           $ref: '#/definitions/v1Connector'
     title: Response message for RuntimeService.ListConnectors
+  v1ListExamplesResponse:
+    type: object
+    properties:
+      examples:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Example'
+    title: Response message for RuntimeService.ListExamples
   v1ListFilesResponse:
     type: object
     properties:
@@ -1923,6 +2090,25 @@ definitions:
         items:
           type: string
     title: Response message for RuntimeService.ListFiles
+  v1ListGCSBucketObjectsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      objects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1GCSObject'
+  v1ListGCSBucketsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      bucketName:
+        type: array
+        items:
+          type: string
   v1ListInstancesResponse:
     type: object
     properties:
@@ -1934,6 +2120,25 @@ definitions:
       nextPageToken:
         type: string
     title: Response message for RuntimeService.ListInstances
+  v1ListS3BucketObjectsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      objects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1S3Object'
+  v1ListS3BucketsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      bucketName:
+        type: array
+        items:
+          type: string
   v1MapType:
     type: object
     properties:
@@ -2429,6 +2634,19 @@ definitions:
   v1RenameFileResponse:
     type: object
     title: Response message for RuntimeService.RenameFile
+  v1S3Object:
+    type: object
+    properties:
+      name:
+        type: string
+      modifiedOn:
+        type: string
+        format: date-time
+      size:
+        type: string
+        format: int64
+      isDir:
+        type: boolean
   v1Source:
     type: object
     properties:

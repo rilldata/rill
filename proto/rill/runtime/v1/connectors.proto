@@ -1,0 +1,85 @@
+syntax = "proto3";
+package rill.runtime.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+
+service ConnectorService {
+  rpc ListS3Buckets(ListS3BucketsRequest) returns (ListS3BucketsResponse) {
+    option (google.api.http) = {get: "/v1/s3/buckets"};
+  }
+
+  rpc ListS3BucketObjects(ListS3BucketObjectsRequest) returns (ListS3BucketObjectsResponse) {
+    option (google.api.http) = {get: "/v1/s3/bucket/{bucket_name}/objects"};
+  }
+
+  rpc ListGCSBuckets(ListGCSBucketsRequest) returns (ListGCSBucketsResponse) {
+    option (google.api.http) = {get: "/v1/gcs/buckets"};
+  }
+
+  rpc ListGCSBucketObjects(ListGCSBucketObjectsRequest) returns (ListGCSBucketObjectsResponse) {
+    option (google.api.http) = {get: "/v1/gcs/bucket/{bucket_name}/objects"};
+  }
+
+}
+
+message ListS3BucketsRequest {
+    uint32 page_size = 1;
+    string page_token = 2;
+}
+
+message ListS3BucketsResponse {
+    string next_page_token = 1;
+    repeated string bucket_name = 2;
+}
+
+message ListS3BucketObjectsRequest {
+    uint32 page_size = 1;
+    string page_token = 2;
+    string bucket_name = 3;
+    string prefix = 4;
+    string start_offset = 5;
+}
+
+message ListS3BucketObjectsResponse {
+    string next_page_token = 1;
+    repeated S3Object objects = 2;
+}
+
+message ListGCSBucketsRequest {
+    uint32 page_size = 1;
+    string page_token = 2;
+}
+
+message ListGCSBucketsResponse {
+    string next_page_token = 1;
+    repeated string bucket_name = 2;
+}
+
+message ListGCSBucketObjectsRequest {
+    uint32 page_size = 1;
+    string page_token = 2;
+    string bucket_name = 3;
+    string prefix = 4;
+    string start_offset = 5;
+}
+
+message ListGCSBucketObjectsResponse {
+    string next_page_token = 1;
+    repeated GCSObject objects = 2;
+}
+
+message S3Object {
+    string name = 1;
+    google.protobuf.Timestamp modified_on = 2;
+    int64 size = 3;
+    bool is_dir = 4;
+}
+
+message GCSObject {
+    string name = 1;
+    google.protobuf.Timestamp modified_on = 2;
+    int64 size = 3;
+    bool is_dir = 4;
+}

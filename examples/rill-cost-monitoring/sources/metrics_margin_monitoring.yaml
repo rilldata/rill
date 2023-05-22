@@ -1,0 +1,4 @@
+# Visit https://docs.rilldata.com/ to learn more about Rill code artifacts.
+
+type: "https"
+uri: "https://storage.googleapis.com/rilldata-public/metrics_margin_monitoring.parquet"

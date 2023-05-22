@@ -1,0 +1,5 @@
+compiler: rill-beta
+rill_version: 0.25.2
+
+name: Rill OpenRTB Programmatic Ads
+description: Real-time Bidding (RTB) is a way of selling media that enables an individual advertising opportunity (ad impression) to be put up for bidding in real-time. OpenRTB is the communication protocol that enables real-time bidding. It was designed to spur growth in RTB marketplaces by providing an open industry standard for communication and interoperability between buyers and sellers in the digital advertising industry.

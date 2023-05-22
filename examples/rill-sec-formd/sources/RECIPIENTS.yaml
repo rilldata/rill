@@ -1,0 +1,4 @@
+# Visit https://docs.rilldata.com/ to learn more about Rill code artifacts.
+
+type: "gcs"
+uri: "gs://medriscoll-rill/sec-form-d/20[12][0-9]*/RECIPIENTS.tsv"

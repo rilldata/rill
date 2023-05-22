@@ -18,6 +18,7 @@ import type {
   RpcStatus,
   V1DeleteFileAndReconcileResponse,
   V1DeleteFileAndReconcileRequest,
+  V1ListExamplesResponse,
   V1ListInstancesResponse,
   RuntimeServiceListInstancesParams,
   V1CreateInstanceResponse,
@@ -155,6 +156,58 @@ export const createRuntimeServiceDeleteFileAndReconcile = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary ListExamples lists all the examples embedded into binary
+ */
+export const runtimeServiceListExamples = (signal?: AbortSignal) => {
+  return httpClient<V1ListExamplesResponse>({
+    url: `/v1/examples`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getRuntimeServiceListExamplesQueryKey = () =>
+  [`/v1/examples`] as const;
+
+export type RuntimeServiceListExamplesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListExamples>>
+>;
+export type RuntimeServiceListExamplesQueryError = RpcStatus;
+
+export const createRuntimeServiceListExamples = <
+  TData = Awaited<ReturnType<typeof runtimeServiceListExamples>>,
+  TError = RpcStatus
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceListExamples>>,
+    TError,
+    TData
+  >;
+}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getRuntimeServiceListExamplesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceListExamples>>
+  > = ({ signal }) => runtimeServiceListExamples(signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceListExamples>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary ListInstances lists all the instances currently managed by the runtime
  */
