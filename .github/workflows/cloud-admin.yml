@@ -45,4 +45,5 @@ jobs:
           enable-pull-request-comment: false
           enable-commit-comment: true
           overwrites-pull-request-comment: true
+          netlify-config-path: ./web-admin/netlify.toml
         timeout-minutes: 1
