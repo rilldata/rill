@@ -1,7 +1,7 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src https:; script-src https:; style-src https:; img-src https: data: blob:"
+    Content-Security-Policy = "default-src https:; script-src https: 'unsafe-inline'; style-src https:; img-src https: data: blob:"
 
 [[headers]]
   for = "/-/*"
