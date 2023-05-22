@@ -5,11 +5,11 @@ sidebar_label: Define metrics dashboard
 sidebar_position: 30
 ---
 
-In Rill, your dashboards are defined by _metrics_. Metrics are composed of:
-* _**a model**_ - A [data model](./sql-models.md) creates One Big Table that will power the dashboard.
-* _**a timeseries**_ - A column from your model that will underlie x-axis data in the line charts. Time will be truncated into different time periods.
-* _**measures**_ - Numerical aggregates of columns from your data model shown on the y-axis of the line charts and the "big number" summaries.
-* _**dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ and allow you to look at segments and filter the data.
+In Rill, your dashboards are defined by _metric definition spec_. Metric definition specs are composed of:
+* _**A model**_ - A [data model](./sql-models.md) creates One Big Table that will power the dashboard.
+* _**A timeseries**_ - A column from your model that will underlie x-axis data in the line charts. Time will be truncated into different time periods.
+* _**Measures**_ - Numerical aggregates of columns from your data model shown on the y-axis of the line charts and the "big number" summaries.
+* _**Dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ and allow you to look at segments and filter the data.
 
 
 ## Creating valid metrics
@@ -18,18 +18,19 @@ In Rill, your dashboards are defined by _metrics_. Metrics are composed of:
 
 Your timeseries must be a column from your data model of [type](https://duckdb.org/docs/sql/data_types/timestamp) `TIMESTAMP`, `TIME`, or `DATE`. If your source has a date in a different format, you can apply [time functions](https://duckdb.org/docs/sql/functions/timestamp) to transform these fields into valid timeseries types.
 
-
 ### Measures
 
 Measures are numeric aggregates of columns from your data model. A measure must be defined with [DuckSQL](./sql-models.md) aggregation functions and expressions on columns from your data model. The following operators and function are allowed in a measure expression:
 
-* any DuckSQL [numeric](https://duckdb.org/docs/sql/functions/numeric) operators and functions
-* this set of  DuckSQL [aggregates](https://duckdb.org/docs/sql/aggregates): `AVG`, `COUNT`, `FAVG`,`FIRST`, `FSUM`, `LAST`, `MAX`, `MIN`, `PRODUCT`, `SUM`, `APPROX_COUNT_DISTINCT`, `APPROX_QUANTILE`, `STDDEV_POP`, `STDDEV_SAMP`, `VAR_POP`, `VAR_SAMP`.
+* Any DuckSQL [numeric](https://duckdb.org/docs/sql/functions/numeric) operators and functions
+* This set of  DuckSQL [aggregates](https://duckdb.org/docs/sql/aggregates): `AVG`, `COUNT`, `FAVG`,`FIRST`, `FSUM`, `LAST`, `MAX`, `MIN`, `PRODUCT`, `SUM`, `APPROX_COUNT_DISTINCT`, `APPROX_QUANTILE`, `STDDEV_POP`, `STDDEV_SAMP`, `VAR_POP`, `VAR_SAMP`.
+* [Filtered aggregates](https://duckdb.org/docs/sql/query_syntax/filter.html) can be used to filter set of rows fed to the aggregate functions
 
 As an example, if you have a table of sales events with the sales price and customer id, you could calculate the following metrics with these aggregates and expressions:
 * number of sales: `COUNT(*)`
 * total revenue: `SUM(sales_price)` 
 * revenue per customer: `CAST(SUM(sales_price) AS FLOAT)/CAST(COUNT(DISTINCT customer_id) AS FLOAT)`
+* Number of orders with order value more than $100 : `count(*) FILTER (WHERE order_val > 100)`
 
 You can also add labels, descriptions, and your choice of number formatting to customize how they are shown in the dashboard.
 
@@ -47,9 +48,9 @@ To create a new dashboard from scratch, click "+" by Dashboards in the left hand
 
 In addition, you can quickly generate a dashboard with opinionated defaults using the "Create Dashboard" button in the upper right hand corner of the source or model views or "Quick Start" button in the metrics editor itself. These dashboards will be populated using:
 
-- the first timestamp column from your model set as the timeseries
-- the number of records as the default measure (`COUNT(*)`)
-- all available categorical columns as dimensions
+- First timestamp column from your model set as the timeseries
+- Number of records as the default measure (`COUNT(*)`)
+- All available categorical string columns as dimensions
 
 If you want to revisit these configurations, you can open the metrics editor by clicking on the "Edit Metrics" button in the upper right hand corner of the dashboard view.
 
@@ -65,7 +66,7 @@ In your Rill project directory, create a `dashboard_name.yaml` file in the `dash
 
 ```yaml
 model: model_name
-display_name: Dashboard name
+title: Dashboard name
 
 timeseries: timestamp_column_name
 
