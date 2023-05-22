@@ -1,15 +1,39 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
   import RadixH1 from "@rilldata/web-common/components/typography/RadixH1.svelte";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
   import AddSourceModal from "@rilldata/web-common/features/sources/add-source/AddSourceModal.svelte";
+  import { createRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+
+  const RILL_COMPILER = "rill-beta";
+  const RILL_PROJECT_TITLE = "Untitled Rill Project";
+
+  const putFileAndReconcile = createRuntimeServicePutFileAndReconcile();
 
   let showAddSourceModal = false;
-
   const openShowAddSourceModal = () => {
     showAddSourceModal = true;
   };
+
+  async function startWithEmptyProject() {
+    $putFileAndReconcile.mutate(
+      {
+        data: {
+          instanceId: $runtime.instanceId,
+          path: "rill.yaml",
+          blob: `title: ${RILL_PROJECT_TITLE}\ncompiler: ${RILL_COMPILER}`,
+        },
+      },
+      {
+        onSuccess: () => {
+          goto("/");
+        },
+      }
+    );
+  }
 </script>
 
 <section class="flex flex-col gap-y-6 items-center text-center">
@@ -40,9 +64,12 @@
       Add data
     </div>
   </button>
-  <a href="/" class="px-2 font-medium text-xs hover:text-blue-400"
-    >Or start with an empty project</a
+  <button
+    class="px-2 font-medium text-xs text-blue-500 hover:text-blue-400"
+    on:click={startWithEmptyProject}
   >
+    Or start with an empty project
+  </button>
   {#if showAddSourceModal}
     <AddSourceModal
       on:close={() => {
