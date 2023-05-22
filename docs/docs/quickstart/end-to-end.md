@@ -25,24 +25,15 @@ For this tutorial, let's checkout example project files from a Github repository
 
 ```
 git clone https://github.com/rilldata/rill-developer-example.git
-cd rill-developer-example
+rill start rill-developer-example
 ```
 
 Alternatively, you can create a new, empty Rill project and [add data that is meaningful to you](../develop/import-data) using the CLI or application:
 
 ```
-rill init my-project
-cd my-project
+rill start my-rill-project
 ```
 
-
-## Starting the application
-
-Once inside the project directory, start the application:
-
-```
-rill start
-```
 
 When you run `rill start`, it parses your project and ingests any missing data sources into a local duckDB database. The Rill web app runs locally at `http://localhost:9009`.
 
