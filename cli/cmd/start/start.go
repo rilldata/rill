@@ -3,6 +3,7 @@ package start
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -56,9 +57,25 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 						return err
 					}
 
+					displayPath := currentDir
+					defval := true
 					projectPath = currentDir
-					msg := fmt.Sprintf("please confirm the project path: %q", projectPath)
-					confirm := cmdutil.ConfirmPrompt(msg, "", false)
+
+					homeDir, err := os.UserHomeDir()
+					if err != nil {
+						return err
+					}
+
+					if strings.Contains(currentDir, homeDir) {
+						displayPath = strings.Replace(currentDir, homeDir, "~", 1)
+						if currentDir == homeDir {
+							defval = false
+							displayPath = "~/"
+						}
+					}
+
+					msg := fmt.Sprintf("Rill will create project files in %q. Do you want to continue?", displayPath)
+					confirm := cmdutil.ConfirmPrompt(msg, "", defval)
 					if !confirm {
 						cmdutil.WarnPrinter("Aborted")
 						return nil
