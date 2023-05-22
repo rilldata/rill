@@ -18,12 +18,16 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
-  import { getArtifactErrors } from "../features/entity-management/getArtifactErrors";
-  import PreparingImport from "../features/sources/add-source/PreparingImport.svelte";
-  import { runtimeServiceGetConfig } from "../runtime-client/manual-clients";
-  import { runtime } from "../runtime-client/runtime-store";
-  import BasicLayout from "./BasicLayout.svelte";
-  import { importOverlayVisible, overlay } from "./overlay-store";
+  import { getArtifactErrors } from "../../../web-common/src/features/entity-management/getArtifactErrors";
+  import PreparingImport from "../../../web-common/src/features/sources/add-source/PreparingImport.svelte";
+  import BasicLayout from "../../../web-common/src/layout/BasicLayout.svelte";
+  import {
+    importOverlayVisible,
+    overlay,
+  } from "../../../web-common/src/layout/overlay-store";
+  import { runtimeServiceGetConfig } from "../../../web-common/src/runtime-client/manual-clients";
+  import { runtime } from "../../../web-common/src/runtime-client/runtime-store";
+  import WelcomePageRedirect from "../features/welcome/WelcomePageRedirect.svelte";
 
   const queryClient = useQueryClient();
 
@@ -113,9 +117,11 @@
     on:drag|preventDefault|stopPropagation
     on:drop|preventDefault|stopPropagation
   >
-    <BasicLayout>
-      <slot />
-    </BasicLayout>
+    <WelcomePageRedirect>
+      <BasicLayout>
+        <slot />
+      </BasicLayout>
+    </WelcomePageRedirect>
   </div>
 </div>
 
