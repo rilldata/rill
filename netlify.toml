@@ -3,7 +3,7 @@
   for = "/*"
   [headers.values]
     Content-Security-Policy = "default-src https:; script-src https: 'unsafe-inline'; style-src https:; img-src https: data: blob:"
-    Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=(),interest-cohort=()"
+    Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
     Referrer-Policy = "no-referrer"
     X-Frame-Options = "SAMEORIGIN"
     X-Xss-Protection = "1; mode=block"
