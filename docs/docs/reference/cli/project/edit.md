@@ -6,16 +6,16 @@ title: rill project edit
 Edit the project details
 
 ```
-rill project edit [flags]
+rill project edit [<project-name>] [flags]
 ```
 
 ### Flags
 
 ```
-      --project string       Name (default "noname")
-      --description string   Description
+      --project string       Project Name
+      --description string   Project Description
       --prod-branch string   Production branch name (default "noname")
-      --public               Public
+      --public               Public Branch
       --path string          Project directory (default ".")
 ```
 
