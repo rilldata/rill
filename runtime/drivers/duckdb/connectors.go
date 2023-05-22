@@ -222,6 +222,10 @@ func generateReadJSONStatement(paths []string, properties map[string]any) (strin
 	if _, sampleSizeDefined := ingestionProps["sample_size"]; !sampleSizeDefined {
 		ingestionProps["sample_size"] = 200000
 	}
+	// set format to auto by default
+	if _, sampleSizeDefined := ingestionProps["format"]; !sampleSizeDefined {
+		ingestionProps["format"] = "auto"
+	}
 	return fmt.Sprintf("read_json(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
 }
 
