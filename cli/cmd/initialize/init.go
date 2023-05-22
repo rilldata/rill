@@ -7,9 +7,9 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
-	"github.com/rilldata/rill/cli/pkg/examples"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
+	"github.com/rilldata/rill/runtime/pkg/examples"
 	"github.com/spf13/cobra"
 )
 
@@ -73,12 +73,12 @@ func InitCmd(cfg *config.Config) *cobra.Command {
 			// List examples and exit
 			if listExamples {
 				fmt.Println("The built-in examples are: ")
-				names, err := examples.List()
+				exampleProjects, err := examples.List()
 				if err != nil {
 					return err
 				}
-				for _, name := range names {
-					fmt.Printf("- %s\n", name)
+				for _, example := range exampleProjects {
+					fmt.Printf("- %s\n", example.Name)
 				}
 				fmt.Println("\nVisit our documentation for more examples: https://docs.rilldata.com")
 				return nil

@@ -3,10 +3,13 @@ package examples
 import (
 	"embed"
 	"errors"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
 
+	"github.com/bmatcuk/doublestar/v4"
+	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
@@ -15,15 +18,39 @@ var examplesFS embed.FS
 
 var ErrExampleNotFound = errors.New("example not found")
 
-func List() ([]string, error) {
+type Example struct {
+	Name        string
+	Title       string
+	Description string
+}
+
+func List() ([]Example, error) {
 	entries, err := examplesFS.ReadDir("embed/dist")
 	if err != nil {
 		return nil, err
 	}
 
-	exampleList := make([]string, 0, len(entries))
+	exampleList := make([]Example, 0, len(entries))
 	for _, entry := range entries {
-		exampleList = append(exampleList, entry.Name())
+		if !entry.IsDir() {
+			continue
+		}
+
+		rillYamlContents, err := examplesFS.ReadFile(filepath.Join("embed/dist", entry.Name(), "rill.yaml"))
+		if err != nil {
+			return nil, err
+		}
+
+		rillYaml, err := rillv1beta.ParseProjectConfig(rillYamlContents)
+		if err != nil {
+			return nil, err
+		}
+
+		exampleList = append(exampleList, Example{
+			Name:        entry.Name(),
+			Title:       rillYaml.Title,
+			Description: rillYaml.Description,
+		})
 	}
 
 	return exampleList, nil
@@ -62,4 +89,27 @@ func Init(name, projectDir string) error {
 	}
 
 	return nil
+}
+
+func Unpack(name string) ([]fs.File, []string, error) {
+	paths, err := doublestar.Glob(examplesFS, path.Join("embed", "dist", name, "*.{yaml,yml,sql}"))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(paths) == 0 {
+		return nil, nil, ErrExampleNotFound
+	}
+
+	files := make([]fs.File, 0)
+	for _, path := range paths {
+		file, err := examplesFS.Open(path)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		files = append(files, file)
+	}
+
+	return files, paths, nil
 }

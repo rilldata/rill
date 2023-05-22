@@ -161,6 +161,11 @@ service RuntimeService {
   rpc ListConnectors(ListConnectorsRequest) returns (ListConnectorsResponse) {
     option (google.api.http) = {get: "/v1/connectors/meta"};
   }
+
+  // ListExamples lists all the examples embedded into binary
+  rpc ListExamples(ListExamplesRequest) returns (ListExamplesResponse) {
+    option (google.api.http) = {get: "/v1/examples"};
+  }
 }
 
 // Request message for RuntimeService.Ping
@@ -660,4 +665,31 @@ message ListConnectorsRequest {}
 // Response message for RuntimeService.ListConnectors
 message ListConnectorsResponse {
   repeated Connector connectors = 1;
+}
+
+// Request message for RuntimeService.ListExamples
+message ListExamplesRequest {
+}
+
+// Response message for RuntimeService.ListExamples
+message ListExamplesResponse {
+  repeated Example examples = 1;
+}
+
+message Example {
+  string name = 1;
+  string title = 2;
+  string description = 3;
+}
+
+// Request message for RuntimeService.UnpackExample
+message UnpackExampleRequest {
+  string name = 1;
+  bool force = 2;
+  string instance_id = 3;
+}
+
+// Response message for RuntimeService.UnpackExample
+message UnpackExampleResponse {
+
 }
