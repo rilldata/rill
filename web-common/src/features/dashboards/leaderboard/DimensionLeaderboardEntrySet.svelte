@@ -34,6 +34,7 @@ see more button
   // false = include, true = exclude
   export let filterExcludeMode: boolean;
   export let isSummableMeasure: boolean;
+  export let totalFilteredRowCount: number;
   export let referenceValue;
   export let atLeastOneActive;
   export let loading = false;
@@ -77,7 +78,7 @@ see more button
   }
 </script>
 
-{#each renderValues as { label, value, active, excluded, comparisonValue } (label)}
+{#each renderValues as { label, value, rowCount, active, excluded, comparisonValue } (label)}
   {@const formattedValue = humanizeDataType(value, formatPreset)}
   {@const showComparisonForThisValue = comparisonLabelToReveal === label}
 
@@ -134,10 +135,10 @@ see more button
       </span>
       <LeaderboardItemTooltip
         slot="tooltip"
-        rowCount={523523}
-        totalRowCount={1013523}
+        {rowCount}
+        {totalFilteredRowCount}
         {excluded}
-        filterd={atLeastOneActive}
+        filtered={atLeastOneActive}
         {filterExcludeMode}
       />
     </DimensionLeaderboardEntry>

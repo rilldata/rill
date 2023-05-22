@@ -1,6 +1,10 @@
 <script lang="ts">
   import VirtualizedGrid from "@rilldata/web-common/components/VirtualizedGrid.svelte";
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
+  import {
+    ROW_COUNT_INLINE_COL_EXPRESSION,
+    ROW_COUNT_INLINE_COL_NAME,
+    cancelDashboardQueries,
+  } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     useMetaQuery,
     useModelHasTimeSeries,
@@ -36,11 +40,8 @@
   $: dimensions = $metaQuery.data?.dimensions;
   $: measures = $metaQuery.data?.measures;
 
-  const inline_count_name =
-    "COUNT(*)_inline_55b1a12c-8b5d-47fc-be1c-97c121623424";
-
   $: selectedMeasureNames = [
-    inline_count_name,
+    ROW_COUNT_INLINE_COL_NAME,
     ...(metricsExplorer?.selectedMeasureNames ?? []),
   ];
 
@@ -61,6 +62,11 @@
     NicelyFormattedTypes.HUMANIZE;
 
   let totalsQuery: CreateQueryResult<V1MetricsViewTotalsResponse, Error>;
+  let totalsQueryFiltered: CreateQueryResult<
+    V1MetricsViewTotalsResponse,
+    Error
+  >;
+
   $: if (
     metricsExplorer &&
     metaQuery &&
@@ -69,8 +75,8 @@
   ) {
     let inlineMeasures: V1InlineMeasure[] = [
       {
-        name: inline_count_name,
-        expression: "COUNT(*)",
+        name: ROW_COUNT_INLINE_COL_NAME,
+        expression: ROW_COUNT_INLINE_COL_EXPRESSION,
       },
     ];
     let totalsQueryParams: QueryServiceMetricsViewTotalsBody = {
@@ -86,10 +92,22 @@
         },
       };
     }
+
     totalsQuery = createQueryServiceMetricsViewTotals(
       $runtime.instanceId,
       metricViewName,
       totalsQueryParams
+    );
+
+    let totalsQueryFilteredParams = {
+      ...totalsQueryParams,
+      filter: metricsExplorer?.filters,
+    };
+
+    totalsQueryFiltered = createQueryServiceMetricsViewTotals(
+      $runtime.instanceId,
+      metricViewName,
+      totalsQueryFilteredParams
     );
   }
 
@@ -97,7 +115,9 @@
   $: if (activeMeasure?.name && $totalsQuery?.data?.data) {
     referenceValue = $totalsQuery.data.data?.[activeMeasure.name];
   }
-  $: console.log("$totalsQuery?.data", $totalsQuery?.data);
+
+  $: totalFilteredRowCount =
+    $totalsQueryFiltered?.data?.data?.[ROW_COUNT_INLINE_COL_NAME] ?? 0;
 
   let leaderboardExpanded;
 
@@ -164,6 +184,7 @@
       <!-- the single virtual element -->
       <Leaderboard
         {formatPreset}
+        {totalFilteredRowCount}
         isSummableMeasure={activeMeasure?.expression
           .toLowerCase()
           ?.includes("count(") ||

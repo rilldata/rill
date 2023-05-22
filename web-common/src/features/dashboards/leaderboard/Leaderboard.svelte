@@ -7,7 +7,11 @@
    */
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
+  import {
+    ROW_COUNT_INLINE_COL_EXPRESSION,
+    ROW_COUNT_INLINE_COL_NAME,
+    cancelDashboardQueries,
+  } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     getFilterForDimension,
     useMetaDimension,
@@ -20,6 +24,7 @@
     createQueryServiceMetricsViewToplist,
     MetricsViewDimension,
     MetricsViewMeasure,
+    V1InlineMeasure,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { isRangeInsideOther } from "../../../lib/time/ranges";
@@ -42,6 +47,7 @@
 
   export let formatPreset: NicelyFormattedTypes;
   export let isSummableMeasure = false;
+  export let totalFilteredRowCount;
 
   let slice = 7;
 
@@ -123,9 +129,17 @@
     $metaQuery?.isSuccess &&
     !$metaQuery?.isRefetching
   ) {
+    let inlineMeasures: V1InlineMeasure[] = [
+      {
+        name: ROW_COUNT_INLINE_COL_NAME,
+        expression: ROW_COUNT_INLINE_COL_EXPRESSION,
+      },
+    ];
+
     let topListParams = {
+      inlineMeasures,
       dimensionName: dimensionName,
-      measureNames: [measure.name],
+      measureNames: [measure.name, ROW_COUNT_INLINE_COL_NAME],
       limit: "250",
       offset: "0",
       sort: [
@@ -159,10 +173,12 @@
 
   /** replace data after fetched. */
   $: if (!$topListQuery?.isFetching) {
+    // console.log("topListQuery", $topListQuery);
     values =
       $topListQuery?.data?.data.map((val) => ({
         value: val[measure?.name],
         label: val[dimension?.name],
+        rowCount: val["COUNT(*)_inline_55b1a12c-8b5d-47fc-be1c-97c121623424"],
       })) ?? [];
   }
 
@@ -299,6 +315,7 @@
           {atLeastOneActive}
           {referenceValue}
           {isSummableMeasure}
+          {totalFilteredRowCount}
           on:select-item
         />
         <!-- place the selected values that are not above the fold here -->
@@ -315,6 +332,7 @@
             {atLeastOneActive}
             {referenceValue}
             {isSummableMeasure}
+            {totalFilteredRowCount}
             on:select-item
           />
           <hr />

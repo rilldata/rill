@@ -11,20 +11,28 @@ Tooltip for a leaderboard item, including the number of rows and the ability to 
   } from "@rilldata/web-common/lib/number-formatting/humanizer";
 
   export let rowCount: number;
-  export let totalRowCount: number;
+  export let totalFilteredRowCount: number;
 
   export let excluded: boolean;
   export let filtered: boolean;
   export let filterExcludeMode: boolean;
 
   $: filteredStr = filtered ? "filtered " : "";
-  $: percent = humanizePercent(rowCount / totalRowCount);
-  $: rowCountFormatted = humanizeCount(rowCount);
-  $: totalCountFormatted = humanizeCount(totalRowCount);
+
+  // guard against invalid inputs and divide by zero
+  $: rows = Number.isFinite(rowCount) ? rowCount : 0;
+  $: totalRows = Number.isFinite(totalFilteredRowCount)
+    ? totalFilteredRowCount
+    : 0;
+  $: percent = totalRows > 0 ? rows / totalRows : 0;
+
+  $: percentFormatted = humanizePercent(percent);
+  $: rowCountFormatted = humanizeCount(rows);
+  $: totalCountFormatted = humanizeCount(totalRows);
 
   // note that rowCountInfoString can never exceed TOOLTIP_STRING_LIMIT==60
   // because the number formatter will always return a string of length <=6 chars
-  $: rowCountInfoString = `${rowCountFormatted} of ${totalCountFormatted} ${filteredStr}rows (${percent})`;
+  $: rowCountInfoString = `${rowCountFormatted} of ${totalCountFormatted} ${filteredStr}rows (${percentFormatted})`;
 </script>
 
 <TooltipShortcutContainer>
