@@ -6,6 +6,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
+	"go.uber.org/zap"
 )
 
 func init() {
@@ -58,7 +59,7 @@ func (c connector) Spec() connectors.Spec {
 
 // local file connectors should directly use glob patterns
 // keeping it for reference
-func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
+func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source, logger *zap.Logger) (connectors.FileIterator, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

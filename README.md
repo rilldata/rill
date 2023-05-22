@@ -20,7 +20,7 @@ After installation, launch the application by running `rill start` or try an exa
 rill init --example
 ```
 
-![home-demo](https://user-images.githubusercontent.com/5587788/207410129-bd4fb84b-dc3d-494c-9cf1-2322fcf0d503.gif "770784519")
+![home-demo](https://github.com/rilldata/rill-developer/assets/5587788/b9b0d375-98f3-4ab5-bef2-e7d799748424 "829237828")
 
 ## We want to hear from you
 

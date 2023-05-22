@@ -38,17 +38,12 @@ func (r *Runtime) GetCatalogEntry(ctx context.Context, instanceID, name string) 
 }
 
 func (r *Runtime) Reconcile(ctx context.Context, instanceID string, changedPaths, forcedPaths []string, dry, strict bool) (*catalog.ReconcileResult, error) {
-	repo, err := r.Repo(ctx, instanceID)
-	if err != nil {
-		return nil, err
-	}
-
-	err = repo.Sync(ctx, instanceID)
-	if err != nil {
-		return nil, err
-	}
-
 	cat, err := r.NewCatalogService(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cat.Repo.Sync(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
@@ -68,17 +63,12 @@ func (r *Runtime) Reconcile(ctx context.Context, instanceID string, changedPaths
 }
 
 func (r *Runtime) RefreshSource(ctx context.Context, instanceID, name string) error {
-	repo, err := r.Repo(ctx, instanceID)
-	if err != nil {
-		return err
-	}
-
-	err = repo.Sync(ctx, instanceID)
-	if err != nil {
-		return err
-	}
-
 	cat, err := r.NewCatalogService(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	err = cat.Repo.Sync(ctx, instanceID)
 	if err != nil {
 		return err
 	}

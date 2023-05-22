@@ -3,8 +3,6 @@ package project
 import (
 	"fmt"
 
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/fatih/color"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -16,8 +14,8 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	var public bool
 
 	editCmd := &cobra.Command{
-		Use:   "edit",
-		Args:  cobra.NoArgs,
+		Use:   "edit [<project-name>]",
+		Args:  cobra.MaximumNArgs(1),
 		Short: "Edit the project details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -28,7 +26,11 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if !cmd.Flags().Changed("project") {
+			if len(args) > 0 {
+				name = args[0]
+			}
+
+			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
 				names, err := cmdutil.ProjectNamesByOrg(ctx, client, cfg.Org)
 				if err != nil {
 					return err
@@ -45,26 +47,13 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 
 			proj := resp.Project
 
-			if !cmd.Flags().Changed("description") {
-				description, err = cmdutil.InputPrompt("Enter the project description", proj.Description)
-				if err != nil {
-					return err
-				}
-			}
+			// Set the default values for edit flags with current values for project
+			cmd.Flag("description").DefValue = proj.Description
+			cmd.Flag("prod-branch").DefValue = proj.ProdBranch
+			cmd.Flag("public").DefValue = fmt.Sprintf("%v", proj.Public)
 
-			if !cmd.Flags().Changed("prod-branch") {
-				prodBranch, err = cmdutil.InputPrompt("Enter the production branch", proj.ProdBranch)
-				if err != nil {
-					return err
-				}
-			}
-
-			if !cmd.Flags().Changed("public") {
-				prompt := &survey.Confirm{
-					Message: fmt.Sprintf("Do you want project \"%s\" to public?", color.YellowString(name)),
-				}
-
-				err = survey.AskOne(prompt, &public)
+			if cfg.Interactive {
+				err = cmdutil.SetFlagsByInputPrompts(*cmd, "description", "prod-branch", "public")
 				if err != nil {
 					return err
 				}
@@ -92,11 +81,10 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	editCmd.Flags().SortFlags = false
-
-	editCmd.Flags().StringVar(&name, "project", "noname", "Name")
-	editCmd.Flags().StringVar(&description, "description", "", "Description")
-	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "noname", "Production branch name")
-	editCmd.Flags().BoolVar(&public, "public", false, "Public")
+	editCmd.Flags().StringVar(&name, "project", "", "Project Name")
+	editCmd.Flags().StringVar(&description, "description", "", "Project Description")
+	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Production branch name")
+	editCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	editCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 
 	return editCmd

@@ -592,6 +592,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ProdOlapDsn:      p.ProdOLAPDSN,
 		ProdSlots:        int64(p.ProdSlots),
 		ProdBranch:       p.ProdBranch,
+		Subpath:          p.Subpath,
 		GithubUrl:        safeStr(p.GithubURL),
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
 		FrontendUrl:      frontendURL,

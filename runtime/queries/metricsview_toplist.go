@@ -41,8 +41,11 @@ func (q *MetricsViewToplist) Deps() []string {
 	return []string{q.MetricsViewName}
 }
 
-func (q *MetricsViewToplist) MarshalResult() any {
-	return q.Result
+func (q *MetricsViewToplist) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *MetricsViewToplist) UnmarshalResult(v any) error {
@@ -148,13 +151,14 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 		q.Limit = 100
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s GROUP BY %s %s LIMIT %d",
+	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s GROUP BY %s %s LIMIT %d OFFSET %d",
 		strings.Join(selectCols, ", "),
 		mv.Model,
 		whereClause,
 		dimName,
 		orderClause,
 		q.Limit,
+		q.Offset,
 	)
 
 	return sql, args, nil

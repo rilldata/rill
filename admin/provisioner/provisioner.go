@@ -25,15 +25,11 @@ type ProvisionOptions struct {
 	Region     string
 }
 
-type Provisioner interface {
-	Provision(ctx context.Context, opts *ProvisionOptions) (*Allocation, error)
+type StaticSpec struct {
+	Runtimes []*StaticRuntimeSpec `json:"runtimes"`
 }
 
-type staticSpec struct {
-	Runtimes []*staticRuntime `json:"runtimes"`
-}
-
-type staticRuntime struct {
+type StaticRuntimeSpec struct {
 	Host     string `json:"host"`
 	Region   string `json:"region"`
 	Slots    int    `json:"slots"`
@@ -41,25 +37,25 @@ type staticRuntime struct {
 	Audience string `json:"audience_url"`
 }
 
-type staticProvisioner struct {
-	spec *staticSpec
+type StaticProvisioner struct {
+	Spec *StaticSpec
 	db   database.DB
 }
 
-func NewStatic(spec string, db database.DB) (Provisioner, error) {
-	sps := &staticSpec{}
+func NewStatic(spec string, db database.DB) (*StaticProvisioner, error) {
+	sps := &StaticSpec{}
 	err := json.Unmarshal([]byte(spec), sps)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse provisioner spec: %w", err)
 	}
 
-	return &staticProvisioner{
-		spec: sps,
+	return &StaticProvisioner{
+		Spec: sps,
 		db:   db,
 	}, nil
 }
 
-func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOptions) (*Allocation, error) {
+func (p *StaticProvisioner) Provision(ctx context.Context, opts *ProvisionOptions) (*Allocation, error) {
 	// Get slots currently used
 	stats, err := p.db.ResolveRuntimeSlotsUsed(ctx)
 	if err != nil {
@@ -72,8 +68,8 @@ func (p *staticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 	}
 
 	// Find runtime with available capacity
-	targets := make([]*staticRuntime, 0)
-	for _, candidate := range p.spec.Runtimes {
+	targets := make([]*StaticRuntimeSpec, 0)
+	for _, candidate := range p.Spec.Runtimes {
 		if opts.Region != "" && opts.Region != candidate.Region {
 			continue
 		}
