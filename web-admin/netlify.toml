@@ -2,10 +2,3 @@
   for = "/*"
   [headers.values]
     Content-Security-Policy = "default-src 'self https:'; script-src https: 'unsafe-inline'; style-src https: 'unsafe-inline'; img-src https: data: blob:"
-  for = "/-/*"
-  [headers.values]
-    cache-control = '''
-    max-age=0,
-    no-cache,
-    no-store,
-    must-revalidate'''
