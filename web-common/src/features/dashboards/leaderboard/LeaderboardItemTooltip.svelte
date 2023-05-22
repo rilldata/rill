@@ -10,6 +10,11 @@ Tooltip for a leaderboard item, including the number of rows and the ability to 
     humanizePercent,
   } from "@rilldata/web-common/lib/number-formatting/humanizer";
 
+  import {
+    useActiveDashboardStore,
+    metricsExplorerEntitySelectors as selectors,
+  } from "../dashboard-stores";
+
   export let rowCount: number;
   export let totalFilteredRowCount: number;
 
@@ -17,7 +22,11 @@ Tooltip for a leaderboard item, including the number of rows and the ability to 
   export let filtered: boolean;
   export let filterExcludeMode: boolean;
 
-  $: filteredStr = filtered ? "filtered " : "";
+  $: activeDashboard = useActiveDashboardStore();
+
+  $: anyLeaderboardFiltered = selectors.hasAnyActiveFilters($activeDashboard);
+
+  $: filteredStr = anyLeaderboardFiltered ? "filtered " : "";
 
   // guard against invalid inputs and divide by zero
   $: rows = Number.isFinite(rowCount) ? rowCount : 0;

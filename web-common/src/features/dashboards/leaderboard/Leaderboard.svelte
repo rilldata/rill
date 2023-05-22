@@ -178,7 +178,7 @@
       $topListQuery?.data?.data.map((val) => ({
         value: val[measure?.name],
         label: val[dimension?.name],
-        rowCount: val["COUNT(*)_inline_55b1a12c-8b5d-47fc-be1c-97c121623424"],
+        rowCount: val[ROW_COUNT_INLINE_COL_NAME],
       })) ?? [];
   }
 

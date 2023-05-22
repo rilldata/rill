@@ -74,9 +74,12 @@ export interface MetricsExplorerEntity {
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
+  // The name of the active dashboard
+  activeDashboardName: string | undefined;
 }
 const { update, subscribe } = writable({
   entities: {},
+  activeDashboardName: undefined,
 } as MetricsExplorerStoreType);
 
 function updateMetricsExplorerProto(metricsExplorer: MetricsExplorerEntity) {
@@ -198,6 +201,14 @@ const metricViewReducers = {
         dimensionFilterExcludeMode: new Map(),
       })
     );
+  },
+
+  setActiveDashboardName(name: string) {
+    console.log("setActiveDashboardName", name);
+    update((state) => {
+      state.activeDashboardName = name;
+      return state;
+    });
   },
 
   setLeaderboardMeasureName(name: string, measureName: string) {
@@ -410,5 +421,23 @@ export function useDashboardStore(
     return $store.entities[name];
   });
 }
+
+export function useActiveDashboardStore(): Readable<MetricsExplorerEntity> {
+  return derived(metricsExplorerStore, ($store) => {
+    console.log("useActiveDashboardStore", $store.activeDashboardName);
+    if (!$store.activeDashboardName) {
+      return undefined;
+    }
+    return $store.entities[$store.activeDashboardName];
+  });
+}
+
+export const metricsExplorerEntitySelectors: Record<
+  string,
+  (e: MetricsExplorerEntity) => unknown
+> = {
+  hasAnyActiveFilters: (e) =>
+    e.filters?.include?.length > 0 || e.filters?.exclude?.length > 0,
+};
 
 export const projectShareStore: Writable<boolean> = writable(false);
