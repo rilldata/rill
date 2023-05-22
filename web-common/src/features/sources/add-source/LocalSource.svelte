@@ -20,6 +20,8 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { useModelNames } from "../../models/selectors";
+  import { useInitializeProjectFile } from "../../welcome/initialize-project-file";
+  import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileCreateSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { hasDuckDBUnicodeError, niceDuckdbUnicodeError } from "./errors";
@@ -32,9 +34,11 @@
 
   $: sourceNames = useSourceNames(runtimeInstanceId);
   $: modelNames = useModelNames(runtimeInstanceId);
+  $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
 
   const createSourceMutation = createRuntimeServicePutFileAndReconcile();
   const deleteSource = createRuntimeServiceDeleteFileAndReconcile();
+  const initializeProjectFile = useInitializeProjectFile();
 
   async function handleOpenFileDialog() {
     return handleUpload(await openFileUploadDialog());
@@ -64,6 +68,15 @@
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
+        // If project is uninitialized, create `rill.yaml`
+        if (!$isProjectInitialized.data) {
+          $initializeProjectFile.mutate({
+            data: {
+              instanceId: runtimeInstanceId,
+            },
+          });
+        }
+
         const yaml = compileCreateSourceYAML(
           {
             sourceName: tableName,
@@ -85,6 +98,7 @@
       overlay.set(null);
       if (!errors?.length) {
         dispatch("close");
+        // TODO: navigate to the new source? how is that happening now?
       } else {
         // if the upload didn't work, delete the source file.
         handleDeleteSource(tableName);

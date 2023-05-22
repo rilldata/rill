@@ -1,5 +1,5 @@
 <script lang="ts">
-  import OnboardingWorkspace from "../../features/onboarding/OnboardingWorkspace.svelte";
+  import OnboardingWorkspace from "@rilldata/web-common/features/onboarding/OnboardingWorkspace.svelte";
 </script>
 
 <svelte:head>

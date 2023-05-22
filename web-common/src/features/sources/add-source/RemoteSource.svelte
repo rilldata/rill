@@ -23,6 +23,8 @@
   import type * as yup from "yup";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
+  import { useInitializeProjectFile } from "../../welcome/initialize-project-file";
+  import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileCreateSourceYAML, inferSourceName } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { humanReadableErrorMessage } from "./errors";
@@ -36,6 +38,7 @@
 
   $: runtimeInstanceId = $runtime.instanceId;
   $: sourceNames = useSourceNames(runtimeInstanceId);
+  $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
 
   const createSourceMutation = createRuntimeServicePutFileAndReconcile();
   let createSourceMutationError: {
@@ -45,6 +48,7 @@
   $: createSourceMutationError = ($createSourceMutation?.error as any)?.response
     ?.data;
   const deleteSource = createRuntimeServiceDeleteFileAndReconcile();
+  const initializeProjectFile = useInitializeProjectFile();
 
   const dispatch = createEventDispatcher();
 
@@ -74,6 +78,15 @@
       validationSchema: yupSchema,
       onSubmit: async (values) => {
         overlay.set({ title: `Importing ${values.sourceName}` });
+        // If project is uninitialized, create `rill.yaml`
+        if (!$isProjectInitialized.data) {
+          $initializeProjectFile.mutate({
+            data: {
+              instanceId: runtimeInstanceId,
+            },
+          });
+        }
+
         const formValues = Object.fromEntries(
           Object.entries(values).map(([key, value]) => [
             fromYupFriendlyKey(key),

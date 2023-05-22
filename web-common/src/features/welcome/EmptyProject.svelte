@@ -1,7 +1,7 @@
 <script lang="ts">
   import AddCircleOutline from "@rilldata/web-common/components/icons/AddCircleOutline.svelte";
-  import Card from "../card/Card.svelte";
-  import CardHeader from "../card/CardHeader.svelte";
+  import Card from "../../components/card/Card.svelte";
+  import CardHeader from "../../components/card/CardHeader.svelte";
 </script>
 
 <Card>

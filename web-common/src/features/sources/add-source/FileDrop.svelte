@@ -5,6 +5,8 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useModelNames } from "../../models/selectors";
+  import { useInitializeProjectFile } from "../../welcome/initialize-project-file";
+  import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileCreateSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { uploadTableFiles } from "./file-upload";
@@ -14,10 +16,12 @@
   const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtime.instanceId;
-  const createSourceMutation = createRuntimeServicePutFileAndReconcile();
-
   $: sourceNames = useSourceNames(runtimeInstanceId);
   $: modelNames = useModelNames(runtimeInstanceId);
+  $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
+
+  const createSourceMutation = createRuntimeServicePutFileAndReconcile();
+  const initializeProjectFile = useInitializeProjectFile();
 
   const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;
@@ -29,6 +33,15 @@
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
+        // If project is uninitialized, create `rill.yaml`
+        if (!$isProjectInitialized.data) {
+          $initializeProjectFile.mutate({
+            data: {
+              instanceId: runtimeInstanceId,
+            },
+          });
+        }
+
         const yaml = compileCreateSourceYAML(
           {
             sourceName: tableName,
