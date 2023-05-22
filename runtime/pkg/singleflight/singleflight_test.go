@@ -102,7 +102,6 @@ func TestPanicDo(t *testing.T) {
 		go func() {
 			defer func() {
 				if err := recover(); err != nil {
-					// t.Logf("Got panic: %v\n%s", err, debug.Stack())
 					atomic.AddInt32(&panicCount, 1)
 				}
 
