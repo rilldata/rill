@@ -25,7 +25,6 @@ rill deploy [flags]
       --project string          Project name (default: Git repo name)
       --remote string           Remote name (defaults: first github remote)
       --api-token string        Token for authenticating with the admin API
-      --api-url string          Base URL for the admin API (default "https://admin.rilldata.com")
 ```
 
 ### Global flags

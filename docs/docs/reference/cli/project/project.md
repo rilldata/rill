@@ -9,7 +9,6 @@ Manage projects
 
 ```
       --api-token string   Token for authenticating with the admin API
-      --api-url string     Base URL for the admin API (default "https://admin.rilldata.com")
       --org string         Organization Name
 ```
 
@@ -25,7 +24,6 @@ Manage projects
 * [rill](../cli.md)	 - Rill CLI
 * [rill project delete](delete.md)	 - Delete the project
 * [rill project edit](edit.md)	 - Edit the project details
-* [rill project jwt](jwt.md)	 - Generate the token for connecting directly to the deployment
 * [rill project list](list.md)	 - List all the projects
 * [rill project reconcile](reconcile.md)	 - Send trigger to deployment
 * [rill project rename](rename.md)	 - Rename project
