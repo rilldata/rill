@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
-	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -103,7 +102,7 @@ func TestPanicDo(t *testing.T) {
 		go func() {
 			defer func() {
 				if err := recover(); err != nil {
-					t.Logf("Got panic: %v\n%s", err, debug.Stack())
+					// t.Logf("Got panic: %v\n%s", err, debug.Stack())
 					atomic.AddInt32(&panicCount, 1)
 				}
 
