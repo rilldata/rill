@@ -46,12 +46,12 @@
     </span>
   </RadixH1>
   <div class="flex flex-col gap-y-2">
-    <Subheading>
+    <Subheading twColor="text-slate-600">
       A Rill project lets you build an <span class="text-base font-semibold"
         >un-dashboard</span
       > that people will actually use.
     </Subheading>
-    <Subheading>Let’s get started.</Subheading>
+    <Subheading twColor="text-slate-600">Let’s get started.</Subheading>
   </div>
   <button
     class="pl-2 pr-4 py-2 rounded-sm bg-gradient-to-b from-[#4680FF] to-[#2563EB] hover:from-blue-500 hover:to-blue-500"
