@@ -3,9 +3,7 @@ on:
   push:
     tags:
       - "*"
-    branches:
-      - main
-      - headers
+    branches: ["main"]
     paths:
       - ".github/workflows/cloud-admin.yml"
       - "web-admin/**"
