@@ -100,14 +100,6 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			// If not initialized, init repo with an empty project
-			if !app.IsProjectInit() {
-				err = app.InitProject("")
-				if err != nil {
-					return fmt.Errorf("init project: %w", err)
-				}
-			}
-
 			err = app.Reconcile(strict)
 			if err != nil {
 				return fmt.Errorf("reconcile project: %w", err)
