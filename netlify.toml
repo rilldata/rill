@@ -1,3 +1,4 @@
+# This should be used for docs also
 [[headers]]
   for = "/*"
   [headers.values]
