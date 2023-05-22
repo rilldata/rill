@@ -77,11 +77,9 @@ export interface MetricsExplorerEntity {
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
-  activeDashboardName: string | undefined;
 }
 const { update, subscribe } = writable({
   entities: {},
-  activeDashboardName: undefined,
 } as MetricsExplorerStoreType);
 
 function updateMetricsExplorerProto(metricsExplorer: MetricsExplorerEntity) {
@@ -232,13 +230,6 @@ const metricViewReducers = {
         dimensionFilterExcludeMode: new Map(),
       })
     );
-  },
-
-  setActiveDashboardName(name: string) {
-    update((state) => {
-      state.activeDashboardName = name;
-      return state;
-    });
   },
 
   setLeaderboardMeasureName(name: string, measureName: string) {

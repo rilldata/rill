@@ -21,8 +21,6 @@
 
   export let leftMargin = undefined;
 
-  $: metricsExplorerStore.setActiveDashboardName(metricViewName);
-
   const switchToMetrics = async (metricViewName: string) => {
     if (!metricViewName) return;
 
