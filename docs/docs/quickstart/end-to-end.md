@@ -4,7 +4,7 @@ sidebar_label: Data to hosted dashboard
 sidebar_position: 1
 ---
 
-This tutorial is a step by step guide that will help you install Rill, ingest source data, and deploy an authenticated dashboard application online.
+This tutorial is a step by step guide that will help you install Rill, ingest source data, and deploy a secure dashboard application online.
 
 
 ## Installation
