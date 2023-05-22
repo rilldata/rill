@@ -236,7 +236,6 @@ const metricViewReducers = {
   },
 
   setActiveDashboardName(name: string) {
-    console.log("setActiveDashboardName", name);
     update((state) => {
       state.activeDashboardName = name;
       return state;
@@ -463,7 +462,6 @@ export function useDashboardStore(
 
 export function useActiveDashboardStore(): Readable<MetricsExplorerEntity> {
   return derived(metricsExplorerStore, ($store) => {
-    console.log("useActiveDashboardStore", $store.activeDashboardName);
     if (!$store.activeDashboardName) {
       return undefined;
     }
