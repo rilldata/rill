@@ -7,7 +7,7 @@
   $: includesProjectFile = createRuntimeServiceListFiles(
     $runtime.instanceId,
     {
-      glob: "rill.{yaml,yml}",
+      glob: "rill.yaml",
     },
     {
       query: {
