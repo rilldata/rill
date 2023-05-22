@@ -41,8 +41,11 @@ func (q *MetricsViewComparisonToplist) Deps() []string {
 	return []string{q.MetricsViewName}
 }
 
-func (q *MetricsViewComparisonToplist) MarshalResult() any {
-	return q.Result
+func (q *MetricsViewComparisonToplist) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *MetricsViewComparisonToplist) UnmarshalResult(v any) error {

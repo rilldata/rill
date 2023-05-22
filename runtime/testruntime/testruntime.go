@@ -7,6 +7,7 @@ import (
 	goruntime "runtime"
 	"strings"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
@@ -23,6 +24,7 @@ type TestingT interface {
 	TempDir() string
 	FailNow()
 	Errorf(format string, args ...interface{})
+	Cleanup(f func())
 }
 
 // New returns a runtime configured for use in tests.
@@ -32,13 +34,15 @@ func New(t TestingT) *runtime.Runtime {
 		MetastoreDriver:     "sqlite",
 		// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 		// "cache=shared" is needed to prevent threading problems.
-		MetastoreDSN:    fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
-		QueryCacheSize:  10000,
-		AllowHostAccess: true,
+		MetastoreDSN:        fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
+		QueryCacheSizeBytes: int64(datasize.MB * 100),
+		AllowHostAccess:     true,
 	}
 	rt, err := runtime.New(opts, nil)
 	require.NoError(t, err)
-
+	t.Cleanup(func() {
+		rt.Close()
+	})
 	return rt
 }
 

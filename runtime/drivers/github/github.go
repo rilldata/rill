@@ -10,20 +10,23 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
+	"github.com/eapache/go-resiliency/retrier"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
+	"golang.org/x/sync/singleflight"
 )
 
 const (
-	retryN    = 3
-	retryWait = 500 * time.Millisecond
+	pullTimeout = 10 * time.Minute
+	retryN      = 3
+	retryWait   = 500 * time.Millisecond
 )
 
 type DSN struct {
@@ -63,26 +66,23 @@ func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, err
 
 	// NOTE :: project isn't cloned yet
 	return &connection{
-		dsnStr:     dsnStr,
-		dsn:        dsn,
-		tempdir:    tempdir,
-		projectdir: projectDir,
+		dsnStr:       dsnStr,
+		dsn:          dsn,
+		tempdir:      tempdir,
+		projectdir:   projectDir,
+		singleflight: &singleflight.Group{},
 	}, nil
 }
 
 type connection struct {
-	dsnStr string
-	dsn    DSN
-	// tempdir path should be absolute
-	tempdir             string
+	dsnStr              string
+	dsn                 DSN
+	tempdir             string // tempdir path should be absolute
 	projectdir          string
 	cloneURLWithToken   string
 	cloneURLRefreshedOn time.Time
-
-	mu sync.Mutex
-	// cloned is set to true once github repo has been cloned successfully.
-	cloned  bool
-	pullErr error
+	singleflight        *singleflight.Group
+	cloned              atomic.Bool
 }
 
 // Close implements drivers.Connection.
@@ -125,29 +125,42 @@ func (c *connection) MigrationStatus(ctx context.Context) (current, desired int,
 	return 0, 0, nil
 }
 
-// pull pulls changes from the repo. Also clones the repo if it hasn't been cloned already.
-func (c *connection) pull(ctx context.Context) error {
-	var deduplicated bool
-	if !c.mu.TryLock() {
-		deduplicated = true
-		c.mu.Lock()
-	}
-	defer c.mu.Unlock()
-
-	if deduplicated {
-		return c.pullErr
+// cloneOrPull clones or pulls the repo with an exponential backoff retry on retryable errors.
+// It's safe for concurrent calls, which are deduplicated.
+func (c *connection) cloneOrPull(ctx context.Context, onlyClone bool) error {
+	if onlyClone && c.cloned.Load() {
+		return nil
 	}
 
-	if !c.cloned {
-		c.pullErr = c.clone(ctx)
-		if c.pullErr == nil { // cloned successfully
-			c.cloned = true
+	ch := c.singleflight.DoChan("pullOrClone", func() (interface{}, error) {
+		ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)
+		defer cancel()
+
+		r := retrier.New(retrier.ExponentialBackoff(retryN, retryWait), retryErrClassifier{})
+		err := r.Run(func() error { return c.cloneOrPullUnsafe(ctx) })
+		if err != nil {
+			return nil, err
 		}
-		return c.pullErr
+		return nil, nil
+	})
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case res := <-ch:
+		return res.Err
+	}
+}
+
+// cloneOrPullUnsafe pulls changes from the repo. Also clones the repo if it hasn't been cloned already.
+func (c *connection) cloneOrPullUnsafe(ctx context.Context) error {
+	if !c.cloned.Load() {
+		err := c.cloneUnsafe(ctx)
+		c.cloned.Store(err == nil)
+		return err
 	}
 
-	c.pullErr = c.pullUnsafe(ctx)
-	return c.pullErr
+	return c.pullUnsafe(ctx)
 }
 
 // pullUnsafe pulls changes from the repo. Requires repo to be cloned already.
@@ -178,8 +191,8 @@ func (c *connection) pullUnsafe(ctx context.Context) error {
 	return nil
 }
 
-// clone runs the initial clone of the repo.
-func (c *connection) clone(ctx context.Context) error {
+// cloneUnsafe runs the initial clone of the repo.
+func (c *connection) cloneUnsafe(ctx context.Context) error {
 	cloneURL, err := c.cloneURL(ctx)
 	if err != nil {
 		return err
@@ -238,4 +251,24 @@ func (c *connection) cloneURL(ctx context.Context) (string, error) {
 
 	// Done
 	return cloneURL, nil
+}
+
+// retryErrClassifier classifies Github request errors as retryable or not.
+type retryErrClassifier struct{}
+
+func (retryErrClassifier) Classify(err error) retrier.Action {
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		return retrier.Fail
+	}
+
+	ghinstallationErr := &ghinstallation.HTTPError{}
+	if errors.As(err, &ghinstallationErr) && ghinstallationErr.Response != nil {
+		statusCode := ghinstallationErr.Response.StatusCode
+		if statusCode/100 == 4 && statusCode != 429 {
+			// Any 4xx error apart from 429 is non retryable
+			return retrier.Fail
+		}
+	}
+
+	return retrier.Retry
 }
