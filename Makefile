@@ -4,7 +4,7 @@ docs.generate:
 	# Sets version to the latest tag to simulate a production build, where certain commands are hidden.
 	rm -rf docs/docs/reference/cli
 	if [ -f ~/.rill/config.yaml ]; then mv ~/.rill/config.yaml ~/.rill/config.yaml.tmp; fi;
-	go run -ldflags="-X main.Version=$(bash git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate docs/docs/reference/cli/
+	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate docs/docs/reference/cli/
 	if [ -f ~/.rill/config.yaml.tmp ]; then mv ~/.rill/config.yaml.tmp ~/.rill/config.yaml; fi;
 
 .PHONY: cli
