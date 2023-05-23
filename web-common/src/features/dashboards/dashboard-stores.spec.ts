@@ -1,5 +1,4 @@
-import { get } from "svelte/store";
-import { describe, it, expect, beforeEach } from "vitest";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import {
   AD_BIDS_BASE_FILTER,
   AD_BIDS_BID_PRICE_MEASURE,
@@ -10,17 +9,18 @@ import {
   AD_BIDS_MIRROR_NAME,
   AD_BIDS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
+  AD_BIDS_WITH_DELETED_DIMENSION,
   ALL_TIME_PARSED_TEST_CONTROLS,
+  CUSTOM_TEST_CONTROLS,
+  LAST_6_HOURS_TEST_CONTROLS,
+  LAST_6_HOURS_TEST_PARSED_CONTROLS,
   assertMetricsView,
   clearMetricsExplorerStore,
   createAdBidsInStore,
   createAdBidsMirrorInStore,
-  CUSTOM_TEST_CONTROLS,
-  AD_BIDS_WITH_DELETED_DIMENSION,
-  LAST_6_HOURS_TEST_CONTROLS,
-  LAST_6_HOURS_TEST_PARSED_CONTROLS,
-} from "@rilldata/web-common/features/dashboard-stores-test-data";
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+} from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
+import { get } from "svelte/store";
+import { beforeEach, describe, expect, it } from "vitest";
 
 describe("dashboard-stores", () => {
   beforeEach(() => {
