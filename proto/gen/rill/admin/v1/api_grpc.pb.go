@@ -51,6 +51,7 @@ const (
 	AdminService_GetGithubRepoStatus_FullMethodName         = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
 	AdminService_CreateAutoinviteDomain_FullMethodName      = "/rill.admin.v1.AdminService/CreateAutoinviteDomain"
 	AdminService_RemoveAutoinviteDomain_FullMethodName      = "/rill.admin.v1.AdminService/RemoveAutoinviteDomain"
+	AdminService_GetUsersByEmail_FullMethodName             = "/rill.admin.v1.AdminService/GetUsersByEmail"
 	AdminService_ListSuperusers_FullMethodName              = "/rill.admin.v1.AdminService/ListSuperusers"
 	AdminService_SetSuperuser_FullMethodName                = "/rill.admin.v1.AdminService/SetSuperuser"
 )
@@ -124,6 +125,8 @@ type AdminServiceClient interface {
 	CreateAutoinviteDomain(ctx context.Context, in *CreateAutoinviteDomainRequest, opts ...grpc.CallOption) (*CreateAutoinviteDomainResponse, error)
 	// RemoveAutoinviteDomain removes a domain from the autoinvite list
 	RemoveAutoinviteDomain(ctx context.Context, in *RemoveAutoinviteDomainRequest, opts ...grpc.CallOption) (*RemoveAutoinviteDomainResponse, error)
+	// GetUsersByEmail returns user by email
+	GetUsersByEmail(ctx context.Context, in *GetUsersByEmailRequest, opts ...grpc.CallOption) (*GetUsersByEmailResponse, error)
 	// ListSuperusers lists all the superusers
 	ListSuperusers(ctx context.Context, in *ListSuperusersRequest, opts ...grpc.CallOption) (*ListSuperusersResponse, error)
 	// SetSuperuser adds/remove a superuser
@@ -426,6 +429,15 @@ func (c *adminServiceClient) RemoveAutoinviteDomain(ctx context.Context, in *Rem
 	return out, nil
 }
 
+func (c *adminServiceClient) GetUsersByEmail(ctx context.Context, in *GetUsersByEmailRequest, opts ...grpc.CallOption) (*GetUsersByEmailResponse, error) {
+	out := new(GetUsersByEmailResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetUsersByEmail_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) ListSuperusers(ctx context.Context, in *ListSuperusersRequest, opts ...grpc.CallOption) (*ListSuperusersResponse, error) {
 	out := new(ListSuperusersResponse)
 	err := c.cc.Invoke(ctx, AdminService_ListSuperusers_FullMethodName, in, out, opts...)
@@ -513,6 +525,8 @@ type AdminServiceServer interface {
 	CreateAutoinviteDomain(context.Context, *CreateAutoinviteDomainRequest) (*CreateAutoinviteDomainResponse, error)
 	// RemoveAutoinviteDomain removes a domain from the autoinvite list
 	RemoveAutoinviteDomain(context.Context, *RemoveAutoinviteDomainRequest) (*RemoveAutoinviteDomainResponse, error)
+	// GetUsersByEmail returns user by email
+	GetUsersByEmail(context.Context, *GetUsersByEmailRequest) (*GetUsersByEmailResponse, error)
 	// ListSuperusers lists all the superusers
 	ListSuperusers(context.Context, *ListSuperusersRequest) (*ListSuperusersResponse, error)
 	// SetSuperuser adds/remove a superuser
@@ -619,6 +633,9 @@ func (UnimplementedAdminServiceServer) CreateAutoinviteDomain(context.Context, *
 }
 func (UnimplementedAdminServiceServer) RemoveAutoinviteDomain(context.Context, *RemoveAutoinviteDomainRequest) (*RemoveAutoinviteDomainResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveAutoinviteDomain not implemented")
+}
+func (UnimplementedAdminServiceServer) GetUsersByEmail(context.Context, *GetUsersByEmailRequest) (*GetUsersByEmailResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUsersByEmail not implemented")
 }
 func (UnimplementedAdminServiceServer) ListSuperusers(context.Context, *ListSuperusersRequest) (*ListSuperusersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListSuperusers not implemented")
@@ -1215,6 +1232,24 @@ func _AdminService_RemoveAutoinviteDomain_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetUsersByEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUsersByEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetUsersByEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetUsersByEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetUsersByEmail(ctx, req.(*GetUsersByEmailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_ListSuperusers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListSuperusersRequest)
 	if err := dec(in); err != nil {
@@ -1385,6 +1420,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveAutoinviteDomain",
 			Handler:    _AdminService_RemoveAutoinviteDomain_Handler,
+		},
+		{
+			MethodName: "GetUsersByEmail",
+			Handler:    _AdminService_GetUsersByEmail_Handler,
 		},
 		{
 			MethodName: "ListSuperusers",

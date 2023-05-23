@@ -2571,6 +2571,82 @@ export class GetCurrentUserResponse extends Message<GetCurrentUserResponse> {
 }
 
 /**
+ * It can be some string as well so not validating for email here
+ *
+ * @generated from message rill.admin.v1.GetUsersByEmailRequest
+ */
+export class GetUsersByEmailRequest extends Message<GetUsersByEmailRequest> {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email = "";
+
+  constructor(data?: PartialMessage<GetUsersByEmailRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetUsersByEmailRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetUsersByEmailRequest {
+    return new GetUsersByEmailRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetUsersByEmailRequest {
+    return new GetUsersByEmailRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetUsersByEmailRequest {
+    return new GetUsersByEmailRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetUsersByEmailRequest | PlainMessage<GetUsersByEmailRequest> | undefined, b: GetUsersByEmailRequest | PlainMessage<GetUsersByEmailRequest> | undefined): boolean {
+    return proto3.util.equals(GetUsersByEmailRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetUsersByEmailResponse
+ */
+export class GetUsersByEmailResponse extends Message<GetUsersByEmailResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.User users = 1;
+   */
+  users: User[] = [];
+
+  constructor(data?: PartialMessage<GetUsersByEmailResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetUsersByEmailResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "users", kind: "message", T: User, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetUsersByEmailResponse {
+    return new GetUsersByEmailResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetUsersByEmailResponse {
+    return new GetUsersByEmailResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetUsersByEmailResponse {
+    return new GetUsersByEmailResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetUsersByEmailResponse | PlainMessage<GetUsersByEmailResponse> | undefined, b: GetUsersByEmailResponse | PlainMessage<GetUsersByEmailResponse> | undefined): boolean {
+    return proto3.util.equals(GetUsersByEmailResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.RevokeCurrentAuthTokenRequest
  */
 export class RevokeCurrentAuthTokenRequest extends Message<RevokeCurrentAuthTokenRequest> {

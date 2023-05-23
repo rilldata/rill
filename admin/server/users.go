@@ -54,6 +54,29 @@ func (s *Server) SetSuperuser(ctx context.Context, req *adminv1.SetSuperuserRequ
 	return &adminv1.SetSuperuserResponse{}, nil
 }
 
+func (s *Server) GetUsersByEmail(ctx context.Context, req *adminv1.GetUsersByEmailRequest) (*adminv1.GetUsersByEmailResponse, error) {
+	// Return an empty result if not authenticated.
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can search users by email")
+	}
+
+	// Owner is a user
+	users, err := s.admin.DB.FindUsersByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	dtos := make([]*adminv1.User, len(users))
+	for i, user := range users {
+		dtos[i] = userToPB(user)
+	}
+
+	return &adminv1.GetUsersByEmailResponse{
+		Users: dtos,
+	}, nil
+}
+
 func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUserRequest) (*adminv1.GetCurrentUserResponse, error) {
 	// Return an empty result if not authenticated.
 	claims := auth.GetClaims(ctx)

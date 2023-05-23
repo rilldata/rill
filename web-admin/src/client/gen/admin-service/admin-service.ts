@@ -67,6 +67,7 @@ import type {
   V1SetSuperuserResponse,
   V1SetSuperuserRequest,
   V1RevokeCurrentAuthTokenResponse,
+  V1GetUsersByEmailResponse,
   V1GetCurrentUserResponse,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
@@ -1968,6 +1969,66 @@ export const createAdminServiceRevokeCurrentAuthToken = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary GetUsersByEmail returns user by email
+ */
+export const adminServiceGetUsersByEmail = (
+  email: string,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1GetUsersByEmailResponse>({
+    url: `/v1/users/${email}`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetUsersByEmailQueryKey = (email: string) =>
+  [`/v1/users/${email}`] as const;
+
+export type AdminServiceGetUsersByEmailQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetUsersByEmail>>
+>;
+export type AdminServiceGetUsersByEmailQueryError = RpcStatus;
+
+export const createAdminServiceGetUsersByEmail = <
+  TData = Awaited<ReturnType<typeof adminServiceGetUsersByEmail>>,
+  TError = RpcStatus
+>(
+  email: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetUsersByEmail>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceGetUsersByEmailQueryKey(email);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetUsersByEmail>>
+  > = ({ signal }) => adminServiceGetUsersByEmail(email, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetUsersByEmail>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!email,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary GetCurrentUser returns the currently authenticated user (if any)
  */

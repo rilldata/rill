@@ -278,6 +278,10 @@ export interface V1LeaveOrganizationResponse {
   [key: string]: any;
 }
 
+export interface V1GetUsersByEmailResponse {
+  users?: V1User[];
+}
+
 export type V1GetProjectVariablesResponseVariables = { [key: string]: string };
 
 export interface V1GetProjectVariablesResponse {
@@ -307,7 +311,7 @@ export interface V1GetCurrentUserResponse {
 }
 
 export type V1DeploymentStatus =
-  typeof V1DeploymentStatus[keyof typeof V1DeploymentStatus];
+  (typeof V1DeploymentStatus)[keyof typeof V1DeploymentStatus];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1DeploymentStatus = {

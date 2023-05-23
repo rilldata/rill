@@ -208,6 +208,11 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/autoinvite/{domain}"};
   }
 
+   // GetUsersByEmail returns user by email
+  rpc GetUsersByEmail(GetUsersByEmailRequest) returns (GetUsersByEmailResponse) {
+    option (google.api.http) = {get: "/v1/users/{email}"};
+  }
+
   // ListSuperusers lists all the superusers
   rpc ListSuperusers(ListSuperusersRequest) returns (ListSuperusersResponse) {
     option (google.api.http) = {get: "/v1/superuser/members"};
@@ -498,6 +503,15 @@ message GetCurrentUserRequest {}
 
 message GetCurrentUserResponse {
   User user = 1;
+}
+
+// It can be some string as well so not validating for email here
+message GetUsersByEmailRequest {
+   string email = 1 [(validate.rules).string.min_len = 1];
+}
+
+message GetUsersByEmailResponse {
+  repeated User users = 1;
 }
 
 message RevokeCurrentAuthTokenRequest {}

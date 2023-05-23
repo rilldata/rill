@@ -456,6 +456,15 @@ func (c *connection) FindUserByEmail(ctx context.Context, email string) (*databa
 	return res, nil
 }
 
+func (c *connection) FindUsersByEmail(ctx context.Context, email string) ([]*database.User, error) {
+	var res []*database.User
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT u.* FROM users u WHERE lower(u.email) ilike lower($1)", email)
+	if err != nil {
+		return nil, parseErr("users", err)
+	}
+	return res, nil
+}
+
 func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOptions) (*database.User, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err

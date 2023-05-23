@@ -7652,6 +7652,255 @@ var _ interface {
 	ErrorName() string
 } = GetCurrentUserResponseValidationError{}
 
+// Validate checks the field values on GetUsersByEmailRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetUsersByEmailRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetUsersByEmailRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetUsersByEmailRequestMultiError, or nil if none found.
+func (m *GetUsersByEmailRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetUsersByEmailRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetEmail()) < 1 {
+		err := GetUsersByEmailRequestValidationError{
+			field:  "Email",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return GetUsersByEmailRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetUsersByEmailRequestMultiError is an error wrapping multiple validation
+// errors returned by GetUsersByEmailRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetUsersByEmailRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetUsersByEmailRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetUsersByEmailRequestMultiError) AllErrors() []error { return m }
+
+// GetUsersByEmailRequestValidationError is the validation error returned by
+// GetUsersByEmailRequest.Validate if the designated constraints aren't met.
+type GetUsersByEmailRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetUsersByEmailRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetUsersByEmailRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetUsersByEmailRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetUsersByEmailRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetUsersByEmailRequestValidationError) ErrorName() string {
+	return "GetUsersByEmailRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetUsersByEmailRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetUsersByEmailRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetUsersByEmailRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetUsersByEmailRequestValidationError{}
+
+// Validate checks the field values on GetUsersByEmailResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetUsersByEmailResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetUsersByEmailResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetUsersByEmailResponseMultiError, or nil if none found.
+func (m *GetUsersByEmailResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetUsersByEmailResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetUsers() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, GetUsersByEmailResponseValidationError{
+						field:  fmt.Sprintf("Users[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, GetUsersByEmailResponseValidationError{
+						field:  fmt.Sprintf("Users[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return GetUsersByEmailResponseValidationError{
+					field:  fmt.Sprintf("Users[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return GetUsersByEmailResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetUsersByEmailResponseMultiError is an error wrapping multiple validation
+// errors returned by GetUsersByEmailResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetUsersByEmailResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetUsersByEmailResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetUsersByEmailResponseMultiError) AllErrors() []error { return m }
+
+// GetUsersByEmailResponseValidationError is the validation error returned by
+// GetUsersByEmailResponse.Validate if the designated constraints aren't met.
+type GetUsersByEmailResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetUsersByEmailResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetUsersByEmailResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetUsersByEmailResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetUsersByEmailResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetUsersByEmailResponseValidationError) ErrorName() string {
+	return "GetUsersByEmailResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetUsersByEmailResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetUsersByEmailResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetUsersByEmailResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetUsersByEmailResponseValidationError{}
+
 // Validate checks the field values on RevokeCurrentAuthTokenRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
