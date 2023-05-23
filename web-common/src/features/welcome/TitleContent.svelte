@@ -21,6 +21,7 @@
         instanceId: $runtime.instanceId,
         data: {
           title: EMPTY_PROJECT_TITLE,
+          force: true,
         },
       },
       {
