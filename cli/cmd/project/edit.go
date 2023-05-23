@@ -50,7 +50,6 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			// Set the default values for edit flags with current values for project
 			cmd.Flag("description").DefValue = proj.Description
 			cmd.Flag("prod-branch").DefValue = proj.ProdBranch
-			fmt.Println("public in proj is ", proj.Public)
 			cmd.Flag("public").DefValue = fmt.Sprintf("%v", proj.Public)
 
 			if cfg.Interactive {
