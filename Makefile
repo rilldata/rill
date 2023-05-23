@@ -20,7 +20,7 @@ cli.prepare:
 	cp -r web-local/build/* cli/pkg/web/embed/dist
 	rm -rf runtime/pkg/examples/embed/dist || true
 	mkdir -p runtime/pkg/examples/embed/dist
-	git clone https://github.com/rilldata/rill-examples.git runtime/pkg/examples/embed/dist
+	git clone --quiet https://github.com/rilldata/rill-examples.git runtime/pkg/examples/embed/dist
 
 .PHONY: proto.generate
 proto.generate:
