@@ -6,13 +6,13 @@ title: rill org create
 Create organization
 
 ```
-rill org create [flags]
+rill org create [<org-name>] [flags]
 ```
 
 ### Flags
 
 ```
-      --name string          Name
+      --name string          Organization Name
       --description string   Description
 ```
 
