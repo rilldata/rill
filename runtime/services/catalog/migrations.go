@@ -93,7 +93,7 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 
 	result := NewReconcileResult()
 
-	if slices.Contains(conf.ChangedPaths, "rill.yaml") {
+	if len(conf.ChangedPaths) == 0 || slices.Contains(conf.ChangedPaths, "rill.yaml") {
 		// set project variables from rill.yaml in instance
 		if err := s.setProjectVariables(ctx); err != nil {
 			return nil, err
