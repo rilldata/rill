@@ -1,4 +1,4 @@
-package rillv1beta
+package rillv1beta_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	"github.com/rilldata/rill/runtime/services/catalog/testutils"
@@ -39,12 +40,12 @@ func Test_ExtractConnectors(t *testing.T) {
 	}))
 	testutils.CreateModel(t, s, "AdBidsGCS", fmt.Sprintf("select * from \"%s\"", AdBidsGCS), "models/AdBidsGCS.sql")
 
-	connectors, err := ExtractConnectors(ctx, dir)
+	connectors, err := rillv1beta.ExtractConnectors(ctx, dir)
 	require.NoError(t, err)
 	require.Len(t, connectors, 2)
 
-	var gcs *Connector
-	var s3 *Connector
+	var gcs *rillv1beta.Connector
+	var s3 *rillv1beta.Connector
 
 	if connectors[0].Name == "gcs" {
 		gcs = connectors[0]
