@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"os"
+	"path/filepath"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/examples"
@@ -37,7 +39,6 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 	}
 
 	exampleFS, err := examples.Unpack(req.Name)
-	// check for not exist
 	if err != nil {
 		return nil, err
 	}
@@ -56,11 +57,15 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 
 	paths := make([]string, 0)
 	err = fs.WalkDir(exampleFS, "./", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
 		if d.IsDir() {
 			return nil
 		}
 
-		if _, ok := existingPaths[path]; ok {
+		if _, ok := existingPaths[filepath.Join("/", path)]; ok {
 			return fmt.Errorf("path %q already exists", path)
 		}
 
@@ -69,6 +74,9 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 	})
 
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, examples.ErrExampleNotFound
+		}
 		return nil, err
 	}
 
