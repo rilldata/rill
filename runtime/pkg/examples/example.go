@@ -4,12 +4,9 @@ import (
 	"embed"
 	"errors"
 	"io/fs"
-	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
 
 //go:embed all:embed
@@ -53,42 +50,6 @@ func List() ([]Example, error) {
 	}
 
 	return exampleList, nil
-}
-
-// TODO deprecate this when all code has moved to unpacking examples
-func Init(name, projectDir string) error {
-	examplePath := path.Join("embed", "dist", name)
-
-	_, err := examplesFS.ReadDir(examplePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return ErrExampleNotFound
-		}
-		return err
-	}
-
-	// We want to append to .gitignore, not override it.
-	// Cache it here.
-	gitignorePath := filepath.Join(projectDir, ".gitignore")
-	prevGitignore, _ := os.ReadFile(gitignorePath)
-
-	// Copy example project to projectDir
-	err = fileutil.CopyEmbedDir(examplesFS, examplePath, projectDir)
-	if err != nil {
-		return err
-	}
-
-	// Fix up gitignore
-	if len(prevGitignore) != 0 {
-		newGitignore, _ := os.ReadFile(gitignorePath)
-		gitignore := string(prevGitignore) + "\n" + string(newGitignore)
-		err := os.WriteFile(gitignorePath, []byte(gitignore), os.ModePerm)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func Unpack(name string) (fs.FS, error) {
