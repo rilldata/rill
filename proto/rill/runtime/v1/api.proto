@@ -412,7 +412,7 @@ message UnpackExampleResponse {}
 // Request message for RuntimeService.UnpackEmpty
 message UnpackEmptyRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string title = 2 [(validate.rules).string.min_len = 1];
+  string title = 2;
 }
 
 // Response message for RuntimeService.UnpackEmpty

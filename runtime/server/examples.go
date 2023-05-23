@@ -9,6 +9,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/examples"
+	"github.com/rilldata/rill/runtime/server/auth"
 )
 
 // ListExamples returns a list of embedded examples
@@ -33,6 +34,10 @@ func (s *Server) ListExamples(ctx context.Context, req *runtimev1.ListExamplesRe
 }
 
 func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExampleRequest) (*runtimev1.UnpackExampleResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+		return nil, ErrForbidden
+	}
+
 	repo, err := s.runtime.Repo(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
@@ -96,6 +101,10 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 }
 
 func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequest) (*runtimev1.UnpackEmptyResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+		return nil, ErrForbidden
+	}
+
 	repo, err := s.runtime.Repo(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
