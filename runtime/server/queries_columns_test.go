@@ -12,7 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestServer_GetTopK_HugeInt(t *testing.T) {
@@ -85,7 +85,7 @@ func TestServer_GetTopK(t *testing.T) {
 	require.Equal(t, 4, len(topk.Entries))
 	require.Equal(t, "abc", topk.Entries[0].Value.GetStringValue())
 	require.Equal(t, 2, int(topk.Entries[0].Count))
-	require.Equal(t, structpb.NewNullValue(), topk.Entries[1].Value)
+	require.Equal(t, structpb.NewNullValue().GetNullValue(), topk.Entries[1].Value.GetNullValue())
 	require.Equal(t, 1, int(topk.Entries[1].Count))
 	require.Equal(t, "12", topk.Entries[2].Value.GetStringValue())
 	require.Equal(t, 1, int(topk.Entries[2].Count))
@@ -101,7 +101,7 @@ func TestServer_GetTopK(t *testing.T) {
 	require.Equal(t, 5, int(res.CategoricalSummary.GetTopK().Entries[0].Count))
 	require.Equal(t, "abc", res.CategoricalSummary.GetTopK().Entries[1].Value.GetStringValue())
 	require.Equal(t, 4, int(res.CategoricalSummary.GetTopK().Entries[1].Count))
-	require.Equal(t, structpb.NewNullValue(), res.CategoricalSummary.GetTopK().Entries[2].Value)
+	require.Equal(t, structpb.NewNullValue().GetNullValue(), res.CategoricalSummary.GetTopK().Entries[2].Value.GetNullValue())
 	require.Equal(t, 1, int(res.CategoricalSummary.GetTopK().Entries[2].Count))
 	require.Equal(t, "12", res.CategoricalSummary.GetTopK().Entries[3].Value.GetStringValue())
 	require.Equal(t, 1, int(res.CategoricalSummary.GetTopK().Entries[3].Count))
@@ -427,8 +427,8 @@ func TestServer_GetTimeRangeSummary(t *testing.T) {
 	res, err := server.ColumnTimeRange(testCtx(), &runtimev1.ColumnTimeRangeRequest{InstanceId: instanceId, TableName: "test", ColumnName: "times"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	require.Equal(t, parseTime(t, "2022-11-01T00:00:00Z"), res.TimeRangeSummary.Min)
-	require.Equal(t, parseTime(t, "2022-11-03T00:00:00Z"), res.TimeRangeSummary.Max)
+	require.Equal(t, parseTime(t, "2022-11-01T00:00:00Z"), res.TimeRangeSummary.Min.AsTime())
+	require.Equal(t, parseTime(t, "2022-11-03T00:00:00Z"), res.TimeRangeSummary.Max.AsTime())
 	require.Equal(t, int32(0), res.TimeRangeSummary.Interval.Months)
 	require.Equal(t, int32(2), res.TimeRangeSummary.Interval.Days)
 	require.Equal(t, int64(0), res.TimeRangeSummary.Interval.Micros)
@@ -453,17 +453,23 @@ func TestServer_GetTimeRangeSummary_Date_Column(t *testing.T) {
 	res, err := server.ColumnTimeRange(testCtx(), &runtimev1.ColumnTimeRangeRequest{InstanceId: instanceId, TableName: "test", ColumnName: "dates"})
 	require.NoError(t, err)
 	require.NotNil(t, res)
-	require.Equal(t, parseTime(t, "2007-04-01T00:00:00Z"), res.TimeRangeSummary.Min)
-	require.Equal(t, parseTime(t, "2011-06-30T00:00:00Z"), res.TimeRangeSummary.Max)
+	require.Equal(t, parseTime(t, "2007-04-01T00:00:00Z"), res.TimeRangeSummary.Min.AsTime())
+	require.Equal(t, parseTime(t, "2011-06-30T00:00:00Z"), res.TimeRangeSummary.Max.AsTime())
 	require.Equal(t, int32(0), res.TimeRangeSummary.Interval.Months)
 	require.Equal(t, int32(1551), res.TimeRangeSummary.Interval.Days)
 	require.Equal(t, int64(0), res.TimeRangeSummary.Interval.Micros)
 }
 
-func parseTime(tst *testing.T, t string) *timestamppb.Timestamp {
+func parseTimeToProtoTimeStamps(tst *testing.T, t string) *timestamppb.Timestamp {
 	ts, err := time.Parse(time.RFC3339, t)
 	require.NoError(tst, err)
 	return timestamppb.New(ts)
+}
+
+func parseTime(tst *testing.T, t string) time.Time {
+	ts, err := time.Parse(time.RFC3339, t)
+	require.NoError(tst, err)
+	return ts
 }
 
 func TestServer_GetCardinalityOfColumn(t *testing.T) {

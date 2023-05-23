@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 	"strings"
-
-	"github.com/rilldata/rill/runtime/pkg/observability"
-	"go.opentelemetry.io/otel/metric/global"
 )
 
-var (
-	meter                   = global.Meter("runtime")
-	queryCacheHitsCounter   = observability.Must(meter.Int64Counter("query_cache.hits"))
-	queryCacheMissesCounter = observability.Must(meter.Int64Counter("query_cache.misses"))
-)
+type QueryResult struct {
+	Value any
+	Bytes int64
+}
 
 type Query interface {
 	// Key should return a cache key that uniquely identifies the query
@@ -21,9 +17,8 @@ type Query interface {
 	// Deps should return the source and model names that the query targets.
 	// It's used to invalidate cached queries when the underlying data changes.
 	Deps() []string
-	// MarshalResult should return the query result for caching.
-	// TODO: Also return estimated cost in bytes.
-	MarshalResult() any
+	// MarshalResult should return the query result and estimated cost in bytes for caching
+	MarshalResult() *QueryResult
 	// UnmarshalResult should populate a query with a cached result
 	UnmarshalResult(v any) error
 	// Resolve should execute the query against the instance's infra.
@@ -35,6 +30,10 @@ type queryCacheKey struct {
 	instanceID    string
 	queryKey      string
 	dependencyKey string
+}
+
+func (q queryCacheKey) String() string {
+	return fmt.Sprintf("InstanceID:%sQueryKey:%sDependencyKey:%s", q.instanceID, q.queryKey, q.dependencyKey)
 }
 
 func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, priority int) error {
@@ -76,18 +75,27 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		dependencyKey: depKey,
 	}
 
-	val, ok := r.queryCache.get(key)
-	if ok {
-		queryCacheHitsCounter.Add(ctx, 1)
-		return query.UnmarshalResult(val)
-	}
-	queryCacheMissesCounter.Add(ctx, 1)
+	val, ok, err := r.queryCache.getOrLoad(ctx, key.String(), queryName(query), func(ctx context.Context) (any, error) {
+		err := query.Resolve(ctx, r, instanceID, priority)
+		if err != nil {
+			return nil, err
+		}
 
-	// Cache miss. Run the query.
-	err := query.Resolve(ctx, r, instanceID, priority)
+		res := query.MarshalResult()
+		return res, nil
+	})
 	if err != nil {
 		return err
 	}
-	r.queryCache.add(key, query.MarshalResult())
+
+	if ok {
+		return query.UnmarshalResult(val)
+	}
 	return nil
+}
+
+func queryName(q Query) string {
+	nameWithPkg := fmt.Sprintf("%T", q)
+	_, after, _ := strings.Cut(nameWithPkg, ".")
+	return after
 }
