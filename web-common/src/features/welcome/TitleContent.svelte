@@ -5,13 +5,10 @@
   import RadixH1 from "@rilldata/web-common/components/typography/RadixH1.svelte";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
   import AddSourceModal from "@rilldata/web-common/features/sources/add-source/AddSourceModal.svelte";
-  import { createRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useInitializeProjectFile } from "./initialize-project-file";
 
-  const RILL_COMPILER = "rill-beta";
-  const RILL_PROJECT_TITLE = "Untitled Rill Project";
-
-  const putFileAndReconcile = createRuntimeServicePutFileAndReconcile();
+  const initializeProjectFile = useInitializeProjectFile();
 
   let showAddSourceModal = false;
   const openShowAddSourceModal = () => {
@@ -19,12 +16,10 @@
   };
 
   async function startWithEmptyProject() {
-    $putFileAndReconcile.mutate(
+    $initializeProjectFile.mutate(
       {
         data: {
           instanceId: $runtime.instanceId,
-          path: "rill.yaml",
-          blob: `title: ${RILL_PROJECT_TITLE}\ncompiler: ${RILL_COMPILER}`,
         },
       },
       {
