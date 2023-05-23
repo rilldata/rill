@@ -111,7 +111,7 @@ func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequ
 	}
 
 	c := rillv1beta.New(repo, req.InstanceId)
-	if c.IsInit(ctx) {
+	if c.IsInit(ctx) && !req.Force {
 		return nil, fmt.Errorf("a Rill project already exists")
 	}
 
