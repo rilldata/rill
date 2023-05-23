@@ -6,20 +6,21 @@
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
   import AddSourceModal from "@rilldata/web-common/features/sources/add-source/AddSourceModal.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useInitializeProjectFile } from "./initialize-project-file";
-
-  const initializeProjectFile = useInitializeProjectFile();
+  import { createRuntimeServiceUnpackEmpty } from "../../runtime-client";
+  import { EMPTY_PROJECT_TITLE } from "./constants";
 
   let showAddSourceModal = false;
   const openShowAddSourceModal = () => {
     showAddSourceModal = true;
   };
 
+  const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
   async function startWithEmptyProject() {
-    $initializeProjectFile.mutate(
+    $unpackEmptyProject.mutate(
       {
+        instanceId: $runtime.instanceId,
         data: {
-          instanceId: $runtime.instanceId,
+          title: EMPTY_PROJECT_TITLE,
         },
       },
       {
