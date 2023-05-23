@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -38,7 +37,7 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 		return nil, err
 	}
 
-	exampleFS, err := examples.Unpack(req.Name)
+	exampleFS, err := examples.Get(req.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -74,9 +73,6 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 	})
 
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, examples.ErrExampleNotFound
-		}
 		return nil, err
 	}
 

@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/dag"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
+	"golang.org/x/exp/slices"
 
 	// Load migrators
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
@@ -92,9 +93,11 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 
 	result := NewReconcileResult()
 
-	// set project variables from rill.yaml in instance
-	if err := s.setProjectVariables(ctx); err != nil {
-		return nil, err
+	if slices.Contains(conf.ChangedPaths, "rill.yaml") {
+		// set project variables from rill.yaml in instance
+		if err := s.setProjectVariables(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	// collect repos and create migration items

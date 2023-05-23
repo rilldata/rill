@@ -4,6 +4,7 @@ import (
 	"embed"
 	"errors"
 	"io/fs"
+	"os"
 	"path/filepath"
 
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
@@ -52,6 +53,19 @@ func List() ([]Example, error) {
 	return exampleList, nil
 }
 
-func Unpack(name string) (fs.FS, error) {
-	return fs.Sub(examplesFS, filepath.Join("embed", "dist", name))
+func Get(name string) (fs.FS, error) {
+	exampleFS, err := fs.Sub(examplesFS, filepath.Join("embed", "dist", name))
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = fs.Stat(exampleFS, "rill.yaml")
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, ErrExampleNotFound
+		}
+		return nil, err
+	}
+
+	return exampleFS, nil
 }
