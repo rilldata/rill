@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"io/fs"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/examples"
@@ -35,34 +36,52 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 		return nil, err
 	}
 
-	entries, entryPaths, err := examples.Unpack(req.Name)
+	exampleFS, err := examples.Unpack(req.Name)
+	// check for not exist
 	if err != nil {
 		return nil, err
 	}
 
+	existingPaths := make(map[string]bool)
 	if !req.Force {
-		paths, err := repo.ListRecursive(ctx, req.InstanceId, "{sources,models}/*.{yaml,yml,sql}")
+		paths, err := repo.ListRecursive(ctx, req.InstanceId, "**")
 		if err != nil {
 			return nil, err
 		}
 
-		// Should we check content or filenames ??
-		if len(paths) != 0 {
-			return nil, fmt.Errorf("repo is not empty %s", paths)
+		for _, path := range paths {
+			existingPaths[path] = true
 		}
 	}
 
-	for i, entry := range entries {
-		stat, err := entry.Stat()
-		if err != nil {
-			return nil, err
+	paths := make([]string, 0)
+	err = fs.WalkDir(exampleFS, "./", func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			return nil
 		}
 
-		if stat.IsDir() {
-			continue
+		if _, ok := existingPaths[path]; ok {
+			return fmt.Errorf("path %q already exists", path)
 		}
 
-		err = repo.Put(ctx, req.InstanceId, entryPaths[i], entry)
+		paths = append(paths, path)
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, path := range paths {
+		err = func() error {
+			file, err := exampleFS.Open(path)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+
+			return repo.Put(ctx, req.InstanceId, path, file)
+		}()
 		if err != nil {
 			return nil, err
 		}

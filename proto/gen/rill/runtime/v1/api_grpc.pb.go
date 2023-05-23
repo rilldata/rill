@@ -30,6 +30,8 @@ const (
 	RuntimeService_PutFile_FullMethodName                = "/rill.runtime.v1.RuntimeService/PutFile"
 	RuntimeService_DeleteFile_FullMethodName             = "/rill.runtime.v1.RuntimeService/DeleteFile"
 	RuntimeService_RenameFile_FullMethodName             = "/rill.runtime.v1.RuntimeService/RenameFile"
+	RuntimeService_ListExamples_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListExamples"
+	RuntimeService_UnpackExample_FullMethodName          = "/rill.runtime.v1.RuntimeService/UnpackExample"
 	RuntimeService_ListCatalogEntries_FullMethodName     = "/rill.runtime.v1.RuntimeService/ListCatalogEntries"
 	RuntimeService_GetCatalogEntry_FullMethodName        = "/rill.runtime.v1.RuntimeService/GetCatalogEntry"
 	RuntimeService_TriggerRefresh_FullMethodName         = "/rill.runtime.v1.RuntimeService/TriggerRefresh"
@@ -40,8 +42,6 @@ const (
 	RuntimeService_RenameFileAndReconcile_FullMethodName = "/rill.runtime.v1.RuntimeService/RenameFileAndReconcile"
 	RuntimeService_RefreshAndReconcile_FullMethodName    = "/rill.runtime.v1.RuntimeService/RefreshAndReconcile"
 	RuntimeService_ListConnectors_FullMethodName         = "/rill.runtime.v1.RuntimeService/ListConnectors"
-	RuntimeService_ListExamples_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListExamples"
-	RuntimeService_UnpackExample_FullMethodName          = "/rill.runtime.v1.RuntimeService/UnpackExample"
 )
 
 // RuntimeServiceClient is the client API for RuntimeService service.
@@ -71,6 +71,10 @@ type RuntimeServiceClient interface {
 	DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error)
 	// RenameFile renames a file in a repo
 	RenameFile(ctx context.Context, in *RenameFileRequest, opts ...grpc.CallOption) (*RenameFileResponse, error)
+	// ListExamples lists all the examples embedded into binary
+	ListExamples(ctx context.Context, in *ListExamplesRequest, opts ...grpc.CallOption) (*ListExamplesResponse, error)
+	// UnpackExample unpacks an example project
+	UnpackExample(ctx context.Context, in *UnpackExampleRequest, opts ...grpc.CallOption) (*UnpackExampleResponse, error)
 	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
 	ListCatalogEntries(ctx context.Context, in *ListCatalogEntriesRequest, opts ...grpc.CallOption) (*ListCatalogEntriesResponse, error)
 	// GetCatalogEntry returns information about a specific entry in the catalog
@@ -98,10 +102,6 @@ type RuntimeServiceClient interface {
 	// ListConnectors returns a description of all the connectors implemented in the runtime,
 	// including their schema and validation rules
 	ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error)
-	// ListExamples lists all the examples embedded into binary
-	ListExamples(ctx context.Context, in *ListExamplesRequest, opts ...grpc.CallOption) (*ListExamplesResponse, error)
-	// UnpackExample unpacks an example project
-	UnpackExample(ctx context.Context, in *UnpackExampleRequest, opts ...grpc.CallOption) (*UnpackExampleResponse, error)
 }
 
 type runtimeServiceClient struct {
@@ -211,6 +211,24 @@ func (c *runtimeServiceClient) RenameFile(ctx context.Context, in *RenameFileReq
 	return out, nil
 }
 
+func (c *runtimeServiceClient) ListExamples(ctx context.Context, in *ListExamplesRequest, opts ...grpc.CallOption) (*ListExamplesResponse, error) {
+	out := new(ListExamplesResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ListExamples_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) UnpackExample(ctx context.Context, in *UnpackExampleRequest, opts ...grpc.CallOption) (*UnpackExampleResponse, error) {
+	out := new(UnpackExampleResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_UnpackExample_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ListCatalogEntries(ctx context.Context, in *ListCatalogEntriesRequest, opts ...grpc.CallOption) (*ListCatalogEntriesResponse, error) {
 	out := new(ListCatalogEntriesResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_ListCatalogEntries_FullMethodName, in, out, opts...)
@@ -301,24 +319,6 @@ func (c *runtimeServiceClient) ListConnectors(ctx context.Context, in *ListConne
 	return out, nil
 }
 
-func (c *runtimeServiceClient) ListExamples(ctx context.Context, in *ListExamplesRequest, opts ...grpc.CallOption) (*ListExamplesResponse, error) {
-	out := new(ListExamplesResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_ListExamples_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) UnpackExample(ctx context.Context, in *UnpackExampleRequest, opts ...grpc.CallOption) (*UnpackExampleResponse, error) {
-	out := new(UnpackExampleResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_UnpackExample_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // RuntimeServiceServer is the server API for RuntimeService service.
 // All implementations must embed UnimplementedRuntimeServiceServer
 // for forward compatibility
@@ -346,6 +346,10 @@ type RuntimeServiceServer interface {
 	DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error)
 	// RenameFile renames a file in a repo
 	RenameFile(context.Context, *RenameFileRequest) (*RenameFileResponse, error)
+	// ListExamples lists all the examples embedded into binary
+	ListExamples(context.Context, *ListExamplesRequest) (*ListExamplesResponse, error)
+	// UnpackExample unpacks an example project
+	UnpackExample(context.Context, *UnpackExampleRequest) (*UnpackExampleResponse, error)
 	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
 	ListCatalogEntries(context.Context, *ListCatalogEntriesRequest) (*ListCatalogEntriesResponse, error)
 	// GetCatalogEntry returns information about a specific entry in the catalog
@@ -373,10 +377,6 @@ type RuntimeServiceServer interface {
 	// ListConnectors returns a description of all the connectors implemented in the runtime,
 	// including their schema and validation rules
 	ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error)
-	// ListExamples lists all the examples embedded into binary
-	ListExamples(context.Context, *ListExamplesRequest) (*ListExamplesResponse, error)
-	// UnpackExample unpacks an example project
-	UnpackExample(context.Context, *UnpackExampleRequest) (*UnpackExampleResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
 
@@ -417,6 +417,12 @@ func (UnimplementedRuntimeServiceServer) DeleteFile(context.Context, *DeleteFile
 func (UnimplementedRuntimeServiceServer) RenameFile(context.Context, *RenameFileRequest) (*RenameFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RenameFile not implemented")
 }
+func (UnimplementedRuntimeServiceServer) ListExamples(context.Context, *ListExamplesRequest) (*ListExamplesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListExamples not implemented")
+}
+func (UnimplementedRuntimeServiceServer) UnpackExample(context.Context, *UnpackExampleRequest) (*UnpackExampleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnpackExample not implemented")
+}
 func (UnimplementedRuntimeServiceServer) ListCatalogEntries(context.Context, *ListCatalogEntriesRequest) (*ListCatalogEntriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListCatalogEntries not implemented")
 }
@@ -446,12 +452,6 @@ func (UnimplementedRuntimeServiceServer) RefreshAndReconcile(context.Context, *R
 }
 func (UnimplementedRuntimeServiceServer) ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListConnectors not implemented")
-}
-func (UnimplementedRuntimeServiceServer) ListExamples(context.Context, *ListExamplesRequest) (*ListExamplesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListExamples not implemented")
-}
-func (UnimplementedRuntimeServiceServer) UnpackExample(context.Context, *UnpackExampleRequest) (*UnpackExampleResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UnpackExample not implemented")
 }
 func (UnimplementedRuntimeServiceServer) mustEmbedUnimplementedRuntimeServiceServer() {}
 
@@ -664,6 +664,42 @@ func _RuntimeService_RenameFile_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_ListExamples_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListExamplesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListExamples(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ListExamples_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListExamples(ctx, req.(*ListExamplesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_UnpackExample_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnpackExampleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).UnpackExample(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_UnpackExample_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).UnpackExample(ctx, req.(*UnpackExampleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ListCatalogEntries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListCatalogEntriesRequest)
 	if err := dec(in); err != nil {
@@ -844,42 +880,6 @@ func _RuntimeService_ListConnectors_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_ListExamples_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListExamplesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).ListExamples(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_ListExamples_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).ListExamples(ctx, req.(*ListExamplesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_UnpackExample_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UnpackExampleRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).UnpackExample(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_UnpackExample_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).UnpackExample(ctx, req.(*UnpackExampleRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // RuntimeService_ServiceDesc is the grpc.ServiceDesc for RuntimeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -932,6 +932,14 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_RenameFile_Handler,
 		},
 		{
+			MethodName: "ListExamples",
+			Handler:    _RuntimeService_ListExamples_Handler,
+		},
+		{
+			MethodName: "UnpackExample",
+			Handler:    _RuntimeService_UnpackExample_Handler,
+		},
+		{
 			MethodName: "ListCatalogEntries",
 			Handler:    _RuntimeService_ListCatalogEntries_Handler,
 		},
@@ -970,14 +978,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListConnectors",
 			Handler:    _RuntimeService_ListConnectors_Handler,
-		},
-		{
-			MethodName: "ListExamples",
-			Handler:    _RuntimeService_ListExamples_Handler,
-		},
-		{
-			MethodName: "UnpackExample",
-			Handler:    _RuntimeService_UnpackExample_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

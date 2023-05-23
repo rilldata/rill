@@ -18,8 +18,6 @@ import type {
   RpcStatus,
   V1DeleteFileAndReconcileResponse,
   V1DeleteFileAndReconcileRequest,
-  V1UnpackExampleResponse,
-  RuntimeServiceUnpackExampleParams,
   V1ListExamplesResponse,
   V1ListInstancesResponse,
   RuntimeServiceListInstancesParams,
@@ -42,6 +40,8 @@ import type {
   RuntimeServicePutFileBody,
   V1RenameFileResponse,
   RuntimeServiceRenameFileBody,
+  V1UnpackExampleResponse,
+  RuntimeServiceUnpackExampleParams,
   V1ReconcileResponse,
   RuntimeServiceReconcileBody,
   V1TriggerSyncResponse,
@@ -158,66 +158,6 @@ export const createRuntimeServiceDeleteFileAndReconcile = <
     TContext
   >(mutationFn, mutationOptions);
 };
-/**
- * @summary UnpackExample unpacks an example project
- */
-export const runtimeServiceUnpackExample = (
-  params?: RuntimeServiceUnpackExampleParams,
-  signal?: AbortSignal
-) => {
-  return httpClient<V1UnpackExampleResponse>({
-    url: `/v1/example/unpack`,
-    method: "get",
-    params,
-    signal,
-  });
-};
-
-export const getRuntimeServiceUnpackExampleQueryKey = (
-  params?: RuntimeServiceUnpackExampleParams
-) => [`/v1/example/unpack`, ...(params ? [params] : [])] as const;
-
-export type RuntimeServiceUnpackExampleQueryResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceUnpackExample>>
->;
-export type RuntimeServiceUnpackExampleQueryError = RpcStatus;
-
-export const createRuntimeServiceUnpackExample = <
-  TData = Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
-  TError = RpcStatus
->(
-  params?: RuntimeServiceUnpackExampleParams,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
-      TError,
-      TData
-    >;
-  }
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ?? getRuntimeServiceUnpackExampleQueryKey(params);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof runtimeServiceUnpackExample>>
-  > = ({ signal }) => runtimeServiceUnpackExample(params, signal);
-
-  const query = createQuery<
-    Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
-    TError,
-    TData
-  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
-    TData,
-    TError
-  > & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
 /**
  * @summary ListExamples lists all the examples embedded into binary
  */
@@ -1003,6 +943,76 @@ export const createRuntimeServiceRenameFile = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary UnpackExample unpacks an example project
+ */
+export const runtimeServiceUnpackExample = (
+  instanceId: string,
+  params?: RuntimeServiceUnpackExampleParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1UnpackExampleResponse>({
+    url: `/v1/instances/${instanceId}/files/unpack-example`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceUnpackExampleQueryKey = (
+  instanceId: string,
+  params?: RuntimeServiceUnpackExampleParams
+) =>
+  [
+    `/v1/instances/${instanceId}/files/unpack-example`,
+    ...(params ? [params] : []),
+  ] as const;
+
+export type RuntimeServiceUnpackExampleQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceUnpackExample>>
+>;
+export type RuntimeServiceUnpackExampleQueryError = RpcStatus;
+
+export const createRuntimeServiceUnpackExample = <
+  TData = Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  params?: RuntimeServiceUnpackExampleParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceUnpackExampleQueryKey(instanceId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceUnpackExample>>
+  > = ({ signal }) => runtimeServiceUnpackExample(instanceId, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary Reconcile applies a full set of artifacts from a repo to the catalog and infra.
 It attempts to infer a minimal number of migrations to apply to reconcile the current state with

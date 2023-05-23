@@ -48,34 +48,6 @@ paths:
             $ref: '#/definitions/v1DeleteFileAndReconcileRequest'
       tags:
         - RuntimeService
-  /v1/example/unpack:
-    get:
-      summary: UnpackExample unpacks an example project
-      operationId: RuntimeService_UnpackExample
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1UnpackExampleResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: name
-          in: query
-          required: false
-          type: string
-        - name: force
-          in: query
-          required: false
-          type: boolean
-        - name: instanceId
-          in: query
-          required: false
-          type: string
-      tags:
-        - RuntimeService
   /v1/examples:
     get:
       summary: ListExamples lists all the examples embedded into binary
@@ -459,6 +431,34 @@ paths:
               toPath:
                 type: string
             title: Request message for RuntimeService.RenameFile
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/unpack-example:
+    get:
+      summary: UnpackExample unpacks an example project
+      operationId: RuntimeService_UnpackExample
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UnpackExampleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: query
+          required: false
+          type: string
+        - name: force
+          in: query
+          required: false
+          type: boolean
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:

@@ -161,6 +161,11 @@ export type QueryServiceColumnCardinalityParams = {
   priority?: number;
 };
 
+export type RuntimeServiceUnpackExampleParams = {
+  name?: string;
+  force?: boolean;
+};
+
 export type RuntimeServiceRenameFileBody = {
   fromPath?: string;
   toPath?: string;
@@ -217,12 +222,6 @@ export type RuntimeServiceDeleteInstanceBody = {
 export type RuntimeServiceListInstancesParams = {
   pageSize?: number;
   pageToken?: string;
-};
-
-export type RuntimeServiceUnpackExampleParams = {
-  name?: string;
-  force?: boolean;
-  instanceId?: string;
 };
 
 export interface V1UnpackExampleResponse {

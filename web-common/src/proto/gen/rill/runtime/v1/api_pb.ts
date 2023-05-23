@@ -2818,19 +2818,19 @@ export class Example extends Message<Example> {
  */
 export class UnpackExampleRequest extends Message<UnpackExampleRequest> {
   /**
-   * @generated from field: string name = 1;
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string name = 2;
    */
   name = "";
 
   /**
-   * @generated from field: bool force = 2;
+   * @generated from field: bool force = 3;
    */
   force = false;
-
-  /**
-   * @generated from field: string instance_id = 3;
-   */
-  instanceId = "";
 
   constructor(data?: PartialMessage<UnpackExampleRequest>) {
     super();
@@ -2840,9 +2840,9 @@ export class UnpackExampleRequest extends Message<UnpackExampleRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.UnpackExampleRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "force", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "force", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnpackExampleRequest {

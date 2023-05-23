@@ -7,9 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
-	"github.com/bmatcuk/doublestar/v4"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 )
@@ -57,6 +55,7 @@ func List() ([]Example, error) {
 	return exampleList, nil
 }
 
+// TODO deprecate this when all code has moved to unpacking examples
 func Init(name, projectDir string) error {
 	examplePath := path.Join("embed", "dist", name)
 
@@ -92,28 +91,6 @@ func Init(name, projectDir string) error {
 	return nil
 }
 
-func Unpack(name string) ([]fs.File, []string, error) {
-	exampleDir := path.Join("embed", "dist", name)
-	paths, err := doublestar.Glob(examplesFS, path.Join(exampleDir, "**"))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if len(paths) == 0 {
-		return nil, nil, ErrExampleNotFound
-	}
-
-	filePaths := make([]string, len(paths))
-	files := make([]fs.File, len(paths))
-	for i, path := range paths {
-		file, err := examplesFS.Open(path)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		files[i] = file
-		_, filePaths[i], _ = strings.Cut(paths[i], exampleDir)
-	}
-
-	return files, filePaths, nil
+func Unpack(name string) (fs.FS, error) {
+	return fs.Sub(examplesFS, filepath.Join("embed", "dist", name))
 }
