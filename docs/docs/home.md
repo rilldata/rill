@@ -25,10 +25,10 @@ rill start
 Or try an example project:
 ```
 rill init --example
-rill start
+cd default && rill start
 ```
 
-![home-demo](https://user-images.githubusercontent.com/5587788/180313797-ef50ec6e-fc2d-4072-bb77-b2acf59205d7.gif "770784519")
+![home-demo](https://github.com/rilldata/rill-developer/assets/5587788/b9b0d375-98f3-4ab5-bef2-e7d799748424 "829237828")
 
 
 ## We want to hear from you

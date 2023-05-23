@@ -6,7 +6,7 @@ title: rill project show
 Show project details
 
 ```
-rill project show <project-name> [flags]
+rill project show [<project-name>] [flags]
 ```
 
 ### Flags
