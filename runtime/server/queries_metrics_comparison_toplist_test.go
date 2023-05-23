@@ -61,12 +61,12 @@ func TestServer_MetricsViewComparisonToplist(t *testing.T) {
 		DimensionName:   "ad words",
 		MeasureNames:    []string{"measure_2"},
 		BaseTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-01T00:00:00Z"),
-			End:   parseTime(t, "2022-01-01T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-01T23:59:00Z"),
 		},
 		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-02T00:00:00Z"),
-			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-02T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
@@ -111,12 +111,12 @@ func TestServer_MetricsViewComparisonToplist_inline_measures(t *testing.T) {
 			},
 		},
 		BaseTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-01T00:00:00Z"),
-			End:   parseTime(t, "2022-01-01T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-01T23:59:00Z"),
 		},
 		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-02T00:00:00Z"),
-			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-02T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
@@ -154,12 +154,12 @@ func TestServer_MetricsViewComparisonToplist_nulls(t *testing.T) {
 		DimensionName:   "domain",
 		MeasureNames:    []string{"measure_2"},
 		BaseTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-01T00:00:00Z"),
-			End:   parseTime(t, "2022-01-01T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-01T23:59:00Z"),
 		},
 		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-02T00:00:00Z"),
-			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-02T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
@@ -213,12 +213,12 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base(t *testing.T) {
 		DimensionName:   "domain",
 		MeasureNames:    []string{"measure_2"},
 		BaseTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-01T00:00:00Z"),
-			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
 		},
 		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-03T00:00:00Z"),
-			End:   parseTime(t, "2022-01-04T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
@@ -263,12 +263,12 @@ func TestServer_MetricsViewComparisonToplist_sort_by_comparison(t *testing.T) {
 		DimensionName:   "domain",
 		MeasureNames:    []string{"measure_2"},
 		BaseTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-01T00:00:00Z"),
-			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
 		},
 		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-03T00:00:00Z"),
-			End:   parseTime(t, "2022-01-04T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
@@ -314,12 +314,12 @@ func TestServer_MetricsViewComparisonToplist_sort_by_abs_delta(t *testing.T) {
 		DimensionName:   "domain",
 		MeasureNames:    []string{"measure_1"},
 		BaseTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-01T00:00:00Z"),
-			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
 		},
 		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-03T00:00:00Z"),
-			End:   parseTime(t, "2022-01-04T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
@@ -364,12 +364,12 @@ func TestServer_MetricsViewComparisonToplist_sort_by_rel_delta(t *testing.T) {
 		DimensionName:   "domain",
 		MeasureNames:    []string{"measure_1"},
 		BaseTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-01T00:00:00Z"),
-			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
 		},
 		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-03T00:00:00Z"),
-			End:   parseTime(t, "2022-01-04T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
@@ -406,12 +406,12 @@ func TestServer_MetricsViewComparisonToplist_sort_error(t *testing.T) {
 		DimensionName:   "domain",
 		MeasureNames:    []string{"measure_2"},
 		BaseTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-01T00:00:00Z"),
-			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
 		},
 		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-03T00:00:00Z"),
-			End:   parseTime(t, "2022-01-04T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
@@ -441,12 +441,12 @@ func TestServer_MetricsViewComparisonToplist_sort_by_delta_limit_1(t *testing.T)
 		DimensionName:   "domain",
 		MeasureNames:    []string{"measure_2"},
 		BaseTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-01T00:00:00Z"),
-			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
 		},
 		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-03T00:00:00Z"),
-			End:   parseTime(t, "2022-01-04T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
@@ -478,12 +478,12 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base_limit_1(t *testing.T) 
 		DimensionName:   "domain",
 		MeasureNames:    []string{"measure_2"},
 		BaseTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-01T00:00:00Z"),
-			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
 		},
 		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-03T00:00:00Z"),
-			End:   parseTime(t, "2022-01-04T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
@@ -515,12 +515,12 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base_filter(t *testing.T) {
 		DimensionName:   "domain",
 		MeasureNames:    []string{"measure_2"},
 		BaseTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-01T00:00:00Z"),
-			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
 		},
 		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-03T00:00:00Z"),
-			End:   parseTime(t, "2022-01-04T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
@@ -576,12 +576,12 @@ func TestServer_MetricsViewComparisonToplist_2_measures(t *testing.T) {
 		DimensionName:   "domain",
 		MeasureNames:    []string{"measure_1", "measure_2"},
 		BaseTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-01T00:00:00Z"),
-			End:   parseTime(t, "2022-01-02T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
 		},
 		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: parseTime(t, "2022-01-03T00:00:00Z"),
-			End:   parseTime(t, "2022-01-04T23:59:00Z"),
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{

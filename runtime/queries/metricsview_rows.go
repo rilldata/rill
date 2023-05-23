@@ -38,8 +38,11 @@ func (q *MetricsViewRows) Deps() []string {
 	return []string{q.MetricsViewName}
 }
 
-func (q *MetricsViewRows) MarshalResult() any {
-	return q.Result
+func (q *MetricsViewRows) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *MetricsViewRows) UnmarshalResult(v any) error {

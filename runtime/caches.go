@@ -3,16 +3,31 @@ package runtime
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
-	lru "github.com/hashicorp/golang-lru"
+	"github.com/dgraph-io/ristretto"
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/singleflight"
 	"github.com/rilldata/rill/runtime/services/catalog"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/global"
 	"go.uber.org/zap"
 )
 
 var errConnectionCacheClosed = errors.New("connectionCache: closed")
+
+var (
+	meter                        = global.Meter("runtime")
+	queryCacheHitsCounter        = observability.Must(meter.Int64ObservableCounter("query_cache.hits"))
+	queryCacheMissesCounter      = observability.Must(meter.Int64ObservableCounter("query_cache.misses"))
+	queryCacheItemCountGauge     = observability.Must(meter.Int64ObservableGauge("query_cache.items"))
+	queryCacheSizeBytesGauge     = observability.Must(meter.Int64ObservableGauge("query_cache.size", metric.WithUnit("bytes")))
+	queryCacheEntrySizeHistogram = observability.Must(meter.Int64Histogram("query_cache.entry_size", metric.WithUnit("bytes")))
+)
 
 // cache for instance specific connections only
 // all instance specific connections should be opened via connection cache only
@@ -143,21 +158,81 @@ func (c *migrationMetaCache) evict(ctx context.Context, instID string) {
 }
 
 type queryCache struct {
-	cache *lru.Cache
+	cache *ristretto.Cache
+	group *singleflight.Group
 }
 
-func newQueryCache(size int) *queryCache {
-	cache, err := lru.New(size)
+func newQueryCache(sizeInBytes int64) *queryCache {
+	if sizeInBytes <= 100 {
+		panic(fmt.Sprintf("invalid cache size should be greater than 100: %v", sizeInBytes))
+	}
+	cache, err := ristretto.NewCache(&ristretto.Config{
+		// Use 5% of cache memory for storing counters. Each counter takes roughly 3 bytes.
+		// Recommended value is 10x the number of items in cache when full.
+		// Tune this again based on metrics.
+		NumCounters: int64(float64(sizeInBytes) * 0.05 / 3),
+		MaxCost:     int64(float64(sizeInBytes) * 0.95),
+		BufferItems: 64,
+		Metrics:     true,
+	})
 	if err != nil {
 		panic(err)
 	}
-	return &queryCache{cache: cache}
+
+	observability.Must(meter.RegisterCallback(func(ctx context.Context, observer metric.Observer) error {
+		observer.ObserveInt64(queryCacheHitsCounter, int64(cache.Metrics.Hits()))
+		observer.ObserveInt64(queryCacheMissesCounter, int64(cache.Metrics.Misses()))
+		observer.ObserveInt64(queryCacheItemCountGauge, int64(cache.Metrics.KeysAdded()-cache.Metrics.KeysEvicted()))
+		observer.ObserveInt64(queryCacheSizeBytesGauge, int64(cache.Metrics.CostAdded()-cache.Metrics.CostEvicted()))
+		return nil
+	}, queryCacheHitsCounter, queryCacheMissesCounter, queryCacheItemCountGauge, queryCacheSizeBytesGauge))
+	return &queryCache{
+		cache: cache,
+		group: &singleflight.Group{},
+	}
 }
 
-func (c *queryCache) get(key queryCacheKey) (any, bool) {
+// getOrLoad gets the key from cache if present. If absent, it looks up the key using the loadFn and puts it into cache before returning value.
+func (c *queryCache) getOrLoad(ctx context.Context, key, queryName string, loadFn func(context.Context) (any, error)) (any, bool, error) {
+	if val, ok := c.cache.Get(key); ok {
+		return val, true, nil
+	}
+
+	cached := true
+	val, err := c.group.Do(ctx, key, func(ctx context.Context) (interface{}, error) {
+		// check the cache again
+		if val, ok := c.cache.Get(key); ok {
+			return val, nil
+		}
+
+		val, err := loadFn(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		// only one caller of load gets this return value
+		cached = false
+		cachedObject := val.(*QueryResult)
+		attrs := attribute.NewSet(
+			attribute.String("query", queryName),
+		)
+		queryCacheEntrySizeHistogram.Record(ctx, cachedObject.Bytes, metric.WithAttributeSet(attrs))
+		c.cache.Set(key, cachedObject.Value, cachedObject.Bytes)
+		return cachedObject.Value, nil
+	})
+	if err != nil {
+		return nil, false, err
+	}
+
+	return val, cached, nil
+}
+
+// nolint:unused // use in tests
+func (c *queryCache) add(key, val any, cost int64) bool {
+	return c.cache.Set(key, val, cost)
+}
+
+// nolint:unused // use in tests
+func (c *queryCache) get(key any) (any, bool) {
 	return c.cache.Get(key)
-}
-
-func (c *queryCache) add(key queryCacheKey, value any) bool {
-	return c.cache.Add(key, value)
 }
