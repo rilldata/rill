@@ -4,8 +4,17 @@ sidebar_label: Deploy an existing project
 sidebar_position: 0
 ---
 
-Follow this tutorial to deploy an existing Rill project to Rill Cloud. When you deploy a project, its dashboards become available online and you can invite other people to access it.
-
+Follow this tutorial to deploy an existing Rill project to Rill Cloud. Deploying a project makes its dashboards available online and enables you to invite others to access it.
+Flow diagram below shows the steps needed for deploying an existing project.  
+```mermaid
+graph LR;
+    A(Local artifacts);
+    B(GitHub);
+    C(Rill Cloud);
+    A--Pushed -->B;
+    B--Continuous Deployment-->C;
+```
+    
 ## Push the project to Github
 
 Rill Cloud connects to a repository on Github containing a Rill project, and continuously deploys that project on every push. Therefore, your project must be on Github before you deploy it to Rill.
@@ -41,7 +50,7 @@ rill deploy
 
 The CLI will guide you through authenticating with Rill Cloud and granting read-only access to your Rill project on Github.
 
-## Check status
+## Checking deployment status
 
 Once the deployment has completed, the browser will open on your project's status page. You can also check the project status from the command-line by running:
 ```
@@ -55,4 +64,10 @@ Your project on Rill Cloud will automatically re-deploy every time you `git push
 To refresh data sources without pushing code changes, run:
 ```
 rill project reconcile --refresh
+```
+
+## Deploying from a branch other than `main`
+A branch from which continuous deployment is setup can be changed while editing the project. To change the branch, run:
+```
+rill project edit
 ```
