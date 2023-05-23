@@ -56,13 +56,6 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 
 	appendToTable := false
 	summary := &drivers.IngestionSummary{}
-	var tableSchema map[string]string
-
-	// parse required properties from source.Properties
-	allowColAddition, allowColRelaxation, err := schemaRelaxationProperties(source.Properties)
-	if err != nil {
-		return nil, err
-	}
 
 	format, formatDefined := source.Properties["format"].(string)
 	if formatDefined {
@@ -76,6 +69,11 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 		ingestionProps = map[string]any{}
 	}
 
+	a, err := newAppender(c, source, ingestionProps)
+	if err != nil {
+		return nil, err
+	}
+
 	for iterator.HasNext() {
 		files, err := iterator.NextBatch(_iteratorBatch)
 		if err != nil {
@@ -86,119 +84,27 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 			format = fileutil.FullExt(files[0])
 			formatDefined = true
 		}
-
-		from, err := sourceReader(files, format, ingestionProps)
-		if err != nil {
-			return nil, err
-		}
-
 		var query string
 		if appendToTable {
-			srcSchema, newSchema, err := c.updateSchema(ctx, from, files, source, tableSchema, allowColAddition, allowColRelaxation)
-			if err != nil {
-				return nil, fmt.Errorf("failed to update schema %w", err)
+			if err := a.appendData(ctx, files, format); err != nil {
+				return nil, err
 			}
-
-			tableSchema = newSchema
-			if !hasKey(ingestionProps, "columns", "types", "dtypes") && format != ".parquet" {
-				// add columns and their datatypes to ensure the datatypes are not inferred again
-				from, err = sourceReader(files, format, addSchemaInference(ingestionProps, srcSchema))
-				if err != nil {
-					return nil, err
-				}
-			}
-
-			colNames := strings.Join(keys(srcSchema), ",")
-			query = fmt.Sprintf("INSERT INTO %q (%s) (SELECT %s FROM %s);", source.Name, colNames, colNames, from)
 		} else {
+			from, err := sourceReader(files, format, ingestionProps)
+			if err != nil {
+				return nil, err
+			}
+
 			query = fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from)
-		}
-		if err := c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1}); err != nil {
-			return nil, err
+			if err := c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1}); err != nil {
+				return nil, err
+			}
 		}
 
 		summary.BytesIngested += fileSize(files)
 		appendToTable = true
 	}
 	return summary, nil
-}
-
-// updateSchema updates the schema of the table in case new file adds a new column or
-// updates the datatypes of an existing columns with a wider datatype.
-func (c *connection) updateSchema(ctx context.Context, from string, fileNames []string, source *connectors.Source, oldSchema map[string]string,
-	allowAddition, allowRelaxation bool,
-) (srcSchema, currentSchema map[string]string, err error) {
-	// schema of new files
-	if srcSchema, err = c.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE (SELECT * FROM %s LIMIT 0);", from)); err != nil {
-		return
-	}
-
-	// combined schema
-	qry := fmt.Sprintf("DESCRIBE ((SELECT * FROM %s limit 0) UNION ALL BY NAME (SELECT * FROM %s limit 0));", source.Name, from)
-	unionSchema, err := c.scanSchemaFromQuery(ctx, qry)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// current schema
-	currentSchema = oldSchema
-	if currentSchema == nil {
-		currentSchema, err = c.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE %s;", source.Name))
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-
-	newCols := make(map[string]string)
-	colTypeChanged := make(map[string]string)
-	for colName, colType := range unionSchema {
-		oldType, ok := currentSchema[colName]
-		if !ok {
-			newCols[colName] = colType
-		} else if oldType != colType {
-			colTypeChanged[colName] = colType
-		}
-	}
-
-	if !allowRelaxation {
-		if len(srcSchema) < len(unionSchema) {
-			c.logger.Error("new files are missing columns and column relaxation not allowed",
-				zap.String("files", strings.Join(names(fileNames), ",")),
-				zap.String("columns", strings.Join(missingMapKeys(unionSchema, srcSchema), ",")))
-			return nil, nil, errors.New("new files are missing columns and schema relaxation not allowed")
-		}
-
-		if len(colTypeChanged) != 0 {
-			c.logger.Error("new files change datatypes of some columns and column relaxation not allowed",
-				zap.String("files", strings.Join(names(fileNames), ",")),
-				zap.String("columns", strings.Join(keys(colTypeChanged), ",")))
-			return nil, nil, errors.New("new files change datatypes of some columns and column relaxation not allowed")
-		}
-	}
-
-	if len(newCols) != 0 && !allowAddition {
-		c.logger.Error("new files have new columns and column addition not allowed",
-			zap.String("files", strings.Join(names(fileNames), ",")),
-			zap.String("columns", strings.Join(keys(newCols), ",")))
-		return nil, nil, errors.New("new files have new columns and column addition not allowed")
-	}
-
-	for colName, colType := range newCols {
-		currentSchema[colName] = colType
-		qry := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", source.Name, colName, colType)
-		if err := c.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
-			return nil, nil, err
-		}
-	}
-
-	for colName, colType := range colTypeChanged {
-		currentSchema[colName] = colType
-		qry := fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s SET DATA TYPE %s", source.Name, colName, colType)
-		if err := c.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
-			return nil, nil, err
-		}
-	}
-	return srcSchema, currentSchema, nil
 }
 
 // local files
@@ -267,6 +173,142 @@ func (c *connection) scanSchemaFromQuery(ctx context.Context, qry string) (map[s
 		schema[s.ColumnName] = s.ColumnType
 	}
 	return schema, nil
+}
+
+type appender struct {
+	*connection
+	source             *connectors.Source
+	ingestionProps     map[string]any
+	allowColAddition   bool
+	allowColRelaxation bool
+	tableSchema        map[string]string
+}
+
+func newAppender(c *connection, source *connectors.Source, ingestionProps map[string]any) (*appender, error) {
+	// parse required properties from source.Properties
+	allowColAddition, allowColRelaxation, err := schemaRelaxationProperties(source.Properties)
+	if err != nil {
+		return nil, err
+	}
+	return &appender{
+		connection:         c,
+		source:             source,
+		ingestionProps:     ingestionProps,
+		allowColAddition:   allowColAddition,
+		allowColRelaxation: allowColRelaxation,
+		tableSchema:        nil,
+	}, nil
+}
+
+func (a *appender) appendData(ctx context.Context, files []string, format string) error {
+	from, err := sourceReader(files, format, a.ingestionProps)
+	if err != nil {
+		return err
+	}
+
+	query := fmt.Sprintf("INSERT INTO %q (SELECT * FROM %s);", a.source.Name, from)
+	err = a.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
+	if err == nil || !containsAny(err.Error(), []string{"binder error", "conversion error"}) {
+		return err
+	}
+
+	// error is of type binder error (more or less columns than current table schema)
+	// or of type conversion error (datatype changed or column sequence changed)
+	srcSchema, err := a.updateSchema(ctx, from, files)
+	if err != nil {
+		return fmt.Errorf("failed to update schema %w", err)
+	}
+
+	if !hasKey(a.ingestionProps, "columns", "types", "dtypes") && format != ".parquet" {
+		// add columns and their datatypes to ensure the datatypes are not inferred again
+		from, err = sourceReader(files, format, addSchemaInference(a.ingestionProps, srcSchema))
+		if err != nil {
+			return err
+		}
+	}
+
+	colNames := strings.Join(keys(srcSchema), ",")
+	query = fmt.Sprintf("INSERT INTO %q (%s) (SELECT %s FROM %s);", a.source.Name, colNames, colNames, from)
+	return a.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
+}
+
+// updateSchema updates the schema of the table in case new file adds a new column or
+// updates the datatypes of an existing columns with a wider datatype.
+func (a *appender) updateSchema(ctx context.Context, from string, fileNames []string) (srcSchema map[string]string, err error) {
+	// schema of new files
+	if srcSchema, err = a.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE (SELECT * FROM %s LIMIT 0);", from)); err != nil {
+		return
+	}
+
+	// combined schema
+	qry := fmt.Sprintf("DESCRIBE ((SELECT * FROM %s limit 0) UNION ALL BY NAME (SELECT * FROM %s limit 0));", a.source.Name, from)
+	unionSchema, err := a.scanSchemaFromQuery(ctx, qry)
+	if err != nil {
+		return nil, err
+	}
+
+	// current schema
+	if a.tableSchema == nil {
+		a.tableSchema, err = a.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE %s;", a.source.Name))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	newCols := make(map[string]string)
+	colTypeChanged := make(map[string]string)
+	for colName, colType := range unionSchema {
+		oldType, ok := a.tableSchema[colName]
+		if !ok {
+			newCols[colName] = colType
+		} else if oldType != colType {
+			colTypeChanged[colName] = colType
+		}
+	}
+
+	if !a.allowColRelaxation {
+		if len(srcSchema) < len(unionSchema) {
+			fileNames := strings.Join(names(fileNames), ",")
+			columns := strings.Join(missingMapKeys(a.tableSchema, srcSchema), ",")
+			a.logger.Error("new files are missing columns and column relaxation not allowed", zap.String("files", fileNames),
+				zap.String("columns", columns))
+			return nil, fmt.Errorf("new files %q are missing columns %q and schema relaxation not allowed", fileNames, columns)
+		}
+
+		if len(colTypeChanged) != 0 {
+			fileNames := strings.Join(names(fileNames), ",")
+			columns := strings.Join(keys(colTypeChanged), ",")
+			a.logger.Error("new files change datatypes of some columns and column relaxation not allowed", zap.String("files", fileNames),
+				zap.String("columns", columns))
+			return nil, fmt.Errorf("new files %q change datatypes of some columns %q and column relaxation not allowed", fileNames, columns)
+		}
+	}
+
+	if len(newCols) != 0 && !a.allowColAddition {
+		fileNames := strings.Join(names(fileNames), ",")
+		columns := strings.Join(missingMapKeys(srcSchema, a.tableSchema), ",")
+		a.logger.Error("new files have new columns and column addition not allowed", zap.String("files", fileNames),
+			zap.String("columns", columns))
+		return nil, fmt.Errorf("new files %q have new columns %q and column addition not allowed", fileNames, columns)
+	}
+
+	for colName, colType := range newCols {
+		a.tableSchema[colName] = colType
+		qry := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", a.source.Name, colName, colType)
+		if err := a.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
+			return nil, err
+		}
+	}
+
+	for colName, colType := range colTypeChanged {
+		a.tableSchema[colName] = colType
+		qry := fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s SET DATA TYPE %s", a.source.Name, colName, colType)
+		if err := a.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
+			return nil, err
+		}
+	}
+
+	return srcSchema, nil
 }
 
 func resolveLocalPath(env *connectors.Env, path, sourceName string) (string, error) {
