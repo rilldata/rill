@@ -79,9 +79,9 @@ var spec = connectors.Spec{
 				if err != nil {
 					return err
 				}
-
+				
 				// ignoring error since PathError is already validated
-				content, _ := os.ReadFile(path)
+				content, _ := os.ReadFile(strings.TrimSpace(path))
 				return string(content)
 			},
 		},
