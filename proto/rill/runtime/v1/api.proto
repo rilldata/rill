@@ -166,6 +166,11 @@ service RuntimeService {
   rpc ListExamples(ListExamplesRequest) returns (ListExamplesResponse) {
     option (google.api.http) = {get: "/v1/examples"};
   }
+
+  // UnpackExample unpacks an example project
+  rpc UnpackExample(UnpackExampleRequest) returns (UnpackExampleResponse) {
+    option (google.api.http) = {get: "/v1/example/unpack"};
+  }
 }
 
 // Request message for RuntimeService.Ping

@@ -18,6 +18,8 @@ import type {
   RpcStatus,
   V1DeleteFileAndReconcileResponse,
   V1DeleteFileAndReconcileRequest,
+  V1UnpackExampleResponse,
+  RuntimeServiceUnpackExampleParams,
   V1ListExamplesResponse,
   V1ListInstancesResponse,
   RuntimeServiceListInstancesParams,
@@ -156,6 +158,66 @@ export const createRuntimeServiceDeleteFileAndReconcile = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary UnpackExample unpacks an example project
+ */
+export const runtimeServiceUnpackExample = (
+  params?: RuntimeServiceUnpackExampleParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1UnpackExampleResponse>({
+    url: `/v1/example/unpack`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceUnpackExampleQueryKey = (
+  params?: RuntimeServiceUnpackExampleParams
+) => [`/v1/example/unpack`, ...(params ? [params] : [])] as const;
+
+export type RuntimeServiceUnpackExampleQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceUnpackExample>>
+>;
+export type RuntimeServiceUnpackExampleQueryError = RpcStatus;
+
+export const createRuntimeServiceUnpackExample = <
+  TData = Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
+  TError = RpcStatus
+>(
+  params?: RuntimeServiceUnpackExampleParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getRuntimeServiceUnpackExampleQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceUnpackExample>>
+  > = ({ signal }) => runtimeServiceUnpackExample(params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary ListExamples lists all the examples embedded into binary
  */

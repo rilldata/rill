@@ -219,6 +219,16 @@ export type RuntimeServiceListInstancesParams = {
   pageToken?: string;
 };
 
+export type RuntimeServiceUnpackExampleParams = {
+  name?: string;
+  force?: boolean;
+  instanceId?: string;
+};
+
+export interface V1UnpackExampleResponse {
+  [key: string]: any;
+}
+
 export type V1TypeCode = (typeof V1TypeCode)[keyof typeof V1TypeCode];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare

@@ -41,6 +41,7 @@ const (
 	RuntimeService_RefreshAndReconcile_FullMethodName    = "/rill.runtime.v1.RuntimeService/RefreshAndReconcile"
 	RuntimeService_ListConnectors_FullMethodName         = "/rill.runtime.v1.RuntimeService/ListConnectors"
 	RuntimeService_ListExamples_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListExamples"
+	RuntimeService_UnpackExample_FullMethodName          = "/rill.runtime.v1.RuntimeService/UnpackExample"
 )
 
 // RuntimeServiceClient is the client API for RuntimeService service.
@@ -99,6 +100,8 @@ type RuntimeServiceClient interface {
 	ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error)
 	// ListExamples lists all the examples embedded into binary
 	ListExamples(ctx context.Context, in *ListExamplesRequest, opts ...grpc.CallOption) (*ListExamplesResponse, error)
+	// UnpackExample unpacks an example project
+	UnpackExample(ctx context.Context, in *UnpackExampleRequest, opts ...grpc.CallOption) (*UnpackExampleResponse, error)
 }
 
 type runtimeServiceClient struct {
@@ -307,6 +310,15 @@ func (c *runtimeServiceClient) ListExamples(ctx context.Context, in *ListExample
 	return out, nil
 }
 
+func (c *runtimeServiceClient) UnpackExample(ctx context.Context, in *UnpackExampleRequest, opts ...grpc.CallOption) (*UnpackExampleResponse, error) {
+	out := new(UnpackExampleResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_UnpackExample_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RuntimeServiceServer is the server API for RuntimeService service.
 // All implementations must embed UnimplementedRuntimeServiceServer
 // for forward compatibility
@@ -363,6 +375,8 @@ type RuntimeServiceServer interface {
 	ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error)
 	// ListExamples lists all the examples embedded into binary
 	ListExamples(context.Context, *ListExamplesRequest) (*ListExamplesResponse, error)
+	// UnpackExample unpacks an example project
+	UnpackExample(context.Context, *UnpackExampleRequest) (*UnpackExampleResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
 
@@ -435,6 +449,9 @@ func (UnimplementedRuntimeServiceServer) ListConnectors(context.Context, *ListCo
 }
 func (UnimplementedRuntimeServiceServer) ListExamples(context.Context, *ListExamplesRequest) (*ListExamplesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListExamples not implemented")
+}
+func (UnimplementedRuntimeServiceServer) UnpackExample(context.Context, *UnpackExampleRequest) (*UnpackExampleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnpackExample not implemented")
 }
 func (UnimplementedRuntimeServiceServer) mustEmbedUnimplementedRuntimeServiceServer() {}
 
@@ -845,6 +862,24 @@ func _RuntimeService_ListExamples_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_UnpackExample_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnpackExampleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).UnpackExample(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_UnpackExample_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).UnpackExample(ctx, req.(*UnpackExampleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RuntimeService_ServiceDesc is the grpc.ServiceDesc for RuntimeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -939,6 +974,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListExamples",
 			Handler:    _RuntimeService_ListExamples_Handler,
+		},
+		{
+			MethodName: "UnpackExample",
+			Handler:    _RuntimeService_UnpackExample_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
