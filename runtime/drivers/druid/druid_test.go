@@ -86,13 +86,9 @@ func TestDruid(t *testing.T) {
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		Started: true,
 		ContainerRequest: testcontainers.ContainerRequest{
-			ExposedPorts: []string{"8081/tcp", "8082/tcp"},
 			WaitingFor:   wait.ForHTTP("/status/health").WithPort("8081"),
-			FromDockerfile: testcontainers.FromDockerfile{
-				Context:       ".",
-				Dockerfile:    "Dockerfile",
-				PrintBuildLog: true,
-			},
+			Image:        "gcr.io/rilldata/druid-micro:25.0.0",
+			ExposedPorts: []string{"8081/tcp", "8082/tcp"},
 		},
 	})
 	require.NoError(t, err)
@@ -164,21 +160,29 @@ func testSchemaAll(t *testing.T, olap drivers.OLAPStore) {
 	require.Equal(t, 1, len(tables))
 	require.Equal(t, testTable, tables[0].Name)
 
-	require.Equal(t, "__time", tables[0].Schema.Fields[0].Name)
-	require.Equal(t, runtimev1.Type_CODE_TIMESTAMP, tables[0].Schema.Fields[0].Type.Code)
-	require.Equal(t, false, tables[0].Schema.Fields[0].Type.Nullable)
-	require.Equal(t, "bid_price", tables[0].Schema.Fields[1].Name)
-	require.Equal(t, runtimev1.Type_CODE_FLOAT64, tables[0].Schema.Fields[1].Type.Code)
-	require.Equal(t, false, tables[0].Schema.Fields[1].Type.Nullable)
-	require.Equal(t, "domain", tables[0].Schema.Fields[2].Name)
-	require.Equal(t, runtimev1.Type_CODE_STRING, tables[0].Schema.Fields[2].Type.Code)
-	require.Equal(t, true, tables[0].Schema.Fields[2].Type.Nullable)
-	require.Equal(t, "id", tables[0].Schema.Fields[3].Name)
-	require.Equal(t, runtimev1.Type_CODE_INT64, tables[0].Schema.Fields[3].Type.Code)
-	require.Equal(t, false, tables[0].Schema.Fields[3].Type.Nullable)
-	require.Equal(t, "publisher", tables[0].Schema.Fields[4].Name)
-	require.Equal(t, runtimev1.Type_CODE_STRING, tables[0].Schema.Fields[4].Type.Code)
-	require.Equal(t, true, tables[0].Schema.Fields[4].Type.Nullable)
+	require.Equal(t, 5, len(tables[0].Schema.Fields))
+
+	mp := make(map[string]*runtimev1.StructType_Field)
+	for _, f := range tables[0].Schema.Fields {
+		mp[f.Name] = f
+	}
+
+	f := mp["__time"]
+	require.Equal(t, "__time", f.Name)
+	require.Equal(t, runtimev1.Type_CODE_TIMESTAMP, f.Type.Code)
+	require.Equal(t, false, f.Type.Nullable)
+	f = mp["bid_price"]
+	require.Equal(t, runtimev1.Type_CODE_FLOAT64, f.Type.Code)
+	require.Equal(t, false, f.Type.Nullable)
+	f = mp["domain"]
+	require.Equal(t, runtimev1.Type_CODE_STRING, f.Type.Code)
+	require.Equal(t, true, f.Type.Nullable)
+	f = mp["id"]
+	require.Equal(t, runtimev1.Type_CODE_INT64, f.Type.Code)
+	require.Equal(t, false, f.Type.Nullable)
+	f = mp["publisher"]
+	require.Equal(t, runtimev1.Type_CODE_STRING, f.Type.Code)
+	require.Equal(t, true, f.Type.Nullable)
 }
 
 func testSchemaLookup(t *testing.T, olap drivers.OLAPStore) {
