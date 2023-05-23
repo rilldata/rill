@@ -401,8 +401,8 @@ message ListExamplesResponse {
 
 // Request message for RuntimeService.UnpackExample
 message UnpackExampleRequest {
-  string instance_id = 1;
-  string name = 2;
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string name = 2 [(validate.rules).string.min_len = 1];
   bool force = 3;
 }
 
@@ -411,9 +411,8 @@ message UnpackExampleResponse {}
 
 // Request message for RuntimeService.UnpackEmpty
 message UnpackEmptyRequest {
-  string instance_id = 1;
-  string name = 2;
-  string version = 3;
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string title = 2 [(validate.rules).string.min_len = 1];
 }
 
 // Response message for RuntimeService.UnpackEmpty

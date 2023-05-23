@@ -107,7 +107,7 @@ func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequ
 	}
 
 	// Init empty project
-	err = c.InitEmpty(ctx, req.Name, req.Version)
+	err = c.InitEmpty(ctx, req.Title)
 	if err != nil {
 		return nil, err
 	}

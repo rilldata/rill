@@ -3247,9 +3247,27 @@ func (m *UnpackExampleRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_UnpackExampleRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := UnpackExampleRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Name
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := UnpackExampleRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Force
 
@@ -3332,6 +3350,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = UnpackExampleRequestValidationError{}
+
+var _UnpackExampleRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on UnpackExampleResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -3457,11 +3477,27 @@ func (m *UnpackEmptyRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for InstanceId
+	if !_UnpackEmptyRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := UnpackEmptyRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Name
-
-	// no validation rules for Version
+	if utf8.RuneCountInString(m.GetTitle()) < 1 {
+		err := UnpackEmptyRequestValidationError{
+			field:  "Title",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return UnpackEmptyRequestMultiError(errors)
@@ -3542,6 +3578,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = UnpackEmptyRequestValidationError{}
+
+var _UnpackEmptyRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 // Validate checks the field values on UnpackEmptyResponse with the rules
 // defined in the proto definition for this message. If any rules are

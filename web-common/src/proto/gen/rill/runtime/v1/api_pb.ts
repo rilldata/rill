@@ -1351,14 +1351,9 @@ export class UnpackEmptyRequest extends Message<UnpackEmptyRequest> {
   instanceId = "";
 
   /**
-   * @generated from field: string name = 2;
+   * @generated from field: string title = 2;
    */
-  name = "";
-
-  /**
-   * @generated from field: string version = 3;
-   */
-  version = "";
+  title = "";
 
   constructor(data?: PartialMessage<UnpackEmptyRequest>) {
     super();
@@ -1369,8 +1364,7 @@ export class UnpackEmptyRequest extends Message<UnpackEmptyRequest> {
   static readonly typeName = "rill.runtime.v1.UnpackEmptyRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnpackEmptyRequest {

@@ -167,8 +167,7 @@ export type RuntimeServiceUnpackExampleBody = {
 };
 
 export type RuntimeServiceUnpackEmptyBody = {
-  name?: string;
-  version?: string;
+  title?: string;
 };
 
 export type RuntimeServiceRenameFileBody = {

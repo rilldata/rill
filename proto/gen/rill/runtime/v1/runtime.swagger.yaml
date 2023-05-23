@@ -457,9 +457,7 @@ paths:
           schema:
             type: object
             properties:
-              name:
-                type: string
-              version:
+              title:
                 type: string
             title: Request message for RuntimeService.UnpackEmpty
       tags:
