@@ -18,7 +18,6 @@ import { TestEntityType, wrapRetryAssertion } from "./utils/helpers";
 import { useRegisteredServer } from "./utils/serverConfigs";
 import { createOrReplaceSource } from "./utils/sourceHelpers";
 import { waitForEntity } from "./utils/waitHelpers";
-import { asyncWait } from "@rilldata/web-local/lib/util/waitUtils";
 
 describe("dashboards", () => {
   const testBrowser = useRegisteredServer("dashboards");
@@ -143,9 +142,11 @@ describe("dashboards", () => {
         document.querySelector('[aria-label="Select time range"]').click();
       })()
 
-      For now, we will just introduce a latency in the e2e test
+      For now, we will wait for the menu to disappear before clicking the next menu
      */
-    await asyncWait(200);
+    await playwrightExpect(
+      page.getByLabel("Time comparison selector")
+    ).not.toBeVisible();
 
     // Switch to a custom time range
     await page.getByLabel("Select time range").click();
@@ -164,7 +165,6 @@ describe("dashboards", () => {
     // Flip back to All Time
     await page.getByLabel("Select time range").click();
     await page.getByRole("menuitem", { name: "All Time" }).click();
-    await page.getByText("Total records 100.0k").click();
 
     // Check number
     await playwrightExpect(
@@ -219,9 +219,6 @@ describe("dashboards", () => {
     // Get the dashboard name field and change it
     await page.getByLabel("Display name").fill("AdBids_model_dashboard_rename");
     await page.getByLabel("Display name").blur();
-    // TODO: change model?
-
-    // await asyncWait(3000);
 
     // Remove timestamp column
     await page.getByLabel("Remove timestamp column").click();
