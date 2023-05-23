@@ -10,7 +10,7 @@ export function useIsProjectInitialized(instanceId: string) {
       query: {
         select: (data) => {
           // Return true if `rill.yaml` exists, else false
-          return data.paths.length > 0;
+          return data.paths.length === 1;
         },
         refetchOnWindowFocus: true,
       },
