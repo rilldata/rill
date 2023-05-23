@@ -57,16 +57,15 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 						return err
 					}
 
-					displayPath := currentDir
-					defval := true
 					projectPath = currentDir
-
 					homeDir, err := os.UserHomeDir()
 					if err != nil {
 						return err
 					}
 
-					if strings.Contains(currentDir, homeDir) {
+					displayPath := currentDir
+					defval := true
+					if strings.HasPrefix(currentDir, homeDir) {
 						displayPath = strings.Replace(currentDir, homeDir, "~", 1)
 						if currentDir == homeDir {
 							defval = false

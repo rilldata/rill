@@ -44,7 +44,7 @@ func toTable(projects []*adminv1.Project) []*project {
 func toRow(o *adminv1.Project) *project {
 	githubURL := o.GithubUrl
 	if o.Subpath != "" {
-		githubURL = filepath.Join(o.GithubUrl, "tree/main", o.Subpath)
+		githubURL = filepath.Join(o.GithubUrl, "tree", o.ProdBranch, o.Subpath)
 	}
 
 	return &project{
