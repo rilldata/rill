@@ -161,7 +161,7 @@ export type QueryServiceColumnCardinalityParams = {
   priority?: number;
 };
 
-export type RuntimeServiceUnpackExampleParams = {
+export type RuntimeServiceUnpackExampleBody = {
   name?: string;
   force?: boolean;
 };

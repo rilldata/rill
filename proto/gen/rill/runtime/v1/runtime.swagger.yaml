@@ -434,7 +434,7 @@ paths:
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/files/unpack-example:
-    get:
+    post:
       summary: UnpackExample unpacks an example project
       operationId: RuntimeService_UnpackExample
       responses:
@@ -451,14 +451,17 @@ paths:
           in: path
           required: true
           type: string
-        - name: name
-          in: query
-          required: false
-          type: string
-        - name: force
-          in: query
-          required: false
-          type: boolean
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              force:
+                type: boolean
+            title: Request message for RuntimeService.UnpackExample
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
