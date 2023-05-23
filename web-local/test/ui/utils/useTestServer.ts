@@ -1,13 +1,13 @@
 import { afterAll, afterEach, beforeAll, beforeEach } from "@jest/globals";
 import { isPortOpen } from "@rilldata/web-local/lib/util/isPortOpen";
 import { asyncWaitUntil } from "@rilldata/web-local/lib/util/waitUtils";
-import { rmSync } from "fs";
+import axios from "axios";
+import { rmSync, writeFileSync } from "fs";
 import type { ChildProcess } from "node:child_process";
 import { spawn } from "node:child_process";
 import path from "node:path";
-import { Browser, chromium, Page } from "playwright";
+import { Browser, Page, chromium } from "playwright";
 import treeKill from "tree-kill";
-import axios from "axios";
 
 export function useTestServer(port: number, dir: string) {
   let childProcess: ChildProcess;
@@ -48,6 +48,12 @@ export function useTestServer(port: number, dir: string) {
         return false;
       }
     });
+
+    // Add `rill.yaml` file to the project repo
+    writeFileSync(
+      `${dir}/rill.yaml`,
+      'compiler: rill-beta\ntitle: "Test Project"'
+    );
   });
 
   afterEach(async () => {
