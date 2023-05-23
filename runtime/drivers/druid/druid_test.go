@@ -87,7 +87,7 @@ func TestDruid(t *testing.T) {
 		Started: true,
 		ContainerRequest: testcontainers.ContainerRequest{
 			WaitingFor:   wait.ForHTTP("/status/health").WithPort("8081"),
-			Image:        "druid-micro:latest",
+			Image:        "gcr.io/rilldata/druid-micro:25.0.0",
 			ExposedPorts: []string{"8081/tcp", "8082/tcp"},
 		},
 	})
