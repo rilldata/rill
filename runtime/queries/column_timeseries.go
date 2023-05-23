@@ -78,17 +78,17 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
+	timeRange, err := q.resolveNormaliseTimeRange(ctx, rt, instanceID, priority)
+	if err != nil {
+		return err
+	}
+
+	if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+		q.Result = &ColumnTimeseriesResult{}
+		return nil
+	}
+
 	return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context) error {
-		timeRange, err := q.resolveNormaliseTimeRange(ctx, rt, instanceID, priority)
-		if err != nil {
-			return err
-		}
-
-		if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-			q.Result = &ColumnTimeseriesResult{}
-			return nil
-		}
-
 		filter, args, err := buildFilterClauseForMetricsViewFilter(q.Filters, olap.Dialect())
 		if err != nil {
 			return err
@@ -290,15 +290,13 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 	valueColumn string,
 ) ([]*runtimev1.TimeSeriesValue, error) {
 	safeTimestampColumnName := safeName(timestampColumnName)
-	tc := &TableCardinality{
-		TableName: tableName,
-	}
-	err := tc.Resolve(ctx, rt, instanceID, priority)
+
+	rowCount, err := q.resolveRowCount(ctx, tableName, olap, priority)
 	if err != nil {
 		return nil, err
 	}
 
-	if tc.Result < int64(q.Pixels*4) {
+	if rowCount < int64(q.Pixels*4) {
 		rows, err := olap.Execute(ctx, &drivers.Statement{
 			Query:    `SELECT ` + safeTimestampColumnName + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
 			Priority: priority,
@@ -423,6 +421,32 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 	}
 
 	return results, nil
+}
+
+func (q *ColumnTimeseries) resolveRowCount(ctx context.Context, tableName string, olap drivers.OLAPStore, priority int) (int64, error) {
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("SELECT count(*) AS count FROM %s", safeName(tableName)),
+		Priority: priority,
+	})
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	var count int64
+	for rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 // normaliseMeasures is called before this method so measure.SqlName will be non empty
