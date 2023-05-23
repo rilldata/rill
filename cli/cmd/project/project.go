@@ -2,6 +2,7 @@ package project
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -41,10 +42,15 @@ func toTable(projects []*adminv1.Project) []*project {
 }
 
 func toRow(o *adminv1.Project) *project {
+	githubURL := o.GithubUrl
+	if o.Subpath != "" {
+		githubURL = filepath.Join(o.GithubUrl, "tree/main", o.Subpath)
+	}
+
 	return &project{
 		Name:         o.Name,
 		Public:       o.Public,
-		GithubURL:    o.GithubUrl,
+		GithubURL:    githubURL,
 		Organization: o.OrgName,
 	}
 }
