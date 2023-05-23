@@ -84,7 +84,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	editCmd.Flags().StringVar(&name, "project", "", "Project Name")
 	editCmd.Flags().StringVar(&description, "description", "", "Project Description")
 	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Production branch name")
-	editCmd.Flags().BoolVar(&public, "public", false, "Public Branch")
+	editCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	editCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 
 	return editCmd
