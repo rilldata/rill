@@ -97,6 +97,14 @@ service RuntimeService {
     };
   }
 
+  // UnpackEmpty unpacks an empty project
+  rpc UnpackEmpty(UnpackEmptyRequest) returns (UnpackEmptyResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/files/unpack-empty",
+      body: "*"
+    };
+  }
+
   // Catalog
 
   // ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
@@ -400,6 +408,16 @@ message UnpackExampleRequest {
 
 // Response message for RuntimeService.UnpackExample
 message UnpackExampleResponse {}
+
+// Request message for RuntimeService.UnpackEmpty
+message UnpackEmptyRequest {
+  string instance_id = 1;
+  string name = 2;
+  string version = 3;
+}
+
+// Response message for RuntimeService.UnpackEmpty
+message UnpackEmptyResponse {}
 
 // **********
 // Catalog

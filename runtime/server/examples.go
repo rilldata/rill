@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/examples"
 )
 
@@ -92,4 +93,24 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 	}
 
 	return &runtimev1.UnpackExampleResponse{}, nil
+}
+
+func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequest) (*runtimev1.UnpackEmptyResponse, error) {
+	repo, err := s.runtime.Repo(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+
+	c := rillv1beta.New(repo, req.InstanceId)
+	if c.IsInit(ctx) {
+		return nil, fmt.Errorf("a Rill project already exists")
+	}
+
+	// Init empty project
+	err = c.InitEmpty(ctx, req.Name, req.Version)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.UnpackEmptyResponse{}, nil
 }
