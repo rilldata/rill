@@ -46,9 +46,7 @@
     const res = await getArtifactErrors(config.instance_id);
     fileArtifactsStore.setErrors(res.affectedPaths, res.errors);
 
-    console.log("onMount page", $page.url.pathname);
-
-    return initMetrics(config);
+    initMetrics(config);
   });
 
   syncFileSystemPeriodically(
