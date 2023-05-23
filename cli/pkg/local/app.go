@@ -3,7 +3,6 @@ package local
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -15,7 +14,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
-	"github.com/rilldata/rill/cli/pkg/examples"
 	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/rilldata/rill/cli/pkg/variable"
 	"github.com/rilldata/rill/cli/pkg/web"
@@ -185,68 +183,6 @@ func (a *App) IsProjectInit() bool {
 
 	c := rillv1beta.New(repo, a.Instance.ID)
 	return c.IsInit(a.Context)
-}
-
-func (a *App) InitProject(exampleName string) error {
-	repo, err := a.Runtime.Repo(a.Context, a.Instance.ID)
-	if err != nil {
-		panic(err) // checks in New should ensure it never happens
-	}
-
-	c := rillv1beta.New(repo, a.Instance.ID)
-	if c.IsInit(a.Context) {
-		return fmt.Errorf("a Rill project already exists")
-	}
-
-	// Check if project path is pwd for nicer log messages
-	pwd, _ := os.Getwd()
-	isPwd := a.ProjectPath == pwd
-
-	// If no example is provided, init an empty project
-	if exampleName == "" {
-		// Infer a default project name from its path
-		defaultName := filepath.Base(a.ProjectPath)
-		if defaultName == "" || defaultName == "." || defaultName == ".." {
-			defaultName = "untitled"
-		}
-
-		// Init empty project
-		err := c.InitEmpty(a.Context, defaultName, a.Version.Number)
-		if err != nil {
-			if isPwd {
-				return fmt.Errorf("failed to initialize project in the current directory (detailed error: %w)", err)
-			}
-			return fmt.Errorf("failed to initialize project in '%s' (detailed error: %w)", a.ProjectPath, err)
-		}
-
-		// Log success
-		if isPwd {
-			a.Logger.Infof("Initialized empty project in the current directory")
-		} else {
-			a.Logger.Infof("Initialized empty project at '%s'", a.ProjectPath)
-		}
-
-		return nil
-	}
-
-	// It's an example project. We currently only support examples through direct file unpacking.
-	// TODO: Support unpacking examples through rillv1beta, instead of unpacking files.
-
-	err = examples.Init(exampleName, a.ProjectPath)
-	if err != nil {
-		if errors.Is(err, examples.ErrExampleNotFound) {
-			return fmt.Errorf("example project '%s' not found", exampleName)
-		}
-		return fmt.Errorf("failed to initialize project (detailed error: %w)", err)
-	}
-
-	if isPwd {
-		a.Logger.Infof("Initialized example project '%s' in the current directory", exampleName)
-	} else {
-		a.Logger.Infof("Initialized example project '%s' in directory '%s'", exampleName, a.ProjectPath)
-	}
-
-	return nil
 }
 
 func (a *App) Reconcile(strict bool) error {

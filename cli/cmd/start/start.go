@@ -3,9 +3,10 @@ package start
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
@@ -27,7 +28,6 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	var strict bool
 	var logFormat string
 	var variables []string
-	var exampleName string
 
 	startCmd := &cobra.Command{
 		Use:   "start [<path>]",
@@ -50,30 +50,32 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 					return fmt.Errorf("required arg <path> missing")
 				}
 
-				fmt.Println("No existing project found. Enter name to initialize a new Rill project.")
-				questions := []*survey.Question{
-					{
-						Name: "name",
-						Prompt: &survey.Input{
-							Message: "Enter project name",
-							Default: cmdutil.DefaultProjectName(),
-						},
-						Validate: func(any interface{}) error {
-							name := any.(string)
-							if name == "" {
-								return fmt.Errorf("empty name")
-							}
-							return nil
-						},
-					},
+				currentDir, err := filepath.Abs("")
+				if err != nil {
+					return err
 				}
 
-				if !cmd.Flags().Changed("example") {
-					if err := survey.Ask(questions, &projectPath); err != nil {
-						return err
+				projectPath = currentDir
+				homeDir, err := os.UserHomeDir()
+				if err != nil {
+					return err
+				}
+
+				displayPath := currentDir
+				defval := true
+				if strings.HasPrefix(currentDir, homeDir) {
+					displayPath = strings.Replace(currentDir, homeDir, "~", 1)
+					if currentDir == homeDir {
+						defval = false
+						displayPath = "~/"
 					}
-				} else {
-					projectPath = exampleName
+				}
+
+				msg := fmt.Sprintf("Rill will create project files in %q. Do you want to continue?", displayPath)
+				confirm := cmdutil.ConfirmPrompt(msg, "", defval)
+				if !confirm {
+					cmdutil.WarnPrinter("Aborted")
+					return nil
 				}
 			}
 
@@ -88,21 +90,11 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer app.Close()
 
-			if cmd.Flags().Changed("example") {
-				if exampleName != "" {
-					fmt.Println("Visit our documentation for more examples: https://docs.rilldata.com.")
-					fmt.Println("")
-				}
-
-				err = app.InitProject(exampleName)
+			if app.IsProjectInit() {
+				err = app.Reconcile(strict)
 				if err != nil {
-					return fmt.Errorf("init project: %w", err)
+					return fmt.Errorf("reconcile project: %w", err)
 				}
-			}
-
-			err = app.Reconcile(strict)
-			if err != nil {
-				return fmt.Errorf("reconcile project: %w", err)
 			}
 
 			userID := ""
@@ -131,7 +123,6 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	startCmd.Flags().BoolVar(&strict, "strict", false, "Exit if project has build errors")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 	startCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
-	startCmd.Flags().StringVar(&exampleName, "example", "default", "Name of example project")
 
 	return startCmd
 }

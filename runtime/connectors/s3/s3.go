@@ -60,12 +60,10 @@ var spec = connectors.Spec{
 	ConnectorVariables: []connectors.VariableSchema{
 		{
 			Key:    "aws_access_key_id",
-			Help:   "Leave blank if public access enabled",
 			Secret: true,
 		},
 		{
 			Key:    "aws_secret_access_key",
-			Help:   "Leave blank if public access enabled",
 			Secret: true,
 		},
 	},

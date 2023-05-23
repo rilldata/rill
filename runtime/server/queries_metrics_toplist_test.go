@@ -9,6 +9,7 @@ import (
 )
 
 func TestServer_MetricsViewToplist(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
@@ -36,6 +37,7 @@ func TestServer_MetricsViewToplist(t *testing.T) {
 }
 
 func TestServer_MetricsViewToplist_InlineMeasures(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
@@ -76,6 +78,7 @@ func TestServer_MetricsViewToplist_InlineMeasures(t *testing.T) {
 }
 
 func TestServer_MetricsViewToplist_quotes(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
@@ -99,6 +102,7 @@ func TestServer_MetricsViewToplist_quotes(t *testing.T) {
 }
 
 func TestServer_MetricsViewToplist_numeric_dim(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
@@ -117,6 +121,7 @@ func TestServer_MetricsViewToplist_numeric_dim(t *testing.T) {
 }
 
 func Ignore_TestServer_MetricsViewToplist_HugeInt(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
@@ -144,6 +149,7 @@ func Ignore_TestServer_MetricsViewToplist_HugeInt(t *testing.T) {
 }
 
 func TestServer_MetricsViewToplist_asc(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
@@ -172,6 +178,7 @@ func TestServer_MetricsViewToplist_asc(t *testing.T) {
 }
 
 func TestServer_MetricsViewToplist_nulls_last(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
@@ -225,6 +232,7 @@ func TestServer_MetricsViewToplist_nulls_last(t *testing.T) {
 }
 
 func TestServer_MetricsViewToplist_asc_limit(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
@@ -249,6 +257,7 @@ func TestServer_MetricsViewToplist_asc_limit(t *testing.T) {
 }
 
 func TestServer_MetricsViewToplist_2measures(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
@@ -281,6 +290,7 @@ func TestServer_MetricsViewToplist_2measures(t *testing.T) {
 }
 
 func TestServer_MetricsViewToplist_complete_source_sanity_test(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
 	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{

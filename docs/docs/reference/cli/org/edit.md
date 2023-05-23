@@ -6,7 +6,7 @@ title: rill org edit
 Edit organization details
 
 ```
-rill org edit [flags]
+rill org edit [<org-name>] [flags]
 ```
 
 ### Flags
