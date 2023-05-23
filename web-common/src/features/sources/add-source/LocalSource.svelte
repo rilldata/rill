@@ -100,7 +100,6 @@
       overlay.set(null);
       if (!errors?.length) {
         dispatch("close");
-        // TODO: navigate to the new source? how is that happening now?
       } else {
         // if the upload didn't work, delete the source file.
         handleDeleteSource(tableName);
