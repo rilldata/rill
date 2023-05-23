@@ -6,7 +6,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/examples"
-	"github.com/rilldata/rill/runtime/server/auth"
 )
 
 // ListExamples returns a list of embedded examples
@@ -31,11 +30,6 @@ func (s *Server) ListExamples(ctx context.Context, req *runtimev1.ListExamplesRe
 }
 
 func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExampleRequest) (*runtimev1.UnpackExampleResponse, error) {
-	claims := auth.GetClaims(ctx)
-	if !claims.CanInstance(req.InstanceId, auth.EditInstance) {
-		return nil, ErrForbidden
-	}
-
 	repo, err := s.runtime.Repo(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
@@ -46,25 +40,31 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 		return nil, err
 	}
 
-	for i, entry := range entries {
-		err := repo.Put(ctx, req.InstanceId, entryPaths[i], entry)
+	if !req.Force {
+		paths, err := repo.ListRecursive(ctx, req.InstanceId, "{sources,models}/*.{yaml,yml,sql}")
 		if err != nil {
 			return nil, err
+		}
+
+		// Should we check content or filenames ??
+		if len(paths) != 0 {
+			return nil, fmt.Errorf("repo is not empty %s", paths)
 		}
 	}
 
-	if !req.Force {
-		paths, err := repo.ListRecursive(ctx, req.InstanceId, "**")
+	for i, entry := range entries {
+		stat, err := entry.Stat()
 		if err != nil {
 			return nil, err
 		}
 
-		for _, path := range paths {
-			for _, entryPath := range entryPaths {
-				if path == entryPath {
-					return nil, fmt.Errorf("file already exists for path %q", path)
-				}
-			}
+		if stat.IsDir() {
+			continue
+		}
+
+		err = repo.Put(ctx, req.InstanceId, entryPaths[i], entry)
+		if err != nil {
+			return nil, err
 		}
 	}
 
