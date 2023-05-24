@@ -22,14 +22,12 @@ The `configParams` props takes in `@@config@@` as an input. This is a variable w
 The project uses the following environment variables -
 ```
 VITE_RILL_CLOUD_AUTH0_CLIENT_IDS="clientID1,clientID2,..."
-VITE_OKTA_CONNECTION="<connection-name>"
-VITE_PINGFED_CONNECTION="<connection-name>"
 VITE_DISABLE_FORGOT_PASS_DOMAINS="domain1.com,domain2.com,..."
+VITE_CONNECTION_MAP={"connection-a":["domain1.com"]...}
 ```
 `VITE_RILL_CLOUD_AUTH0_CLIENT_IDS` is a comma separated list of Auth0 client IDs of application created for Rill Cloud.
-`VITE_OKTA_CONNECTION` is the name of the connection set for Okta
-`VITE_PINGFED_CONNECTION` is the name of the connection set for PingFed
 `VITE_DISABLE_FORGOT_PASS_DOMAINS` is a comma separated list of domains for which reset password functionality has been blocked. This has been ported from the old sign-up template.
+`VITE_CONNECTION_MAP` is a connection name to domain mapping object
 
 These environment variables can be found in 1Password. The document is named - **Rill Web Auth env**
 
