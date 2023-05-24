@@ -19,6 +19,7 @@ const production = !process.env.ROLLUP_WATCH;
 const environmentVars = [
   "VITE_RILL_CLOUD_AUTH0_CLIENT_IDS",
   "VITE_DISABLE_FORGOT_PASS_DOMAINS",
+  "VITE_CONNECTION_MAP",
 ];
 
 const removeUnusedCss = purgeCss({
@@ -44,8 +45,8 @@ function inlineSvelte(template) {
       // Replace all environment variables
       environmentVars.forEach((envVar) => {
         bundle[file].code = bundle[file].code.replace(
-          `%%${envVar}%%`,
-          () => process.env[envVar]
+          `"%%${envVar}%%"`,
+          () => JSON.stringify(process.env[envVar])
         );
       });
     },

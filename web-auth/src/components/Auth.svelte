@@ -9,11 +9,14 @@
   import EmailPassForm from "./EmailPassForm.svelte";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import SSOForm from "./SSOForm.svelte";
+  import { getConnectionFromEmail } from "./utils";
 
   export let configParams: string;
   export let cloudClientIDs = "";
   export let disableForgotPassDomains = "";
+  export let connectionMap = "{}";
 
+  const connectionMapObj = JSON.parse(connectionMap);
   const cloudClientIDsArr = cloudClientIDs.split(",");
   const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
 
@@ -59,29 +62,28 @@
   }
 
   function authorize(connection: string) {
+    webAuth.authorize({ connection });
+  }
+
+  function handleSSOLogin(email: string) {
     isSSODisabled = true;
-    /**
-     * `authorize` will redirect the user to the login page irrespective of the connection name
-     * We are using the changePassword API to determine if the connection name exists
-     */
-    webAuth.changePassword(
-      {
-        connection: connection,
-        email: "testConnection@email.com",
-      },
-      (err) => {
-        if (err) {
-          if (err?.description === "connection not found") {
-            displayError({
-              message: `Organization slug ${connection} doesn't exist`,
-            });
-            isSSODisabled = false;
-          } else {
-            webAuth.authorize({ connection });
-          }
-        }
-      }
-    );
+    errorText = "";
+
+    const connectionName = getConnectionFromEmail(email, connectionMapObj);
+
+    if (!connectionName) {
+      displayError({
+        message: `IDP for the email ${email} not found. Please contact your administrator.`,
+      });
+      isSSODisabled = false;
+      return;
+    }
+
+    webAuth.authorize({
+      connection: connectionName,
+      login_hint: email,
+      prompt: "login",
+    });
   }
 
   function handleEmailSubmit(email: string, password: string) {
@@ -175,7 +177,7 @@
         <SSOForm
           disabled={isSSODisabled}
           on:ssoSubmit={(e) => {
-            authorize(e.detail);
+            handleSSOLogin(e.detail);
           }}
         />
       {/if}
@@ -192,7 +194,9 @@
     </div>
 
     {#if errorText}
-      <div class="text-red-500 text-sm mt-2 max-w-[400px]">{errorText}</div>
+      <div style:max-width="400px" class="text-red-500 text-sm mt-3">
+        {errorText}
+      </div>
     {/if}
 
     <Disclaimer />
