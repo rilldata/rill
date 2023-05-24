@@ -164,9 +164,6 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 			}
 
 			it, err = rillblob.NewIterator(ctx, bucketObj, opts, logger)
-		} else {
-			// reason for failure is not bad credentials
-			return nil, err
 		}
 
 		// check again
