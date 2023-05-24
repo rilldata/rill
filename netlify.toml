@@ -9,11 +9,3 @@
     X-Xss-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
 
-[[headers]]
-  for = "/-/*"
-  [headers.values]
-    cache-control = '''
-    max-age=0,
-    no-cache,
-    no-store,
-    must-revalidate'''
