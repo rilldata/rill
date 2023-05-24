@@ -7,23 +7,18 @@ sidebar_position: 20
 
 Data models in Rill are composed SQL `SELECT` statements that operate on source data. They allow you to join, transform, and clean data.
 
-## SQL transformations with DuckDB
+## SQL transformations
 
-Data transformations in Rill Developer are powered by DuckDB and their dialect of SQL (duckSQL). Please visit their [documentation](https://duckdb.org/docs/sql/introduction) for insight into how to write your queries.
+Data transformations in Rill Developer are powered by DuckDB and their dialect of SQL (DuckDB SQL). Please visit [DuckDB SQL documentation](https://duckdb.org/docs/sql/introduction) to learn about how to write your queries.
 
 ## Adding a data model
 
-### Using the UI
-
-To add a new data model using the UI, click "+" by Models in the left hand navigation pane. You can now begin typing a duckSQL `SELECT` query for your model in the code editor – with keystroke-by-keystroke feedback.
-
-### Using the CLI
-It is not possible to add models to Rill directly through the CLI.
+To add a new data model using the UI, click "+" by Models in the left hand navigation pane. You can now begin typing a DuckDB SQL `SELECT` query for your model in the code editor – with keystroke-by-keystroke feedback.
 
 ### Using code
-When you add a data model using the UI, a code definition will automatically be created as a `.sql` file in the `models` folder in your Rill project.
+When you add a data model using the UI, a code definition will automatically be created as a `<model_name>.sql` file in the `models` folder in your Rill project.
 
-In addition, you can create a model outside of the application and add it to Rill by placing a `model_name.sql` file in the `models` directory containing a duckSQL `SELECT` statement. Rill will automatically detect and parse the model next time you run `rill start`.
+In addition, you can create a model outside of the application and add it to Rill by placing a `<model_name>.sql` file in the `models` directory containing a DuckDB SQL `SELECT` statement. Rill will automatically detect and parse the model next time you run `rill start`.
 
 ## One Big Table and Dashboarding
 

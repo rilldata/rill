@@ -73,6 +73,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			// Init logger
 			cfg := zap.NewProductionConfig()
 			cfg.Level.SetLevel(conf.LogLevel)
+			cfg.EncoderConfig.NameKey = zapcore.OmitKey
 			logger, err := cfg.Build()
 			if err != nil {
 				fmt.Printf("error: failed to create logger: %s", err.Error())

@@ -57,6 +57,7 @@
   style="position:relative"
 >
   <select
+    aria-label={columnConfig.ariaLabel}
     class="table-select bg-transparent w-full"
     on:change={onchangeHandler}
     style={selectStyle}

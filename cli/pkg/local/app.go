@@ -26,6 +26,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
+	"gopkg.in/natefinch/lumberjack.v2"
+	"moul.io/zapfilter"
 )
 
 type LogFormat string
@@ -56,39 +58,11 @@ type App struct {
 	Verbose               bool
 	ProjectPath           string
 	observabilityShutdown observability.ShutdownFunc
+	loggerCleanUp         func()
 }
 
 func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string) (*App, error) {
-	// Setup a friendly-looking colored/json logger
-	var logger *zap.Logger
-	var err error
-	switch logFormat {
-	case LogFormatJSON:
-		cfg := zap.NewProductionConfig()
-		cfg.DisableStacktrace = true
-		cfg.Level.SetLevel(zapcore.DebugLevel)
-		logger, err = cfg.Build()
-	case LogFormatConsole:
-		encCfg := zap.NewDevelopmentEncoderConfig()
-		encCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
-		logger = zap.New(zapcore.NewCore(
-			zapcore.NewConsoleEncoder(encCfg),
-			zapcore.AddSync(os.Stdout),
-			zapcore.DebugLevel,
-		))
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Set logging level
-	lvl := zap.InfoLevel
-	if verbose {
-		lvl = zap.DebugLevel
-	}
-	logger = logger.WithOptions(zap.IncreaseLevel(lvl))
-
+	logger, cleanupFn := initLogger(verbose, logFormat)
 	// Init Prometheus telemetry
 	shutdown, err := observability.Start(ctx, logger, &observability.Options{
 		MetricsExporter: observability.PrometheusExporter,
@@ -159,6 +133,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		Verbose:               verbose,
 		ProjectPath:           projectPath,
 		observabilityShutdown: shutdown,
+		loggerCleanUp:         cleanupFn,
 	}
 	return app, nil
 }
@@ -172,6 +147,7 @@ func (a *App) Close() error {
 		fmt.Printf("telemetry shutdown failed: %s\n", err.Error())
 	}
 
+	a.loggerCleanUp()
 	return a.Runtime.Close()
 }
 
@@ -186,7 +162,7 @@ func (a *App) IsProjectInit() bool {
 }
 
 func (a *App) Reconcile(strict bool) error {
-	a.Logger.Infof("Hydrating project '%s'", a.ProjectPath)
+	a.Logger.Named("console").Infof("Hydrating project '%s'", a.ProjectPath)
 	res, err := a.Runtime.Reconcile(a.Context, a.Instance.ID, nil, nil, false, false)
 	if err != nil {
 		return err
@@ -195,23 +171,23 @@ func (a *App) Reconcile(strict bool) error {
 		a.Logger.Errorf("Hydration canceled")
 	}
 	for _, path := range res.AffectedPaths {
-		a.Logger.Infof("Reconciled: %s", path)
+		a.Logger.Named("console").Infof("Reconciled: %s", path)
 	}
 	for _, merr := range res.Errors {
 		a.Logger.Errorf("%s: %s", merr.FilePath, merr.Message)
 	}
 	if len(res.Errors) == 0 {
-		a.Logger.Infof("Hydration completed!")
+		a.Logger.Named("console").Infof("Hydration completed!")
 	} else if strict {
 		a.Logger.Fatalf("Hydration failed")
 	} else {
-		a.Logger.Infof("Hydration failed")
+		a.Logger.Named("console").Infof("Hydration failed")
 	}
 	return nil
 }
 
 func (a *App) ReconcileSource(sourcePath string) error {
-	a.Logger.Infof("Reconciling source and impacted models in project '%s'", a.ProjectPath)
+	a.Logger.Named("console").Infof("Reconciling source and impacted models in project '%s'", a.ProjectPath)
 	paths := []string{sourcePath}
 	res, err := a.Runtime.Reconcile(a.Context, a.Instance.ID, paths, paths, false, false)
 	if err != nil {
@@ -222,15 +198,15 @@ func (a *App) ReconcileSource(sourcePath string) error {
 		return nil
 	}
 	for _, path := range res.AffectedPaths {
-		a.Logger.Infof("Reconciled: %s", path)
+		a.Logger.Named("console").Infof("Reconciled: %s", path)
 	}
 	for _, merr := range res.Errors {
 		a.Logger.Errorf("%s: %s", merr.FilePath, merr.Message)
 	}
 	if len(res.Errors) == 0 {
-		a.Logger.Infof("Hydration completed!")
+		a.Logger.Named("console").Infof("Hydration completed!")
 	} else {
-		a.Logger.Infof("Hydration failed")
+		a.Logger.Named("console").Infof("Hydration failed")
 	}
 	return nil
 }
@@ -239,7 +215,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	// Get analytics info
 	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {
-		a.Logger.Warnf("error finding install ID: %v", err)
+		a.Logger.Named("console").Warnf("error finding install ID: %v", err)
 	}
 
 	// Build local info for frontend
@@ -307,7 +283,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	if err != nil {
 		return fmt.Errorf("server crashed: %w", err)
 	}
-	a.Logger.Info("Rill shutdown gracefully")
+	a.Logger.Named("console").Info("Rill shutdown gracefully")
 	return nil
 }
 
@@ -335,7 +311,7 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 	}
 
 	// Health check succeeded
-	a.Logger.Infof("Serving Rill on: %s", uri)
+	a.Logger.Named("console").Infof("Serving Rill on: %s", uri)
 	if openOnHealthy {
 		err := browser.Open(uri)
 		if err != nil {
@@ -381,7 +357,7 @@ func (a *App) versionHandler() http.Handler {
 		// Get the latest version available
 		latestVersion, err := update.LatestVersion(r.Context())
 		if err != nil {
-			a.Logger.Warnf("error finding latest version: %v", err)
+			a.Logger.Named("console").Warnf("error finding latest version: %v", err)
 		}
 
 		inf := &versionInfo{
@@ -449,5 +425,57 @@ func ParseLogFormat(format string) (LogFormat, bool) {
 		return LogFormatConsole, true
 	default:
 		return "", false
+	}
+}
+
+func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanupFn func()) {
+	logLevel := zapcore.InfoLevel
+	if isVerbose {
+		logLevel = zapcore.DebugLevel
+	}
+
+	logPath, err := dotrill.ResolveFilename("rill.log", true)
+	if err != nil {
+		panic(err)
+	}
+	// lumberjack.Logger is already safe for concurrent use, so we don't need to
+	// lock it.
+	luLogger := &lumberjack.Logger{
+		Filename:   logPath,
+		MaxSize:    100, // megabytes
+		MaxBackups: 3,
+		MaxAge:     30, // days
+		Compress:   true,
+	}
+	cfg := zap.NewProductionEncoderConfig()
+	// hide logger name like `console`
+	cfg.NameKey = zapcore.OmitKey
+	fileCore := zapcore.NewCore(zapcore.NewJSONEncoder(cfg), zapcore.AddSync(luLogger), logLevel)
+
+	var consoleEncoder zapcore.Encoder
+	opts := make([]zap.Option, 0)
+	switch logFormat {
+	case LogFormatJSON:
+		cfg := zap.NewProductionEncoderConfig()
+		cfg.NameKey = zapcore.OmitKey
+		// never
+		opts = append(opts, zap.AddStacktrace(zapcore.InvalidLevel))
+		consoleEncoder = zapcore.NewJSONEncoder(cfg)
+	case LogFormatConsole:
+		encCfg := zap.NewDevelopmentEncoderConfig()
+		encCfg.NameKey = zapcore.OmitKey
+		encCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		consoleEncoder = zapcore.NewConsoleEncoder(encCfg)
+	}
+
+	core := zapcore.NewTee(
+		fileCore,
+		// send all error logs and logs matching console namespace to stdout
+		zapfilter.NewFilteringCore(zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), logLevel), zapfilter.MustParseRules("error:* *:console")),
+	)
+
+	return zap.New(core, opts...), func() {
+		_ = logger.Sync()
+		luLogger.Close()
 	}
 }

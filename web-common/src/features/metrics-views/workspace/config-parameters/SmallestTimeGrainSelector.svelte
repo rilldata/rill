@@ -168,6 +168,7 @@
   <div class={SELECTOR_CONTAINER.classes} style={SELECTOR_CONTAINER.style}>
     <Tooltip alignment="start" distance={16} location="right" suppress={active}>
       <SelectMenu
+        label="Change smallest time grain"
         paddingTop={1}
         paddingBottom={1}
         bind:active

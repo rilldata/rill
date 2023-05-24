@@ -15,6 +15,7 @@
   export let columnNames: ColumnConfig<any>[];
 
   export let rows: any[];
+  export let label: string | undefined = undefined;
 
   let selectedColumns = [];
 
@@ -31,6 +32,7 @@
     on:tableResize
     {columnNames}
     {rows}
+    {label}
   />
 
   {#if selectedColumns.length}
@@ -43,6 +45,7 @@
         on:delete={(evt) => dispatch("delete", evt.detail)}
         columnNames={selectedColumns}
         {rows}
+        {label}
       />
     </div>
   {/if}
