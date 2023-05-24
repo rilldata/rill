@@ -16,6 +16,7 @@ import (
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/s3blob"
@@ -152,8 +153,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		// we try again with anonymous credentials in case bucket is public
 		errCode := gcerrors.Code(err)
 		if (errCode == gcerrors.PermissionDenied || errCode == gcerrors.Unknown) && creds != credentials.AnonymousCredentials {
-			logger.Info("s3 list objects failed", zap.Error(err))
-			logger.Info("re-trying with anonymous credentials")
+			logger.Info("s3 list objects failed, re-trying with anonymous credential", zap.Error(err), observability.ZapCtx(ctx))
 			creds = credentials.AnonymousCredentials
 			bucketObj, bucketErr := openBucket(ctx, conf, conf.url.Host, creds)
 			if bucketErr != nil {

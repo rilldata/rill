@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/connectors/localfile"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
 
@@ -63,14 +64,14 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 		}
 
 		st := time.Now()
-		c.logger.Info("ingesting files", zap.String("source", source.Name), zap.Strings("files", files))
+		c.logger.Info("ingesting files", zap.String("source", source.Name), zap.Strings("files", files), observability.ZapCtx(ctx))
 		if err := c.ingestIteratorFiles(ctx, source, files, appendToTable); err != nil {
 			return nil, err
 		}
 
 		size := fileSize(files)
 		summary.BytesIngested += size
-		c.logger.Info("ingested files", zap.String("source", source.Name), zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Float64("took_seconds", time.Since(st).Seconds()))
+		c.logger.Info("ingested files", zap.String("source", source.Name), zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
 		appendToTable = true
 	}
 	return summary, nil
@@ -89,7 +90,7 @@ func (c *connection) ingestIteratorFiles(ctx context.Context, source *connectors
 	} else {
 		query = fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from)
 	}
-	c.logger.Debug("generated query", zap.String("query", query))
+	c.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
 	return c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }
 
