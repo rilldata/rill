@@ -62,7 +62,7 @@ var spec = connectors.Spec{
 					return nil
 				}
 
-				path, err := fileutil.ExpandHome(val)
+				path, err := fileutil.ExpandHome(strings.TrimSpace(val))
 				if err != nil {
 					return err
 				}
@@ -76,11 +76,10 @@ var spec = connectors.Spec{
 					return ""
 				}
 
-				path, err := fileutil.ExpandHome(val)
+				path, err := fileutil.ExpandHome(strings.TrimSpace(val))
 				if err != nil {
 					return err
 				}
-
 				// ignoring error since PathError is already validated
 				content, _ := os.ReadFile(path)
 				return string(content)

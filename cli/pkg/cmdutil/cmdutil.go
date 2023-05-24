@@ -165,6 +165,7 @@ func StringPromptIfEmpty(input *string, msg string) {
 		fmt.Printf("Prompt failed %v\n", err)
 		os.Exit(1)
 	}
+	*input = strings.TrimSpace(*input)
 }
 
 func SelectPromptIfEmpty(input *string, msg string, options []string, def string) {
