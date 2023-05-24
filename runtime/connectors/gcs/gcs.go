@@ -61,7 +61,7 @@ var spec = connectors.Spec{
 					return nil
 				}
 
-				path, err := fileutil.ExpandHome(val)
+				path, err := fileutil.ExpandHome(strings.TrimSpace(val))
 				if err != nil {
 					return err
 				}
