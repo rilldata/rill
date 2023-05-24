@@ -159,7 +159,7 @@ func newQueryCache(sizeInBytes int64) *queryCache {
 
 	return &queryCache{
 		cache:        cache,
-		singleflight: &singleflight.Group[queryCacheKey, any]{},
+		singleflight: &singleflight.Group[string, any]{},
 		metrics:      metrics,
 	}
 }
