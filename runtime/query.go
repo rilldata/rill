@@ -8,13 +8,13 @@ import (
 	"github.com/dgraph-io/ristretto"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/singleflight"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/global"
 )
 
 var (
-	meter                        = global.Meter("runtime")
+	meter                        = otel.Meter("runtime")
 	queryCacheHitsCounter        = observability.Must(meter.Int64ObservableCounter("query_cache.hits"))
 	queryCacheMissesCounter      = observability.Must(meter.Int64ObservableCounter("query_cache.misses"))
 	queryCacheItemCountGauge     = observability.Must(meter.Int64ObservableGauge("query_cache.items"))
