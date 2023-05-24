@@ -31,6 +31,10 @@ func TestQuery(t *testing.T) {
 }
 
 func TestPriorityQueue(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
 	conn := prepareConn(t)
 	olap, _ := conn.OLAPStore()
 	defer conn.Close()
@@ -76,6 +80,10 @@ func TestPriorityQueue(t *testing.T) {
 }
 
 func TestCancel(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
 	conn := prepareConn(t)
 	olap, _ := conn.OLAPStore()
 	defer conn.Close()
@@ -149,6 +157,10 @@ func TestCancel(t *testing.T) {
 }
 
 func TestClose(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+
 	conn := prepareConn(t)
 	olap, _ := conn.OLAPStore()
 

@@ -51,6 +51,7 @@ last-query-output.json
 staging-databases
 /rilldata
 docs/dist/
+coverage
 
 # Maven
 target/

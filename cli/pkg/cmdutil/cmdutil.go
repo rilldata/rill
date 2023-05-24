@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -164,6 +165,7 @@ func StringPromptIfEmpty(input *string, msg string) {
 		fmt.Printf("Prompt failed %v\n", err)
 		os.Exit(1)
 	}
+	*input = strings.TrimSpace(*input)
 }
 
 func SelectPromptIfEmpty(input *string, msg string, options []string, def string) {
@@ -412,7 +414,7 @@ func SetFlagsByInputPrompts(cmd cobra.Command, flags ...string) error {
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed && slices.Contains(flags, f.Name) {
 			if f.Value.Type() == "string" {
-				val, err = InputPrompt(fmt.Sprintf("Enter the %s", f.Usage), "")
+				val, err = InputPrompt(fmt.Sprintf("Enter the %s", f.Usage), f.DefValue)
 				if err != nil {
 					fmt.Println("error while input prompt, error:", err)
 					return
@@ -421,8 +423,14 @@ func SetFlagsByInputPrompts(cmd cobra.Command, flags ...string) error {
 
 			if f.Value.Type() == "bool" {
 				var public bool
+				defVal, err := strconv.ParseBool(f.DefValue)
+				if err != nil {
+					return
+				}
+
 				prompt := &survey.Confirm{
 					Message: fmt.Sprintf("Confirm \"%s\"?", f.Usage),
+					Default: defVal,
 				}
 
 				err = survey.AskOne(prompt, &public)

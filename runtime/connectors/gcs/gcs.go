@@ -14,6 +14,7 @@ import (
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
+	"go.uber.org/zap"
 	"gocloud.dev/blob/gcsblob"
 	"gocloud.dev/gcp"
 	"golang.org/x/oauth2"
@@ -53,7 +54,7 @@ var spec = connectors.Spec{
 	ConnectorVariables: []connectors.VariableSchema{
 		{
 			Key:  "google_application_credentials",
-			Help: "Enter path of file to load from. Leave blank if public access enabled.",
+			Help: "Enter path of file to load from.",
 			ValidateFunc: func(any interface{}) error {
 				val := any.(string)
 				if val == "" {
@@ -61,7 +62,7 @@ var spec = connectors.Spec{
 					return nil
 				}
 
-				path, err := fileutil.ExpandHome(val)
+				path, err := fileutil.ExpandHome(strings.TrimSpace(val))
 				if err != nil {
 					return err
 				}
@@ -75,11 +76,10 @@ var spec = connectors.Spec{
 					return ""
 				}
 
-				path, err := fileutil.ExpandHome(val)
+				path, err := fileutil.ExpandHome(strings.TrimSpace(val))
 				if err != nil {
 					return err
 				}
-
 				// ignoring error since PathError is already validated
 				content, _ := os.ReadFile(path)
 				return string(content)
@@ -130,7 +130,7 @@ func (c connector) Spec() connectors.Spec {
 // ConsumeAsIterator returns a file iterator over objects stored in gcs.
 // The credential json is read from a env variable google_application_credentials.
 // Additionally in case `env.AllowHostCredentials` is true it looks for "Application Default Credentials" as well
-func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
+func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source, l *zap.Logger) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -157,7 +157,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		StorageLimitInBytes:   env.StorageLimitInBytes,
 	}
 
-	iter, err := rillblob.NewIterator(ctx, bucketObj, opts)
+	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, l)
 	if err != nil {
 		apiError := &googleapi.Error{}
 		// in cases when no creds are passed
