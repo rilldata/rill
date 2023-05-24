@@ -7652,31 +7652,31 @@ var _ interface {
 	ErrorName() string
 } = GetCurrentUserResponseValidationError{}
 
-// Validate checks the field values on GetUsersByEmailRequest with the rules
+// Validate checks the field values on SearchUsersRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetUsersByEmailRequest) Validate() error {
+func (m *SearchUsersRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetUsersByEmailRequest with the rules
+// ValidateAll checks the field values on SearchUsersRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetUsersByEmailRequestMultiError, or nil if none found.
-func (m *GetUsersByEmailRequest) ValidateAll() error {
+// SearchUsersRequestMultiError, or nil if none found.
+func (m *SearchUsersRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetUsersByEmailRequest) validate(all bool) error {
+func (m *SearchUsersRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetEmail()) < 1 {
-		err := GetUsersByEmailRequestValidationError{
-			field:  "Email",
+	if utf8.RuneCountInString(m.GetEmailPattern()) < 1 {
+		err := SearchUsersRequestValidationError{
+			field:  "EmailPattern",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -7685,20 +7685,37 @@ func (m *GetUsersByEmailRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 100 {
+			err := SearchUsersRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 100",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
 	if len(errors) > 0 {
-		return GetUsersByEmailRequestMultiError(errors)
+		return SearchUsersRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetUsersByEmailRequestMultiError is an error wrapping multiple validation
-// errors returned by GetUsersByEmailRequest.ValidateAll() if the designated
-// constraints aren't met.
-type GetUsersByEmailRequestMultiError []error
+// SearchUsersRequestMultiError is an error wrapping multiple validation errors
+// returned by SearchUsersRequest.ValidateAll() if the designated constraints
+// aren't met.
+type SearchUsersRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetUsersByEmailRequestMultiError) Error() string {
+func (m SearchUsersRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -7707,11 +7724,11 @@ func (m GetUsersByEmailRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetUsersByEmailRequestMultiError) AllErrors() []error { return m }
+func (m SearchUsersRequestMultiError) AllErrors() []error { return m }
 
-// GetUsersByEmailRequestValidationError is the validation error returned by
-// GetUsersByEmailRequest.Validate if the designated constraints aren't met.
-type GetUsersByEmailRequestValidationError struct {
+// SearchUsersRequestValidationError is the validation error returned by
+// SearchUsersRequest.Validate if the designated constraints aren't met.
+type SearchUsersRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -7719,24 +7736,24 @@ type GetUsersByEmailRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetUsersByEmailRequestValidationError) Field() string { return e.field }
+func (e SearchUsersRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetUsersByEmailRequestValidationError) Reason() string { return e.reason }
+func (e SearchUsersRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetUsersByEmailRequestValidationError) Cause() error { return e.cause }
+func (e SearchUsersRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetUsersByEmailRequestValidationError) Key() bool { return e.key }
+func (e SearchUsersRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetUsersByEmailRequestValidationError) ErrorName() string {
-	return "GetUsersByEmailRequestValidationError"
+func (e SearchUsersRequestValidationError) ErrorName() string {
+	return "SearchUsersRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetUsersByEmailRequestValidationError) Error() string {
+func (e SearchUsersRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -7748,14 +7765,14 @@ func (e GetUsersByEmailRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetUsersByEmailRequest.%s: %s%s",
+		"invalid %sSearchUsersRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetUsersByEmailRequestValidationError{}
+var _ error = SearchUsersRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -7763,24 +7780,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetUsersByEmailRequestValidationError{}
+} = SearchUsersRequestValidationError{}
 
-// Validate checks the field values on GetUsersByEmailResponse with the rules
+// Validate checks the field values on SearchUsersResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetUsersByEmailResponse) Validate() error {
+func (m *SearchUsersResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GetUsersByEmailResponse with the
-// rules defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on SearchUsersResponse with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GetUsersByEmailResponseMultiError, or nil if none found.
-func (m *GetUsersByEmailResponse) ValidateAll() error {
+// SearchUsersResponseMultiError, or nil if none found.
+func (m *SearchUsersResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GetUsersByEmailResponse) validate(all bool) error {
+func (m *SearchUsersResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -7794,7 +7811,7 @@ func (m *GetUsersByEmailResponse) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, GetUsersByEmailResponseValidationError{
+					errors = append(errors, SearchUsersResponseValidationError{
 						field:  fmt.Sprintf("Users[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -7802,7 +7819,7 @@ func (m *GetUsersByEmailResponse) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, GetUsersByEmailResponseValidationError{
+					errors = append(errors, SearchUsersResponseValidationError{
 						field:  fmt.Sprintf("Users[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -7811,7 +7828,7 @@ func (m *GetUsersByEmailResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return GetUsersByEmailResponseValidationError{
+				return SearchUsersResponseValidationError{
 					field:  fmt.Sprintf("Users[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -7821,20 +7838,22 @@ func (m *GetUsersByEmailResponse) validate(all bool) error {
 
 	}
 
+	// no validation rules for NextPageToken
+
 	if len(errors) > 0 {
-		return GetUsersByEmailResponseMultiError(errors)
+		return SearchUsersResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GetUsersByEmailResponseMultiError is an error wrapping multiple validation
-// errors returned by GetUsersByEmailResponse.ValidateAll() if the designated
+// SearchUsersResponseMultiError is an error wrapping multiple validation
+// errors returned by SearchUsersResponse.ValidateAll() if the designated
 // constraints aren't met.
-type GetUsersByEmailResponseMultiError []error
+type SearchUsersResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GetUsersByEmailResponseMultiError) Error() string {
+func (m SearchUsersResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -7843,11 +7862,11 @@ func (m GetUsersByEmailResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GetUsersByEmailResponseMultiError) AllErrors() []error { return m }
+func (m SearchUsersResponseMultiError) AllErrors() []error { return m }
 
-// GetUsersByEmailResponseValidationError is the validation error returned by
-// GetUsersByEmailResponse.Validate if the designated constraints aren't met.
-type GetUsersByEmailResponseValidationError struct {
+// SearchUsersResponseValidationError is the validation error returned by
+// SearchUsersResponse.Validate if the designated constraints aren't met.
+type SearchUsersResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -7855,24 +7874,24 @@ type GetUsersByEmailResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GetUsersByEmailResponseValidationError) Field() string { return e.field }
+func (e SearchUsersResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GetUsersByEmailResponseValidationError) Reason() string { return e.reason }
+func (e SearchUsersResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GetUsersByEmailResponseValidationError) Cause() error { return e.cause }
+func (e SearchUsersResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GetUsersByEmailResponseValidationError) Key() bool { return e.key }
+func (e SearchUsersResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GetUsersByEmailResponseValidationError) ErrorName() string {
-	return "GetUsersByEmailResponseValidationError"
+func (e SearchUsersResponseValidationError) ErrorName() string {
+	return "SearchUsersResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GetUsersByEmailResponseValidationError) Error() string {
+func (e SearchUsersResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -7884,14 +7903,14 @@ func (e GetUsersByEmailResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGetUsersByEmailResponse.%s: %s%s",
+		"invalid %sSearchUsersResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GetUsersByEmailResponseValidationError{}
+var _ error = SearchUsersResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -7899,7 +7918,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GetUsersByEmailResponseValidationError{}
+} = SearchUsersResponseValidationError{}
 
 // Validate checks the field values on RevokeCurrentAuthTokenRequest with the
 // rules defined in the proto definition for this message. If any rules are

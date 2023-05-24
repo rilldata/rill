@@ -4,6 +4,12 @@
  * rill/admin/v1/api.proto
  * OpenAPI spec version: version not set
  */
+export type AdminServiceSearchUsersParams = {
+  emailPattern?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
   [key: string]: string;
 };
@@ -159,6 +165,11 @@ export interface V1SetOrganizationMemberRoleResponse {
   [key: string]: any;
 }
 
+export interface V1SearchUsersResponse {
+  users?: V1User[];
+  nextPageToken?: string;
+}
+
 export interface V1RevokeCurrentAuthTokenResponse {
   tokenId?: string;
 }
@@ -276,10 +287,6 @@ export interface V1ListOrganizationInvitesResponse {
 
 export interface V1LeaveOrganizationResponse {
   [key: string]: any;
-}
-
-export interface V1GetUsersByEmailResponse {
-  users?: V1User[];
 }
 
 export type V1GetProjectVariablesResponseVariables = { [key: string]: string };

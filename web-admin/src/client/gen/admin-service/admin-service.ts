@@ -67,8 +67,9 @@ import type {
   V1SetSuperuserResponse,
   V1SetSuperuserRequest,
   V1RevokeCurrentAuthTokenResponse,
-  V1GetUsersByEmailResponse,
   V1GetCurrentUserResponse,
+  V1SearchUsersResponse,
+  AdminServiceSearchUsersParams,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
@@ -1970,66 +1971,6 @@ export const createAdminServiceRevokeCurrentAuthToken = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary GetUsersByEmail returns user by email
- */
-export const adminServiceGetUsersByEmail = (
-  email: string,
-  signal?: AbortSignal
-) => {
-  return httpClient<V1GetUsersByEmailResponse>({
-    url: `/v1/users/${email}`,
-    method: "get",
-    signal,
-  });
-};
-
-export const getAdminServiceGetUsersByEmailQueryKey = (email: string) =>
-  [`/v1/users/${email}`] as const;
-
-export type AdminServiceGetUsersByEmailQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceGetUsersByEmail>>
->;
-export type AdminServiceGetUsersByEmailQueryError = RpcStatus;
-
-export const createAdminServiceGetUsersByEmail = <
-  TData = Awaited<ReturnType<typeof adminServiceGetUsersByEmail>>,
-  TError = RpcStatus
->(
-  email: string,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceGetUsersByEmail>>,
-      TError,
-      TData
-    >;
-  }
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ?? getAdminServiceGetUsersByEmailQueryKey(email);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetUsersByEmail>>
-  > = ({ signal }) => adminServiceGetUsersByEmail(email, signal);
-
-  const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceGetUsersByEmail>>,
-    TError,
-    TData
-  >({
-    queryKey,
-    queryFn,
-    enabled: !!email,
-    ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
  * @summary GetCurrentUser returns the currently authenticated user (if any)
  */
 export const adminServiceGetCurrentUser = (signal?: AbortSignal) => {
@@ -2069,6 +2010,66 @@ export const createAdminServiceGetCurrentUser = <
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceGetCurrentUser>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary GetUsersByEmail returns user by email
+ */
+export const adminServiceSearchUsers = (
+  params?: AdminServiceSearchUsersParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1SearchUsersResponse>({
+    url: `/v1/users/search`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceSearchUsersQueryKey = (
+  params?: AdminServiceSearchUsersParams
+) => [`/v1/users/search`, ...(params ? [params] : [])] as const;
+
+export type AdminServiceSearchUsersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSearchUsers>>
+>;
+export type AdminServiceSearchUsersQueryError = RpcStatus;
+
+export const createAdminServiceSearchUsers = <
+  TData = Awaited<ReturnType<typeof adminServiceSearchUsers>>,
+  TError = RpcStatus
+>(
+  params?: AdminServiceSearchUsersParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceSearchUsers>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceSearchUsersQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceSearchUsers>>
+  > = ({ signal }) => adminServiceSearchUsers(params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceSearchUsers>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<

@@ -209,8 +209,8 @@ service AdminService {
   }
 
    // GetUsersByEmail returns user by email
-  rpc GetUsersByEmail(GetUsersByEmailRequest) returns (GetUsersByEmailResponse) {
-    option (google.api.http) = {get: "/v1/users/{email}"};
+  rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse) {
+    option (google.api.http) = {get: "/v1/users/search"};
   }
 
   // ListSuperusers lists all the superusers
@@ -506,12 +506,15 @@ message GetCurrentUserResponse {
 }
 
 // It can be some string as well so not validating for email here
-message GetUsersByEmailRequest {
-   string email = 1 [(validate.rules).string.min_len = 1];
+message SearchUsersRequest {
+  string email_pattern = 1 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 3;
 }
 
-message GetUsersByEmailResponse {
+message SearchUsersResponse {
   repeated User users = 1;
+  string next_page_token = 2;
 }
 
 message RevokeCurrentAuthTokenRequest {}

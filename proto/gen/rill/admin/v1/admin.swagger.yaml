@@ -893,26 +893,6 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
-  /v1/users/{email}:
-    get:
-      summary: GetUsersByEmail returns user by email
-      operationId: AdminService_GetUsersByEmail
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetUsersByEmailResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: email
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
   /v1/users/current:
     get:
       summary: GetCurrentUser returns the currently authenticated user (if any)
@@ -926,6 +906,35 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
+  /v1/users/search:
+    get:
+      summary: GetUsersByEmail returns user by email
+      operationId: AdminService_SearchUsers
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SearchUsersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: emailPattern
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
       tags:
         - AdminService
 definitions:
@@ -1055,14 +1064,6 @@ definitions:
         type: object
         additionalProperties:
           type: string
-  v1GetUsersByEmailResponse:
-    type: object
-    properties:
-      users:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1User'
   v1LeaveOrganizationResponse:
     type: object
   v1ListOrganizationInvitesResponse:
@@ -1265,6 +1266,16 @@ definitions:
     type: object
     properties:
       tokenId:
+        type: string
+  v1SearchUsersResponse:
+    type: object
+    properties:
+      users:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1User'
+      nextPageToken:
         type: string
   v1SetOrganizationMemberRoleResponse:
     type: object

@@ -54,17 +54,28 @@ func (s *Server) SetSuperuser(ctx context.Context, req *adminv1.SetSuperuserRequ
 	return &adminv1.SetSuperuserResponse{}, nil
 }
 
-func (s *Server) GetUsersByEmail(ctx context.Context, req *adminv1.GetUsersByEmailRequest) (*adminv1.GetUsersByEmailResponse, error) {
+func (s *Server) SearchUsers(ctx context.Context, req *adminv1.SearchUsersRequest) (*adminv1.SearchUsersResponse, error) {
 	// Return an empty result if not authenticated.
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can search users by email")
 	}
 
-	// Owner is a user
-	users, err := s.admin.DB.FindUsersByEmail(ctx, req.Email)
+	token, err := unmarshalPageToken(req.PageToken)
 	if err != nil {
 		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	// Owner is a user
+	users, err := s.admin.DB.FindUsersByEmailPattern(ctx, req.EmailPattern, token.Val, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	nextToken := ""
+	if len(users) >= pageSize {
+		nextToken = marshalPageToken(users[len(users)-1].Email)
 	}
 
 	dtos := make([]*adminv1.User, len(users))
@@ -72,8 +83,9 @@ func (s *Server) GetUsersByEmail(ctx context.Context, req *adminv1.GetUsersByEma
 		dtos[i] = userToPB(user)
 	}
 
-	return &adminv1.GetUsersByEmailResponse{
-		Users: dtos,
+	return &adminv1.SearchUsersResponse{
+		Users:         dtos,
+		NextPageToken: nextToken,
 	}, nil
 }
 

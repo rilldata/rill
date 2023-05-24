@@ -9,7 +9,7 @@ import (
 
 func SearchCmd(cfg *config.Config) *cobra.Command {
 	searchCmd := &cobra.Command{
-		Use:   "search <email>",
+		Use:   "search <email-pattern>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Search users by email",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -21,8 +21,8 @@ func SearchCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			res, err := client.GetUsersByEmail(ctx, &adminv1.GetUsersByEmailRequest{
-				Email: args[0],
+			res, err := client.SearchUsers(ctx, &adminv1.SearchUsersRequest{
+				EmailPattern: args[0],
 			})
 			if err != nil {
 				return err

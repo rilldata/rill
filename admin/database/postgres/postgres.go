@@ -456,9 +456,11 @@ func (c *connection) FindUserByEmail(ctx context.Context, email string) (*databa
 	return res, nil
 }
 
-func (c *connection) FindUsersByEmail(ctx context.Context, email string) ([]*database.User, error) {
+func (c *connection) FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*database.User, error) {
 	var res []*database.User
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT u.* FROM users u WHERE lower(u.email) ilike lower($1)", email)
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u 
+	WHERE lower(u.email) like lower($1) AND lower(u.email) > $2 
+	ORDER BY lower(u.email) LIMIT $3`, emailPattern, afterEmail, limit)
 	if err != nil {
 		return nil, parseErr("users", err)
 	}

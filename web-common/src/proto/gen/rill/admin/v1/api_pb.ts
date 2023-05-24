@@ -2573,76 +2573,94 @@ export class GetCurrentUserResponse extends Message<GetCurrentUserResponse> {
 /**
  * It can be some string as well so not validating for email here
  *
- * @generated from message rill.admin.v1.GetUsersByEmailRequest
+ * @generated from message rill.admin.v1.SearchUsersRequest
  */
-export class GetUsersByEmailRequest extends Message<GetUsersByEmailRequest> {
+export class SearchUsersRequest extends Message<SearchUsersRequest> {
   /**
-   * @generated from field: string email = 1;
+   * @generated from field: string email_pattern = 1;
    */
-  email = "";
+  emailPattern = "";
 
-  constructor(data?: PartialMessage<GetUsersByEmailRequest>) {
+  /**
+   * @generated from field: uint32 page_size = 2;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 3;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<SearchUsersRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.GetUsersByEmailRequest";
+  static readonly typeName = "rill.admin.v1.SearchUsersRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "email_pattern", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetUsersByEmailRequest {
-    return new GetUsersByEmailRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SearchUsersRequest {
+    return new SearchUsersRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetUsersByEmailRequest {
-    return new GetUsersByEmailRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SearchUsersRequest {
+    return new SearchUsersRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetUsersByEmailRequest {
-    return new GetUsersByEmailRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SearchUsersRequest {
+    return new SearchUsersRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetUsersByEmailRequest | PlainMessage<GetUsersByEmailRequest> | undefined, b: GetUsersByEmailRequest | PlainMessage<GetUsersByEmailRequest> | undefined): boolean {
-    return proto3.util.equals(GetUsersByEmailRequest, a, b);
+  static equals(a: SearchUsersRequest | PlainMessage<SearchUsersRequest> | undefined, b: SearchUsersRequest | PlainMessage<SearchUsersRequest> | undefined): boolean {
+    return proto3.util.equals(SearchUsersRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.GetUsersByEmailResponse
+ * @generated from message rill.admin.v1.SearchUsersResponse
  */
-export class GetUsersByEmailResponse extends Message<GetUsersByEmailResponse> {
+export class SearchUsersResponse extends Message<SearchUsersResponse> {
   /**
    * @generated from field: repeated rill.admin.v1.User users = 1;
    */
   users: User[] = [];
 
-  constructor(data?: PartialMessage<GetUsersByEmailResponse>) {
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
+  constructor(data?: PartialMessage<SearchUsersResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.GetUsersByEmailResponse";
+  static readonly typeName = "rill.admin.v1.SearchUsersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "users", kind: "message", T: User, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetUsersByEmailResponse {
-    return new GetUsersByEmailResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SearchUsersResponse {
+    return new SearchUsersResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetUsersByEmailResponse {
-    return new GetUsersByEmailResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SearchUsersResponse {
+    return new SearchUsersResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetUsersByEmailResponse {
-    return new GetUsersByEmailResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SearchUsersResponse {
+    return new SearchUsersResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetUsersByEmailResponse | PlainMessage<GetUsersByEmailResponse> | undefined, b: GetUsersByEmailResponse | PlainMessage<GetUsersByEmailResponse> | undefined): boolean {
-    return proto3.util.equals(GetUsersByEmailResponse, a, b);
+  static equals(a: SearchUsersResponse | PlainMessage<SearchUsersResponse> | undefined, b: SearchUsersResponse | PlainMessage<SearchUsersResponse> | undefined): boolean {
+    return proto3.util.equals(SearchUsersResponse, a, b);
   }
 }
 
