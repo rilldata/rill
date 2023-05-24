@@ -33,6 +33,7 @@
   export let atLeastOneSelected = false;
   export let excludeMode = false;
   export let positionStatic = false;
+  export let label = undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
   const isDimensionTable = config.table === "DimensionTable";
@@ -147,6 +148,7 @@
           notifications.send({ message: `copied value to clipboard` });
           // update this to set the active animation in the tooltip text
         }}
+        aria-label={label}
       >
         <FormattedDataType
           value={formattedValue || value}

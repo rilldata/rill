@@ -23,6 +23,8 @@
   export let removeButtonTooltipAlignment = "start";
   export let removeButtonTooltipDistance = 12;
 
+  export let label = undefined;
+
   /** the maximum width for the tooltip of the main chip */
 
   const dispatch = createEventDispatcher();
@@ -45,6 +47,7 @@
       ? "max-content"
       : ""}
     {$$slots.body ? "max-content" : ""}"
+    aria-label={label}
   >
     <!-- a cancelable element, e.g. filter buttons -->
     {#if removable}

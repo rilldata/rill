@@ -31,7 +31,7 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 	}
 
 	// Get a runtime with capacity for the deployment
-	alloc, err := s.provisioner.Provision(ctx, &provisioner.ProvisionOptions{
+	alloc, err := s.Provisioner.Provision(ctx, &provisioner.ProvisionOptions{
 		OLAPDriver: proj.ProdOLAPDriver,
 		Slots:      proj.ProdSlots,
 		Region:     proj.Region,

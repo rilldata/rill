@@ -27,6 +27,9 @@ export function useTestServer(port: number, dir: string) {
         port.toString(),
         `--port-grpc`,
         (port + 1000).toString(),
+        // Temporary workaround for test hangs until runtime fix. With pool size 1, sometimes network requests hang
+        "--db",
+        "stage.db?rill_pool_size=4",
         dir,
       ],
       {
@@ -64,6 +67,7 @@ export function useTestBrowser(port: number) {
   beforeAll(async () => {
     browser = await chromium.launch({
       // headless: false,
+      // slowMo: 500,
       // devtools: true,
     });
   });
