@@ -84,7 +84,6 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 			format = fileutil.FullExt(files[0])
 			formatDefined = true
 		}
-		var query string
 		if appendToTable {
 			if err := a.appendData(ctx, files, format); err != nil {
 				return nil, err
@@ -95,7 +94,7 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 				return nil, err
 			}
 
-			query = fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from)
+			query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from)
 			if err := c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1}); err != nil {
 				return nil, err
 			}
