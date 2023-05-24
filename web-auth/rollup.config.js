@@ -44,9 +44,8 @@ function inlineSvelte(template) {
 
       // Replace all environment variables
       environmentVars.forEach((envVar) => {
-        bundle[file].code = bundle[file].code.replace(
-          `"%%${envVar}%%"`,
-          () => JSON.stringify(process.env[envVar])
+        bundle[file].code = bundle[file].code.replace(`"%%${envVar}%%"`, () =>
+          JSON.stringify(process.env[envVar])
         );
       });
     },
