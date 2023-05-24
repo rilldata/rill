@@ -34,7 +34,8 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path string `mapstructure:"path"`
+	Path    string            `mapstructure:"path"`
+	Headers map[string]string `mapstructure:"headers"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -66,6 +67,10 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, conf.Path, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch url %s:  %w", conf.Path, err)
+	}
+
+	for k, v := range conf.Headers {
+		req.Header.Set(k, v)
 	}
 
 	start := time.Now()
