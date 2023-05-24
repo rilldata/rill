@@ -7,7 +7,7 @@ sidebar_position: 0
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-## MacOS
+## macOS
 
 On macOS, we recommend installing `rill` using Homebrew:
 

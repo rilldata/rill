@@ -5,7 +5,7 @@ sidebar_label: Define metrics dashboard
 sidebar_position: 30
 ---
 
-In Rill, your dashboards are defined by _metric definition spec_. Metric definition specs are composed of:
+In Rill, your dashboards are defined by _metric definition_. Metric definition are composed of:
 * _**A model**_ - A [data model](./sql-models.md) creates One Big Table that will power the dashboard.
 * _**A timeseries**_ - A column from your model that will underlie x-axis data in the line charts. Time will be truncated into different time periods.
 * _**Measures**_ - Numerical aggregates of columns from your data model shown on the y-axis of the line charts and the "big number" summaries.
@@ -20,16 +20,16 @@ Your timeseries must be a column from your data model of [type](https://duckdb.o
 
 ### Measures
 
-Measures are numeric aggregates of columns from your data model. A measure must be defined with [DuckSQL](./sql-models.md) aggregation functions and expressions on columns from your data model. The following operators and function are allowed in a measure expression:
+Measures are numeric aggregates of columns from your data model. A measure must be defined with [DuckDB SQL](./sql-models.md) aggregation functions and expressions on columns from your data model. The following operators and function are allowed in a measure expression:
 
-* Any DuckSQL [numeric](https://duckdb.org/docs/sql/functions/numeric) operators and functions
-* This set of  DuckSQL [aggregates](https://duckdb.org/docs/sql/aggregates): `AVG`, `COUNT`, `FAVG`,`FIRST`, `FSUM`, `LAST`, `MAX`, `MIN`, `PRODUCT`, `SUM`, `APPROX_COUNT_DISTINCT`, `APPROX_QUANTILE`, `STDDEV_POP`, `STDDEV_SAMP`, `VAR_POP`, `VAR_SAMP`.
+* Any DuckDB SQL [numeric](https://duckdb.org/docs/sql/functions/numeric) operators and functions
+* This set of DuckDB SQL [aggregates](https://duckdb.org/docs/sql/aggregates): `AVG`, `COUNT`, `FAVG`,`FIRST`, `FSUM`, `LAST`, `MAX`, `MIN`, `PRODUCT`, `SUM`, `APPROX_COUNT_DISTINCT`, `APPROX_QUANTILE`, `STDDEV_POP`, `STDDEV_SAMP`, `VAR_POP`, `VAR_SAMP`.
 * [Filtered aggregates](https://duckdb.org/docs/sql/query_syntax/filter.html) can be used to filter set of rows fed to the aggregate functions
 
 As an example, if you have a table of sales events with the sales price and customer id, you could calculate the following metrics with these aggregates and expressions:
-* number of sales: `COUNT(*)`
-* total revenue: `SUM(sales_price)` 
-* revenue per customer: `CAST(SUM(sales_price) AS FLOAT)/CAST(COUNT(DISTINCT customer_id) AS FLOAT)`
+* Number of sales: `COUNT(*)`
+* Total revenue: `SUM(sales_price)` 
+* Revenue per customer: `CAST(SUM(sales_price) AS FLOAT)/CAST(COUNT(DISTINCT customer_id) AS FLOAT)`
 * Number of orders with order value more than $100 : `count(*) FILTER (WHERE order_val > 100)`
 
 You can also add labels, descriptions, and your choice of number formatting to customize how they are shown in the dashboard.

@@ -8,7 +8,7 @@ Follow this tutorial to deploy an existing Rill project to Rill Cloud. Deploying
 Flow diagram below shows the steps needed for deploying an existing project.  
 ```mermaid
 graph LR;
-    A(Local artifacts);
+    A(Local code files);
     B(GitHub);
     C(Rill Cloud);
     A--Pushed -->B;

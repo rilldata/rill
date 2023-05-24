@@ -15,7 +15,7 @@ To manage cloud permissions with the Rill CLI, you must first authenticate it. I
 rill login
 ```
 
-## Managing Members of an Organization
+## Managing members of an organization
 
 When you invite a user to an organization on Rill Cloud, they automatically get access to *all projects* in the organization. Users can have one of two roles:
 
@@ -36,7 +36,7 @@ If you add a user who has not yet signed up for Rill, they will receive an email
 
 Run `rill user --help` to show commands for listing members or changing access.
 
-## Managing Members of a Project
+## Managing members of a project
 
 By default, adding a user to an organization grants them access to all its projects. You can alternatively add a user only to a specific project. Users can have one of two roles on a project:
 
