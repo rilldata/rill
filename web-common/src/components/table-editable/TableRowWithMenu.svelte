@@ -10,6 +10,7 @@
   import TableHeader from "./TableHeader.svelte";
 
   export let index: number;
+  export let menuLabel: string | undefined = undefined;
 
   const dispatch = createEventDispatcher();
 
@@ -68,6 +69,7 @@
               tooltipText=""
               suppressTooltip={true}
               on:click={toggleFloatingElement}
+              label={menuLabel}
             >
               <MoreIcon />
             </ContextButton>
