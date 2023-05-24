@@ -20,7 +20,6 @@ import (
 	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/s3blob"
-	"gocloud.dev/gcerrors"
 )
 
 func init() {
@@ -148,23 +147,29 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, logger)
 	if err != nil {
-		// s3 throws error (possibly inconsistent) in case we are trying to access public buckets and passing some credentials
-		// go cdk wraps some s3's errors into gcerrors.Unknown
+		var failureErr awserr.RequestFailure
+		if !errors.As(err, &failureErr) {
+			return nil, err
+		}
+
+		// aws returns StatusForbidden in cases like no creds passed, wrong creds passed and incorrect bucket
+		// r2 returns StatusBadRequest in all cases above
 		// we try again with anonymous credentials in case bucket is public
-		errCode := gcerrors.Code(err)
-		if (errCode == gcerrors.PermissionDenied || errCode == gcerrors.Unknown) && creds != credentials.AnonymousCredentials {
+		if (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) && creds != credentials.AnonymousCredentials {
 			logger.Info("s3 list objects failed, re-trying with anonymous credential", zap.Error(err), observability.ZapCtx(ctx))
 			creds = credentials.AnonymousCredentials
 			bucketObj, bucketErr := openBucket(ctx, conf, conf.url.Host, creds)
 			if bucketErr != nil {
 				return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, bucketErr)
 			}
+
 			it, err = rillblob.NewIterator(ctx, bucketObj, opts, logger)
+		} else {
+			// reason for failure is not bad credentials
+			return nil, err
 		}
 
-		// aws returns StatusForbidden in cases like no creds passed, wrong creds passed and incorrect bucket
-		// r2 returns StatusBadRequest in all cases above
-		var failureErr awserr.RequestFailure
+		// check again
 		if errors.As(err, &failureErr) && (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) {
 			return nil, connectors.NewPermissionDeniedError(fmt.Sprintf("can't access remote source %q err: %v", source.Name, failureErr))
 		}
