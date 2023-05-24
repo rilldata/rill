@@ -34,7 +34,7 @@
 
 <section class="flex flex-col items-center gap-y-5 mt-4 mb-6">
   <Subheading>Or jump right into a project.</Subheading>
-  <div class="flex flex-row gap-4 flex-wrap">
+  <div class="flex flex-row justify-center gap-4 flex-wrap">
     <EmptyProject />
     {#each EXAMPLES as example}
       <Card
