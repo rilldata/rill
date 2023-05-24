@@ -154,6 +154,8 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		// we try again with anonymous credentials in case bucket is public
 		errCode := gcerrors.Code(err)
 		if (errCode == gcerrors.PermissionDenied || errCode == gcerrors.Unknown) && creds != credentials.AnonymousCredentials {
+			logger.Info("s3 list objects failed", zap.Error(err))
+			logger.Info("re-trying with anonymous credentials")
 			creds = credentials.AnonymousCredentials
 			bucketObj, bucketErr := openBucket(ctx, conf, conf.url.Host, creds)
 			if bucketErr != nil {

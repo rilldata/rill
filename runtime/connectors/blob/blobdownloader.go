@@ -238,9 +238,8 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 		return nil, err
 	}
 
-	it.logger.Info("planner started", zap.String("glob", it.opts.GlobPattern))
-
 	listOpts := listOptions(it.opts.GlobPattern)
+	it.logger.Info("planner started", zap.String("glob", it.opts.GlobPattern), zap.String("prefix", listOpts.Prefix))
 	token := blob.FirstPageToken
 	for token != nil && !planner.done() {
 		objs, nextToken, err := it.bucket.ListPage(it.ctx, token, it.opts.GlobPageSize, listOpts)
