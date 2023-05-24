@@ -107,7 +107,7 @@
 
 <RillTheme>
   <AuthContainer>
-    <RillLogoSquareNegative />
+    <RillLogoSquareNegative size="84px" />
     <div class="text-xl my-6">
       {isLoginPage ? "Log in to Rill" : "Create your Rill account"}
     </div>
