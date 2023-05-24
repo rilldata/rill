@@ -71,3 +71,11 @@ A branch from which continuous deployment is setup can be changed while editing 
 ```
 rill project edit
 ```
+
+## Deploy from a monorepo
+
+If your Rill project is in a sub-directory of a Git repository, use the `--subpath` option when creating your project:
+```
+rill deploy --subpath path/to/rill/project
+```
+Note that you must run `rill deploy` from the root of the Git repository, not the root of the Rill project.
