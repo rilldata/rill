@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3, protoInt64, Timestamp } from "@bufbuild/protobuf";
+import { Message, Timestamp, proto3, protoInt64 } from "@bufbuild/protobuf";
 import { MetricsView, Model, ObjectType, Source, Table } from "./catalog_pb.js";
 
 /**
@@ -1355,6 +1355,11 @@ export class UnpackEmptyRequest extends Message<UnpackEmptyRequest> {
    */
   title = "";
 
+  /**
+   * @generated from field: bool force = 3;
+   */
+  force = false;
+
   constructor(data?: PartialMessage<UnpackEmptyRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1365,6 +1370,7 @@ export class UnpackEmptyRequest extends Message<UnpackEmptyRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "force", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnpackEmptyRequest {
