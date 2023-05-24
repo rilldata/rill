@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
@@ -52,7 +53,7 @@ var spec = connectors.Spec{
 	ConnectorVariables: []connectors.VariableSchema{
 		{
 			Key:  "google_application_credentials",
-			Help: "Enter path of file to load from. Leave blank if public access enabled.",
+			Help: "Enter path of file to load from.",
 			ValidateFunc: func(any interface{}) error {
 				val := any.(string)
 				if val == "" {
@@ -212,7 +213,15 @@ func resolvedCredentials(ctx context.Context, env *connectors.Env) (*google.Cred
 	// GOOGLE_APPLICATION_CREDENTIALS is not set
 	if env.AllowHostAccess {
 		// use host credentials
-		return gcp.DefaultCredentials(ctx)
+		creds, err := gcp.DefaultCredentials(ctx)
+		if err != nil {
+			if strings.Contains(err.Error(), "google: could not find default credentials") {
+				return nil, errNoCredentials
+			}
+
+			return nil, err
+		}
+		return creds, nil
 	}
 	return nil, errNoCredentials
 }

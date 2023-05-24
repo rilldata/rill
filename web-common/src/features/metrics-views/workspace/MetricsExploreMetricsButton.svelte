@@ -63,6 +63,7 @@
 <Tooltip alignment="middle" distance={5} location="right">
   <!-- TODO: we need to standardize these buttons. -->
   <Button
+    label="Go to dashboard"
     disabled={buttonDisabled}
     on:click={() => viewDashboard()}
     type="primary"

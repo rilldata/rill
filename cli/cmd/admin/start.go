@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/server"
+	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -64,8 +65,9 @@ type Config struct {
 // StartCmd starts an admin server. It only allows configuration using environment variables.
 func StartCmd(cliCfg *config.Config) *cobra.Command {
 	startCmd := &cobra.Command{
-		Use:   "start",
-		Short: "Start admin server",
+		Use:   "start [server|worker]",
+		Short: "Start admin service",
+		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			// Load .env (note: fails silently if .env has errors)
 			_ = godotenv.Load()
@@ -161,40 +163,53 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				keyPairs[idx] = key
 			}
 
-			// Init admin server
-			srvOpts := &server.Options{
-				HTTPPort:               conf.HTTPPort,
-				GRPCPort:               conf.GRPCPort,
-				ExternalURL:            conf.ExternalURL,
-				FrontendURL:            conf.FrontendURL,
-				SessionKeyPairs:        keyPairs,
-				AllowedOrigins:         conf.AllowedOrigins,
-				ServePrometheus:        conf.MetricsExporter == observability.PrometheusExporter,
-				AuthDomain:             conf.AuthDomain,
-				AuthClientID:           conf.AuthClientID,
-				AuthClientSecret:       conf.AuthClientSecret,
-				GithubAppName:          conf.GithubAppName,
-				GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
-				GithubClientID:         conf.GithubClientID,
-				GithubClientSecret:     conf.GithubClientSecret,
-			}
-			srv, err := server.New(srvOpts, logger, adm, issuer)
-			if err != nil {
-				logger.Fatal("error creating server", zap.Error(err))
-			}
-
-			// Run server
+			// Make errgroup for running the processes
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 			group, cctx := errgroup.WithContext(ctx)
-			group.Go(func() error { return srv.ServeGRPC(cctx) })
-			group.Go(func() error { return srv.ServeHTTP(cctx) })
 
-			err = group.Wait()
-			if err != nil {
-				logger.Fatal("server crashed", zap.Error(err))
+			// Determine services to run. If no service name was provided, run them all.
+			// We just have two currently, so keeping this basic.
+			runServer := len(args) == 0 || args[0] == "server"
+			runWorker := len(args) == 0 || args[0] == "worker"
+
+			// Init and run server
+			if runServer {
+				srv, err := server.New(logger, adm, issuer, &server.Options{
+					HTTPPort:               conf.HTTPPort,
+					GRPCPort:               conf.GRPCPort,
+					ExternalURL:            conf.ExternalURL,
+					FrontendURL:            conf.FrontendURL,
+					SessionKeyPairs:        keyPairs,
+					AllowedOrigins:         conf.AllowedOrigins,
+					ServePrometheus:        conf.MetricsExporter == observability.PrometheusExporter,
+					AuthDomain:             conf.AuthDomain,
+					AuthClientID:           conf.AuthClientID,
+					AuthClientSecret:       conf.AuthClientSecret,
+					GithubAppName:          conf.GithubAppName,
+					GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
+					GithubClientID:         conf.GithubClientID,
+					GithubClientSecret:     conf.GithubClientSecret,
+				})
+				if err != nil {
+					logger.Fatal("error creating server", zap.Error(err))
+				}
+				group.Go(func() error { return srv.ServeGRPC(cctx) })
+				group.Go(func() error { return srv.ServeHTTP(cctx) })
 			}
 
-			logger.Info("server shutdown gracefully")
+			// Init and run worker
+			if runWorker {
+				wkr := worker.New(logger, adm)
+				group.Go(func() error { return wkr.Run(cctx) })
+			}
+
+			// Run tasks
+			err = group.Wait()
+			if err != nil {
+				logger.Fatal("crashed", zap.Error(err))
+			}
+
+			logger.Info("shutdown gracefully")
 		},
 	}
 	return startCmd

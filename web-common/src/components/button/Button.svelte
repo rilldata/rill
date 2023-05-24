@@ -7,6 +7,7 @@
   export let compact = false;
   export let submitForm = false;
   export let form = "";
+  export let label: string | undefined = undefined;
 
   const dispatch = createEventDispatcher();
 
@@ -59,6 +60,7 @@
   on:click={handleClick}
   type={submitForm && "submit"}
   form={submitForm && form}
+  aria-label={label}
 >
   <slot />
 </button>
