@@ -41,9 +41,10 @@ There are two roles available at the project-level: **Viewer** and **Admin**.
 | `read_prod`              | View dashboards deployed from the production (main) branch |      ✔ |     ✔ |
 | `read_prod_status`       | View logs for the production deployment                    |        |     ✔ |
 | `manage_prod`            | Trigger actions on the production deployment               |        |     ✔ |
+| `read_project_members`   | View members of the project                                |        |     ✔ |
+| `manage_project_members` | Add, remove or change roles of project members             |        |     ✔ |
+<!--
 | `read_dev`               | View dashboards deployed from non-production branches      |        |     ✔ |
 | `read_dev_status`        | View logs for non-production deployments                   |        |     ✔ |
 | `manage_dev`             | Trigger actions on non-production deployments              |        |     ✔ |
-| `read_project_members`   | View members of the project                                |        |     ✔ |
-| `manage_project_members` | Add, remove or change roles of project members             |        |     ✔ |
-
+ -->
