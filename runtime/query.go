@@ -79,7 +79,7 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		instanceID:    instanceID,
 		queryKey:      query.Key(),
 		dependencyKey: depKey,
-	}
+	}.String()
 
 	// Try to get from cache
 	if val, ok := r.queryCache.cache.Get(key); ok {
@@ -122,9 +122,13 @@ type queryCacheKey struct {
 	dependencyKey string
 }
 
+func (k queryCacheKey) String() string {
+	return fmt.Sprintf("inst:%s deps:%s qry:%s", k.instanceID, k.dependencyKey, k.queryKey)
+}
+
 type queryCache struct {
 	cache        *ristretto.Cache
-	singleflight *singleflight.Group[queryCacheKey, any]
+	singleflight *singleflight.Group[string, any]
 	metrics      metric.Registration
 }
 
