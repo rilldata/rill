@@ -32,6 +32,12 @@ You will then be prompted for details about the user.
 
 If you add a user who has not yet signed up for Rill, they will receive an email inviting them to sign up and join.
 
+### Automatically add members by email domain
+
+You can automatically add users to your organization by their email domain. For example, if you whitelist `yourdomain.com`, new and existing users with an email address ending on `@yourdomain.com` will automatically be added to your organization.
+
+The feature currently requires manual action by a support representative at Rill. Just [reach out here](https://www.rilldata.com/contact) and ask us to whitelist your domain.
+
 ### Other actions
 
 Run `rill user --help` to show commands for listing members or changing access.

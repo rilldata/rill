@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -55,11 +56,9 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 }
 
 func (r *Runtime) Close() error {
-	err1 := r.metastore.Close()
-	err2 := r.connCache.Close()
-	r.queryCache.cache.Close()
-	if err1 != nil {
-		return err1
-	}
-	return err2
+	return errors.Join(
+		r.metastore.Close(),
+		r.connCache.Close(),
+		r.queryCache.close(),
+	)
 }

@@ -111,7 +111,7 @@ func genMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 	buf.WriteString("---\n")
 	if cmd.Parent() == nil {
 		buf.WriteString("title: CLI usage\n")
-		buf.WriteString("sidebar_position: 40\n")
+		buf.WriteString("sidebar_position: 15\n")
 	} else {
 		buf.WriteString("title: " + name + "\n")
 	}
