@@ -109,7 +109,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 
 	runtimev1.RegisterRuntimeServiceServer(server, s)
 	runtimev1.RegisterQueryServiceServer(server, s)
-	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
+	s.logger.Named("console").Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
@@ -121,7 +121,7 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 	}
 
 	server := &http.Server{Handler: handler}
-	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
+	s.logger.Named("console").Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 
