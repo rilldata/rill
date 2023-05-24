@@ -2,7 +2,7 @@
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
   import Card from "../../components/card/Card.svelte";
   import CardDescription from "../../components/card/CardDescription.svelte";
-  import CardHeader from "../../components/card/CardHeader.svelte";
+  import CardTitle from "../../components/card/CardTitle.svelte";
   import { createRuntimeServiceUnpackExample } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import EmptyProject from "./EmptyProject.svelte";
@@ -48,7 +48,7 @@
           });
         }}
       >
-        <CardHeader>{example.title}</CardHeader>
+        <CardTitle>{example.title}</CardTitle>
         <CardDescription>{example.description}</CardDescription>
       </Card>
     {/each}

@@ -3,7 +3,7 @@
   import AddCircleOutline from "@rilldata/web-common/components/icons/AddCircleOutline.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import Card from "../../components/card/Card.svelte";
-  import CardHeader from "../../components/card/CardHeader.svelte";
+  import CardTitle from "../../components/card/CardTitle.svelte";
   import { createRuntimeServiceUnpackEmpty } from "../../runtime-client";
   import { EMPTY_PROJECT_TITLE } from "./constants";
 
@@ -28,5 +28,5 @@
 
 <Card on:click={startWithEmptyProject}>
   <AddCircleOutline size="2em" className="text-slate-800" />
-  <CardHeader position="middle">Start with an empty project</CardHeader>
+  <CardTitle position="middle">Start with an empty project</CardTitle>
 </Card>
