@@ -1,3 +1,3 @@
-<div class="absolute top-1/4 left-1/2 transform -translate-x-1/2">
+<div class="flex flex-col gap-y-8 py-16 px-20">
   <slot />
 </div>
