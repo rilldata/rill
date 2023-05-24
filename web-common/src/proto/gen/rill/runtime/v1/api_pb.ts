@@ -1135,6 +1135,289 @@ export class RenameFileResponse extends Message<RenameFileResponse> {
 }
 
 /**
+ * @generated from message rill.runtime.v1.Example
+ */
+export class Example extends Message<Example> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string title = 2;
+   */
+  title = "";
+
+  /**
+   * @generated from field: string description = 3;
+   */
+  description = "";
+
+  constructor(data?: PartialMessage<Example>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Example";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Example {
+    return new Example().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Example {
+    return new Example().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Example {
+    return new Example().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Example | PlainMessage<Example> | undefined, b: Example | PlainMessage<Example> | undefined): boolean {
+    return proto3.util.equals(Example, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.ListExamples
+ *
+ * @generated from message rill.runtime.v1.ListExamplesRequest
+ */
+export class ListExamplesRequest extends Message<ListExamplesRequest> {
+  constructor(data?: PartialMessage<ListExamplesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListExamplesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListExamplesRequest {
+    return new ListExamplesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListExamplesRequest {
+    return new ListExamplesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListExamplesRequest {
+    return new ListExamplesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListExamplesRequest | PlainMessage<ListExamplesRequest> | undefined, b: ListExamplesRequest | PlainMessage<ListExamplesRequest> | undefined): boolean {
+    return proto3.util.equals(ListExamplesRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.ListExamples
+ *
+ * @generated from message rill.runtime.v1.ListExamplesResponse
+ */
+export class ListExamplesResponse extends Message<ListExamplesResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.Example examples = 1;
+   */
+  examples: Example[] = [];
+
+  constructor(data?: PartialMessage<ListExamplesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListExamplesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "examples", kind: "message", T: Example, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListExamplesResponse {
+    return new ListExamplesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListExamplesResponse {
+    return new ListExamplesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListExamplesResponse {
+    return new ListExamplesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListExamplesResponse | PlainMessage<ListExamplesResponse> | undefined, b: ListExamplesResponse | PlainMessage<ListExamplesResponse> | undefined): boolean {
+    return proto3.util.equals(ListExamplesResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.UnpackExample
+ *
+ * @generated from message rill.runtime.v1.UnpackExampleRequest
+ */
+export class UnpackExampleRequest extends Message<UnpackExampleRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
+  /**
+   * @generated from field: bool force = 3;
+   */
+  force = false;
+
+  constructor(data?: PartialMessage<UnpackExampleRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.UnpackExampleRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "force", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnpackExampleRequest {
+    return new UnpackExampleRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UnpackExampleRequest {
+    return new UnpackExampleRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UnpackExampleRequest {
+    return new UnpackExampleRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UnpackExampleRequest | PlainMessage<UnpackExampleRequest> | undefined, b: UnpackExampleRequest | PlainMessage<UnpackExampleRequest> | undefined): boolean {
+    return proto3.util.equals(UnpackExampleRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.UnpackExample
+ *
+ * @generated from message rill.runtime.v1.UnpackExampleResponse
+ */
+export class UnpackExampleResponse extends Message<UnpackExampleResponse> {
+  constructor(data?: PartialMessage<UnpackExampleResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.UnpackExampleResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnpackExampleResponse {
+    return new UnpackExampleResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UnpackExampleResponse {
+    return new UnpackExampleResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UnpackExampleResponse {
+    return new UnpackExampleResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UnpackExampleResponse | PlainMessage<UnpackExampleResponse> | undefined, b: UnpackExampleResponse | PlainMessage<UnpackExampleResponse> | undefined): boolean {
+    return proto3.util.equals(UnpackExampleResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.UnpackEmpty
+ *
+ * @generated from message rill.runtime.v1.UnpackEmptyRequest
+ */
+export class UnpackEmptyRequest extends Message<UnpackEmptyRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string title = 2;
+   */
+  title = "";
+
+  constructor(data?: PartialMessage<UnpackEmptyRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.UnpackEmptyRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnpackEmptyRequest {
+    return new UnpackEmptyRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UnpackEmptyRequest {
+    return new UnpackEmptyRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UnpackEmptyRequest {
+    return new UnpackEmptyRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UnpackEmptyRequest | PlainMessage<UnpackEmptyRequest> | undefined, b: UnpackEmptyRequest | PlainMessage<UnpackEmptyRequest> | undefined): boolean {
+    return proto3.util.equals(UnpackEmptyRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.UnpackEmpty
+ *
+ * @generated from message rill.runtime.v1.UnpackEmptyResponse
+ */
+export class UnpackEmptyResponse extends Message<UnpackEmptyResponse> {
+  constructor(data?: PartialMessage<UnpackEmptyResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.UnpackEmptyResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnpackEmptyResponse {
+    return new UnpackEmptyResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UnpackEmptyResponse {
+    return new UnpackEmptyResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UnpackEmptyResponse {
+    return new UnpackEmptyResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UnpackEmptyResponse | PlainMessage<UnpackEmptyResponse> | undefined, b: UnpackEmptyResponse | PlainMessage<UnpackEmptyResponse> | undefined): boolean {
+    return proto3.util.equals(UnpackEmptyResponse, a, b);
+  }
+}
+
+/**
  * CatalogEntry contains information about an object in the catalog
  *
  * @generated from message rill.runtime.v1.CatalogEntry

@@ -9,9 +9,10 @@ cli.prepare:
 	rm -rf cli/pkg/web/embed/dist || true
 	mkdir -p cli/pkg/web/embed/dist
 	cp -r web-local/build/* cli/pkg/web/embed/dist
-	rm -rf cli/pkg/examples/embed/dist || true
-	mkdir -p cli/pkg/examples/embed/dist
-	cp -r examples/* cli/pkg/examples/embed/dist/
+	rm -rf runtime/pkg/examples/embed/dist || true
+	mkdir -p runtime/pkg/examples/embed/dist
+	git clone --quiet https://github.com/rilldata/rill-examples.git runtime/pkg/examples/embed/dist
+	rm -rf runtime/pkg/examples/embed/dist/.git
 
 .PHONY: coverage.go
 coverage.go:

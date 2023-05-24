@@ -84,6 +84,27 @@ service RuntimeService {
     };
   }
 
+  // ListExamples lists all the examples embedded into binary
+  rpc ListExamples(ListExamplesRequest) returns (ListExamplesResponse) {
+    option (google.api.http) = {get: "/v1/examples"};
+  }
+  
+  // UnpackExample unpacks an example project
+  rpc UnpackExample(UnpackExampleRequest) returns (UnpackExampleResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/files/unpack-example",
+      body: "*"
+    };
+  }
+
+  // UnpackEmpty unpacks an empty project
+  rpc UnpackEmpty(UnpackEmptyRequest) returns (UnpackEmptyResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/files/unpack-empty",
+      body: "*"
+    };
+  }
+
   // Catalog
 
   // ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
@@ -362,6 +383,40 @@ message RenameFileRequest {
 
 // Response message for RuntimeService.RenameFile
 message RenameFileResponse {}
+
+message Example {
+  string name = 1;
+  string title = 2;
+  string description = 3;
+}
+
+// Request message for RuntimeService.ListExamples
+message ListExamplesRequest {
+}
+
+// Response message for RuntimeService.ListExamples
+message ListExamplesResponse {
+  repeated Example examples = 1;
+}
+
+// Request message for RuntimeService.UnpackExample
+message UnpackExampleRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string name = 2 [(validate.rules).string.min_len = 1];
+  bool force = 3;
+}
+
+// Response message for RuntimeService.UnpackExample
+message UnpackExampleResponse {}
+
+// Request message for RuntimeService.UnpackEmpty
+message UnpackEmptyRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string title = 2;
+}
+
+// Response message for RuntimeService.UnpackEmpty
+message UnpackEmptyResponse {}
 
 // **********
 // Catalog

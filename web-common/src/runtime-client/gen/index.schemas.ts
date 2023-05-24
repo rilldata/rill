@@ -72,7 +72,7 @@ export type QueryServiceColumnRollupIntervalBody = {
 };
 
 export type QueryServiceColumnNumericHistogramHistogramMethod =
-  typeof QueryServiceColumnNumericHistogramHistogramMethod[keyof typeof QueryServiceColumnNumericHistogramHistogramMethod];
+  (typeof QueryServiceColumnNumericHistogramHistogramMethod)[keyof typeof QueryServiceColumnNumericHistogramHistogramMethod];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const QueryServiceColumnNumericHistogramHistogramMethod = {
@@ -161,6 +161,15 @@ export type QueryServiceColumnCardinalityParams = {
   priority?: number;
 };
 
+export type RuntimeServiceUnpackExampleBody = {
+  name?: string;
+  force?: boolean;
+};
+
+export type RuntimeServiceUnpackEmptyBody = {
+  title?: string;
+};
+
 export type RuntimeServiceRenameFileBody = {
   fromPath?: string;
   toPath?: string;
@@ -179,7 +188,7 @@ export type RuntimeServiceListFilesParams = {
 };
 
 export type RuntimeServiceListCatalogEntriesType =
-  typeof RuntimeServiceListCatalogEntriesType[keyof typeof RuntimeServiceListCatalogEntriesType];
+  (typeof RuntimeServiceListCatalogEntriesType)[keyof typeof RuntimeServiceListCatalogEntriesType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const RuntimeServiceListCatalogEntriesType = {
@@ -219,7 +228,15 @@ export type RuntimeServiceListInstancesParams = {
   pageToken?: string;
 };
 
-export type V1TypeCode = typeof V1TypeCode[keyof typeof V1TypeCode];
+export interface V1UnpackExampleResponse {
+  [key: string]: any;
+}
+
+export interface V1UnpackEmptyResponse {
+  [key: string]: any;
+}
+
+export type V1TypeCode = (typeof V1TypeCode)[keyof typeof V1TypeCode];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1TypeCode = {
@@ -273,12 +290,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -297,7 +308,7 @@ export interface V1TimeRange {
   end?: string;
 }
 
-export type V1TimeGrain = typeof V1TimeGrain[keyof typeof V1TimeGrain];
+export type V1TimeGrain = (typeof V1TimeGrain)[keyof typeof V1TimeGrain];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1TimeGrain = {
@@ -311,6 +322,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_MONTH: "TIME_GRAIN_MONTH",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -358,16 +375,6 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
-export interface V1RenameFileAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
 export interface V1RenameFileAndReconcileRequest {
   instanceId?: string;
   fromPath?: string;
@@ -375,6 +382,16 @@ export interface V1RenameFileAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
   strict?: boolean;
+}
+
+export interface V1RefreshAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export interface V1RefreshAndReconcileRequest {
@@ -395,7 +412,7 @@ export interface V1RefreshAndReconcileRequest {
  - CODE_SOURCE_PERMISSION_DENIED: Error returned when unauthorised to access remote sources
  */
 export type V1ReconcileErrorCode =
-  typeof V1ReconcileErrorCode[keyof typeof V1ReconcileErrorCode];
+  (typeof V1ReconcileErrorCode)[keyof typeof V1ReconcileErrorCode];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ReconcileErrorCode = {
@@ -424,7 +441,7 @@ Only applicable if file_path is set. */
   endLocation?: ReconcileErrorCharLocation;
 }
 
-export interface V1RefreshAndReconcileResponse {
+export interface V1RenameFileAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
   errors?: V1ReconcileError[];
@@ -489,7 +506,7 @@ export interface V1PingResponse {
   time?: string;
 }
 
-export type V1ObjectType = typeof V1ObjectType[keyof typeof V1ObjectType];
+export type V1ObjectType = (typeof V1ObjectType)[keyof typeof V1ObjectType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ObjectType = {
@@ -581,7 +598,7 @@ export interface V1MetricsViewComparisonValue {
 }
 
 export type V1MetricsViewComparisonSortType =
-  typeof V1MetricsViewComparisonSortType[keyof typeof V1MetricsViewComparisonSortType];
+  (typeof V1MetricsViewComparisonSortType)[keyof typeof V1MetricsViewComparisonSortType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1MetricsViewComparisonSortType = {
@@ -645,6 +662,10 @@ export interface V1ListFilesResponse {
   paths?: string[];
 }
 
+export interface V1ListExamplesResponse {
+  examples?: V1Example[];
+}
+
 export interface V1ListConnectorsResponse {
   connectors?: V1Connector[];
 }
@@ -687,7 +708,7 @@ export interface V1InlineMeasure {
 }
 
 export type V1HistogramMethod =
-  typeof V1HistogramMethod[keyof typeof V1HistogramMethod];
+  (typeof V1HistogramMethod)[keyof typeof V1HistogramMethod];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1HistogramMethod = {
@@ -707,6 +728,12 @@ export interface V1GetFileResponse {
 
 export interface V1GetCatalogEntryResponse {
   entry?: V1CatalogEntry;
+}
+
+export interface V1Example {
+  name?: string;
+  title?: string;
+  description?: string;
 }
 
 export interface V1EditInstanceResponse {
@@ -860,7 +887,7 @@ export interface RpcStatus {
  - NULL_VALUE: Null value.
  */
 export type ProtobufNullValue =
-  typeof ProtobufNullValue[keyof typeof ProtobufNullValue];
+  (typeof ProtobufNullValue)[keyof typeof ProtobufNullValue];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ProtobufNullValue = {
@@ -916,7 +943,7 @@ export interface NumericHistogramBinsBin {
   count?: number;
 }
 
-export type ModelDialect = typeof ModelDialect[keyof typeof ModelDialect];
+export type ModelDialect = (typeof ModelDialect)[keyof typeof ModelDialect];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ModelDialect = {
@@ -945,7 +972,7 @@ export interface MetricsViewDimension {
 }
 
 export type ExtractPolicyStrategy =
-  typeof ExtractPolicyStrategy[keyof typeof ExtractPolicyStrategy];
+  (typeof ExtractPolicyStrategy)[keyof typeof ExtractPolicyStrategy];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ExtractPolicyStrategy = {
@@ -955,7 +982,7 @@ export const ExtractPolicyStrategy = {
 } as const;
 
 export type ConnectorPropertyType =
-  typeof ConnectorPropertyType[keyof typeof ConnectorPropertyType];
+  (typeof ConnectorPropertyType)[keyof typeof ConnectorPropertyType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ConnectorPropertyType = {
