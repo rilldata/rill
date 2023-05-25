@@ -3,7 +3,6 @@ package queries
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
