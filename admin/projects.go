@@ -127,9 +127,9 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 // It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
 func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions, reconcileDeployment bool) (*database.Project, error) {
 	if proj.Region != opts.Region || proj.ProdSlots != opts.ProdSlots { // require new deployments
-		s.logger.Info("update project: recreating project", zap.String("project", proj.ID),
+		s.logger.Info("update project: recreating project", zap.String("project_id", proj.ID),
 			zap.String("region", opts.Region),
-			zap.String("slots", opts.Region),
+			zap.Int("slots", opts.ProdSlots),
 			observability.ZapCtx(ctx),
 		)
 		// create new deployment for project
