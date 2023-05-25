@@ -402,7 +402,6 @@ func (s *Service) recreateDeployment(ctx context.Context, proj *database.Project
 		return nil, err
 	}
 
-	// now update slots, region and new deployment ID
 	opts.ProdDeploymentID = &depl.ID
 	res, err := s.DB.UpdateProject(ctx, proj.ID, opts)
 	if err != nil {
