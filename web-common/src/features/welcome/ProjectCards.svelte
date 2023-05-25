@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import Card from "../../components/card/Card.svelte";
   import CardDescription from "../../components/card/CardDescription.svelte";
   import CardTitle from "../../components/card/CardTitle.svelte";
@@ -8,9 +9,12 @@
   import {
     createRuntimeServiceReconcile,
     createRuntimeServiceUnpackExample,
+    getRuntimeServiceGetFileQueryKey,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import EmptyProject from "./EmptyProject.svelte";
+
+  const queryClient = useQueryClient();
 
   const EXAMPLES = [
     {
@@ -56,6 +60,13 @@
   const reconcile = createRuntimeServiceReconcile({
     mutation: {
       onSuccess: () => {
+        // Invalidate `rill.yaml` GetFile
+        queryClient.invalidateQueries({
+          queryKey: getRuntimeServiceGetFileQueryKey(
+            $runtime.instanceId,
+            "rill.yaml"
+          ),
+        });
         goto(firstPage);
       },
       onError: (err) => {
