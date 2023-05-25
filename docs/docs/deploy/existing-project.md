@@ -1,6 +1,6 @@
 ---
-title: Deploy an existing Rill project
-sidebar_label: Deploy an existing project
+title: Deploy a project
+sidebar_label: Deploy project
 sidebar_position: 0
 ---
 
@@ -66,6 +66,16 @@ To refresh data sources without pushing code changes, run:
 rill project reconcile --refresh
 ```
 
+# Change your production branch
+
+By default, Rill deploys from the [default branch](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-branches#about-the-default-branch) of your git repository. You can change this to any branch you want.
+
+To deploy your project from a different branch, run the following command:
+
+```bash
+rill deploy --prod-branch [PROD-BRANCH]
+```
+
 ## Deploying from a branch other than `main`
 A branch from which continuous deployment is setup can be changed while editing the project. To change the branch, run:
 ```
@@ -79,3 +89,4 @@ If your Rill project is in a sub-directory of a Git repository, use the `--subpa
 rill deploy --subpath path/to/rill/project
 ```
 Note that you must run `rill deploy` from the root of the Git repository, not the root of the Rill project.
+

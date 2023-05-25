@@ -2,12 +2,12 @@
 title: Roles and permissions
 description: Learn more about roles and permissions for organizations and projects in Rill Cloud
 sidebar_label: Roles and permissions
-sidebar_position: 10
+sidebar_position: 30
 ---
 
 Access permissions in Rill Cloud are organized into roles at the organization and project level. It is usually sufficient to grant access at the organization-level because those permissions are inherited for projects by default. 
 
-For information about granting, revoking and changing roles, see [Share with others](../../deploy/share.md).
+For information about granting, revoking and changing roles, see [Share with others](./share-rill.md).
 
 ## Role inheritance
 

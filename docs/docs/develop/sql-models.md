@@ -1,7 +1,7 @@
 ---
 title: Model SQL transformations
 description: Transform your data into One Big Table using DuckDB SQL
-sidebar_label: Model SQL transformations
+sidebar_label: Model SQL transformation
 sidebar_position: 20
 ---
 

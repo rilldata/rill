@@ -164,11 +164,11 @@ const config = {
       {
         redirects: [
           {
-            to: '/connectors/s3',
+            to: '/deploy/credentials/s3',
             from: '/reference/connectors/s3',
           },
           {
-            to: '/connectors/gcs',
+            to: '/deploy/credentials/gcs',
             from: '/reference/connectors/gcs',
           },
         ],
