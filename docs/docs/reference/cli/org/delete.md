@@ -6,13 +6,14 @@ title: rill org delete
 Delete organization
 
 ```
-rill org delete <org-name> [flags]
+rill org delete [<org-name>] [flags]
 ```
 
 ### Flags
 
 ```
-      --force   Delete forcefully, skips the confirmation
+      --org string   Organization Name
+      --force        Delete forcefully, skips the confirmation
 ```
 
 ### Global flags

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
@@ -29,7 +28,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 	defer olap.Close()
 
 	// Check repo connection
-	repo, repoStore, err := r.checkRepoConnection(inst)
+	repo, _, err := r.checkRepoConnection(inst)
 	if err != nil {
 		return err
 	}
@@ -53,12 +52,6 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 		return fmt.Errorf("failed to prepare instance: %w", err)
 	}
 
-	c := rillv1beta.New(repoStore, inst.ID)
-	proj, err := c.ProjectConfig(ctx)
-	if err != nil {
-		return err
-	}
-	inst.ProjectVariables = proj.Variables
 	// this is a hack to set variables and pass to connectors
 	// ideally the runtime should propagate this flag to connectors.Env
 	if inst.Variables == nil {

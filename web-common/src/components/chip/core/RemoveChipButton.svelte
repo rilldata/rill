@@ -37,6 +37,7 @@
     on:mouseleave={blurOnRemove}
     on:blur={blurOnRemove}
     on:click|stopPropagation={() => dispatch("remove")}
+    aria-label="Remove"
   >
     <CancelCircle size="16px" />
     <!-- <Close /> -->

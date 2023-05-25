@@ -66,6 +66,7 @@
         {...getCellProps(row)}
         on:inspect
         on:select-item
+        label="Filter dimension value"
       />
     </StickyHeader>
   {/each}

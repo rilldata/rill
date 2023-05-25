@@ -47,13 +47,21 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	// Create user
-	user, err = s.DB.InsertUser(ctx, &database.InsertUserOptions{
+	isFirstUser, err := s.DB.CheckUsersEmpty(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	opts := &database.InsertUserOptions{
 		Email:               email,
 		DisplayName:         name,
 		PhotoURL:            photoURL,
 		QuotaSingleuserOrgs: database.DefaultQuotaSingleuserOrgs,
-	})
+		Superuser:           isFirstUser,
+	}
+
+	// Create user
+	user, err = s.DB.InsertUser(ctx, opts)
 	if err != nil {
 		return nil, err
 	}

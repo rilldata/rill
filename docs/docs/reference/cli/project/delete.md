@@ -6,14 +6,14 @@ title: rill project delete
 Delete the project
 
 ```
-rill project delete [flags]
+rill project delete [<project-name>] [flags]
 ```
 
 ### Flags
 
 ```
       --force            Delete forcefully, skips the confirmation
-      --project string   Name
+      --project string   Project Name
       --path string      Project directory (default ".")
 ```
 
