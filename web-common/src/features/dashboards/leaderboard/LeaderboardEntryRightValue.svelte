@@ -4,27 +4,11 @@
   import { humanizeDataType } from "../humanize-numbers";
   import { FormattedDataType } from "../../../components/data-types";
 
-  export let label;
-
   export let value;
   export let comparisonValue;
   export let showComparisonForThisValue = false;
   export let formatPreset;
   export let formattedValue: string;
-
-  $: if (label == "Facebook") {
-    console.log(
-      "LeaderboardEntryRightValue - saw Facebook",
-      "value",
-      value,
-      "comparisonValue",
-      comparisonValue,
-      "formattedValue",
-      formattedValue
-      // "rowCount",
-      // rowCount
-    );
-  }
 </script>
 
 <div class="flex items-baseline gap-x-1">

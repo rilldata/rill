@@ -1,29 +1,6 @@
 import { humanizeDataType } from "../humanize-numbers";
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
-import {
-  formatMeasurePercentageDifference,
-  // humanizeDataType,
-} from "../humanize-numbers";
-
-// /**
-//  * LeaderboardRenderGlobal contains items that affect all leaderboards,
-//  * and may be relevant to the rendering of any individual leaderboard entries.
-//  */
-export type LeaderboardRenderGlobal = {
-  totalFilteredRowCount: number;
-};
-
-/**
- * PerLeaderboardData contains data that is specific to a single
- * leaderboard, but may be relevant to the rendering of all
- *  entries in that leaderboard.
- */
-export type PerLeaderboardData = {
-  // whether the leaderboard is currently in "exclude" mode.
-  // true means that the leaderboard is in "exclude" mode,
-  // false means that the leaderboard is in "include" mode.
-  excludeMode: boolean;
-};
+import { formatMeasurePercentageDifference } from "../humanize-numbers";
 
 /**
  * LeaderboardRenderValue is the data that an individual

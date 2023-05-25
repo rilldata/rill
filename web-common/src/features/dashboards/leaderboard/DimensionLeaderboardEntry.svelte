@@ -18,7 +18,6 @@
   $: ({
     label,
     value: measureValue,
-    // rowCount,
     active,
     excluded,
     comparisonValue,
@@ -29,13 +28,8 @@
 
   export let filterExcludeMode: boolean;
 
-  // export let label: string;
   /** grays out the value if this is true */
   export let loading = false;
-
-  // export let active;
-  /** the measure value to be displayed on the right side */
-  // export let measureValue;
 
   /** show the context number next to the actual value */
   export let showContext = false;
@@ -46,12 +40,7 @@
   /** for summable measures, this is the value we use to calculate the bar % to fill */
   export let referenceValue;
 
-  // export let excluded = false;
-
-  // export let comparisonValue;
-  // export let showComparisonForThisValue = false;
   export let formatPreset;
-  // export let formattedValue: string;
 
   /** if this is a summable measure and there's a reference value, show measureValue / referenceValue.
    * This value is between 0-1 (in theroy!). If it is > 1, the BarAndLabel component shows teeth expressing
@@ -72,20 +61,6 @@
     : active
     ? "ui-measure-bar-included-selected"
     : "ui-measure-bar-included";
-
-  $: if (label == "Facebook") {
-    console.log(
-      "DimensionLeaderboardEntry - saw Facebook",
-      "value",
-      measureValue,
-      "comparisonValue",
-      comparisonValue,
-      "formattedValue",
-      formattedValue
-      // "rowCount",
-      // rowCount
-    );
-  }
 </script>
 
 <Tooltip location="right">
@@ -122,15 +97,12 @@
     </div>
     <!-- right-hand metric value -->
     <div slot="right" let:isActive>
-      <!-- {#if !(atLeastOneActive && !active)} -->
       <div
         class:ui-copy-disabled={excluded}
         class:ui-copy-strong={!excluded && isActive}
         in:fly={{ duration: 200, y: 4 }}
       >
-        <!-- <slot name="right" /> -->
         <LeaderboardEntryRightValue
-          {label}
           value={measureValue}
           {comparisonValue}
           {showComparisonForThisValue}
@@ -138,7 +110,6 @@
           {formattedValue}
         />
       </div>
-      <!-- {/if} -->
     </div>
     <div slot="context" let:isActive>
       <div
