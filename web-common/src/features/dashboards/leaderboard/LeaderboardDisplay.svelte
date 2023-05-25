@@ -26,6 +26,7 @@
   import { NicelyFormattedTypes } from "../humanize-numbers";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardMeasureSelector from "./LeaderboardMeasureSelector.svelte";
+  import { isActiveMeasureSummable } from "./leaderboard-render-values";
 
   export let metricViewName: string;
 
@@ -154,6 +155,8 @@
     observer?.disconnect();
   });
 
+  $: isSummableMeasure = isActiveMeasureSummable(activeMeasure);
+
   // FIXME: this is pending the remaining state work for show/hide measures and dimensions
   // $: availableDimensionKeys = selectDimensionKeys($metaQuery);
   // $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
@@ -185,10 +188,7 @@
       <Leaderboard
         {formatPreset}
         {totalFilteredRowCount}
-        isSummableMeasure={activeMeasure?.expression
-          .toLowerCase()
-          ?.includes("count(") ||
-          activeMeasure?.expression?.toLowerCase()?.includes("sum(")}
+        {isSummableMeasure}
         {metricViewName}
         dimensionName={item.name}
         on:expand={() => {

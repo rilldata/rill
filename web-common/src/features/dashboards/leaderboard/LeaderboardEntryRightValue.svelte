@@ -3,28 +3,25 @@
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { humanizeDataType } from "../humanize-numbers";
   import { FormattedDataType } from "../../../components/data-types";
+  import type { LeaderboardRenderValue } from "./leaderboard-render-values";
 
-  export let label;
+  export let renderValue: LeaderboardRenderValue;
+  $: ({
+    // label,
+    value,
+    // active,
+    // excluded,
+    comparisonValue,
+    formattedValue,
+    showComparisonForThisValue,
+    // rowCount,
+  } = renderValue);
 
-  export let value;
-  export let comparisonValue;
-  export let showComparisonForThisValue = false;
+  // export let value;
+  // export let comparisonValue;
+  // export let showComparisonForThisValue = false;
   export let formatPreset;
-  export let formattedValue: string;
-
-  $: if (label == "Facebook") {
-    console.log(
-      "LeaderboardEntryRightValue - saw Facebook",
-      "value",
-      value,
-      "comparisonValue",
-      comparisonValue,
-      "formattedValue",
-      formattedValue
-      // "rowCount",
-      // rowCount
-    );
-  }
+  // export let formattedValue: string;
 </script>
 
 <div class="flex items-baseline gap-x-1">

@@ -1,4 +1,4 @@
-import { humanizeDataType } from "../humanize-numbers";
+import { NicelyFormattedTypes, humanizeDataType } from "../humanize-numbers";
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import {
   formatMeasurePercentageDifference,
@@ -10,7 +10,14 @@ import {
 //  * and may be relevant to the rendering of any individual leaderboard entries.
 //  */
 export type LeaderboardRenderGlobal = {
+  // total number of rows captured by current set of filters
   totalFilteredRowCount: number;
+  // whether the active measure is summable
+  activeMeasureIsSummable: boolean;
+  // the numeric formatting preset for the active measure
+  formatPreset: NicelyFormattedTypes;
+  // the active metricViewName
+  metricViewName: string;
 };
 
 /**
@@ -23,6 +30,9 @@ export type PerLeaderboardData = {
   // true means that the leaderboard is in "exclude" mode,
   // false means that the leaderboard is in "include" mode.
   excludeMode: boolean;
+  // whether there is at least one active (selected) value
+  // in this leaderboard.
+  atLeastOneActive: boolean;
 };
 
 /**
@@ -47,8 +57,6 @@ export type LeaderboardRenderValue = {
   excluded: boolean;
 
   // whether the comparison value should be shown for this leaderboard entry
-  // FIXME: is this per leaderboard entry, per leaderboard, or global across all leaderboards?
-
   showComparisonForThisValue: boolean;
   // the numeric value of the leaderboard entry for the comparison time period
   comparisonValue: number;
@@ -93,4 +101,11 @@ export function getFormatterValueForPercDiff(comparisonValue, value) {
 
   const percDiff = (value - comparisonValue) / comparisonValue;
   return formatMeasurePercentageDifference(percDiff);
+}
+
+export function isActiveMeasureSummable(activeMeasure) {
+  return (
+    activeMeasure?.expression.toLowerCase()?.includes("count(") ||
+    activeMeasure?.expression?.toLowerCase()?.includes("sum(")
+  );
 }
