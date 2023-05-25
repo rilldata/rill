@@ -2,7 +2,7 @@
   import { fly } from "svelte/transition";
   import BackgroundImage from "./BackgroundImage.svelte";
   import BodyContainer from "./BodyContainer.svelte";
-  import ProjectTiles from "./ProjectTiles.svelte";
+  import ProjectCards from "./ProjectCards.svelte";
   import TitleContent from "./TitleContent.svelte";
 </script>
 
@@ -10,7 +10,7 @@
   <div in:fly={{ duration: 1600, delay: 400, y: 8 }}>
     <BodyContainer>
       <TitleContent />
-      <ProjectTiles />
+      <ProjectCards />
     </BodyContainer>
   </div>
 </BackgroundImage>
