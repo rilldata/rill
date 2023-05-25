@@ -117,7 +117,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	outlierResults, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            rugSQL,
 		Priority:         priority,
-		ExecutionTimeout: time.Minute * 2,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err

@@ -48,6 +48,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		defer cancel()
 		ctx = cx
 	}
+
 	rows, err := c.db.QueryxContext(ctx, stmt.Query, stmt.Args...)
 	if err != nil {
 		return nil, err

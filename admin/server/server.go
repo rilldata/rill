@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/admin/server/cookies"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/middleware"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
@@ -103,11 +104,15 @@ func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimea
 	}, nil
 }
 
+func timeoutSelector(service, method string) time.Duration {
+	return time.Minute
+}
+
 // ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
-			runtimeserver.DeadlineStreamServerInterceptor(runtimeserver.TimeoutSelector),
+			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
 			observability.TracingStreamServerInterceptor(),
 			observability.LoggingStreamServerInterceptor(s.logger),
 			errorMappingStreamServerInterceptor(),
@@ -116,7 +121,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			s.authenticator.StreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
-			runtimeserver.DeadlineUnaryServerInterceptor(runtimeserver.TimeoutSelector),
+			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
 			observability.TracingUnaryServerInterceptor(),
 			observability.LoggingUnaryServerInterceptor(s.logger),
 			errorMappingUnaryServerInterceptor(),

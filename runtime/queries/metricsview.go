@@ -69,7 +69,7 @@ func metricsQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql
 		Query:            sql,
 		Args:             args,
 		Priority:         priority,
-		ExecutionTimeout: time.Minute * 2,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return nil, nil, status.Error(codes.InvalidArgument, err.Error())

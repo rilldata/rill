@@ -139,7 +139,7 @@ func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.O
 		Query:            sql,
 		Args:             args,
 		Priority:         priority,
-		ExecutionTimeout: time.Minute * 2,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err

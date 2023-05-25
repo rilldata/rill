@@ -72,7 +72,7 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            descriptiveStatisticsSQL,
 		Priority:         priority,
-		ExecutionTimeout: time.Minute * 2,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err

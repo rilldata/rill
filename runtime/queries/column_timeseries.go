@@ -129,7 +129,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			Query:            querySQL,
 			Args:             args,
 			Priority:         priority,
-			ExecutionTimeout: time.Minute * 2,
+			ExecutionTimeout: defaultExecutionTimeout,
 		})
 		if err != nil {
 			return err
@@ -139,14 +139,14 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			_ = olap.Exec(ensuredCtx, &drivers.Statement{
 				Query:            `DROP TABLE "` + temporaryTableName + `"`,
 				Priority:         priority,
-				ExecutionTimeout: time.Minute * 2,
+				ExecutionTimeout: defaultExecutionTimeout,
 			})
 		}()
 
 		rows, err := olap.Execute(ctx, &drivers.Statement{
 			Query:            fmt.Sprintf(`SELECT * FROM %q`, temporaryTableName),
 			Priority:         priority,
-			ExecutionTimeout: time.Minute * 2,
+			ExecutionTimeout: defaultExecutionTimeout,
 		})
 		if err != nil {
 			return err
@@ -301,7 +301,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 		rows, err := olap.Execute(ctx, &drivers.Statement{
 			Query:            `SELECT ` + safeTimestampColumnName + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
 			Priority:         priority,
-			ExecutionTimeout: time.Minute * 2,
+			ExecutionTimeout: defaultExecutionTimeout,
 		})
 		if err != nil {
 			return nil, err
@@ -372,7 +372,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            querySQL,
 		Priority:         priority,
-		ExecutionTimeout: time.Minute * 2,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return nil, err

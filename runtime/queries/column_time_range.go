@@ -68,7 +68,7 @@ func (q *ColumnTimeRange) resolveDuckDB(ctx context.Context, olap drivers.OLAPSt
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            rangeSQL,
 		Priority:         priority,
-		ExecutionTimeout: time.Minute * 2,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err
@@ -133,7 +133,7 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            rangeSQL,
 		Priority:         priority,
-		ExecutionTimeout: time.Minute * 2,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err

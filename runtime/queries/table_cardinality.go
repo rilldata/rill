@@ -54,7 +54,7 @@ func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            countSQL,
 		Priority:         priority,
-		ExecutionTimeout: time.Minute * 2,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err

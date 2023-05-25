@@ -116,6 +116,12 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	// NOTE: We can't just "defer release()" because release() will block until rows.Close() is called.
 	// We must be careful to make sure release() is called on all code paths.
 
+	if stmt.ExecutionTimeout != 0 {
+		cx, cancel := context.WithTimeout(ctx, stmt.ExecutionTimeout)
+		defer cancel()
+		ctx = cx
+	}
+
 	rows, err := conn.QueryxContext(ctx, stmt.Query, stmt.Args...)
 	if err != nil {
 		_ = release()
