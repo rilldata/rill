@@ -11,20 +11,25 @@ see more button
   import { notifications } from "@rilldata/web-common/components/notifications";
   import LeaderboardItemTooltip from "./LeaderboardItemTooltip.svelte";
   import {
-    LIST_SLIDE_DURATION,
+    // LIST_SLIDE_DURATION,
     TOOLTIP_STRING_LIMIT,
   } from "@rilldata/web-common/layout/config";
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
-  import { slideRight } from "@rilldata/web-common/lib/transitions";
+  // import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { createEventDispatcher } from "svelte";
   import PercentageChange from "../../../components/data-types/PercentageChange.svelte";
   import { PERC_DIFF } from "../../../components/data-types/type-utils";
   import {
     formatMeasurePercentageDifference,
-    humanizeDataType,
+    // humanizeDataType,
   } from "../humanize-numbers";
   import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
-  import { FormattedDataType } from "../../../components/data-types";
+  import {
+    LeaderboardRenderValue,
+    valuesToRenderValues,
+  } from "./leaderboard-render-values";
+  // import { FormattedDataType } from "../../../components/data-types";
+  // import LeaderboardEntryRightValue from "./LeaderboardEntryRightValue.svelte";
 
   export let values;
   export let comparisonValues;
@@ -43,22 +48,40 @@ see more button
   const { shiftClickAction } = createShiftClickAction();
 
   const dispatch = createEventDispatcher();
-  let renderValues = [];
+  let renderValues: LeaderboardRenderValue[] = [];
 
-  $: comparsionMap = new Map(comparisonValues?.map((v) => [v.label, v.value]));
-  $: renderValues = values.map((v) => {
-    const active = activeValues.findIndex((value) => value === v.label) >= 0;
-    const comparisonValue = comparsionMap.get(v.label);
+  $: comparisonMap = new Map(comparisonValues?.map((v) => [v.label, v.value]));
 
-    // Super important special case: if there is not at least one "active" (selected) value,
-    // we need to set *all* items to be included, because by default if a user has not
-    // selected any values, we assume they want all values included in all calculations.
-    const excluded = atLeastOneActive
-      ? (filterExcludeMode && active) || (!filterExcludeMode && !active)
-      : false;
+  $: renderValues = valuesToRenderValues(
+    values,
+    activeValues,
+    comparisonMap,
+    comparisonLabelToReveal,
+    filterExcludeMode,
+    atLeastOneActive,
+    formatPreset
+  );
+  // values.map((v) => {
+  //   const active = activeValues.findIndex((value) => value === v.label) >= 0;
+  //   const comparisonValue = comparsionMap.get(v.label);
 
-    return { ...v, active, excluded, comparisonValue };
-  });
+  //   // Super important special case: if there is not at least one "active" (selected) value,
+  //   // we need to set *all* items to be included, because by default if a user has not
+  //   // selected any values, we assume they want all values included in all calculations.
+  //   const excluded = atLeastOneActive
+  //     ? (filterExcludeMode && active) || (!filterExcludeMode && !active)
+  //     : false;
+
+  //   return {
+  //     ...v,
+  //     active,
+  //     excluded,
+  //     comparisonValue,
+  //     formattedValue: humanizeDataType(v.value, formatPreset),
+  //     showComparisonForThisValue: comparisonLabelToReveal === v.label,
+  //   };
+  // });
+  // $: console.log("renderValues", renderValues);
 
   let comparisonLabelToReveal = undefined;
   function revealComparisonNumber(value) {
@@ -66,21 +89,37 @@ see more button
       if (showComparison) comparisonLabelToReveal = value;
     };
   }
-
-  function getFormatterValueForPercDiff(comparisonValue, value) {
-    if (comparisonValue === 0) return PERC_DIFF.PREV_VALUE_ZERO;
-    if (!comparisonValue) return PERC_DIFF.PREV_VALUE_NO_DATA;
-    if (value === null || value === undefined)
-      return PERC_DIFF.CURRENT_VALUE_NO_DATA;
-
-    const percDiff = (value - comparisonValue) / comparisonValue;
-    return formatMeasurePercentageDifference(percDiff);
-  }
 </script>
 
-{#each renderValues as { label, value, rowCount, active, excluded, comparisonValue } (label)}
-  {@const formattedValue = humanizeDataType(value, formatPreset)}
-  {@const showComparisonForThisValue = comparisonLabelToReveal === label}
+<!-- {#each renderValues as { label, value, rowCount, active, excluded, comparisonValue, formattedValue, showComparisonForThisValue } (label)} -->
+{#each renderValues as renderValue (renderValue.label)}
+  {@const {
+    label,
+    value,
+    // rowCount,
+    active,
+    excluded,
+    comparisonValue,
+    formattedValue,
+    showComparisonForThisValue,
+  } = renderValue}
+  <!-- {@const showComparisonForThisValue = comparisonLabelToReveal === label} -->
+  <!-- {@const foo = (() => {
+    //console.log("foo");
+    if (label == "Facebook") {
+      console.log(
+        "Facebook",
+        "value",
+        value,
+        "comparisonValue",
+        comparisonValue,
+        "formattedValue",
+        formattedValue,
+        "rowCount",
+        rowCount
+      );
+    }
+  })()} -->
 
   <div
     use:shiftClickAction
@@ -103,7 +142,18 @@ see more button
       });
     }}
   >
+    <!-- <DimensionLeaderboardEntry
+      {renderValue}
+      showContext={showComparison}
+      {loading}
+      {isSummableMeasure}
+      {referenceValue}
+      {atLeastOneActive}
+      {formatPreset}
+    > -->
     <DimensionLeaderboardEntry
+      {renderValue}
+      {label}
       measureValue={value}
       showContext={showComparison}
       {loading}
@@ -112,11 +162,22 @@ see more button
       {atLeastOneActive}
       {active}
       {excluded}
+      {comparisonValue}
+      {showComparisonForThisValue}
+      {formatPreset}
+      {formattedValue}
+      {filterExcludeMode}
+      {totalFilteredRowCount}
     >
-      <svelte:fragment slot="label">
-        <FormattedDataType value={label} />
-      </svelte:fragment>
-      <div slot="right" class="flex items-baseline gap-x-1">
+      <!-- <LeaderboardEntryRightValue
+        slot="right"
+        {value}
+        {comparisonValue}
+        {showComparisonForThisValue}
+        {formatPreset}
+        {formattedValue}
+      /> -->
+      <!-- <div slot="right" class="flex items-baseline gap-x-1">
         {#if showComparisonForThisValue && comparisonValue !== undefined && comparisonValue !== null}
           <span
             class="inline-block opacity-50"
@@ -127,20 +188,18 @@ see more button
           </span>
         {/if}
         <FormattedDataType type="INTEGER" value={formattedValue || value} />
-      </div>
-      <span slot="context">
-        <PercentageChange
-          value={getFormatterValueForPercDiff(comparisonValue, value)}
-        />
-      </span>
-      <LeaderboardItemTooltip
+      </div> -->
+      <!-- <span slot="context">
+        
+      </span> -->
+      <!-- <LeaderboardItemTooltip
         slot="tooltip"
         {rowCount}
         {totalFilteredRowCount}
         {excluded}
         filtered={atLeastOneActive}
         {filterExcludeMode}
-      />
+      /> -->
     </DimensionLeaderboardEntry>
   </div>
 {/each}
