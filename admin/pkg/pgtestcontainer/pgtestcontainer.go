@@ -11,11 +11,13 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+// Container wraps a testcontainer running Postgres.
 type Container struct {
 	testcontainers.Container
 	DatabaseURL string
 }
 
+// New creates and starts a new Postgres testcontainer. Call Terminate() when done using it.
 func New(t *testing.T) Container {
 	ctx := context.Background()
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -45,6 +47,7 @@ func New(t *testing.T) Container {
 	}
 }
 
+// Terminate stops and removes the container.
 func (c Container) Terminate(t *testing.T) {
 	ctx := context.Background()
 	err := c.Container.Terminate(ctx)
