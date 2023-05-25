@@ -66,7 +66,18 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 
 	// Provision prod deployment.
 	// Start using original context again since transaction in txCtx is done.
-	depl, err := s.createDeployment(ctx, proj)
+	depl, err := s.createDeployment(ctx, &createDeploymentOptions{
+		ProjectID:            proj.ID,
+		Region:               proj.Region,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		Subpath:              proj.Subpath,
+		ProdBranch:           proj.ProdBranch,
+		ProdVariables:        proj.ProdVariables,
+		ProdOLAPDriver:       proj.ProdOLAPDriver,
+		ProdOLAPDSN:          proj.ProdOLAPDSN,
+		ProdSlots:            proj.ProdSlots,
+	})
 	if err != nil {
 		err2 := s.DB.DeleteProject(ctx, proj.ID)
 		return nil, multierr.Combine(err, err2)
@@ -133,7 +144,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 			observability.ZapCtx(ctx),
 		)
 		// create new deployment for project
-		return s.recreateDeployment(ctx, proj, opts.ProdSlots, opts.Region)
+		return s.recreateDeployment(ctx, proj, opts)
 	}
 
 	impactsDeployments := (proj.ProdBranch != opts.ProdBranch ||
@@ -176,7 +187,18 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 // TriggerRedeploy de-provisions and re-provisions a project's prod deployment.
 func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) error {
 	// Provision new deployment
-	newDepl, err := s.createDeployment(ctx, proj)
+	newDepl, err := s.createDeployment(ctx, &createDeploymentOptions{
+		ProjectID:            proj.ID,
+		Region:               proj.Region,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		Subpath:              proj.Subpath,
+		ProdBranch:           proj.ProdBranch,
+		ProdVariables:        proj.ProdVariables,
+		ProdOLAPDriver:       proj.ProdOLAPDriver,
+		ProdOLAPDSN:          proj.ProdOLAPDSN,
+		ProdSlots:            proj.ProdSlots,
+	})
 	if err != nil {
 		return err
 	}
@@ -358,29 +380,31 @@ func (s *Service) endReconcile(ctx context.Context, depl *database.Deployment, r
 }
 
 // recreateDeployment creates a new deployment with given slot and region
-func (s *Service) recreateDeployment(ctx context.Context, proj *database.Project, slots int, region string) (*database.Project, error) {
+func (s *Service) recreateDeployment(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
 	oldDepls, err := s.DB.FindDeployments(ctx, proj.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	depl, err := s.createDeployment(ctx, proj)
+	depl, err := s.createDeployment(ctx, &createDeploymentOptions{
+		ProjectID:            proj.ID,
+		Subpath:              proj.Subpath,
+		ProdOLAPDriver:       proj.ProdOLAPDriver,
+		ProdOLAPDSN:          proj.ProdOLAPDSN,
+		Region:               opts.Region,
+		GithubURL:            opts.GithubURL,
+		GithubInstallationID: opts.GithubInstallationID,
+		ProdBranch:           opts.ProdBranch,
+		ProdVariables:        opts.ProdVariables,
+		ProdSlots:            opts.ProdSlots,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
-		Name:                 proj.Name,
-		Description:          proj.Description,
-		Public:               proj.Public,
-		GithubURL:            proj.GithubURL,
-		GithubInstallationID: proj.GithubInstallationID,
-		ProdBranch:           proj.ProdBranch,
-		ProdVariables:        proj.ProdVariables,
-		ProdSlots:            slots,
-		Region:               region,
-		ProdDeploymentID:     &depl.ID,
-	})
+	// now update slots, region and new deployment ID
+	opts.ProdDeploymentID = &depl.ID
+	res, err := s.DB.UpdateProject(ctx, proj.ID, opts)
 	if err != nil {
 		return nil, multierr.Combine(err, s.teardownDeployment(ctx, proj, depl))
 	}
