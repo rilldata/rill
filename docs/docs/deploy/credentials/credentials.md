@@ -1,6 +1,6 @@
 ---
 title: Configure connector credentials
-sidebar_label: Configure connector credentials
+sidebar_label: Configure credentials
 sidebar_position: 10
 ---
 
@@ -10,5 +10,5 @@ When running Rill locally, Rill attempts to find existing credentials configured
 
 For instructions on how to create a service account and set credentials in Rill Cloud, see our reference docs for:
 
-- [Amazon S3](../connectors/s3.md)
-- [Google Cloud Storage (GCS)](../connectors/gcs.md)
+- [Amazon S3](./s3.md)
+- [Google Cloud Storage (GCS)](./gcs.md)
