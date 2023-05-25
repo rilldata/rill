@@ -133,9 +133,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 			observability.ZapCtx(ctx),
 		)
 		// create new deployment for project
-		proj.ProdSlots = opts.ProdSlots
-		proj.ProdBranch = opts.ProdBranch
-		return s.recreateDeployment(ctx, proj)
+		return s.recreateDeployment(ctx, proj, opts.ProdSlots, opts.Region)
 	}
 
 	impactsDeployments := (proj.ProdBranch != opts.ProdBranch ||
@@ -359,7 +357,8 @@ func (s *Service) endReconcile(ctx context.Context, depl *database.Deployment, r
 	return nil
 }
 
-func (s *Service) recreateDeployment(ctx context.Context, proj *database.Project) (*database.Project, error) {
+// recreateDeployment creates a new deployment with given slot and region
+func (s *Service) recreateDeployment(ctx context.Context, proj *database.Project, slots int, region string) (*database.Project, error) {
 	oldDepls, err := s.DB.FindDeployments(ctx, proj.ID)
 	if err != nil {
 		return nil, err
@@ -378,8 +377,8 @@ func (s *Service) recreateDeployment(ctx context.Context, proj *database.Project
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdBranch:           proj.ProdBranch,
 		ProdVariables:        proj.ProdVariables,
-		ProdSlots:            proj.ProdSlots,
-		Region:               proj.Region,
+		ProdSlots:            slots,
+		Region:               region,
 		ProdDeploymentID:     &depl.ID,
 	})
 	if err != nil {
