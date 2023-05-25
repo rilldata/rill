@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
   import Card from "../../components/card/Card.svelte";
   import CardDescription from "../../components/card/CardDescription.svelte";
@@ -46,6 +47,7 @@
               name: example.name,
             },
           });
+          goto("/");
         }}
       >
         <CardTitle>{example.title}</CardTitle>
