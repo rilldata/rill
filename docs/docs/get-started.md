@@ -32,7 +32,7 @@ On the welcome screen, initialize an example project or load up Rill with your o
 
 You can deploy any Rill project with a dashboard to an authenticated hosted endpoint:
 
-1. Create a [new Github repository](https://github.com/new) and push your `my-rill-project` directory to it
+1. Create a new Github repository on [https://github.com/new](https://github.com/new) and push your `my-rill-project` directory to it
 2. Setup continuous deployment from Github to Rill Cloud:
     ```
     cd my-rill-project
