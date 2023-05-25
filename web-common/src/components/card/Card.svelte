@@ -4,10 +4,13 @@
 
 <div
   class="w-[240px] h-[240px] rounded-md
-  flex flex-col items-center justify-center gap-y-2
-  relative {bgClasses} 
-  transition duration-300 ease-out custom-shadow custom-shadow-hover cursor-pointer"
+flex flex-col items-center justify-center gap-y-2
+relative {bgClasses} 
+transition duration-300 ease-out custom-shadow custom-shadow-hover cursor-pointer"
   on:click
+  on:keydown={(e) => e.key === "Enter" && e.currentTarget.click()}
+  role="button"
+  tabindex="0"
 >
   <slot />
 </div>
