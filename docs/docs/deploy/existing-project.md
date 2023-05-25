@@ -19,26 +19,8 @@ graph LR;
 
 Rill Cloud connects to a repository on Github containing a Rill project, and continuously deploys that project on every push. Therefore, your project must be on Github before you deploy it to Rill.
 
-Follow these steps to push your project to Github:
-
-1. Initialize `git`:
-```
-git init
-```
-2. Add and commit the project files:
-```
-git add .
-git commit -m "Initial commit"
-```
-3. Create a new Github repository on Github: [https://github.com/new](https://github.com/new)
-4. Link `git` to the remote repository
-```
-git remote add origin https://github.com/your-account/your-repo.git
-```
-5. Push your repository to Github
-```
-git push -u origin main
-```
+- If your project is not yet on Github, follow the steps on [https://github.com/new](https://github.com/new) to create a new repository and push your project files to it.
+- If your project is already on Github, make sure you have permission to grant access to it. If you're deploying a project controlled by someone else, first fork or copy it to a repository in your account.
 
 ## Deploy to Rill Cloud
 
@@ -68,7 +50,7 @@ rill project reconcile --refresh
 
 # Change your production branch
 
-By default, Rill deploys from the [default branch](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-branches#about-the-default-branch) of your git repository. You can change this to any branch you want.
+By default, Rill deploys from the [default branch](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-branches#about-the-default-branch) of your Git repository. You can change this to any branch you want.
 
 To deploy your project from a different branch, run the following command:
 
