@@ -9,8 +9,8 @@
   import {
     createRuntimeServiceReconcile,
     createRuntimeServiceUnpackExample,
-    getRuntimeServiceGetFileQueryKey,
   } from "../../runtime-client";
+  import { invalidateAfterReconcile } from "../../runtime-client/invalidation";
   import { runtime } from "../../runtime-client/runtime-store";
   import EmptyProject from "./EmptyProject.svelte";
 
@@ -59,14 +59,8 @@
 
   const reconcile = createRuntimeServiceReconcile({
     mutation: {
-      onSuccess: () => {
-        // Invalidate `rill.yaml` GetFile
-        queryClient.invalidateQueries({
-          queryKey: getRuntimeServiceGetFileQueryKey(
-            $runtime.instanceId,
-            "rill.yaml"
-          ),
-        });
+      onSuccess: (response) => {
+        invalidateAfterReconcile(queryClient, $runtime.instanceId, response);
         goto(firstPage);
       },
       onError: (err) => {
