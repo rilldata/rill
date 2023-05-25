@@ -13,6 +13,7 @@ rill env configure [flags]
 
 ```
       --path string      Project directory (default ".")
+      --subpath string   Project path to sub directory of a larger repository
       --project string   
       --redeploy         Redeploy project
 ```

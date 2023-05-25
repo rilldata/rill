@@ -3,7 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
-	"time"
+	"reflect"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -25,8 +25,11 @@ func (q *ColumnNullCount) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnNullCount) MarshalResult() any {
-	return q.Result
+func (q *ColumnNullCount) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: int64(reflect.TypeOf(q.Result).Size()),
+	}
 }
 
 func (q *ColumnNullCount) UnmarshalResult(v any) error {

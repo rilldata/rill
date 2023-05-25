@@ -40,7 +40,7 @@ jobs:
       - name: Set up go for E2E
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.x
+          go-version: 1.20.3
       - name: go build cache
         uses: actions/cache@v3
         with:
@@ -95,8 +95,7 @@ jobs:
       - name: Build & Test the web local
         if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}
         run: |-
-          npm run build -w web-local
-          npm run test -w web-local
+          SKIP_UI_BUILD=true npm run test
 
       - name: Build & Test the web admin
         if: ${{ steps.filter.outputs.admin == 'true' || steps.filter.outputs.common == 'true' }}

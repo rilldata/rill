@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
+	"reflect"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -27,8 +27,11 @@ func (q *ColumnTimeGrain) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnTimeGrain) MarshalResult() any {
-	return q.Result
+func (q *ColumnTimeGrain) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: int64(reflect.TypeOf(q.Result).Size()),
+	}
 }
 
 func (q *ColumnTimeGrain) UnmarshalResult(v any) error {

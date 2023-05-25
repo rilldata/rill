@@ -15,8 +15,8 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	var orgName, description string
 
 	editCmd := &cobra.Command{
-		Use:   "edit",
-		Args:  cobra.NoArgs,
+		Use:   "edit [<org-name>]",
+		Args:  cobra.MaximumNArgs(1),
 		Short: "Edit organization details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -27,21 +27,16 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if !cmd.Flags().Changed("org") {
+			if len(args) > 0 {
+				orgName = args[0]
+			}
+			if !cmd.Flags().Changed("org") && len(args) == 0 && cfg.Interactive {
 				orgNames, err := cmdutil.OrgNames(ctx, client)
 				if err != nil {
 					return err
 				}
 
 				orgName = cmdutil.SelectPrompt("Select org to edit", orgNames, cfg.Org)
-			}
-
-			if !cmd.Flags().Changed("description") {
-				// Get the new org description from user if not provided in the flag
-				description, err = cmdutil.InputPrompt("Enter the org description", description)
-				if err != nil {
-					return err
-				}
 			}
 
 			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: orgName})
@@ -57,6 +52,16 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			org := resp.Organization
+
+			// Set the default values for edit flags with current values for org
+			cmd.Flag("description").DefValue = org.Description
+
+			if cfg.Interactive {
+				err = cmdutil.SetFlagsByInputPrompts(*cmd, "description")
+				if err != nil {
+					return err
+				}
+			}
 
 			updatedOrg, err := client.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
 				Id:          org.Id,

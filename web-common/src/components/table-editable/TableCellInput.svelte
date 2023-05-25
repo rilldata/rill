@@ -97,6 +97,7 @@
 >
   <div class="flex flex-row">
     <input
+      aria-label={columnConfig.ariaLabel}
       autocomplete="off"
       bind:this={inputElt}
       class={"table-input w-full text-ellipsis bg-inherit " +

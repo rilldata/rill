@@ -1,6 +1,6 @@
 ---
-title: rill.yaml
-sidebar_label: rill.yaml
+title: Project YAML
+sidebar_label: Project YAML
 sidebar_position: 40
 ---
 

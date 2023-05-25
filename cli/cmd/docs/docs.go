@@ -21,7 +21,7 @@ func DocsCmd(cfg *config.Config, rootCmd *cobra.Command) *cobra.Command {
 			}
 		},
 	}
-	docsCmd.AddCommand(GenerateCmd(rootCmd))
+	docsCmd.AddCommand(GenerateCmd(rootCmd, cfg))
 
 	return docsCmd
 }

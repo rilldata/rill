@@ -30,8 +30,15 @@ func (q *ColumnNumericHistogram) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnNumericHistogram) MarshalResult() any {
-	return q.Result
+func (q *ColumnNumericHistogram) MarshalResult() *runtime.QueryResult {
+	var size int64
+	if len(q.Result) > 0 {
+		size = sizeProtoMessage(q.Result[0]) * int64(len(q.Result))
+	}
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: size,
+	}
 }
 
 func (q *ColumnNumericHistogram) UnmarshalResult(v any) error {

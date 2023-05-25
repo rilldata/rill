@@ -67,7 +67,7 @@ type Server struct {
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
-func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer) (*Server, error) {
+func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, opts *Options) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)

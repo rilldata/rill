@@ -43,6 +43,7 @@
     style:flex="1"
     style:grid-template-columns="auto max-content"
     style:height="32px"
+    aria-label="Open dimension details"
   >
     <div>
       <Tooltip distance={16} location="top">
