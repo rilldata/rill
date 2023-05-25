@@ -30,7 +30,13 @@
     },
   ];
 
-  const unpackExampleProject = createRuntimeServiceUnpackExample();
+  const unpackExampleProject = createRuntimeServiceUnpackExample({
+    mutation: {
+      onSuccess: () => {
+        goto("/");
+      },
+    },
+  });
 </script>
 
 <section class="flex flex-col items-center gap-y-5 mt-4 mb-6">
@@ -40,16 +46,14 @@
     {#each EXAMPLES as example}
       <Card
         bgClasses={example.image}
-        on:click={() => {
+        on:click={() =>
           $unpackExampleProject.mutate({
             instanceId: $runtime.instanceId,
             data: {
               name: example.name,
               force: true,
             },
-          });
-          goto("/");
-        }}
+          })}
       >
         <CardTitle>{example.title}</CardTitle>
         <CardDescription>{example.description}</CardDescription>
