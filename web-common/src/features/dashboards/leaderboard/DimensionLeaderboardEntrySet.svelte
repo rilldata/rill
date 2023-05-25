@@ -9,27 +9,14 @@ see more button
 -->
 <script lang="ts">
   import { notifications } from "@rilldata/web-common/components/notifications";
-  // import LeaderboardItemTooltip from "./LeaderboardItemTooltip.svelte";
-  import {
-    // LIST_SLIDE_DURATION,
-    TOOLTIP_STRING_LIMIT,
-  } from "@rilldata/web-common/layout/config";
+  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
-  // import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { createEventDispatcher } from "svelte";
-  // import PercentageChange from "../../../components/data-types/PercentageChange.svelte";
-  // import { PERC_DIFF } from "../../../components/data-types/type-utils";
-  // import {
-  //   // formatMeasurePercentageDifference,
-  //   // humanizeDataType,
-  // } from "../humanize-numbers";
   import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
   import {
     LeaderboardRenderValue,
     valuesToRenderValues,
   } from "./leaderboard-render-values";
-  // import { FormattedDataType } from "../../../components/data-types";
-  // import LeaderboardEntryRightValue from "./LeaderboardEntryRightValue.svelte";
 
   export let values;
   export let comparisonValues;
