@@ -26,7 +26,7 @@ func (m *mockConnector) Spec() connectors.Spec {
 	return connectors.Spec{}
 }
 
-func (m *mockConnector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
+func (m *mockConnector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source, logger *zap.Logger) (connectors.FileIterator, error) {
 	return m.mockIterator, nil
 }
 

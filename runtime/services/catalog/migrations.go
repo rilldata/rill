@@ -9,11 +9,13 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/dag"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
+	"golang.org/x/exp/slices"
 
 	// Load migrators
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
@@ -90,6 +92,13 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 	defer s.Meta.lock.Unlock()
 
 	result := NewReconcileResult()
+
+	if len(conf.ChangedPaths) == 0 || slices.Contains(conf.ChangedPaths, "rill.yaml") {
+		// set project variables from rill.yaml in instance
+		if err := s.setProjectVariables(ctx); err != nil {
+			return nil, err
+		}
+	}
 
 	// collect repos and create migration items
 	migrationMap, reconcileErrors, err := s.getMigrationMap(ctx, conf)
@@ -526,8 +535,9 @@ func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) 
 
 // wrapMigrator is a temporary solution to log source related messages.
 func (s *Service) wrapMigrator(catalogEntry *drivers.CatalogEntry, run func() error) error {
+	st := time.Now()
 	if catalogEntry.Type == drivers.ObjectTypeSource {
-		s.logger.Info(fmt.Sprintf(
+		s.logger.Named("console").Info(fmt.Sprintf(
 			"Ingesting source %q from %q",
 			catalogEntry.Name, catalogEntry.GetSource().Properties.Fields["path"].GetStringValue(),
 		))
@@ -537,7 +547,7 @@ func (s *Service) wrapMigrator(catalogEntry *drivers.CatalogEntry, run func() er
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("Ingestion failed for %q : %s", catalogEntry.Name, err.Error()))
 		} else {
-			s.logger.Info(fmt.Sprintf("Finished ingesting %q", catalogEntry.Name))
+			s.logger.Named("console").Info(fmt.Sprintf("Finished ingesting %q, took %v seconds", catalogEntry.Name, time.Since(st).Seconds()))
 		}
 	}
 	return err
@@ -580,4 +590,20 @@ func (s *Service) getSourceIngestionLimit(ctx context.Context, inst *drivers.Ins
 		return 0, nil
 	}
 	return limitInBytes, nil
+}
+
+func (s *Service) setProjectVariables(ctx context.Context) error {
+	c := rillv1beta.New(s.Repo, s.InstID)
+	proj, err := c.ProjectConfig(ctx)
+	if err != nil {
+		return err
+	}
+
+	inst, err := s.RegistryStore.FindInstance(ctx, s.InstID)
+	if err != nil {
+		return err
+	}
+
+	inst.ProjectVariables = proj.Variables
+	return s.RegistryStore.EditInstance(ctx, inst)
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/connectors/localfile"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
 
@@ -48,7 +49,7 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 		return c.ingestLocalFiles(ctx, env, source)
 	}
 
-	iterator, err := connectors.ConsumeAsIterator(ctx, env, source)
+	iterator, err := connectors.ConsumeAsIterator(ctx, env, source, c.logger)
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +85,9 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 			format = fileutil.FullExt(files[0])
 			formatDefined = true
 		}
+
+		st := time.Now()
+		c.logger.Info("ingesting files", zap.String("source", source.Name), zap.Strings("files", files), observability.ZapCtx(ctx))
 		if appendToTable {
 			if err := a.appendData(ctx, files, format); err != nil {
 				return nil, err
@@ -100,7 +104,9 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 			}
 		}
 
-		summary.BytesIngested += fileSize(files)
+		size := fileSize(files)
+		summary.BytesIngested += size
+		c.logger.Info("ingested files", zap.String("source", source.Name), zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
 		appendToTable = true
 	}
 	return summary, nil
@@ -205,7 +211,13 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 		return err
 	}
 
-	query := fmt.Sprintf("INSERT INTO %q (SELECT * FROM %s);", a.source.Name, from)
+	var query string
+	if a.allowColRelaxation {
+		query = fmt.Sprintf("INSERT INTO %q BY NAME (SELECT * FROM %s);", a.source.Name, from)
+	} else {
+		query = fmt.Sprintf("INSERT INTO %q (SELECT * FROM %s);", a.source.Name, from)
+	}
+	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
 	err = a.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 	if err == nil || !containsAny(err.Error(), []string{"binder error", "conversion error"}) {
 		return err
@@ -228,6 +240,7 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 
 	colNames := strings.Join(keys(srcSchema), ",")
 	query = fmt.Sprintf("INSERT INTO %q (%s) (SELECT %s FROM %s);", a.source.Name, colNames, colNames, from)
+	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
 	return a.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }
 
@@ -269,16 +282,12 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 		if len(srcSchema) < len(unionSchema) {
 			fileNames := strings.Join(names(fileNames), ",")
 			columns := strings.Join(missingMapKeys(a.tableSchema, srcSchema), ",")
-			a.logger.Error("new files are missing columns and column relaxation not allowed", zap.String("files", fileNames),
-				zap.String("columns", columns))
 			return nil, fmt.Errorf("new files %q are missing columns %q and schema relaxation not allowed", fileNames, columns)
 		}
 
 		if len(colTypeChanged) != 0 {
 			fileNames := strings.Join(names(fileNames), ",")
 			columns := strings.Join(keys(colTypeChanged), ",")
-			a.logger.Error("new files change datatypes of some columns and column relaxation not allowed", zap.String("files", fileNames),
-				zap.String("columns", columns))
 			return nil, fmt.Errorf("new files %q change datatypes of some columns %q and column relaxation not allowed", fileNames, columns)
 		}
 	}
@@ -286,8 +295,6 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 	if len(newCols) != 0 && !a.allowColAddition {
 		fileNames := strings.Join(names(fileNames), ",")
 		columns := strings.Join(missingMapKeys(srcSchema, a.tableSchema), ",")
-		a.logger.Error("new files have new columns and column addition not allowed", zap.String("files", fileNames),
-			zap.String("columns", columns))
 		return nil, fmt.Errorf("new files %q have new columns %q and column addition not allowed", fileNames, columns)
 	}
 
