@@ -173,6 +173,16 @@ export type QueryServiceColumnCardinalityParams = {
   priority?: number;
 };
 
+export type RuntimeServiceUnpackExampleBody = {
+  name?: string;
+  force?: boolean;
+};
+
+export type RuntimeServiceUnpackEmptyBody = {
+  title?: string;
+  force?: boolean;
+};
+
 export type RuntimeServiceRenameFileBody = {
   fromPath?: string;
   toPath?: string;
@@ -242,6 +252,14 @@ export type ConnectorServiceListGCSBucketObjectsParams = {
   prefix?: string;
   startOffset?: string;
 };
+
+export interface V1UnpackExampleResponse {
+  [key: string]: any;
+}
+
+export interface V1UnpackEmptyResponse {
+  [key: string]: any;
+}
 
 export type V1TypeCode = (typeof V1TypeCode)[keyof typeof V1TypeCode];
 
@@ -389,16 +407,6 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
-export interface V1RenameFileAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
 export interface V1RenameFileAndReconcileRequest {
   instanceId?: string;
   fromPath?: string;
@@ -406,6 +414,16 @@ export interface V1RenameFileAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
   strict?: boolean;
+}
+
+export interface V1RefreshAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export interface V1RefreshAndReconcileRequest {
@@ -455,7 +473,7 @@ Only applicable if file_path is set. */
   endLocation?: ReconcileErrorCharLocation;
 }
 
-export interface V1RefreshAndReconcileResponse {
+export interface V1RenameFileAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
   errors?: V1ReconcileError[];
@@ -557,6 +575,14 @@ export interface V1NumericSummary {
   numericHistogramBins?: V1NumericHistogramBins;
   numericStatistics?: V1NumericStatistics;
   numericOutliers?: V1NumericOutliers;
+}
+
+export interface V1Model {
+  name?: string;
+  sql?: string;
+  dialect?: ModelDialect;
+  schema?: V1StructType;
+  materialize?: boolean;
 }
 
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
@@ -669,11 +695,6 @@ export interface V1ListS3BucketObjectsResponse {
   objects?: V1S3Object[];
 }
 
-export interface V1ListInstancesResponse {
-  instances?: V1Instance[];
-  nextPageToken?: string;
-}
-
 export interface V1ListGCSBucketsResponse {
   nextPageToken?: string;
   bucketName?: string[];
@@ -726,6 +747,11 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
   variables?: V1InstanceVariables;
   projectVariables?: V1InstanceProjectVariables;
   ingestionLimitBytes?: string;
+}
+
+export interface V1ListInstancesResponse {
+  instances?: V1Instance[];
+  nextPageToken?: string;
 }
 
 export interface V1InlineMeasure {
@@ -983,14 +1009,6 @@ export const ModelDialect = {
   DIALECT_UNSPECIFIED: "DIALECT_UNSPECIFIED",
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
-
-export interface V1Model {
-  name?: string;
-  sql?: string;
-  dialect?: ModelDialect;
-  schema?: V1StructType;
-  materialize?: boolean;
-}
 
 export interface MetricsViewMeasure {
   name?: string;

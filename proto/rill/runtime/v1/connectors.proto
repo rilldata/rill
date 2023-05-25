@@ -10,18 +10,36 @@ service ConnectorService {
     option (google.api.http) = {get: "/v1/s3/buckets"};
   }
 
-  rpc ListS3BucketObjects(ListS3BucketObjectsRequest) returns (ListS3BucketObjectsResponse) {
-    option (google.api.http) = {get: "/v1/s3/bucket/{bucket_name}/objects"};
+  rpc ListS3BucketDirectory(ListS3BucketDirectoryRequest) returns (ListS3BucketDirectoryResponse) {
+    option (google.api.http) = {get: "/v1/s3/bucket/{bucket_name}/directory"};
+  }
+
+  rpc GetS3BucketMetadata(GetS3BucketMetadataRequest) returns (GetS3BucketMetadataResponse) {
+    option (google.api.http) = {get: "/v1/s3/bucket/{bucket_name}/metadata"};
   }
 
   rpc ListGCSBuckets(ListGCSBucketsRequest) returns (ListGCSBucketsResponse) {
     option (google.api.http) = {get: "/v1/gcs/buckets"};
   }
 
-  rpc ListGCSBucketObjects(ListGCSBucketObjectsRequest) returns (ListGCSBucketObjectsResponse) {
-    option (google.api.http) = {get: "/v1/gcs/bucket/{bucket_name}/objects"};
+  rpc ListGCSBucketDirectory(ListGCSBucketDirectoryRequest) returns (ListGCSBucketDirectoryResponse) {
+    option (google.api.http) = {get: "/v1/gcs/bucket/{bucket_name}/directory"};
   }
 
+}
+
+message S3Object {
+  string name = 1;
+  google.protobuf.Timestamp modified_on = 2;
+  int64 size = 3;
+  bool is_dir = 4;
+}
+
+message GCSObject {
+  string name = 1;
+  google.protobuf.Timestamp modified_on = 2;
+  int64 size = 3;
+  bool is_dir = 4;
 }
 
 message ListS3BucketsRequest {
@@ -34,7 +52,7 @@ message ListS3BucketsResponse {
     repeated string bucket_name = 2;
 }
 
-message ListS3BucketObjectsRequest {
+message ListS3BucketDirectoryRequest {
     uint32 page_size = 1;
     string page_token = 2;
     string bucket_name = 3;
@@ -42,7 +60,7 @@ message ListS3BucketObjectsRequest {
     string start_offset = 5;
 }
 
-message ListS3BucketObjectsResponse {
+message ListS3BucketDirectoryResponse {
     string next_page_token = 1;
     repeated S3Object objects = 2;
 }
@@ -57,7 +75,7 @@ message ListGCSBucketsResponse {
     repeated string bucket_name = 2;
 }
 
-message ListGCSBucketObjectsRequest {
+message ListGCSBucketDirectoryRequest {
     uint32 page_size = 1;
     string page_token = 2;
     string bucket_name = 3;
@@ -65,21 +83,15 @@ message ListGCSBucketObjectsRequest {
     string start_offset = 5;
 }
 
-message ListGCSBucketObjectsResponse {
+message ListGCSBucketDirectoryResponse {
     string next_page_token = 1;
     repeated GCSObject objects = 2;
 }
 
-message S3Object {
-    string name = 1;
-    google.protobuf.Timestamp modified_on = 2;
-    int64 size = 3;
-    bool is_dir = 4;
+message GetS3BucketMetadataRequest {
+  string bucket_name = 1;
 }
 
-message GCSObject {
-    string name = 1;
-    google.protobuf.Timestamp modified_on = 2;
-    int64 size = 3;
-    bool is_dir = 4;
+message GetS3BucketMetadataResponse {
+  string region = 1;
 }

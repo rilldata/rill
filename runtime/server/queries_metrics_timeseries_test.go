@@ -9,6 +9,7 @@ import (
 )
 
 func TestServer_MetricsViewTimeSeries(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
@@ -31,6 +32,7 @@ func TestServer_MetricsViewTimeSeries(t *testing.T) {
 }
 
 func TestServer_MetricsViewTimeSeries_TimeEnd_exclusive(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
@@ -51,6 +53,7 @@ func TestServer_MetricsViewTimeSeries_TimeEnd_exclusive(t *testing.T) {
 }
 
 func TestServer_MetricsViewTimeSeries_complete_source_sanity_test(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
 	tr, err := server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{

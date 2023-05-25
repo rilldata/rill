@@ -15,8 +15,8 @@ import (
 )
 
 func TestDo(t *testing.T) {
-	var g Group
-	v, err := g.Do(context.Background(), "key", func(context.Context) (interface{}, error) {
+	var g Group[string, string]
+	v, err := g.Do(context.Background(), "key", func(context.Context) (string, error) {
 		return "bar", nil
 	})
 	if got, want := fmt.Sprintf("%v (%T)", v, v), "bar (string)"; got != want {
@@ -28,9 +28,9 @@ func TestDo(t *testing.T) {
 }
 
 func TestDoErr(t *testing.T) {
-	var g Group
+	var g Group[string, any]
 	someErr := errors.New("Some error")
-	v, err := g.Do(context.Background(), "key", func(context.Context) (interface{}, error) {
+	v, err := g.Do(context.Background(), "key", func(context.Context) (any, error) {
 		return nil, someErr
 	})
 	if err != someErr {
@@ -42,11 +42,11 @@ func TestDoErr(t *testing.T) {
 }
 
 func TestDoDupSuppress(t *testing.T) {
-	var g Group
+	var g Group[string, string]
 	var wg1, wg2 sync.WaitGroup
 	c := make(chan string, 1)
 	var calls int32
-	fn := func(ctx context.Context) (interface{}, error) {
+	fn := func(ctx context.Context) (string, error) {
 		if atomic.AddInt32(&calls, 1) == 1 {
 			// First invocation.
 			wg1.Done()
@@ -72,7 +72,7 @@ func TestDoDupSuppress(t *testing.T) {
 				t.Errorf("Do error: %v", err)
 				return
 			}
-			if s, _ := v.(string); s != "bar" {
+			if v != "bar" {
 				t.Errorf("Do = %T %v; want %q", v, v, "bar")
 			}
 		}()
@@ -90,7 +90,7 @@ func TestDoDupSuppress(t *testing.T) {
 // Test singleflight behaves correctly after Do panic.
 // See https://github.com/golang/go/issues/41133
 func TestPanicDo(t *testing.T) {
-	var g Group
+	var g Group[string, any]
 	fn := func(context.Context) (interface{}, error) {
 		panic("invalid memory address or nil pointer dereference")
 	}
@@ -127,7 +127,7 @@ func TestPanicDo(t *testing.T) {
 }
 
 func TestGoexitDo(t *testing.T) {
-	var g Group
+	var g Group[string, any]
 	fn := func(ctx context.Context) (interface{}, error) {
 		runtime.Goexit()
 		return nil, nil
@@ -159,14 +159,14 @@ func TestGoexitDo(t *testing.T) {
 }
 
 func TestContextCancelledForSome(t *testing.T) {
-	s := Group{}
+	var g Group[string, string]
 
-	f := func(ctx context.Context) (interface{}, error) {
+	f := func(ctx context.Context) (string, error) {
 		for {
 			select {
 			case <-ctx.Done():
 				// Handle context cancellation
-				return nil, ctx.Err()
+				return "", ctx.Err()
 			case <-time.After(200 * time.Millisecond):
 				// Simulate some work
 				return "hello", nil
@@ -189,9 +189,7 @@ func TestContextCancelledForSome(t *testing.T) {
 			}
 			defer cancel()
 			defer wg.Done()
-			values[i], errs[i] = s.Do(ctx, "key", func(ctx context.Context) (interface{}, error) {
-				return f(ctx)
-			})
+			values[i], errs[i] = g.Do(ctx, "key", f)
 		}(i)
 		time.Sleep(10 * time.Millisecond) // ensure that first goroutine starts the work
 	}
@@ -208,14 +206,14 @@ func TestContextCancelledForSome(t *testing.T) {
 }
 
 func TestContextCancelledForAll(t *testing.T) {
-	s := Group{}
+	var g Group[string, string]
 
-	f := func(ctx context.Context) (interface{}, error) {
+	f := func(ctx context.Context) (string, error) {
 		for {
 			select {
 			case <-ctx.Done():
 				// Handle context cancellation
-				return nil, ctx.Err()
+				return "", ctx.Err()
 			case <-time.After(200 * time.Millisecond):
 				// Simulate some work
 				return "hello", nil
@@ -231,9 +229,7 @@ func TestContextCancelledForAll(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
 			defer wg.Done()
-			values[i], errs[i] = s.Do(ctx, "key", func(ctx context.Context) (interface{}, error) {
-				return f(ctx)
-			})
+			values[i], errs[i] = g.Do(ctx, "key", f)
 		}(i)
 	}
 	wg.Wait()

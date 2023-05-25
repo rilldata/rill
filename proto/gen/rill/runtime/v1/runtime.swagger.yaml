@@ -494,6 +494,68 @@ paths:
             title: Request message for RuntimeService.RenameFile
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/files/unpack-empty:
+    post:
+      summary: UnpackEmpty unpacks an empty project
+      operationId: RuntimeService_UnpackEmpty
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UnpackEmptyResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+              force:
+                type: boolean
+            title: Request message for RuntimeService.UnpackEmpty
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/unpack-example:
+    post:
+      summary: UnpackExample unpacks an example project
+      operationId: RuntimeService_UnpackExample
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UnpackExampleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              force:
+                type: boolean
+            title: Request message for RuntimeService.UnpackExample
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
     get:
       summary: Get cardinality for a column
@@ -2848,3 +2910,9 @@ definitions:
       - CODE_UUID
     default: CODE_UNSPECIFIED
     title: Code enumerates all the types that can be represented in a schema
+  v1UnpackEmptyResponse:
+    type: object
+    title: Response message for RuntimeService.UnpackEmpty
+  v1UnpackExampleResponse:
+    type: object
+    title: Response message for RuntimeService.UnpackExample

@@ -53,6 +53,7 @@ measures:
     expression: sum(clicks)
 */
 func TestServer_MetricsViewComparisonToplist(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -97,6 +98,7 @@ func TestServer_MetricsViewComparisonToplist(t *testing.T) {
 |yahoo.com               |1    |1         |0    |0      |1    |2         |1    |1      |
 */
 func TestServer_MetricsViewComparisonToplist_inline_measures(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -146,6 +148,7 @@ func TestServer_MetricsViewComparisonToplist_inline_measures(t *testing.T) {
 }
 
 func TestServer_MetricsViewComparisonToplist_nulls(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -205,6 +208,7 @@ the result should be:
 |yahoo.com               |1    |2         |1    |1      |
 */
 func TestServer_MetricsViewComparisonToplist_sort_by_base(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -255,6 +259,7 @@ the result should be:
 |msn.com                 |2    |1         | -1  |-0.5   |
 */
 func TestServer_MetricsViewComparisonToplist_sort_by_comparison(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -306,6 +311,7 @@ the result should be:
 */
 
 func TestServer_MetricsViewComparisonToplist_sort_by_abs_delta(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -356,6 +362,7 @@ the result should be:
 |yahoo.com               |100  |200       |100  |1      |
 */
 func TestServer_MetricsViewComparisonToplist_sort_by_rel_delta(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -398,6 +405,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_rel_delta(t *testing.T) {
 }
 
 func TestServer_MetricsViewComparisonToplist_sort_error(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
 	_, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -433,6 +441,7 @@ the result should be:
 */
 
 func TestServer_MetricsViewComparisonToplist_sort_by_delta_limit_1(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -470,6 +479,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_delta_limit_1(t *testing.T)
 }
 
 func TestServer_MetricsViewComparisonToplist_sort_by_base_limit_1(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -507,6 +517,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base_limit_1(t *testing.T) 
 }
 
 func TestServer_MetricsViewComparisonToplist_sort_by_base_filter(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -568,6 +579,7 @@ the result should be:
 |msn.com                 |1    |10        |9    |9      | 2   |1         | -1  |-0.5   |
 */
 func TestServer_MetricsViewComparisonToplist_2_measures(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -641,6 +653,7 @@ Measures:
     expression: sum(clicks)
 */
 func TestServer_MetricsViewComparisonToplist_no_comparison(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -669,6 +682,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison(t *testing.T) {
 }
 
 func TestServer_MetricsViewComparisonToplist_no_comparison_quotes(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -692,6 +706,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_quotes(t *testing.T) 
 }
 
 func TestServer_MetricsViewComparisonToplist_no_comparison_numeric_dim(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -710,6 +725,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_numeric_dim(t *testin
 }
 
 func Ignore_TestServer_MetricsViewComparisonToplist_no_comparison_HugeInt(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -737,6 +753,7 @@ func Ignore_TestServer_MetricsViewComparisonToplist_no_comparison_HugeInt(t *tes
 }
 
 func TestServer_MetricsViewComparisonToplist_no_comparison_asc(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -765,6 +782,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_asc(t *testing.T) {
 }
 
 func TestServer_MetricsViewComparisonToplist_no_comparison_nulls_last(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -818,6 +836,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_nulls_last(t *testing
 }
 
 func TestServer_MetricsViewComparisonToplist_no_comparison_asc_limit(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -842,6 +861,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_asc_limit(t *testing.
 }
 
 func TestServer_MetricsViewComparisonToplist_no_comparison_2measures(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
@@ -874,6 +894,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_2measures(t *testing.
 }
 
 func TestServer_MetricsViewComparisonToplist_no_comparison_complete_source_sanity_test(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
