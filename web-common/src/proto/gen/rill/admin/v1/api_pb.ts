@@ -1041,6 +1041,16 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
    */
   githubUrl = "";
 
+  /**
+   * @generated from field: int64 prod_slots = 8;
+   */
+  prodSlots = protoInt64.zero;
+
+  /**
+   * @generated from field: string region = 9;
+   */
+  region = "";
+
   constructor(data?: PartialMessage<UpdateProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1056,6 +1066,8 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 5, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 9, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectRequest {

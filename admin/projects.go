@@ -81,6 +81,8 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdBranch:           proj.ProdBranch,
 		ProdVariables:        proj.ProdVariables,
+		ProdSlots:            proj.ProdSlots,
+		Region:               proj.Region,
 		ProdDeploymentID:     &depl.ID,
 	})
 	if err != nil {
@@ -124,6 +126,18 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 // UpdateProject updates a project and any impacted deployments.
 // It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
 func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions, reconcileDeployment bool) (*database.Project, error) {
+	if proj.Region != opts.Region || proj.ProdSlots != opts.ProdSlots { // require new deployments
+		s.logger.Info("update project: recreating project", zap.String("project", proj.ID),
+			zap.String("region", opts.Region),
+			zap.String("slots", opts.Region),
+			observability.ZapCtx(ctx),
+		)
+		// create new deployment for project
+		proj.ProdSlots = opts.ProdSlots
+		proj.ProdBranch = opts.ProdBranch
+		return s.recreateDeployment(ctx, proj)
+	}
+
 	impactsDeployments := (proj.ProdBranch != opts.ProdBranch ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
@@ -178,6 +192,8 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdBranch:           proj.ProdBranch,
 		ProdVariables:        proj.ProdVariables,
+		ProdSlots:            proj.ProdSlots,
+		Region:               proj.Region,
 		ProdDeploymentID:     &newDepl.ID,
 	})
 	if err != nil {
@@ -188,7 +204,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 	// Delete old prod deployment
 	err = s.teardownDeployment(ctx, proj, prevDepl)
 	if err != nil {
-		s.logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err))
+		s.logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
 	}
 
 	// Trigger reconcile on new deployment
@@ -341,4 +357,44 @@ func (s *Service) endReconcile(ctx context.Context, depl *database.Deployment, r
 	depl.Status = updatedDepl.Status
 	depl.Logs = updatedDepl.Logs
 	return nil
+}
+
+func (s *Service) recreateDeployment(ctx context.Context, proj *database.Project) (*database.Project, error) {
+	oldDepls, err := s.DB.FindDeployments(ctx, proj.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	depl, err := s.createDeployment(ctx, proj)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Name:                 proj.Name,
+		Description:          proj.Description,
+		Public:               proj.Public,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		ProdBranch:           proj.ProdBranch,
+		ProdVariables:        proj.ProdVariables,
+		ProdSlots:            proj.ProdSlots,
+		Region:               proj.Region,
+		ProdDeploymentID:     &depl.ID,
+	})
+	if err != nil {
+		return nil, multierr.Combine(err, s.teardownDeployment(ctx, proj, depl))
+	}
+
+	for _, depl := range oldDepls {
+		if err := s.teardownDeployment(context.Background(), proj, depl); err != nil {
+			s.logger.Error("update project: could not delete old deploymnet", zap.String("project", proj.ID), zap.String("deployment", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+		}
+	}
+
+	if err := s.TriggerReconcile(ctx, depl); err != nil {
+		return nil, fmt.Errorf("reconcile failed with error %w", err)
+	}
+
+	return res, nil
 }
