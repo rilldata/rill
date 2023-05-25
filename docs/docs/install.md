@@ -1,21 +1,15 @@
 ---
 title: How to install Rill
-sidebar_label: Install Rill
-sidebar_position: 0
+sidebar_label: Install  
+sidebar_position: 11
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-## macOS
+## Releases
 
-On macOS, we recommend installing `rill` using Homebrew:
-
-```
-brew install rilldata/tap/rill
-```
-
-Alternatively, you can install `rill` using our installation script:
+You can install `rill` using our installation script:
 
 ```
 curl -s https://cdn.rilldata.com/install.sh | bash
@@ -26,18 +20,6 @@ Verify that the installation succeeded:
 rill --help
 ```
 
-## Linux
-
-On Linux, we recommend installing `rill` using the installation script:
-
-```
-curl -s https://cdn.rilldata.com/install.sh | bash
-```
-
-Verify that the installation succeeded:
-```
-rill --help
-```
 
 ## Nightly Releases
 

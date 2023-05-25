@@ -1,14 +1,12 @@
 ---
-title: Share with others
-sidebar_label: Share with others
+title: User Management
+sidebar_label: User Management
 sidebar_position: 20
 ---
 
 In Rill Cloud, access can be granted at the organization or project level using the Rill CLI.
 
 ## Install and authenticate the Rill CLI
-
-If you have not already installed the Rill CLI, see [Install Rill](../develop/install.md).
 
 To manage cloud permissions with the Rill CLI, you must first authenticate it. If you have not already done so, run:
 ```
