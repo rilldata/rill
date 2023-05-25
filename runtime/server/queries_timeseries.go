@@ -49,7 +49,6 @@ func (s *Server) ColumnTimeSeries(ctx context.Context, req *runtimev1.ColumnTime
 		Rollup: &runtimev1.TimeSeriesResponse{
 			Results:    q.Result.Results,
 			Spark:      q.Result.Spark,
-			TimeRange:  q.Result.TimeRange,
 			SampleSize: q.Result.SampleSize,
 		},
 	}, nil

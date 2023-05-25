@@ -200,25 +200,10 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			}
 		}
 
-		// A timestamppb has a range of year 0000 inclusive to 10000 exclusive.
-		// The Go type can contain higher values, but will fail at serialization time.
-		// If any of the result values are outside of this range, an error will be returned (see loop above).
-		// But if it's only the range values themselves that exceed (such as when the highest time is 9999-12-31 and the time range exclusive end is hence 10000-01-01), we just return them as nil.
-		if err := timeRange.Start.CheckValid(); err != nil {
-			timeRange.Start = nil
-		}
-		if err := timeRange.End.CheckValid(); err != nil {
-			timeRange.End = nil
-		}
-		if timeRange.Start == nil && timeRange.End == nil {
-			timeRange = nil
-		}
-
 		q.Result = &ColumnTimeseriesResult{
-			Meta:      meta,
-			Results:   data,
-			TimeRange: timeRange,
-			Spark:     sparkValues,
+			Meta:    meta,
+			Results: data,
+			Spark:   sparkValues,
 		}
 		return nil
 	})
