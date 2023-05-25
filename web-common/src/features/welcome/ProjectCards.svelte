@@ -45,6 +45,7 @@
             instanceId: $runtime.instanceId,
             data: {
               name: example.name,
+              force: true,
             },
           });
           goto("/");
