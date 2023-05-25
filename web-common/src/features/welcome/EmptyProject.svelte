@@ -30,6 +30,6 @@
   bgClasses="bg-gradient-to-b from-white to-[#F8FAFC]"
   on:click={startWithEmptyProject}
 >
-  <AddCircleOutline size="2em" className="text-slate-800" />
+  <AddCircleOutline size="2em" className="text-slate-600" />
   <CardTitle position="middle">Start with an empty project</CardTitle>
 </Card>
