@@ -4,6 +4,8 @@ sidebar_label: Get started
 sidebar_position: 10
 ---
 
+<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
+
 This tutorial is a step by step guide that will help you install Rill, ingest source data, and deploy a dashboard online.
 
 ## Install Rill

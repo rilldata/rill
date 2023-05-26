@@ -4,6 +4,8 @@ sidebar_label: Deploy project
 sidebar_position: 0
 ---
 
+<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
+
 Follow this tutorial to deploy an existing Rill project to Rill Cloud. Deploying a project makes its dashboards available online and enables you to invite others to access it.
 Flow diagram below shows the steps needed for deploying an existing project.  
 ```mermaid

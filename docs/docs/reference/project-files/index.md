@@ -4,6 +4,8 @@ sidebar_label: Project files
 sidebar_position: 0
 ---
 
+<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
+
 When you create sources, models, and metrics versions we create code-representations on your behalf on the file system. You can see these files in your `source`, `models` and `dashboards` folders in your project. 
 
 Projects can be "re-hydrated" from Rill project files into an explorable data application - figuring out the dependencies, pulling down data, & validating your model queries and metrics configurations. The result is a set of functioning exploratory dashboards.
