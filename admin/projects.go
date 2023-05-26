@@ -138,13 +138,49 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 // It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
 func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions, reconcileDeployment bool) (*database.Project, error) {
 	if proj.Region != opts.Region || proj.ProdSlots != opts.ProdSlots { // require new deployments
-		s.logger.Info("update project: recreating project", zap.String("project_id", proj.ID),
-			zap.String("region", opts.Region),
-			zap.Int("slots", opts.ProdSlots),
-			observability.ZapCtx(ctx),
-		)
-		// create new deployment for project
-		return s.recreateDeployment(ctx, proj, opts)
+		s.logger.Info("recreating deployment", observability.ZapCtx(ctx))
+		var oldDepl *database.Deployment
+		var err error
+		if proj.ProdDeploymentID != nil {
+			oldDepl, err = s.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+			if err != nil && !errors.Is(err, database.ErrNotFound) {
+				return nil, err
+			}
+		}
+
+		depl, err := s.createDeployment(ctx, &createDeploymentOptions{
+			ProjectID:            proj.ID,
+			Subpath:              proj.Subpath,
+			ProdOLAPDriver:       proj.ProdOLAPDriver,
+			ProdOLAPDSN:          proj.ProdOLAPDSN,
+			Region:               opts.Region,
+			GithubURL:            opts.GithubURL,
+			GithubInstallationID: opts.GithubInstallationID,
+			ProdBranch:           opts.ProdBranch,
+			ProdVariables:        opts.ProdVariables,
+			ProdSlots:            opts.ProdSlots,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		opts.ProdDeploymentID = &depl.ID
+		res, err := s.DB.UpdateProject(ctx, proj.ID, opts)
+		if err != nil {
+			return nil, multierr.Combine(err, s.teardownDeployment(ctx, proj, depl))
+		}
+
+		if oldDepl != nil {
+			if err := s.teardownDeployment(context.Background(), proj, oldDepl); err != nil {
+				s.logger.Error("could not delete old deploymnet", zap.Error(err), observability.ZapCtx(ctx))
+			}
+		}
+
+		if err := s.TriggerReconcile(ctx, depl); err != nil {
+			return nil, fmt.Errorf("reconcile failed with error %w", err)
+		}
+
+		return res, nil
 	}
 
 	impactsDeployments := (proj.ProdBranch != opts.ProdBranch ||
@@ -153,6 +189,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables))
 
 	if impactsDeployments {
+		s.logger.Info("updating deployments", observability.ZapCtx(ctx))
 		ds, err := s.DB.FindDeployments(ctx, proj.ID)
 		if err != nil {
 			return nil, err
@@ -377,46 +414,4 @@ func (s *Service) endReconcile(ctx context.Context, depl *database.Deployment, r
 	depl.Status = updatedDepl.Status
 	depl.Logs = updatedDepl.Logs
 	return nil
-}
-
-// recreateDeployment creates a new deployment with given slot and region
-func (s *Service) recreateDeployment(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
-	oldDepls, err := s.DB.FindDeployments(ctx, proj.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	depl, err := s.createDeployment(ctx, &createDeploymentOptions{
-		ProjectID:            proj.ID,
-		Subpath:              proj.Subpath,
-		ProdOLAPDriver:       proj.ProdOLAPDriver,
-		ProdOLAPDSN:          proj.ProdOLAPDSN,
-		Region:               opts.Region,
-		GithubURL:            opts.GithubURL,
-		GithubInstallationID: opts.GithubInstallationID,
-		ProdBranch:           opts.ProdBranch,
-		ProdVariables:        opts.ProdVariables,
-		ProdSlots:            opts.ProdSlots,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	opts.ProdDeploymentID = &depl.ID
-	res, err := s.DB.UpdateProject(ctx, proj.ID, opts)
-	if err != nil {
-		return nil, multierr.Combine(err, s.teardownDeployment(ctx, proj, depl))
-	}
-
-	for _, depl := range oldDepls {
-		if err := s.teardownDeployment(context.Background(), proj, depl); err != nil {
-			s.logger.Error("update project: could not delete old deploymnet", zap.String("project", proj.ID), zap.String("deployment", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
-		}
-	}
-
-	if err := s.TriggerReconcile(ctx, depl); err != nil {
-		return nil, fmt.Errorf("reconcile failed with error %w", err)
-	}
-
-	return res, nil
 }
