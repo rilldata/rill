@@ -5,6 +5,8 @@ sidebar_label: GCS
 sidebar_position: 20
 ---
 
+<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
+
 ## How to configure credentials in Rill
 
 How you configure access to GCS depends on whether you are developing a project locally using `rill start` or are setting up a deployment using `rill deploy`.
