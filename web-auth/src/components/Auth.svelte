@@ -1,13 +1,13 @@
 <script lang="ts">
+  import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
+  import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
+  import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import auth0, { WebAuth } from "auth0-js";
   import { onMount } from "svelte";
   import { LOGIN_OPTIONS } from "../config";
-  import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
-  import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import AuthContainer from "./AuthContainer.svelte";
   import Disclaimer from "./Disclaimer.svelte";
   import EmailPassForm from "./EmailPassForm.svelte";
-  import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
 
   export let configParams: string;
   export let cloudClientIDs = "";

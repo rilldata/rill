@@ -142,6 +142,15 @@ export interface V1TriggerReconcileResponse {
   [key: string]: any;
 }
 
+export interface V1SetSuperuserResponse {
+  [key: string]: any;
+}
+
+export interface V1SetSuperuserRequest {
+  email?: string;
+  superuser?: boolean;
+}
+
 export interface V1SetProjectMemberRoleResponse {
   [key: string]: any;
 }
@@ -231,6 +240,10 @@ export interface V1Member {
   updatedOn?: string;
 }
 
+export interface V1ListSuperusersResponse {
+  users?: V1User[];
+}
+
 export interface V1ListProjectsForOrganizationResponse {
   projects?: V1Project[];
   nextPageToken?: string;
@@ -294,7 +307,7 @@ export interface V1GetCurrentUserResponse {
 }
 
 export type V1DeploymentStatus =
-  typeof V1DeploymentStatus[keyof typeof V1DeploymentStatus];
+  (typeof V1DeploymentStatus)[keyof typeof V1DeploymentStatus];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1DeploymentStatus = {

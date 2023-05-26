@@ -48,7 +48,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				warn.Printf("Directory at %q doesn't contain a valid Rill project.\n\n", fullpath)
-				warn.Printf("Run \"rill env configure\" from a Rill project directory or use \"--path\" to pass a project path.\n")
+				warn.Printf("Run `rill env configure` from a Rill project directory or use `--path` to pass a project path.\n")
 				return nil
 			}
 

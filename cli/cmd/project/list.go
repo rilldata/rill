@@ -20,15 +20,21 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			proj, err := client.ListProjectsForOrganization(context.Background(), &adminv1.ListProjectsForOrganizationRequest{
+			res, err := client.ListProjectsForOrganization(context.Background(), &adminv1.ListProjectsForOrganizationRequest{
 				OrganizationName: cfg.Org,
 			})
 			if err != nil {
 				return err
 			}
 
+			if len(res.Projects) == 0 {
+				cmdutil.WarnPrinter("No projects found")
+				return nil
+			}
+
 			cmdutil.SuccessPrinter("Projects list")
-			cmdutil.TablePrinter(toTable(proj.Projects))
+			cmdutil.TablePrinter(toTable(res.Projects))
+
 			return nil
 		},
 	}

@@ -1,10 +1,15 @@
 <script lang="ts">
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import { createRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
+  import {
+    createRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceUnpackEmpty,
+  } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useModelNames } from "../../models/selectors";
+  import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
+  import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import {
     compileCreateSourceYAML,
     sourceErrorTelemetryHandler,
@@ -22,10 +27,12 @@
   const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtime.instanceId;
-  const createSourceMutation = createRuntimeServicePutFileAndReconcile();
-
   $: sourceNames = useSourceNames(runtimeInstanceId);
   $: modelNames = useModelNames(runtimeInstanceId);
+  $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
+
+  const createSourceMutation = createRuntimeServicePutFileAndReconcile();
+  const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
 
   const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;
@@ -37,6 +44,16 @@
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
+        // If project is uninitialized, initialize an empty project
+        if (!$isProjectInitialized.data) {
+          $unpackEmptyProject.mutate({
+            instanceId: $runtime.instanceId,
+            data: {
+              title: EMPTY_PROJECT_TITLE,
+            },
+          });
+        }
+
         const yaml = compileCreateSourceYAML(
           {
             sourceName: tableName,
