@@ -1,6 +1,8 @@
 # Welcome to Rill
 
-Rill makes it effortless to transform your datasets with SQL and create powerful, opinionated dashboards.
+Rill is the fastest path from data lake to dashboard. Download Rill to start modeling data and create fast, exploratory dashboards.
+
+
 
 ```
 curl -s https://cdn.rilldata.com/install.sh | bash
@@ -19,7 +21,10 @@ Rill's design principles:
 
 ## We want to hear from you
 
-You can [file an issue](https://github.com/rilldata/rill-developer/issues/new/choose) or reach us in our [Rill discord](https://bit.ly/3unvA05) channel. Please abide by the [community policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
+We always appreciate hearing from our users and welcome any questions, comments, or concerns you may have. To get in touch with us, there are two options available:
+
+1. _**File an Issue**_: If you have encountered a bug or have a feature request, please [file an issue](https://github.com/rilldata/rill-developer/issues/new/choose) here (this GitHub page).
+2. _**Join our Discord Channel**_: For general inquiries or if you need help getting started with Rill, we encourage you to join our [Discord Community](https://bit.ly/3unvA05). Please abide by the [community policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
 
 ## Legal
 
