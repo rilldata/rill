@@ -31,7 +31,7 @@ var errNoCredentials = errors.New("empty credentials: set `google_application_cr
 var spec = connectors.Spec{
 	DisplayName:        "Google Cloud Storage",
 	Description:        "Connect to Google Cloud Storage.",
-	ServiceAccountDocs: "https://docs.rilldata.com/connectors/gcs",
+	ServiceAccountDocs: "https://docs.rilldata.com/deploy/credentials/gcs",
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "path",

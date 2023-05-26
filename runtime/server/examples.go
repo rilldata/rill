@@ -61,7 +61,7 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 	}
 
 	paths := make([]string, 0)
-	err = fs.WalkDir(exampleFS, "./", func(path string, d fs.DirEntry, err error) error {
+	err = fs.WalkDir(exampleFS, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
