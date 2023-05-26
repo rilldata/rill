@@ -14,7 +14,7 @@ Rill's design principles:
 - _**Works with your local and remote datasets**_ – imports and exports Parquet and CSV (s3, gcs, https, local)
 - _**No more data analysis "side-quests"**_ – helps you build intuition about your dataset through automatic profiling
 - _**No "run query" button required**_ – responds to each keystroke by re-profiling the resulting dataset
-- _**Radically simple interactive dashboards**_ – thoughtful, opinionated interactive dashboards defaults to help you quickly derive insights from your data
+- _**Radically simple interactive dashboards**_ – thoughtful, opinionated, interactive dashboard defaults to help you quickly derive insights from your data
 - _**Dashboards as code**_ – each step from data to dashboard has versioning, Git sharing, and easy project rehydration
 
 ## We want to hear from you
