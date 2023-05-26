@@ -11,7 +11,6 @@ import (
 	"github.com/rilldata/rill/cli/cmd/deploy"
 	"github.com/rilldata/rill/cli/cmd/docs"
 	"github.com/rilldata/rill/cli/cmd/env"
-	"github.com/rilldata/rill/cli/cmd/initialize"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/cmd/runtime"
@@ -115,7 +114,6 @@ func runCmd(ctx context.Context, ver config.Version) error {
 
 	// Add sub-commands
 	rootCmd.AddCommand(start.StartCmd(cfg))
-	rootCmd.AddCommand(initialize.InitCmd(cfg))
 	rootCmd.AddCommand(admin.AdminCmd(cfg))
 	rootCmd.AddCommand(runtime.RuntimeCmd(cfg))
 	rootCmd.AddCommand(docs.DocsCmd(cfg, rootCmd))

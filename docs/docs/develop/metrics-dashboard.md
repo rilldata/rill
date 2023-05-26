@@ -1,7 +1,7 @@
 ---
 title: Define metrics dashboard
 description: Define your time dimension, measures and dimensions to create a dashboard
-sidebar_label: Define metrics dashboard
+sidebar_label: Define dashboard
 sidebar_position: 30
 ---
 
