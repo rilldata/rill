@@ -172,13 +172,24 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 
 	claims := auth.GetClaims(r.Context())
 	if claims.OwnerType() != auth.OwnerTypeUser {
-		http.Error(w, "only authenticated users can connect to github", http.StatusUnauthorized)
+		s.redirectLogin(w, r)
 		return
 	}
 
 	code := qry.Get("code")
 	if code == "" {
-		http.Error(w, "unauthorised user", http.StatusUnauthorized)
+		if setupAction == "install" || !qry.Has("state") {
+			http.Error(w, "unable to verify user's identity", http.StatusInternalServerError)
+			return
+		}
+
+		redirectURL, err := urlutil.WithQuery(s.urls.githubConnectRequest, map[string]string{"remote": qry.Get("state")})
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to create retry request url: %s", err.Error()), http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
 
