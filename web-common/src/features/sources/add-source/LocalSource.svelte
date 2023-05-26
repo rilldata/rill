@@ -20,9 +20,18 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { useModelNames } from "../../models/selectors";
-  import { compileCreateSourceYAML } from "../sourceUtils";
+  import {
+    compileCreateSourceYAML,
+    parseSourceError,
+    sourceErrorTelemetryHandler,
+  } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { hasDuckDBUnicodeError, niceDuckdbUnicodeError } from "./errors";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "../../../metrics/service/MetricsTypes";
+  import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
 
   const dispatch = createEventDispatcher();
 
@@ -88,6 +97,13 @@
       } else {
         // if the upload didn't work, delete the source file.
         handleDeleteSource(tableName);
+        sourceErrorTelemetryHandler(
+          MetricsEventSpace.Workspace,
+          MetricsEventScreenName.Source,
+          errors,
+          SourceConnectionType.Local,
+          filePath
+        );
       }
     }
   }

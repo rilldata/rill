@@ -5,9 +5,17 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useModelNames } from "../../models/selectors";
-  import { compileCreateSourceYAML } from "../sourceUtils";
+  import {
+    compileCreateSourceYAML,
+    sourceErrorTelemetryHandler,
+  } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { uploadTableFiles } from "./file-upload";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "../../../metrics/service/MetricsTypes";
+  import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
 
   export let showDropOverlay: boolean;
 
@@ -36,14 +44,23 @@
           },
           "local_file"
         );
-        // TODO: errors
-        await createSource(
+        const errors = await createSource(
           queryClient,
           runtimeInstanceId,
           tableName,
           yaml,
           $createSourceMutation
         );
+
+        if (errors) {
+          sourceErrorTelemetryHandler(
+            MetricsEventSpace.Workspace,
+            MetricsEventScreenName.Source,
+            errors,
+            SourceConnectionType.Local,
+            filePath
+          );
+        }
       } catch (err) {
         console.error(err);
       }

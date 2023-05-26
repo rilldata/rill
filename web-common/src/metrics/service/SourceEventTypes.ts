@@ -1,12 +1,14 @@
 export enum SourceErrorCodes {
+  InvalidInput = "invalid_input",
   UnsupportedFileType = "unsupported_file_type",
   MismatchedSchema = "mismatched_schema",
   NoServerResponse = "no_server_response",
   ExceedDataSizeMemory = "exceed_data_size_memory",
   ExceedDataSizeRuntime = "exceed_data_size_runtime",
   AccessForbidden = "access_forbidden",
-  Unauthorized = "Unauthorized",
+  Unauthorized = "unauthorized",
   URLBroken = "url_broken",
+  Uncategorized = "uncategorized",
 }
 
 export enum SourceFileType {

@@ -23,7 +23,12 @@
   import type * as yup from "yup";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
-  import { compileCreateSourceYAML, inferSourceName } from "../sourceUtils";
+  import {
+    compileCreateSourceYAML,
+    inferSourceName,
+    parseSourceError,
+    sourceErrorTelemetryHandler,
+  } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { humanReadableErrorMessage } from "./errors";
   import {
@@ -31,6 +36,11 @@
     getYupSchema,
     toYupFriendlyKey,
   } from "./yupSchemas";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "../../../metrics/service/MetricsTypes";
+  import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
 
   export let connector: V1Connector;
 
@@ -81,6 +91,8 @@
           ])
         );
 
+        console.log(formValues);
+
         const yaml = compileCreateSourceYAML(formValues, connector.name);
 
         waitingOnSourceImport = true;
@@ -105,6 +117,13 @@
               $appStore.activeEntity,
               $sourceNames.data,
               false
+            );
+            sourceErrorTelemetryHandler(
+              MetricsEventSpace.Workspace,
+              MetricsEventScreenName.Source,
+              errors,
+              SourceConnectionType.Local,
+              formValues?.uri
             );
           }
         } catch (err) {

@@ -10,7 +10,7 @@ import type {
   SourceFileType,
 } from "./service/SourceEventTypes";
 
-export class SourceErrorEventHandler {
+export class ErrorEventHandler {
   public constructor(
     private readonly metricsService: MetricsService,
     private readonly commonUserMetrics: CommonUserFields
