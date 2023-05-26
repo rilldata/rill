@@ -85,10 +85,12 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 		if err != nil {
 			return err
 		}
+
 		entry.Value, err = pbutil.ToValue(val)
 		if err != nil {
 			return err
 		}
+
 		res.Entries = append(res.Entries, entry)
 	}
 

@@ -43,10 +43,10 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		return nil, prepared.Close()
 	}
 
+	var cancelFunc context.CancelFunc
 	if stmt.ExecutionTimeout != 0 {
-		cx, cancel := context.WithTimeout(ctx, stmt.ExecutionTimeout)
-		defer cancel()
-		ctx = cx
+		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
+		_ = cancelFunc
 	}
 
 	rows, err := c.db.QueryxContext(ctx, stmt.Query, stmt.Args...)
@@ -59,7 +59,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		return nil, err
 	}
 
-	return &drivers.Result{Rows: rows, Schema: schema}, nil
+	return &drivers.Result{Rows: rows, Schema: schema, CancelFunc: cancelFunc}, nil
 }
 
 func (c *connection) DropDB() error {
