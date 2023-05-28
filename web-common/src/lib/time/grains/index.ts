@@ -88,11 +88,11 @@ export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
   ) {
     return [TIME_GRAIN.TIME_GRAIN_MINUTE, TIME_GRAIN.TIME_GRAIN_HOUR];
   } else if (
-    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
+    timeRangeDurationMs <= durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
   ) {
     return [TIME_GRAIN.TIME_GRAIN_HOUR];
   } else if (
-    timeRangeDurationMs <
+    timeRangeDurationMs <=
     14 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
   ) {
     return [TIME_GRAIN.TIME_GRAIN_HOUR, TIME_GRAIN.TIME_GRAIN_DAY];

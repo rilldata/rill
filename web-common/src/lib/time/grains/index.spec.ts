@@ -30,6 +30,12 @@ const allowedGrainTests = [
     expected: [TIME_GRAIN.TIME_GRAIN_HOUR],
   },
   {
+    test: "should return TIME_GRAIN_HOUR for 24 hours",
+    start: new Date(0),
+    end: new Date(durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)),
+    expected: [TIME_GRAIN.TIME_GRAIN_HOUR],
+  },
+  {
     test: "should return TIME_GRAIN_HOUR and TIME_GRAIN_DAY if otherwise < 14 days",
     start: new Date(0),
     end: new Date(
