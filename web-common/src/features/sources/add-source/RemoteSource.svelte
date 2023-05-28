@@ -31,6 +31,10 @@
     inferSourceName,
     sourceErrorTelemetryHandler,
   } from "../sourceUtils";
+  import {
+    EntityTypeToScreenMap,
+    MetricsEventSpace,
+  } from "../../../metrics/service/MetricsTypes";
   import { createSource } from "./createSource";
   import { humanReadableErrorMessage } from "./errors";
   import {
@@ -38,11 +42,7 @@
     getYupSchema,
     toYupFriendlyKey,
   } from "./yupSchemas";
-  import {
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "../../../metrics/service/MetricsTypes";
-  import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
+  import { connectorToSourceConnectionType } from "../../../metrics/service/SourceEventTypes";
 
   export let connector: V1Connector;
 
@@ -106,8 +106,6 @@
           ])
         );
 
-        console.log(formValues);
-
         const yaml = compileCreateSourceYAML(formValues, connector.name);
 
         waitingOnSourceImport = true;
@@ -133,11 +131,13 @@
               $sourceNames.data,
               false
             );
+          }
+          if ($createSourceMutation.isError || error) {
             sourceErrorTelemetryHandler(
-              MetricsEventSpace.Workspace,
-              MetricsEventScreenName.Source,
-              errors,
-              SourceConnectionType.Local,
+              MetricsEventSpace.LeftPanel,
+              EntityTypeToScreenMap[$appStore.activeEntity?.type],
+              createSourceMutationError?.message ?? error?.message,
+              connectorToSourceConnectionType[connector.name],
               formValues?.uri
             );
           }

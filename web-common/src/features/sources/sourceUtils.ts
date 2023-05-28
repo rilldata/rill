@@ -2,6 +2,7 @@ import type { V1Connector } from "@rilldata/web-common/runtime-client";
 import { sanitizeEntityName } from "./extract-table-name";
 import { SourceErrorCodes } from "../../metrics/service/SourceEventTypes";
 import { errorEvent } from "../../metrics/initMetrics";
+import { categorizeSourceError } from "./add-source/errors";
 
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,
@@ -51,11 +52,11 @@ export function inferSourceName(connector: V1Connector, path: string) {
 export function sourceErrorTelemetryHandler(
   space,
   screenName,
-  errors,
+  errorMessage,
   connectionType,
   fileName
 ) {
-  const categorizedError = parseSourceError(errors);
+  const categorizedError = categorizeSourceError(errorMessage);
   const fileType = getFileTypeFromName(fileName);
 
   // errorEvent.fireSourceErrorEvent(
@@ -77,25 +78,4 @@ function getFileTypeFromName(fileName) {
   }
 
   return fileType;
-}
-
-export function parseSourceError(errors) {
-  console.log(errors);
-
-  for (const error of errors) {
-    if (error?.message?.includes("Invalid Error: Invalid Input Error")) {
-      return SourceErrorCodes.InvalidInput;
-    }
-    if (error?.message?.includes("PermissionDenied")) {
-      return SourceErrorCodes.AccessForbidden;
-    }
-    if (error?.message?.includes("failed to fetch url")) {
-      return SourceErrorCodes.URLBroken;
-    }
-    if (error?.message?.includes("file type not supported")) {
-      return SourceErrorCodes.UnsupportedFileType;
-    }
-  }
-
-  return SourceErrorCodes.Uncategorized;
 }

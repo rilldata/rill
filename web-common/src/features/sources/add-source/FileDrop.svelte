@@ -17,10 +17,11 @@
   import { createSource } from "./createSource";
   import { uploadTableFiles } from "./file-upload";
   import {
-    MetricsEventScreenName,
+    EntityTypeToScreenMap,
     MetricsEventSpace,
   } from "../../../metrics/service/MetricsTypes";
   import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
+  import { appStore } from "../../../layout/app-store";
 
   export let showDropOverlay: boolean;
 
@@ -33,6 +34,9 @@
 
   const createSourceMutation = createRuntimeServicePutFileAndReconcile();
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
+
+  $: createSourceMutationError = ($createSourceMutation?.error as any)?.response
+    ?.data;
 
   const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;
@@ -69,11 +73,11 @@
           $createSourceMutation
         );
 
-        if (errors) {
+        if (createSourceMutationError.isError || errors.length) {
           sourceErrorTelemetryHandler(
             MetricsEventSpace.Workspace,
-            MetricsEventScreenName.Source,
-            errors,
+            EntityTypeToScreenMap[$appStore.activeEntity?.type],
+            createSourceMutationError?.message ?? errors[0]?.message,
             SourceConnectionType.Local,
             filePath
           );

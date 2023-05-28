@@ -30,7 +30,7 @@
   import { createSource } from "./createSource";
   import { hasDuckDBUnicodeError, niceDuckdbUnicodeError } from "./errors";
   import {
-    MetricsEventScreenName,
+    EntityTypeToScreenMap,
     MetricsEventSpace,
   } from "../../../metrics/service/MetricsTypes";
   import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
@@ -48,6 +48,9 @@
   const createSourceMutation = createRuntimeServicePutFileAndReconcile();
   const deleteSource = createRuntimeServiceDeleteFileAndReconcile();
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
+
+  $: createSourceMutationError = ($createSourceMutation?.error as any)?.response
+    ?.data;
 
   async function handleOpenFileDialog() {
     return handleUpload(await openFileUploadDialog());
@@ -111,10 +114,13 @@
       } else {
         // if the upload didn't work, delete the source file.
         handleDeleteSource(tableName);
+      }
+
+      if ($createSourceMutation.isError || errors.length) {
         sourceErrorTelemetryHandler(
-          MetricsEventSpace.Workspace,
-          MetricsEventScreenName.Source,
-          errors,
+          MetricsEventSpace.LeftPanel,
+          EntityTypeToScreenMap[$appStore.activeEntity?.type],
+          createSourceMutationError?.message ?? errors[0]?.message,
           SourceConnectionType.Local,
           filePath
         );
