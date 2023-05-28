@@ -5,6 +5,8 @@ sidebar_label: Import data source
 sidebar_position: 10
 ---
 
+<!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
+
 Rill supports several connectors for importing data: local files, download from an S3 or GCS bucket, or download using HTTP(S). Rill can ingest `.csv`, `.tsv`, and `.parquet` files, which may be compressed (`.gz`). You can only import a single data file as a source at a time.
 
 ## Adding a local file
@@ -76,8 +78,9 @@ Rill requires credentials to connect to remote data sources such as private buck
 
 When running Rill locally, Rill attempts to find existing credentials configured on your computer. When deploying projects to Rill Cloud, you must explicitly provide service account credentials with correct access permissions.
 
-
 ### Configure credentials for GCS
+
+<!-- WARNING: There are links to this heading in source code. If you change it, find and replace the links. -->
 
 Rill uses the credentials configured in your local environment using the Google Cloud CLI (`gcloud`). Follow these steps to configure it:
 
@@ -85,9 +88,17 @@ Rill uses the credentials configured in your local environment using the Google 
 
 2. If it did not print information about your user, follow the steps on [Install the Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk). Make sure to run `gcloud init` after installation as described in the tutorial.
 
+Once you have `gcloud` installed, run this command to set your default credentials:
+
+```
+gcloud auth application-default login
+```
+
 You have now configured Google Cloud access from your local environment. Rill will detect and use your credentials next time you try to ingest a source.
 
 ### Configure credentials for S3
+
+<!-- WARNING: There are links to this heading in source code. If you change it, find and replace the links. -->
 
 Rill uses the credentials configured in your local environment using the AWS CLI. 
 

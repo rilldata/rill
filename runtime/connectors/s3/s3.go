@@ -55,7 +55,7 @@ var spec = connectors.Spec{
 			Description: "AWS credentials inferred from your local environment.",
 			Type:        connectors.InformationalPropertyType,
 			Hint:        "Set your local credentials: <code>aws configure</code> Click to learn more.",
-			Href:        "https://docs.rilldata.com/develop/import-data#setting-local-credentials-for-s3",
+			Href:        "https://docs.rilldata.com/develop/import-data#configure-credentials-for-s3",
 		},
 	},
 	ConnectorVariables: []connectors.VariableSchema{

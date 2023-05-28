@@ -769,6 +769,11 @@ paths:
                 type: string
               githubUrl:
                 type: string
+              prodSlots:
+                type: string
+                format: int64
+              region:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}/variables:

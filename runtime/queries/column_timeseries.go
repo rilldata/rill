@@ -178,8 +178,14 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 				return err
 			}
 
+			tpb := timestamppb.New(t)
+			if err := tpb.CheckValid(); err != nil {
+				rows.Close()
+				return err
+			}
+
 			data = append(data, &runtimev1.TimeSeriesValue{
-				Ts:      timestamppb.New(t),
+				Ts:      tpb,
 				Records: records,
 			})
 		}
@@ -195,10 +201,9 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}
 
 		q.Result = &ColumnTimeseriesResult{
-			Meta:      meta,
-			Results:   data,
-			TimeRange: timeRange,
-			Spark:     sparkValues,
+			Meta:    meta,
+			Results: data,
+			Spark:   sparkValues,
 		}
 		return nil
 	})

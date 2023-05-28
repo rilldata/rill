@@ -8,20 +8,28 @@
   import AuthContainer from "./AuthContainer.svelte";
   import Disclaimer from "./Disclaimer.svelte";
   import EmailPassForm from "./EmailPassForm.svelte";
+  import SSOForm from "./SSOForm.svelte";
+  import { getConnectionFromEmail } from "./utils";
 
   export let configParams: string;
   export let cloudClientIDs = "";
+  export let disableForgotPassDomains = "";
+  export let connectionMap = "{}";
 
+  const connectionMapObj = JSON.parse(connectionMap);
   const cloudClientIDsArr = cloudClientIDs.split(",");
+  const disableForgotPassDomainsArr = disableForgotPassDomains.split(",");
 
-  // By default show the SignUp page
-  let isLoginPage = false;
-  let errorText = "";
+  // By default show the LogIn page
+  $: isLoginPage = true;
+  $: errorText = "";
+  $: isRillCloud = false;
+
+  let isSSODisabled = false;
+  let isEmailDisabled = false;
 
   let webAuth: WebAuth;
   const databaseConnection = "Username-Password-Authentication";
-
-  $: loginOptions = LOGIN_OPTIONS;
 
   function initConfig() {
     const config = JSON.parse(
@@ -29,9 +37,7 @@
     );
 
     if (cloudClientIDsArr.includes(config?.clientID)) {
-      loginOptions = loginOptions.filter(
-        (option) => !["Okta", "Pingfed"].includes(option.name)
-      );
+      isRillCloud = true;
     }
 
     const params = Object.assign(
@@ -59,42 +65,83 @@
     webAuth.authorize({ connection });
   }
 
-  function handleEmailSubmit(email: string, password: string) {
+  function handleSSOLogin(email: string) {
+    isSSODisabled = true;
     errorText = "";
-    if (isLoginPage) {
-      webAuth.login(
-        {
-          realm: databaseConnection,
-          username: email,
-          password: password,
-        },
-        (err) => {
-          if (err) displayError(err);
-        }
-      );
-    } else {
-      webAuth.redirect.signupAndLogin(
-        {
-          connection: databaseConnection,
-          email: email,
-          password: password,
-        },
-        (err) => {
-          if (err) displayError(err);
-        }
-      );
+
+    const connectionName = getConnectionFromEmail(email, connectionMapObj);
+
+    if (!connectionName) {
+      displayError({
+        message: `IDP for the email ${email} not found. Please contact your administrator.`,
+      });
+      isSSODisabled = false;
+      return;
+    }
+
+    webAuth.authorize({
+      connection: connectionName,
+      login_hint: email,
+      prompt: "login",
+    });
+  }
+
+  function handleEmailSubmit(email: string, password: string) {
+    isEmailDisabled = true;
+    errorText = "";
+    try {
+      if (isLoginPage) {
+        webAuth.login(
+          {
+            realm: databaseConnection,
+            username: email,
+            password: password,
+          },
+          (err) => {
+            if (err) displayError({ message: err?.description });
+            isEmailDisabled = false;
+          }
+        );
+      } else {
+        webAuth.redirect.signupAndLogin(
+          {
+            connection: databaseConnection,
+            email: email,
+            password: password,
+          },
+          (err) => {
+            if (err) displayError({ message: err?.description });
+            isEmailDisabled = false;
+          }
+        );
+      }
+    } catch (err) {
+      displayError({ message: err?.description || err?.message });
+      isEmailDisabled = false;
     }
   }
 
   function handleResetPassword(email: string) {
+    errorText = "";
     if (!email) return displayError({ message: "Please enter an email" });
+
+    if (
+      disableForgotPassDomainsArr.some((domain) =>
+        email.toLowerCase().endsWith(domain.toLowerCase())
+      )
+    ) {
+      return displayError({
+        message: "Password reset is not available. Please contact your admin.",
+      });
+    }
+
     webAuth.changePassword(
       {
         connection: databaseConnection,
         email: email,
       },
       (err, resp) => {
-        if (err) displayError(err);
+        if (err) displayError({ message: err?.description });
         else alert(resp);
       }
     );
@@ -112,7 +159,7 @@
       {isLoginPage ? "Log in to Rill" : "Create your Rill account"}
     </div>
     <div class="flex flex-col gap-y-4" style:width="400px">
-      {#each loginOptions as { label, icon, style, connection }}
+      {#each LOGIN_OPTIONS as { label, icon, style, connection }}
         <CtaButton
           variant={style === "primary" ? "primary" : "secondary"}
           on:click={() => authorize(connection)}
@@ -125,8 +172,18 @@
           </div>
         </CtaButton>
       {/each}
+
+      {#if !isRillCloud}
+        <SSOForm
+          disabled={isSSODisabled}
+          on:ssoSubmit={(e) => {
+            handleSSOLogin(e.detail);
+          }}
+        />
+      {/if}
       <EmailPassForm
         {isLoginPage}
+        disabled={isEmailDisabled}
         on:submit={(e) => {
           handleEmailSubmit(e.detail.email, e.detail.password);
         }}
@@ -137,7 +194,9 @@
     </div>
 
     {#if errorText}
-      <div class="text-red-500 text-sm mt-2">{errorText}</div>
+      <div style:max-width="400px" class="text-red-500 text-sm mt-3">
+        {errorText}
+      </div>
     {/if}
 
     <Disclaimer />

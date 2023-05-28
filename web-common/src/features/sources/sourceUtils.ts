@@ -8,7 +8,7 @@ export function compileCreateSourceYAML(
   values: Record<string, unknown>,
   connectorName: string
 ) {
-  const topLineComment = `# Visit https://docs.rilldata.com/ to learn more about Rill code artifacts.`;
+  const topLineComment = `# Visit https://docs.rilldata.com/ to learn more about Rill code files.`;
 
   if (connectorName !== "local_file") {
     values.uri = values.path;
