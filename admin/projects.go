@@ -114,7 +114,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 
 // TeardownProject tears down a project and all its deployments.
 func (s *Service) TeardownProject(ctx context.Context, p *database.Project) error {
-	ds, err := s.DB.FindDeployments(ctx, p.ID)
+	ds, err := s.DB.FindDeploymentsForProject(ctx, p.ID)
 	if err != nil {
 		return err
 	}
@@ -190,7 +190,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 
 	if impactsDeployments {
 		s.logger.Info("updating deployments", observability.ZapCtx(ctx))
-		ds, err := s.DB.FindDeployments(ctx, proj.ID)
+		ds, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
 		if err != nil {
 			return nil, err
 		}
