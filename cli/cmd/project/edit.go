@@ -10,8 +10,9 @@ import (
 )
 
 func EditCmd(cfg *config.Config) *cobra.Command {
-	var name, description, prodBranch, path string
+	var name, description, prodBranch, path, region string
 	var public bool
+	var slots int
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<project-name>]",
@@ -59,6 +60,12 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
+			if !cmd.Flags().Changed("prod-slots") {
+				slots = int(proj.ProdSlots)
+			}
+			if !cmd.Flags().Changed("region") {
+				region = proj.Region
+			}
 			// Todo: Need to add prompt for repo_path <path_for_monorepo>
 
 			updatedProj, err := client.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
@@ -69,6 +76,8 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				Public:           public,
 				ProdBranch:       prodBranch,
 				GithubUrl:        proj.GithubUrl,
+				ProdSlots:        int64(slots),
+				Region:           region,
 			})
 			if err != nil {
 				return err
@@ -86,6 +95,13 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Production branch name")
 	editCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	editCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	editCmd.Flags().IntVar(&slots, "prod-slots", 0, "Slots to allocate for production deployments (default: current slots)")
+	editCmd.Flags().StringVar(&region, "region", "", "Deployment region (default: current region)")
+	if !cfg.IsDev() {
+		if err := editCmd.Flags().MarkHidden("prod-slots"); err != nil {
+			panic(err)
+		}
+	}
 
 	return editCmd
 }

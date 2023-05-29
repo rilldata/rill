@@ -309,6 +309,11 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	deployCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().StringVar(&name, "project", "", "Project name (default: Git repo name)")
 	deployCmd.Flags().StringVar(&remote, "remote", "", "Remote name (defaults: first github remote)")
+	if !cfg.IsDev() {
+		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
+			panic(err)
+		}
+	}
 
 	return deployCmd
 }
@@ -381,7 +386,7 @@ func createOrgFlow(ctx context.Context, cfg *config.Config, client *adminclient.
 		Name: defaultName,
 	})
 	if err != nil {
-		if !isNameExistsErr(err) {
+		if !errMsgContains(err, "an org with that name already exists") {
 			return err
 		}
 
@@ -453,7 +458,7 @@ func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adm
 	// Create the project (automatically deploys prod branch)
 	res, err := client.CreateProject(ctx, req)
 	if err != nil {
-		if !isNameExistsErr(err) {
+		if !errMsgContains(err, "a project with that name already exists in the org") {
 			return nil, err
 		}
 
@@ -528,9 +533,9 @@ func projectNamePrompt(ctx context.Context, client *adminclient.Client, orgName 
 	return name, nil
 }
 
-func isNameExistsErr(err error) bool {
+func errMsgContains(err error, msg string) bool {
 	if st, ok := status.FromError(err); ok && st != nil {
-		return strings.Contains(st.Message(), "violates unique constraint")
+		return strings.Contains(st.Message(), msg)
 	}
 	return false
 }
