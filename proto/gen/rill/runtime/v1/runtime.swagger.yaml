@@ -2826,8 +2826,6 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1TimeSeriesValue'
-      timeRange:
-        $ref: '#/definitions/v1TimeSeriesTimeRange'
       sampleSize:
         type: integer
         format: int32

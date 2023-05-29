@@ -2993,11 +2993,6 @@ export class TimeSeriesResponse extends Message<TimeSeriesResponse> {
   spark: TimeSeriesValue[] = [];
 
   /**
-   * @generated from field: rill.runtime.v1.TimeSeriesTimeRange time_range = 3;
-   */
-  timeRange?: TimeSeriesTimeRange;
-
-  /**
    * @generated from field: int32 sample_size = 4;
    */
   sampleSize = 0;
@@ -3012,7 +3007,6 @@ export class TimeSeriesResponse extends Message<TimeSeriesResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "results", kind: "message", T: TimeSeriesValue, repeated: true },
     { no: 2, name: "spark", kind: "message", T: TimeSeriesValue, repeated: true },
-    { no: 3, name: "time_range", kind: "message", T: TimeSeriesTimeRange },
     { no: 4, name: "sample_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 

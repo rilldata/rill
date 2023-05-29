@@ -454,7 +454,6 @@ func TestServer_Timeseries_Empty_TimeRange(t *testing.T) {
 	for i, v := range response.GetRollup().Results {
 		fmt.Printf("i: %d, ts: %v\n", i, v.Ts.AsTime())
 	}
-	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_HOUR, response.Rollup.TimeRange.GetInterval())
 	require.Equal(t, 25, len(results))
 	require.Equal(t, 1.0, results[0].Records.Fields["max"].GetNumberValue())
 }
@@ -958,7 +957,6 @@ func TestServer_Timeseries_Spark(t *testing.T) {
 	for i, v := range response.GetRollup().Results {
 		fmt.Printf("i: %d, ts: %v\n", i, v.Ts.AsTime())
 	}
-	require.Equal(t, parseTime(t, "2019-01-10T00:00:00Z"), response.GetRollup().TimeRange.End.AsTime())
 	results := response.GetRollup().Results
 	require.Equal(t, 9, len(results))
 	require.Equal(t, 12, len(response.Rollup.Spark))
