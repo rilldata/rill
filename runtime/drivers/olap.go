@@ -41,9 +41,8 @@ type Statement struct {
 // Result wraps the results of query.
 type Result struct {
 	*sqlx.Rows
-	Schema     *runtimev1.StructType
-	cleanupFn  func() error
-	CancelFunc context.CancelFunc
+	Schema    *runtimev1.StructType
+	cleanupFn func() error
 }
 
 // SetCleanupFunc sets a function, which will be called when the Result is closed.
@@ -67,9 +66,6 @@ func (r *Result) Close() error {
 		// Prevent cleanupFn from being called multiple times.
 		// NOTE: Not idempotent for error returned from cleanupFn.
 		r.cleanupFn = nil
-	}
-	if r.CancelFunc != nil {
-		r.CancelFunc()
 	}
 	return firstErr
 }

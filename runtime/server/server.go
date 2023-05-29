@@ -12,8 +12,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/middleware"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
@@ -114,16 +114,6 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	runtimev1.RegisterQueryServiceServer(server, s)
 	s.logger.Named("console").Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
-}
-
-func timeoutSelector(service, method string) time.Duration {
-	if method == "TriggerReconcile" {
-		return time.Minute * 30
-	}
-	if service == "QueryService" {
-		return time.Minute * 5
-	}
-	return time.Second * 30
 }
 
 // Starts the HTTP server.
@@ -228,6 +218,16 @@ func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gate
 		err = &gateway.HTTPStatusError{HTTPStatus: http.StatusBadRequest, Err: err}
 	}
 	gateway.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
+}
+
+func timeoutSelector(service, method string) time.Duration {
+	if method == "TriggerReconcile" {
+		return time.Minute * 30
+	}
+	if service == "QueryService" {
+		return time.Minute * 5
+	}
+	return time.Second * 30
 }
 
 // errorMappingUnaryServerInterceptor is an interceptor that applies mapGRPCError.

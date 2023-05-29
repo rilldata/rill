@@ -135,8 +135,16 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		return nil, err
 	}
 
-	res = &drivers.Result{Rows: rows, Schema: schema, CancelFunc: cancelFunc}
-	res.SetCleanupFunc(release) // Will call release when res.Close() is called.
+	res = &drivers.Result{Rows: rows, Schema: schema}
+	res.SetCleanupFunc(func() error {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+		if release != nil {
+			return release()
+		}
+		return nil
+	}) // Will call release when res.Close() is called.
 
 	return res, nil
 }
