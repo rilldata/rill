@@ -1,4 +1,7 @@
-import type { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+import type {
+  BehaviourEventAction,
+  BehaviourEventMedium,
+} from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
 import type { MetricsService } from "@rilldata/web-common/metrics/service/MetricsService";
 import type {
   CommonUserFields,
@@ -51,6 +54,21 @@ export class BehaviourEventHandler {
       source_screen,
       screen_name,
       isStart,
+    ]);
+  }
+
+  public fireSplashEvent(
+    action: BehaviourEventAction,
+    medium: BehaviourEventMedium,
+    space: MetricsEventSpace,
+    project_id = ""
+  ) {
+    return this.metricsService.dispatch("splashEvent", [
+      this.commonUserMetrics,
+      action,
+      medium,
+      space,
+      project_id,
     ]);
   }
 }

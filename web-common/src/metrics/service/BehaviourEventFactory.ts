@@ -1,7 +1,7 @@
 import type { BehaviourEventMedium } from "./BehaviourEventTypes";
 import { BehaviourEvent, BehaviourEventAction } from "./BehaviourEventTypes";
 import { MetricsEventFactory } from "./MetricsEventFactory";
-import type {
+import {
   CommonFields,
   CommonUserFields,
   MetricsEventScreenName,
@@ -55,6 +55,27 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     event.space = space;
     event.screen_name = screen_name;
     event.source_screen = source_screen;
+    return event;
+  }
+
+  public splashEvent(
+    commonFields: CommonFields,
+    commonUserFields: CommonUserFields,
+    action: BehaviourEventAction,
+    medium: BehaviourEventMedium,
+    space: MetricsEventSpace,
+    project_id: string
+  ): BehaviourEvent {
+    const event = this.getBaseMetricsEvent(
+      "behavioral",
+      commonFields,
+      commonUserFields
+    ) as BehaviourEvent;
+    event.action = action;
+    event.entity_id = project_id;
+    event.medium = medium;
+    event.space = space;
+    event.screen_name = MetricsEventScreenName.Splash;
     return event;
   }
 }

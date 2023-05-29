@@ -36,11 +36,6 @@ export enum SourceConnectionType {
   Local = "local",
 }
 
-export enum SourceEventMedium {
-  Button = "button",
-  Card = "card",
-}
-
 export enum SourceBehaviourEventAction {
   SourceModal = "source-modal",
   SourceCancel = "source-cancel",

@@ -5,12 +5,18 @@ export enum BehaviourEventAction {
   Navigate = "navigate",
   PublishStart = "publish-start",
   PublishSuccess = "publish-success",
+
+  // Splash Screen Actions
+  SourceModal = "source-modal",
+  ExampleAdd = "example-add",
+  ProjectEmpty = "project-empty",
 }
 
 export enum BehaviourEventMedium {
   Button = "button",
   Menu = "menu",
   AssetName = "asset-name",
+  Card = "card",
 }
 
 export interface BehaviourEvent extends MetricsEvent {
