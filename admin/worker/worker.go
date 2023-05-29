@@ -33,6 +33,7 @@ func New(logger *zap.Logger, adm *admin.Service) *Worker {
 func (w *Worker) Run(ctx context.Context) error {
 	group, ctx := errgroup.WithContext(ctx)
 	group.Go(func() error { return w.schedule(ctx, "check_slots", w.checkSlots, 15*time.Minute) })
+	group.Go(func() error { return w.schedule(ctx, "delete_expired_tokens", w.deleteExpiredTokens, 15*time.Minute) })
 	// NOTE: Add new jobs here
 
 	w.logger.Info("worker started")

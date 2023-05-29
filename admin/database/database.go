@@ -104,6 +104,7 @@ type DB interface {
 	InsertUsergroupMember(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupMember(ctx context.Context, groupID, userID string) error
 
+	FindExpiredAuthTokens(ctx context.Context) ([]*UserAuthToken, error)
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
