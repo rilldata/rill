@@ -24,6 +24,9 @@ export enum SourceFileType {
   CSV = "csv",
   NDJSON = "ndjson",
   Parquet = "parquet",
+  JSON = "json",
+  TSV = "tsv",
+  TXT = "txt",
 }
 
 export enum SourceConnectionType {

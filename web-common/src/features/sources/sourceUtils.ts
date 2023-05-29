@@ -1,8 +1,12 @@
 import type { V1Connector } from "@rilldata/web-common/runtime-client";
 import { sanitizeEntityName } from "./extract-table-name";
-import { SourceErrorCodes } from "../../metrics/service/SourceEventTypes";
+import type { SourceConnectionType } from "../../metrics/service/SourceEventTypes";
 import { errorEvent } from "../../metrics/initMetrics";
 import { categorizeSourceError } from "./add-source/errors";
+import type {
+  MetricsEventScreenName,
+  MetricsEventSpace,
+} from "../../metrics/service/MetricsTypes";
 
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,
@@ -50,22 +54,22 @@ export function inferSourceName(connector: V1Connector, path: string) {
 }
 
 export function sourceErrorTelemetryHandler(
-  space,
-  screenName,
-  errorMessage,
-  connectionType,
-  fileName
+  space: MetricsEventSpace,
+  screenName: MetricsEventScreenName,
+  errorMessage: string,
+  connectionType: SourceConnectionType,
+  fileName: string
 ) {
   const categorizedError = categorizeSourceError(errorMessage);
   const fileType = getFileTypeFromName(fileName);
 
-  // errorEvent.fireSourceErrorEvent(
-  //   space,
-  //   screenName,
-  //   categorizedError,
-  //   connectionType,
-  //   fileType
-  // );
+  errorEvent.fireSourceErrorEvent(
+    space,
+    screenName,
+    categorizedError,
+    connectionType,
+    fileType
+  );
 }
 
 function getFileTypeFromName(fileName) {
