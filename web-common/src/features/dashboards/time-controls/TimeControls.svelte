@@ -171,7 +171,11 @@
       end: new Date(end),
     };
 
-    const defaultTimeGrain = getDefaultTimeGrain(start, end).grain;
+    const defaultTimeGrain = getDefaultTimeGrain(
+      baseTimeRange.start,
+      baseTimeRange.end
+    ).grain;
+
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
       defaultTimeGrain,
