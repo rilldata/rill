@@ -62,13 +62,15 @@ export function sourceErrorTelemetryHandler(
 ) {
   const categorizedError = categorizeSourceError(errorMessage);
   const fileType = getFileTypeFromName(fileName);
+  const isGlob = fileName.includes("*");
 
   errorEvent.fireSourceErrorEvent(
     space,
     screenName,
     categorizedError,
     connectionType,
-    fileType
+    fileType,
+    isGlob
   );
 }
 

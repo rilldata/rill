@@ -23,7 +23,8 @@ export class ErrorEventHandler {
     screen_name: MetricsEventScreenName,
     error_code: SourceErrorCodes,
     connection_type: SourceConnectionType,
-    file_type: SourceFileType
+    file_type: SourceFileType,
+    glob: boolean
   ) {
     return this.metricsService.dispatch("sourceErrorEvent", [
       this.commonUserMetrics,
@@ -32,6 +33,7 @@ export class ErrorEventHandler {
       error_code,
       connection_type,
       file_type,
+      glob,
     ]);
   }
 }

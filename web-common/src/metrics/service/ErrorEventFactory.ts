@@ -23,6 +23,7 @@ export interface ErrorEvent extends MetricsEvent {
   screen_name: MetricsEventScreenName;
   file_type: SourceFileType;
   connection_type: SourceConnectionType;
+  glob: boolean;
 }
 
 export class ErrorEventFactory extends MetricsEventFactory {
@@ -33,7 +34,8 @@ export class ErrorEventFactory extends MetricsEventFactory {
     screen_name: MetricsEventScreenName,
     error_code: SourceErrorCodes,
     connection_type: SourceConnectionType,
-    file_type: SourceFileType
+    file_type: SourceFileType,
+    glob: boolean
   ): ErrorEvent {
     const event = this.getBaseMetricsEvent(
       "error",
@@ -46,6 +48,7 @@ export class ErrorEventFactory extends MetricsEventFactory {
     event.error_code = error_code;
     event.connection_type = connection_type;
     event.file_type = file_type;
+    event.glob = glob;
     return event;
   }
 }
