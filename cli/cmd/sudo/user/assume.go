@@ -30,7 +30,7 @@ func AssumeCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			// Backup original token
+			// Backup current token as original_token
 			originalToken, err := dotrill.GetAccessToken()
 			if err != nil {
 				return err
@@ -40,13 +40,13 @@ func AssumeCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			// Set token new token
+			// Set new access token
 			err = dotrill.SetAccessToken(token.TokenId)
 			if err != nil {
 				return err
 			}
 
-			// Set email for representing user
+			// Set representing user email
 			err = dotrill.SetRepresentingUserEmail(args[0])
 			if err != nil {
 				return err

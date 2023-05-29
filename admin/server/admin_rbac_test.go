@@ -91,12 +91,12 @@ func TestAdmin_RBAC(t *testing.T) {
 	require.NotNil(t, adminAuthToken)
 	adminToken := adminAuthToken.Token().String()
 
-	viewerAuthToken, err := service.IssueUserAuthToken(ctx, viewerUser.ID, database.AuthClientIDRillWeb, "test", adminUser.ID, 0)
+	viewerAuthToken, err := service.IssueUserAuthToken(ctx, viewerUser.ID, database.AuthClientIDRillWeb, "test", viewerUser.ID, 0)
 	require.NoError(t, err)
 	require.NotNil(t, viewerAuthToken)
 	viewerToken := viewerAuthToken.Token().String()
 
-	testAuthToken, err := service.IssueUserAuthToken(ctx, testUser.ID, database.AuthClientIDRillWeb, "test", adminUser.ID, 0)
+	testAuthToken, err := service.IssueUserAuthToken(ctx, testUser.ID, database.AuthClientIDRillWeb, "test", testUser.ID, 0)
 	require.NoError(t, err)
 	require.NotNil(t, testAuthToken)
 	testToken := testAuthToken.Token().String()

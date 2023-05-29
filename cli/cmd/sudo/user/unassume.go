@@ -14,7 +14,7 @@ func UnAssumeCmd(cfg *config.Config) *cobra.Command {
 	unAssumeCmd := &cobra.Command{
 		Use:   "unassume",
 		Args:  cobra.NoArgs,
-		Short: "Unassume users by email",
+		Short: "Unassume",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -33,17 +33,10 @@ func UnAssumeCmd(cfg *config.Config) *cobra.Command {
 				return fmt.Errorf("Original token is not available, you are not assuming any user")
 			}
 
-			currentToken, err := dotrill.GetAccessToken()
+			// Revoke current token if have original token
+			_, err = client.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
 			if err != nil {
-				return err
-			}
-
-			// Need to check if we require this as we have background job for this
-			if originalToken != currentToken {
-				_, err = client.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
-				if err != nil {
-					fmt.Printf("Failed to revoke token (did you revoke it manually?). Clearing local token anyway.\n")
-				}
+				fmt.Printf("Failed to revoke token (did you revoke it manually?). Clearing local token anyway.\n")
 			}
 
 			err = dotrill.SetAccessToken(originalToken)
@@ -51,7 +44,7 @@ func UnAssumeCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			// Set original token as empty
+			// Set original_token as empty
 			err = dotrill.BackupOriginalToken("")
 			if err != nil {
 				return err
