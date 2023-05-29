@@ -25,6 +25,7 @@ export enum MetricsEventSpace {
   RightPanel = "right-panel",
   Workspace = "workspace",
   LeftPanel = "left-panel",
+  Modal = "modal",
 }
 
 export enum MetricsEventScreenName {

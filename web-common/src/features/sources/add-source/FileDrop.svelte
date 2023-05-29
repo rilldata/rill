@@ -13,6 +13,7 @@
   import {
     compileCreateSourceYAML,
     sourceErrorTelemetryHandler,
+    sourceSuccessTelemetryHandler,
   } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { uploadTableFiles } from "./file-upload";
@@ -22,6 +23,7 @@
   } from "../../../metrics/service/MetricsTypes";
   import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
   import { appStore } from "../../../layout/app-store";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
 
   export let showDropOverlay: boolean;
 
@@ -78,6 +80,14 @@
             MetricsEventSpace.Workspace,
             EntityTypeToScreenMap[$appStore.activeEntity?.type],
             createSourceMutationError?.message ?? errors[0]?.message,
+            SourceConnectionType.Local,
+            filePath
+          );
+        } else {
+          sourceSuccessTelemetryHandler(
+            MetricsEventSpace.Workspace,
+            EntityTypeToScreenMap[$appStore.activeEntity?.type],
+            BehaviourEventMedium.Drag,
             SourceConnectionType.Local,
             filePath
           );

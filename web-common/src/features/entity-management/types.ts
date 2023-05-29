@@ -1,3 +1,4 @@
+// TODO: Add Home and Splash
 export enum EntityType {
   Table = "Table",
   Model = "Model",

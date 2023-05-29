@@ -26,6 +26,7 @@
   import {
     compileCreateSourceYAML,
     sourceErrorTelemetryHandler,
+    sourceSuccessTelemetryHandler,
   } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { hasDuckDBUnicodeError, niceDuckdbUnicodeError } from "./errors";
@@ -34,6 +35,7 @@
     MetricsEventSpace,
   } from "../../../metrics/service/MetricsTypes";
   import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
 
   const dispatch = createEventDispatcher();
 
@@ -118,9 +120,17 @@
 
       if ($createSourceMutation.isError || errors.length) {
         sourceErrorTelemetryHandler(
-          MetricsEventSpace.LeftPanel,
+          MetricsEventSpace.Modal,
           EntityTypeToScreenMap[$appStore.activeEntity?.type],
           createSourceMutationError?.message ?? errors[0]?.message,
+          SourceConnectionType.Local,
+          filePath
+        );
+      } else {
+        sourceSuccessTelemetryHandler(
+          MetricsEventSpace.Modal,
+          EntityTypeToScreenMap[$appStore.activeEntity?.type],
+          BehaviourEventMedium.Button,
           SourceConnectionType.Local,
           filePath
         );

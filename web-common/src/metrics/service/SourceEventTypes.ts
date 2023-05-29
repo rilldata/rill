@@ -36,15 +36,15 @@ export enum SourceConnectionType {
   Local = "local",
 }
 
-export enum SourceBehaviourEventAction {
-  SourceModal = "source-modal",
-  SourceCancel = "source-cancel",
-  SourceAdd = "source-add",
-}
-
 export const connectorToSourceConnectionType = {
   s3: SourceConnectionType.S3,
   gcs: SourceConnectionType.GCS,
   https: SourceConnectionType.Https,
   local: SourceConnectionType.Local,
 };
+
+export interface SourceEventFields {
+  connection_type?: SourceConnectionType;
+  file_type?: SourceFileType;
+  glob?: boolean;
+}

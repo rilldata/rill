@@ -1,12 +1,13 @@
 import type { V1Connector } from "@rilldata/web-common/runtime-client";
 import { sanitizeEntityName } from "./extract-table-name";
 import type { SourceConnectionType } from "../../metrics/service/SourceEventTypes";
-import { errorEvent } from "../../metrics/initMetrics";
+import { behaviourEvent, errorEvent } from "../../metrics/initMetrics";
 import { categorizeSourceError } from "./add-source/errors";
 import type {
   MetricsEventScreenName,
   MetricsEventSpace,
 } from "../../metrics/service/MetricsTypes";
+import type { BehaviourEventMedium } from "../../metrics/service/BehaviourEventTypes";
 
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,
@@ -53,6 +54,18 @@ export function inferSourceName(connector: V1Connector, path: string) {
   return sanitizeEntityName(fileName);
 }
 
+function getFileTypeFromName(fileName) {
+  const fileType = fileName.split(".").pop();
+
+  if (!fileType) return "";
+
+  if (fileType === "gz") {
+    return fileName.split(".").slice(-2).shift();
+  }
+
+  return fileType;
+}
+
 export function sourceErrorTelemetryHandler(
   space: MetricsEventSpace,
   screenName: MetricsEventScreenName,
@@ -74,14 +87,22 @@ export function sourceErrorTelemetryHandler(
   );
 }
 
-function getFileTypeFromName(fileName) {
-  const fileType = fileName.split(".").pop();
+export function sourceSuccessTelemetryHandler(
+  space: MetricsEventSpace,
+  screenName: MetricsEventScreenName,
+  medium: BehaviourEventMedium,
+  connectionType: SourceConnectionType,
+  fileName: string
+) {
+  const fileType = getFileTypeFromName(fileName);
+  const isGlob = fileName.includes("*");
 
-  if (!fileType) return "";
-
-  if (fileType === "gz") {
-    return fileName.split(".").slice(-2).shift();
-  }
-
-  return fileType;
+  behaviourEvent.fireSourceSuccessEvent(
+    medium,
+    screenName,
+    space,
+    connectionType,
+    fileType,
+    isGlob
+  );
 }

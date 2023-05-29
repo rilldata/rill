@@ -18,7 +18,11 @@
     BehaviourEventAction,
     BehaviourEventMedium,
   } from "../../metrics/service/BehaviourEventTypes";
-  import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "../../metrics/service/MetricsTypes";
+  import { SourceConnectionType } from "../../metrics/service/SourceEventTypes";
 
   const queryClient = useQueryClient();
 
@@ -67,6 +71,14 @@
     mutation: {
       onSuccess: (response) => {
         invalidateAfterReconcile(queryClient, $runtime.instanceId, response);
+        // behaviourEvent.fireSourceSuccessEvent(
+        //   BehaviourEventMedium.Card,
+        //   MetricsEventScreenName.Splash,
+        //   MetricsEventSpace.Workspace,
+        //   SourceConnectionType.Https,
+        //   fileType,
+        //   false
+        // );
         goto(firstPage);
       },
       onError: (err) => {

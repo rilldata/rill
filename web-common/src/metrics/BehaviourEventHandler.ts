@@ -9,6 +9,10 @@ import type {
   MetricsEventSpace,
 } from "@rilldata/web-common/metrics/service/MetricsTypes";
 import MD5 from "crypto-js/md5";
+import type {
+  SourceConnectionType,
+  SourceFileType,
+} from "./service/SourceEventTypes";
 
 // TODO: simplify telemetry code to fewer classes and layers
 export class BehaviourEventHandler {
@@ -69,6 +73,40 @@ export class BehaviourEventHandler {
       medium,
       space,
       project_id,
+    ]);
+  }
+
+  public fireSourceSuccessEvent(
+    medium: BehaviourEventMedium,
+    screen_name: MetricsEventScreenName,
+    space: MetricsEventSpace,
+    connection_type: SourceConnectionType,
+    file_type: SourceFileType,
+    glob: boolean
+  ) {
+    return this.metricsService.dispatch("sourceSuccess", [
+      this.commonUserMetrics,
+      medium,
+      screen_name,
+      space,
+      connection_type,
+      file_type,
+      glob,
+    ]);
+  }
+
+  public fireSourceTriggerEvent(
+    action: BehaviourEventAction,
+    medium: BehaviourEventMedium,
+    screen_name: MetricsEventScreenName,
+    space: MetricsEventSpace
+  ) {
+    return this.metricsService.dispatch("sourceTrigger", [
+      this.commonUserMetrics,
+      action,
+      medium,
+      screen_name,
+      space,
     ]);
   }
 }

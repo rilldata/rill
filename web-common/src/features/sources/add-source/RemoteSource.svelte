@@ -30,6 +30,7 @@
     compileCreateSourceYAML,
     inferSourceName,
     sourceErrorTelemetryHandler,
+    sourceSuccessTelemetryHandler,
   } from "../sourceUtils";
   import {
     EntityTypeToScreenMap,
@@ -43,6 +44,7 @@
     toYupFriendlyKey,
   } from "./yupSchemas";
   import { connectorToSourceConnectionType } from "../../../metrics/service/SourceEventTypes";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
 
   export let connector: V1Connector;
 
@@ -134,9 +136,17 @@
           }
           if ($createSourceMutation.isError || error) {
             sourceErrorTelemetryHandler(
-              MetricsEventSpace.LeftPanel,
+              MetricsEventSpace.Modal,
               EntityTypeToScreenMap[$appStore.activeEntity?.type],
               createSourceMutationError?.message ?? error?.message,
+              connectorToSourceConnectionType[connector.name],
+              formValues?.uri
+            );
+          } else {
+            sourceSuccessTelemetryHandler(
+              MetricsEventSpace.Modal,
+              EntityTypeToScreenMap[$appStore.activeEntity?.type],
+              BehaviourEventMedium.Button,
               connectorToSourceConnectionType[connector.name],
               formValues?.uri
             );
