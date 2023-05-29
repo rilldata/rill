@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	meter                 = otel.Meter("runtime/connectors")
+	meter                 = otel.Meter("github.com/rilldata/rill/runtime/connectors")
 	downloadTimeHistogram = observability.Must(meter.Float64Histogram("download.time", metric.WithUnit("s")))
 	downloadSizeCounter   = observability.Must(meter.Int64UpDownCounter("download.size", metric.WithUnit("bytes")))
 	downloadSpeedCounter  = observability.Must(meter.Float64UpDownCounter("download.speed", metric.WithUnit("bytes/s")))

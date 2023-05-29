@@ -10,12 +10,14 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
 var (
-	meter               = otel.Meter("admin/worker")
+	tracer              = otel.Tracer("github.com/rilldata/rill/admin/worker")
+	meter               = otel.Meter("github.com/rilldata/rill/admin/worker")
 	jobLatencyHistogram = observability.Must(meter.Int64Histogram("job_latency", metric.WithUnit("ms")))
 )
 
@@ -66,14 +68,17 @@ func (w *Worker) schedule(ctx context.Context, name string, fn func(context.Cont
 }
 
 func (w *Worker) runJob(ctx context.Context, name string, fn func(context.Context) error) error {
+	ctx, span := tracer.Start(ctx, fmt.Sprintf("runJob %s", name), trace.WithAttributes(attribute.String("name", name)))
+	defer span.End()
+
 	start := time.Now()
-	w.logger.Info("job started", zap.String("name", name))
+	w.logger.Info("job started", zap.String("name", name), observability.ZapCtx(ctx))
 	err := fn(ctx)
 	jobLatencyHistogram.Record(ctx, time.Since(start).Milliseconds(), metric.WithAttributes(attribute.String("name", name), attribute.Bool("failed", err != nil)))
 	if err != nil {
-		w.logger.Error("job failed", zap.String("name", name), zap.Error(err), zap.Duration("duration", time.Since(start)))
+		w.logger.Error("job failed", zap.String("name", name), zap.Error(err), zap.Duration("duration", time.Since(start)), observability.ZapCtx(ctx))
 		return err
 	}
-	w.logger.Info("job completed", zap.String("name", name), zap.Duration("duration", time.Since(start)))
+	w.logger.Info("job completed", zap.String("name", name), zap.Duration("duration", time.Since(start)), observability.ZapCtx(ctx))
 	return nil
 }

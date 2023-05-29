@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	meter                        = otel.Meter("runtime")
+	meter                        = otel.Meter("github.com/rilldata/rill/runtime")
 	queryCacheHitsCounter        = observability.Must(meter.Int64ObservableCounter("query_cache.hits"))
 	queryCacheMissesCounter      = observability.Must(meter.Int64ObservableCounter("query_cache.misses"))
 	queryCacheItemCountGauge     = observability.Must(meter.Int64ObservableGauge("query_cache.items"))

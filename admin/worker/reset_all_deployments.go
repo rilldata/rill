@@ -14,7 +14,7 @@ func (w *Worker) resetAllDeployments(ctx context.Context) error {
 	afterName := ""
 	stop := false
 	for !stop {
-		// Get batch and progress iterator
+		// Get batch and update iterator variables
 		projs, err := w.admin.DB.FindProjects(ctx, afterName, limit)
 		if err != nil {
 			return err
@@ -22,7 +22,9 @@ func (w *Worker) resetAllDeployments(ctx context.Context) error {
 		if len(projs) < limit {
 			stop = true
 		}
-		afterName = projs[len(projs)-1].Name
+		if len(projs) != 0 {
+			afterName = projs[len(projs)-1].Name
+		}
 
 		// Process batch
 		for _, proj := range projs {

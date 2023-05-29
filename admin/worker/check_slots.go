@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
 
@@ -29,16 +30,16 @@ func (w *Worker) checkSlots(ctx context.Context) error {
 	}
 
 	// Log info status
-	w.logger.Info(`slots check: status`, zap.Int("runtimes", len(w.admin.Provisioner.Spec.Runtimes)), zap.Int("slots_total", slotsTotal), zap.Int("slots_used", slotsUsed), zap.Float64("min_pct_used", minPctUsed))
+	w.logger.Info(`slots check: status`, zap.Int("runtimes", len(w.admin.Provisioner.Spec.Runtimes)), zap.Int("slots_total", slotsTotal), zap.Int("slots_used", slotsUsed), zap.Float64("min_pct_used", minPctUsed), observability.ZapCtx(ctx))
 
 	// Check there's at least 20% free slots
 	if float64(slotsUsed)/float64(slotsTotal) >= 0.8 {
-		w.logger.Warn(`slots check: +80% of all slots used`, zap.Int("slots_total", slotsTotal), zap.Int("slots_used", slotsUsed), zap.Float64("min_pct_used", minPctUsed))
+		w.logger.Warn(`slots check: +80% of all slots used`, zap.Int("slots_total", slotsTotal), zap.Int("slots_used", slotsUsed), zap.Float64("min_pct_used", minPctUsed), observability.ZapCtx(ctx))
 	}
 
 	// Check there's at least one runtime with at least 30% free slots
 	if minPctUsed >= 0.7 {
-		w.logger.Warn(`slots check: +70% of slots used on every runtime`, zap.Int("slots_total", slotsTotal), zap.Int("slots_used", slotsUsed), zap.Float64("min_pct_used", minPctUsed))
+		w.logger.Warn(`slots check: +70% of slots used on every runtime`, zap.Int("slots_total", slotsTotal), zap.Int("slots_used", slotsUsed), zap.Float64("min_pct_used", minPctUsed), observability.ZapCtx(ctx))
 	}
 
 	return nil

@@ -40,7 +40,7 @@ func Open(driver, dsn string, logger *zap.Logger) (Connection, error) {
 	return conn, nil
 }
 
-// Drop tears down a store. It's not supported by all drivers.
+// Drop tears down a store. Drivers that do not support it return ErrDropNotSupported.
 func Drop(driver, dsn string, logger *zap.Logger) error {
 	d, ok := Drivers[driver]
 	if !ok {
@@ -55,7 +55,7 @@ type Driver interface {
 	// Open opens a new connection to an underlying store.
 	Open(dsn string, logger *zap.Logger) (Connection, error)
 
-	// Drop tears down a store. It's not supported by all drivers.
+	// Drop tears down a store. Drivers that do not support it return ErrDropNotSupported.
 	Drop(dsn string, logger *zap.Logger) error
 }
 
