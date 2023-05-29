@@ -59,7 +59,15 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		return nil, err
 	}
 
-	return &drivers.Result{Rows: rows, Schema: schema, CancelFunc: cancelFunc}, nil
+	r := &drivers.Result{Rows: rows, Schema: schema}
+	r.SetCleanupFunc(func() error {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+		return nil
+	})
+
+	return r, nil
 }
 
 func (c *connection) DropDB() error {
