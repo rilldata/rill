@@ -35,6 +35,10 @@ func (w *Worker) resetAllDeployments(ctx context.Context) error {
 		}
 	}
 
+	// Wait for all the background reconciles to finish.
+	// We can remove this when the runtime supports async reconciles.
+	w.admin.UnsafeWaitForReconciles()
+
 	return nil
 }
 

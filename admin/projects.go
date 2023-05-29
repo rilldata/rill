@@ -277,7 +277,9 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 // TriggerReconcile triggers a reconcile for a deployment.
 func (s *Service) TriggerReconcile(ctx context.Context, depl *database.Deployment) error {
 	// Run reconcile in the background (since it's sync)
+	s.reconcileWg.Add(1)
 	go func() {
+		defer s.reconcileWg.Done()
 		s.logger.Info("reconcile: starting", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 		err := s.triggerReconcile(s.closeCtx, depl) // Use s.closeCtx to cancel if the service is stopped
 		if err == nil {
@@ -308,7 +310,9 @@ func (s *Service) triggerReconcile(ctx context.Context, depl *database.Deploymen
 // TriggerRefreshSource triggers refresh of a deployment's sources. If the sources slice is nil, it will refresh all sources.f
 func (s *Service) TriggerRefreshSources(ctx context.Context, depl *database.Deployment, sources []string) error {
 	// Run reconcile in the background (since it's sync)
+	s.reconcileWg.Add(1)
 	go func() {
+		defer s.reconcileWg.Done()
 		s.logger.Info("refresh sources: starting", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 		err := s.triggerRefreshSources(s.closeCtx, depl, sources) // Use s.closeCtx to cancel if the service is stopped
 		if err == nil {
