@@ -2754,9 +2754,9 @@ export class RequestRepresentativeAuthTokenRequest extends Message<RequestRepres
   email = "";
 
   /**
-   * @generated from field: uint32 ttl = 2;
+   * @generated from field: int64 ttl = 2;
    */
-  ttl = 0;
+  ttl = protoInt64.zero;
 
   constructor(data?: PartialMessage<RequestRepresentativeAuthTokenRequest>) {
     super();
@@ -2767,7 +2767,7 @@ export class RequestRepresentativeAuthTokenRequest extends Message<RequestRepres
   static readonly typeName = "rill.admin.v1.RequestRepresentativeAuthTokenRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "ttl", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 2, name: "ttl", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RequestRepresentativeAuthTokenRequest {

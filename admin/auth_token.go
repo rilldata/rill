@@ -37,7 +37,7 @@ func (t *userAuthToken) OwnerID() string {
 }
 
 // IssueUserAuthToken generates and persists a new auth token for a user.
-func (s *Service) IssueUserAuthToken(ctx context.Context, userID, clientID, displayName, representingUserID string, expirationTTLMinutes int) (AuthToken, error) {
+func (s *Service) IssueUserAuthToken(ctx context.Context, userID, clientID, displayName, representingUserID string, expirationTTLMinutes int64) (AuthToken, error) {
 	tkn := authtoken.NewRandom(authtoken.TypeUser)
 
 	expirationTS := time.Now().Add(defaultTokenExpirationTTL)

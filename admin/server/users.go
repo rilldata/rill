@@ -133,7 +133,7 @@ func (s *Server) RequestRepresentativeAuthToken(ctx context.Context, req *adminv
 		return nil, err
 	}
 
-	tokenID, err := s.admin.IssueUserAuthToken(ctx, claims.OwnerID(), database.AuthClientIDRillSupport, u.DisplayName, u.ID, int(req.Ttl))
+	tokenID, err := s.admin.IssueUserAuthToken(ctx, claims.OwnerID(), database.AuthClientIDRillSupport, u.DisplayName, u.ID, req.Ttl)
 	if err != nil {
 		return nil, err
 	}

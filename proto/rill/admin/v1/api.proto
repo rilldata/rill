@@ -532,7 +532,7 @@ message RevokeCurrentAuthTokenResponse {
 
 message RequestRepresentativeAuthTokenRequest {
   string email = 1 [(validate.rules).string.email = true];
-  uint32 ttl = 2;
+  int64 ttl = 2;
 }
 
 message RequestRepresentativeAuthTokenResponse {

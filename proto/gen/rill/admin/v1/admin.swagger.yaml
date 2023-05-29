@@ -904,7 +904,7 @@ paths:
         - name: ttl
           in: query
           required: false
-          type: integer
+          type: string
           format: int64
       tags:
         - AdminService

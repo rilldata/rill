@@ -11,7 +11,7 @@ export type AdminServiceSearchUsersParams = {
 };
 
 export type AdminServiceRequestRepresentativeAuthTokenParams = {
-  ttl?: number;
+  ttl?: string;
 };
 
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
