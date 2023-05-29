@@ -140,19 +140,48 @@ export function isGrainBigger(
   );
 }
 
-//TODO: Simplify use of this method
 export function checkValidTimeGrain(
   timeGrain: V1TimeGrain,
-  timeGrainOptions: TimeGrainOption[],
+  timeGrainOptions: TimeGrain[],
   minTimeGrain: V1TimeGrain
 ): boolean {
-  const timeGrainOption = timeGrainOptions.find(
-    (timeGrainOption) => timeGrainOption.grain === timeGrain
-  );
+  if (!timeGrainOptions.find((t) => t.grain === timeGrain)) return false;
 
-  if (minTimeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED)
-    return timeGrainOption?.enabled;
+  // If minTimeGrain is not specified, then all available timeGrains are valid
+  if (minTimeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) return true;
 
   const isGrainPossible = !isGrainBigger(minTimeGrain, timeGrain);
-  return timeGrainOption?.enabled && isGrainPossible;
+  return isGrainPossible;
+}
+
+export function findValidTimeGrain(
+  timeGrain: V1TimeGrain,
+  timeGrainOptions: TimeGrain[],
+  minTimeGrain: V1TimeGrain
+): V1TimeGrain {
+  const timeGrains = Object.values(TIME_GRAIN).map(
+    (timeGrain) => timeGrain.grain
+  );
+
+  const defaultIndex = timeGrains.indexOf(timeGrain);
+
+  // Loop through the timeGrains starting from the default value
+  for (let i = defaultIndex; i < timeGrains.length; i++) {
+    const currentGrain = timeGrains[i];
+
+    if (checkValidTimeGrain(currentGrain, timeGrainOptions, minTimeGrain)) {
+      return currentGrain;
+    }
+  }
+  // If no valid timeGrain is found, loop from the beginning of the array
+  for (let i = 0; i < defaultIndex; i++) {
+    const currentGrain = timeGrains[i];
+
+    if (checkValidTimeGrain(currentGrain, timeGrainOptions, minTimeGrain)) {
+      return currentGrain;
+    }
+  }
+
+  // If no valid timeGrain is found, return the default timeGrain as fallback
+  return timeGrain;
 }
