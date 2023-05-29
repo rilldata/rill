@@ -161,6 +161,16 @@ export type QueryServiceColumnCardinalityParams = {
   priority?: number;
 };
 
+export type RuntimeServiceUnpackExampleBody = {
+  name?: string;
+  force?: boolean;
+};
+
+export type RuntimeServiceUnpackEmptyBody = {
+  title?: string;
+  force?: boolean;
+};
+
 export type RuntimeServiceRenameFileBody = {
   fromPath?: string;
   toPath?: string;
@@ -219,6 +229,14 @@ export type RuntimeServiceListInstancesParams = {
   pageToken?: string;
 };
 
+export interface V1UnpackExampleResponse {
+  [key: string]: any;
+}
+
+export interface V1UnpackEmptyResponse {
+  [key: string]: any;
+}
+
 export type V1TypeCode = (typeof V1TypeCode)[keyof typeof V1TypeCode];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
@@ -273,16 +291,9 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
-  timeRange?: V1TimeSeriesTimeRange;
   sampleSize?: number;
 }
 
@@ -311,6 +322,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_MONTH: "TIME_GRAIN_MONTH",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -358,16 +375,6 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
-export interface V1RenameFileAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
 export interface V1RenameFileAndReconcileRequest {
   instanceId?: string;
   fromPath?: string;
@@ -375,6 +382,16 @@ export interface V1RenameFileAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
   strict?: boolean;
+}
+
+export interface V1RefreshAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export interface V1RefreshAndReconcileRequest {
@@ -424,7 +441,7 @@ Only applicable if file_path is set. */
   endLocation?: ReconcileErrorCharLocation;
 }
 
-export interface V1RefreshAndReconcileResponse {
+export interface V1RenameFileAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
   errors?: V1ReconcileError[];
@@ -645,6 +662,10 @@ export interface V1ListFilesResponse {
   paths?: string[];
 }
 
+export interface V1ListExamplesResponse {
+  examples?: V1Example[];
+}
+
 export interface V1ListConnectorsResponse {
   connectors?: V1Connector[];
 }
@@ -707,6 +728,12 @@ export interface V1GetFileResponse {
 
 export interface V1GetCatalogEntryResponse {
   entry?: V1CatalogEntry;
+}
+
+export interface V1Example {
+  name?: string;
+  title?: string;
+  description?: string;
 }
 
 export interface V1EditInstanceResponse {

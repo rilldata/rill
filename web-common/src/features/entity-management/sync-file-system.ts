@@ -119,7 +119,7 @@ function isPathToAsset(path: string) {
 }
 
 export function addReconcilingOverlay(pagePath: string) {
-  if (pagePath === "/") return;
+  if (!isPathToAsset(pagePath)) return;
 
   const filePath = getFilePathFromPagePath(pagePath);
   const isFileReconcilingStore = getIsFileReconcilingStore(filePath);

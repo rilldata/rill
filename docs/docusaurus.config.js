@@ -71,7 +71,7 @@ const config = {
         debug: false // Set debug to true if you want to inspect the modal        
       },
       metadata: [
-        { 
+        {
           property: 'og:image', content: 'https://images.ctfassets.net/ve6smfzbifwz/5MvW4kOHMbGBIIAI7hWe65/a9418adf8f96ee0d3a3ca1341f368e67/Rill_Data.png'
         },
         {
@@ -151,7 +151,7 @@ const config = {
         darkTheme: darkCodeTheme,
       },
     }),
-  
+
   plugins: [
     [
       require.resolve('docusaurus-gtm-plugin'),
@@ -164,17 +164,23 @@ const config = {
       {
         redirects: [
           {
-            to: '/connectors/s3',
+            to: '/deploy/credentials/s3',
             from: '/reference/connectors/s3',
           },
           {
-            to: '/connectors/gcs',
+            to: '/deploy/credentials/gcs',
             from: '/reference/connectors/gcs',
           },
         ],
       },
     ],
-  ]
+  ],
+
+  // Configure Mermaid for diagrams
+  themes: ['@docusaurus/theme-mermaid'],
+  markdown: {
+    mermaid: true,
+  },
 };
 
 module.exports = config;

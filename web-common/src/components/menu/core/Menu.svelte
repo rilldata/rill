@@ -27,6 +27,7 @@
   export let role = "menu";
   /** used for selector-style menus */
   export let multiselectable = false;
+  export let label: string | undefined = undefined;
 
   if (dark) {
     setContext("rill:menu:dark", dark);
@@ -154,6 +155,7 @@
     : 'bg-white dark:bg-gray-700 border-[.5px] border-gray-300 dark:border-none shadow-lg dark:shadow-xl'}
         "
   style:outline="none"
+  aria-label={label}
   {...ariaProperties}
 >
   <slot />

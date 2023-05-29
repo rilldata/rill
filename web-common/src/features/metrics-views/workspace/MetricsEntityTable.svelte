@@ -13,6 +13,7 @@
   export let addButtonId;
   export let label;
   export let resizeCallback;
+  export let addLabel;
 
   let sectionHeaderContainer;
   let sectionHeaderContainerHeight;
@@ -30,7 +31,12 @@
       {label}
     </h4>
     <div class="align-middle pl-5">
-      <ContextButton id={addButtonId} {tooltipText} on:click={addEntityHandler}>
+      <ContextButton
+        id={addButtonId}
+        label={addLabel}
+        {tooltipText}
+        on:click={addEntityHandler}
+      >
         <AddIcon />
       </ContextButton>
     </div>
@@ -39,6 +45,7 @@
     <EditableTable
       {rows}
       {columnNames}
+      {label}
       on:change={updateEntityHandler}
       on:delete={deleteEntityHandler}
       on:tableResize={(evt) =>

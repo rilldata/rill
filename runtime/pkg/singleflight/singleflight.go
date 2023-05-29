@@ -44,34 +44,34 @@ func newPanicError(v interface{}) error {
 }
 
 // call is an in-flight or completed singleflight.Do call
-type call struct {
+type call[V any] struct {
 	ctx     context.Context
 	cancel  context.CancelFunc
 	counter uint
-	val     interface{}
+	val     V
 	err     error
 }
 
 // Group represents a class of work and forms a namespace in
 // which units of work can be executed with duplicate suppression.
-type Group struct {
-	mu sync.Mutex       // protects m
-	m  map[string]*call // lazily initialized
+type Group[K comparable, V any] struct {
+	mu sync.Mutex     // protects m
+	m  map[K]*call[V] // lazily initialized
 }
 
 // Do executes and returns the results of the given function, making
 // sure that only one execution is in-flight for a given key at a
 // time. If a duplicate comes in, the duplicate caller waits for the
 // original to complete and receives the same results.
-func (g *Group) Do(ctx context.Context, key string, fn func(context.Context) (any, error)) (any, error) {
+func (g *Group[K, V]) Do(ctx context.Context, key K, fn func(context.Context) (V, error)) (V, error) {
 	g.mu.Lock()
 	if g.m == nil {
-		g.m = make(map[string]*call)
+		g.m = make(map[K]*call[V])
 	}
 	c, ok := g.m[key]
 	if !ok {
 		cctx, cancel := withCancelAndContextValues(ctx)
-		c = &call{
+		c = &call[V]{
 			ctx:    cctx,
 			cancel: cancel,
 		}
@@ -97,7 +97,8 @@ func (g *Group) Do(ctx context.Context, key string, fn func(context.Context) (an
 	g.mu.Unlock()
 
 	if ctx.Err() != nil {
-		return nil, ctx.Err()
+		var empty V
+		return empty, ctx.Err()
 	}
 
 	pErr := &panicError{}
@@ -110,7 +111,7 @@ func (g *Group) Do(ctx context.Context, key string, fn func(context.Context) (an
 }
 
 // doCall handles the single call for a key.
-func (g *Group) doCall(c *call, key string, fn func(ctx context.Context) (interface{}, error)) {
+func (g *Group[K, V]) doCall(c *call[V], key K, fn func(ctx context.Context) (V, error)) {
 	normalReturn := false
 	recovered := false
 

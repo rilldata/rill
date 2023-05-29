@@ -1,12 +1,3 @@
-.PHONY: docs.generate
-docs.generate:
-	# Temporarily replaces ~/.rill/config.yaml to avoid including user-defined defaults in generated docs.
-	# Sets version to the latest tag to simulate a production build, where certain commands are hidden.
-	rm -rf docs/docs/reference/cli
-	if [ -f ~/.rill/config.yaml ]; then mv ~/.rill/config.yaml ~/.rill/config.yaml.tmp; fi;
-	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate docs/docs/reference/cli/
-	if [ -f ~/.rill/config.yaml.tmp ]; then mv ~/.rill/config.yaml.tmp ~/.rill/config.yaml; fi;
-
 .PHONY: cli
 cli: cli.prepare
 	go build -o rill cli/main.go 
@@ -18,9 +9,29 @@ cli.prepare:
 	rm -rf cli/pkg/web/embed/dist || true
 	mkdir -p cli/pkg/web/embed/dist
 	cp -r web-local/build/* cli/pkg/web/embed/dist
-	rm -rf cli/pkg/examples/embed/dist || true
-	mkdir -p cli/pkg/examples/embed/dist
-	cp -r examples/* cli/pkg/examples/embed/dist/
+	rm -rf runtime/pkg/examples/embed/dist || true
+	mkdir -p runtime/pkg/examples/embed/dist
+	git clone --quiet https://github.com/rilldata/rill-examples.git runtime/pkg/examples/embed/dist
+	rm -rf runtime/pkg/examples/embed/dist/.git
+
+.PHONY: coverage.go
+coverage.go:
+	rm -rf coverage/go.out
+	mkdir -p coverage
+	# Run tests with coverage output. First builds the list of packages to include in coverage, excluding generated code in 'proto/gen'.
+	set -e ; \
+		PACKAGES=$$(go list ./... | grep -v 'proto/gen/' | tr '\n' ',' | sed -e 's/,$$//' | sed -e 's/github.com\/rilldata\/rill/./g') ;\
+		go test ./... -short -v -coverprofile ./coverage/go.out -coverpkg $$PACKAGES
+	go tool cover -func coverage/go.out
+
+.PHONY: docs.generate
+docs.generate:
+	# Temporarily replaces ~/.rill/config.yaml to avoid including user-defined defaults in generated docs.
+	# Sets version to the latest tag to simulate a production build, where certain commands are hidden.
+	rm -rf docs/docs/reference/cli
+	if [ -f ~/.rill/config.yaml ]; then mv ~/.rill/config.yaml ~/.rill/config.yaml.tmp; fi;
+	go run -ldflags="-X main.Version=$(shell git describe --tags `git rev-list --tags --max-count=1`)" ./cli docs generate docs/docs/reference/cli/
+	if [ -f ~/.rill/config.yaml.tmp ]; then mv ~/.rill/config.yaml.tmp ~/.rill/config.yaml; fi;
 
 .PHONY: proto.generate
 proto.generate:
