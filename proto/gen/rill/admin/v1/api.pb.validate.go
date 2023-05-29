@@ -2804,6 +2804,10 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 
 	// no validation rules for GithubUrl
 
+	// no validation rules for ProdSlots
+
+	// no validation rules for Region
+
 	if len(errors) > 0 {
 		return UpdateProjectRequestMultiError(errors)
 	}

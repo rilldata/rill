@@ -127,6 +127,7 @@
     class:bg-gray-200={active}
     class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 items-baseline"
     on:click={toggleFloatingElement}
+    aria-label="Select time range"
   >
     <div class="flex flew-row gap-x-3">
       <div class="font-bold flex flex-row items-center gap-x-3">
@@ -160,6 +161,7 @@
     on:click-outside={() => onClickOutside(toggleFloatingElement)}
     on:escape={toggleFloatingElement}
     slot="floating-element"
+    label="Time range selector"
   >
     {@const allTime = {
       name: TimeRangePreset.ALL_TIME,

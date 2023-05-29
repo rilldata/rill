@@ -28,6 +28,8 @@ export type AdminServiceUpdateProjectBody = {
   public?: boolean;
   prodBranch?: string;
   githubUrl?: string;
+  prodSlots?: string;
+  region?: string;
 };
 
 export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };

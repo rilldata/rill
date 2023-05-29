@@ -42,7 +42,7 @@ func init() {
 // GetAll loads all values from ~/.rill/{filename}.
 // It assumes filename identifies a YAML file.
 func GetAll(filename string) (map[string]string, error) {
-	filename, err := resolveFilename(filename, false)
+	filename, err := ResolveFilename(filename, false)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func Set(filename, key, value string) error {
 	}
 	conf[key] = value
 
-	filename, err = resolveFilename(filename, true)
+	filename, err = ResolveFilename(filename, true)
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ type oldAnalyticsConfig struct {
 // We are deprecating it to centralize user-facing config in config.yaml and to prevent confusion around the local.json file.
 // It has been replaced with a config key ("analytics_enabled") and an install ID stored separately in ~/.rill/state.yaml.
 func migrateOldAnalyticsConfig() error {
-	filename, err := resolveFilename("local.json", false)
+	filename, err := ResolveFilename("local.json", false)
 	if err != nil {
 		return err
 	}
@@ -271,9 +271,9 @@ func migrateOldAnalyticsConfig() error {
 	return nil
 }
 
-// resolveFilename resolves a file name to a full path to ~/.rill.
+// ResolveFilename resolves a file name to a full path to ~/.rill.
 // If mkdir is true, it will create the .rill directory if it doesn't exist.
-func resolveFilename(name string, mkdir bool) (string, error) {
+func ResolveFilename(name string, mkdir bool) (string, error) {
 	if homeDir == "" {
 		return "", fmt.Errorf("home directory not found")
 	}

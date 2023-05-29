@@ -4,17 +4,18 @@
   import EyeInvisible from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
   import Eye from "@rilldata/web-common/components/icons/Eye.svelte";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
+  import { validateEmail } from "./utils";
 
   const dispatch = createEventDispatcher();
 
   export let isLoginPage = false;
+  export let disabled = false;
 
   let email = "";
   let password = "";
 
   let showForm = false;
   let showPassword = false;
-  let hasError = false;
   let errorText = "";
 
   let inputClasses =
@@ -27,13 +28,6 @@
   function onPassInput(e: any) {
     password = e.target.value;
   }
-  function validateEmail(email: string) {
-    const emailRegex =
-      //eslint-disable-next-line
-      /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-
-    return emailRegex.test(email);
-  }
 
   function handleSubmit() {
     if (!showForm) {
@@ -42,18 +36,16 @@
     }
 
     if (!email || !password) {
-      hasError = true;
       errorText = "Please enter your email and password";
       return;
     }
 
     if (!validateEmail(email)) {
-      hasError = true;
       errorText = "Please enter a valid email address";
       return;
     }
 
-    hasError = false;
+    errorText = "";
 
     dispatch("submit", {
       email,
@@ -62,6 +54,12 @@
   }
 
   function handleForgotPass() {
+    if (!validateEmail(email)) {
+      errorText = "Please enter a valid email address";
+      return;
+    }
+
+    errorText = "";
     dispatch("resetPass", {
       email,
     });
@@ -80,7 +78,7 @@
         bind:value={email}
       />
 
-      {#if hasError}
+      {#if errorText}
         <div class="text-red-500 text-sm -mt-2">
           {errorText}
         </div>
@@ -121,7 +119,7 @@
     {/if}
   {/if}
 
-  <CtaButton variant="secondary" on:click={() => handleSubmit()}>
+  <CtaButton {disabled} variant="secondary" on:click={() => handleSubmit()}>
     <div class="flex justify-center font-medium w-[400px]">
       <div>Continue with Email</div>
     </div>
