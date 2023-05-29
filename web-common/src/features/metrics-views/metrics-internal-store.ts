@@ -5,6 +5,7 @@ import type {
   V1Model,
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
+import { dim } from "ansi-colors";
 import { Subscriber, readable } from "svelte/store";
 import { Document, ParsedNode, YAMLMap, parseDocument } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
@@ -35,6 +36,7 @@ export interface DimensionEntity {
   name?: string;
   label?: string;
   property?: string;
+  column?: string;
   description?: string;
   __ERROR__?: string;
 }
@@ -83,10 +85,9 @@ export class MetricsInternalRepresentation {
         ?.items as YAMLMap[],
       MeasureNamePrefix
     );
-    this.fillNames(
+    this.fixDimensions(
       (internalRepresentationDoc.get("dimensions") as Collection)
-        ?.items as YAMLMap[],
-      DimensionNamePrefix
+        ?.items as YAMLMap[]
     );
 
     this.internalRepresentationDocument = internalRepresentationDoc;
@@ -226,7 +227,7 @@ export class MetricsInternalRepresentation {
     const dimensionNode = this.internalRepresentationDocument.createNode({
       name: newName,
       label: "",
-      property: "",
+      column: "",
       description: "",
     });
 
@@ -245,6 +246,22 @@ export class MetricsInternalRepresentation {
   deleteDimension(index: number) {
     this.internalRepresentationDocument.deleteIn(["dimensions", index]);
     this.regenerateInternalYAML();
+  }
+
+  fixDimensions(dimensions: Array<YAMLMap>) {
+    this.fillNames(dimensions, DimensionNamePrefix);
+
+    for (const dimension of dimensions) {
+      const property = dimension.get("property");
+      if (property) {
+        dimension.delete("property");
+      }
+
+      const column = dimension.get("column");
+      if (!column) {
+        dimension.set("column", property);
+      }
+    }
   }
 
   fillNames(entities: Array<YAMLMap>, namePrefix: string) {
@@ -341,7 +358,7 @@ export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
       return {
         name: field.name,
         label: capitalize(field.name),
-        property: field.name,
+        column: field.name,
         description: "",
       };
     });
