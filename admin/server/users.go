@@ -112,6 +112,37 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 	}, nil
 }
 
+// RequestRepresentativeAuthToken returns the temporary auth token for representing email
+func (s *Server) RequestRepresentativeAuthToken(ctx context.Context, req *adminv1.RequestRepresentativeAuthTokenRequest) (*adminv1.RequestRepresentativeAuthTokenResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if claims == nil {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated")
+	}
+
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can search users by email")
+	}
+
+	// Error if authenticated as anything other than a user
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, fmt.Errorf("not authenticated as a user")
+	}
+
+	u, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	tokenID, err := s.admin.IssueUserAuthToken(ctx, claims.OwnerID(), database.AuthClientIDRillSupport, u.DisplayName, u.ID, int(req.Ttl))
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.RequestRepresentativeAuthTokenResponse{
+		TokenId: tokenID.Token().String(),
+	}, nil
+}
+
 // RevokeCurrentAuthToken revokes the current auth token
 func (s *Server) RevokeCurrentAuthToken(ctx context.Context, req *adminv1.RevokeCurrentAuthTokenRequest) (*adminv1.RevokeCurrentAuthTokenResponse, error) {
 	claims := auth.GetClaims(ctx)

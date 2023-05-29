@@ -55,6 +55,18 @@ func Logout(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
+	// Set original token backup as empty
+	err = dotrill.BackupOriginalToken("")
+	if err != nil {
+		return err
+	}
+
+	// Set email for representing user as empty
+	err = dotrill.SetRepresentingUserEmail("")
+	if err != nil {
+		return err
+	}
+
 	// Clear the state during logout
 	err = dotrill.SetDefaultOrg("")
 	if err != nil {

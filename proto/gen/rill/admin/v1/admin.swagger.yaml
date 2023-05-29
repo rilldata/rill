@@ -878,6 +878,31 @@ paths:
             $ref: '#/definitions/v1SetSuperuserRequest'
       tags:
         - AdminService
+  /v1/tokens/{email}:
+    get:
+      summary: RequestRepresentativeAuthToken returns the temporary token for given email
+      operationId: AdminService_RequestRepresentativeAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RequestRepresentativeAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: email
+          in: path
+          required: true
+          type: string
+        - name: ttl
+          in: query
+          required: false
+          type: integer
+          format: int64
+      tags:
+        - AdminService
   /v1/tokens/current:
     delete:
       summary: RevokeCurrentAuthToken revoke the current auth token
@@ -1262,6 +1287,11 @@ definitions:
     type: object
   v1RemoveProjectMemberResponse:
     type: object
+  v1RequestRepresentativeAuthTokenResponse:
+    type: object
+    properties:
+      tokenId:
+        type: string
   v1RevokeCurrentAuthTokenResponse:
     type: object
     properties:

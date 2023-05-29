@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/authtoken"
 )
+
+const defaultTokenExpirationTTL = 365 * 24 * time.Hour
 
 // AuthToken is the interface package admin uses to provide a consolidated view of a token string and its DB model.
 type AuthToken interface {
@@ -26,19 +29,30 @@ func (t *userAuthToken) Token() *authtoken.Token {
 }
 
 func (t *userAuthToken) OwnerID() string {
+	if t.model.UserID != t.model.RepresentingUserID {
+		return t.model.RepresentingUserID
+	}
+
 	return t.model.UserID
 }
 
 // IssueUserAuthToken generates and persists a new auth token for a user.
-func (s *Service) IssueUserAuthToken(ctx context.Context, userID, clientID, displayName string) (AuthToken, error) {
+func (s *Service) IssueUserAuthToken(ctx context.Context, userID, clientID, displayName, representingUserID string, expirationTTLMinutes int) (AuthToken, error) {
 	tkn := authtoken.NewRandom(authtoken.TypeUser)
 
+	expirationTS := time.Now().Add(defaultTokenExpirationTTL)
+	if expirationTTLMinutes > 0 {
+		expirationTS = time.Now().Add(time.Duration(expirationTTLMinutes) * time.Minute)
+	}
+
 	uat, err := s.DB.InsertUserAuthToken(ctx, &database.InsertUserAuthTokenOptions{
-		ID:           tkn.ID.String(),
-		SecretHash:   tkn.SecretHash(),
-		UserID:       userID,
-		AuthClientID: &clientID,
-		DisplayName:  displayName,
+		ID:                 tkn.ID.String(),
+		SecretHash:         tkn.SecretHash(),
+		UserID:             userID,
+		AuthClientID:       &clientID,
+		DisplayName:        displayName,
+		RepresentingUserID: representingUserID,
+		ExpirationTS:       expirationTS,
 	})
 	if err != nil {
 		return nil, err
@@ -59,6 +73,10 @@ func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToke
 		uat, err := s.DB.FindUserAuthToken(ctx, parsed.ID.String())
 		if err != nil {
 			return nil, err
+		}
+
+		if uat.RepresentingUserID != uat.UserID && uat.ExpirationTS.Before(time.Now()) {
+			return nil, fmt.Errorf("auth token is expired")
 		}
 
 		if !bytes.Equal(uat.SecretHash, parsed.SecretHash()) {

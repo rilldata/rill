@@ -19,41 +19,42 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AdminService_Ping_FullMethodName                        = "/rill.admin.v1.AdminService/Ping"
-	AdminService_ListOrganizations_FullMethodName           = "/rill.admin.v1.AdminService/ListOrganizations"
-	AdminService_GetOrganization_FullMethodName             = "/rill.admin.v1.AdminService/GetOrganization"
-	AdminService_CreateOrganization_FullMethodName          = "/rill.admin.v1.AdminService/CreateOrganization"
-	AdminService_DeleteOrganization_FullMethodName          = "/rill.admin.v1.AdminService/DeleteOrganization"
-	AdminService_UpdateOrganization_FullMethodName          = "/rill.admin.v1.AdminService/UpdateOrganization"
-	AdminService_ListProjectsForOrganization_FullMethodName = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
-	AdminService_GetProject_FullMethodName                  = "/rill.admin.v1.AdminService/GetProject"
-	AdminService_GetProjectVariables_FullMethodName         = "/rill.admin.v1.AdminService/GetProjectVariables"
-	AdminService_CreateProject_FullMethodName               = "/rill.admin.v1.AdminService/CreateProject"
-	AdminService_DeleteProject_FullMethodName               = "/rill.admin.v1.AdminService/DeleteProject"
-	AdminService_UpdateProject_FullMethodName               = "/rill.admin.v1.AdminService/UpdateProject"
-	AdminService_UpdateProjectVariables_FullMethodName      = "/rill.admin.v1.AdminService/UpdateProjectVariables"
-	AdminService_TriggerReconcile_FullMethodName            = "/rill.admin.v1.AdminService/TriggerReconcile"
-	AdminService_TriggerRefreshSources_FullMethodName       = "/rill.admin.v1.AdminService/TriggerRefreshSources"
-	AdminService_TriggerRedeploy_FullMethodName             = "/rill.admin.v1.AdminService/TriggerRedeploy"
-	AdminService_ListOrganizationMembers_FullMethodName     = "/rill.admin.v1.AdminService/ListOrganizationMembers"
-	AdminService_ListOrganizationInvites_FullMethodName     = "/rill.admin.v1.AdminService/ListOrganizationInvites"
-	AdminService_AddOrganizationMember_FullMethodName       = "/rill.admin.v1.AdminService/AddOrganizationMember"
-	AdminService_RemoveOrganizationMember_FullMethodName    = "/rill.admin.v1.AdminService/RemoveOrganizationMember"
-	AdminService_LeaveOrganization_FullMethodName           = "/rill.admin.v1.AdminService/LeaveOrganization"
-	AdminService_SetOrganizationMemberRole_FullMethodName   = "/rill.admin.v1.AdminService/SetOrganizationMemberRole"
-	AdminService_ListProjectMembers_FullMethodName          = "/rill.admin.v1.AdminService/ListProjectMembers"
-	AdminService_ListProjectInvites_FullMethodName          = "/rill.admin.v1.AdminService/ListProjectInvites"
-	AdminService_AddProjectMember_FullMethodName            = "/rill.admin.v1.AdminService/AddProjectMember"
-	AdminService_RemoveProjectMember_FullMethodName         = "/rill.admin.v1.AdminService/RemoveProjectMember"
-	AdminService_SetProjectMemberRole_FullMethodName        = "/rill.admin.v1.AdminService/SetProjectMemberRole"
-	AdminService_GetCurrentUser_FullMethodName              = "/rill.admin.v1.AdminService/GetCurrentUser"
-	AdminService_RevokeCurrentAuthToken_FullMethodName      = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
-	AdminService_GetGithubRepoStatus_FullMethodName         = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
-	AdminService_CreateAutoinviteDomain_FullMethodName      = "/rill.admin.v1.AdminService/CreateAutoinviteDomain"
-	AdminService_RemoveAutoinviteDomain_FullMethodName      = "/rill.admin.v1.AdminService/RemoveAutoinviteDomain"
-	AdminService_SearchUsers_FullMethodName                 = "/rill.admin.v1.AdminService/SearchUsers"
-	AdminService_ListSuperusers_FullMethodName              = "/rill.admin.v1.AdminService/ListSuperusers"
-	AdminService_SetSuperuser_FullMethodName                = "/rill.admin.v1.AdminService/SetSuperuser"
+	AdminService_Ping_FullMethodName                           = "/rill.admin.v1.AdminService/Ping"
+	AdminService_ListOrganizations_FullMethodName              = "/rill.admin.v1.AdminService/ListOrganizations"
+	AdminService_GetOrganization_FullMethodName                = "/rill.admin.v1.AdminService/GetOrganization"
+	AdminService_CreateOrganization_FullMethodName             = "/rill.admin.v1.AdminService/CreateOrganization"
+	AdminService_DeleteOrganization_FullMethodName             = "/rill.admin.v1.AdminService/DeleteOrganization"
+	AdminService_UpdateOrganization_FullMethodName             = "/rill.admin.v1.AdminService/UpdateOrganization"
+	AdminService_ListProjectsForOrganization_FullMethodName    = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
+	AdminService_GetProject_FullMethodName                     = "/rill.admin.v1.AdminService/GetProject"
+	AdminService_GetProjectVariables_FullMethodName            = "/rill.admin.v1.AdminService/GetProjectVariables"
+	AdminService_CreateProject_FullMethodName                  = "/rill.admin.v1.AdminService/CreateProject"
+	AdminService_DeleteProject_FullMethodName                  = "/rill.admin.v1.AdminService/DeleteProject"
+	AdminService_UpdateProject_FullMethodName                  = "/rill.admin.v1.AdminService/UpdateProject"
+	AdminService_UpdateProjectVariables_FullMethodName         = "/rill.admin.v1.AdminService/UpdateProjectVariables"
+	AdminService_TriggerReconcile_FullMethodName               = "/rill.admin.v1.AdminService/TriggerReconcile"
+	AdminService_TriggerRefreshSources_FullMethodName          = "/rill.admin.v1.AdminService/TriggerRefreshSources"
+	AdminService_TriggerRedeploy_FullMethodName                = "/rill.admin.v1.AdminService/TriggerRedeploy"
+	AdminService_ListOrganizationMembers_FullMethodName        = "/rill.admin.v1.AdminService/ListOrganizationMembers"
+	AdminService_ListOrganizationInvites_FullMethodName        = "/rill.admin.v1.AdminService/ListOrganizationInvites"
+	AdminService_AddOrganizationMember_FullMethodName          = "/rill.admin.v1.AdminService/AddOrganizationMember"
+	AdminService_RemoveOrganizationMember_FullMethodName       = "/rill.admin.v1.AdminService/RemoveOrganizationMember"
+	AdminService_LeaveOrganization_FullMethodName              = "/rill.admin.v1.AdminService/LeaveOrganization"
+	AdminService_SetOrganizationMemberRole_FullMethodName      = "/rill.admin.v1.AdminService/SetOrganizationMemberRole"
+	AdminService_ListProjectMembers_FullMethodName             = "/rill.admin.v1.AdminService/ListProjectMembers"
+	AdminService_ListProjectInvites_FullMethodName             = "/rill.admin.v1.AdminService/ListProjectInvites"
+	AdminService_AddProjectMember_FullMethodName               = "/rill.admin.v1.AdminService/AddProjectMember"
+	AdminService_RemoveProjectMember_FullMethodName            = "/rill.admin.v1.AdminService/RemoveProjectMember"
+	AdminService_SetProjectMemberRole_FullMethodName           = "/rill.admin.v1.AdminService/SetProjectMemberRole"
+	AdminService_GetCurrentUser_FullMethodName                 = "/rill.admin.v1.AdminService/GetCurrentUser"
+	AdminService_RequestRepresentativeAuthToken_FullMethodName = "/rill.admin.v1.AdminService/RequestRepresentativeAuthToken"
+	AdminService_RevokeCurrentAuthToken_FullMethodName         = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
+	AdminService_GetGithubRepoStatus_FullMethodName            = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
+	AdminService_CreateAutoinviteDomain_FullMethodName         = "/rill.admin.v1.AdminService/CreateAutoinviteDomain"
+	AdminService_RemoveAutoinviteDomain_FullMethodName         = "/rill.admin.v1.AdminService/RemoveAutoinviteDomain"
+	AdminService_SearchUsers_FullMethodName                    = "/rill.admin.v1.AdminService/SearchUsers"
+	AdminService_ListSuperusers_FullMethodName                 = "/rill.admin.v1.AdminService/ListSuperusers"
+	AdminService_SetSuperuser_FullMethodName                   = "/rill.admin.v1.AdminService/SetSuperuser"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -116,6 +117,8 @@ type AdminServiceClient interface {
 	SetProjectMemberRole(ctx context.Context, in *SetProjectMemberRoleRequest, opts ...grpc.CallOption) (*SetProjectMemberRoleResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
+	// RequestRepresentativeAuthToken returns the temporary token for given email
+	RequestRepresentativeAuthToken(ctx context.Context, in *RequestRepresentativeAuthTokenRequest, opts ...grpc.CallOption) (*RequestRepresentativeAuthTokenResponse, error)
 	// RevokeCurrentAuthToken revoke the current auth token
 	RevokeCurrentAuthToken(ctx context.Context, in *RevokeCurrentAuthTokenRequest, opts ...grpc.CallOption) (*RevokeCurrentAuthTokenResponse, error)
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
@@ -393,6 +396,15 @@ func (c *adminServiceClient) GetCurrentUser(ctx context.Context, in *GetCurrentU
 	return out, nil
 }
 
+func (c *adminServiceClient) RequestRepresentativeAuthToken(ctx context.Context, in *RequestRepresentativeAuthTokenRequest, opts ...grpc.CallOption) (*RequestRepresentativeAuthTokenResponse, error) {
+	out := new(RequestRepresentativeAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_RequestRepresentativeAuthToken_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) RevokeCurrentAuthToken(ctx context.Context, in *RevokeCurrentAuthTokenRequest, opts ...grpc.CallOption) (*RevokeCurrentAuthTokenResponse, error) {
 	out := new(RevokeCurrentAuthTokenResponse)
 	err := c.cc.Invoke(ctx, AdminService_RevokeCurrentAuthToken_FullMethodName, in, out, opts...)
@@ -516,6 +528,8 @@ type AdminServiceServer interface {
 	SetProjectMemberRole(context.Context, *SetProjectMemberRoleRequest) (*SetProjectMemberRoleResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
+	// RequestRepresentativeAuthToken returns the temporary token for given email
+	RequestRepresentativeAuthToken(context.Context, *RequestRepresentativeAuthTokenRequest) (*RequestRepresentativeAuthTokenResponse, error)
 	// RevokeCurrentAuthToken revoke the current auth token
 	RevokeCurrentAuthToken(context.Context, *RevokeCurrentAuthTokenRequest) (*RevokeCurrentAuthTokenResponse, error)
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
@@ -621,6 +635,9 @@ func (UnimplementedAdminServiceServer) SetProjectMemberRole(context.Context, *Se
 }
 func (UnimplementedAdminServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
+}
+func (UnimplementedAdminServiceServer) RequestRepresentativeAuthToken(context.Context, *RequestRepresentativeAuthTokenRequest) (*RequestRepresentativeAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestRepresentativeAuthToken not implemented")
 }
 func (UnimplementedAdminServiceServer) RevokeCurrentAuthToken(context.Context, *RevokeCurrentAuthTokenRequest) (*RevokeCurrentAuthTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RevokeCurrentAuthToken not implemented")
@@ -1160,6 +1177,24 @@ func _AdminService_GetCurrentUser_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_RequestRepresentativeAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestRepresentativeAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RequestRepresentativeAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RequestRepresentativeAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RequestRepresentativeAuthToken(ctx, req.(*RequestRepresentativeAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_RevokeCurrentAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RevokeCurrentAuthTokenRequest)
 	if err := dec(in); err != nil {
@@ -1404,6 +1439,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCurrentUser",
 			Handler:    _AdminService_GetCurrentUser_Handler,
+		},
+		{
+			MethodName: "RequestRepresentativeAuthToken",
+			Handler:    _AdminService_RequestRepresentativeAuthToken_Handler,
 		},
 		{
 			MethodName: "RevokeCurrentAuthToken",

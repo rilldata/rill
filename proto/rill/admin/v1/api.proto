@@ -184,6 +184,11 @@ service AdminService {
     };
   }
 
+  // RequestRepresentativeAuthToken returns the temporary token for given email
+  rpc RequestRepresentativeAuthToken(RequestRepresentativeAuthTokenRequest) returns (RequestRepresentativeAuthTokenResponse) {
+    option (google.api.http) = {get: "/v1/tokens/{email}"};
+  }
+
   // RevokeCurrentAuthToken revoke the current auth token
   rpc RevokeCurrentAuthToken(RevokeCurrentAuthTokenRequest) returns (RevokeCurrentAuthTokenResponse) {
     option (google.api.http) = {delete: "/v1/tokens/current"};
@@ -520,6 +525,15 @@ message SearchUsersResponse {
 message RevokeCurrentAuthTokenRequest {}
 
 message RevokeCurrentAuthTokenResponse {
+  string token_id = 1;
+}
+
+message RequestRepresentativeAuthTokenRequest {
+  string email = 1 [(validate.rules).string.email = true];
+  uint32 ttl = 2;
+}
+
+message RequestRepresentativeAuthTokenResponse {
   string token_id = 1;
 }
 

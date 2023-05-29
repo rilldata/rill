@@ -66,6 +66,8 @@ import type {
   V1ListSuperusersResponse,
   V1SetSuperuserResponse,
   V1SetSuperuserRequest,
+  V1RequestRepresentativeAuthTokenResponse,
+  AdminServiceRequestRepresentativeAuthTokenParams,
   V1RevokeCurrentAuthTokenResponse,
   V1GetCurrentUserResponse,
   V1SearchUsersResponse,
@@ -1926,6 +1928,75 @@ export const createAdminServiceSetSuperuser = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary RequestRepresentativeAuthToken returns the temporary token for given email
+ */
+export const adminServiceRequestRepresentativeAuthToken = (
+  email: string,
+  params?: AdminServiceRequestRepresentativeAuthTokenParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1RequestRepresentativeAuthTokenResponse>({
+    url: `/v1/tokens/${email}`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceRequestRepresentativeAuthTokenQueryKey = (
+  email: string,
+  params?: AdminServiceRequestRepresentativeAuthTokenParams
+) => [`/v1/tokens/${email}`, ...(params ? [params] : [])] as const;
+
+export type AdminServiceRequestRepresentativeAuthTokenQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRequestRepresentativeAuthToken>>
+>;
+export type AdminServiceRequestRepresentativeAuthTokenQueryError = RpcStatus;
+
+export const createAdminServiceRequestRepresentativeAuthToken = <
+  TData = Awaited<
+    ReturnType<typeof adminServiceRequestRepresentativeAuthToken>
+  >,
+  TError = RpcStatus
+>(
+  email: string,
+  params?: AdminServiceRequestRepresentativeAuthTokenParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceRequestRepresentativeAuthToken>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceRequestRepresentativeAuthTokenQueryKey(email, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceRequestRepresentativeAuthToken>>
+  > = ({ signal }) =>
+    adminServiceRequestRepresentativeAuthToken(email, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceRequestRepresentativeAuthToken>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!email,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary RevokeCurrentAuthToken revoke the current auth token
  */

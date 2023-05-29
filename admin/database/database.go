@@ -351,21 +351,25 @@ type InsertUsergroupOptions struct {
 
 // UserAuthToken is a persistent API token for a user.
 type UserAuthToken struct {
-	ID           string
-	SecretHash   []byte    `db:"secret_hash"`
-	UserID       string    `db:"user_id"`
-	DisplayName  string    `db:"display_name"`
-	AuthClientID *string   `db:"auth_client_id"`
-	CreatedOn    time.Time `db:"created_on"`
+	ID                 string
+	SecretHash         []byte    `db:"secret_hash"`
+	UserID             string    `db:"user_id"`
+	DisplayName        string    `db:"display_name"`
+	AuthClientID       *string   `db:"auth_client_id"`
+	RepresentingUserID string    `db:"representing_user_id"`
+	ExpirationTS       time.Time `db:"expiration_ts"`
+	CreatedOn          time.Time `db:"created_on"`
 }
 
 // InsertUserAuthTokenOptions defines options for creating a UserAuthToken.
 type InsertUserAuthTokenOptions struct {
-	ID           string
-	SecretHash   []byte
-	UserID       string
-	DisplayName  string
-	AuthClientID *string
+	ID                 string
+	SecretHash         []byte
+	UserID             string
+	DisplayName        string
+	AuthClientID       *string
+	RepresentingUserID string
+	ExpirationTS       time.Time
 }
 
 // AuthClient is a client that requests and consumes auth tokens.
@@ -378,8 +382,9 @@ type AuthClient struct {
 
 // Hard-coded auth client IDs (created in the migrations).
 const (
-	AuthClientIDRillWeb = "12345678-0000-0000-0000-000000000001"
-	AuthClientIDRillCLI = "12345678-0000-0000-0000-000000000002"
+	AuthClientIDRillWeb     = "12345678-0000-0000-0000-000000000001"
+	AuthClientIDRillCLI     = "12345678-0000-0000-0000-000000000002"
+	AuthClientIDRillSupport = "12345678-0000-0000-0000-000000000003"
 )
 
 // DeviceAuthCodeState is an enum representing the approval state of a DeviceAuthCode

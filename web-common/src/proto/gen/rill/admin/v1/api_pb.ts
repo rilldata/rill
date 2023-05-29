@@ -2733,6 +2733,86 @@ export class RevokeCurrentAuthTokenResponse extends Message<RevokeCurrentAuthTok
 }
 
 /**
+ * @generated from message rill.admin.v1.RequestRepresentativeAuthTokenRequest
+ */
+export class RequestRepresentativeAuthTokenRequest extends Message<RequestRepresentativeAuthTokenRequest> {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email = "";
+
+  /**
+   * @generated from field: uint32 ttl = 2;
+   */
+  ttl = 0;
+
+  constructor(data?: PartialMessage<RequestRepresentativeAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RequestRepresentativeAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "ttl", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RequestRepresentativeAuthTokenRequest {
+    return new RequestRepresentativeAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RequestRepresentativeAuthTokenRequest {
+    return new RequestRepresentativeAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RequestRepresentativeAuthTokenRequest {
+    return new RequestRepresentativeAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RequestRepresentativeAuthTokenRequest | PlainMessage<RequestRepresentativeAuthTokenRequest> | undefined, b: RequestRepresentativeAuthTokenRequest | PlainMessage<RequestRepresentativeAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(RequestRepresentativeAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RequestRepresentativeAuthTokenResponse
+ */
+export class RequestRepresentativeAuthTokenResponse extends Message<RequestRepresentativeAuthTokenResponse> {
+  /**
+   * @generated from field: string token_id = 1;
+   */
+  tokenId = "";
+
+  constructor(data?: PartialMessage<RequestRepresentativeAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RequestRepresentativeAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "token_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RequestRepresentativeAuthTokenResponse {
+    return new RequestRepresentativeAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RequestRepresentativeAuthTokenResponse {
+    return new RequestRepresentativeAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RequestRepresentativeAuthTokenResponse {
+    return new RequestRepresentativeAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RequestRepresentativeAuthTokenResponse | PlainMessage<RequestRepresentativeAuthTokenResponse> | undefined, b: RequestRepresentativeAuthTokenResponse | PlainMessage<RequestRepresentativeAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(RequestRepresentativeAuthTokenResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetGithubRepoStatusRequest
  */
 export class GetGithubRepoStatusRequest extends Message<GetGithubRepoStatusRequest> {

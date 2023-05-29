@@ -167,7 +167,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	}
 
 	// Issue a new persistent auth token
-	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session")
+	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", user.ID, 0)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return

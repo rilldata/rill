@@ -564,9 +564,9 @@ func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.Ins
 
 	res := &database.UserAuthToken{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id)
-		VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID,
+		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id, representing_user_id, expiration_ts)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID, opts.RepresentingUserID, opts.ExpirationTS,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("auth token", err)

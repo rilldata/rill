@@ -26,6 +26,8 @@ const (
 	AnalyticsEnabledConfigKey = "analytics_enabled"
 	AccessTokenCredentialsKey = "token"
 	InstallIDStateKey         = "install_id"
+	RepresentingUserEmailKey  = "representing"
+	BackupOriginalTokenKey    = "original_token"
 	VersionKey                = "latest_version"
 	VersionUpdatedAtKey       = "latest_version_checked_at"
 )
@@ -127,6 +129,26 @@ func GetAccessToken() (string, error) {
 // SetToken saves an auth token
 func SetAccessToken(token string) error {
 	return Set(CredentialsFilename, AccessTokenCredentialsKey, token)
+}
+
+// GetBackupOriginalToken loads the original auth token
+func GetBackupOriginalToken() (string, error) {
+	return Get(CredentialsFilename, BackupOriginalTokenKey)
+}
+
+// SetBackupOriginalToken saves original auth token
+func BackupOriginalToken(token string) error {
+	return Set(CredentialsFilename, BackupOriginalTokenKey, token)
+}
+
+// GetRepresentingUserEmail loads the current representing user email
+func GetRepresentingUserEmail() (string, error) {
+	return Get(CredentialsFilename, RepresentingUserEmailKey)
+}
+
+// SetRepresentingUserEmail saves representing user email
+func SetRepresentingUserEmail(email string) error {
+	return Set(CredentialsFilename, RepresentingUserEmailKey, email)
 }
 
 func SetVersion(version string) error {

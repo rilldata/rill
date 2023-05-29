@@ -10,6 +10,10 @@ export type AdminServiceSearchUsersParams = {
   pageToken?: string;
 };
 
+export type AdminServiceRequestRepresentativeAuthTokenParams = {
+  ttl?: number;
+};
+
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
   [key: string]: string;
 };
@@ -171,6 +175,10 @@ export interface V1SearchUsersResponse {
 }
 
 export interface V1RevokeCurrentAuthTokenResponse {
+  tokenId?: string;
+}
+
+export interface V1RequestRepresentativeAuthTokenResponse {
   tokenId?: string;
 }
 
