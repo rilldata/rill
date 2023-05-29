@@ -119,17 +119,24 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	var cancelFunc context.CancelFunc
 	if stmt.ExecutionTimeout != 0 {
 		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
-		_ = cancelFunc
 	}
 
 	rows, err := conn.QueryxContext(ctx, stmt.Query, stmt.Args...)
 	if err != nil {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+
 		_ = release()
 		return nil, err
 	}
 
 	schema, err := rowsToSchema(rows)
 	if err != nil {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+
 		_ = rows.Close()
 		_ = release()
 		return nil, err
@@ -140,11 +147,9 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		if cancelFunc != nil {
 			cancelFunc()
 		}
-		if release != nil {
-			return release()
-		}
-		return nil
-	}) // Will call release when res.Close() is called.
+
+		return release()
+	})
 
 	return res, nil
 }

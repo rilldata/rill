@@ -46,16 +46,23 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	var cancelFunc context.CancelFunc
 	if stmt.ExecutionTimeout != 0 {
 		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
-		_ = cancelFunc
 	}
 
 	rows, err := c.db.QueryxContext(ctx, stmt.Query, stmt.Args...)
 	if err != nil {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+
 		return nil, err
 	}
 
 	schema, err := rowsToSchema(rows)
 	if err != nil {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+
 		return nil, err
 	}
 
@@ -64,6 +71,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		if cancelFunc != nil {
 			cancelFunc()
 		}
+
 		return nil
 	})
 
