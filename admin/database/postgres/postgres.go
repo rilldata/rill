@@ -539,7 +539,7 @@ func (c *connection) DeleteUsergroupMember(ctx context.Context, groupID, userID 
 	return checkDeleteRow("usergroup member", res, err)
 }
 
-// Should we pass expiredTS here instead of checking with `current_timestamp`
+// Should we pass expiredTS here instead of checking with `current_timestamp`?
 func (c *connection) FindExpiredAuthTokens(ctx context.Context) ([]*database.UserAuthToken, error) {
 	var res []*database.UserAuthToken
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT t.* FROM user_auth_tokens t WHERE t.expiration_ts < current_timestamp")
