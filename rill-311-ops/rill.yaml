@@ -1,4 +1,0 @@
-compiler: rill-beta
-rill_version: 0.25.2
-name: Rill 311 Example
-description: Open Data initiatives across US cities have created increased transparency in the activities of city programs – however it is still difficult to explore the operational data that these cities are collecting because it is locked up in csv files on websites and the datasets can't be readily transformed across citys for comparison. This dashboard pulls together San Francisco, Berkeley, San Jose, Austin and Boston's 311 call center logs to understand city operations.
