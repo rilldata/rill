@@ -10,6 +10,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/goccy/go-json"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -27,6 +28,8 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+const defaultPageSize = 20
 
 func init() {
 	connectors.Register("gcs", Connector{})
@@ -197,34 +200,34 @@ func (c Connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, 
 	return bucketObj.IsAccessible(ctx)
 }
 
-func createClient(ctx context.Context, env *connectors.Env) (*gcp.HTTPClient, error) {
-	creds, err := resolvedCredentials(ctx, env)
-	if err != nil {
-		if !errors.Is(err, errNoCredentials) {
-			return nil, err
-		}
-
-		// no credentials set, we try with a anonymous client in case user is trying to access public buckets
-		return gcp.NewAnonymousHTTPClient(gcp.DefaultTransport()), nil
-	}
-	// the token source returned from credentials works for all kind of credentials like serviceAccountKey, credentialsKey etc.
-	return gcp.NewHTTPClient(gcp.DefaultTransport(), gcp.CredentialsTokenSource(creds))
-}
-
-func (c Connector) ListBuckets(ctx context.Context, req *runtimev1.GCSListBucketsRequest) ([]string, string, error) {
-	credentials, err := google.FindDefaultCredentials(ctx)
+func (c Connector) ListBuckets(ctx context.Context, req *runtimev1.GCSListBucketsRequest, env *connectors.Env) ([]string, string, error) {
+	credentials, err := resolvedCredentials(ctx, env)
 	if err != nil {
 		return nil, "", err
 	}
 
-	client, err := storage.NewClient(ctx, option.WithTokenSource(credentials.TokenSource))
+	client, err := storage.NewClient(ctx, option.WithCredentials(credentials))
 	if err != nil {
 		return nil, "", err
 	}
 	defer client.Close()
 
-	pager := iterator.NewPager(client.Buckets(ctx, credentials.ProjectID), int(req.GetPageSize()), req.GetPageToken())
-	buckets := make([]storage.BucketAttrs, 0)
+	projectID := credentials.ProjectID
+	if projectID == "" {
+		f := &credentialsFile{}
+		if err := json.Unmarshal(credentials.JSON, f); err != nil {
+			return nil, "", err
+		}
+
+		projectID = f.GetProjectID()
+	}
+
+	pageSize := int(req.GetPageSize())
+	if pageSize == 0 {
+		pageSize = defaultPageSize
+	}
+	pager := iterator.NewPager(client.Buckets(ctx, projectID), pageSize, req.GetPageToken())
+	buckets := make([]*storage.BucketAttrs, 0)
 	next, err := pager.NextPage(&buckets)
 	if err != nil {
 		return nil, "", err
@@ -237,10 +240,8 @@ func (c Connector) ListBuckets(ctx context.Context, req *runtimev1.GCSListBucket
 	return names, next, nil
 }
 
-func (c Connector) ListObjects(ctx context.Context, req *runtimev1.GCSListObjectsRequest) ([]*runtimev1.GCSObject, string, error) {
-	client, err := createClient(ctx, &connectors.Env{
-		AllowHostAccess: true,
-	})
+func (c Connector) ListObjects(ctx context.Context, req *runtimev1.GCSListObjectsRequest, env *connectors.Env) ([]*runtimev1.GCSObject, string, error) {
+	client, err := createClient(ctx, env)
 	if err != nil {
 		return nil, "", err
 	}
@@ -251,6 +252,11 @@ func (c Connector) ListObjects(ctx context.Context, req *runtimev1.GCSListObject
 	}
 	defer bucket.Close()
 
+	pageSize := int(req.GetPageSize())
+	if pageSize == 0 {
+		pageSize = defaultPageSize
+	}
+
 	var pageToken []byte
 	if req.GetPageToken() == "" {
 		pageToken = blob.FirstPageToken
@@ -258,7 +264,7 @@ func (c Connector) ListObjects(ctx context.Context, req *runtimev1.GCSListObject
 		pageToken = []byte(req.GetPageToken())
 	}
 
-	objects, nextToken, err := bucket.ListPage(ctx, pageToken, int(req.GetPageSize()), &blob.ListOptions{
+	objects, nextToken, err := bucket.ListPage(ctx, pageToken, pageSize, &blob.ListOptions{
 		Prefix:    req.Prefix,
 		Delimiter: req.Delimitter,
 		BeforeList: func(as func(interface{}) bool) error {
@@ -288,6 +294,20 @@ func (c Connector) ListObjects(ctx context.Context, req *runtimev1.GCSListObject
 	return gcsObjects, string(nextToken), nil
 }
 
+func createClient(ctx context.Context, env *connectors.Env) (*gcp.HTTPClient, error) {
+	creds, err := resolvedCredentials(ctx, env)
+	if err != nil {
+		if !errors.Is(err, errNoCredentials) {
+			return nil, err
+		}
+
+		// no credentials set, we try with a anonymous client in case user is trying to access public buckets
+		return gcp.NewAnonymousHTTPClient(gcp.DefaultTransport()), nil
+	}
+	// the token source returned from credentials works for all kind of credentials like serviceAccountKey, credentialsKey etc.
+	return gcp.NewHTTPClient(gcp.DefaultTransport(), gcp.CredentialsTokenSource(creds))
+}
+
 func resolvedCredentials(ctx context.Context, env *connectors.Env) (*google.Credentials, error) {
 	if secretJSON := env.Variables["GOOGLE_APPLICATION_CREDENTIALS"]; secretJSON != "" {
 		// GOOGLE_APPLICATION_CREDENTIALS is set, use credentials from json string provided by user
@@ -307,4 +327,28 @@ func resolvedCredentials(ctx context.Context, env *connectors.Env) (*google.Cred
 		return creds, nil
 	}
 	return nil, errNoCredentials
+}
+
+// credentialsFile is the unmarshalled representation of a credentials file.
+type credentialsFile struct {
+	Type string `json:"type"`
+
+	// Service Account fields
+	ProjectID string `json:"project_id"`
+
+	// External Account fields
+	QuotaProjectID string `json:"quota_project_id"`
+
+	// Service account impersonation
+	SourceCredentials *credentialsFile `json:"source_credentials"`
+}
+
+func (c *credentialsFile) GetProjectID() string {
+	if c.Type == "impersonated_service_account" {
+		return c.SourceCredentials.GetProjectID()
+	}
+	if c.ProjectID != "" {
+		return c.ProjectID
+	}
+	return c.QuotaProjectID
 }

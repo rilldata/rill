@@ -64,7 +64,7 @@ func (s *Server) S3ListBuckets(ctx context.Context, req *runtimev1.S3ListBuckets
 	}
 
 	s3Conn := connector.(s3.Connector)
-	buckets, err := s3Conn.ListBuckets(ctx)
+	buckets, err := s3Conn.ListBuckets(ctx, &connectors.Env{AllowHostAccess: s.runtime.AllowHostAccess()})
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (s *Server) S3ListObjects(ctx context.Context, req *runtimev1.S3ListObjects
 	}
 
 	s3Conn := connector.(s3.Connector)
-	objects, nextToken, err := s3Conn.ListObjects(ctx, req)
+	objects, nextToken, err := s3Conn.ListObjects(ctx, req, &connectors.Env{AllowHostAccess: s.runtime.AllowHostAccess()})
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (s *Server) S3GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBu
 	}
 
 	s3Conn := connector.(s3.Connector)
-	region, err := s3Conn.GetBucketMetadata(ctx, req)
+	region, err := s3Conn.GetBucketMetadata(ctx, req, &connectors.Env{AllowHostAccess: s.runtime.AllowHostAccess()})
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (s *Server) GCSListBuckets(ctx context.Context, req *runtimev1.GCSListBucke
 	}
 
 	gcsConn := connector.(gcs.Connector)
-	buckets, next, err := gcsConn.ListBuckets(ctx, req)
+	buckets, next, err := gcsConn.ListBuckets(ctx, req, &connectors.Env{AllowHostAccess: s.runtime.AllowHostAccess()})
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (s *Server) GCSListObjects(ctx context.Context, req *runtimev1.GCSListObjec
 	}
 
 	gcsConn := connector.(gcs.Connector)
-	objects, nextToken, err := gcsConn.ListObjects(ctx, req)
+	objects, nextToken, err := gcsConn.ListObjects(ctx, req, &connectors.Env{AllowHostAccess: s.runtime.AllowHostAccess()})
 	if err != nil {
 		return nil, err
 	}

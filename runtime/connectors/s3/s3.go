@@ -25,10 +25,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var defaultCredProviders = []credentials.Provider{
-	&credentials.EnvProvider{},
-	&credentials.SharedCredentialsProvider{Filename: "", Profile: ""},
-}
+const defaultPageSize = 20
 
 func init() {
 	connectors.Register("s3", Connector{})
@@ -203,15 +200,30 @@ func (c Connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, 
 	return bucketObj.IsAccessible(ctx)
 }
 
-func (c Connector) ListBuckets(ctx context.Context) ([]string, error) {
-	creds := credentials.NewChainCredentials(defaultCredProviders)
-	sess, err := session.NewSession(&aws.Config{
-		Credentials: creds,
+func (c Connector) ListBuckets(ctx context.Context, env *connectors.Env) ([]string, error) {
+	creds, err := getCredentials(env)
+	if err != nil {
+		return nil, err
+	}
+	if creds == credentials.AnonymousCredentials {
+		return nil, fmt.Errorf("no credentials exist")
+	}
+
+	// Create a session that tries to infer the region from the environment
+	sess, err := session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable, // Tells to look for default region set with `aws configure`
+		Config: aws.Config{
+			Credentials: creds,
+		},
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	// no region found, default to us-east-1
+	if sess.Config.Region == nil || *sess.Config.Region == "" {
+		sess = sess.Copy(&aws.Config{Region: aws.String("us-east-1")})
+	}
 	svc := s3.New(sess)
 	output, err := svc.ListBuckets(&s3.ListBucketsInput{})
 	if err != nil {
@@ -227,16 +239,14 @@ func (c Connector) ListBuckets(ctx context.Context) ([]string, error) {
 	return buckets, nil
 }
 
-func (c Connector) ListObjects(ctx context.Context, req *runtimev1.S3ListObjectsRequest) ([]*runtimev1.S3Object, string, error) {
-	creds := credentials.NewChainCredentials(defaultCredProviders)
-	sess, err := session.NewSession(&aws.Config{
-		Credentials: creds,
-	})
+func (c Connector) ListObjects(ctx context.Context, req *runtimev1.S3ListObjectsRequest, env *connectors.Env) ([]*runtimev1.S3Object, string, error) {
+	// todo :: check for cases when accessing public buckets but env configured
+	creds, err := getCredentials(env)
 	if err != nil {
 		return nil, "", err
 	}
 
-	bucket, err := s3blob.OpenBucket(ctx, sess, req.Bucket, &s3blob.Options{})
+	bucket, err := openBucket(ctx, &Config{AWSRegion: req.Region}, req.Bucket, creds)
 	if err != nil {
 		return nil, "", err
 	}
@@ -249,7 +259,11 @@ func (c Connector) ListObjects(ctx context.Context, req *runtimev1.S3ListObjects
 		pageToken = []byte(req.GetPageToken())
 	}
 
-	objects, nextToken, err := bucket.ListPage(ctx, pageToken, int(req.GetPageSize()), &blob.ListOptions{
+	pageSize := int(req.GetPageSize())
+	if pageSize == 0 {
+		pageSize = defaultPageSize
+	}
+	objects, nextToken, err := bucket.ListPage(ctx, pageToken, pageSize, &blob.ListOptions{
 		Prefix:    req.Prefix,
 		Delimiter: req.Delimitter,
 		BeforeList: func(as func(interface{}) bool) error {
@@ -279,17 +293,21 @@ func (c Connector) ListObjects(ctx context.Context, req *runtimev1.S3ListObjects
 	return s3Objects, string(nextToken), nil
 }
 
-func (c Connector) GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBucketMetadataRequest) (string, error) {
-	creds := credentials.NewChainCredentials(defaultCredProviders)
-	sess, err := session.NewSession(&aws.Config{
-		Credentials: creds,
-		Region:      aws.String("us-east-1"),
-	})
+func (c Connector) GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBucketMetadataRequest, env *connectors.Env) (string, error) {
+	creds, err := getCredentials(env)
 	if err != nil {
 		return "", err
 	}
 
-	return s3manager.GetBucketRegion(ctx, sess, req.GetBucket(), "")
+	sess, err := getAwsSessionConfig(ctx, &Config{}, req.GetBucket(), creds)
+	if err != nil {
+		return "", err
+	}
+
+	if sess.Config.Region != nil {
+		return *sess.Config.Region, nil
+	}
+	return "", fmt.Errorf("unable to get region")
 }
 
 func openBucket(ctx context.Context, conf *Config, bucket string, creds *credentials.Credentials) (*blob.Bucket, error) {
