@@ -162,6 +162,12 @@ const findValidTimeGrainTests = [
     expected: V1TimeGrain.TIME_GRAIN_WEEK,
   },
   {
+    test: "findValidTimeGrain returns a valid time grain when there is no minTimeGrain",
+    timeGrain: V1TimeGrain.TIME_GRAIN_HOUR,
+    minTimeGrain: undefined,
+    expected: V1TimeGrain.TIME_GRAIN_DAY,
+  },
+  {
     test: "findValidTimeGrain returns the default time grain as fallback",
     timeGrain: V1TimeGrain.TIME_GRAIN_WEEK,
     minTimeGrain: V1TimeGrain.TIME_GRAIN_HOUR,
