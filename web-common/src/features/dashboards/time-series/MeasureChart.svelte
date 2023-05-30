@@ -194,7 +194,7 @@
         value={roundedValue}
         let:point
       >
-        {#if inBounds(internalXMin, internalXMax, point[xAccessor])}
+        {#if point && inBounds(internalXMin, internalXMax, point[xAccessor])}
           <g transition:fly|local={{ duration: 100, x: -4 }}>
             <text
               class="fill-gray-600"

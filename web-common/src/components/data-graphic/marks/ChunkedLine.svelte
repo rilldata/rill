@@ -56,7 +56,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   let lineFunction;
   let areaFunction;
 
-  $: curveType = data?.length < 10 ? "curveStepExtended" : "curveLinear";
+  const curveType = "curveLinear";
 
   // FIXME:
   $: if ($xScale && $yScale) {
