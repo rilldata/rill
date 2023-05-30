@@ -16,7 +16,7 @@ export const initDimensionColumns = (inputChangeHandler, dimensionOptions) =>
     },
 
     {
-      name: "property",
+      name: "column",
       label: "Dimension column",
       ariaLabel: "Dimension column",
       headerTooltip:
