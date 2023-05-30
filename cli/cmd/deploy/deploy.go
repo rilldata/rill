@@ -275,11 +275,9 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			// Success!
 			success.Printf("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", cfg.Org, res.Project.Name)
-			// Run flow to check connector credentials
-			if err := variablesFlow(ctx, fullProjectPath, name); err != nil {
-				return err
-			}
 			success.Printf("Rill projects deploy continuously when you push changes to Github.\n")
+			// Run flow to check connector credentials
+			variablesFlow(ctx, fullProjectPath, name)
 			if res.Project.FrontendUrl != "" {
 				success.Printf("Your project can be accessed at: %s\n", res.Project.FrontendUrl)
 				// TODO :: add a doc link here
@@ -475,10 +473,11 @@ func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adm
 	return res, err
 }
 
-func variablesFlow(ctx context.Context, projectPath, projectName string) error {
+func variablesFlow(ctx context.Context, projectPath, projectName string) {
 	connectorList, err := rillv1beta.ExtractConnectors(ctx, projectPath)
 	if err != nil {
-		return fmt.Errorf("failed to extract connectors %w", err)
+		fmt.Printf("failed to extract connectors %s", err)
+		return
 	}
 
 	// collect all sources
@@ -489,23 +488,21 @@ func variablesFlow(ctx context.Context, projectPath, projectName string) error {
 		}
 	}
 	if len(srcs) == 0 {
-		return nil
+		return
 	}
 
-	fmt.Printf("Rill does not have access to the following data sources:\n\n")
+	warn := color.New(color.Bold).Add(color.FgYellow)
+	warn.Printf("\nCould not ingest all sources. Rill requires credentials for the following sources:\n\n")
 	for _, src := range srcs {
 		if _, ok := src.Properties["path"]; ok {
 			// print URL wherever applicable
-			fmt.Printf(" - %s\n", src.Properties["path"])
+			warn.Printf(" - %s\n", src.Properties["path"])
 		} else {
-			fmt.Printf(" - %s\n", src.Name)
+			warn.Printf(" - %s\n", src.Name)
 		}
 	}
-	fmt.Printf("\nRun `rill env configure --project %s` to provide access to the data store.\n", projectName)
-	warn := color.New(color.Bold).Add(color.FgYellow)
-	warn.Printf("The project will remain in an error state until this is done.\n\n")
+	warn.Printf("\nRun `rill env configure --project %s` to provide credentials.\n\n", projectName)
 	time.Sleep(2 * time.Second)
-	return nil
 }
 
 func repoInSyncFlow(projectPath, branch, remoteName string) bool {
