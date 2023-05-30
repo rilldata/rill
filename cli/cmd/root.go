@@ -128,6 +128,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.AddCommand(runtime.RuntimeCmd(cfg))
 	rootCmd.AddCommand(docs.DocsCmd(cfg, rootCmd))
 	rootCmd.AddCommand(completionCmd)
+	rootCmd.AddCommand(verifyInstallCmd(cfg))
 	rootCmd.AddCommand(versioncmd.VersionCmd())
 
 	// Add sub-commands for admin

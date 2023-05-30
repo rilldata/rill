@@ -170,9 +170,15 @@
       start: new Date(start),
       end: new Date(end),
     };
+
+    const defaultTimeGrain = getDefaultTimeGrain(
+      baseTimeRange.start,
+      baseTimeRange.end
+    ).grain;
+
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
-      $dashboardStore.selectedTimeRange?.interval,
+      defaultTimeGrain,
       // reset the comparison range
       {}
     );
@@ -211,7 +217,7 @@
     const { name, start, end } = timeRange;
 
     // validate time range name + time grain combination
-    // (necessary because when the time range name is changed, the current time grain may not be valid for the new time range name)
+    // (necessary because when the time range name is changed, the default time grain may not be valid for the new time range name)
     timeGrainOptions = getTimeGrainOptions(start, end);
     const isValidTimeGrain = checkValidTimeGrain(
       timeGrain,

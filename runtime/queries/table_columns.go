@@ -59,8 +59,9 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 		// views return duplicate column names, so we need to create a temporary table
 		temporaryTableName := tempName("profile_columns_")
 		err = olap.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM "%s" LIMIT 1)`, temporaryTableName, q.TableName),
-			Priority: priority,
+			Query:            fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM "%s" LIMIT 1)`, temporaryTableName, q.TableName),
+			Priority:         priority,
+			ExecutionTimeout: defaultExecutionTimeout,
 		})
 		if err != nil {
 			return err
@@ -68,8 +69,9 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 		defer func() {
 			// NOTE: Using ensuredCtx
 			_ = olap.Exec(ensuredCtx, &drivers.Statement{
-				Query:    `DROP TABLE "` + temporaryTableName + `"`,
-				Priority: priority,
+				Query:            `DROP TABLE "` + temporaryTableName + `"`,
+				Priority:         priority,
+				ExecutionTimeout: defaultExecutionTimeout,
 			})
 		}()
 
@@ -78,7 +80,8 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 				SELECT column_name AS name, data_type AS type
 				FROM information_schema.columns
 				WHERE table_catalog = 'temp' AND table_name = '%s'`, temporaryTableName),
-			Priority: priority,
+			Priority:         priority,
+			ExecutionTimeout: defaultExecutionTimeout,
 		})
 		if err != nil {
 			return err
