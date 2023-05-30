@@ -17,12 +17,9 @@
   } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { uploadTableFiles } from "./file-upload";
-  import {
-    EntityTypeToScreenMap,
-    MetricsEventSpace,
-  } from "../../../metrics/service/MetricsTypes";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
-  import { appStore } from "../../../layout/app-store";
+  import { appScreen } from "../../../layout/app-store";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
 
   export let showDropOverlay: boolean;
@@ -78,7 +75,7 @@
         if (createSourceMutationError.isError || errors.length) {
           sourceErrorTelemetryHandler(
             MetricsEventSpace.Workspace,
-            EntityTypeToScreenMap[$appStore.activeEntity?.type],
+            $appScreen,
             createSourceMutationError?.message ?? errors[0]?.message,
             SourceConnectionType.Local,
             filePath
@@ -86,7 +83,7 @@
         } else {
           sourceSuccessTelemetryHandler(
             MetricsEventSpace.Workspace,
-            EntityTypeToScreenMap[$appStore.activeEntity?.type],
+            $appScreen,
             BehaviourEventMedium.Drag,
             SourceConnectionType.Local,
             filePath

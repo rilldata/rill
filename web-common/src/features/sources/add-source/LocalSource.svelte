@@ -7,7 +7,7 @@
     uploadTableFiles,
   } from "@rilldata/web-common/features/sources/add-source/file-upload";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import { appStore } from "@rilldata/web-common/layout/app-store";
+  import { appScreen, appStore } from "@rilldata/web-common/layout/app-store";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
@@ -30,10 +30,7 @@
   } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { hasDuckDBUnicodeError, niceDuckdbUnicodeError } from "./errors";
-  import {
-    EntityTypeToScreenMap,
-    MetricsEventSpace,
-  } from "../../../metrics/service/MetricsTypes";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
 
@@ -121,7 +118,7 @@
       if ($createSourceMutation.isError || errors.length) {
         sourceErrorTelemetryHandler(
           MetricsEventSpace.Modal,
-          EntityTypeToScreenMap[$appStore.activeEntity?.type],
+          $appScreen,
           createSourceMutationError?.message ?? errors[0]?.message,
           SourceConnectionType.Local,
           filePath
@@ -129,7 +126,7 @@
       } else {
         sourceSuccessTelemetryHandler(
           MetricsEventSpace.Modal,
-          EntityTypeToScreenMap[$appStore.activeEntity?.type],
+          $appScreen,
           BehaviourEventMedium.Button,
           SourceConnectionType.Local,
           filePath

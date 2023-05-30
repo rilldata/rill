@@ -14,11 +14,8 @@
     BehaviourEventAction,
     BehaviourEventMedium,
   } from "../../../metrics/service/BehaviourEventTypes";
-  import {
-    EntityTypeToScreenMap,
-    MetricsEventSpace,
-  } from "../../../metrics/service/MetricsTypes";
-  import { appStore } from "../../../layout/app-store";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import { appScreen } from "../../../layout/app-store";
 
   const dispatch = createEventDispatcher();
 
@@ -46,7 +43,7 @@
     behaviourEvent.fireSourceTriggerEvent(
       BehaviourEventAction.SourceCancel,
       BehaviourEventMedium.Button,
-      EntityTypeToScreenMap[$appStore.activeEntity?.type],
+      $appScreen,
       MetricsEventSpace.Modal
     );
     dispatch("close");

@@ -6,7 +6,7 @@
   import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import { appStore } from "@rilldata/web-common/layout/app-store";
+  import { appScreen, appStore } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     ConnectorProperty,
@@ -32,10 +32,7 @@
     sourceErrorTelemetryHandler,
     sourceSuccessTelemetryHandler,
   } from "../sourceUtils";
-  import {
-    EntityTypeToScreenMap,
-    MetricsEventSpace,
-  } from "../../../metrics/service/MetricsTypes";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { createSource } from "./createSource";
   import { humanReadableErrorMessage } from "./errors";
   import {
@@ -96,7 +93,7 @@
         behaviourEvent.fireSourceTriggerEvent(
           BehaviourEventAction.SourceAdd,
           BehaviourEventMedium.Button,
-          EntityTypeToScreenMap[$appStore.activeEntity?.type],
+          $appScreen,
           MetricsEventSpace.Modal
         );
 
@@ -148,7 +145,7 @@
           if ($createSourceMutation.isError || error) {
             sourceErrorTelemetryHandler(
               MetricsEventSpace.Modal,
-              EntityTypeToScreenMap[$appStore.activeEntity?.type],
+              $appScreen,
               createSourceMutationError?.message ?? error?.message,
               connectorToSourceConnectionType[connector.name],
               formValues?.uri
@@ -156,7 +153,7 @@
           } else {
             sourceSuccessTelemetryHandler(
               MetricsEventSpace.Modal,
-              EntityTypeToScreenMap[$appStore.activeEntity?.type],
+              $appScreen,
               BehaviourEventMedium.Button,
               connectorToSourceConnectionType[connector.name],
               formValues?.uri

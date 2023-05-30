@@ -29,11 +29,8 @@
     BehaviourEventAction,
     BehaviourEventMedium,
   } from "../../../metrics/service/BehaviourEventTypes";
-  import { appStore } from "../../../layout/app-store";
-  import {
-    EntityTypeToScreenMap,
-    MetricsEventSpace,
-  } from "../../../metrics/service/MetricsTypes";
+  import { appScreen } from "../../../layout/app-store";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
 
   $: sourceNames = useSourceNames($runtime.instanceId);
   $: modelNames = useModelNames($runtime.instanceId);
@@ -55,7 +52,7 @@
     behaviourEvent.fireSourceTriggerEvent(
       BehaviourEventAction.SourceAdd,
       BehaviourEventMedium.Button,
-      EntityTypeToScreenMap[$appStore.activeEntity?.type],
+      $appScreen,
       MetricsEventSpace.LeftPanel
     );
   };
