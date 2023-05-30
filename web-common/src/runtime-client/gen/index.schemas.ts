@@ -4,16 +4,18 @@
  * rill/runtime/v1/schema.proto
  * OpenAPI spec version: version not set
  */
-export type ConnectorServiceListS3BucketsParams = {
+export type ConnectorServiceS3ListBucketsParams = {
   pageSize?: number;
   pageToken?: string;
 };
 
-export type ConnectorServiceListS3BucketObjectsParams = {
+export type ConnectorServiceS3ListObjectsParams = {
   pageSize?: number;
   pageToken?: string;
+  region?: string;
   prefix?: string;
-  startOffset?: string;
+  startAfter?: string;
+  delimitter?: string;
 };
 
 export type RuntimeServiceReconcileBody = {
@@ -241,16 +243,18 @@ export type RuntimeServiceListInstancesParams = {
   pageToken?: string;
 };
 
-export type ConnectorServiceListGCSBucketsParams = {
+export type ConnectorServiceGCSListBucketsParams = {
   pageSize?: number;
   pageToken?: string;
 };
 
-export type ConnectorServiceListGCSBucketObjectsParams = {
+export type ConnectorServiceGCSListObjectsParams = {
   pageSize?: number;
   pageToken?: string;
   prefix?: string;
   startOffset?: string;
+  endOffset?: string;
+  delimitter?: string;
 };
 
 export interface V1UnpackExampleResponse {
@@ -402,8 +406,32 @@ export interface V1S3Object {
   isDir?: boolean;
 }
 
+export interface V1S3ListObjectsResponse {
+  nextPageToken?: string;
+  objects?: V1S3Object[];
+}
+
+export interface V1S3ListBucketsResponse {
+  nextPageToken?: string;
+  buckets?: string[];
+}
+
+export interface V1S3GetBucketMetadataResponse {
+  region?: string;
+}
+
 export interface V1RenameFileResponse {
   [key: string]: any;
+}
+
+export interface V1RenameFileAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export interface V1RenameFileAndReconcileRequest {
@@ -470,16 +498,6 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: ReconcileErrorCharLocation;
   endLocation?: ReconcileErrorCharLocation;
-}
-
-export interface V1RenameFileAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
 }
 
 export interface V1ReconcileResponse {
@@ -598,6 +616,11 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
+export interface V1MetricsViewTimeSeriesResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1TimeSeriesValue[];
+}
+
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
@@ -656,11 +679,6 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
-export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1TimeSeriesValue[];
-}
-
 export interface V1MetricsViewRowsResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewRowsResponseDataItem[];
@@ -684,24 +702,9 @@ export interface V1MapType {
   valueType?: Runtimev1Type;
 }
 
-export interface V1ListS3BucketsResponse {
+export interface V1ListInstancesResponse {
+  instances?: V1Instance[];
   nextPageToken?: string;
-  bucketName?: string[];
-}
-
-export interface V1ListS3BucketObjectsResponse {
-  nextPageToken?: string;
-  objects?: V1S3Object[];
-}
-
-export interface V1ListGCSBucketsResponse {
-  nextPageToken?: string;
-  bucketName?: string[];
-}
-
-export interface V1ListGCSBucketObjectsResponse {
-  nextPageToken?: string;
-  objects?: V1GCSObject[];
 }
 
 export interface V1ListFilesResponse {
@@ -748,11 +751,6 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
   ingestionLimitBytes?: string;
 }
 
-export interface V1ListInstancesResponse {
-  instances?: V1Instance[];
-  nextPageToken?: string;
-}
-
 export interface V1InlineMeasure {
   name?: string;
   expression?: string;
@@ -786,6 +784,16 @@ export interface V1GCSObject {
   modifiedOn?: string;
   size?: string;
   isDir?: boolean;
+}
+
+export interface V1GCSListObjectsResponse {
+  nextPageToken?: string;
+  objects?: V1GCSObject[];
+}
+
+export interface V1GCSListBucketsResponse {
+  nextPageToken?: string;
+  buckets?: string[];
 }
 
 export interface V1Example {

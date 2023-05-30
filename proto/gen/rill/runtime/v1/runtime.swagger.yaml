@@ -64,20 +64,20 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
-  /v1/gcs/bucket/{bucketName}/objects:
+  /v1/gcs/bucket/{bucket}/objects:
     get:
-      operationId: ConnectorService_ListGCSBucketObjects
+      operationId: ConnectorService_GCSListObjects
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListGCSBucketObjectsResponse'
+            $ref: '#/definitions/v1GCSListObjectsResponse'
         default:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: bucketName
+        - name: bucket
           in: path
           required: true
           type: string
@@ -98,16 +98,24 @@ paths:
           in: query
           required: false
           type: string
+        - name: endOffset
+          in: query
+          required: false
+          type: string
+        - name: delimitter
+          in: query
+          required: false
+          type: string
       tags:
         - ConnectorService
   /v1/gcs/buckets:
     get:
-      operationId: ConnectorService_ListGCSBuckets
+      operationId: ConnectorService_GCSListBuckets
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListGCSBucketsResponse'
+            $ref: '#/definitions/v1GCSListBucketsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1504,20 +1512,39 @@ paths:
             $ref: '#/definitions/v1RenameFileAndReconcileRequest'
       tags:
         - RuntimeService
-  /v1/s3/bucket/{bucketName}/objects:
+  /v1/s3/bucket/{bucket}/metadata:
     get:
-      operationId: ConnectorService_ListS3BucketObjects
+      operationId: ConnectorService_S3GetBucketMetadata
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListS3BucketObjectsResponse'
+            $ref: '#/definitions/v1S3GetBucketMetadataResponse'
         default:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: bucketName
+        - name: bucket
+          in: path
+          required: true
+          type: string
+      tags:
+        - ConnectorService
+  /v1/s3/bucket/{bucket}/objects:
+    get:
+      operationId: ConnectorService_S3ListObjects
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1S3ListObjectsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: bucket
           in: path
           required: true
           type: string
@@ -1530,11 +1557,19 @@ paths:
           in: query
           required: false
           type: string
+        - name: region
+          in: query
+          required: false
+          type: string
         - name: prefix
           in: query
           required: false
           type: string
-        - name: startOffset
+        - name: startAfter
+          in: query
+          required: false
+          type: string
+        - name: delimitter
           in: query
           required: false
           type: string
@@ -1542,12 +1577,12 @@ paths:
         - ConnectorService
   /v1/s3/buckets:
     get:
-      operationId: ConnectorService_ListS3Buckets
+      operationId: ConnectorService_S3ListBuckets
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListS3BucketsResponse'
+            $ref: '#/definitions/v1S3ListBucketsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -2022,6 +2057,25 @@ definitions:
         type: string
       description:
         type: string
+  v1GCSListBucketsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      buckets:
+        type: array
+        items:
+          type: string
+  v1GCSListObjectsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      objects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1GCSObject'
   v1GCSObject:
     type: object
     properties:
@@ -2152,25 +2206,6 @@ definitions:
         items:
           type: string
     title: Response message for RuntimeService.ListFiles
-  v1ListGCSBucketObjectsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      objects:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1GCSObject'
-  v1ListGCSBucketsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      bucketName:
-        type: array
-        items:
-          type: string
   v1ListInstancesResponse:
     type: object
     properties:
@@ -2182,25 +2217,6 @@ definitions:
       nextPageToken:
         type: string
     title: Response message for RuntimeService.ListInstances
-  v1ListS3BucketObjectsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      objects:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1S3Object'
-  v1ListS3BucketsResponse:
-    type: object
-    properties:
-      nextPageToken:
-        type: string
-      bucketName:
-        type: array
-        items:
-          type: string
   v1MapType:
     type: object
     properties:
@@ -2696,6 +2712,30 @@ definitions:
   v1RenameFileResponse:
     type: object
     title: Response message for RuntimeService.RenameFile
+  v1S3GetBucketMetadataResponse:
+    type: object
+    properties:
+      region:
+        type: string
+  v1S3ListBucketsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      buckets:
+        type: array
+        items:
+          type: string
+  v1S3ListObjectsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      objects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1S3Object'
   v1S3Object:
     type: object
     properties:

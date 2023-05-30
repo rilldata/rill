@@ -6,6 +6,8 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
+	"github.com/rilldata/rill/runtime/connectors/gcs"
+	"github.com/rilldata/rill/runtime/connectors/s3"
 )
 
 // ListConnectors implements RuntimeService.
@@ -53,4 +55,92 @@ func (s *Server) ListConnectors(ctx context.Context, req *runtimev1.ListConnecto
 	}
 
 	return &runtimev1.ListConnectorsResponse{Connectors: pbs}, nil
+}
+
+func (s *Server) S3ListBuckets(ctx context.Context, req *runtimev1.S3ListBucketsRequest) (*runtimev1.S3ListBucketsResponse, error) {
+	connector, ok := connectors.Connectors["s3"]
+	if !ok {
+		panic("s3 connector not found")
+	}
+
+	s3Conn := connector.(s3.Connector)
+	buckets, err := s3Conn.ListBuckets(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.S3ListBucketsResponse{
+		Buckets: buckets,
+	}, nil
+}
+
+func (s *Server) S3ListObjects(ctx context.Context, req *runtimev1.S3ListObjectsRequest) (*runtimev1.S3ListObjectsResponse, error) {
+	connector, ok := connectors.Connectors["s3"]
+	if !ok {
+		panic("s3 connector not found")
+	}
+
+	s3Conn := connector.(s3.Connector)
+	objects, nextToken, err := s3Conn.ListObjects(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.S3ListObjectsResponse{
+		Objects:       objects,
+		NextPageToken: nextToken,
+	}, nil
+}
+
+func (s *Server) S3GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBucketMetadataRequest) (*runtimev1.S3GetBucketMetadataResponse, error) {
+	connector, ok := connectors.Connectors["s3"]
+	if !ok {
+		panic("s3 connector not found")
+	}
+
+	s3Conn := connector.(s3.Connector)
+	region, err := s3Conn.GetBucketMetadata(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.S3GetBucketMetadataResponse{
+		Region: region,
+	}, nil
+}
+
+func (s *Server) GCSListBuckets(ctx context.Context, req *runtimev1.GCSListBucketsRequest) (*runtimev1.GCSListBucketsResponse, error) {
+	connector, ok := connectors.Connectors["gcs"]
+	if !ok {
+		panic("gcs connector not found")
+	}
+
+	gcsConn := connector.(gcs.Connector)
+	buckets, next, err := gcsConn.ListBuckets(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.GCSListBucketsResponse{
+		Buckets:       buckets,
+		NextPageToken: next,
+	}, nil
+}
+
+func (s *Server) GCSListObjects(ctx context.Context, req *runtimev1.GCSListObjectsRequest) (*runtimev1.GCSListObjectsResponse, error) {
+	connector, ok := connectors.Connectors["gcs"]
+	if !ok {
+		panic("gcs connector not found")
+	}
+
+	gcsConn := connector.(gcs.Connector)
+	objects, nextToken, err := gcsConn.ListObjects(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.GCSListObjectsResponse{
+		Objects:       objects,
+		NextPageToken: nextToken,
+	}, nil
 }

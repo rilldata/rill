@@ -10,9 +10,11 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
@@ -20,10 +22,16 @@ import (
 	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/s3blob"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+var defaultCredProviders = []credentials.Provider{
+	&credentials.EnvProvider{},
+	&credentials.SharedCredentialsProvider{Filename: "", Profile: ""},
+}
+
 func init() {
-	connectors.Register("s3", connector{})
+	connectors.Register("s3", Connector{})
 }
 
 var spec = connectors.Spec{
@@ -104,9 +112,9 @@ func ParseConfig(props map[string]any) (*Config, error) {
 	return conf, nil
 }
 
-type connector struct{}
+type Connector struct{}
 
-func (c connector) Spec() connectors.Spec {
+func (c Connector) Spec() connectors.Spec {
 	return spec
 }
 
@@ -118,7 +126,7 @@ func (c connector) Spec() connectors.Spec {
 //   - AWS_SESSION_TOKEN
 //
 // Additionally in case env.AllowHostCredentials is true it looks for credentials stored on host machine as well
-func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source, logger *zap.Logger) (connectors.FileIterator, error) {
+func (c Connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source, logger *zap.Logger) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -175,7 +183,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 	return it, err
 }
 
-func (c connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {
+func (c Connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse config: %w", err)
@@ -190,8 +198,98 @@ func (c connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, 
 	if err != nil {
 		return false, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
 	}
+	defer bucketObj.Close()
 
 	return bucketObj.IsAccessible(ctx)
+}
+
+func (c Connector) ListBuckets(ctx context.Context) ([]string, error) {
+	creds := credentials.NewChainCredentials(defaultCredProviders)
+	sess, err := session.NewSession(&aws.Config{
+		Credentials: creds,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	svc := s3.New(sess)
+	output, err := svc.ListBuckets(&s3.ListBucketsInput{})
+	if err != nil {
+		return nil, err
+	}
+
+	buckets := make([]string, 0, len(output.Buckets))
+	for _, bucket := range output.Buckets {
+		if bucket.Name != nil {
+			buckets = append(buckets, *bucket.Name)
+		}
+	}
+	return buckets, nil
+}
+
+func (c Connector) ListObjects(ctx context.Context, req *runtimev1.S3ListObjectsRequest) ([]*runtimev1.S3Object, string, error) {
+	creds := credentials.NewChainCredentials(defaultCredProviders)
+	sess, err := session.NewSession(&aws.Config{
+		Credentials: creds,
+	})
+	if err != nil {
+		return nil, "", err
+	}
+
+	bucket, err := s3blob.OpenBucket(ctx, sess, req.Bucket, &s3blob.Options{})
+	if err != nil {
+		return nil, "", err
+	}
+	defer bucket.Close()
+
+	var pageToken []byte
+	if req.GetPageToken() == "" {
+		pageToken = blob.FirstPageToken
+	} else {
+		pageToken = []byte(req.GetPageToken())
+	}
+
+	objects, nextToken, err := bucket.ListPage(ctx, pageToken, int(req.GetPageSize()), &blob.ListOptions{
+		Prefix:    req.Prefix,
+		Delimiter: req.Delimitter,
+		BeforeList: func(as func(interface{}) bool) error {
+			if req.StartAfter == "" {
+				return nil
+			}
+			var q *s3.ListObjectsV2Input
+			if as(&q) {
+				q.StartAfter = &req.StartAfter
+			}
+			return nil
+		},
+	})
+	if err != nil {
+		return nil, "", err
+	}
+
+	s3Objects := make([]*runtimev1.S3Object, len(objects))
+	for i, object := range objects {
+		s3Objects[i] = &runtimev1.S3Object{
+			Name:       object.Key,
+			ModifiedOn: timestamppb.New(object.ModTime),
+			Size:       object.Size,
+			IsDir:      object.IsDir,
+		}
+	}
+	return s3Objects, string(nextToken), nil
+}
+
+func (c Connector) GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBucketMetadataRequest) (string, error) {
+	creds := credentials.NewChainCredentials(defaultCredProviders)
+	sess, err := session.NewSession(&aws.Config{
+		Credentials: creds,
+		Region:      aws.String("us-east-1"),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return s3manager.GetBucketRegion(ctx, sess, req.GetBucket(), "")
 }
 
 func openBucket(ctx context.Context, conf *Config, bucket string, creds *credentials.Credentials) (*blob.Bucket, error) {

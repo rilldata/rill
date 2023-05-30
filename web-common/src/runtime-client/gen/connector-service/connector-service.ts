@@ -12,54 +12,51 @@ import type {
   QueryKey,
 } from "@tanstack/svelte-query";
 import type {
-  V1ListGCSBucketObjectsResponse,
+  V1GCSListObjectsResponse,
   RpcStatus,
-  ConnectorServiceListGCSBucketObjectsParams,
-  V1ListGCSBucketsResponse,
-  ConnectorServiceListGCSBucketsParams,
-  V1ListS3BucketObjectsResponse,
-  ConnectorServiceListS3BucketObjectsParams,
-  V1ListS3BucketsResponse,
-  ConnectorServiceListS3BucketsParams,
+  ConnectorServiceGCSListObjectsParams,
+  V1GCSListBucketsResponse,
+  ConnectorServiceGCSListBucketsParams,
+  V1S3GetBucketMetadataResponse,
+  V1S3ListObjectsResponse,
+  ConnectorServiceS3ListObjectsParams,
+  V1S3ListBucketsResponse,
+  ConnectorServiceS3ListBucketsParams,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
-export const connectorServiceListGCSBucketObjects = (
-  bucketName: string,
-  params?: ConnectorServiceListGCSBucketObjectsParams,
+export const connectorServiceGCSListObjects = (
+  bucket: string,
+  params?: ConnectorServiceGCSListObjectsParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1ListGCSBucketObjectsResponse>({
-    url: `/v1/gcs/bucket/${bucketName}/objects`,
+  return httpClient<V1GCSListObjectsResponse>({
+    url: `/v1/gcs/bucket/${bucket}/objects`,
     method: "get",
     params,
     signal,
   });
 };
 
-export const getConnectorServiceListGCSBucketObjectsQueryKey = (
-  bucketName: string,
-  params?: ConnectorServiceListGCSBucketObjectsParams
-) =>
-  [
-    `/v1/gcs/bucket/${bucketName}/objects`,
-    ...(params ? [params] : []),
-  ] as const;
+export const getConnectorServiceGCSListObjectsQueryKey = (
+  bucket: string,
+  params?: ConnectorServiceGCSListObjectsParams
+) => [`/v1/gcs/bucket/${bucket}/objects`, ...(params ? [params] : [])] as const;
 
-export type ConnectorServiceListGCSBucketObjectsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof connectorServiceListGCSBucketObjects>>
+export type ConnectorServiceGCSListObjectsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectorServiceGCSListObjects>>
 >;
-export type ConnectorServiceListGCSBucketObjectsQueryError = RpcStatus;
+export type ConnectorServiceGCSListObjectsQueryError = RpcStatus;
 
-export const createConnectorServiceListGCSBucketObjects = <
-  TData = Awaited<ReturnType<typeof connectorServiceListGCSBucketObjects>>,
+export const createConnectorServiceGCSListObjects = <
+  TData = Awaited<ReturnType<typeof connectorServiceGCSListObjects>>,
   TError = RpcStatus
 >(
-  bucketName: string,
-  params?: ConnectorServiceListGCSBucketObjectsParams,
+  bucket: string,
+  params?: ConnectorServiceGCSListObjectsParams,
   options?: {
     query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof connectorServiceListGCSBucketObjects>>,
+      Awaited<ReturnType<typeof connectorServiceGCSListObjects>>,
       TError,
       TData
     >;
@@ -69,21 +66,20 @@ export const createConnectorServiceListGCSBucketObjects = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getConnectorServiceListGCSBucketObjectsQueryKey(bucketName, params);
+    getConnectorServiceGCSListObjectsQueryKey(bucket, params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof connectorServiceListGCSBucketObjects>>
-  > = ({ signal }) =>
-    connectorServiceListGCSBucketObjects(bucketName, params, signal);
+    Awaited<ReturnType<typeof connectorServiceGCSListObjects>>
+  > = ({ signal }) => connectorServiceGCSListObjects(bucket, params, signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof connectorServiceListGCSBucketObjects>>,
+    Awaited<ReturnType<typeof connectorServiceGCSListObjects>>,
     TError,
     TData
   >({
     queryKey,
     queryFn,
-    enabled: !!bucketName,
+    enabled: !!bucket,
     ...queryOptions,
   }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -92,11 +88,11 @@ export const createConnectorServiceListGCSBucketObjects = <
   return query;
 };
 
-export const connectorServiceListGCSBuckets = (
-  params?: ConnectorServiceListGCSBucketsParams,
+export const connectorServiceGCSListBuckets = (
+  params?: ConnectorServiceGCSListBucketsParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1ListGCSBucketsResponse>({
+  return httpClient<V1GCSListBucketsResponse>({
     url: `/v1/gcs/buckets`,
     method: "get",
     params,
@@ -104,23 +100,23 @@ export const connectorServiceListGCSBuckets = (
   });
 };
 
-export const getConnectorServiceListGCSBucketsQueryKey = (
-  params?: ConnectorServiceListGCSBucketsParams
+export const getConnectorServiceGCSListBucketsQueryKey = (
+  params?: ConnectorServiceGCSListBucketsParams
 ) => [`/v1/gcs/buckets`, ...(params ? [params] : [])] as const;
 
-export type ConnectorServiceListGCSBucketsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof connectorServiceListGCSBuckets>>
+export type ConnectorServiceGCSListBucketsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectorServiceGCSListBuckets>>
 >;
-export type ConnectorServiceListGCSBucketsQueryError = RpcStatus;
+export type ConnectorServiceGCSListBucketsQueryError = RpcStatus;
 
-export const createConnectorServiceListGCSBuckets = <
-  TData = Awaited<ReturnType<typeof connectorServiceListGCSBuckets>>,
+export const createConnectorServiceGCSListBuckets = <
+  TData = Awaited<ReturnType<typeof connectorServiceGCSListBuckets>>,
   TError = RpcStatus
 >(
-  params?: ConnectorServiceListGCSBucketsParams,
+  params?: ConnectorServiceGCSListBucketsParams,
   options?: {
     query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof connectorServiceListGCSBuckets>>,
+      Awaited<ReturnType<typeof connectorServiceGCSListBuckets>>,
       TError,
       TData
     >;
@@ -129,14 +125,14 @@ export const createConnectorServiceListGCSBuckets = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getConnectorServiceListGCSBucketsQueryKey(params);
+    queryOptions?.queryKey ?? getConnectorServiceGCSListBucketsQueryKey(params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof connectorServiceListGCSBuckets>>
-  > = ({ signal }) => connectorServiceListGCSBuckets(params, signal);
+    Awaited<ReturnType<typeof connectorServiceGCSListBuckets>>
+  > = ({ signal }) => connectorServiceGCSListBuckets(params, signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof connectorServiceListGCSBuckets>>,
+    Awaited<ReturnType<typeof connectorServiceGCSListBuckets>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
@@ -149,39 +145,34 @@ export const createConnectorServiceListGCSBuckets = <
   return query;
 };
 
-export const connectorServiceListS3BucketObjects = (
-  bucketName: string,
-  params?: ConnectorServiceListS3BucketObjectsParams,
+export const connectorServiceS3GetBucketMetadata = (
+  bucket: string,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1ListS3BucketObjectsResponse>({
-    url: `/v1/s3/bucket/${bucketName}/objects`,
+  return httpClient<V1S3GetBucketMetadataResponse>({
+    url: `/v1/s3/bucket/${bucket}/metadata`,
     method: "get",
-    params,
     signal,
   });
 };
 
-export const getConnectorServiceListS3BucketObjectsQueryKey = (
-  bucketName: string,
-  params?: ConnectorServiceListS3BucketObjectsParams
-) =>
-  [`/v1/s3/bucket/${bucketName}/objects`, ...(params ? [params] : [])] as const;
+export const getConnectorServiceS3GetBucketMetadataQueryKey = (
+  bucket: string
+) => [`/v1/s3/bucket/${bucket}/metadata`] as const;
 
-export type ConnectorServiceListS3BucketObjectsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof connectorServiceListS3BucketObjects>>
+export type ConnectorServiceS3GetBucketMetadataQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectorServiceS3GetBucketMetadata>>
 >;
-export type ConnectorServiceListS3BucketObjectsQueryError = RpcStatus;
+export type ConnectorServiceS3GetBucketMetadataQueryError = RpcStatus;
 
-export const createConnectorServiceListS3BucketObjects = <
-  TData = Awaited<ReturnType<typeof connectorServiceListS3BucketObjects>>,
+export const createConnectorServiceS3GetBucketMetadata = <
+  TData = Awaited<ReturnType<typeof connectorServiceS3GetBucketMetadata>>,
   TError = RpcStatus
 >(
-  bucketName: string,
-  params?: ConnectorServiceListS3BucketObjectsParams,
+  bucket: string,
   options?: {
     query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof connectorServiceListS3BucketObjects>>,
+      Awaited<ReturnType<typeof connectorServiceS3GetBucketMetadata>>,
       TError,
       TData
     >;
@@ -191,21 +182,20 @@ export const createConnectorServiceListS3BucketObjects = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getConnectorServiceListS3BucketObjectsQueryKey(bucketName, params);
+    getConnectorServiceS3GetBucketMetadataQueryKey(bucket);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof connectorServiceListS3BucketObjects>>
-  > = ({ signal }) =>
-    connectorServiceListS3BucketObjects(bucketName, params, signal);
+    Awaited<ReturnType<typeof connectorServiceS3GetBucketMetadata>>
+  > = ({ signal }) => connectorServiceS3GetBucketMetadata(bucket, signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof connectorServiceListS3BucketObjects>>,
+    Awaited<ReturnType<typeof connectorServiceS3GetBucketMetadata>>,
     TError,
     TData
   >({
     queryKey,
     queryFn,
-    enabled: !!bucketName,
+    enabled: !!bucket,
     ...queryOptions,
   }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -214,35 +204,38 @@ export const createConnectorServiceListS3BucketObjects = <
   return query;
 };
 
-export const connectorServiceListS3Buckets = (
-  params?: ConnectorServiceListS3BucketsParams,
+export const connectorServiceS3ListObjects = (
+  bucket: string,
+  params?: ConnectorServiceS3ListObjectsParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1ListS3BucketsResponse>({
-    url: `/v1/s3/buckets`,
+  return httpClient<V1S3ListObjectsResponse>({
+    url: `/v1/s3/bucket/${bucket}/objects`,
     method: "get",
     params,
     signal,
   });
 };
 
-export const getConnectorServiceListS3BucketsQueryKey = (
-  params?: ConnectorServiceListS3BucketsParams
-) => [`/v1/s3/buckets`, ...(params ? [params] : [])] as const;
+export const getConnectorServiceS3ListObjectsQueryKey = (
+  bucket: string,
+  params?: ConnectorServiceS3ListObjectsParams
+) => [`/v1/s3/bucket/${bucket}/objects`, ...(params ? [params] : [])] as const;
 
-export type ConnectorServiceListS3BucketsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof connectorServiceListS3Buckets>>
+export type ConnectorServiceS3ListObjectsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectorServiceS3ListObjects>>
 >;
-export type ConnectorServiceListS3BucketsQueryError = RpcStatus;
+export type ConnectorServiceS3ListObjectsQueryError = RpcStatus;
 
-export const createConnectorServiceListS3Buckets = <
-  TData = Awaited<ReturnType<typeof connectorServiceListS3Buckets>>,
+export const createConnectorServiceS3ListObjects = <
+  TData = Awaited<ReturnType<typeof connectorServiceS3ListObjects>>,
   TError = RpcStatus
 >(
-  params?: ConnectorServiceListS3BucketsParams,
+  bucket: string,
+  params?: ConnectorServiceS3ListObjectsParams,
   options?: {
     query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof connectorServiceListS3Buckets>>,
+      Awaited<ReturnType<typeof connectorServiceS3ListObjects>>,
       TError,
       TData
     >;
@@ -251,14 +244,74 @@ export const createConnectorServiceListS3Buckets = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getConnectorServiceListS3BucketsQueryKey(params);
+    queryOptions?.queryKey ??
+    getConnectorServiceS3ListObjectsQueryKey(bucket, params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof connectorServiceListS3Buckets>>
-  > = ({ signal }) => connectorServiceListS3Buckets(params, signal);
+    Awaited<ReturnType<typeof connectorServiceS3ListObjects>>
+  > = ({ signal }) => connectorServiceS3ListObjects(bucket, params, signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof connectorServiceListS3Buckets>>,
+    Awaited<ReturnType<typeof connectorServiceS3ListObjects>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!bucket,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+export const connectorServiceS3ListBuckets = (
+  params?: ConnectorServiceS3ListBucketsParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1S3ListBucketsResponse>({
+    url: `/v1/s3/buckets`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getConnectorServiceS3ListBucketsQueryKey = (
+  params?: ConnectorServiceS3ListBucketsParams
+) => [`/v1/s3/buckets`, ...(params ? [params] : [])] as const;
+
+export type ConnectorServiceS3ListBucketsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectorServiceS3ListBuckets>>
+>;
+export type ConnectorServiceS3ListBucketsQueryError = RpcStatus;
+
+export const createConnectorServiceS3ListBuckets = <
+  TData = Awaited<ReturnType<typeof connectorServiceS3ListBuckets>>,
+  TError = RpcStatus
+>(
+  params?: ConnectorServiceS3ListBucketsParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof connectorServiceS3ListBuckets>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getConnectorServiceS3ListBucketsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof connectorServiceS3ListBuckets>>
+  > = ({ signal }) => connectorServiceS3ListBuckets(params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof connectorServiceS3ListBuckets>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<

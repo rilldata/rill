@@ -19,20 +19,22 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ConnectorService_ListS3Buckets_FullMethodName        = "/rill.runtime.v1.ConnectorService/ListS3Buckets"
-	ConnectorService_ListS3BucketObjects_FullMethodName  = "/rill.runtime.v1.ConnectorService/ListS3BucketObjects"
-	ConnectorService_ListGCSBuckets_FullMethodName       = "/rill.runtime.v1.ConnectorService/ListGCSBuckets"
-	ConnectorService_ListGCSBucketObjects_FullMethodName = "/rill.runtime.v1.ConnectorService/ListGCSBucketObjects"
+	ConnectorService_S3ListBuckets_FullMethodName       = "/rill.runtime.v1.ConnectorService/S3ListBuckets"
+	ConnectorService_S3ListObjects_FullMethodName       = "/rill.runtime.v1.ConnectorService/S3ListObjects"
+	ConnectorService_S3GetBucketMetadata_FullMethodName = "/rill.runtime.v1.ConnectorService/S3GetBucketMetadata"
+	ConnectorService_GCSListBuckets_FullMethodName      = "/rill.runtime.v1.ConnectorService/GCSListBuckets"
+	ConnectorService_GCSListObjects_FullMethodName      = "/rill.runtime.v1.ConnectorService/GCSListObjects"
 )
 
 // ConnectorServiceClient is the client API for ConnectorService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConnectorServiceClient interface {
-	ListS3Buckets(ctx context.Context, in *ListS3BucketsRequest, opts ...grpc.CallOption) (*ListS3BucketsResponse, error)
-	ListS3BucketObjects(ctx context.Context, in *ListS3BucketObjectsRequest, opts ...grpc.CallOption) (*ListS3BucketObjectsResponse, error)
-	ListGCSBuckets(ctx context.Context, in *ListGCSBucketsRequest, opts ...grpc.CallOption) (*ListGCSBucketsResponse, error)
-	ListGCSBucketObjects(ctx context.Context, in *ListGCSBucketObjectsRequest, opts ...grpc.CallOption) (*ListGCSBucketObjectsResponse, error)
+	S3ListBuckets(ctx context.Context, in *S3ListBucketsRequest, opts ...grpc.CallOption) (*S3ListBucketsResponse, error)
+	S3ListObjects(ctx context.Context, in *S3ListObjectsRequest, opts ...grpc.CallOption) (*S3ListObjectsResponse, error)
+	S3GetBucketMetadata(ctx context.Context, in *S3GetBucketMetadataRequest, opts ...grpc.CallOption) (*S3GetBucketMetadataResponse, error)
+	GCSListBuckets(ctx context.Context, in *GCSListBucketsRequest, opts ...grpc.CallOption) (*GCSListBucketsResponse, error)
+	GCSListObjects(ctx context.Context, in *GCSListObjectsRequest, opts ...grpc.CallOption) (*GCSListObjectsResponse, error)
 }
 
 type connectorServiceClient struct {
@@ -43,36 +45,45 @@ func NewConnectorServiceClient(cc grpc.ClientConnInterface) ConnectorServiceClie
 	return &connectorServiceClient{cc}
 }
 
-func (c *connectorServiceClient) ListS3Buckets(ctx context.Context, in *ListS3BucketsRequest, opts ...grpc.CallOption) (*ListS3BucketsResponse, error) {
-	out := new(ListS3BucketsResponse)
-	err := c.cc.Invoke(ctx, ConnectorService_ListS3Buckets_FullMethodName, in, out, opts...)
+func (c *connectorServiceClient) S3ListBuckets(ctx context.Context, in *S3ListBucketsRequest, opts ...grpc.CallOption) (*S3ListBucketsResponse, error) {
+	out := new(S3ListBucketsResponse)
+	err := c.cc.Invoke(ctx, ConnectorService_S3ListBuckets_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *connectorServiceClient) ListS3BucketObjects(ctx context.Context, in *ListS3BucketObjectsRequest, opts ...grpc.CallOption) (*ListS3BucketObjectsResponse, error) {
-	out := new(ListS3BucketObjectsResponse)
-	err := c.cc.Invoke(ctx, ConnectorService_ListS3BucketObjects_FullMethodName, in, out, opts...)
+func (c *connectorServiceClient) S3ListObjects(ctx context.Context, in *S3ListObjectsRequest, opts ...grpc.CallOption) (*S3ListObjectsResponse, error) {
+	out := new(S3ListObjectsResponse)
+	err := c.cc.Invoke(ctx, ConnectorService_S3ListObjects_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *connectorServiceClient) ListGCSBuckets(ctx context.Context, in *ListGCSBucketsRequest, opts ...grpc.CallOption) (*ListGCSBucketsResponse, error) {
-	out := new(ListGCSBucketsResponse)
-	err := c.cc.Invoke(ctx, ConnectorService_ListGCSBuckets_FullMethodName, in, out, opts...)
+func (c *connectorServiceClient) S3GetBucketMetadata(ctx context.Context, in *S3GetBucketMetadataRequest, opts ...grpc.CallOption) (*S3GetBucketMetadataResponse, error) {
+	out := new(S3GetBucketMetadataResponse)
+	err := c.cc.Invoke(ctx, ConnectorService_S3GetBucketMetadata_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *connectorServiceClient) ListGCSBucketObjects(ctx context.Context, in *ListGCSBucketObjectsRequest, opts ...grpc.CallOption) (*ListGCSBucketObjectsResponse, error) {
-	out := new(ListGCSBucketObjectsResponse)
-	err := c.cc.Invoke(ctx, ConnectorService_ListGCSBucketObjects_FullMethodName, in, out, opts...)
+func (c *connectorServiceClient) GCSListBuckets(ctx context.Context, in *GCSListBucketsRequest, opts ...grpc.CallOption) (*GCSListBucketsResponse, error) {
+	out := new(GCSListBucketsResponse)
+	err := c.cc.Invoke(ctx, ConnectorService_GCSListBuckets_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *connectorServiceClient) GCSListObjects(ctx context.Context, in *GCSListObjectsRequest, opts ...grpc.CallOption) (*GCSListObjectsResponse, error) {
+	out := new(GCSListObjectsResponse)
+	err := c.cc.Invoke(ctx, ConnectorService_GCSListObjects_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -83,10 +94,11 @@ func (c *connectorServiceClient) ListGCSBucketObjects(ctx context.Context, in *L
 // All implementations must embed UnimplementedConnectorServiceServer
 // for forward compatibility
 type ConnectorServiceServer interface {
-	ListS3Buckets(context.Context, *ListS3BucketsRequest) (*ListS3BucketsResponse, error)
-	ListS3BucketObjects(context.Context, *ListS3BucketObjectsRequest) (*ListS3BucketObjectsResponse, error)
-	ListGCSBuckets(context.Context, *ListGCSBucketsRequest) (*ListGCSBucketsResponse, error)
-	ListGCSBucketObjects(context.Context, *ListGCSBucketObjectsRequest) (*ListGCSBucketObjectsResponse, error)
+	S3ListBuckets(context.Context, *S3ListBucketsRequest) (*S3ListBucketsResponse, error)
+	S3ListObjects(context.Context, *S3ListObjectsRequest) (*S3ListObjectsResponse, error)
+	S3GetBucketMetadata(context.Context, *S3GetBucketMetadataRequest) (*S3GetBucketMetadataResponse, error)
+	GCSListBuckets(context.Context, *GCSListBucketsRequest) (*GCSListBucketsResponse, error)
+	GCSListObjects(context.Context, *GCSListObjectsRequest) (*GCSListObjectsResponse, error)
 	mustEmbedUnimplementedConnectorServiceServer()
 }
 
@@ -94,17 +106,20 @@ type ConnectorServiceServer interface {
 type UnimplementedConnectorServiceServer struct {
 }
 
-func (UnimplementedConnectorServiceServer) ListS3Buckets(context.Context, *ListS3BucketsRequest) (*ListS3BucketsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListS3Buckets not implemented")
+func (UnimplementedConnectorServiceServer) S3ListBuckets(context.Context, *S3ListBucketsRequest) (*S3ListBucketsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method S3ListBuckets not implemented")
 }
-func (UnimplementedConnectorServiceServer) ListS3BucketObjects(context.Context, *ListS3BucketObjectsRequest) (*ListS3BucketObjectsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListS3BucketObjects not implemented")
+func (UnimplementedConnectorServiceServer) S3ListObjects(context.Context, *S3ListObjectsRequest) (*S3ListObjectsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method S3ListObjects not implemented")
 }
-func (UnimplementedConnectorServiceServer) ListGCSBuckets(context.Context, *ListGCSBucketsRequest) (*ListGCSBucketsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListGCSBuckets not implemented")
+func (UnimplementedConnectorServiceServer) S3GetBucketMetadata(context.Context, *S3GetBucketMetadataRequest) (*S3GetBucketMetadataResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method S3GetBucketMetadata not implemented")
 }
-func (UnimplementedConnectorServiceServer) ListGCSBucketObjects(context.Context, *ListGCSBucketObjectsRequest) (*ListGCSBucketObjectsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListGCSBucketObjects not implemented")
+func (UnimplementedConnectorServiceServer) GCSListBuckets(context.Context, *GCSListBucketsRequest) (*GCSListBucketsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GCSListBuckets not implemented")
+}
+func (UnimplementedConnectorServiceServer) GCSListObjects(context.Context, *GCSListObjectsRequest) (*GCSListObjectsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GCSListObjects not implemented")
 }
 func (UnimplementedConnectorServiceServer) mustEmbedUnimplementedConnectorServiceServer() {}
 
@@ -119,74 +134,92 @@ func RegisterConnectorServiceServer(s grpc.ServiceRegistrar, srv ConnectorServic
 	s.RegisterService(&ConnectorService_ServiceDesc, srv)
 }
 
-func _ConnectorService_ListS3Buckets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListS3BucketsRequest)
+func _ConnectorService_S3ListBuckets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(S3ListBucketsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ConnectorServiceServer).ListS3Buckets(ctx, in)
+		return srv.(ConnectorServiceServer).S3ListBuckets(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ConnectorService_ListS3Buckets_FullMethodName,
+		FullMethod: ConnectorService_S3ListBuckets_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConnectorServiceServer).ListS3Buckets(ctx, req.(*ListS3BucketsRequest))
+		return srv.(ConnectorServiceServer).S3ListBuckets(ctx, req.(*S3ListBucketsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ConnectorService_ListS3BucketObjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListS3BucketObjectsRequest)
+func _ConnectorService_S3ListObjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(S3ListObjectsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ConnectorServiceServer).ListS3BucketObjects(ctx, in)
+		return srv.(ConnectorServiceServer).S3ListObjects(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ConnectorService_ListS3BucketObjects_FullMethodName,
+		FullMethod: ConnectorService_S3ListObjects_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConnectorServiceServer).ListS3BucketObjects(ctx, req.(*ListS3BucketObjectsRequest))
+		return srv.(ConnectorServiceServer).S3ListObjects(ctx, req.(*S3ListObjectsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ConnectorService_ListGCSBuckets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListGCSBucketsRequest)
+func _ConnectorService_S3GetBucketMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(S3GetBucketMetadataRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ConnectorServiceServer).ListGCSBuckets(ctx, in)
+		return srv.(ConnectorServiceServer).S3GetBucketMetadata(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ConnectorService_ListGCSBuckets_FullMethodName,
+		FullMethod: ConnectorService_S3GetBucketMetadata_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConnectorServiceServer).ListGCSBuckets(ctx, req.(*ListGCSBucketsRequest))
+		return srv.(ConnectorServiceServer).S3GetBucketMetadata(ctx, req.(*S3GetBucketMetadataRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ConnectorService_ListGCSBucketObjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListGCSBucketObjectsRequest)
+func _ConnectorService_GCSListBuckets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GCSListBucketsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ConnectorServiceServer).ListGCSBucketObjects(ctx, in)
+		return srv.(ConnectorServiceServer).GCSListBuckets(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ConnectorService_ListGCSBucketObjects_FullMethodName,
+		FullMethod: ConnectorService_GCSListBuckets_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConnectorServiceServer).ListGCSBucketObjects(ctx, req.(*ListGCSBucketObjectsRequest))
+		return srv.(ConnectorServiceServer).GCSListBuckets(ctx, req.(*GCSListBucketsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConnectorService_GCSListObjects_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GCSListObjectsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConnectorServiceServer).GCSListObjects(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConnectorService_GCSListObjects_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConnectorServiceServer).GCSListObjects(ctx, req.(*GCSListObjectsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -199,20 +232,24 @@ var ConnectorService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ConnectorServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ListS3Buckets",
-			Handler:    _ConnectorService_ListS3Buckets_Handler,
+			MethodName: "S3ListBuckets",
+			Handler:    _ConnectorService_S3ListBuckets_Handler,
 		},
 		{
-			MethodName: "ListS3BucketObjects",
-			Handler:    _ConnectorService_ListS3BucketObjects_Handler,
+			MethodName: "S3ListObjects",
+			Handler:    _ConnectorService_S3ListObjects_Handler,
 		},
 		{
-			MethodName: "ListGCSBuckets",
-			Handler:    _ConnectorService_ListGCSBuckets_Handler,
+			MethodName: "S3GetBucketMetadata",
+			Handler:    _ConnectorService_S3GetBucketMetadata_Handler,
 		},
 		{
-			MethodName: "ListGCSBucketObjects",
-			Handler:    _ConnectorService_ListGCSBucketObjects_Handler,
+			MethodName: "GCSListBuckets",
+			Handler:    _ConnectorService_GCSListBuckets_Handler,
+		},
+		{
+			MethodName: "GCSListObjects",
+			Handler:    _ConnectorService_GCSListObjects_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

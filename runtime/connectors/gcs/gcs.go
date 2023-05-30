@@ -8,22 +8,28 @@ import (
 	"os"
 	"strings"
 
+	"cloud.google.com/go/storage"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"go.uber.org/zap"
+	"gocloud.dev/blob"
 	"gocloud.dev/blob/gcsblob"
 	"gocloud.dev/gcp"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/googleapi"
+	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func init() {
-	connectors.Register("gcs", connector{})
+	connectors.Register("gcs", Connector{})
 }
 
 var errNoCredentials = errors.New("empty credentials: set `google_application_credentials` env variable")
@@ -121,16 +127,16 @@ func ParseConfig(props map[string]any) (*Config, error) {
 	return conf, nil
 }
 
-type connector struct{}
+type Connector struct{}
 
-func (c connector) Spec() connectors.Spec {
+func (c Connector) Spec() connectors.Spec {
 	return spec
 }
 
 // ConsumeAsIterator returns a file iterator over objects stored in gcs.
 // The credential json is read from a env variable google_application_credentials.
 // Additionally in case `env.AllowHostCredentials` is true it looks for "Application Default Credentials" as well
-func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source, l *zap.Logger) (connectors.FileIterator, error) {
+func (c Connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source, l *zap.Logger) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -176,7 +182,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 	return iter, err
 }
 
-func (c connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {
+func (c Connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse config: %w", err)
@@ -203,6 +209,83 @@ func createClient(ctx context.Context, env *connectors.Env) (*gcp.HTTPClient, er
 	}
 	// the token source returned from credentials works for all kind of credentials like serviceAccountKey, credentialsKey etc.
 	return gcp.NewHTTPClient(gcp.DefaultTransport(), gcp.CredentialsTokenSource(creds))
+}
+
+func (c Connector) ListBuckets(ctx context.Context, req *runtimev1.GCSListBucketsRequest) ([]string, string, error) {
+	credentials, err := google.FindDefaultCredentials(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+
+	client, err := storage.NewClient(ctx, option.WithTokenSource(credentials.TokenSource))
+	if err != nil {
+		return nil, "", err
+	}
+	defer client.Close()
+
+	pager := iterator.NewPager(client.Buckets(ctx, credentials.ProjectID), int(req.GetPageSize()), req.GetPageToken())
+	buckets := make([]storage.BucketAttrs, 0)
+	next, err := pager.NextPage(&buckets)
+	if err != nil {
+		return nil, "", err
+	}
+
+	names := make([]string, len(buckets))
+	for i := 0; i < len(buckets); i++ {
+		names[i] = buckets[i].Name
+	}
+	return names, next, nil
+}
+
+func (c Connector) ListObjects(ctx context.Context, req *runtimev1.GCSListObjectsRequest) ([]*runtimev1.GCSObject, string, error) {
+	client, err := createClient(ctx, &connectors.Env{
+		AllowHostAccess: true,
+	})
+	if err != nil {
+		return nil, "", err
+	}
+
+	bucket, err := gcsblob.OpenBucket(ctx, client, req.GetBucket(), nil)
+	if err != nil {
+		return nil, "", err
+	}
+	defer bucket.Close()
+
+	var pageToken []byte
+	if req.GetPageToken() == "" {
+		pageToken = blob.FirstPageToken
+	} else {
+		pageToken = []byte(req.GetPageToken())
+	}
+
+	objects, nextToken, err := bucket.ListPage(ctx, pageToken, int(req.GetPageSize()), &blob.ListOptions{
+		Prefix:    req.Prefix,
+		Delimiter: req.Delimitter,
+		BeforeList: func(as func(interface{}) bool) error {
+			var q *storage.Query
+			if as(&q) {
+				q.StartOffset = req.GetStartOffset()
+				q.EndOffset = req.GetEndOffset()
+			} else {
+				panic("Listobjects failed")
+			}
+			return nil
+		},
+	})
+	if err != nil {
+		return nil, "", err
+	}
+
+	gcsObjects := make([]*runtimev1.GCSObject, len(objects))
+	for i, object := range objects {
+		gcsObjects[i] = &runtimev1.GCSObject{
+			Name:       object.Key,
+			ModifiedOn: timestamppb.New(object.ModTime),
+			Size:       object.Size,
+			IsDir:      object.IsDir,
+		}
+	}
+	return gcsObjects, string(nextToken), nil
 }
 
 func resolvedCredentials(ctx context.Context, env *connectors.Env) (*google.Credentials, error) {
