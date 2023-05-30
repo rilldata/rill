@@ -1,4 +1,4 @@
-// TODO: Add Home and Splash
+// TODO: Deprecate in favour of MetricsEventScreenName
 export enum EntityType {
   Table = "Table",
   Model = "Model",
