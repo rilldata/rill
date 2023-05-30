@@ -15,8 +15,8 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 	var refreshSources []string
 
 	reconcileCmd := &cobra.Command{
-		Use:               "reconcile",
-		Args:              cobra.NoArgs,
+		Use:               "reconcile [<project-name>]",
+		Args:              cobra.MaximumNArgs(1),
 		Short:             "Send trigger to deployment",
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -28,7 +28,11 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if !cmd.Flags().Changed("project") {
+			if len(args) > 0 {
+				project = args[0]
+			}
+
+			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
 				var err error
 				project, err = inferProjectName(ctx, client, cfg.Org, path)
 				if err != nil {
@@ -54,7 +58,7 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				fmt.Printf("Triggered project reset. To see status, run \"rill project status --project %s\".\n", project)
+				fmt.Printf("Triggered project reset. To see status, run `rill project status --project %s`.\n", project)
 				return nil
 			}
 
@@ -64,7 +68,7 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				fmt.Printf("Triggered refresh. To see status, run \"rill project status --project %s\".\n", project)
+				fmt.Printf("Triggered refresh. To see status, run `rill project status --project %s`.\n", project)
 				return nil
 			}
 
@@ -74,7 +78,7 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("Triggered reconcile. To see status, run \"rill project status --project %s\".\n", project)
+			fmt.Printf("Triggered reconcile. To see status, run `rill project status --project %s`.\n", project)
 			return nil
 		},
 	}

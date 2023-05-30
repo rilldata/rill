@@ -20,6 +20,7 @@
   import type { Writable } from "svelte/store";
   import { getArtifactErrors } from "../features/entity-management/getArtifactErrors";
   import PreparingImport from "../features/sources/add-source/PreparingImport.svelte";
+  import WelcomePageRedirect from "../features/welcome/WelcomePageRedirect.svelte";
   import { runtimeServiceGetConfig } from "../runtime-client/manual-clients";
   import { runtime } from "../runtime-client/runtime-store";
   import BasicLayout from "./BasicLayout.svelte";
@@ -45,7 +46,7 @@
     const res = await getArtifactErrors(config.instance_id);
     fileArtifactsStore.setErrors(res.affectedPaths, res.errors);
 
-    return initMetrics(config);
+    initMetrics(config);
   });
 
   syncFileSystemPeriodically(
@@ -113,9 +114,11 @@
     on:drag|preventDefault|stopPropagation
     on:drop|preventDefault|stopPropagation
   >
-    <BasicLayout>
-      <slot />
-    </BasicLayout>
+    <WelcomePageRedirect>
+      <BasicLayout>
+        <slot />
+      </BasicLayout>
+    </WelcomePageRedirect>
   </div>
 </div>
 

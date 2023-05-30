@@ -26,8 +26,11 @@ func (q *ColumnDescriptiveStatistics) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnDescriptiveStatistics) MarshalResult() any {
-	return q.Result
+func (q *ColumnDescriptiveStatistics) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *ColumnDescriptiveStatistics) UnmarshalResult(v any) error {
@@ -69,8 +72,9 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 		safeName(q.TableName))
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    descriptiveStatisticsSQL,
-		Priority: priority,
+		Query:            descriptiveStatisticsSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err

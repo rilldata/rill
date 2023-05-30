@@ -269,12 +269,21 @@ func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID
 }
 
 func (c *connection) FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*database.Project, error) {
-	result := make([]*database.Project, 0)
-	err := c.getDB(ctx).SelectContext(ctx, &result, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) ", githubURL)
+	var res []*database.Project
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) ", githubURL)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return result, nil
+	return res, nil
+}
+
+func (c *connection) FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*database.Project, error) {
+	var res []*database.Project
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.github_installation_id=$1", id)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return res, nil
 }
 
 func (c *connection) FindProject(ctx context.Context, id string) (*database.Project, error) {
@@ -324,9 +333,9 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, prod_deployment_id=$8, updated_on=now()
-		WHERE id=$9 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProdDeploymentID, id,
+		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, prod_deployment_id=$8, region=$9, prod_slots=$10, updated_on=now()
+		WHERE id=$11 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProdDeploymentID, opts.Region, opts.ProdSlots, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -453,9 +462,18 @@ func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOp
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url, quota_singleuser_orgs) VALUES ($1, $2, $3, $4) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL, opts.QuotaSingleuserOrgs).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO users (email, display_name, photo_url, quota_singleuser_orgs, superuser) VALUES ($1, $2, $3, $4, $5) RETURNING *", opts.Email, opts.DisplayName, opts.PhotoURL, opts.QuotaSingleuserOrgs, opts.Superuser).StructScan(res)
 	if err != nil {
 		return nil, parseErr("user", err)
+	}
+	return res, nil
+}
+
+func (c *connection) CheckUsersEmpty(ctx context.Context) (bool, error) {
+	var res bool
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT NOT EXISTS (SELECT 1 FROM users limit 1) ").Scan(&res)
+	if err != nil {
+		return false, parseErr("check", err)
 	}
 	return res, nil
 }
@@ -589,6 +607,11 @@ func (c *connection) UpdateDeviceAuthCode(ctx context.Context, id, userID string
 	return checkUpdateRow("device auth code", res, err)
 }
 
+func (c *connection) DeleteExpiredDeviceAuthCodes(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM device_auth_codes WHERE expires_on + $1 < now()", retention)
+	return parseErr("device auth code", err)
+}
+
 func (c *connection) FindOrganizationRole(ctx context.Context, name string) (*database.OrganizationRole, error) {
 	role := &database.OrganizationRole{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM org_roles WHERE lower(name)=lower($1)", name).StructScan(role)
@@ -719,6 +742,20 @@ func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, afte
 		return nil, parseErr("project members", err)
 	}
 	return res, nil
+}
+
+func (c *connection) FindSuperusers(ctx context.Context) ([]*database.User, error) {
+	var res []*database.User
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u WHERE u.superuser = true`)
+	if err != nil {
+		return nil, parseErr("project members", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateSuperuser(ctx context.Context, userID string, superuser bool) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE users SET superuser=$2, updated_on=now() WHERE id=$1`, userID, superuser)
+	return checkUpdateRow("superuser", res, err)
 }
 
 func (c *connection) InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error {

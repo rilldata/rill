@@ -11,11 +11,9 @@ import (
 	"github.com/rilldata/rill/cli/cmd/deploy"
 	"github.com/rilldata/rill/cli/cmd/docs"
 	"github.com/rilldata/rill/cli/cmd/env"
-	"github.com/rilldata/rill/cli/cmd/initialize"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/cmd/runtime"
-	"github.com/rilldata/rill/cli/cmd/source"
 	"github.com/rilldata/rill/cli/cmd/start"
 	"github.com/rilldata/rill/cli/cmd/sudo"
 	"github.com/rilldata/rill/cli/cmd/user"
@@ -53,7 +51,7 @@ func Execute(ctx context.Context, ver config.Version) {
 		} else if strings.Contains(errMsg, "project not found") {
 			fmt.Println("Project not found. Run `rill project list` to check the list of projects.")
 		} else if strings.Contains(errMsg, "auth token not found") {
-			fmt.Println("Auth token is invalid/expired. Run `rill logout` and login again with `rill login`.")
+			fmt.Println("Auth token is invalid/expired. Login again with `rill login`.")
 		} else if strings.Contains(errMsg, "not authenticated as a user") {
 			fmt.Println("Please log in or sign up for Rill with `rill login`.")
 		} else {
@@ -115,13 +113,12 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.Flags().BoolP("version", "v", false, "Show rill version") // Adds option to get version by passing --version or -v
 
 	// Add sub-commands
-	rootCmd.AddCommand(initialize.InitCmd(cfg))
 	rootCmd.AddCommand(start.StartCmd(cfg))
-	rootCmd.AddCommand(source.SourceCmd(cfg))
 	rootCmd.AddCommand(admin.AdminCmd(cfg))
 	rootCmd.AddCommand(runtime.RuntimeCmd(cfg))
 	rootCmd.AddCommand(docs.DocsCmd(cfg, rootCmd))
 	rootCmd.AddCommand(completionCmd)
+	rootCmd.AddCommand(verifyInstallCmd(cfg))
 	rootCmd.AddCommand(versioncmd.VersionCmd())
 
 	// Add sub-commands for admin

@@ -17,6 +17,7 @@ export/
 /tmp
 /runtime/sql/deps
 /runtime/release
+/runtime/pkg/examples/embed/dist
 /cli/pkg/web/embed/dist
 /rill
 /cli/pkg/examples/embed/dist
@@ -51,6 +52,7 @@ last-query-output.json
 staging-databases
 /rilldata
 docs/dist/
+coverage
 
 # Maven
 target/
@@ -72,3 +74,5 @@ rill-binary-sa.json
 !runtime/testdata/**
 sysroot/
 latest.txt
+/web-common/coverage
+/web-local/.jest/rill-e2e-test

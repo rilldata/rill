@@ -71,6 +71,7 @@ type DB interface {
 	FindProjectsForOrgAndUser(ctx context.Context, orgID, userID, afterProjectName string, limit int) ([]*Project, error)
 	FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*Project, error)
+	FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*Project, error)
 	FindProject(ctx context.Context, id string) (*Project, error)
 	FindProjectByName(ctx context.Context, orgName string, name string) (*Project, error)
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
@@ -94,6 +95,9 @@ type DB interface {
 	InsertUser(ctx context.Context, opts *InsertUserOptions) (*User, error)
 	DeleteUser(ctx context.Context, id string) error
 	UpdateUser(ctx context.Context, id string, opts *UpdateUserOptions) (*User, error)
+	CheckUsersEmpty(ctx context.Context) (bool, error)
+	FindSuperusers(ctx context.Context) ([]*User, error)
+	UpdateSuperuser(ctx context.Context, userID string, superuser bool) error
 
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
 	InsertUsergroupMember(ctx context.Context, groupID, userID string) error
@@ -109,6 +113,7 @@ type DB interface {
 	InsertDeviceAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*DeviceAuthCode, error)
 	DeleteDeviceAuthCode(ctx context.Context, deviceCode string) error
 	UpdateDeviceAuthCode(ctx context.Context, id, userID string, state DeviceAuthCodeState) error
+	DeleteExpiredDeviceAuthCodes(ctx context.Context, retention time.Duration) error
 
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
@@ -254,6 +259,8 @@ type UpdateProjectOptions struct {
 	ProdBranch           string
 	ProdVariables        map[string]string
 	ProdDeploymentID     *string
+	ProdSlots            int
+	Region               string
 }
 
 // DeploymentStatus is an enum representing the state of a deployment
@@ -321,6 +328,7 @@ type InsertUserOptions struct {
 	DisplayName         string
 	PhotoURL            string
 	QuotaSingleuserOrgs int
+	Superuser           bool
 }
 
 // UpdateUserOptions defines options for updating an existing user

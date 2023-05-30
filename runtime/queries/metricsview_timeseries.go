@@ -43,8 +43,11 @@ func (q *MetricsViewTimeSeries) Deps() []string {
 	return []string{q.MetricsViewName}
 }
 
-func (q *MetricsViewTimeSeries) MarshalResult() any {
-	return q.Result
+func (q *MetricsViewTimeSeries) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *MetricsViewTimeSeries) UnmarshalResult(v any) error {
@@ -136,9 +139,10 @@ func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.O
 	}
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    sql,
-		Args:     args,
-		Priority: priority,
+		Query:            sql,
+		Args:             args,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err

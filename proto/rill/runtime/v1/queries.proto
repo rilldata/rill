@@ -28,6 +28,13 @@ service QueryService {
     };
   }
 
+  rpc MetricsViewComparisonToplist(MetricsViewComparisonToplistRequest) returns (MetricsViewComparisonToplistResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/compare-toplist",
+      body: "*"
+    };
+  }
+
   // MetricsViewTimeSeries returns time series for the measures in the metrics view.
   // It's a convenience API for querying a metrics view.
   rpc MetricsViewTimeSeries(MetricsViewTimeSeriesRequest) returns (MetricsViewTimeSeriesResponse) {
@@ -180,6 +187,59 @@ message MetricsViewToplistRequest {
 message MetricsViewToplistResponse {
   repeated MetricsViewColumn meta = 1;
   repeated google.protobuf.Struct data = 2;
+}
+
+// Request message for QueryService.MetricsViewComparisonToplist
+message MetricsViewComparisonToplistRequest {
+  string instance_id = 1;
+  string metrics_view_name = 2;
+  string dimension_name = 3;
+  repeated string measure_names = 4;
+  repeated InlineMeasure inline_measures = 5;
+  TimeRange base_time_range = 6;
+  TimeRange comparison_time_range = 7;
+  repeated MetricsViewComparisonSort sort = 8;
+  MetricsViewFilter filter = 9;
+  int64 limit = 10;
+  int64 offset = 11;
+  int32 priority = 12;
+}
+
+// Response message for QueryService.MetricsViewComparisonToplist
+message MetricsViewComparisonToplistResponse {
+  repeated MetricsViewComparisonRow rows = 1;
+}
+
+message TimeRange {
+  google.protobuf.Timestamp start = 1;
+  google.protobuf.Timestamp end = 2;
+}
+
+enum MetricsViewComparisonSortType {
+  METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED = 0;
+  METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE = 1;
+  METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE = 2;
+  METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA = 3;
+  METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA = 4;
+}
+
+message MetricsViewComparisonSort {
+  string measure_name = 1;
+  bool ascending = 2;
+  MetricsViewComparisonSortType type = 3;
+}
+
+message MetricsViewComparisonRow {
+  google.protobuf.Value dimension_value = 1;
+  repeated MetricsViewComparisonValue measure_values = 2;
+}
+
+message MetricsViewComparisonValue {
+  string measure_name = 1;
+  google.protobuf.Value base_value = 2;
+  google.protobuf.Value comparison_value = 3;
+  google.protobuf.Value delta_abs = 4;
+  google.protobuf.Value delta_rel = 5;
 }
 
 // Request message for QueryService.MetricsViewTimeSeries
@@ -495,7 +555,6 @@ message TimeSeriesTimeRange {
 message TimeSeriesResponse {
   repeated TimeSeriesValue results = 1;
   repeated TimeSeriesValue spark = 2;
-  TimeSeriesTimeRange time_range = 3;
   int32 sample_size = 4;
 }
 

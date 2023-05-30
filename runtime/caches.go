@@ -5,7 +5,6 @@ import (
 	"errors"
 	"sync"
 
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
@@ -74,7 +73,7 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn strin
 	key := instanceID + driver + dsn
 	val, ok := c.cache.Get(key)
 	if !ok {
-		conn, err := drivers.Open(driver, dsn, c.logger)
+		conn, err := drivers.Open(driver, dsn, c.logger.With(zap.String("instance_id", instanceID), zap.String("driver", driver)))
 		if err != nil {
 			return nil, err
 		}
@@ -140,24 +139,4 @@ func (c *migrationMetaCache) evict(ctx context.Context, instID string) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.cache.Remove(instID)
-}
-
-type queryCache struct {
-	cache *lru.Cache
-}
-
-func newQueryCache(size int) *queryCache {
-	cache, err := lru.New(size)
-	if err != nil {
-		panic(err)
-	}
-	return &queryCache{cache: cache}
-}
-
-func (c *queryCache) get(key queryCacheKey) (any, bool) {
-	return c.cache.Get(key)
-}
-
-func (c *queryCache) add(key queryCacheKey, value any) bool {
-	return c.cache.Add(key, value)
 }

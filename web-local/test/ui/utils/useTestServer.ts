@@ -1,11 +1,12 @@
 import { afterAll, afterEach, beforeAll, beforeEach } from "@jest/globals";
 import { isPortOpen } from "@rilldata/web-local/lib/util/isPortOpen";
 import { asyncWaitUntil } from "@rilldata/web-local/lib/util/waitUtils";
-import { rmSync } from "fs";
+import axios from "axios";
+import { rmSync, writeFileSync } from "fs";
 import type { ChildProcess } from "node:child_process";
 import { spawn } from "node:child_process";
 import path from "node:path";
-import { Browser, chromium, Page } from "playwright";
+import { Browser, Page, chromium } from "playwright";
 import treeKill from "tree-kill";
 
 export function useTestServer(port: number, dir: string) {
@@ -18,15 +19,17 @@ export function useTestServer(port: number, dir: string) {
     });
 
     childProcess = spawn(
-      path.join(__dirname, "../../../..", "rill"),
+      path.join(__dirname, "../../rill-e2e-test"),
       [
         "start",
         "--no-open",
-        "--port",
-        port + "",
-        "--port-grpc",
-        port + 1000 + "",
-        "--project",
+        `--port`,
+        port.toString(),
+        `--port-grpc`,
+        (port + 1000).toString(),
+        // Temporary workaround for test hangs until runtime fix. With pool size 1, sometimes network requests hang
+        "--db",
+        "stage.db?rill_pool_size=4",
         dir,
       ],
       {
@@ -35,7 +38,22 @@ export function useTestServer(port: number, dir: string) {
       }
     );
     childProcess.on("error", console.log);
-    await asyncWaitUntil(() => isPortOpen(port));
+
+    // Ping runtime until it's ready
+    await asyncWaitUntil(async () => {
+      try {
+        const response = await axios.get(`http://localhost:${port}/v1/ping`);
+        return response.status === 200;
+      } catch (err) {
+        return false;
+      }
+    });
+
+    // Add `rill.yaml` file to the project repo
+    writeFileSync(
+      `${dir}/rill.yaml`,
+      'compiler: rill-beta\ntitle: "Test Project"'
+    );
   });
 
   afterEach(async () => {
@@ -55,6 +73,7 @@ export function useTestBrowser(port: number) {
   beforeAll(async () => {
     browser = await chromium.launch({
       // headless: false,
+      // slowMo: 500,
       // devtools: true,
     });
   });

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
@@ -13,6 +14,7 @@ import (
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
+	"go.uber.org/zap"
 	"gocloud.dev/blob/gcsblob"
 	"gocloud.dev/gcp"
 	"golang.org/x/oauth2"
@@ -29,7 +31,7 @@ var errNoCredentials = errors.New("empty credentials: set `google_application_cr
 var spec = connectors.Spec{
 	DisplayName:        "Google Cloud Storage",
 	Description:        "Connect to Google Cloud Storage.",
-	ServiceAccountDocs: "https://docs.rilldata.com/connectors/gcs",
+	ServiceAccountDocs: "https://docs.rilldata.com/deploy/credentials/gcs",
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "path",
@@ -46,13 +48,13 @@ var spec = connectors.Spec{
 			Description: "GCP credentials inferred from your local environment.",
 			Type:        connectors.InformationalPropertyType,
 			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
-			Href:        "https://docs.rilldata.com/develop/import-data#setting-local-credentials-for-gcs",
+			Href:        "https://docs.rilldata.com/develop/import-data#configure-credentials-for-gcs",
 		},
 	},
 	ConnectorVariables: []connectors.VariableSchema{
 		{
 			Key:  "google_application_credentials",
-			Help: "Enter path of file to load from. Leave blank if public access enabled.",
+			Help: "Enter path of file to load from.",
 			ValidateFunc: func(any interface{}) error {
 				val := any.(string)
 				if val == "" {
@@ -60,7 +62,7 @@ var spec = connectors.Spec{
 					return nil
 				}
 
-				path, err := fileutil.ExpandHome(val)
+				path, err := fileutil.ExpandHome(strings.TrimSpace(val))
 				if err != nil {
 					return err
 				}
@@ -74,11 +76,10 @@ var spec = connectors.Spec{
 					return ""
 				}
 
-				path, err := fileutil.ExpandHome(val)
+				path, err := fileutil.ExpandHome(strings.TrimSpace(val))
 				if err != nil {
 					return err
 				}
-
 				// ignoring error since PathError is already validated
 				content, _ := os.ReadFile(path)
 				return string(content)
@@ -129,7 +130,7 @@ func (c connector) Spec() connectors.Spec {
 // ConsumeAsIterator returns a file iterator over objects stored in gcs.
 // The credential json is read from a env variable google_application_credentials.
 // Additionally in case `env.AllowHostCredentials` is true it looks for "Application Default Credentials" as well
-func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
+func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source, l *zap.Logger) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -156,7 +157,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		StorageLimitInBytes:   env.StorageLimitInBytes,
 	}
 
-	iter, err := rillblob.NewIterator(ctx, bucketObj, opts)
+	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, l)
 	if err != nil {
 		apiError := &googleapi.Error{}
 		// in cases when no creds are passed
@@ -212,7 +213,15 @@ func resolvedCredentials(ctx context.Context, env *connectors.Env) (*google.Cred
 	// GOOGLE_APPLICATION_CREDENTIALS is not set
 	if env.AllowHostAccess {
 		// use host credentials
-		return gcp.DefaultCredentials(ctx)
+		creds, err := gcp.DefaultCredentials(ctx)
+		if err != nil {
+			if strings.Contains(err.Error(), "google: could not find default credentials") {
+				return nil, errNoCredentials
+			}
+
+			return nil, err
+		}
+		return creds, nil
 	}
 	return nil, errNoCredentials
 }

@@ -18,8 +18,8 @@
     getTimeGrainOptions,
   } from "@rilldata/web-common/lib/time/grains";
   import {
-    convertTimeRangePreset,
     ISODurationToTimePreset,
+    convertTimeRangePreset,
     isRangeInsideOther,
   } from "@rilldata/web-common/lib/time/ranges";
   import {
@@ -31,12 +31,11 @@
     TimeRangeType,
   } from "@rilldata/web-common/lib/time/types";
   import {
-    createRuntimeServiceGetCatalogEntry,
     V1TimeGrain,
+    createRuntimeServiceGetCatalogEntry,
   } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { get } from "svelte/store";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
@@ -96,7 +95,8 @@
   // Once we have the allTimeRange, set the default time range and time grain.
   // This is a temporary workaround with high potential to break. We should refactor this defaulting logic to live with the store, not as part of a component.
   $: if (allTimeRange && allTimeRange?.start && isDashboardDefined) {
-    const selectedTimeRange = get(dashboardStore)?.selectedTimeRange;
+    const selectedTimeRange = $dashboardStore?.selectedTimeRange;
+
     if (!selectedTimeRange) {
       setDefaultTimeControls(allTimeRange);
     } else {
@@ -170,9 +170,15 @@
       start: new Date(start),
       end: new Date(end),
     };
+
+    const defaultTimeGrain = getDefaultTimeGrain(
+      baseTimeRange.start,
+      baseTimeRange.end
+    ).grain;
+
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
-      $dashboardStore.selectedTimeRange?.interval,
+      defaultTimeGrain,
       // reset the comparison range
       {}
     );
@@ -211,7 +217,7 @@
     const { name, start, end } = timeRange;
 
     // validate time range name + time grain combination
-    // (necessary because when the time range name is changed, the current time grain may not be valid for the new time range name)
+    // (necessary because when the time range name is changed, the default time grain may not be valid for the new time range name)
     timeGrainOptions = getTimeGrainOptions(start, end);
     const isValidTimeGrain = checkValidTimeGrain(
       timeGrain,

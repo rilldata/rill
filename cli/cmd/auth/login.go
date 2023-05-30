@@ -21,12 +21,14 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 		Use:   "login",
 		Short: "Authenticate with the Rill API",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			warn := color.New(color.Bold).Add(color.FgYellow)
 			ctx := cmd.Context()
 
+			// updating this as its not required to logout first and login again
 			if cfg.AdminTokenDefault != "" {
-				warn.Println("You are already logged in. To log in again, run `rill logout` first.")
-				return nil
+				err := Logout(ctx, cfg)
+				if err != nil {
+					return err
+				}
 			}
 
 			// Login user
@@ -64,7 +66,7 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 
 				fmt.Printf("Set default organization to %q. Change using `rill org switch`.\n", defaultOrg)
 			} else {
-				warn.Println("You are not part of any org. Run `rill org create` or `rill deploy` to create one.")
+				cmdutil.WarnPrinter("You are not part of any org. Run `rill org create` or `rill deploy` to create one.")
 			}
 			return nil
 		},

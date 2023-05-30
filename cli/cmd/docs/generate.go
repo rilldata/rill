@@ -11,14 +11,16 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-func GenerateCmd(rootCmd *cobra.Command) *cobra.Command {
+func GenerateCmd(rootCmd *cobra.Command, cfg *config.Config) *cobra.Command {
 	docsCmd := &cobra.Command{
-		Use:   "generate",
-		Short: "Generate CLI documentation",
-		Args:  cobra.ExactArgs(1),
+		Use:    "generate",
+		Short:  "Generate CLI documentation",
+		Args:   cobra.ExactArgs(1),
+		Hidden: !cfg.IsDev(),
 		Run: func(cmd *cobra.Command, args []string) {
 			dir := args[0]
 			rootCmd.DisableAutoGenTag = true
@@ -57,12 +59,6 @@ func genMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHa
 			sd = filepath.Join(dir, cmd.Name())
 		}
 
-		if _, err := os.Stat(sd); os.IsNotExist(err) {
-			if err := os.Mkdir(sd, fs.ModePerm); err != nil {
-				return err
-			}
-		}
-
 		if err := genMarkdownTreeCustom(c, sd, filePrepender, linkHandler); err != nil {
 			return err
 		}
@@ -72,9 +68,17 @@ func genMarkdownTreeCustom(cmd *cobra.Command, dir string, filePrepender, linkHa
 	if cmd.Parent() == nil {
 		nm = "cli"
 	}
+
 	filename := filepath.Join(dir, nm+".md")
 	if len(cmd.Commands()) > 0 && cmd.Parent() != nil {
-		filename = filepath.Join(dir, cmd.Name(), nm+".md")
+		dir = filepath.Join(dir, cmd.Name())
+		filename = filepath.Join(dir, nm+".md")
+	}
+
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.Mkdir(dir, fs.ModePerm); err != nil {
+			return err
+		}
 	}
 
 	f, err := os.Create(filename)
@@ -107,7 +111,7 @@ func genMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 	buf.WriteString("---\n")
 	if cmd.Parent() == nil {
 		buf.WriteString("title: CLI usage\n")
-		buf.WriteString("sidebar_position: 40\n")
+		buf.WriteString("sidebar_position: 15\n")
 	} else {
 		buf.WriteString("title: " + name + "\n")
 	}

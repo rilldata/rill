@@ -30,8 +30,8 @@ func (c *Codec) IsInit(ctx context.Context) bool {
 	return err == nil
 }
 
-func (c *Codec) InitEmpty(ctx context.Context, name, rillVersion string) error {
-	err := c.Repo.Put(ctx, c.InstanceID, "rill.yaml", strings.NewReader(fmt.Sprintf("compiler: %s\nrill_version: %s\n\ntitle: %s\n", Version, rillVersion, name)))
+func (c *Codec) InitEmpty(ctx context.Context, title string) error {
+	err := c.Repo.Put(ctx, c.InstanceID, "rill.yaml", strings.NewReader(fmt.Sprintf("compiler: %s\n\ntitle: %q\n", Version, title)))
 	if err != nil {
 		return err
 	}
@@ -134,21 +134,16 @@ func (c *Codec) ProjectConfig(ctx context.Context) (*ProjectConfig, error) {
 	return r, nil
 }
 
-func ProjectName(dir string) (string, error) {
-	content, err := os.ReadFile(filepath.Join(dir, "rill.yaml"))
-	if err != nil {
-		return "", err
-	}
-
-	c := &ProjectConfig{Variables: make(map[string]string)}
-	if err := yaml.Unmarshal(content, c); err != nil {
-		return "", err
-	}
-
-	return c.SanitizedName(), nil
-}
-
 func HasRillProject(dir string) bool {
 	_, err := os.Open(filepath.Join(dir, "rill.yaml"))
 	return err == nil
+}
+
+func ParseProjectConfig(content []byte) (*ProjectConfig, error) {
+	c := &ProjectConfig{Variables: make(map[string]string)}
+	if err := yaml.Unmarshal(content, c); err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
