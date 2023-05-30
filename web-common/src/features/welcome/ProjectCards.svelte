@@ -67,14 +67,6 @@
     mutation: {
       onSuccess: (response) => {
         invalidateAfterReconcile(queryClient, $runtime.instanceId, response);
-        // behaviourEvent.fireSourceSuccessEvent(
-        //   BehaviourEventMedium.Card,
-        //   MetricsEventScreenName.Splash,
-        //   MetricsEventSpace.Workspace,
-        //   SourceConnectionType.Https,
-        //   fileType,
-        //   false
-        // );
         goto(firstPage);
       },
       onError: (err) => {
