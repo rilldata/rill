@@ -1,5 +1,0 @@
-compiler: rill-beta
-rill_version: 0.25.2
-
-title: Infra Cost Margins Monitoring
-description: This dashboard identifies opportunities to improve cloud infrastructure operations and to manage customer implementations. In this example, we’ve tied together a combination of cloud services, other hosting costs, and revenue metrics. Cost is the primary metric with insight into Revenue and Margins by Customer.
