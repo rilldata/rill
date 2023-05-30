@@ -14,7 +14,6 @@ import (
 	adminclient "github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
-	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -25,6 +24,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
+	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
@@ -251,12 +251,6 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			// Run flow to get connector credentials and other variables
-			variables, err := env.VariablesFlow(ctx, fullProjectPath, tel)
-			if err != nil {
-				return err
-			}
-
 			// Create the project (automatically deploys prod branch)
 			res, err := createProjectFlow(ctx, client, &adminv1.CreateProjectRequest{
 				OrganizationName: cfg.Org,
@@ -270,7 +264,6 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				ProdBranch:       prodBranch,
 				Public:           public,
 				GithubUrl:        githubURL,
-				Variables:        variables,
 			})
 			if err != nil {
 				if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
@@ -282,6 +275,10 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			// Success!
 			success.Printf("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", cfg.Org, res.Project.Name)
+			// Run flow to check connector credentials
+			if err := variablesFlow(ctx, fullProjectPath, name); err != nil {
+				return err
+			}
 			success.Printf("Rill projects deploy continuously when you push changes to Github.\n")
 			if res.Project.FrontendUrl != "" {
 				success.Printf("Your project can be accessed at: %s\n", res.Project.FrontendUrl)
@@ -476,6 +473,39 @@ func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adm
 		return client.CreateProject(ctx, req)
 	}
 	return res, err
+}
+
+func variablesFlow(ctx context.Context, projectPath, projectName string) error {
+	connectorList, err := rillv1beta.ExtractConnectors(ctx, projectPath)
+	if err != nil {
+		return fmt.Errorf("failed to extract connectors %w", err)
+	}
+
+	// collect all sources
+	srcs := make([]*connectors.Source, 0)
+	for _, c := range connectorList {
+		if !c.AnonymousAccess {
+			srcs = append(srcs, c.Sources...)
+		}
+	}
+	if len(srcs) == 0 {
+		return nil
+	}
+
+	fmt.Printf("Rill does not have access to the following data sources:\n\n")
+	for _, src := range srcs {
+		if _, ok := src.Properties["path"]; ok {
+			// print URL wherever applicable
+			fmt.Printf(" - %s\n", src.Properties["path"])
+		} else {
+			fmt.Printf(" - %s\n", src.Name)
+		}
+	}
+	fmt.Printf("\nRun `rill env configure --project %s` to provide access to the data store.\n", projectName)
+	warn := color.New(color.Bold).Add(color.FgYellow)
+	warn.Printf("The project will remain in an error state until this is done.\n\n")
+	time.Sleep(2 * time.Second)
+	return nil
 }
 
 func repoInSyncFlow(projectPath, branch, remoteName string) bool {
