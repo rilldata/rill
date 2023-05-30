@@ -14,6 +14,7 @@ func UserCmd(cfg *config.Config) *cobra.Command {
 	userCmd.AddCommand(SearchCmd(cfg))
 	userCmd.AddCommand(AssumeCmd(cfg))
 	userCmd.AddCommand(UnAssumeCmd(cfg))
+	userCmd.AddCommand(OpenCmd(cfg))
 
 	return userCmd
 }

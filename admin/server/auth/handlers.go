@@ -28,6 +28,7 @@ func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux) {
 	// TODO: Add helper utils to clean this up
 	inner := http.NewServeMux()
 	inner.Handle("/auth/login", otelhttp.WithRouteTag("/auth/login", http.HandlerFunc(a.authLogin)))
+	inner.Handle("/auth/with-token", otelhttp.WithRouteTag("/auth/with-token", http.HandlerFunc(a.authWithToken)))
 	inner.Handle("/auth/callback", otelhttp.WithRouteTag("/auth/callback", http.HandlerFunc(a.authLoginCallback)))
 	inner.Handle("/auth/logout", otelhttp.WithRouteTag("/auth/logout", http.HandlerFunc(a.authLogout)))
 	inner.Handle("/auth/logout/callback", otelhttp.WithRouteTag("/auth/logout/callback", http.HandlerFunc(a.authLogoutCallback)))
@@ -35,6 +36,44 @@ func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux) {
 	inner.Handle("/auth/oauth/device", otelhttp.WithRouteTag("/auth/oauth/device", a.HTTPMiddleware(http.HandlerFunc(a.handleUserCodeConfirmation)))) // NOTE: Uses auth middleware
 	inner.Handle("/auth/oauth/token", otelhttp.WithRouteTag("/auth/oauth/token", http.HandlerFunc(a.getAccessToken)))
 	mux.Handle("/auth/", observability.Middleware("admin", a.logger, inner))
+}
+
+func (a *Authenticator) authWithToken(w http.ResponseWriter, r *http.Request) {
+	// Generate random state for CSRF
+	b := make([]byte, 32)
+	_, err := rand.Read(b)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to generate state: %s", err), http.StatusInternalServerError)
+		return
+	}
+	state := base64.StdEncoding.EncodeToString(b)
+
+	// Get auth cookie
+	sess := a.cookies.Get(r, cookieName)
+
+	// Set state in cookie
+	sess.Values[cookieFieldState] = state
+
+	// Set redirect URL in cookie to enable custom redirects after auth has completed
+	redirect := r.URL.Query().Get("redirect")
+	if redirect != "" {
+		sess.Values[cookieFieldRedirect] = redirect
+	}
+
+	// Set auth token in cookie
+	token := r.URL.Query().Get("token")
+	if token != "" {
+		sess.Values[cookieFieldAccessToken] = token
+	}
+
+	// Save cookie
+	if err := sess.Save(r, w); err != nil {
+		http.Error(w, fmt.Sprintf("failed to save session: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Redirect to UI (usually)
+	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 }
 
 // authLogin starts an OAuth and OIDC flow that redirects the user for authentication with the auth provider.
