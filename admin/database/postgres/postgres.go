@@ -607,6 +607,11 @@ func (c *connection) UpdateDeviceAuthCode(ctx context.Context, id, userID string
 	return checkUpdateRow("device auth code", res, err)
 }
 
+func (c *connection) DeleteExpiredDeviceAuthCodes(ctx context.Context) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM device_auth_codes WHERE expires_on < now()")
+	return parseErr("device auth code", err)
+}
+
 func (c *connection) FindOrganizationRole(ctx context.Context, name string) (*database.OrganizationRole, error) {
 	role := &database.OrganizationRole{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM org_roles WHERE lower(name)=lower($1)", name).StructScan(role)
