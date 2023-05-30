@@ -45,6 +45,8 @@ func (w *Worker) Run(ctx context.Context) error {
 
 func (w *Worker) RunJob(ctx context.Context, name string) error {
 	switch name {
+	case "check_slots":
+		return w.runJob(ctx, name, w.checkSlots)
 	case "reset_all_deployments":
 		return w.runJob(ctx, name, w.resetAllDeployments)
 	// NOTE: Add new ad-hoc jobs here
