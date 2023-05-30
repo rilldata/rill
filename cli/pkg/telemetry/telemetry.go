@@ -28,6 +28,7 @@ var ErrRillIntake = errors.New("failed to fire telemetry")
 type Action string
 
 const (
+	ActionInstallSuccess         Action = "install-success"
 	ActionDeployStart            Action = "deploy-start"
 	ActionDeploySuccess          Action = "deploy-success"
 	ActionGithubConnectedStart   Action = "ghconnected-start"
