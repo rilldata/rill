@@ -7,9 +7,18 @@
     "generate:runtime-client": "orval",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
-    "test:watch": "npm run test -- --watch"
+    "test:watch": "npm run test -- --watch",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "devDependencies": {
+    "@storybook/addon-essentials": "^7.0.18",
+    "@storybook/addon-interactions": "^7.0.18",
+    "@storybook/addon-links": "^7.0.18",
+    "@storybook/blocks": "^7.0.18",
+    "@storybook/svelte": "^7.0.18",
+    "@storybook/svelte-vite": "^7.0.18",
+    "@storybook/testing-library": "^0.0.14-next.2",
     "@tanstack/svelte-query": "^4.27.0",
     "@typescript-eslint/eslint-plugin": "^5.27.0",
     "@typescript-eslint/parser": "^5.27.0",
@@ -17,14 +26,23 @@
     "axios": "^0.27.2",
     "eslint": "^8.16.0",
     "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-storybook": "^0.6.12",
     "jest": "^27.5.1",
     "match-sorter": "^6.3.1",
     "orval": "^6.12.0",
     "prettier": "^2.6.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "storybook": "^7.0.18",
     "svelte": "^3.48.0",
     "svelte-preprocess": "^5.0.0",
     "typescript": "^4.7.4",
     "vitest": "^0.31.0"
   },
-  "type": "module"
+  "type": "module",
+  "eslintConfig": {
+    "extends": [
+      "plugin:storybook/recommended"
+    ]
+  }
 }
