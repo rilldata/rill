@@ -44,7 +44,11 @@
     toYupFriendlyKey,
   } from "./yupSchemas";
   import { connectorToSourceConnectionType } from "../../../metrics/service/SourceEventTypes";
-  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
+  import {
+    BehaviourEventAction,
+    BehaviourEventMedium,
+  } from "../../../metrics/service/BehaviourEventTypes";
+  import { behaviourEvent } from "../../../metrics/initMetrics";
 
   export let connector: V1Connector;
 
@@ -89,6 +93,13 @@
       },
       validationSchema: yupSchema,
       onSubmit: async (values) => {
+        behaviourEvent.fireSourceTriggerEvent(
+          BehaviourEventAction.SourceAdd,
+          BehaviourEventMedium.Button,
+          EntityTypeToScreenMap[$appStore.activeEntity?.type],
+          MetricsEventSpace.Modal
+        );
+
         overlay.set({ title: `Importing ${values.sourceName}` });
 
         // If project is uninitialized, initialize an empty project

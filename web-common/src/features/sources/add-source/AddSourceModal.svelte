@@ -9,6 +9,16 @@
   import { createEventDispatcher } from "svelte";
   import LocalSource from "./LocalSource.svelte";
   import RemoteSource from "./RemoteSource.svelte";
+  import { behaviourEvent } from "../../../metrics/initMetrics";
+  import {
+    BehaviourEventAction,
+    BehaviourEventMedium,
+  } from "../../../metrics/service/BehaviourEventTypes";
+  import {
+    EntityTypeToScreenMap,
+    MetricsEventSpace,
+  } from "../../../metrics/service/MetricsTypes";
+  import { appStore } from "../../../layout/app-store";
 
   const dispatch = createEventDispatcher();
 
@@ -32,6 +42,16 @@
 
   let disabled = false;
 
+  function onDialogClose() {
+    behaviourEvent.fireSourceTriggerEvent(
+      BehaviourEventAction.SourceCancel,
+      BehaviourEventMedium.Button,
+      EntityTypeToScreenMap[$appStore.activeEntity?.type],
+      MetricsEventSpace.Modal
+    );
+    dispatch("close");
+  }
+
   function setDefaultConnector(connectors: V1Connector[]) {
     if (connectors?.length > 0) {
       selectedConnector = connectors[0];
@@ -45,7 +65,7 @@
   compact
   useContentForMinSize
   {disabled}
-  on:cancel={() => dispatch("close")}
+  on:cancel={() => onDialogClose()}
   showCancel
   size="md"
   yFixed
