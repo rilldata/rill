@@ -14,7 +14,6 @@ rill deploy [flags]
 ```
       --path string             Path to project repository (default ".")
       --org string              Org to deploy project
-      --prod-slots int          Slots to allocate for production deployments (default 2)
       --description string      Project description
       --region string           Deployment region
       --prod-db-driver string   Database driver (default "duckdb")

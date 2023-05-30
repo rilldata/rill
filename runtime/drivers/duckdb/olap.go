@@ -114,21 +114,40 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	// NOTE: We can't just "defer release()" because release() will block until rows.Close() is called.
 	// We must be careful to make sure release() is called on all code paths.
 
+	var cancelFunc context.CancelFunc
+	if stmt.ExecutionTimeout != 0 {
+		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
+	}
+
 	rows, err := conn.QueryxContext(ctx, stmt.Query, stmt.Args...)
 	if err != nil {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+
 		_ = release()
 		return nil, err
 	}
 
 	schema, err := rowsToSchema(rows)
 	if err != nil {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+
 		_ = rows.Close()
 		_ = release()
 		return nil, err
 	}
 
 	res = &drivers.Result{Rows: rows, Schema: schema}
-	res.SetCleanupFunc(release) // Will call release when res.Close() is called.
+	res.SetCleanupFunc(func() error {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+
+		return release()
+	})
 
 	return res, nil
 }

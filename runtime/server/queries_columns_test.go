@@ -62,13 +62,13 @@ func TestServer_GetTopK(t *testing.T) {
 		t,
 		`
 		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times, DATE '2007-04-01' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times, DATE '2009-06-01' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-04-11' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-11-21' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 12 AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2011-06-30' AS dates
 		`,
 		5,
@@ -519,13 +519,13 @@ func TestServer_GetCardinalityOfColumn(t *testing.T) {
 func getColumnTestServer(t *testing.T) (*Server, string) {
 	sql := `
 		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times, DATE '2007-04-01' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times, DATE '2009-06-01' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-04-11' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-11-21' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 12 AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2011-06-30' AS dates
 	`
 
