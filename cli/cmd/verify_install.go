@@ -13,7 +13,8 @@ import (
 func verifyInstallCmd(cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "verify-install",
-		Hidden: true,
+		Short:  "Verify installation (called by install script)",
+		Hidden: !cfg.IsDev(),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Emit telemetry event
 			tel := telemetry.New(cfg.Version)
