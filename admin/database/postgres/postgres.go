@@ -607,8 +607,8 @@ func (c *connection) UpdateDeviceAuthCode(ctx context.Context, id, userID string
 	return checkUpdateRow("device auth code", res, err)
 }
 
-func (c *connection) DeleteExpiredDeviceAuthCodes(ctx context.Context) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM device_auth_codes WHERE expires_on < now()")
+func (c *connection) DeleteExpiredDeviceAuthCodes(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM device_auth_codes WHERE expires_on + $1 < now()", retention)
 	return parseErr("device auth code", err)
 }
 
