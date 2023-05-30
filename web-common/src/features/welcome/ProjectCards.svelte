@@ -18,11 +18,7 @@
     BehaviourEventAction,
     BehaviourEventMedium,
   } from "../../metrics/service/BehaviourEventTypes";
-  import {
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "../../metrics/service/MetricsTypes";
-  import { SourceConnectionType } from "../../metrics/service/SourceEventTypes";
+  import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
 
   const queryClient = useQueryClient();
 
