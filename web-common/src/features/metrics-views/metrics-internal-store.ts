@@ -5,7 +5,6 @@ import type {
   V1Model,
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
-import { dim } from "ansi-colors";
 import { Subscriber, readable } from "svelte/store";
 import { Document, ParsedNode, YAMLMap, parseDocument } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
