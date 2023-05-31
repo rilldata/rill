@@ -10,6 +10,7 @@
   import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../../layout/navigation/NavigationHeader.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
   import { getName } from "../../entity-management/name-utils";
   import { createModel } from "../createModel";
   import { useModelNames } from "../selectors";
@@ -46,14 +47,9 @@
   };
 </script>
 
-<NavigationHeader
-  bind:show={showModels}
-  contextButtonID={"create-model-button"}
-  on:add={handleAddModel}
-  tooltipText="Create a new model"
+<NavigationHeader bind:show={showModels} toggleText="models"
+  >Models</NavigationHeader
 >
-  Models
-</NavigationHeader>
 
 {#if showModels}
   <div
@@ -90,6 +86,11 @@
         </NavigationEntry>
       {/each}
     {/if}
+    <AddAssetButton
+      id="create-model-button"
+      label="Add model"
+      on:click={handleAddModel}
+    />
   </div>
 {/if}
 

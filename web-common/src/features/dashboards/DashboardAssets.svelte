@@ -40,6 +40,7 @@
   import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
   import { runtime } from "../../runtime-client/runtime-store";
+  import AddAssetButton from "../entity-management/AddAssetButton.svelte";
   import RenameAssetModal from "../entity-management/RenameAssetModal.svelte";
 
   $: instanceId = $runtime.instanceId;
@@ -183,15 +184,9 @@
   $: canAddDashboard = $featureFlags.readOnly === false;
 </script>
 
-<NavigationHeader
-  bind:show={showMetricsDefs}
-  on:add={dispatchAddEmptyMetricsDef}
-  tooltipText="Create a new dashboard"
-  toggleText="dashboards"
-  canAddAsset={canAddDashboard}
+<NavigationHeader bind:show={showMetricsDefs} toggleText="dashboards"
+  >Dashboards</NavigationHeader
 >
-  Dashboards
-</NavigationHeader>
 
 {#if showMetricsDefs && $dashboardNames.data}
   <div
@@ -255,6 +250,13 @@
         </svelte:fragment>
       </NavigationEntry>
     {/each}
+    {#if canAddDashboard}
+      <AddAssetButton
+        id="add-dashboard"
+        label="Add dashboard"
+        on:click={() => dispatchAddEmptyMetricsDef()}
+      />
+    {/if}
   </div>
   {#if showRenameMetricsDefinitionModal}
     <RenameAssetModal
