@@ -8,7 +8,7 @@
 <button
   on:click
   {id}
-  class="py-1 pl-2.5 pr-2 hover:bg-gray-100 w-full text-left flex gap-x-2 items-center text-xs"
+  class="pl-2.5 pr-2 py-1 hover:bg-gray-100 w-full text-left flex gap-x-1.5 items-center text-xs"
 >
   <Add className="text-gray-900 bg-gray-300 rounded" size={"16px"} />
   {label}
