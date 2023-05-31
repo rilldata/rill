@@ -410,9 +410,9 @@ func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, stat
 	return res, nil
 }
 
-func (c *connection) UpdateDeploymentTS(ctx context.Context, ids []string) (*database.Deployment, error) {
+func (c *connection) UpdateDeploymentUsedOn(ctx context.Context, ids []string) (*database.Deployment, error) {
 	res := &database.Deployment{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET updated_on=now() WHERE id = any($1) RETURNING *", ids).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET used_on=now() WHERE id = any($1) RETURNING *", ids).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
 	}

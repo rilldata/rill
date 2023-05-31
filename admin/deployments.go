@@ -203,7 +203,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 			continue
 		}
 
-		if proj.ProductionTTL < time.Since(depl.UpdatedOn) {
+		if proj.ProdTTL < time.Since(depl.UpdatedOn) {
 			err := s.teardownDeployment(ctx, proj, depl)
 			if err != nil {
 				fmt.Printf("could not teardown deployment, error:%v\n", err)

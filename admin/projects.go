@@ -173,7 +173,7 @@ func (s *Service) updateDeplTSToDB(ctx context.Context) error {
 		deplIds = append(deplIds, k)
 	}
 
-	_, err := s.DB.UpdateDeploymentTS(ctx, deplIds)
+	_, err := s.DB.UpdateDeploymentUsedOn(ctx, deplIds)
 
 	s.deplTSCache.cache = make(map[string]bool)
 	return err
