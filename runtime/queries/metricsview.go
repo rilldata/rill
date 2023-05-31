@@ -258,3 +258,52 @@ func repeatString(val string, n int) []string {
 	}
 	return res
 }
+
+func validateAndGetDimension(mv *runtimev1.MetricsView, dimName string) (string, error) {
+	dimName = strings.ToLower(dimName)
+	for _, dimension := range mv.Dimensions {
+		if strings.EqualFold(dimension.Name, dimName) {
+			if dimension.Column != "" {
+				return dimension.Column, nil
+			}
+			// backwards compatibility for older projects that have not run reconcile on this dashboard
+			// in that case `column` will not be present
+			return dimension.Name, nil
+		}
+	}
+	return "", fmt.Errorf("dimension %s not found", dimName)
+}
+
+func convertFilterToColumn(mv *runtimev1.MetricsView, filter *runtimev1.MetricsViewFilter) error {
+	if filter == nil {
+		return nil
+	}
+
+	dimNameMap := make(map[string]string)
+	for _, dimension := range mv.Dimensions {
+		if dimension.Column != "" {
+			dimNameMap[dimension.Name] = dimension.Column
+		} else {
+			// backwards compatibility for older projects that have not run reconcile on this dashboard
+			// in that case `column` will not be present
+			dimNameMap[dimension.Name] = dimension.Name
+		}
+	}
+
+	for _, cond := range filter.Include {
+		col, ok := dimNameMap[cond.Name]
+		if !ok {
+			return fmt.Errorf("dimension %s not found", cond.Name)
+		}
+		cond.Name = col
+	}
+	for _, cond := range filter.Exclude {
+		col, ok := dimNameMap[cond.Name]
+		if !ok {
+			return fmt.Errorf("dimension %s not found", cond.Name)
+		}
+		cond.Name = col
+	}
+
+	return nil
+}

@@ -64,7 +64,7 @@ func TestServer_MetricsViewTimeSeries_complete_source_sanity_test(t *testing.T) 
 		Filter: &runtimev1.MetricsViewFilter{
 			Include: []*runtimev1.MetricsViewFilter_Cond{
 				{
-					Name: "domain",
+					Name: "dom",
 					In: []*structpb.Value{
 						structpb.NewStringValue("msn.com"),
 					},

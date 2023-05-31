@@ -76,6 +76,11 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
+	err = convertFilterToColumn(mv, q.Filter)
+	if err != nil {
+		return err
+	}
+
 	// Build query
 	sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect())
 	if err != nil {
@@ -102,7 +107,12 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 		return "", nil, err
 	}
 
-	dimName := safeName(q.DimensionName)
+	dimName, err := validateAndGetDimension(mv, q.DimensionName)
+	if err != nil {
+		return "", nil, err
+	}
+
+	dimName = safeName(dimName)
 	selectCols := []string{dimName}
 	for _, m := range ms {
 		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)

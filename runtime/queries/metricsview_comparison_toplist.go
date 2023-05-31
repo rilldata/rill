@@ -80,6 +80,11 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 		return q.executeComparisonToplist(ctx, olap, mv, priority)
 	}
 
+	err = convertFilterToColumn(mv, q.Filter)
+	if err != nil {
+		return err
+	}
+
 	return q.executeToplist(ctx, olap, mv, priority)
 }
 
@@ -236,7 +241,12 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 		return "", nil, err
 	}
 
-	dimName := safeName(q.DimensionName)
+	dimName, err := validateAndGetDimension(mv, q.DimensionName)
+	if err != nil {
+		return "", nil, err
+	}
+
+	dimName = safeName(dimName)
 	selectCols := []string{dimName}
 	for _, m := range ms {
 		expr := fmt.Sprintf(`%s as %s`, m.Expression, safeName(m.Name))
@@ -296,8 +306,14 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		return "", nil, err
 	}
 
-	dimName := safeName(q.DimensionName)
+	dimName, err := validateAndGetDimension(mv, q.DimensionName)
+	if err != nil {
+		return "", nil, err
+	}
+
+	dimName = safeName(dimName)
 	selectCols := []string{dimName}
+
 	finalSelectCols := []string{}
 	measureMap := make(map[string]int)
 	for i, m := range ms {

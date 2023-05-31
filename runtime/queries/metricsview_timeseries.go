@@ -69,6 +69,11 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
+	err = convertFilterToColumn(mv, q.Filter)
+	if err != nil {
+		return err
+	}
+
 	olap, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err

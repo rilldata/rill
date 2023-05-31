@@ -900,7 +900,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_complete_source_sanit
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		DimensionName:   "domain",
+		DimensionName:   "dom",
 		MeasureNames:    []string{"measure_0"},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
@@ -911,7 +911,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_complete_source_sanit
 		Filter: &runtimev1.MetricsViewFilter{
 			Exclude: []*runtimev1.MetricsViewFilter_Cond{
 				{
-					Name: "publisher",
+					Name: "pub",
 					In: []*structpb.Value{
 						structpb.NewStringValue("Yahoo"),
 					},

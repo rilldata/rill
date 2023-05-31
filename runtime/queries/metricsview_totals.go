@@ -72,6 +72,11 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
+	err = convertFilterToColumn(mv, q.Filter)
+	if err != nil {
+		return err
+	}
+
 	ql, args, err := q.buildMetricsTotalsSQL(mv, olap.Dialect())
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
