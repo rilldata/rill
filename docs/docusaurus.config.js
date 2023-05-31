@@ -68,7 +68,6 @@ const config = {
         appId: "YF2DSTYTDY",
         apiKey: "5ad8a0be8edb6cd902a1c24b28c38900",
         indexName: "rilldata",
-        branch: "netlify-cralwer", //testing
         debug: false // Set debug to true if you want to inspect the modal        
       },
       metadata: [
