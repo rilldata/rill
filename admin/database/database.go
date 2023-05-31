@@ -104,11 +104,11 @@ type DB interface {
 	InsertUsergroupMember(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupMember(ctx context.Context, groupID, userID string) error
 
-	FindExpiredUserAuthTokens(ctx context.Context) ([]*UserAuthToken, error)
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
 	DeleteUserAuthToken(ctx context.Context, id string) error
+	DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error
 
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
 	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)

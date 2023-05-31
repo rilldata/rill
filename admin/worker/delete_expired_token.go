@@ -2,24 +2,10 @@ package worker
 
 import (
 	"context"
-
-	"github.com/rilldata/rill/runtime/pkg/observability"
-	"go.uber.org/zap"
+	"time"
 )
 
-func (w *Worker) deleteExpiredTokens(ctx context.Context) error {
-	expiredTokens, err := w.admin.DB.FindExpiredUserAuthTokens(ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, token := range expiredTokens {
-		w.logger.Info(`deleting expired token`, zap.String("id", token.ID), zap.Time("expires_on", *token.ExpiresOn), observability.ZapCtx(ctx))
-		err = w.admin.DB.DeleteUserAuthToken(ctx, token.ID)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+func (w *Worker) deleteExpiredUserAuthTokens(ctx context.Context) error {
+	// Delete user auth tokens that have been expired for more than 24 hours.
+	return w.admin.DB.DeleteExpiredUserAuthTokens(ctx, 24*time.Hour)
 }

@@ -539,15 +539,6 @@ func (c *connection) DeleteUsergroupMember(ctx context.Context, groupID, userID 
 	return checkDeleteRow("usergroup member", res, err)
 }
 
-func (c *connection) FindExpiredUserAuthTokens(ctx context.Context) ([]*database.UserAuthToken, error) {
-	var res []*database.UserAuthToken
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT t.* FROM user_auth_tokens t WHERE t.expires_on IS NOT NULL AND t.expires_on < now()")
-	if err != nil {
-		return nil, parseErr("auth tokens", err)
-	}
-	return res, nil
-}
-
 func (c *connection) FindUserAuthTokens(ctx context.Context, userID string) ([]*database.UserAuthToken, error) {
 	var res []*database.UserAuthToken
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT t.* FROM user_auth_tokens t WHERE t.user_id=$1", userID)
@@ -586,6 +577,11 @@ func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.Ins
 func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE id=$1", id)
 	return checkDeleteRow("auth token", res, err)
+}
+
+func (c *connection) DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
+	return parseErr("auth token", err)
 }
 
 func (c *connection) FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.DeviceAuthCode, error) {
