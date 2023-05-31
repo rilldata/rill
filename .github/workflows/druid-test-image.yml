@@ -1,0 +1,36 @@
+name: Build Druid image for tests
+
+on:
+  pull_request:
+    paths:
+      - "scripts/druid-micro.dockerfile"
+      - ".github/workflows/druid-test-image.yml"
+
+jobs:
+  release:
+    name: 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Authenticate GCloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: "${{ secrets.RILL_BINARY_SA }}"
+
+      - name: Set up GCloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Build & Publish Rill docker image
+        run: |-
+          cd scripts
+
+          gcloud auth configure-docker
+
+          docker build -f druid-micro.dockerfile --build-arg DRUID_VERSION=${{ env.DRUID_VERSION }} -t gcr.io/rilldata/druid-micro:${{ env.DRUID_VERSION }} .
+          docker tag gcr.io/rilldata/druid-micro:${{ env.DRUID_VERSION }} gcr.io/rilldata/druid-micro
+          docker push gcr.io/rilldata/druid-micro:${{ env.DRUID_VERSION }}
+          docker push gcr.io/rilldata/druid-micro
+        env:
+          DRUID_VERSION: 25.0.0

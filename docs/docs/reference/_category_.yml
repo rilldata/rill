@@ -1,4 +1,4 @@
 position: 50
 label: Reference
-collapsible: false
-collapsed: false
+collapsible: true
+collapsed: true

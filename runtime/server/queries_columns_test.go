@@ -16,6 +16,7 @@ import (
 )
 
 func TestServer_GetTopK_HugeInt(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getColumnTestServerWithModel(t, "select 170141183460469231731687303715884105727::hugeint as metric, 'a' as dim", 1)
 
 	res, err := server.ColumnTopK(
@@ -36,6 +37,7 @@ func TestServer_GetTopK_HugeInt(t *testing.T) {
 }
 
 func TestServer_GetTopK_1dim_HugeInt(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getColumnTestServerWithModel(t, "select 170141183460469231731687303715884105727::hugeint as metric", 1)
 
 	res, err := server.ColumnTopK(
@@ -55,17 +57,18 @@ func TestServer_GetTopK_1dim_HugeInt(t *testing.T) {
 }
 
 func TestServer_GetTopK(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getColumnTestServerWithModel(
 		t,
 		`
 		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times, DATE '2007-04-01' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times, DATE '2009-06-01' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-04-11' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-11-21' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 12 AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2011-06-30' AS dates
 		`,
 		5,
@@ -116,6 +119,7 @@ func TestServer_GetTopK(t *testing.T) {
 }
 
 func TestServer_ColumnNullCount(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getColumnTestServer(t)
 
 	res, err := server.ColumnNullCount(testCtx(), &runtimev1.ColumnNullCountRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
@@ -130,6 +134,7 @@ func TestServer_ColumnNullCount(t *testing.T) {
 }
 
 func TestServer_ColumnDescriptiveStatistics(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getColumnTestServer(t)
 
 	_, err := server.ColumnDescriptiveStatistics(testCtx(), &runtimev1.ColumnDescriptiveStatisticsRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
@@ -151,6 +156,7 @@ func TestServer_ColumnDescriptiveStatistics(t *testing.T) {
 }
 
 func TestServer_ColumnDescriptiveStatistics_EmptyModel(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getColumnTestServerWithEmptyModel(t)
 
 	res, err := server.ColumnDescriptiveStatistics(testCtx(), &runtimev1.ColumnDescriptiveStatisticsRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
@@ -160,6 +166,7 @@ func TestServer_ColumnDescriptiveStatistics_EmptyModel(t *testing.T) {
 }
 
 func TestServer_ColumnTimeGrain(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getColumnTestServer(t)
 
 	_, err := server.ColumnTimeGrain(testCtx(), &runtimev1.ColumnTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
@@ -174,6 +181,7 @@ func TestServer_ColumnTimeGrain(t *testing.T) {
 }
 
 func TestServer_ColumnTimeGrain_EmptyModel(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getColumnTestServerWithEmptyModel(t)
 
 	_, err := server.ColumnTimeGrain(testCtx(), &runtimev1.ColumnTimeGrainRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
@@ -188,6 +196,7 @@ func TestServer_ColumnTimeGrain_EmptyModel(t *testing.T) {
 }
 
 func TestServer_GetNumericHistogram_FD(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getColumnTestServer(t)
 
 	res, err := server.ColumnNumericHistogram(
@@ -209,6 +218,7 @@ func TestServer_GetNumericHistogram_FD(t *testing.T) {
 }
 
 func TestServer_GetNumericHistogram_Diagnostic(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getColumnTestServer(t)
 
 	start, _, gap := queries.NiceAndStep(1, 5, 5)
@@ -245,6 +255,7 @@ func TestServer_GetNumericHistogram_Diagnostic(t *testing.T) {
 }
 
 func TestServer_Model_Nulls(t *testing.T) {
+	t.Parallel()
 	sql := `SELECT null as val`
 	server, instanceId := getColumnTestServerWithModel(t, sql, 1)
 	require.NotNil(t, server)
@@ -252,6 +263,7 @@ func TestServer_Model_Nulls(t *testing.T) {
 }
 
 func TestServer_GetNumericHistogram_2rows_all_nulls(t *testing.T) {
+	t.Parallel()
 	sql := `
 		SELECT null as val
 		UNION ALL
@@ -274,6 +286,7 @@ func TestServer_GetNumericHistogram_2rows_all_nulls(t *testing.T) {
 }
 
 func TestServer_GetNumericHistogram_2rows_single_null(t *testing.T) {
+	t.Parallel()
 	sql := `
 		SELECT null as val
 		UNION ALL
@@ -296,6 +309,7 @@ func TestServer_GetNumericHistogram_2rows_single_null(t *testing.T) {
 }
 
 func TestServer_GetNumericHistogram_2rows(t *testing.T) {
+	t.Parallel()
 	sql := `
 		SELECT NULL as val
 		UNION ALL
@@ -330,6 +344,7 @@ func TestServer_GetNumericHistogram_2rows(t *testing.T) {
 }
 
 func TestServer_GetNumericHistogram_EmptyModel(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getColumnTestServerWithEmptyModel(t)
 
 	res, err := server.ColumnNumericHistogram(
@@ -347,6 +362,7 @@ func TestServer_GetNumericHistogram_EmptyModel(t *testing.T) {
 }
 
 func TestServer_GetRugHistogram(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getColumnTestServer(t)
 
 	res, err := server.ColumnRugHistogram(testCtx(), &runtimev1.ColumnRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
@@ -366,6 +382,7 @@ func TestServer_GetRugHistogram(t *testing.T) {
 }
 
 func TestServer_GetRugHistogram_all_nulls(t *testing.T) {
+	t.Parallel()
 	sql := `
 		SELECT NULL as val
 		UNION ALL
@@ -381,6 +398,7 @@ func TestServer_GetRugHistogram_all_nulls(t *testing.T) {
 }
 
 func TestServer_GetRugHistogram_2rows_null(t *testing.T) {
+	t.Parallel()
 	sql := `
 		SELECT NULL as val
 		UNION ALL
@@ -395,6 +413,7 @@ func TestServer_GetRugHistogram_2rows_null(t *testing.T) {
 }
 
 func TestServer_GetRugHistogram_3rows_null(t *testing.T) {
+	t.Parallel()
 	sql := `
 		SELECT NULL as val
 		UNION ALL
@@ -412,6 +431,7 @@ func TestServer_GetRugHistogram_3rows_null(t *testing.T) {
 }
 
 func TestServer_GetCategoricalHistogram_EmptyModel(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getColumnTestServerWithEmptyModel(t)
 
 	res, err := server.ColumnRugHistogram(testCtx(), &runtimev1.ColumnRugHistogramRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
@@ -421,6 +441,7 @@ func TestServer_GetCategoricalHistogram_EmptyModel(t *testing.T) {
 }
 
 func TestServer_GetTimeRangeSummary(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getColumnTestServer(t)
 
 	// Get Time Range Summary works with timestamp columns
@@ -435,6 +456,7 @@ func TestServer_GetTimeRangeSummary(t *testing.T) {
 }
 
 func TestServer_GetTimeRangeSummary_EmptyModel(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getColumnTestServerWithEmptyModel(t)
 
 	// Get Time Range Summary works with timestamp columns
@@ -447,6 +469,7 @@ func TestServer_GetTimeRangeSummary_EmptyModel(t *testing.T) {
 }
 
 func TestServer_GetTimeRangeSummary_Date_Column(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getColumnTestServer(t)
 
 	// Test Get Time Range Summary with Date type column
@@ -473,6 +496,7 @@ func parseTime(tst *testing.T, t string) time.Time {
 }
 
 func TestServer_GetCardinalityOfColumn(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getColumnTestServer(t)
 
 	// Get Cardinality of Column works with all columns
@@ -495,13 +519,13 @@ func TestServer_GetCardinalityOfColumn(t *testing.T) {
 func getColumnTestServer(t *testing.T) (*Server, string) {
 	sql := `
 		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times, DATE '2007-04-01' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times, DATE '2009-06-01' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-04-11' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-11-21' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 12 AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2011-06-30' AS dates
 	`
 

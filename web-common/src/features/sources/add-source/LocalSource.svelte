@@ -13,6 +13,7 @@
   import {
     createRuntimeServiceDeleteFileAndReconcile,
     createRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceUnpackEmpty,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
@@ -20,6 +21,8 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { useModelNames } from "../../models/selectors";
+  import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
+  import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileCreateSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { hasDuckDBUnicodeError, niceDuckdbUnicodeError } from "./errors";
@@ -32,9 +35,11 @@
 
   $: sourceNames = useSourceNames(runtimeInstanceId);
   $: modelNames = useModelNames(runtimeInstanceId);
+  $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
 
   const createSourceMutation = createRuntimeServicePutFileAndReconcile();
   const deleteSource = createRuntimeServiceDeleteFileAndReconcile();
+  const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
 
   async function handleOpenFileDialog() {
     return handleUpload(await openFileUploadDialog());
@@ -64,6 +69,16 @@
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
+        // If project is uninitialized, initialize an empty project
+        if (!$isProjectInitialized.data) {
+          $unpackEmptyProject.mutate({
+            instanceId: $runtime.instanceId,
+            data: {
+              title: EMPTY_PROJECT_TITLE,
+            },
+          });
+        }
+
         const yaml = compileCreateSourceYAML(
           {
             sourceName: tableName,

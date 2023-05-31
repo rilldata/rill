@@ -13,13 +13,18 @@
     mounted = true;
   });
 
-  $: projectYaml = createRuntimeServiceGetFile(
+  $: projectTitle = createRuntimeServiceGetFile(
     $runtime?.instanceId,
-    `rill.yaml`
+    "rill.yaml",
+    {
+      query: {
+        select: (data) => {
+          const projectData = parseDocument(data.blob)?.toJS();
+          return projectData.title ?? projectData.name;
+        },
+      },
+    }
   );
-
-  $: projectData = parseDocument($projectYaml?.data?.blob || "{}")?.toJS();
-  $: title = projectData.title ?? projectData.name;
 </script>
 
 <header
@@ -30,7 +35,7 @@
   <h1
     class="grid grid-flow-col justify-start gap-x-3 p-4 pl-[.75rem] items-center content-center"
   >
-    {#if mounted}
+    {#if mounted && $projectTitle.isSuccess}
       <a href="/">
         <div
           style:width="20px"
@@ -39,7 +44,7 @@
           style:height="20px"
         >
           <div>
-            {shorthandTitle(title || "Ri")}
+            {shorthandTitle($projectTitle.data || "Ri")}
           </div>
         </div>
       </a>
@@ -51,11 +56,11 @@
         class="font-semibold text-black grow text-ellipsis overflow-hidden whitespace-nowrap pr-12"
         href="/"
       >
-        {title || "Untitled Rill Project"}
+        {$projectTitle.data || "Untitled Rill Project"}
       </a>
       <TooltipContent maxWidth="300px" slot="tooltip-content">
         <div class="font-bold">
-          {title || "Untitled Rill Project"}
+          {$projectTitle.data || "Untitled Rill Project"}
         </div>
       </TooltipContent>
     </Tooltip>

@@ -115,6 +115,7 @@ type DB interface {
 	InsertDeviceAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*DeviceAuthCode, error)
 	DeleteDeviceAuthCode(ctx context.Context, deviceCode string) error
 	UpdateDeviceAuthCode(ctx context.Context, id, userID string, state DeviceAuthCodeState) error
+	DeleteExpiredDeviceAuthCodes(ctx context.Context, retention time.Duration) error
 
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
@@ -262,6 +263,8 @@ type UpdateProjectOptions struct {
 	ProdBranch           string
 	ProdVariables        map[string]string
 	ProdDeploymentID     *string
+	ProdSlots            int
+	Region               string
 }
 
 // DeploymentStatus is an enum representing the state of a deployment

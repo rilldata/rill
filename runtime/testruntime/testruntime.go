@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	// Load database drivers for testing.
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
@@ -38,7 +39,7 @@ func New(t TestingT) *runtime.Runtime {
 		QueryCacheSizeBytes: int64(datasize.MB * 100),
 		AllowHostAccess:     true,
 	}
-	rt, err := runtime.New(opts, nil)
+	rt, err := runtime.New(opts, zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		rt.Close()

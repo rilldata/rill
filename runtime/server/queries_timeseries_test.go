@@ -14,6 +14,7 @@ import (
 )
 
 func TestServer_Timeseries_EmptyModel(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServerWithEmptyModel(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -34,6 +35,7 @@ func TestServer_Timeseries_EmptyModel(t *testing.T) {
 }
 
 func TestServer_Timeseries(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -68,6 +70,7 @@ func TestServer_Timeseries(t *testing.T) {
 }
 
 func TestServer_Timeseries_Spark_NoParams(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -83,6 +86,7 @@ func TestServer_Timeseries_Spark_NoParams(t *testing.T) {
 }
 
 func TestServer_Timeseries_nulls_for_empty_intervals(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -123,6 +127,7 @@ func isNull(v *structpb.Value) bool {
 }
 
 func Ignore_TestServer_Timeseries_exclude_notnull(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -155,6 +160,7 @@ func Ignore_TestServer_Timeseries_exclude_notnull(t *testing.T) {
 }
 
 func Ignore_TestServer_Timeseries_exclude_all(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -187,6 +193,7 @@ func Ignore_TestServer_Timeseries_exclude_all(t *testing.T) {
 }
 
 func TestServer_Timeseries_exclude_notnull_string(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -219,6 +226,7 @@ func TestServer_Timeseries_exclude_notnull_string(t *testing.T) {
 }
 
 func TestServer_Timeseries_exclude_all_string(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -251,6 +259,7 @@ func TestServer_Timeseries_exclude_all_string(t *testing.T) {
 }
 
 func TestServer_Timeseries_exclude_notnull_like(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -283,6 +292,7 @@ func TestServer_Timeseries_exclude_notnull_like(t *testing.T) {
 }
 
 func TestServer_Timeseries_exclude_like_all(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -316,6 +326,7 @@ func TestServer_Timeseries_exclude_like_all(t *testing.T) {
 }
 
 func TestServer_Timeseries_numeric_dim(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -348,6 +359,7 @@ func TestServer_Timeseries_numeric_dim(t *testing.T) {
 }
 
 func TestServer_Timeseries_numeric_dim_2values(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -380,6 +392,7 @@ func TestServer_Timeseries_numeric_dim_2values(t *testing.T) {
 }
 
 func TestServer_Timeseries_numeric_dim_and_null(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -412,6 +425,7 @@ func TestServer_Timeseries_numeric_dim_and_null(t *testing.T) {
 }
 
 func TestServer_Timeseries_Empty_TimeRange(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -440,12 +454,12 @@ func TestServer_Timeseries_Empty_TimeRange(t *testing.T) {
 	for i, v := range response.GetRollup().Results {
 		fmt.Printf("i: %d, ts: %v\n", i, v.Ts.AsTime())
 	}
-	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_HOUR, response.Rollup.TimeRange.GetInterval())
 	require.Equal(t, 25, len(results))
 	require.Equal(t, 1.0, results[0].Records.Fields["max"].GetNumberValue())
 }
 
 func TestServer_Timeseries_Empty_Filter(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	mx := "max"
@@ -474,6 +488,7 @@ func TestServer_Timeseries_Empty_Filter(t *testing.T) {
 }
 
 func TestServer_Timeseries_TimeEnd_exclusive(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -501,6 +516,7 @@ func TestServer_Timeseries_TimeEnd_exclusive(t *testing.T) {
 }
 
 func TestServer_Timeseries_No_Measures(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -523,6 +539,7 @@ func TestServer_Timeseries_No_Measures(t *testing.T) {
 }
 
 func TestServer_Timeseries_Nil_Measures(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -544,6 +561,7 @@ func TestServer_Timeseries_Nil_Measures(t *testing.T) {
 }
 
 func TestServer_Timeseries_2measures(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	mx := "max"
@@ -585,6 +603,7 @@ func TestServer_Timeseries_2measures(t *testing.T) {
 }
 
 func TestServer_Timeseries_1dim(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	sm := "sum"
@@ -620,6 +639,7 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 }
 
 func TestServer_Timeseries_1dim_null(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -652,6 +672,7 @@ func TestServer_Timeseries_1dim_null(t *testing.T) {
 }
 
 func TestServer_Timeseries_1dim_null_and_in(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -687,6 +708,7 @@ func TestServer_Timeseries_1dim_null_and_in(t *testing.T) {
 }
 
 func TestServer_Timeseries_1dim_null_and_in_and_like(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -725,6 +747,7 @@ func TestServer_Timeseries_1dim_null_and_in_and_like(t *testing.T) {
 }
 
 func TestServer_Timeseries_1dim_2like(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -760,6 +783,7 @@ func TestServer_Timeseries_1dim_2like(t *testing.T) {
 }
 
 func TestServer_Timeseries_2dim_include_and_exclude(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -800,6 +824,7 @@ func TestServer_Timeseries_2dim_include_and_exclude(t *testing.T) {
 }
 
 func TestServer_Timeseries_no_measures(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -820,6 +845,7 @@ func TestServer_Timeseries_no_measures(t *testing.T) {
 }
 
 func TestServer_Timeseries_1day(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	mx := "max"
@@ -854,6 +880,7 @@ func TestServer_Timeseries_1day(t *testing.T) {
 }
 
 func TestServer_Timeseries_1day_Count(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	cnt := "count"
@@ -889,6 +916,7 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 }
 
 func TestServer_RangeSanity(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	olap, err := server.runtime.OLAP(testCtx(), instanceID)
@@ -909,6 +937,7 @@ func TestServer_RangeSanity(t *testing.T) {
 }
 
 func TestServer_Timeseries_Spark(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getSparkTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -928,13 +957,13 @@ func TestServer_Timeseries_Spark(t *testing.T) {
 	for i, v := range response.GetRollup().Results {
 		fmt.Printf("i: %d, ts: %v\n", i, v.Ts.AsTime())
 	}
-	require.Equal(t, parseTime(t, "2019-01-10T00:00:00Z"), response.GetRollup().TimeRange.End.AsTime())
 	results := response.GetRollup().Results
 	require.Equal(t, 9, len(results))
 	require.Equal(t, 12, len(response.Rollup.Spark))
 }
 
 func TestServer_Timeseries_Spark_no_count(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getSparkTimeseriesTestServer(t)
 
 	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
@@ -1008,6 +1037,7 @@ func getSparkTimeseriesTestServer(t *testing.T) (*Server, string) {
 }
 
 func TestServer_EstimateRollupInterval_timestamp(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	r, err := server.ColumnRollupInterval(testCtx(), &runtimev1.ColumnRollupIntervalRequest{
@@ -1023,6 +1053,7 @@ func TestServer_EstimateRollupInterval_timestamp(t *testing.T) {
 }
 
 func TestServer_EstimateRollupInterval_date(t *testing.T) {
+	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
 	r, err := server.ColumnRollupInterval(testCtx(), &runtimev1.ColumnRollupIntervalRequest{

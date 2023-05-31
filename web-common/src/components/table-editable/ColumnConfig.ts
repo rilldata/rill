@@ -68,6 +68,7 @@ export interface ColumnConfig<T extends CellConfig> {
   //FIXME: specify types based on CellRendererComponent
   name: string;
   label?: string;
+  ariaLabel?: string;
   headerTooltip?: string;
   cellRenderer: T;
   customClass?: string;

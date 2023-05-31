@@ -18,6 +18,8 @@ export type AdminServiceUpdateProjectBody = {
   public?: boolean;
   prodBranch?: string;
   githubUrl?: string;
+  prodSlots?: string;
+  region?: string;
 };
 
 export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
@@ -307,7 +309,7 @@ export interface V1GetCurrentUserResponse {
 }
 
 export type V1DeploymentStatus =
-  typeof V1DeploymentStatus[keyof typeof V1DeploymentStatus];
+  (typeof V1DeploymentStatus)[keyof typeof V1DeploymentStatus];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1DeploymentStatus = {

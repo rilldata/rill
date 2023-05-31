@@ -3,7 +3,8 @@ on:
   push:
     tags:
       - "*"
-    branches: ["main"]
+    branches:
+      - "main"
     paths:
       - ".github/workflows/cloud-admin.yml"
       - "web-admin/**"
@@ -43,4 +44,5 @@ jobs:
           enable-pull-request-comment: false
           enable-commit-comment: true
           overwrites-pull-request-comment: true
+          netlify-config-path: ./netlify.toml
         timeout-minutes: 1

@@ -66,7 +66,18 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 
 	// Provision prod deployment.
 	// Start using original context again since transaction in txCtx is done.
-	depl, err := s.createDeployment(ctx, proj)
+	depl, err := s.createDeployment(ctx, &createDeploymentOptions{
+		ProjectID:            proj.ID,
+		Region:               proj.Region,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		Subpath:              proj.Subpath,
+		ProdBranch:           proj.ProdBranch,
+		ProdVariables:        proj.ProdVariables,
+		ProdOLAPDriver:       proj.ProdOLAPDriver,
+		ProdOLAPDSN:          proj.ProdOLAPDSN,
+		ProdSlots:            proj.ProdSlots,
+	})
 	if err != nil {
 		err2 := s.DB.DeleteProject(ctx, proj.ID)
 		return nil, multierr.Combine(err, err2)
@@ -81,6 +92,8 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdBranch:           proj.ProdBranch,
 		ProdVariables:        proj.ProdVariables,
+		ProdSlots:            proj.ProdSlots,
+		Region:               proj.Region,
 		ProdDeploymentID:     &depl.ID,
 	})
 	if err != nil {
@@ -169,12 +182,59 @@ func (s *Service) updateDeplTSToDB(ctx context.Context) error {
 // UpdateProject updates a project and any impacted deployments.
 // It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
 func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions, reconcileDeployment bool) (*database.Project, error) {
+	if proj.Region != opts.Region || proj.ProdSlots != opts.ProdSlots { // require new deployments
+		s.logger.Info("recreating deployment", observability.ZapCtx(ctx))
+		var oldDepl *database.Deployment
+		var err error
+		if proj.ProdDeploymentID != nil {
+			oldDepl, err = s.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+			if err != nil && !errors.Is(err, database.ErrNotFound) {
+				return nil, err
+			}
+		}
+
+		depl, err := s.createDeployment(ctx, &createDeploymentOptions{
+			ProjectID:            proj.ID,
+			Subpath:              proj.Subpath,
+			ProdOLAPDriver:       proj.ProdOLAPDriver,
+			ProdOLAPDSN:          proj.ProdOLAPDSN,
+			Region:               opts.Region,
+			GithubURL:            opts.GithubURL,
+			GithubInstallationID: opts.GithubInstallationID,
+			ProdBranch:           opts.ProdBranch,
+			ProdVariables:        opts.ProdVariables,
+			ProdSlots:            opts.ProdSlots,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		opts.ProdDeploymentID = &depl.ID
+		res, err := s.DB.UpdateProject(ctx, proj.ID, opts)
+		if err != nil {
+			return nil, multierr.Combine(err, s.teardownDeployment(ctx, proj, depl))
+		}
+
+		if oldDepl != nil {
+			if err := s.teardownDeployment(context.Background(), proj, oldDepl); err != nil {
+				s.logger.Error("could not delete old deploymnet", zap.Error(err), observability.ZapCtx(ctx))
+			}
+		}
+
+		if err := s.TriggerReconcile(ctx, depl); err != nil {
+			return nil, fmt.Errorf("reconcile failed with error %w", err)
+		}
+
+		return res, nil
+	}
+
 	impactsDeployments := (proj.ProdBranch != opts.ProdBranch ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
 		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables))
 
 	if impactsDeployments {
+		s.logger.Info("updating deployments", observability.ZapCtx(ctx))
 		ds, err := s.DB.FindDeployments(ctx, proj.ID)
 		if err != nil {
 			return nil, err
@@ -209,7 +269,18 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 // TriggerRedeploy de-provisions and re-provisions a project's prod deployment.
 func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) error {
 	// Provision new deployment
-	newDepl, err := s.createDeployment(ctx, proj)
+	newDepl, err := s.createDeployment(ctx, &createDeploymentOptions{
+		ProjectID:            proj.ID,
+		Region:               proj.Region,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		Subpath:              proj.Subpath,
+		ProdBranch:           proj.ProdBranch,
+		ProdVariables:        proj.ProdVariables,
+		ProdOLAPDriver:       proj.ProdOLAPDriver,
+		ProdOLAPDSN:          proj.ProdOLAPDSN,
+		ProdSlots:            proj.ProdSlots,
+	})
 	if err != nil {
 		return err
 	}
@@ -223,6 +294,8 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdBranch:           proj.ProdBranch,
 		ProdVariables:        proj.ProdVariables,
+		ProdSlots:            proj.ProdSlots,
+		Region:               proj.Region,
 		ProdDeploymentID:     &newDepl.ID,
 	})
 	if err != nil {
@@ -233,7 +306,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 	// Delete old prod deployment
 	err = s.teardownDeployment(ctx, proj, prevDepl)
 	if err != nil {
-		s.logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err))
+		s.logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
 	}
 
 	// Trigger reconcile on new deployment
