@@ -54,10 +54,10 @@ func (a *Authenticator) authWithToken(w http.ResponseWriter, r *http.Request) {
 	// Set state in cookie
 	sess.Values[cookieFieldState] = state
 
-	// Set redirect URL in cookie to enable custom redirects after auth has completed
-	redirect := r.URL.Query().Get("redirect")
-	if redirect != "" {
-		sess.Values[cookieFieldRedirect] = redirect
+	// Get redirect destination
+	redirect, ok := sess.Values[cookieFieldRedirect].(string)
+	if !ok || redirect == "" {
+		redirect = "/"
 	}
 
 	// Set auth token in cookie
@@ -206,7 +206,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	}
 
 	// Issue a new persistent auth token
-	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", user.ID, 0)
+	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, nil)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return

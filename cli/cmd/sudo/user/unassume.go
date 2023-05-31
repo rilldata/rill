@@ -10,8 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func UnAssumeCmd(cfg *config.Config) *cobra.Command {
-	unAssumeCmd := &cobra.Command{
+func UnassumeCmd(cfg *config.Config) *cobra.Command {
+	unassumeCmd := &cobra.Command{
 		Use:   "unassume",
 		Args:  cobra.NoArgs,
 		Short: "Unassume",
@@ -24,7 +24,7 @@ func UnAssumeCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			originalToken, err := dotrill.GetBackupOriginalToken()
+			originalToken, err := dotrill.GetBackupToken()
 			if err != nil {
 				return err
 			}
@@ -36,7 +36,7 @@ func UnAssumeCmd(cfg *config.Config) *cobra.Command {
 			// Revoke current token if have original token
 			_, err = client.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
 			if err != nil {
-				fmt.Printf("Failed to revoke token (did you revoke it manually?). Clearing local token anyway.\n")
+				fmt.Printf("Failed to revoke token (it may have expired). Clearing local token anyway.\n")
 			}
 
 			err = dotrill.SetAccessToken(originalToken)
@@ -45,13 +45,13 @@ func UnAssumeCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Set original_token as empty
-			err = dotrill.BackupOriginalToken("")
+			err = dotrill.SetBackupToken("")
 			if err != nil {
 				return err
 			}
 
 			// Set email for representing user as empty
-			err = dotrill.SetRepresentingUserEmail("")
+			err = dotrill.SetRepresentingUser("")
 			if err != nil {
 				return err
 			}
@@ -59,5 +59,5 @@ func UnAssumeCmd(cfg *config.Config) *cobra.Command {
 			return nil
 		},
 	}
-	return unAssumeCmd
+	return unassumeCmd
 }

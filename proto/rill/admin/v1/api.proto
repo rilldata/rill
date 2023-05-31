@@ -184,9 +184,12 @@ service AdminService {
     };
   }
 
-  // RequestRepresentativeAuthToken returns the temporary token for given email
-  rpc RequestRepresentativeAuthToken(RequestRepresentativeAuthTokenRequest) returns (RequestRepresentativeAuthTokenResponse) {
-    option (google.api.http) = {get: "/v1/tokens/{email}"};
+  // IssueRepresentativeAuthToken returns the temporary token for given email
+  rpc IssueRepresentativeAuthToken(IssueRepresentativeAuthTokenRequest) returns (IssueRepresentativeAuthTokenResponse) {
+    option (google.api.http) = {
+      put: "/v1/tokens/represent",
+      body: "*"
+    };
   }
 
   // RevokeCurrentAuthToken revoke the current auth token
@@ -530,13 +533,13 @@ message RevokeCurrentAuthTokenResponse {
   string token_id = 1;
 }
 
-message RequestRepresentativeAuthTokenRequest {
+message IssueRepresentativeAuthTokenRequest {
   string email = 1 [(validate.rules).string.email = true];
-  int64 ttl = 2;
+  int64 ttl_minutes = 2;
 }
 
-message RequestRepresentativeAuthTokenResponse {
-  string token_id = 1;
+message IssueRepresentativeAuthTokenResponse {
+  string token = 1;
 }
 
 message GetGithubRepoStatusRequest {

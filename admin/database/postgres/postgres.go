@@ -459,7 +459,7 @@ func (c *connection) FindUserByEmail(ctx context.Context, email string) (*databa
 func (c *connection) FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*database.User, error) {
 	var res []*database.User
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u 
-	WHERE lower(u.email) like lower($1) AND lower(u.email) > $2 
+	WHERE lower(u.email) LIKE lower($1) AND lower(u.email) > $2 
 	ORDER BY lower(u.email) LIMIT $3`, emailPattern, afterEmail, limit)
 	if err != nil {
 		return nil, parseErr("users", err)
@@ -539,10 +539,9 @@ func (c *connection) DeleteUsergroupMember(ctx context.Context, groupID, userID 
 	return checkDeleteRow("usergroup member", res, err)
 }
 
-// Should we pass expiredTS here instead of checking with `current_timestamp`?
-func (c *connection) FindExpiredAuthTokens(ctx context.Context) ([]*database.UserAuthToken, error) {
+func (c *connection) FindExpiredUserAuthTokens(ctx context.Context) ([]*database.UserAuthToken, error) {
 	var res []*database.UserAuthToken
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT t.* FROM user_auth_tokens t WHERE t.expiration_ts < current_timestamp")
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT t.* FROM user_auth_tokens t WHERE t.expires_on < now()")
 	if err != nil {
 		return nil, parseErr("auth tokens", err)
 	}
@@ -574,9 +573,9 @@ func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.Ins
 
 	res := &database.UserAuthToken{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id, representing_user_id, expiration_ts)
+		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id, representing_user_id, expires_on)
 		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID, opts.RepresentingUserID, opts.ExpirationTS,
+		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID, opts.RepresentingUserID, opts.ExpiresOn,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("auth token", err)

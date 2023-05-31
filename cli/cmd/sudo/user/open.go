@@ -27,9 +27,6 @@ func OpenCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			qry := map[string]string{"token": cfg.AdminTokenDefault}
-			// What about local
-			qry["redirect"] = "ui.rilldata.com"
-
 			withTokenURL, err := urlutil.WithQuery(withTokenURI, qry)
 			if err != nil {
 				return err

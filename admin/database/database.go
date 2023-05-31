@@ -90,9 +90,9 @@ type DB interface {
 	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
 
 	FindUsers(ctx context.Context) ([]*User, error)
+	FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*User, error)
 	FindUser(ctx context.Context, id string) (*User, error)
 	FindUserByEmail(ctx context.Context, email string) (*User, error)
-	FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*User, error)
 	InsertUser(ctx context.Context, opts *InsertUserOptions) (*User, error)
 	DeleteUser(ctx context.Context, id string) error
 	UpdateUser(ctx context.Context, id string, opts *UpdateUserOptions) (*User, error)
@@ -104,7 +104,7 @@ type DB interface {
 	InsertUsergroupMember(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupMember(ctx context.Context, groupID, userID string) error
 
-	FindExpiredAuthTokens(ctx context.Context) ([]*UserAuthToken, error)
+	FindExpiredUserAuthTokens(ctx context.Context) ([]*UserAuthToken, error)
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
@@ -356,13 +356,13 @@ type InsertUsergroupOptions struct {
 // UserAuthToken is a persistent API token for a user.
 type UserAuthToken struct {
 	ID                 string
-	SecretHash         []byte    `db:"secret_hash"`
-	UserID             string    `db:"user_id"`
-	DisplayName        string    `db:"display_name"`
-	AuthClientID       *string   `db:"auth_client_id"`
-	RepresentingUserID string    `db:"representing_user_id"`
-	ExpirationTS       time.Time `db:"expiration_ts"`
-	CreatedOn          time.Time `db:"created_on"`
+	SecretHash         []byte     `db:"secret_hash"`
+	UserID             string     `db:"user_id"`
+	DisplayName        string     `db:"display_name"`
+	AuthClientID       *string    `db:"auth_client_id"`
+	RepresentingUserID *string    `db:"representing_user_id"`
+	CreatedOn          time.Time  `db:"created_on"`
+	ExpiresOn          *time.Time `db:"expires_on"`
 }
 
 // InsertUserAuthTokenOptions defines options for creating a UserAuthToken.
@@ -372,8 +372,8 @@ type InsertUserAuthTokenOptions struct {
 	UserID             string
 	DisplayName        string
 	AuthClientID       *string
-	RepresentingUserID string
-	ExpirationTS       time.Time
+	RepresentingUserID *string
+	ExpiresOn          *time.Time
 }
 
 // AuthClient is a client that requests and consumes auth tokens.

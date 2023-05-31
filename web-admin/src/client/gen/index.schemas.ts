@@ -10,10 +10,6 @@ export type AdminServiceSearchUsersParams = {
   pageToken?: string;
 };
 
-export type AdminServiceRequestRepresentativeAuthTokenParams = {
-  ttl?: string;
-};
-
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
   [key: string]: string;
 };
@@ -180,10 +176,6 @@ export interface V1RevokeCurrentAuthTokenResponse {
   tokenId?: string;
 }
 
-export interface V1RequestRepresentativeAuthTokenResponse {
-  tokenId?: string;
-}
-
 export interface V1RemoveProjectMemberResponse {
   [key: string]: any;
 }
@@ -297,6 +289,15 @@ export interface V1ListOrganizationInvitesResponse {
 
 export interface V1LeaveOrganizationResponse {
   [key: string]: any;
+}
+
+export interface V1IssueRepresentativeAuthTokenResponse {
+  token?: string;
+}
+
+export interface V1IssueRepresentativeAuthTokenRequest {
+  email?: string;
+  ttlMinutes?: string;
 }
 
 export type V1GetProjectVariablesResponseVariables = { [key: string]: string };

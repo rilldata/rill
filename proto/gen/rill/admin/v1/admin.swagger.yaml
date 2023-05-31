@@ -883,31 +883,6 @@ paths:
             $ref: '#/definitions/v1SetSuperuserRequest'
       tags:
         - AdminService
-  /v1/tokens/{email}:
-    get:
-      summary: RequestRepresentativeAuthToken returns the temporary token for given email
-      operationId: AdminService_RequestRepresentativeAuthToken
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1RequestRepresentativeAuthTokenResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: email
-          in: path
-          required: true
-          type: string
-        - name: ttl
-          in: query
-          required: false
-          type: string
-          format: int64
-      tags:
-        - AdminService
   /v1/tokens/current:
     delete:
       summary: RevokeCurrentAuthToken revoke the current auth token
@@ -921,6 +896,27 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
+  /v1/tokens/represent:
+    put:
+      summary: IssueRepresentativeAuthToken returns the temporary token for given email
+      operationId: AdminService_IssueRepresentativeAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1IssueRepresentativeAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1IssueRepresentativeAuthTokenRequest'
       tags:
         - AdminService
   /v1/users/current:
@@ -1094,6 +1090,19 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  v1IssueRepresentativeAuthTokenRequest:
+    type: object
+    properties:
+      email:
+        type: string
+      ttlMinutes:
+        type: string
+        format: int64
+  v1IssueRepresentativeAuthTokenResponse:
+    type: object
+    properties:
+      token:
+        type: string
   v1LeaveOrganizationResponse:
     type: object
   v1ListOrganizationInvitesResponse:
@@ -1292,11 +1301,6 @@ definitions:
     type: object
   v1RemoveProjectMemberResponse:
     type: object
-  v1RequestRepresentativeAuthTokenResponse:
-    type: object
-    properties:
-      tokenId:
-        type: string
   v1RevokeCurrentAuthTokenResponse:
     type: object
     properties:

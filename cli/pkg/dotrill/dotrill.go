@@ -21,15 +21,15 @@ const (
 
 // Constants for YAML keys
 const (
-	DefaultOrgConfigKey       = "org"
-	DefaultAdminURLConfigKey  = "api_url"
-	AnalyticsEnabledConfigKey = "analytics_enabled"
-	AccessTokenCredentialsKey = "token"
-	InstallIDStateKey         = "install_id"
-	RepresentingUserEmailKey  = "representing"
-	BackupOriginalTokenKey    = "original_token"
-	VersionKey                = "latest_version"
-	VersionUpdatedAtKey       = "latest_version_checked_at"
+	DefaultOrgConfigKey            = "org"
+	DefaultAdminURLConfigKey       = "api_url"
+	AnalyticsEnabledConfigKey      = "analytics_enabled"
+	AccessTokenCredentialsKey      = "token"
+	InstallIDStateKey              = "install_id"
+	RepresentingUserCredentialsKey = "representing_user"
+	BackupTokenCredentialsKey      = "backup_token"
+	VersionKey                     = "latest_version"
+	VersionUpdatedAtKey            = "latest_version_checked_at"
 )
 
 // homeDir is the user's home directory. We keep this as a global to override in unit tests.
@@ -131,24 +131,24 @@ func SetAccessToken(token string) error {
 	return Set(CredentialsFilename, AccessTokenCredentialsKey, token)
 }
 
-// GetBackupOriginalToken loads the original auth token
-func GetBackupOriginalToken() (string, error) {
-	return Get(CredentialsFilename, BackupOriginalTokenKey)
+// GetBackupToken loads the original auth token
+func GetBackupToken() (string, error) {
+	return Get(CredentialsFilename, BackupTokenCredentialsKey)
 }
 
-// SetBackupOriginalToken saves original auth token
-func BackupOriginalToken(token string) error {
-	return Set(CredentialsFilename, BackupOriginalTokenKey, token)
+// SetBackupToken saves original auth token
+func SetBackupToken(token string) error {
+	return Set(CredentialsFilename, BackupTokenCredentialsKey, token)
 }
 
-// GetRepresentingUserEmail loads the current representing user email
-func GetRepresentingUserEmail() (string, error) {
-	return Get(CredentialsFilename, RepresentingUserEmailKey)
+// GetRepresentingUser loads the current representing user email
+func GetRepresentingUser() (string, error) {
+	return Get(CredentialsFilename, RepresentingUserCredentialsKey)
 }
 
-// SetRepresentingUserEmail saves representing user email
-func SetRepresentingUserEmail(email string) error {
-	return Set(CredentialsFilename, RepresentingUserEmailKey, email)
+// SetRepresentingUser saves representing user email
+func SetRepresentingUser(email string) error {
+	return Set(CredentialsFilename, RepresentingUserCredentialsKey, email)
 }
 
 func SetVersion(version string) error {

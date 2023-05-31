@@ -8132,23 +8132,23 @@ var _ interface {
 	ErrorName() string
 } = RevokeCurrentAuthTokenResponseValidationError{}
 
-// Validate checks the field values on RequestRepresentativeAuthTokenRequest
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the first error encountered is returned, or nil if
-// there are no violations.
-func (m *RequestRepresentativeAuthTokenRequest) Validate() error {
+// Validate checks the field values on IssueRepresentativeAuthTokenRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *IssueRepresentativeAuthTokenRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on RequestRepresentativeAuthTokenRequest
+// ValidateAll checks the field values on IssueRepresentativeAuthTokenRequest
 // with the rules defined in the proto definition for this message. If any
 // rules are violated, the result is a list of violation errors wrapped in
-// RequestRepresentativeAuthTokenRequestMultiError, or nil if none found.
-func (m *RequestRepresentativeAuthTokenRequest) ValidateAll() error {
+// IssueRepresentativeAuthTokenRequestMultiError, or nil if none found.
+func (m *IssueRepresentativeAuthTokenRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *RequestRepresentativeAuthTokenRequest) validate(all bool) error {
+func (m *IssueRepresentativeAuthTokenRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -8156,7 +8156,7 @@ func (m *RequestRepresentativeAuthTokenRequest) validate(all bool) error {
 	var errors []error
 
 	if err := m._validateEmail(m.GetEmail()); err != nil {
-		err = RequestRepresentativeAuthTokenRequestValidationError{
+		err = IssueRepresentativeAuthTokenRequestValidationError{
 			field:  "Email",
 			reason: "value must be a valid email address",
 			cause:  err,
@@ -8167,16 +8167,16 @@ func (m *RequestRepresentativeAuthTokenRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Ttl
+	// no validation rules for TtlMinutes
 
 	if len(errors) > 0 {
-		return RequestRepresentativeAuthTokenRequestMultiError(errors)
+		return IssueRepresentativeAuthTokenRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-func (m *RequestRepresentativeAuthTokenRequest) _validateHostname(host string) error {
+func (m *IssueRepresentativeAuthTokenRequest) _validateHostname(host string) error {
 	s := strings.ToLower(strings.TrimSuffix(host, "."))
 
 	if len(host) > 253 {
@@ -8206,7 +8206,7 @@ func (m *RequestRepresentativeAuthTokenRequest) _validateHostname(host string) e
 	return nil
 }
 
-func (m *RequestRepresentativeAuthTokenRequest) _validateEmail(addr string) error {
+func (m *IssueRepresentativeAuthTokenRequest) _validateEmail(addr string) error {
 	a, err := mail.ParseAddress(addr)
 	if err != nil {
 		return err
@@ -8226,14 +8226,14 @@ func (m *RequestRepresentativeAuthTokenRequest) _validateEmail(addr string) erro
 	return m._validateHostname(parts[1])
 }
 
-// RequestRepresentativeAuthTokenRequestMultiError is an error wrapping
-// multiple validation errors returned by
-// RequestRepresentativeAuthTokenRequest.ValidateAll() if the designated
+// IssueRepresentativeAuthTokenRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// IssueRepresentativeAuthTokenRequest.ValidateAll() if the designated
 // constraints aren't met.
-type RequestRepresentativeAuthTokenRequestMultiError []error
+type IssueRepresentativeAuthTokenRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m RequestRepresentativeAuthTokenRequestMultiError) Error() string {
+func (m IssueRepresentativeAuthTokenRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -8242,12 +8242,12 @@ func (m RequestRepresentativeAuthTokenRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m RequestRepresentativeAuthTokenRequestMultiError) AllErrors() []error { return m }
+func (m IssueRepresentativeAuthTokenRequestMultiError) AllErrors() []error { return m }
 
-// RequestRepresentativeAuthTokenRequestValidationError is the validation error
-// returned by RequestRepresentativeAuthTokenRequest.Validate if the
-// designated constraints aren't met.
-type RequestRepresentativeAuthTokenRequestValidationError struct {
+// IssueRepresentativeAuthTokenRequestValidationError is the validation error
+// returned by IssueRepresentativeAuthTokenRequest.Validate if the designated
+// constraints aren't met.
+type IssueRepresentativeAuthTokenRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -8255,24 +8255,24 @@ type RequestRepresentativeAuthTokenRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e RequestRepresentativeAuthTokenRequestValidationError) Field() string { return e.field }
+func (e IssueRepresentativeAuthTokenRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e RequestRepresentativeAuthTokenRequestValidationError) Reason() string { return e.reason }
+func (e IssueRepresentativeAuthTokenRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e RequestRepresentativeAuthTokenRequestValidationError) Cause() error { return e.cause }
+func (e IssueRepresentativeAuthTokenRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e RequestRepresentativeAuthTokenRequestValidationError) Key() bool { return e.key }
+func (e IssueRepresentativeAuthTokenRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e RequestRepresentativeAuthTokenRequestValidationError) ErrorName() string {
-	return "RequestRepresentativeAuthTokenRequestValidationError"
+func (e IssueRepresentativeAuthTokenRequestValidationError) ErrorName() string {
+	return "IssueRepresentativeAuthTokenRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e RequestRepresentativeAuthTokenRequestValidationError) Error() string {
+func (e IssueRepresentativeAuthTokenRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -8284,14 +8284,14 @@ func (e RequestRepresentativeAuthTokenRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sRequestRepresentativeAuthTokenRequest.%s: %s%s",
+		"invalid %sIssueRepresentativeAuthTokenRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = RequestRepresentativeAuthTokenRequestValidationError{}
+var _ error = IssueRepresentativeAuthTokenRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -8299,49 +8299,48 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = RequestRepresentativeAuthTokenRequestValidationError{}
+} = IssueRepresentativeAuthTokenRequestValidationError{}
 
-// Validate checks the field values on RequestRepresentativeAuthTokenResponse
+// Validate checks the field values on IssueRepresentativeAuthTokenResponse
 // with the rules defined in the proto definition for this message. If any
 // rules are violated, the first error encountered is returned, or nil if
 // there are no violations.
-func (m *RequestRepresentativeAuthTokenResponse) Validate() error {
+func (m *IssueRepresentativeAuthTokenResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on
-// RequestRepresentativeAuthTokenResponse with the rules defined in the proto
-// definition for this message. If any rules are violated, the result is a
-// list of violation errors wrapped in
-// RequestRepresentativeAuthTokenResponseMultiError, or nil if none found.
-func (m *RequestRepresentativeAuthTokenResponse) ValidateAll() error {
+// ValidateAll checks the field values on IssueRepresentativeAuthTokenResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// IssueRepresentativeAuthTokenResponseMultiError, or nil if none found.
+func (m *IssueRepresentativeAuthTokenResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *RequestRepresentativeAuthTokenResponse) validate(all bool) error {
+func (m *IssueRepresentativeAuthTokenResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	// no validation rules for TokenId
+	// no validation rules for Token
 
 	if len(errors) > 0 {
-		return RequestRepresentativeAuthTokenResponseMultiError(errors)
+		return IssueRepresentativeAuthTokenResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// RequestRepresentativeAuthTokenResponseMultiError is an error wrapping
-// multiple validation errors returned by
-// RequestRepresentativeAuthTokenResponse.ValidateAll() if the designated
+// IssueRepresentativeAuthTokenResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// IssueRepresentativeAuthTokenResponse.ValidateAll() if the designated
 // constraints aren't met.
-type RequestRepresentativeAuthTokenResponseMultiError []error
+type IssueRepresentativeAuthTokenResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m RequestRepresentativeAuthTokenResponseMultiError) Error() string {
+func (m IssueRepresentativeAuthTokenResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -8350,12 +8349,12 @@ func (m RequestRepresentativeAuthTokenResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m RequestRepresentativeAuthTokenResponseMultiError) AllErrors() []error { return m }
+func (m IssueRepresentativeAuthTokenResponseMultiError) AllErrors() []error { return m }
 
-// RequestRepresentativeAuthTokenResponseValidationError is the validation
-// error returned by RequestRepresentativeAuthTokenResponse.Validate if the
-// designated constraints aren't met.
-type RequestRepresentativeAuthTokenResponseValidationError struct {
+// IssueRepresentativeAuthTokenResponseValidationError is the validation error
+// returned by IssueRepresentativeAuthTokenResponse.Validate if the designated
+// constraints aren't met.
+type IssueRepresentativeAuthTokenResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -8363,24 +8362,24 @@ type RequestRepresentativeAuthTokenResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e RequestRepresentativeAuthTokenResponseValidationError) Field() string { return e.field }
+func (e IssueRepresentativeAuthTokenResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e RequestRepresentativeAuthTokenResponseValidationError) Reason() string { return e.reason }
+func (e IssueRepresentativeAuthTokenResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e RequestRepresentativeAuthTokenResponseValidationError) Cause() error { return e.cause }
+func (e IssueRepresentativeAuthTokenResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e RequestRepresentativeAuthTokenResponseValidationError) Key() bool { return e.key }
+func (e IssueRepresentativeAuthTokenResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e RequestRepresentativeAuthTokenResponseValidationError) ErrorName() string {
-	return "RequestRepresentativeAuthTokenResponseValidationError"
+func (e IssueRepresentativeAuthTokenResponseValidationError) ErrorName() string {
+	return "IssueRepresentativeAuthTokenResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e RequestRepresentativeAuthTokenResponseValidationError) Error() string {
+func (e IssueRepresentativeAuthTokenResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -8392,14 +8391,14 @@ func (e RequestRepresentativeAuthTokenResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sRequestRepresentativeAuthTokenResponse.%s: %s%s",
+		"invalid %sIssueRepresentativeAuthTokenResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = RequestRepresentativeAuthTokenResponseValidationError{}
+var _ error = IssueRepresentativeAuthTokenResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -8407,7 +8406,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = RequestRepresentativeAuthTokenResponseValidationError{}
+} = IssueRepresentativeAuthTokenResponseValidationError{}
 
 // Validate checks the field values on GetGithubRepoStatusRequest with the
 // rules defined in the proto definition for this message. If any rules are

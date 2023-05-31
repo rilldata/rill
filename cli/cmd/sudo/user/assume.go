@@ -13,7 +13,7 @@ func AssumeCmd(cfg *config.Config) *cobra.Command {
 	assumeCmd := &cobra.Command{
 		Use:   "assume <email>",
 		Args:  cobra.ExactArgs(1),
-		Short: "Assume users by email",
+		Short: "Temporarily act as another user",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -23,9 +23,9 @@ func AssumeCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			token, err := client.RequestRepresentativeAuthToken(ctx, &adminv1.RequestRepresentativeAuthTokenRequest{
-				Email: args[0],
-				Ttl:   int64(ttlMinutes),
+			res, err := client.IssueRepresentativeAuthToken(ctx, &adminv1.IssueRepresentativeAuthTokenRequest{
+				Email:      args[0],
+				TtlMinutes: int64(ttlMinutes),
 			})
 			if err != nil {
 				return err
@@ -36,29 +36,29 @@ func AssumeCmd(cfg *config.Config) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			err = dotrill.BackupOriginalToken(originalToken)
+			err = dotrill.SetBackupToken(originalToken)
 			if err != nil {
 				return err
 			}
 
 			// Set new access token
-			err = dotrill.SetAccessToken(token.TokenId)
+			err = dotrill.SetAccessToken(res.Token)
 			if err != nil {
 				return err
 			}
 
 			// Set representing user email
-			err = dotrill.SetRepresentingUserEmail(args[0])
+			err = dotrill.SetRepresentingUser(args[0])
 			if err != nil {
 				return err
 			}
 
 			// set the default token to the one we just got
-			cfg.AdminTokenDefault = token.TokenId
+			cfg.AdminTokenDefault = res.Token
 			return nil
 		},
 	}
 
-	assumeCmd.Flags().IntVar(&ttlMinutes, "ttl-minutes", 60, "Expiration Timestamp (in Minutes)")
+	assumeCmd.Flags().IntVar(&ttlMinutes, "ttl-minutes", 60, "Minutes until the token should expire")
 	return assumeCmd
 }

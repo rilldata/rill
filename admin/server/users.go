@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -55,7 +56,6 @@ func (s *Server) SetSuperuser(ctx context.Context, req *adminv1.SetSuperuserRequ
 }
 
 func (s *Server) SearchUsers(ctx context.Context, req *adminv1.SearchUsersRequest) (*adminv1.SearchUsersResponse, error) {
-	// Return an empty result if not authenticated.
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can search users by email")
@@ -67,7 +67,6 @@ func (s *Server) SearchUsers(ctx context.Context, req *adminv1.SearchUsersReques
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	// Owner is a user
 	users, err := s.admin.DB.FindUsersByEmailPattern(ctx, req.EmailPattern, token.Val, pageSize)
 	if err != nil {
 		return nil, err
@@ -112,12 +111,9 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 	}, nil
 }
 
-// RequestRepresentativeAuthToken returns the temporary auth token for representing email
-func (s *Server) RequestRepresentativeAuthToken(ctx context.Context, req *adminv1.RequestRepresentativeAuthTokenRequest) (*adminv1.RequestRepresentativeAuthTokenResponse, error) {
+// IssueRepresentativeAuthToken returns the temporary auth token for representing email
+func (s *Server) IssueRepresentativeAuthToken(ctx context.Context, req *adminv1.IssueRepresentativeAuthTokenRequest) (*adminv1.IssueRepresentativeAuthTokenResponse, error) {
 	claims := auth.GetClaims(ctx)
-	if claims == nil {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated")
-	}
 
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can search users by email")
@@ -133,13 +129,15 @@ func (s *Server) RequestRepresentativeAuthToken(ctx context.Context, req *adminv
 		return nil, err
 	}
 
-	tokenID, err := s.admin.IssueUserAuthToken(ctx, claims.OwnerID(), database.AuthClientIDRillSupport, u.DisplayName, u.ID, req.Ttl)
+	ttl := func() *time.Duration { t := time.Duration(req.TtlMinutes) * time.Minute; return &t }()
+	displayName := fmt.Sprintf("Support for %s", u.Email)
+	token, err := s.admin.IssueUserAuthToken(ctx, claims.OwnerID(), database.AuthClientIDRillSupport, displayName, &u.ID, ttl)
 	if err != nil {
 		return nil, err
 	}
 
-	return &adminv1.RequestRepresentativeAuthTokenResponse{
-		TokenId: tokenID.Token().String(),
+	return &adminv1.IssueRepresentativeAuthTokenResponse{
+		Token: token.Token().String(),
 	}, nil
 }
 
