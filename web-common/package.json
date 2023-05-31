@@ -7,9 +7,13 @@
     "generate:runtime-client": "orval",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
-    "test:watch": "npm run test -- --watch"
+    "test:watch": "npm run test -- --watch",
+    "story:dev": "histoire dev",
+    "story:build": "histoire build",
+    "story:preview": "histoire preview"
   },
   "devDependencies": {
+    "@histoire/plugin-svelte": "^0.16.1",
     "@tanstack/svelte-query": "^4.27.0",
     "@typescript-eslint/eslint-plugin": "^5.27.0",
     "@typescript-eslint/parser": "^5.27.0",
@@ -17,6 +21,7 @@
     "axios": "^0.27.2",
     "eslint": "^8.16.0",
     "eslint-config-prettier": "^8.3.0",
+    "histoire": "^0.16.1",
     "jest": "^27.5.1",
     "match-sorter": "^6.3.1",
     "orval": "^6.12.0",
