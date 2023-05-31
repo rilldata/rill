@@ -30,10 +30,15 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConnectorServiceClient interface {
+	// S3ListBuckets lists buckets accessible with the configured credentials.
 	S3ListBuckets(ctx context.Context, in *S3ListBucketsRequest, opts ...grpc.CallOption) (*S3ListBucketsResponse, error)
+	// S3ListBuckets lists objects for the given bucket.
 	S3ListObjects(ctx context.Context, in *S3ListObjectsRequest, opts ...grpc.CallOption) (*S3ListObjectsResponse, error)
+	// S3GetBucketMetadata returns metadata for the given bucket.
 	S3GetBucketMetadata(ctx context.Context, in *S3GetBucketMetadataRequest, opts ...grpc.CallOption) (*S3GetBucketMetadataResponse, error)
+	// GCSListBuckets lists buckets accessible with the configured credentials.
 	GCSListBuckets(ctx context.Context, in *GCSListBucketsRequest, opts ...grpc.CallOption) (*GCSListBucketsResponse, error)
+	// GCSListObjects lists objects for the given bucket.
 	GCSListObjects(ctx context.Context, in *GCSListObjectsRequest, opts ...grpc.CallOption) (*GCSListObjectsResponse, error)
 }
 
@@ -94,10 +99,15 @@ func (c *connectorServiceClient) GCSListObjects(ctx context.Context, in *GCSList
 // All implementations must embed UnimplementedConnectorServiceServer
 // for forward compatibility
 type ConnectorServiceServer interface {
+	// S3ListBuckets lists buckets accessible with the configured credentials.
 	S3ListBuckets(context.Context, *S3ListBucketsRequest) (*S3ListBucketsResponse, error)
+	// S3ListBuckets lists objects for the given bucket.
 	S3ListObjects(context.Context, *S3ListObjectsRequest) (*S3ListObjectsResponse, error)
+	// S3GetBucketMetadata returns metadata for the given bucket.
 	S3GetBucketMetadata(context.Context, *S3GetBucketMetadataRequest) (*S3GetBucketMetadataResponse, error)
+	// GCSListBuckets lists buckets accessible with the configured credentials.
 	GCSListBuckets(context.Context, *GCSListBucketsRequest) (*GCSListBucketsResponse, error)
+	// GCSListObjects lists objects for the given bucket.
 	GCSListObjects(context.Context, *GCSListObjectsRequest) (*GCSListObjectsResponse, error)
 	mustEmbedUnimplementedConnectorServiceServer()
 }

@@ -219,7 +219,7 @@ func (c Connector) ListBuckets(ctx context.Context, req *runtimev1.GCSListBucket
 			return nil, "", err
 		}
 
-		projectID = f.GetProjectID()
+		projectID = f.getProjectID()
 	}
 
 	pageSize := int(req.GetPageSize())
@@ -343,9 +343,9 @@ type credentialsFile struct {
 	SourceCredentials *credentialsFile `json:"source_credentials"`
 }
 
-func (c *credentialsFile) GetProjectID() string {
+func (c *credentialsFile) getProjectID() string {
 	if c.Type == "impersonated_service_account" {
-		return c.SourceCredentials.GetProjectID()
+		return c.SourceCredentials.getProjectID()
 	}
 	if c.ProjectID != "" {
 		return c.ProjectID

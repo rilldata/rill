@@ -25,6 +25,9 @@ import type {
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
+/**
+ * @summary GCSListObjects lists objects for the given bucket.
+ */
 export const connectorServiceGCSListObjects = (
   bucket: string,
   params?: ConnectorServiceGCSListObjectsParams,
@@ -88,6 +91,9 @@ export const createConnectorServiceGCSListObjects = <
   return query;
 };
 
+/**
+ * @summary GCSListBuckets lists buckets accessible with the configured credentials.
+ */
 export const connectorServiceGCSListBuckets = (
   params?: ConnectorServiceGCSListBucketsParams,
   signal?: AbortSignal
@@ -145,6 +151,9 @@ export const createConnectorServiceGCSListBuckets = <
   return query;
 };
 
+/**
+ * @summary S3GetBucketMetadata returns metadata for the given bucket.
+ */
 export const connectorServiceS3GetBucketMetadata = (
   bucket: string,
   signal?: AbortSignal
@@ -204,6 +213,9 @@ export const createConnectorServiceS3GetBucketMetadata = <
   return query;
 };
 
+/**
+ * @summary S3ListBuckets lists objects for the given bucket.
+ */
 export const connectorServiceS3ListObjects = (
   bucket: string,
   params?: ConnectorServiceS3ListObjectsParams,
@@ -267,6 +279,9 @@ export const createConnectorServiceS3ListObjects = <
   return query;
 };
 
+/**
+ * @summary S3ListBuckets lists buckets accessible with the configured credentials.
+ */
 export const connectorServiceS3ListBuckets = (
   params?: ConnectorServiceS3ListBucketsParams,
   signal?: AbortSignal

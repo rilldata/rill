@@ -66,6 +66,7 @@ paths:
         - RuntimeService
   /v1/gcs/bucket/{bucket}/objects:
     get:
+      summary: GCSListObjects lists objects for the given bucket.
       operationId: ConnectorService_GCSListObjects
       responses:
         "200":
@@ -110,6 +111,7 @@ paths:
         - ConnectorService
   /v1/gcs/buckets:
     get:
+      summary: GCSListBuckets lists buckets accessible with the configured credentials.
       operationId: ConnectorService_GCSListBuckets
       responses:
         "200":
@@ -1514,6 +1516,7 @@ paths:
         - RuntimeService
   /v1/s3/bucket/{bucket}/metadata:
     get:
+      summary: S3GetBucketMetadata returns metadata for the given bucket.
       operationId: ConnectorService_S3GetBucketMetadata
       responses:
         "200":
@@ -1533,6 +1536,7 @@ paths:
         - ConnectorService
   /v1/s3/bucket/{bucket}/objects:
     get:
+      summary: S3ListBuckets lists objects for the given bucket.
       operationId: ConnectorService_S3ListObjects
       responses:
         "200":
@@ -1577,6 +1581,7 @@ paths:
         - ConnectorService
   /v1/s3/buckets:
     get:
+      summary: S3ListBuckets lists buckets accessible with the configured credentials.
       operationId: ConnectorService_S3ListBuckets
       responses:
         "200":

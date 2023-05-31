@@ -3,39 +3,36 @@ package rill.runtime.v1;
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
-
+import "validate/validate.proto";
 
 service ConnectorService {
+  // S3ListBuckets lists buckets accessible with the configured credentials.
   rpc S3ListBuckets(S3ListBucketsRequest) returns (S3ListBucketsResponse) {
     option (google.api.http) = {get: "/v1/s3/buckets"};
   }
 
+  // S3ListBuckets lists objects for the given bucket.
   rpc S3ListObjects(S3ListObjectsRequest) returns (S3ListObjectsResponse) {
     option (google.api.http) = {get: "/v1/s3/bucket/{bucket}/objects"};
   }
 
+  // S3GetBucketMetadata returns metadata for the given bucket.
   rpc S3GetBucketMetadata(S3GetBucketMetadataRequest) returns (S3GetBucketMetadataResponse) {
     option (google.api.http) = {get: "/v1/s3/bucket/{bucket}/metadata"};
   }
 
+  // GCSListBuckets lists buckets accessible with the configured credentials.
   rpc GCSListBuckets(GCSListBucketsRequest) returns (GCSListBucketsResponse) {
     option (google.api.http) = {get: "/v1/gcs/buckets"};
   }
 
+  // GCSListObjects lists objects for the given bucket.
   rpc GCSListObjects(GCSListObjectsRequest) returns (GCSListObjectsResponse) {
     option (google.api.http) = {get: "/v1/gcs/bucket/{bucket}/objects"};
   }
-
 }
 
 message S3Object {
-  string name = 1;
-  google.protobuf.Timestamp modified_on = 2;
-  int64 size = 3;
-  bool is_dir = 4;
-}
-
-message GCSObject {
   string name = 1;
   google.protobuf.Timestamp modified_on = 2;
   int64 size = 3;
@@ -53,9 +50,9 @@ message S3ListBucketsResponse {
 }
 
 message S3ListObjectsRequest {
-  uint32 page_size = 1;
+  uint32 page_size = 1 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   string page_token = 2;
-  string bucket = 3;
+  string bucket = 3 [(validate.rules).string.min_len = 1];
   string region = 4;
   string prefix = 5;
   string start_after = 6;
@@ -67,8 +64,23 @@ message S3ListObjectsResponse {
   repeated S3Object objects = 2;
 }
 
+message S3GetBucketMetadataRequest {
+  string bucket = 1 [(validate.rules).string.min_len = 1];
+}
+
+message S3GetBucketMetadataResponse {
+  string region = 1;
+}
+
+message GCSObject {
+  string name = 1;
+  google.protobuf.Timestamp modified_on = 2;
+  int64 size = 3;
+  bool is_dir = 4;
+}
+
 message GCSListBucketsRequest {
-  uint32 page_size = 1;
+  uint32 page_size = 1 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   string page_token = 2;
 }
 
@@ -78,9 +90,9 @@ message GCSListBucketsResponse {
 }
 
 message GCSListObjectsRequest {
-  uint32 page_size = 1;
+  uint32 page_size = 1 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
   string page_token = 2;
-  string bucket = 3;
+  string bucket = 3 [(validate.rules).string.min_len = 1];
   string prefix = 4;
   string start_offset = 5;
   string end_offset = 6;
@@ -90,12 +102,4 @@ message GCSListObjectsRequest {
 message GCSListObjectsResponse {
   string next_page_token = 1;
   repeated GCSObject objects = 2;
-}
-
-message S3GetBucketMetadataRequest {
-  string bucket = 1;
-}
-
-message S3GetBucketMetadataResponse {
-  string region = 1;
 }
