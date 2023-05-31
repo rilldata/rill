@@ -899,7 +899,7 @@ paths:
       tags:
         - AdminService
   /v1/tokens/represent:
-    put:
+    post:
       summary: IssueRepresentativeAuthToken returns the temporary token for given email
       operationId: AdminService_IssueRepresentativeAuthToken
       responses:

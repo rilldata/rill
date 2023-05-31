@@ -459,7 +459,7 @@ func (c *connection) FindUserByEmail(ctx context.Context, email string) (*databa
 func (c *connection) FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*database.User, error) {
 	var res []*database.User
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u 
-	WHERE lower(u.email) LIKE lower($1) AND lower(u.email) > $2 
+	WHERE lower(u.email) LIKE lower($1) AND lower(u.email) > lower($2) 
 	ORDER BY lower(u.email) LIMIT $3`, emailPattern, afterEmail, limit)
 	if err != nil {
 		return nil, parseErr("users", err)
@@ -541,7 +541,7 @@ func (c *connection) DeleteUsergroupMember(ctx context.Context, groupID, userID 
 
 func (c *connection) FindExpiredUserAuthTokens(ctx context.Context) ([]*database.UserAuthToken, error) {
 	var res []*database.UserAuthToken
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT t.* FROM user_auth_tokens t WHERE t.expires_on < now()")
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT t.* FROM user_auth_tokens t WHERE t.expires_on IS NOT NULL AND t.expires_on < now()")
 	if err != nil {
 		return nil, parseErr("auth tokens", err)
 	}

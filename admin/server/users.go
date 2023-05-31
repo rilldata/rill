@@ -129,9 +129,10 @@ func (s *Server) IssueRepresentativeAuthToken(ctx context.Context, req *adminv1.
 		return nil, err
 	}
 
-	ttl := func() *time.Duration { t := time.Duration(req.TtlMinutes) * time.Minute; return &t }()
+	ttl := time.Duration(req.TtlMinutes) * time.Minute
 	displayName := fmt.Sprintf("Support for %s", u.Email)
-	token, err := s.admin.IssueUserAuthToken(ctx, claims.OwnerID(), database.AuthClientIDRillSupport, displayName, &u.ID, ttl)
+	
+	token, err := s.admin.IssueUserAuthToken(ctx, claims.OwnerID(), database.AuthClientIDRillSupport, displayName, &u.ID, &ttl)
 	if err != nil {
 		return nil, err
 	}

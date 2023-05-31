@@ -1980,7 +1980,7 @@ export const adminServiceIssueRepresentativeAuthToken = (
 ) => {
   return httpClient<V1IssueRepresentativeAuthTokenResponse>({
     url: `/v1/tokens/represent`,
-    method: "put",
+    method: "post",
     headers: { "Content-Type": "application/json" },
     data: v1IssueRepresentativeAuthTokenRequest,
   });

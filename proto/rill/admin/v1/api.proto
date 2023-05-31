@@ -187,7 +187,7 @@ service AdminService {
   // IssueRepresentativeAuthToken returns the temporary token for given email
   rpc IssueRepresentativeAuthToken(IssueRepresentativeAuthTokenRequest) returns (IssueRepresentativeAuthTokenResponse) {
     option (google.api.http) = {
-      put: "/v1/tokens/represent",
+      post: "/v1/tokens/represent",
       body: "*"
     };
   }

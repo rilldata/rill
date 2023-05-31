@@ -40,7 +40,8 @@ func (s *Service) IssueUserAuthToken(ctx context.Context, userID, clientID, disp
 
 	var expiresOn *time.Time
 	if ttl != nil {
-		expiresOn = func() *time.Time { t := time.Now().Add(*ttl); return &t }()
+		t := time.Now().Add(*ttl)
+		expiresOn = &t
 	}
 
 	uat, err := s.DB.InsertUserAuthToken(ctx, &database.InsertUserAuthTokenOptions{
