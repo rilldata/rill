@@ -139,6 +139,13 @@ service QueryService {
   rpc TableRows(TableRowsRequest) returns (TableRowsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
   }
+
+  rpc Download(DownloadLinkRequest) returns (DownloadLinkResponse) {
+    option (google.api.http) = {
+      post: "/v1/download-link",
+      body: "*"
+    };
+  }
 }
 
 // Request message for QueryService.Query
@@ -604,4 +611,28 @@ message TableRowsRequest {
 
 message TableRowsResponse {
   repeated google.protobuf.Struct data = 1;
+}
+
+message DownloadLinkRequest {
+  oneof request {
+    MetricsViewToplistRequest metrics_view_toplist = 1;
+  }
+  int32 limit = 2;
+  DownloadFormat format = 3;
+  DownloadCompression compression = 4;
+}
+
+enum DownloadFormat {
+  DOWNLOAD_FORMAT_UNSPECIFIED = 0; // assumes CSV
+  DOWNLOAD_FORMAT_CSV = 1;
+  DOWNLOAD_FORMAT_PARQUET = 2;
+}
+
+enum DownloadCompression {
+  DOWNLOAD_COMPRESSION_UNSPECIFIED = 0; // assumes no compression
+  DOWNLOAD_COMPRESSION_ZIP = 1;
+}
+
+message DownloadLinkResponse {
+  string download_url_path = 1;
 }

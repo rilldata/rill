@@ -73,6 +73,56 @@ proto3.util.setEnumType(HistogramMethod, "rill.runtime.v1.HistogramMethod", [
 ]);
 
 /**
+ * @generated from enum rill.runtime.v1.DownloadFormat
+ */
+export enum DownloadFormat {
+  /**
+   * assumes CSV
+   *
+   * @generated from enum value: DOWNLOAD_FORMAT_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: DOWNLOAD_FORMAT_CSV = 1;
+   */
+  CSV = 1,
+
+  /**
+   * @generated from enum value: DOWNLOAD_FORMAT_PARQUET = 2;
+   */
+  PARQUET = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(DownloadFormat)
+proto3.util.setEnumType(DownloadFormat, "rill.runtime.v1.DownloadFormat", [
+  { no: 0, name: "DOWNLOAD_FORMAT_UNSPECIFIED" },
+  { no: 1, name: "DOWNLOAD_FORMAT_CSV" },
+  { no: 2, name: "DOWNLOAD_FORMAT_PARQUET" },
+]);
+
+/**
+ * @generated from enum rill.runtime.v1.DownloadCompression
+ */
+export enum DownloadCompression {
+  /**
+   * assumes no compression
+   *
+   * @generated from enum value: DOWNLOAD_COMPRESSION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: DOWNLOAD_COMPRESSION_ZIP = 1;
+   */
+  ZIP = 1,
+}
+// Retrieve enum metadata with: proto3.getEnumType(DownloadCompression)
+proto3.util.setEnumType(DownloadCompression, "rill.runtime.v1.DownloadCompression", [
+  { no: 0, name: "DOWNLOAD_COMPRESSION_UNSPECIFIED" },
+  { no: 1, name: "DOWNLOAD_COMPRESSION_ZIP" },
+]);
+
+/**
  * Request message for QueryService.Query
  *
  * @generated from message rill.runtime.v1.QueryRequest
@@ -3392,6 +3442,104 @@ export class TableRowsResponse extends Message<TableRowsResponse> {
 
   static equals(a: TableRowsResponse | PlainMessage<TableRowsResponse> | undefined, b: TableRowsResponse | PlainMessage<TableRowsResponse> | undefined): boolean {
     return proto3.util.equals(TableRowsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.DownloadLinkRequest
+ */
+export class DownloadLinkRequest extends Message<DownloadLinkRequest> {
+  /**
+   * @generated from oneof rill.runtime.v1.DownloadLinkRequest.request
+   */
+  request: {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewToplistRequest metrics_view_toplist = 1;
+     */
+    value: MetricsViewToplistRequest;
+    case: "metricsViewToplist";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  /**
+   * @generated from field: int32 limit = 2;
+   */
+  limit = 0;
+
+  /**
+   * @generated from field: rill.runtime.v1.DownloadFormat format = 3;
+   */
+  format = DownloadFormat.UNSPECIFIED;
+
+  /**
+   * @generated from field: rill.runtime.v1.DownloadCompression compression = 4;
+   */
+  compression = DownloadCompression.UNSPECIFIED;
+
+  constructor(data?: PartialMessage<DownloadLinkRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DownloadLinkRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "metrics_view_toplist", kind: "message", T: MetricsViewToplistRequest, oneof: "request" },
+    { no: 2, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "format", kind: "enum", T: proto3.getEnumType(DownloadFormat) },
+    { no: 4, name: "compression", kind: "enum", T: proto3.getEnumType(DownloadCompression) },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DownloadLinkRequest {
+    return new DownloadLinkRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DownloadLinkRequest {
+    return new DownloadLinkRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DownloadLinkRequest {
+    return new DownloadLinkRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DownloadLinkRequest | PlainMessage<DownloadLinkRequest> | undefined, b: DownloadLinkRequest | PlainMessage<DownloadLinkRequest> | undefined): boolean {
+    return proto3.util.equals(DownloadLinkRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.DownloadLinkResponse
+ */
+export class DownloadLinkResponse extends Message<DownloadLinkResponse> {
+  /**
+   * @generated from field: string download_url_path = 1;
+   */
+  downloadUrlPath = "";
+
+  constructor(data?: PartialMessage<DownloadLinkResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DownloadLinkResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "download_url_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DownloadLinkResponse {
+    return new DownloadLinkResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DownloadLinkResponse {
+    return new DownloadLinkResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DownloadLinkResponse {
+    return new DownloadLinkResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DownloadLinkResponse | PlainMessage<DownloadLinkResponse> | undefined, b: DownloadLinkResponse | PlainMessage<DownloadLinkResponse> | undefined): boolean {
+    return proto3.util.equals(DownloadLinkResponse, a, b);
   }
 }
 

@@ -291,6 +291,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -323,12 +329,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_MONTH: "TIME_GRAIN_MONTH",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -376,16 +376,7 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
-export interface V1RenameFileAndReconcileRequest {
-  instanceId?: string;
-  fromPath?: string;
-  toPath?: string;
-  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
-  dry?: boolean;
-  strict?: boolean;
-}
-
-export interface V1RefreshAndReconcileResponse {
+export interface V1RenameFileAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
   errors?: V1ReconcileError[];
@@ -393,6 +384,15 @@ affected_paths without an error can be assumed to have been reconciled succesful
 executing the reconciliation. If changed_paths was empty, this will include all
 code artifacts in the repo. */
   affectedPaths?: string[];
+}
+
+export interface V1RenameFileAndReconcileRequest {
+  instanceId?: string;
+  fromPath?: string;
+  toPath?: string;
+  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
+  dry?: boolean;
+  strict?: boolean;
 }
 
 export interface V1RefreshAndReconcileRequest {
@@ -442,7 +442,7 @@ Only applicable if file_path is set. */
   endLocation?: ReconcileErrorCharLocation;
 }
 
-export interface V1RenameFileAndReconcileResponse {
+export interface V1RefreshAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
   errors?: V1ReconcileError[];
@@ -546,14 +546,6 @@ export interface V1NumericSummary {
   numericOutliers?: V1NumericOutliers;
 }
 
-export interface V1Model {
-  name?: string;
-  sql?: string;
-  dialect?: ModelDialect;
-  schema?: V1StructType;
-  materialize?: boolean;
-}
-
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
@@ -568,11 +560,6 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
-export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1TimeSeriesValue[];
-}
-
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
@@ -580,14 +567,24 @@ export interface V1MetricsViewSort {
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
-
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  filter?: V1MetricsViewFilter;
+  priority?: number;
 }
 
 export interface V1MetricsViewComparisonValue {
@@ -596,6 +593,10 @@ export interface V1MetricsViewComparisonValue {
   comparisonValue?: unknown;
   deltaAbs?: unknown;
   deltaRel?: unknown;
+}
+
+export interface V1MetricsViewComparisonToplistResponse {
+  rows?: V1MetricsViewComparisonRow[];
 }
 
 export type V1MetricsViewComparisonSortType =
@@ -626,14 +627,20 @@ export interface V1MetricsViewComparisonRow {
   measureValues?: V1MetricsViewComparisonValue[];
 }
 
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
-}
-
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
+}
+
+export interface V1MetricsViewTimeSeriesResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1TimeSeriesValue[];
+}
+
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
 }
 
 export interface V1MetricsView {
@@ -739,6 +746,36 @@ export interface V1Example {
 
 export interface V1EditInstanceResponse {
   instance?: V1Instance;
+}
+
+export interface V1DownloadLinkResponse {
+  downloadUrlPath?: string;
+}
+
+export type V1DownloadFormat =
+  (typeof V1DownloadFormat)[keyof typeof V1DownloadFormat];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1DownloadFormat = {
+  DOWNLOAD_FORMAT_UNSPECIFIED: "DOWNLOAD_FORMAT_UNSPECIFIED",
+  DOWNLOAD_FORMAT_CSV: "DOWNLOAD_FORMAT_CSV",
+  DOWNLOAD_FORMAT_PARQUET: "DOWNLOAD_FORMAT_PARQUET",
+} as const;
+
+export type V1DownloadCompression =
+  (typeof V1DownloadCompression)[keyof typeof V1DownloadCompression];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1DownloadCompression = {
+  DOWNLOAD_COMPRESSION_UNSPECIFIED: "DOWNLOAD_COMPRESSION_UNSPECIFIED",
+  DOWNLOAD_COMPRESSION_ZIP: "DOWNLOAD_COMPRESSION_ZIP",
+} as const;
+
+export interface V1DownloadLinkRequest {
+  metricsViewToplist?: V1MetricsViewToplistRequest;
+  limit?: number;
+  format?: V1DownloadFormat;
+  compression?: V1DownloadCompression;
 }
 
 export interface V1DeleteInstanceResponse {
@@ -951,6 +988,14 @@ export const ModelDialect = {
   DIALECT_UNSPECIFIED: "DIALECT_UNSPECIFIED",
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
+
+export interface V1Model {
+  name?: string;
+  sql?: string;
+  dialect?: ModelDialect;
+  schema?: V1StructType;
+  materialize?: boolean;
+}
 
 export interface MetricsViewMeasure {
   name?: string;

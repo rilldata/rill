@@ -38,6 +38,7 @@ const (
 	QueryService_TableCardinality_FullMethodName             = "/rill.runtime.v1.QueryService/TableCardinality"
 	QueryService_TableColumns_FullMethodName                 = "/rill.runtime.v1.QueryService/TableColumns"
 	QueryService_TableRows_FullMethodName                    = "/rill.runtime.v1.QueryService/TableRows"
+	QueryService_Download_FullMethodName                     = "/rill.runtime.v1.QueryService/Download"
 )
 
 // QueryServiceClient is the client API for QueryService service.
@@ -85,6 +86,7 @@ type QueryServiceClient interface {
 	TableColumns(ctx context.Context, in *TableColumnsRequest, opts ...grpc.CallOption) (*TableColumnsResponse, error)
 	// TableRows returns table rows
 	TableRows(ctx context.Context, in *TableRowsRequest, opts ...grpc.CallOption) (*TableRowsResponse, error)
+	Download(ctx context.Context, in *DownloadLinkRequest, opts ...grpc.CallOption) (*DownloadLinkResponse, error)
 }
 
 type queryServiceClient struct {
@@ -266,6 +268,15 @@ func (c *queryServiceClient) TableRows(ctx context.Context, in *TableRowsRequest
 	return out, nil
 }
 
+func (c *queryServiceClient) Download(ctx context.Context, in *DownloadLinkRequest, opts ...grpc.CallOption) (*DownloadLinkResponse, error) {
+	out := new(DownloadLinkResponse)
+	err := c.cc.Invoke(ctx, QueryService_Download_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServiceServer is the server API for QueryService service.
 // All implementations must embed UnimplementedQueryServiceServer
 // for forward compatibility
@@ -311,6 +322,7 @@ type QueryServiceServer interface {
 	TableColumns(context.Context, *TableColumnsRequest) (*TableColumnsResponse, error)
 	// TableRows returns table rows
 	TableRows(context.Context, *TableRowsRequest) (*TableRowsResponse, error)
+	Download(context.Context, *DownloadLinkRequest) (*DownloadLinkResponse, error)
 	mustEmbedUnimplementedQueryServiceServer()
 }
 
@@ -374,6 +386,9 @@ func (UnimplementedQueryServiceServer) TableColumns(context.Context, *TableColum
 }
 func (UnimplementedQueryServiceServer) TableRows(context.Context, *TableRowsRequest) (*TableRowsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TableRows not implemented")
+}
+func (UnimplementedQueryServiceServer) Download(context.Context, *DownloadLinkRequest) (*DownloadLinkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Download not implemented")
 }
 func (UnimplementedQueryServiceServer) mustEmbedUnimplementedQueryServiceServer() {}
 
@@ -730,6 +745,24 @@ func _QueryService_TableRows_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _QueryService_Download_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DownloadLinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServiceServer).Download(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueryService_Download_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServiceServer).Download(ctx, req.(*DownloadLinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // QueryService_ServiceDesc is the grpc.ServiceDesc for QueryService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -812,6 +845,10 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TableRows",
 			Handler:    _QueryService_TableRows_Handler,
+		},
+		{
+			MethodName: "Download",
+			Handler:    _QueryService_Download_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

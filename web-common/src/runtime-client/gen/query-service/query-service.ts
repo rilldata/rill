@@ -14,8 +14,10 @@ import type {
   QueryKey,
 } from "@tanstack/svelte-query";
 import type {
-  V1ColumnCardinalityResponse,
+  V1DownloadLinkResponse,
   RpcStatus,
+  V1DownloadLinkRequest,
+  V1ColumnCardinalityResponse,
   QueryServiceColumnCardinalityParams,
   V1TableColumnsResponse,
   QueryServiceTableColumnsParams,
@@ -56,6 +58,52 @@ import type {
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
+export const queryServiceDownload = (
+  v1DownloadLinkRequest: V1DownloadLinkRequest
+) => {
+  return httpClient<V1DownloadLinkResponse>({
+    url: `/v1/download-link`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1DownloadLinkRequest,
+  });
+};
+
+export type QueryServiceDownloadMutationResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceDownload>>
+>;
+export type QueryServiceDownloadMutationBody = V1DownloadLinkRequest;
+export type QueryServiceDownloadMutationError = RpcStatus;
+
+export const createQueryServiceDownload = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceDownload>>,
+    TError,
+    { data: V1DownloadLinkRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceDownload>>,
+    { data: V1DownloadLinkRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return queryServiceDownload(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof queryServiceDownload>>,
+    TError,
+    { data: V1DownloadLinkRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary Get cardinality for a column
  */

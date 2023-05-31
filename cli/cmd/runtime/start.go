@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/queries/downloads"
 	"github.com/rilldata/rill/runtime/server"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -130,11 +132,17 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				logger.Fatal("error: could not create server", zap.Error(err))
 			}
 
+			fn := func(sm *http.ServeMux) {
+				sm.Handle("/v1/downloads", &downloads.DownloadHandler{
+					Runtime: rt,
+				})
+			}
+
 			// Run server
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 			group, cctx := errgroup.WithContext(ctx)
 			group.Go(func() error { return s.ServeGRPC(cctx) })
-			group.Go(func() error { return s.ServeHTTP(cctx, nil) })
+			group.Go(func() error { return s.ServeHTTP(cctx, fn) })
 			err = group.Wait()
 			if err != nil {
 				logger.Fatal("server crashed", zap.Error(err))

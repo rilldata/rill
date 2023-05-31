@@ -8466,6 +8466,264 @@ var _ interface {
 	ErrorName() string
 } = TableRowsResponseValidationError{}
 
+// Validate checks the field values on DownloadLinkRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DownloadLinkRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DownloadLinkRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DownloadLinkRequestMultiError, or nil if none found.
+func (m *DownloadLinkRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DownloadLinkRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Limit
+
+	// no validation rules for Format
+
+	// no validation rules for Compression
+
+	switch v := m.Request.(type) {
+	case *DownloadLinkRequest_MetricsViewToplist:
+		if v == nil {
+			err := DownloadLinkRequestValidationError{
+				field:  "Request",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewToplist()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, DownloadLinkRequestValidationError{
+						field:  "MetricsViewToplist",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, DownloadLinkRequestValidationError{
+						field:  "MetricsViewToplist",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewToplist()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return DownloadLinkRequestValidationError{
+					field:  "MetricsViewToplist",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return DownloadLinkRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// DownloadLinkRequestMultiError is an error wrapping multiple validation
+// errors returned by DownloadLinkRequest.ValidateAll() if the designated
+// constraints aren't met.
+type DownloadLinkRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DownloadLinkRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DownloadLinkRequestMultiError) AllErrors() []error { return m }
+
+// DownloadLinkRequestValidationError is the validation error returned by
+// DownloadLinkRequest.Validate if the designated constraints aren't met.
+type DownloadLinkRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DownloadLinkRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DownloadLinkRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DownloadLinkRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DownloadLinkRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DownloadLinkRequestValidationError) ErrorName() string {
+	return "DownloadLinkRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DownloadLinkRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDownloadLinkRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DownloadLinkRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DownloadLinkRequestValidationError{}
+
+// Validate checks the field values on DownloadLinkResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DownloadLinkResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DownloadLinkResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DownloadLinkResponseMultiError, or nil if none found.
+func (m *DownloadLinkResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DownloadLinkResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for DownloadUrlPath
+
+	if len(errors) > 0 {
+		return DownloadLinkResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// DownloadLinkResponseMultiError is an error wrapping multiple validation
+// errors returned by DownloadLinkResponse.ValidateAll() if the designated
+// constraints aren't met.
+type DownloadLinkResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DownloadLinkResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DownloadLinkResponseMultiError) AllErrors() []error { return m }
+
+// DownloadLinkResponseValidationError is the validation error returned by
+// DownloadLinkResponse.Validate if the designated constraints aren't met.
+type DownloadLinkResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DownloadLinkResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DownloadLinkResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DownloadLinkResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DownloadLinkResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DownloadLinkResponseValidationError) ErrorName() string {
+	return "DownloadLinkResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DownloadLinkResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDownloadLinkResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DownloadLinkResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DownloadLinkResponseValidationError{}
+
 // Validate checks the field values on MetricsViewFilter_Cond with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
