@@ -65,8 +65,8 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       algolia: {
-        appId: "4U01DM4NS4",
-        apiKey: "c0399915ae21a35c6d34a473d017c15b",
+        appId: "YF2DSTYTDY",
+        apiKey: "5ad8a0be8edb6cd902a1c24b28c38900",
         indexName: "rilldata",
         debug: false // Set debug to true if you want to inspect the modal        
       },
