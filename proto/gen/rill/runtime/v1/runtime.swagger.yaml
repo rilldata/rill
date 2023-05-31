@@ -1924,8 +1924,6 @@ definitions:
   v1DownloadLinkRequest:
     type: object
     properties:
-      metricsViewToplist:
-        $ref: '#/definitions/v1MetricsViewToplistRequest'
       limit:
         type: integer
         format: int32
@@ -1933,6 +1931,10 @@ definitions:
         $ref: '#/definitions/v1DownloadFormat'
       compression:
         $ref: '#/definitions/v1DownloadCompression'
+      metricsViewToplistRequest:
+        $ref: '#/definitions/v1MetricsViewToplistRequest'
+      metricsViewRowsRequest:
+        $ref: '#/definitions/v1MetricsViewRowsRequest'
   v1DownloadLinkResponse:
     type: object
     properties:
@@ -2195,6 +2197,36 @@ definitions:
           type: object
           $ref: '#/definitions/MetricsViewFilterCond'
     title: Filter clause for metrics view requests
+  v1MetricsViewRowsRequest:
+    type: object
+    properties:
+      instanceId:
+        type: string
+      metricsViewName:
+        type: string
+      timeStart:
+        type: string
+        format: date-time
+      timeEnd:
+        type: string
+        format: date-time
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
+      sort:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewSort'
+      limit:
+        type: integer
+        format: int32
+      offset:
+        type: string
+        format: int64
+      priority:
+        type: integer
+        format: int32
+    title: Request message for QueryService.MetricsViewRows
   v1MetricsViewRowsResponse:
     type: object
     properties:

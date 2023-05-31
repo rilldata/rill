@@ -22,6 +22,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/queries/downloads"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -272,6 +273,9 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 			mux.Handle("/local/config", a.infoHandler(inf))
 			mux.Handle("/local/version", a.versionHandler())
 			mux.Handle("/local/track", a.trackingHandler(inf))
+			mux.Handle("/v1/downloads", &downloads.DownloadHandler{
+				Runtime: a.Runtime,
+			})
 		})
 	})
 

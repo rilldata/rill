@@ -546,6 +546,14 @@ export interface V1NumericSummary {
   numericOutliers?: V1NumericOutliers;
 }
 
+export interface V1Model {
+  name?: string;
+  sql?: string;
+  dialect?: ModelDialect;
+  schema?: V1StructType;
+  materialize?: boolean;
+}
+
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
@@ -560,12 +568,22 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
+export interface V1MetricsViewTimeSeriesResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1TimeSeriesValue[];
+}
+
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
 }
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
 
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
@@ -584,6 +602,18 @@ export interface V1MetricsViewToplistRequest {
   offset?: string;
   sort?: V1MetricsViewSort[];
   filter?: V1MetricsViewFilter;
+  priority?: number;
+}
+
+export interface V1MetricsViewRowsRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  timeStart?: string;
+  timeEnd?: string;
+  filter?: V1MetricsViewFilter;
+  sort?: V1MetricsViewSort[];
+  limit?: number;
+  offset?: string;
   priority?: number;
 }
 
@@ -631,16 +661,6 @@ export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
-}
-
-export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1TimeSeriesValue[];
-}
-
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
 }
 
 export interface V1MetricsView {
@@ -772,10 +792,11 @@ export const V1DownloadCompression = {
 } as const;
 
 export interface V1DownloadLinkRequest {
-  metricsViewToplist?: V1MetricsViewToplistRequest;
   limit?: number;
   format?: V1DownloadFormat;
   compression?: V1DownloadCompression;
+  metricsViewToplistRequest?: V1MetricsViewToplistRequest;
+  metricsViewRowsRequest?: V1MetricsViewRowsRequest;
 }
 
 export interface V1DeleteInstanceResponse {
@@ -988,14 +1009,6 @@ export const ModelDialect = {
   DIALECT_UNSPECIFIED: "DIALECT_UNSPECIFIED",
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
-
-export interface V1Model {
-  name?: string;
-  sql?: string;
-  dialect?: ModelDialect;
-  schema?: V1StructType;
-  materialize?: boolean;
-}
 
 export interface MetricsViewMeasure {
   name?: string;

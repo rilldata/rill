@@ -8495,7 +8495,7 @@ func (m *DownloadLinkRequest) validate(all bool) error {
 	// no validation rules for Compression
 
 	switch v := m.Request.(type) {
-	case *DownloadLinkRequest_MetricsViewToplist:
+	case *DownloadLinkRequest_MetricsViewToplistRequest:
 		if v == nil {
 			err := DownloadLinkRequestValidationError{
 				field:  "Request",
@@ -8508,11 +8508,11 @@ func (m *DownloadLinkRequest) validate(all bool) error {
 		}
 
 		if all {
-			switch v := interface{}(m.GetMetricsViewToplist()).(type) {
+			switch v := interface{}(m.GetMetricsViewToplistRequest()).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
 					errors = append(errors, DownloadLinkRequestValidationError{
-						field:  "MetricsViewToplist",
+						field:  "MetricsViewToplistRequest",
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -8520,16 +8520,57 @@ func (m *DownloadLinkRequest) validate(all bool) error {
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
 					errors = append(errors, DownloadLinkRequestValidationError{
-						field:  "MetricsViewToplist",
+						field:  "MetricsViewToplistRequest",
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
 				}
 			}
-		} else if v, ok := interface{}(m.GetMetricsViewToplist()).(interface{ Validate() error }); ok {
+		} else if v, ok := interface{}(m.GetMetricsViewToplistRequest()).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return DownloadLinkRequestValidationError{
-					field:  "MetricsViewToplist",
+					field:  "MetricsViewToplistRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *DownloadLinkRequest_MetricsViewRowsRequest:
+		if v == nil {
+			err := DownloadLinkRequestValidationError{
+				field:  "Request",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewRowsRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, DownloadLinkRequestValidationError{
+						field:  "MetricsViewRowsRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, DownloadLinkRequestValidationError{
+						field:  "MetricsViewRowsRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewRowsRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return DownloadLinkRequestValidationError{
+					field:  "MetricsViewRowsRequest",
 					reason: "embedded message failed validation",
 					cause:  err,
 				}

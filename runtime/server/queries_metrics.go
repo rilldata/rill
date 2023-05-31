@@ -152,7 +152,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 // This is to prevent injection of arbitrary SQL from clients with only ReadMetrics access.
 // In the future, we should consider allowing arbitrary expressions from people with wider access.
 // Currently, only COUNT(*) is allowed.
-func ValidateInlineMeasures(ms []*runtimev1.InlineMeasure) error {
+func validateInlineMeasures(ms []*runtimev1.InlineMeasure) error {
 	for _, im := range ms {
 		if !strings.EqualFold(im.Expression, "COUNT(*)") {
 			return fmt.Errorf("illegal inline measure expression: %q", im.Expression)

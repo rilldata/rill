@@ -614,12 +614,13 @@ message TableRowsResponse {
 }
 
 message DownloadLinkRequest {
+  int32 limit = 1;
+  DownloadFormat format = 2;
+  DownloadCompression compression = 3;
   oneof request {
-    MetricsViewToplistRequest metrics_view_toplist = 1;
+    MetricsViewToplistRequest metrics_view_toplist_request = 4;
+    MetricsViewRowsRequest metrics_view_rows_request = 5;
   }
-  int32 limit = 2;
-  DownloadFormat format = 3;
-  DownloadCompression compression = 4;
 }
 
 enum DownloadFormat {

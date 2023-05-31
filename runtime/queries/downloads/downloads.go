@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/csv"
-	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strconv"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -28,44 +29,45 @@ type DownloadHandler struct {
 
 func (h *DownloadHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/csv")
-	w.WriteHeader(http.StatusOK)
-	limit, err := strconv.Atoi(req.URL.Query().Get(Limit))
+
+	limitString := req.URL.Query().Get(Limit)
+	var limit int
+	var err error
+	if limitString != "" {
+		limit, err = strconv.Atoi(limitString)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to parse request: %s", err), http.StatusBadRequest)
+			return
+		}
+	}
+
+	marshalled, err := base64.StdEncoding.DecodeString(req.URL.Query().Get(Request))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to parse request: %s", err), http.StatusBadRequest)
 		return
 	}
 
-	var dst []byte
-	_, err = base64.StdEncoding.Decode(
-		dst,
-		[]byte(
-			req.URL.Query().Get(Request),
-		),
-	)
+	request := &runtimev1.DownloadLinkRequest{}
+	err = proto.Unmarshal(marshalled, request)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to parse request: %s", err), http.StatusBadRequest)
 		return
 	}
 
-	var request any
-	err = json.Unmarshal(dst, &request)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to parse request: %s", err), http.StatusBadRequest)
-		return
-	}
-
-	switch v := request.(type) {
-	case *runtimev1.MetricsViewToplistRequest:
-		v.Limit = int64(limit)
-		err = h.executeToplist(req.Context(), w, v)
+	switch v := request.Request.(type) {
+	case *runtimev1.DownloadLinkRequest_MetricsViewToplistRequest:
+		v.MetricsViewToplistRequest.Limit = int64(limit)
+		err = h.executeToplist(req.Context(), w, v.MetricsViewToplistRequest)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	default:
-		http.Error(w, fmt.Sprintf("Unsupported request type: %s", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("Unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *DownloadHandler) executeToplist(ctx context.Context, writer http.ResponseWriter, req *runtimev1.MetricsViewToplistRequest) error {
