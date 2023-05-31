@@ -103,7 +103,7 @@ describe("dashboards", () => {
 
     // Change the metric trend granularity
     await page.getByRole("button", { name: "Metric trends by day" }).click();
-    await page.getByRole("menuitem", { name: "hour" }).click();
+    await page.getByRole("menuitem", { name: "day" }).click();
 
     // Change the time range
     await page.getByLabel("Select time range").click();
