@@ -2,6 +2,7 @@ package queries
 
 import (
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -92,8 +94,43 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	return nil
 }
 
-func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.DownloadFormat, w io.Writer) error {
-	return ErrExportNotSupported
+func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.DownloadFormat, writer io.Writer) error {
+	err := q.Resolve(ctx, rt, instanceID, priority)
+	if err != nil {
+		return err
+	}
+
+	switch format {
+	case runtimev1.DownloadFormat_DOWNLOAD_FORMAT_UNSPECIFIED, runtimev1.DownloadFormat_DOWNLOAD_FORMAT_CSV:
+		return writeCSV(q.Result.Meta, q.Result.Data, writer)
+	}
+
+	return nil
+}
+
+func writeCSV(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writer io.Writer) error {
+	w := csv.NewWriter(writer)
+
+	record := make([]string, 0, len(meta))
+	for _, field := range meta {
+		record = append(record, field.Name)
+	}
+	if err := w.Write(record); err != nil {
+		return err
+	}
+	record = record[:0]
+
+	for _, structs := range data {
+		for _, field := range structs.Fields {
+			record = append(record, field.GetStringValue())
+		}
+		if err := w.Write(record); err != nil {
+			return err
+		}
+		record = record[:0]
+	}
+
+	return nil
 }
 
 func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {

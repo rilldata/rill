@@ -2,7 +2,6 @@ package queries
 
 import (
 	"context"
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -105,21 +104,8 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 	}
 
 	switch format {
-	case runtimev1.DownloadFormat_DOWNLOAD_FORMAT_UNSPECIFIED:
-		fallthrough
-	case runtimev1.DownloadFormat_DOWNLOAD_FORMAT_CSV:
-		w := csv.NewWriter(writer)
-
-		record := make([]string, 0, len(q.Result.Meta))
-		for _, structs := range q.Result.Data {
-			for _, field := range structs.Fields {
-				record = append(record, field.GetStringValue())
-			}
-			if err := w.Write(record); err != nil {
-				return err
-			}
-			record = record[:0]
-		}
+	case runtimev1.DownloadFormat_DOWNLOAD_FORMAT_UNSPECIFIED, runtimev1.DownloadFormat_DOWNLOAD_FORMAT_CSV:
+		return writeCSV(q.Result.Meta, q.Result.Data, writer)
 	}
 
 	return nil
