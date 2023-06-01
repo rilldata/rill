@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
@@ -221,7 +222,7 @@ func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gate
 }
 
 func timeoutSelector(service, method string) time.Duration {
-	if method == "TriggerReconcile" {
+	if service == "RuntimeService" && (strings.Contains(method, "Trigger") || strings.Contains(method, "Reconcile")) {
 		return time.Minute * 30
 	}
 	if service == "QueryService" {
