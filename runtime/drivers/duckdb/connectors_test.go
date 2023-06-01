@@ -952,7 +952,7 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 				"path": filepath.Join(tempDir, "*.csv"),
 			},
 		})
-		require.NoError(t, err)
+		require.NoError(t, err, "no err expected test %s", test.name)
 
 		var count int
 		rows, err := olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %s", test.name)})

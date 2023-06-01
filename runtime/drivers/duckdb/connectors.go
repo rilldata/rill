@@ -232,7 +232,7 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 
 	if !hasKey(a.ingestionProps, "columns", "types", "dtypes") && format != ".parquet" {
 		// add columns and their datatypes to ensure the datatypes are not inferred again
-		from, err = sourceReader(files, format, addSchemaInference(a.ingestionProps, srcSchema))
+		from, err = sourceReader(files, format, addSchemaInference(a.ingestionProps, srcSchema, format))
 		if err != nil {
 			return err
 		}
@@ -394,6 +394,10 @@ func generateReadJSONStatement(paths []string, properties map[string]any) (strin
 	if _, formatDefined := ingestionProps["format"]; !formatDefined {
 		ingestionProps["format"] = "auto"
 	}
+	// set union_by_name to unify the schema of the files
+	if _, defined := ingestionProps["union_by_name"]; !defined {
+		ingestionProps["union_by_name"] = true
+	}
 	return fmt.Sprintf("read_json(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
 }
 
@@ -457,10 +461,14 @@ func schemaRelaxationProperties(prop map[string]interface{}) (allowAddition, all
 	return allowAddition, allowRelaxation, nil
 }
 
-func addSchemaInference(duckDBProps map[string]interface{}, schema map[string]string) map[string]interface{} {
+func addSchemaInference(duckDBProps map[string]interface{}, schema map[string]string, format string) map[string]interface{} {
 	// add columns and their datatypes to ensure the datatypes are not inferred again
 	ingestionProps := copyMap(duckDBProps)
-	ingestionProps["dtypes"] = schemaToDuckDBColumnsProp(schema)
+	if containsAny(format, []string{".csv", ".tsv", ".txt"}) {
+		ingestionProps["dtypes"] = schemaToDuckDBColumnsProp(schema)
+	} else if containsAny(format, []string{".json", ".ndjson"}) {
+		ingestionProps["columns"] = schemaToDuckDBColumnsProp(schema)
+	}
 	return ingestionProps
 }
 
