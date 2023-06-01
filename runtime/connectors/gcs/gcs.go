@@ -2,31 +2,24 @@ package gcs
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
 
-	"cloud.google.com/go/storage"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"go.uber.org/zap"
-	"gocloud.dev/blob"
 	"gocloud.dev/blob/gcsblob"
 	"gocloud.dev/gcp"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/googleapi"
-	"google.golang.org/api/iterator"
-	"google.golang.org/api/option"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const defaultPageSize = 20
@@ -200,100 +193,6 @@ func (c Connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, 
 	return bucketObj.IsAccessible(ctx)
 }
 
-func (c Connector) ListBuckets(ctx context.Context, req *runtimev1.GCSListBucketsRequest, env *connectors.Env) ([]string, string, error) {
-	credentials, err := resolvedCredentials(ctx, env)
-	if err != nil {
-		return nil, "", err
-	}
-
-	client, err := storage.NewClient(ctx, option.WithCredentials(credentials))
-	if err != nil {
-		return nil, "", err
-	}
-	defer client.Close()
-
-	projectID := credentials.ProjectID
-	if projectID == "" {
-		f := &credentialsFile{}
-		if err := json.Unmarshal(credentials.JSON, f); err != nil {
-			return nil, "", err
-		}
-
-		projectID = f.getProjectID()
-	}
-
-	pageSize := int(req.GetPageSize())
-	if pageSize == 0 {
-		pageSize = defaultPageSize
-	}
-	pager := iterator.NewPager(client.Buckets(ctx, projectID), pageSize, req.GetPageToken())
-	buckets := make([]*storage.BucketAttrs, 0)
-	next, err := pager.NextPage(&buckets)
-	if err != nil {
-		return nil, "", err
-	}
-
-	names := make([]string, len(buckets))
-	for i := 0; i < len(buckets); i++ {
-		names[i] = buckets[i].Name
-	}
-	return names, next, nil
-}
-
-func (c Connector) ListObjects(ctx context.Context, req *runtimev1.GCSListObjectsRequest, env *connectors.Env) ([]*runtimev1.GCSObject, string, error) {
-	client, err := createClient(ctx, env)
-	if err != nil {
-		return nil, "", err
-	}
-
-	bucket, err := gcsblob.OpenBucket(ctx, client, req.GetBucket(), nil)
-	if err != nil {
-		return nil, "", err
-	}
-	defer bucket.Close()
-
-	pageSize := int(req.GetPageSize())
-	if pageSize == 0 {
-		pageSize = defaultPageSize
-	}
-
-	var pageToken []byte
-	if req.GetPageToken() == "" {
-		pageToken = blob.FirstPageToken
-	} else {
-		pageToken = []byte(req.GetPageToken())
-	}
-
-	objects, nextToken, err := bucket.ListPage(ctx, pageToken, pageSize, &blob.ListOptions{
-		Prefix:    req.Prefix,
-		Delimiter: req.Delimitter,
-		BeforeList: func(as func(interface{}) bool) error {
-			var q *storage.Query
-			if as(&q) {
-				q.StartOffset = req.GetStartOffset()
-				q.EndOffset = req.GetEndOffset()
-			} else {
-				panic("Listobjects failed")
-			}
-			return nil
-		},
-	})
-	if err != nil {
-		return nil, "", err
-	}
-
-	gcsObjects := make([]*runtimev1.GCSObject, len(objects))
-	for i, object := range objects {
-		gcsObjects[i] = &runtimev1.GCSObject{
-			Name:       object.Key,
-			ModifiedOn: timestamppb.New(object.ModTime),
-			Size:       object.Size,
-			IsDir:      object.IsDir,
-		}
-	}
-	return gcsObjects, string(nextToken), nil
-}
-
 func createClient(ctx context.Context, env *connectors.Env) (*gcp.HTTPClient, error) {
 	creds, err := resolvedCredentials(ctx, env)
 	if err != nil {
@@ -327,28 +226,4 @@ func resolvedCredentials(ctx context.Context, env *connectors.Env) (*google.Cred
 		return creds, nil
 	}
 	return nil, errNoCredentials
-}
-
-// credentialsFile is the unmarshalled representation of a credentials file.
-type credentialsFile struct {
-	Type string `json:"type"`
-
-	// Service Account fields
-	ProjectID string `json:"project_id"`
-
-	// External Account fields
-	QuotaProjectID string `json:"quota_project_id"`
-
-	// Service account impersonation
-	SourceCredentials *credentialsFile `json:"source_credentials"`
-}
-
-func (c *credentialsFile) getProjectID() string {
-	if c.Type == "impersonated_service_account" {
-		return c.SourceCredentials.getProjectID()
-	}
-	if c.ProjectID != "" {
-		return c.ProjectID
-	}
-	return c.QuotaProjectID
 }

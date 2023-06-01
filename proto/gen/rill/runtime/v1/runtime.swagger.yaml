@@ -103,7 +103,7 @@ paths:
           in: query
           required: false
           type: string
-        - name: delimitter
+        - name: delimiter
           in: query
           required: false
           type: string
@@ -1573,7 +1573,7 @@ paths:
           in: query
           required: false
           type: string
-        - name: delimitter
+        - name: delimiter
           in: query
           required: false
           type: string

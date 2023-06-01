@@ -15,7 +15,7 @@ export type ConnectorServiceS3ListObjectsParams = {
   region?: string;
   prefix?: string;
   startAfter?: string;
-  delimitter?: string;
+  delimiter?: string;
 };
 
 export type RuntimeServiceReconcileBody = {
@@ -254,7 +254,7 @@ export type ConnectorServiceGCSListObjectsParams = {
   prefix?: string;
   startOffset?: string;
   endOffset?: string;
-  delimitter?: string;
+  delimiter?: string;
 };
 
 export interface V1UnpackExampleResponse {

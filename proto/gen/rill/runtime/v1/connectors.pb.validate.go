@@ -435,7 +435,7 @@ func (m *S3ListObjectsRequest) validate(all bool) error {
 
 	// no validation rules for StartAfter
 
-	// no validation rules for Delimitter
+	// no validation rules for Delimiter
 
 	if len(errors) > 0 {
 		return S3ListObjectsRequestMultiError(errors)
@@ -1286,7 +1286,7 @@ func (m *GCSListObjectsRequest) validate(all bool) error {
 
 	// no validation rules for EndOffset
 
-	// no validation rules for Delimitter
+	// no validation rules for Delimiter
 
 	if len(errors) > 0 {
 		return GCSListObjectsRequestMultiError(errors)

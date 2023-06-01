@@ -182,9 +182,9 @@ export class S3ListObjectsRequest extends Message<S3ListObjectsRequest> {
   startAfter = "";
 
   /**
-   * @generated from field: string delimitter = 7;
+   * @generated from field: string delimiter = 7;
    */
-  delimitter = "";
+  delimiter = "";
 
   constructor(data?: PartialMessage<S3ListObjectsRequest>) {
     super();
@@ -200,7 +200,7 @@ export class S3ListObjectsRequest extends Message<S3ListObjectsRequest> {
     { no: 4, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "start_after", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "delimitter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "delimiter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): S3ListObjectsRequest {
@@ -513,9 +513,9 @@ export class GCSListObjectsRequest extends Message<GCSListObjectsRequest> {
   endOffset = "";
 
   /**
-   * @generated from field: string delimitter = 7;
+   * @generated from field: string delimiter = 7;
    */
-  delimitter = "";
+  delimiter = "";
 
   constructor(data?: PartialMessage<GCSListObjectsRequest>) {
     super();
@@ -531,7 +531,7 @@ export class GCSListObjectsRequest extends Message<GCSListObjectsRequest> {
     { no: 4, name: "prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "start_offset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "end_offset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "delimitter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "delimiter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GCSListObjectsRequest {

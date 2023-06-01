@@ -56,7 +56,7 @@ message S3ListObjectsRequest {
   string region = 4;
   string prefix = 5;
   string start_after = 6;
-  string delimitter = 7;
+  string delimiter = 7;
 }
 
 message S3ListObjectsResponse {
@@ -96,7 +96,7 @@ message GCSListObjectsRequest {
   string prefix = 4;
   string start_offset = 5;
   string end_offset = 6;
-  string delimitter = 7;
+  string delimiter = 7;
 }
 
 message GCSListObjectsResponse {
