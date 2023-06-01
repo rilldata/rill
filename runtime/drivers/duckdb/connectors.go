@@ -225,45 +225,37 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 
 	// error is of type binder error (more or less columns than current table schema)
 	// or of type conversion error (datatype changed or column sequence changed)
-	srcSchema, err := a.updateSchema(ctx, from, files)
+	err = a.updateSchema(ctx, from, files)
 	if err != nil {
 		return fmt.Errorf("failed to update schema %w", err)
 	}
 
-	if !hasKey(a.ingestionProps, "columns", "types", "dtypes") && format != ".parquet" {
-		// add columns and their datatypes to ensure the datatypes are not inferred again
-		from, err = sourceReader(files, format, addSchemaInference(a.ingestionProps, srcSchema, format))
-		if err != nil {
-			return err
-		}
-	}
-
-	colNames := strings.Join(keys(srcSchema), "\",\"")
-	query = fmt.Sprintf("INSERT INTO %q (\"%s\") (SELECT \"%s\" FROM %s);", a.source.Name, colNames, colNames, from)
+	query = fmt.Sprintf("INSERT INTO %q BY NAME (SELECT * FROM %s);", a.source.Name, from)
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
 	return a.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }
 
 // updateSchema updates the schema of the table in case new file adds a new column or
 // updates the datatypes of an existing columns with a wider datatype.
-func (a *appender) updateSchema(ctx context.Context, from string, fileNames []string) (srcSchema map[string]string, err error) {
+func (a *appender) updateSchema(ctx context.Context, from string, fileNames []string) error {
 	// schema of new files
-	if srcSchema, err = a.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE (SELECT * FROM %s LIMIT 0);", from)); err != nil {
-		return
+	srcSchema, err := a.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE (SELECT * FROM %s LIMIT 0);", from))
+	if err != nil {
+		return err
 	}
 
 	// combined schema
 	qry := fmt.Sprintf("DESCRIBE ((SELECT * FROM %s limit 0) UNION ALL BY NAME (SELECT * FROM %s limit 0));", a.source.Name, from)
 	unionSchema, err := a.scanSchemaFromQuery(ctx, qry)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// current schema
 	if a.tableSchema == nil {
 		a.tableSchema, err = a.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE %q;", a.source.Name))
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -282,27 +274,27 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 		if len(srcSchema) < len(unionSchema) {
 			fileNames := strings.Join(names(fileNames), ",")
 			columns := strings.Join(missingMapKeys(a.tableSchema, srcSchema), ",")
-			return nil, fmt.Errorf("new files %q are missing columns %q and schema relaxation not allowed", fileNames, columns)
+			return fmt.Errorf("new files %q are missing columns %q and schema relaxation not allowed", fileNames, columns)
 		}
 
 		if len(colTypeChanged) != 0 {
 			fileNames := strings.Join(names(fileNames), ",")
 			columns := strings.Join(keys(colTypeChanged), ",")
-			return nil, fmt.Errorf("new files %q change datatypes of some columns %q and column relaxation not allowed", fileNames, columns)
+			return fmt.Errorf("new files %q change datatypes of some columns %q and column relaxation not allowed", fileNames, columns)
 		}
 	}
 
 	if len(newCols) != 0 && !a.allowColAddition {
 		fileNames := strings.Join(names(fileNames), ",")
 		columns := strings.Join(missingMapKeys(srcSchema, a.tableSchema), ",")
-		return nil, fmt.Errorf("new files %q have new columns %q and column addition not allowed", fileNames, columns)
+		return fmt.Errorf("new files %q have new columns %q and column addition not allowed", fileNames, columns)
 	}
 
 	for colName, colType := range newCols {
 		a.tableSchema[colName] = colType
 		qry := fmt.Sprintf("ALTER TABLE %q ADD COLUMN %q %s", a.source.Name, colName, colType)
 		if err := a.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -310,11 +302,11 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 		a.tableSchema[colName] = colType
 		qry := fmt.Sprintf("ALTER TABLE %q ALTER COLUMN %q SET DATA TYPE %s", a.source.Name, colName, colType)
 		if err := a.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return srcSchema, nil
+	return nil
 }
 
 func resolveLocalPath(env *connectors.Env, path, sourceName string) (string, error) {
@@ -411,21 +403,6 @@ func convertToStatementParamsStr(paths []string, properties map[string]any) stri
 	return strings.Join(ingestionParamsStr, ",")
 }
 
-func schemaToDuckDBColumnsProp(schema map[string]string) string {
-	var typeStr strings.Builder
-	typeStr.WriteString("{")
-	i := 0
-	for name, dtype := range schema {
-		typeStr.WriteString(fmt.Sprintf("'%s':'%s'", name, dtype))
-		i++
-		if i != len(schema) {
-			typeStr.WriteString(",")
-		}
-	}
-	typeStr.WriteString("}")
-	return typeStr.String()
-}
-
 type duckDBTableSchemaResult struct {
 	ColumnName string  `db:"column_name"`
 	ColumnType string  `db:"column_type"`
@@ -459,17 +436,6 @@ func schemaRelaxationProperties(prop map[string]interface{}) (allowAddition, all
 	}
 
 	return allowAddition, allowRelaxation, nil
-}
-
-func addSchemaInference(duckDBProps map[string]interface{}, schema map[string]string, format string) map[string]interface{} {
-	// add columns and their datatypes to ensure the datatypes are not inferred again
-	ingestionProps := copyMap(duckDBProps)
-	if containsAny(format, []string{".csv", ".tsv", ".txt"}) {
-		ingestionProps["dtypes"] = schemaToDuckDBColumnsProp(schema)
-	} else if containsAny(format, []string{".json", ".ndjson"}) {
-		ingestionProps["columns"] = schemaToDuckDBColumnsProp(schema)
-	}
-	return ingestionProps
 }
 
 // utility functions
