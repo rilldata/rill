@@ -2,8 +2,10 @@ package queries
 
 import (
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -91,6 +93,33 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	q.Result = &runtimev1.MetricsViewToplistResponse{
 		Meta: meta,
 		Data: data,
+	}
+
+	return nil
+}
+
+func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.DownloadFormat, writer io.Writer) error {
+	err := q.Resolve(ctx, rt, instanceID, priority)
+	if err != nil {
+		return err
+	}
+
+	switch format {
+	case runtimev1.DownloadFormat_DOWNLOAD_FORMAT_UNSPECIFIED:
+		fallthrough
+	case runtimev1.DownloadFormat_DOWNLOAD_FORMAT_CSV:
+		w := csv.NewWriter(writer)
+
+		record := make([]string, 0, len(q.Result.Meta))
+		for _, structs := range q.Result.Data {
+			for _, field := range structs.Fields {
+				record = append(record, field.GetStringValue())
+			}
+			if err := w.Write(record); err != nil {
+				return err
+			}
+			record = record[:0]
+		}
 	}
 
 	return nil

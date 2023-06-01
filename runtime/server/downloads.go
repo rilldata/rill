@@ -1,9 +1,8 @@
-package downloads
+package server
 
 import (
 	"context"
 	"encoding/base64"
-	"encoding/csv"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -70,10 +69,10 @@ func (h *DownloadHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (h *DownloadHandler) executeToplist(ctx context.Context, writer http.ResponseWriter, req *runtimev1.MetricsViewToplistRequest) error {
-	// err := server.ValidateInlineMeasures(req.InlineMeasures)
-	// if err != nil {
-	// return err
-	// }
+	err := validateInlineMeasures(req.InlineMeasures)
+	if err != nil {
+		return err
+	}
 
 	q := &queries.MetricsViewToplist{
 		MetricsViewName: req.MetricsViewName,
@@ -87,23 +86,6 @@ func (h *DownloadHandler) executeToplist(ctx context.Context, writer http.Respon
 		Sort:            req.Sort,
 		Filter:          req.Filter,
 	}
-	err := q.Resolve(ctx, h.Runtime, req.InstanceId, downloadPriority)
-	if err != nil {
-		return err
-	}
 
-	w := csv.NewWriter(writer)
-
-	record := make([]string, 0, len(q.Result.Meta))
-	for _, structs := range q.Result.Data {
-		for _, field := range structs.Fields {
-			record = append(record, field.GetStringValue())
-		}
-		if err := w.Write(record); err != nil {
-			return err
-		}
-		record = record[:0]
-	}
-
-	return nil
+	return q.Export(ctx, h.Runtime, req.InstanceId, downloadPriority, runtimev1.DownloadFormat_DOWNLOAD_FORMAT_CSV, writer)
 }
