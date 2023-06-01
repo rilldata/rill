@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/marcboeker/go-duckdb"
@@ -174,4 +175,8 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 	}
 
 	return errors.New("no rows returned")
+}
+
+func (q *ColumnTimeRange) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.DownloadFormat, w io.Writer) error {
+	return ErrExportNotSupported
 }

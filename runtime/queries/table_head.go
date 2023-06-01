@@ -3,7 +3,9 @@ package queries
 import (
 	"context"
 	"fmt"
+	"io"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -73,4 +75,8 @@ func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID
 
 	q.Result = data
 	return nil
+}
+
+func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.DownloadFormat, w io.Writer) error {
+	return ErrExportNotSupported
 }

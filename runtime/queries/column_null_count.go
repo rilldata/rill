@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
+	"io"
 	"reflect"
 
 	"github.com/rilldata/rill/runtime"
@@ -80,4 +81,8 @@ func (q *ColumnNullCount) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 
 	q.Result = count
 	return nil
+}
+
+func (q *ColumnNullCount) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.DownloadFormat, w io.Writer) error {
+	return ErrExportNotSupported
 }

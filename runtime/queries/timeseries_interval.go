@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
+	"io"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -85,4 +86,8 @@ func (q *RollupInterval) Resolve(ctx context.Context, rt *runtime.Runtime, insta
 		End:      ctr.Result.Max,
 	}
 	return nil
+}
+
+func (q *RollupInterval) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.DownloadFormat, w io.Writer) error {
+	return ErrExportNotSupported
 }
