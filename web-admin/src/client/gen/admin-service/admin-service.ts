@@ -67,7 +67,11 @@ import type {
   V1SetSuperuserResponse,
   V1SetSuperuserRequest,
   V1RevokeCurrentAuthTokenResponse,
+  V1IssueRepresentativeAuthTokenResponse,
+  V1IssueRepresentativeAuthTokenRequest,
   V1GetCurrentUserResponse,
+  V1SearchUsersResponse,
+  AdminServiceSearchUsersParams,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
@@ -1969,6 +1973,57 @@ export const createAdminServiceRevokeCurrentAuthToken = <
   >(mutationFn, mutationOptions);
 };
 /**
+ * @summary IssueRepresentativeAuthToken returns the temporary token for given email
+ */
+export const adminServiceIssueRepresentativeAuthToken = (
+  v1IssueRepresentativeAuthTokenRequest: V1IssueRepresentativeAuthTokenRequest
+) => {
+  return httpClient<V1IssueRepresentativeAuthTokenResponse>({
+    url: `/v1/tokens/represent`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1IssueRepresentativeAuthTokenRequest,
+  });
+};
+
+export type AdminServiceIssueRepresentativeAuthTokenMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceIssueRepresentativeAuthToken>>
+  >;
+export type AdminServiceIssueRepresentativeAuthTokenMutationBody =
+  V1IssueRepresentativeAuthTokenRequest;
+export type AdminServiceIssueRepresentativeAuthTokenMutationError = RpcStatus;
+
+export const createAdminServiceIssueRepresentativeAuthToken = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceIssueRepresentativeAuthToken>>,
+    TError,
+    { data: V1IssueRepresentativeAuthTokenRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceIssueRepresentativeAuthToken>>,
+    { data: V1IssueRepresentativeAuthTokenRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceIssueRepresentativeAuthToken(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceIssueRepresentativeAuthToken>>,
+    TError,
+    { data: V1IssueRepresentativeAuthTokenRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
  * @summary GetCurrentUser returns the currently authenticated user (if any)
  */
 export const adminServiceGetCurrentUser = (signal?: AbortSignal) => {
@@ -2008,6 +2063,66 @@ export const createAdminServiceGetCurrentUser = <
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceGetCurrentUser>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary GetUsersByEmail returns user by email
+ */
+export const adminServiceSearchUsers = (
+  params?: AdminServiceSearchUsersParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1SearchUsersResponse>({
+    url: `/v1/users/search`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceSearchUsersQueryKey = (
+  params?: AdminServiceSearchUsersParams
+) => [`/v1/users/search`, ...(params ? [params] : [])] as const;
+
+export type AdminServiceSearchUsersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSearchUsers>>
+>;
+export type AdminServiceSearchUsersQueryError = RpcStatus;
+
+export const createAdminServiceSearchUsers = <
+  TData = Awaited<ReturnType<typeof adminServiceSearchUsers>>,
+  TError = RpcStatus
+>(
+  params?: AdminServiceSearchUsersParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceSearchUsers>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceSearchUsersQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceSearchUsers>>
+  > = ({ signal }) => adminServiceSearchUsers(params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceSearchUsers>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
