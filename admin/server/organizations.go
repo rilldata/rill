@@ -3,8 +3,10 @@ package server
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -561,7 +563,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 	return &adminv1.LeaveOrganizationResponse{}, nil
 }
 
-func (s *Server) CreateAutoinviteDomain(ctx context.Context, req *adminv1.CreateAutoinviteDomainRequest) (*adminv1.CreateAutoinviteDomainResponse, error) {
+func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.CreateWhitelistedDomainRequest) (*adminv1.CreateWhitelistedDomainResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.domain", req.Domain),
@@ -569,8 +571,8 @@ func (s *Server) CreateAutoinviteDomain(ctx context.Context, req *adminv1.Create
 	)
 
 	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can add autoinvite domain")
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
@@ -579,6 +581,24 @@ func (s *Server) CreateAutoinviteDomain(ctx context.Context, req *adminv1.Create
 			return nil, status.Error(codes.NotFound, "org not found")
 		}
 		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if !claims.Superuser(ctx) {
+		if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+			return nil, status.Error(codes.PermissionDenied, "only org admins can add whitelisted domain")
+		}
+		// check if the user's domain matches the whitelist domain
+		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if !strings.HasSuffix(user.Email, "@"+req.Domain) {
+			return nil, status.Error(codes.PermissionDenied, "Domain name doesn’t match verified email domain. Please contact Rill support.")
+		}
+
+		if publicemail.IsPublic(req.Domain) {
+			return nil, status.Errorf(codes.InvalidArgument, "Public Domain %s cannot be whitelisted", req.Domain)
+		}
 	}
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
@@ -589,7 +609,13 @@ func (s *Server) CreateAutoinviteDomain(ctx context.Context, req *adminv1.Create
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	_, err = s.admin.DB.InsertOrganizationAutoinviteDomain(ctx, &database.InsertOrganizationAutoinviteDomainOptions{
+	ctx, tx, err := s.admin.DB.NewTx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	_, err = s.admin.DB.InsertOrganizationWhitelistedDomain(ctx, &database.InsertOrganizationWhitelistedDomainOptions{
 		OrgID:     org.ID,
 		OrgRoleID: role.ID,
 		Domain:    req.Domain,
@@ -599,19 +625,51 @@ func (s *Server) CreateAutoinviteDomain(ctx context.Context, req *adminv1.Create
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.CreateAutoinviteDomainResponse{}, nil
+	// add existing users belonging to the whitelisted domain to the org
+	users, err := s.admin.DB.FindUsers(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	for _, user := range users {
+		if strings.HasSuffix(user.Email, "@"+req.Domain) {
+			// check if user is already a member of the org
+			exists, err := s.admin.DB.CheckUserIsAnOrganizationMember(ctx, user.ID, org.ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			if exists {
+				continue
+			}
+
+			err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+
+			// add to all user group
+			err = s.admin.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.CreateWhitelistedDomainResponse{}, nil
 }
 
-func (s *Server) RemoveAutoinviteDomain(ctx context.Context, req *adminv1.RemoveAutoinviteDomainRequest) (*adminv1.RemoveAutoinviteDomainResponse, error) {
+func (s *Server) RemoveWhitelistedDomain(ctx context.Context, req *adminv1.RemoveWhitelistedDomainRequest) (*adminv1.RemoveWhitelistedDomainResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.domain", req.Domain),
 	)
 
 	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can remove autoinvite domain")
-	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
@@ -621,20 +679,58 @@ func (s *Server) RemoveAutoinviteDomain(ctx context.Context, req *adminv1.Remove
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	invite, err := s.admin.DB.FindOrganizationAutoinviteDomain(ctx, org.ID, req.Domain)
+	if !(claims.OrganizationPermissions(ctx, org.ID).ManageOrg || claims.Superuser(ctx)) {
+		return nil, status.Error(codes.PermissionDenied, "only org admins can remove whitelisted domain")
+	}
+
+	invite, err := s.admin.DB.FindOrganizationWhitelistedDomain(ctx, org.ID, req.Domain)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Errorf(codes.NotFound, "auto invite not found for org %q and domain %q", org.Name, req.Domain)
+			return nil, status.Errorf(codes.NotFound, "whitelist not found for org %q and domain %q", org.Name, req.Domain)
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.admin.DB.DeleteOrganizationAutoinviteDomain(ctx, invite.ID)
+	err = s.admin.DB.DeleteOrganizationWhitelistedDomain(ctx, invite.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.RemoveAutoinviteDomainResponse{}, nil
+	return &adminv1.RemoveWhitelistedDomainResponse{}, nil
+}
+
+func (s *Server) ListWhitelistedDomains(ctx context.Context, req *adminv1.ListWhitelistedDomainsRequest) (*adminv1.ListWhitelistedDomainsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+	)
+
+	claims := auth.GetClaims(ctx)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "org not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if !(claims.OrganizationPermissions(ctx, org.ID).ManageOrg || claims.Superuser(ctx)) {
+		return nil, status.Error(codes.PermissionDenied, "only org admins can list whitelisted domain")
+	}
+
+	whitelistedDomains, err := s.admin.DB.FindOrganizationWhitelistedDomainForOrganizationWithJoinedRoleNames(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	whitelistedDomainDtos := make([]*adminv1.WhitelistedDomain, len(whitelistedDomains))
+	for i, whitelistedDomain := range whitelistedDomains {
+		whitelistedDomainDtos[i] = whitelistedDomainToPB(whitelistedDomain)
+	}
+
+	return &adminv1.ListWhitelistedDomainsResponse{
+		Domains: whitelistedDomainDtos,
+	}, nil
 }
 
 func organizationToDTO(o *database.Organization) *adminv1.Organization {
@@ -644,5 +740,12 @@ func organizationToDTO(o *database.Organization) *adminv1.Organization {
 		Description: o.Description,
 		CreatedOn:   timestamppb.New(o.CreatedOn),
 		UpdatedOn:   timestamppb.New(o.UpdatedOn),
+	}
+}
+
+func whitelistedDomainToPB(a *database.OrganizationWhitelistedDomainWithJoinedRoleNames) *adminv1.WhitelistedDomain {
+	return &adminv1.WhitelistedDomain{
+		Domain: a.Domain,
+		Role:   a.RoleName,
 	}
 }
