@@ -19,7 +19,7 @@ export interface AppStore {
   previousActiveEntity: ActiveEntity;
 }
 
-// We should deprecate ActiveEntity in favor of appScreen dervied store
+// We should rewrite ActiveEntity using appScreen dervied store
 const { update, subscribe } = writable({
   activeEntity: undefined,
   previousActiveEntity: undefined,
