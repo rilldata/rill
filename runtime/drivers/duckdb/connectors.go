@@ -238,8 +238,8 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 		}
 	}
 
-	colNames := strings.Join(keys(srcSchema), ",")
-	query = fmt.Sprintf("INSERT INTO %q (%s) (SELECT %s FROM %s);", a.source.Name, colNames, colNames, from)
+	colNames := strings.Join(keys(srcSchema), "\",\"")
+	query = fmt.Sprintf("INSERT INTO %q (\"%s\") (SELECT \"%s\" FROM %s);", a.source.Name, colNames, colNames, from)
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
 	return a.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }
@@ -261,7 +261,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 
 	// current schema
 	if a.tableSchema == nil {
-		a.tableSchema, err = a.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE %s;", a.source.Name))
+		a.tableSchema, err = a.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE %q;", a.source.Name))
 		if err != nil {
 			return nil, err
 		}
@@ -300,7 +300,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 
 	for colName, colType := range newCols {
 		a.tableSchema[colName] = colType
-		qry := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", a.source.Name, colName, colType)
+		qry := fmt.Sprintf("ALTER TABLE %q ADD COLUMN %q %s", a.source.Name, colName, colType)
 		if err := a.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
 			return nil, err
 		}
@@ -308,7 +308,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 
 	for colName, colType := range colTypeChanged {
 		a.tableSchema[colName] = colType
-		qry := fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s SET DATA TYPE %s", a.source.Name, colName, colType)
+		qry := fmt.Sprintf("ALTER TABLE %q ALTER COLUMN %q SET DATA TYPE %s", a.source.Name, colName, colType)
 		if err := a.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
 			return nil, err
 		}
@@ -460,7 +460,7 @@ func schemaRelaxationProperties(prop map[string]interface{}) (allowAddition, all
 func addSchemaInference(duckDBProps map[string]interface{}, schema map[string]string) map[string]interface{} {
 	// add columns and their datatypes to ensure the datatypes are not inferred again
 	ingestionProps := copyMap(duckDBProps)
-	ingestionProps["columns"] = schemaToDuckDBColumnsProp(schema)
+	ingestionProps["dtypes"] = schemaToDuckDBColumnsProp(schema)
 	return ingestionProps
 }
 
