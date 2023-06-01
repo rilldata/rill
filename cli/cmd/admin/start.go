@@ -32,6 +32,7 @@ import (
 type Config struct {
 	DatabaseDriver         string                 `default:"postgres" split_words:"true"`
 	DatabaseURL            string                 `split_words:"true"`
+	Jobs                   []string               `split_words:"true"`
 	HTTPPort               int                    `default:"8080" split_words:"true"`
 	GRPCPort               int                    `default:"9090" split_words:"true"`
 	LogLevel               zapcore.Level          `default:"info" split_words:"true"`
@@ -65,7 +66,7 @@ type Config struct {
 // StartCmd starts an admin server. It only allows configuration using environment variables.
 func StartCmd(cliCfg *config.Config) *cobra.Command {
 	startCmd := &cobra.Command{
-		Use:   "start [server|worker]",
+		Use:   "start [jobs|server|worker]",
 		Short: "Start admin service",
 		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -168,9 +169,10 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			group, cctx := errgroup.WithContext(ctx)
 
 			// Determine services to run. If no service name was provided, run them all.
-			// We just have two currently, so keeping this basic.
+			// We just have three currently, so keeping this basic.
 			runServer := len(args) == 0 || args[0] == "server"
 			runWorker := len(args) == 0 || args[0] == "worker"
+			runJobs := len(args) == 0 || args[0] == "jobs"
 
 			// Init and run server
 			if runServer {
@@ -198,9 +200,17 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}
 
 			// Init and run worker
-			if runWorker {
+			if runWorker || runJobs {
 				wkr := worker.New(logger, adm)
-				group.Go(func() error { return wkr.Run(cctx) })
+				if runWorker {
+					group.Go(func() error { return wkr.Run(cctx) })
+				}
+				if runJobs {
+					for _, job := range conf.Jobs {
+						job := job
+						group.Go(func() error { return wkr.RunJob(cctx, job) })
+					}
+				}
 			}
 
 			// Run tasks

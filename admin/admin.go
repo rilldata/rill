@@ -33,6 +33,7 @@ type Service struct {
 	closeCtx       context.Context
 	closeCtxCancel context.CancelFunc
 	deplTSCache    *updateTSCache
+	reconcileWg    sync.WaitGroup
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github) (*Service, error) {
@@ -90,7 +91,15 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 
 func (s *Service) Close() error {
 	s.closeCtxCancel()
-	// TODO: Also wait for background items to finish (up to a timeout)
+	s.reconcileWg.Wait()
 
 	return s.DB.Close()
+}
+
+// UnsafeWaitForReconciles waits for all background reconciles to finish.
+// It is unsafe because while it is running, no new reconciles should be started.
+// It's a temporary solution until the runtime is able to reconcile asynchronously.
+// Unlike s.Close(), it does not cancel currently running reconciles, it just waits for them to finish.
+func (s *Service) UnsafeWaitForReconciles() {
+	s.reconcileWg.Wait()
 }
