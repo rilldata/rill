@@ -40,7 +40,7 @@
   let disabled = false;
 
   function onDialogClose() {
-    behaviourEvent.fireSourceTriggerEvent(
+    behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceCancel,
       BehaviourEventMedium.Button,
       $appScreen,

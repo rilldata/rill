@@ -49,7 +49,7 @@
   const openShowAddSourceModal = () => {
     showAddSourceModal = true;
 
-    behaviourEvent.fireSourceTriggerEvent(
+    behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceAdd,
       BehaviourEventMedium.Button,
       $appScreen,

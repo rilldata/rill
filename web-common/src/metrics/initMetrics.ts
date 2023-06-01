@@ -7,6 +7,7 @@ import { RillIntakeClient } from "@rilldata/web-common/metrics/service/RillIntak
 import type { V1RuntimeGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
 import { ActiveEventHandler } from "./ActiveEventHandler";
 import { collectCommonUserFields } from "./collectCommonUserFields";
+import { ErrorEventFactory } from "./service/ErrorEventFactory";
 
 export let metricsService: MetricsService;
 
@@ -18,6 +19,7 @@ export async function initMetrics(localConfig: V1RuntimeGetConfig) {
   metricsService = new MetricsService(localConfig, new RillIntakeClient(), [
     new ProductHealthEventFactory(),
     new BehaviourEventFactory(),
+    new ErrorEventFactory(),
   ]);
   await metricsService.loadCommonFields();
 

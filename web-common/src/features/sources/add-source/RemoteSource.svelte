@@ -90,7 +90,7 @@
       },
       validationSchema: yupSchema,
       onSubmit: async (values) => {
-        behaviourEvent.fireSourceTriggerEvent(
+        behaviourEvent?.fireSourceTriggerEvent(
           BehaviourEventAction.SourceAdd,
           BehaviourEventMedium.Button,
           $appScreen,

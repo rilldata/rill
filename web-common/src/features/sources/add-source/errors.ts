@@ -106,6 +106,7 @@ const errorTelemetryMap = {
   authorizationHeaderMalformed: SourceErrorCodes.MalformedHeader,
   // GCP Errors
   "could not find default credentials": SourceErrorCodes.Unauthorized,
+  NotFound: SourceErrorCodes.URLBroken,
   Unauthorized: SourceErrorCodes.Unauthorized,
   AccessDenied: SourceErrorCodes.AccessForbidden,
   PermissionDenied: SourceErrorCodes.AccessForbidden,
