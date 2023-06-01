@@ -80,7 +80,7 @@
       {#each $sourceNames.data as sourceName (sourceName)}
         <div
           animate:flip={{ duration: 200 }}
-          out:slide={{ duration: LIST_SLIDE_DURATION }}
+          out:slide|local={{ duration: LIST_SLIDE_DURATION }}
         >
           <NavigationEntry
             href={`/source/${sourceName}`}

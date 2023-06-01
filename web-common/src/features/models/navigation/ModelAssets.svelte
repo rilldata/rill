@@ -58,7 +58,7 @@
 {#if showModels}
   <div
     class="pb-3 justify-self-end"
-    transition:slide={{ duration: LIST_SLIDE_DURATION }}
+    transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
     id="assets-model-list"
   >
     {#if $modelNames?.data}

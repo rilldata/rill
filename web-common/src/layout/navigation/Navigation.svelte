@@ -3,17 +3,21 @@
   import SurfaceViewIcon from "@rilldata/web-common/components/icons/SurfaceView.svelte";
   import Portal from "@rilldata/web-common/components/Portal.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { ModelAssets } from "@rilldata/web-common/features/models";
   import TableAssets from "@rilldata/web-common/features/sources/navigation/TableAssets.svelte";
   import ProjectTitle from "@rilldata/web-common/layout/navigation/ProjectTitle.svelte";
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
   import { Readable, Writable, writable } from "svelte/store";
   import DashboardAssets from "../../features/dashboards/DashboardAssets.svelte";
+  import Navigation from "../../features/editor/nav/Navigation.svelte";
+  import { ModelAssets } from "../../features/models";
   import { DEFAULT_NAV_WIDTH } from "../config";
   import { drag } from "../drag";
   import Footer from "./Footer.svelte";
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
+
+  let navKind: "assets" | "files" = "assets";
+  $: isModelerEnabled = $featureFlags.readOnly === false;
 
   /** FIXME: come up with strong defaults here when needed */
   const navigationLayout =
@@ -29,8 +33,6 @@
   const navVisibilityTween =
     (getContext("rill:app:navigation-visibility-tween") as Readable<number>) ||
     tweened(0, { duration: 50 });
-
-  $: isModelerEnabled = $featureFlags.readOnly === false;
 </script>
 
 <div
@@ -78,11 +80,26 @@
     <div class="w-full flex flex-col h-full">
       <div class="grow">
         <ProjectTitle />
-        {#if isModelerEnabled}
-          <TableAssets />
-          <ModelAssets />
+        <div class="px-4 pb-2 flex gap-x-2">
+          <!-- toggle nav mode -->
+          {#if navKind === "assets"}
+            <button on:click={() => (navKind = "files")}>Catalog view</button>
+          {:else}
+            <button on:click={() => (navKind = "assets")}>File view</button>
+            <div class="flex-grow" />
+            <button>New file</button>
+          {/if}
+        </div>
+        {#if navKind === "assets"}
+          {#if isModelerEnabled}
+            <TableAssets />
+            <ModelAssets />
+          {/if}
+          <DashboardAssets />
         {/if}
-        <DashboardAssets />
+        {#if navKind === "files"}
+          <Navigation />
+        {/if}
       </div>
       <Footer />
     </div>

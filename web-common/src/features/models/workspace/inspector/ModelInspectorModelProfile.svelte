@@ -38,7 +38,7 @@
     getFilePathFromNameAndType(modelName, EntityType.Model)
   );
 
-  $: references = getTableReferences($getModelFile?.data.blob ?? "");
+  $: references = getTableReferences($getModelFile?.data?.blob ?? "");
   $: getAllSources = createRuntimeServiceListCatalogEntries(
     $runtime?.instanceId,
     {

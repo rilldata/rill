@@ -196,7 +196,7 @@
 {#if showMetricsDefs && $dashboardNames.data}
   <div
     class="pb-3 justify-self-end"
-    transition:slide={{ duration: LIST_SLIDE_DURATION }}
+    transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
     id="assets-metrics-list"
   >
     {#each $dashboardNames.data as dashboardName (dashboardName)}
