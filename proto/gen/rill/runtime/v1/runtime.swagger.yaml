@@ -1906,13 +1906,6 @@ definitions:
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
-  v1DownloadCompression:
-    type: string
-    enum:
-      - DOWNLOAD_COMPRESSION_UNSPECIFIED
-      - DOWNLOAD_COMPRESSION_ZIP
-    default: DOWNLOAD_COMPRESSION_UNSPECIFIED
-    title: '- DOWNLOAD_COMPRESSION_UNSPECIFIED: assumes no compression'
   v1DownloadFormat:
     type: string
     enum:
@@ -1929,8 +1922,6 @@ definitions:
         format: int32
       format:
         $ref: '#/definitions/v1DownloadFormat'
-      compression:
-        $ref: '#/definitions/v1DownloadCompression'
       metricsViewToplistRequest:
         $ref: '#/definitions/v1MetricsViewToplistRequest'
       metricsViewRowsRequest:

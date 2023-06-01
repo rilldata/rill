@@ -546,14 +546,6 @@ export interface V1NumericSummary {
   numericOutliers?: V1NumericOutliers;
 }
 
-export interface V1Model {
-  name?: string;
-  sql?: string;
-  dialect?: ModelDialect;
-  schema?: V1StructType;
-  materialize?: boolean;
-}
-
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
@@ -782,19 +774,9 @@ export const V1DownloadFormat = {
   DOWNLOAD_FORMAT_PARQUET: "DOWNLOAD_FORMAT_PARQUET",
 } as const;
 
-export type V1DownloadCompression =
-  (typeof V1DownloadCompression)[keyof typeof V1DownloadCompression];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1DownloadCompression = {
-  DOWNLOAD_COMPRESSION_UNSPECIFIED: "DOWNLOAD_COMPRESSION_UNSPECIFIED",
-  DOWNLOAD_COMPRESSION_ZIP: "DOWNLOAD_COMPRESSION_ZIP",
-} as const;
-
 export interface V1DownloadLinkRequest {
   limit?: number;
   format?: V1DownloadFormat;
-  compression?: V1DownloadCompression;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
 }
@@ -1009,6 +991,14 @@ export const ModelDialect = {
   DIALECT_UNSPECIFIED: "DIALECT_UNSPECIFIED",
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
+
+export interface V1Model {
+  name?: string;
+  sql?: string;
+  dialect?: ModelDialect;
+  schema?: V1StructType;
+  materialize?: boolean;
+}
 
 export interface MetricsViewMeasure {
   name?: string;

@@ -616,10 +616,9 @@ message TableRowsResponse {
 message DownloadLinkRequest {
   int32 limit = 1;
   DownloadFormat format = 2;
-  DownloadCompression compression = 3;
   oneof request {
-    MetricsViewToplistRequest metrics_view_toplist_request = 4;
-    MetricsViewRowsRequest metrics_view_rows_request = 5;
+    MetricsViewToplistRequest metrics_view_toplist_request = 3;
+    MetricsViewRowsRequest metrics_view_rows_request = 4;
   }
 }
 
@@ -627,11 +626,6 @@ enum DownloadFormat {
   DOWNLOAD_FORMAT_UNSPECIFIED = 0; // assumes CSV
   DOWNLOAD_FORMAT_CSV = 1;
   DOWNLOAD_FORMAT_PARQUET = 2;
-}
-
-enum DownloadCompression {
-  DOWNLOAD_COMPRESSION_UNSPECIFIED = 0; // assumes no compression
-  DOWNLOAD_COMPRESSION_ZIP = 1;
 }
 
 message DownloadLinkResponse {

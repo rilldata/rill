@@ -8492,8 +8492,6 @@ func (m *DownloadLinkRequest) validate(all bool) error {
 
 	// no validation rules for Format
 
-	// no validation rules for Compression
-
 	switch v := m.Request.(type) {
 	case *DownloadLinkRequest_MetricsViewToplistRequest:
 		if v == nil {

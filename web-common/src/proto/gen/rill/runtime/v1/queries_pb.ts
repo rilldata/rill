@@ -101,28 +101,6 @@ proto3.util.setEnumType(DownloadFormat, "rill.runtime.v1.DownloadFormat", [
 ]);
 
 /**
- * @generated from enum rill.runtime.v1.DownloadCompression
- */
-export enum DownloadCompression {
-  /**
-   * assumes no compression
-   *
-   * @generated from enum value: DOWNLOAD_COMPRESSION_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: DOWNLOAD_COMPRESSION_ZIP = 1;
-   */
-  ZIP = 1,
-}
-// Retrieve enum metadata with: proto3.getEnumType(DownloadCompression)
-proto3.util.setEnumType(DownloadCompression, "rill.runtime.v1.DownloadCompression", [
-  { no: 0, name: "DOWNLOAD_COMPRESSION_UNSPECIFIED" },
-  { no: 1, name: "DOWNLOAD_COMPRESSION_ZIP" },
-]);
-
-/**
  * Request message for QueryService.Query
  *
  * @generated from message rill.runtime.v1.QueryRequest
@@ -3460,22 +3438,17 @@ export class DownloadLinkRequest extends Message<DownloadLinkRequest> {
   format = DownloadFormat.UNSPECIFIED;
 
   /**
-   * @generated from field: rill.runtime.v1.DownloadCompression compression = 3;
-   */
-  compression = DownloadCompression.UNSPECIFIED;
-
-  /**
    * @generated from oneof rill.runtime.v1.DownloadLinkRequest.request
    */
   request: {
     /**
-     * @generated from field: rill.runtime.v1.MetricsViewToplistRequest metrics_view_toplist_request = 4;
+     * @generated from field: rill.runtime.v1.MetricsViewToplistRequest metrics_view_toplist_request = 3;
      */
     value: MetricsViewToplistRequest;
     case: "metricsViewToplistRequest";
   } | {
     /**
-     * @generated from field: rill.runtime.v1.MetricsViewRowsRequest metrics_view_rows_request = 5;
+     * @generated from field: rill.runtime.v1.MetricsViewRowsRequest metrics_view_rows_request = 4;
      */
     value: MetricsViewRowsRequest;
     case: "metricsViewRowsRequest";
@@ -3491,9 +3464,8 @@ export class DownloadLinkRequest extends Message<DownloadLinkRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "format", kind: "enum", T: proto3.getEnumType(DownloadFormat) },
-    { no: 3, name: "compression", kind: "enum", T: proto3.getEnumType(DownloadCompression) },
-    { no: 4, name: "metrics_view_toplist_request", kind: "message", T: MetricsViewToplistRequest, oneof: "request" },
-    { no: 5, name: "metrics_view_rows_request", kind: "message", T: MetricsViewRowsRequest, oneof: "request" },
+    { no: 3, name: "metrics_view_toplist_request", kind: "message", T: MetricsViewToplistRequest, oneof: "request" },
+    { no: 4, name: "metrics_view_rows_request", kind: "message", T: MetricsViewRowsRequest, oneof: "request" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DownloadLinkRequest {

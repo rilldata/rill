@@ -3,7 +3,6 @@ package runtime
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"time"
 
@@ -132,17 +131,11 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				logger.Fatal("error: could not create server", zap.Error(err))
 			}
 
-			fn := func(sm *http.ServeMux) {
-				sm.Handle("/v1/downloads", &downloads.DownloadHandler{
-					Runtime: rt,
-				})
-			}
-
 			// Run server
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 			group, cctx := errgroup.WithContext(ctx)
 			group.Go(func() error { return s.ServeGRPC(cctx) })
-			group.Go(func() error { return s.ServeHTTP(cctx, fn) })
+			group.Go(func() error { return s.ServeHTTP(cctx, nil) })
 			err = group.Wait()
 			if err != nil {
 				logger.Fatal("server crashed", zap.Error(err))

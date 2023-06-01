@@ -26,10 +26,6 @@ func (s *Server) Download(ctx context.Context, req *runtimev1.DownloadLinkReques
 		out += fmt.Sprintf("&%s=%s", downloads.Format, req.Format)
 	}
 
-	if req.Compression != runtimev1.DownloadCompression_DOWNLOAD_COMPRESSION_UNSPECIFIED {
-		out += fmt.Sprintf("&%s=%s", downloads.Compression, req.Compression)
-	}
-
 	return &runtimev1.DownloadLinkResponse{
 		DownloadUrlPath: out,
 	}, nil

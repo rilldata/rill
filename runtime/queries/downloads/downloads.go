@@ -17,7 +17,6 @@ import (
 
 const (
 	Limit            string = "limit"
-	Compression      string = "compression"
 	Format           string = "format"
 	Request          string = "request"
 	downloadPriority int    = 0
