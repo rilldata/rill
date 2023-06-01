@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -54,6 +55,39 @@ func (s *Server) SetSuperuser(ctx context.Context, req *adminv1.SetSuperuserRequ
 	return &adminv1.SetSuperuserResponse{}, nil
 }
 
+func (s *Server) SearchUsers(ctx context.Context, req *adminv1.SearchUsersRequest) (*adminv1.SearchUsersResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can search users by email")
+	}
+
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	users, err := s.admin.DB.FindUsersByEmailPattern(ctx, req.EmailPattern, token.Val, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	nextToken := ""
+	if len(users) >= pageSize {
+		nextToken = marshalPageToken(users[len(users)-1].Email)
+	}
+
+	dtos := make([]*adminv1.User, len(users))
+	for i, user := range users {
+		dtos[i] = userToPB(user)
+	}
+
+	return &adminv1.SearchUsersResponse{
+		Users:         dtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
 func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUserRequest) (*adminv1.GetCurrentUserResponse, error) {
 	// Return an empty result if not authenticated.
 	claims := auth.GetClaims(ctx)
@@ -74,6 +108,37 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 
 	return &adminv1.GetCurrentUserResponse{
 		User: userToPB(u),
+	}, nil
+}
+
+// IssueRepresentativeAuthToken returns the temporary auth token for representing email
+func (s *Server) IssueRepresentativeAuthToken(ctx context.Context, req *adminv1.IssueRepresentativeAuthTokenRequest) (*adminv1.IssueRepresentativeAuthTokenResponse, error) {
+	claims := auth.GetClaims(ctx)
+
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can search users by email")
+	}
+
+	// Error if authenticated as anything other than a user
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, fmt.Errorf("not authenticated as a user")
+	}
+
+	u, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	ttl := time.Duration(req.TtlMinutes) * time.Minute
+	displayName := fmt.Sprintf("Support for %s", u.Email)
+
+	token, err := s.admin.IssueUserAuthToken(ctx, claims.OwnerID(), database.AuthClientIDRillSupport, displayName, &u.ID, &ttl)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.IssueRepresentativeAuthTokenResponse{
+		Token: token.Token().String(),
 	}, nil
 }
 

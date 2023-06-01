@@ -443,11 +443,9 @@ func TestJsonIngestionWithVariousParams(t *testing.T) {
 			"path": filePath,
 			"duckdb": map[string]any{
 				"maximum_object_size": "9999999",
-				"lines":               true,
+				"records":             true,
 				"ignore_errors":       true,
-				"compression":         "auto",
 				"columns":             "{id:'INTEGER',name:'VARCHAR',isActive:'BOOLEAN',createdDate:'VARCHAR',}",
-				"json_format":         "records",
 				"auto_detect":         false,
 				"sample_size":         -1,
 				"dateformat":          "iso",
