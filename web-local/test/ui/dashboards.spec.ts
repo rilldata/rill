@@ -103,7 +103,7 @@ describe("dashboards", () => {
 
     // Change the metric trend granularity
     await page.getByRole("button", { name: "Metric trends by day" }).click();
-    await page.getByRole("menuitem", { name: "hour" }).click();
+    await page.getByRole("menuitem", { name: "day" }).click();
 
     // Change the time range
     await page.getByLabel("Select time range").click();
@@ -344,27 +344,27 @@ describe("dashboards", () => {
 
     // Add Published, Domain back to dashboard
     await page.getByRole("button", { name: "Add dimension" }).click();
-    await dimensionsTable
-      .getByRole("row")
-      .nth(1)
+    const firstDimensionsRow = dimensionsTable.getByRole("row").nth(1);
+    await firstDimensionsRow
       .getByRole("textbox", { name: "Dimension label" })
       .fill("Publisher");
-    await dimensionsTable
-      .getByRole("row")
-      .nth(1)
+    await firstDimensionsRow
       .getByLabel("Dimension column")
       .selectOption("publisher");
+
     await page.getByRole("button", { name: "Add dimension" }).click();
-    await dimensionsTable
-      .getByRole("row")
-      .nth(2)
+
+    const secondDimensionsRow = dimensionsTable.getByRole("row").nth(2);
+    await secondDimensionsRow
       .getByRole("textbox", { name: "Dimension label" })
       .fill("Domain Name");
-    await dimensionsTable
-      .getByRole("row")
-      .nth(2)
+    await secondDimensionsRow
       .getByLabel("Dimension column")
       .selectOption("domain");
+    await secondDimensionsRow
+      .getByLabel("Dimension column")
+      .getByText("domain")
+      .isVisible();
 
     // Go to dashboard
     await page.getByRole("button", { name: "Go to dashboard" }).click();

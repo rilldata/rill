@@ -17,10 +17,11 @@ export/
 /tmp
 /runtime/sql/deps
 /runtime/release
+/runtime/pkg/examples/embed/dist
 /cli/pkg/web/embed/dist
 /rill
 /cli/pkg/examples/embed/dist
-/dev-project
+/dev-project*
 
 # data files
 *.duckdb

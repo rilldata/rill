@@ -262,6 +262,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		GithubURL:            githubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdDeploymentID:     proj.ProdDeploymentID,
+		ProdSlots:            int(req.ProdSlots),
+		Region:               req.Region,
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts, true)
 	if err != nil {
@@ -306,6 +308,8 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdDeploymentID:     proj.ProdDeploymentID,
+		ProdSlots:            proj.ProdSlots,
+		Region:               proj.Region,
 		ProdVariables:        req.Variables,
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts, false)

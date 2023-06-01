@@ -294,7 +294,6 @@ export interface V1TimeSeriesValue {
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
-  timeRange?: V1TimeSeriesTimeRange;
   sampleSize?: number;
 }
 

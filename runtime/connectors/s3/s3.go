@@ -29,7 +29,7 @@ func init() {
 var spec = connectors.Spec{
 	DisplayName:        "Amazon S3",
 	Description:        "Connect to AWS S3 Storage.",
-	ServiceAccountDocs: "https://docs.rilldata.com/connectors/s3",
+	ServiceAccountDocs: "https://docs.rilldata.com/deploy/credentials/s3",
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "path",
@@ -55,7 +55,7 @@ var spec = connectors.Spec{
 			Description: "AWS credentials inferred from your local environment.",
 			Type:        connectors.InformationalPropertyType,
 			Hint:        "Set your local credentials: <code>aws configure</code> Click to learn more.",
-			Href:        "https://docs.rilldata.com/develop/import-data#setting-local-credentials-for-s3",
+			Href:        "https://docs.rilldata.com/develop/import-data#configure-credentials-for-s3",
 		},
 	},
 	ConnectorVariables: []connectors.VariableSchema{

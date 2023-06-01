@@ -23,7 +23,6 @@ rill start [<path>] [flags]
       --strict              Exit if project has build errors
       --log-format string   Log format (options: "console", "json") (default "console")
   -e, --env strings         Set project variables
-      --example string      Name of example project (default "default")
 ```
 
 ### Global flags

@@ -16,16 +16,4 @@ export const LOGIN_OPTIONS = [
     label: "Continue with Microsoft",
     style: "secondary",
   },
-  {
-    name: "Okta",
-    connection: "Rill-Okta",
-    label: "Continue with Okta",
-    style: "secondary",
-  },
-  {
-    name: "Pingfed",
-    connection: "pingone",
-    label: "Continue with Ping Fed",
-    style: "secondary",
-  },
 ];
