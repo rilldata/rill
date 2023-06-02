@@ -49,7 +49,6 @@ export const appStore: Readable<AppStore> & typeof appStoreReducers = {
 export const appScreen = derived(page, ($page) => {
   switch ($page.route.id) {
     case "/(application)":
-      console.log("in here");
       return MetricsEventScreenName.Home;
     case "/(application)/source/[name]":
       return MetricsEventScreenName.Source;
