@@ -14,7 +14,6 @@
     useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import { convertFilters } from "@rilldata/web-common/features/dashboards/selectors.js";
   import {
     createQueryServiceMetricsViewToplist,
     createQueryServiceMetricsViewTotals,
@@ -120,7 +119,7 @@
     );
 
     let topListParams = {
-      dimensionName: dimension.column,
+      dimensionName: dimension.name,
       measureNames: selectedMeasureNames,
       limit: "250",
       offset: "0",
@@ -130,7 +129,7 @@
           ascending: sortDirection === "asc",
         },
       ],
-      filter: convertFilters(filterSet, $metaQuery.data.dimensions),
+      filter: filterSet,
     };
 
     if (hasTimeSeries) {
@@ -201,7 +200,7 @@
     );
 
     let comparisonParams = {
-      dimensionName: dimension.column,
+      dimensionName: dimension.name,
       measureNames: [sortByColumn],
       limit: "250",
       offset: "0",
@@ -211,7 +210,7 @@
           ascending: sortDirection === "asc",
         },
       ],
-      filter: convertFilters(comparisonFilterSet, $metaQuery.data.dimensions),
+      filter: comparisonFilterSet,
     };
 
     if (hasTimeSeries) {

@@ -12,7 +12,6 @@
     useMetaQuery,
     useModelAllTimeRange,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import { convertFilters } from "@rilldata/web-common/features/dashboards/selectors.js";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -94,10 +93,7 @@
 
     const totalsQueryParams = {
       measureNames: selectedMeasureNames,
-      filter: convertFilters(
-        $dashboardStore?.filters,
-        $metaQuery.data.dimensions
-      ),
+      filter: $dashboardStore?.filters,
       timeStart: $dashboardStore.selectedTimeRange?.start.toISOString(),
       timeEnd: $dashboardStore.selectedTimeRange?.end.toISOString(),
     };
@@ -143,16 +139,12 @@
     !$metaQuery.isRefetching &&
     $dashboardStore?.selectedTimeRange?.start
   ) {
-    const filter = convertFilters(
-      $dashboardStore?.filters,
-      $metaQuery.data.dimensions
-    );
     timeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
       instanceId,
       metricViewName,
       {
         measureNames: selectedMeasureNames,
-        filter,
+        filter: $dashboardStore?.filters,
         timeStart: $dashboardStore.selectedTimeRange?.start.toISOString(),
         timeEnd: $dashboardStore.selectedTimeRange?.end.toISOString(),
         timeGranularity: $dashboardStore.selectedTimeRange?.interval,
@@ -164,7 +156,7 @@
         metricViewName,
         {
           measureNames: selectedMeasureNames,
-          filter,
+          filter: $dashboardStore?.filters,
           timeStart:
             $dashboardStore?.selectedComparisonTimeRange?.start.toISOString(),
           timeEnd:

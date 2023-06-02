@@ -9,7 +9,6 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
-    convertFilters,
     getFilterForDimension,
     useMetaDimension,
     useMetaMeasure,
@@ -125,7 +124,7 @@
     !$metaQuery?.isRefetching
   ) {
     let topListParams = {
-      dimensionName: dimension.column,
+      dimensionName: dimension.name,
       measureNames: [measure.name],
       limit: "250",
       offset: "0",
@@ -135,7 +134,7 @@
           ascending: false,
         },
       ],
-      filter: convertFilters(filterForDimension, $metaQuery.data.dimensions),
+      filter: filterForDimension,
     };
 
     if (hasTimeSeries) {
@@ -227,7 +226,7 @@
     );
 
     let comparisonParams = {
-      dimensionName: dimension.column,
+      dimensionName: dimension.name,
       measureNames: [measure.name],
       limit: currentVisibleValues.length.toString(),
       offset: "0",
@@ -237,7 +236,7 @@
           ascending: false,
         },
       ],
-      filter: convertFilters(updatedFilters, $metaQuery.data.dimensions),
+      filter: updatedFilters,
     };
 
     if (hasTimeSeries) {
