@@ -7,6 +7,8 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -44,6 +46,10 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 }
 
 func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizationRequest) (*adminv1.GetOrganizationResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("org", req.Name),
+	)
+
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
@@ -91,6 +97,11 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 }
 
 func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrganizationRequest) (*adminv1.CreateOrganizationResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("org", req.Name),
+		attribute.String("description", req.Description),
+	)
+
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
 	if claims.OwnerType() != auth.OwnerTypeUser {
@@ -121,6 +132,10 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 }
 
 func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrganizationRequest) (*adminv1.DeleteOrganizationResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("org", req.Name),
+	)
+
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -140,6 +155,12 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 }
 
 func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrganizationRequest) (*adminv1.UpdateOrganizationResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("id", req.Id),
+		attribute.String("org", req.Name),
+		attribute.String("description", req.Description),
+	)
+
 	org, err := s.admin.DB.FindOrganization(ctx, req.Id)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -164,6 +185,10 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 }
 
 func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListOrganizationMembersRequest) (*adminv1.ListOrganizationMembersResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("org", req.Organization),
+	)
+
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -202,6 +227,10 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 }
 
 func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListOrganizationInvitesRequest) (*adminv1.ListOrganizationInvitesResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("org", req.Organization),
+	)
+
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -241,6 +270,11 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 }
 
 func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrganizationMemberRequest) (*adminv1.AddOrganizationMemberResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("org", req.Organization),
+		attribute.String("role", req.Role),
+	)
+
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -318,6 +352,11 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 }
 
 func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.RemoveOrganizationMemberRequest) (*adminv1.RemoveOrganizationMemberResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("org", req.Organization),
+		attribute.Bool("keep_project_roles", req.KeepProjectRoles),
+	)
+
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -397,6 +436,11 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 }
 
 func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.SetOrganizationMemberRoleRequest) (*adminv1.SetOrganizationMemberRoleResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("org", req.Organization),
+		attribute.String("role", req.Role),
+	)
+
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -458,6 +502,10 @@ func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.Set
 }
 
 func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrganizationRequest) (*adminv1.LeaveOrganizationResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("org", req.Organization),
+	)
+
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
 	if claims.OwnerType() != auth.OwnerTypeUser {
@@ -514,6 +562,12 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 }
 
 func (s *Server) CreateAutoinviteDomain(ctx context.Context, req *adminv1.CreateAutoinviteDomainRequest) (*adminv1.CreateAutoinviteDomainResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("org", req.Organization),
+		attribute.String("domain", req.Domain),
+		attribute.String("role", req.Role),
+	)
+
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can add autoinvite domain")
@@ -549,6 +603,11 @@ func (s *Server) CreateAutoinviteDomain(ctx context.Context, req *adminv1.Create
 }
 
 func (s *Server) RemoveAutoinviteDomain(ctx context.Context, req *adminv1.RemoveAutoinviteDomainRequest) (*adminv1.RemoveAutoinviteDomainResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("org", req.Organization),
+		attribute.String("domain", req.Domain),
+	)
+
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can remove autoinvite domain")

@@ -6,11 +6,17 @@ import (
 
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 func (s *Server) TriggerReconcile(ctx context.Context, req *adminv1.TriggerReconcileRequest) (*adminv1.TriggerReconcileResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("deployment_id", req.DeploymentId),
+	)
+
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -35,6 +41,11 @@ func (s *Server) TriggerReconcile(ctx context.Context, req *adminv1.TriggerRecon
 }
 
 func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.TriggerRefreshSourcesRequest) (*adminv1.TriggerRefreshSourcesResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("deployment_id", req.DeploymentId),
+		attribute.StringSlice("sources", req.Sources),
+	)
+
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -91,6 +102,10 @@ func (s *Server) triggerRefreshSourcesInternal(w http.ResponseWriter, r *http.Re
 }
 
 func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedeployRequest) (*adminv1.TriggerRedeployResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("deployment_id", req.DeploymentId),
+	)
+
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
