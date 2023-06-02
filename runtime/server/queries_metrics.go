@@ -61,9 +61,9 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 // MetricsViewComparisonToplist implements QueryService.
 func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev1.MetricsViewComparisonToplistRequest) (*runtimev1.MetricsViewComparisonToplistResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("metric_view", req.MetricsViewName),
-		attribute.String("dimension", req.DimensionName),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.metric_view", req.MetricsViewName),
+		attribute.String("args.dimension", req.DimensionName),
 		attribute.StringSlice("args.measures", req.MeasureNames),
 		attribute.StringSlice("args.inline_measures.names", marshalInlineMeasure(req.InlineMeasures)),
 		attribute.StringSlice("args.sort.names", marshalMetricsViewComparisonSort(req.Sort)),

@@ -605,7 +605,7 @@ func (s *Server) CreateAutoinviteDomain(ctx context.Context, req *adminv1.Create
 func (s *Server) RemoveAutoinviteDomain(ctx context.Context, req *adminv1.RemoveAutoinviteDomainRequest) (*adminv1.RemoveAutoinviteDomainResponse, error) {
 	observability.SetRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
-		attribute.String("args.args.domain", req.Domain),
+		attribute.String("args.domain", req.Domain),
 	)
 
 	claims := auth.GetClaims(ctx)

@@ -44,8 +44,8 @@ type ColumnInfo struct {
 
 func (s *Server) TableColumns(ctx context.Context, req *runtimev1.TableColumnsRequest) (*runtimev1.TableColumnsResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("table", req.TableName),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 

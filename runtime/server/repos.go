@@ -19,7 +19,7 @@ import (
 // ListFiles implements RuntimeService.
 func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest) (*runtimev1.ListFilesResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("args.args.instance_id", req.InstanceId),
+		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.glob", req.Glob),
 	)
 
