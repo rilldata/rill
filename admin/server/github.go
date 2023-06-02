@@ -32,7 +32,7 @@ const (
 
 func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithubRepoStatusRequest) (*adminv1.GetGithubRepoStatusResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("github_url", req.GithubUrl),
+		attribute.String("args.github_url", req.GithubUrl),
 	)
 
 	// Check the request is made by an authenticated user

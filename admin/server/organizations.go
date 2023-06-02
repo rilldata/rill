@@ -47,7 +47,7 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 
 func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizationRequest) (*adminv1.GetOrganizationResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.Name),
+		attribute.String("args.org", req.Name),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
@@ -98,8 +98,8 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 
 func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrganizationRequest) (*adminv1.CreateOrganizationResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.Name),
-		attribute.String("description", req.Description),
+		attribute.String("args.org", req.Name),
+		attribute.String("args.description", req.Description),
 	)
 
 	// Check the request is made by an authenticated user
@@ -133,7 +133,7 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 
 func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrganizationRequest) (*adminv1.DeleteOrganizationResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.Name),
+		attribute.String("args.org", req.Name),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
@@ -156,9 +156,9 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 
 func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrganizationRequest) (*adminv1.UpdateOrganizationResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("id", req.Id),
-		attribute.String("org", req.Name),
-		attribute.String("description", req.Description),
+		attribute.String("args.id", req.Id),
+		attribute.String("args.org", req.Name),
+		attribute.String("args.description", req.Description),
 	)
 
 	org, err := s.admin.DB.FindOrganization(ctx, req.Id)
@@ -186,7 +186,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 
 func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListOrganizationMembersRequest) (*adminv1.ListOrganizationMembersResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.Organization),
+		attribute.String("args.org", req.Organization),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
@@ -228,7 +228,7 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 
 func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListOrganizationInvitesRequest) (*adminv1.ListOrganizationInvitesResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.Organization),
+		attribute.String("args.org", req.Organization),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
@@ -271,8 +271,8 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 
 func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrganizationMemberRequest) (*adminv1.AddOrganizationMemberResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.Organization),
-		attribute.String("role", req.Role),
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.role", req.Role),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
@@ -353,8 +353,8 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 
 func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.RemoveOrganizationMemberRequest) (*adminv1.RemoveOrganizationMemberResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.Organization),
-		attribute.Bool("keep_project_roles", req.KeepProjectRoles),
+		attribute.String("args.org", req.Organization),
+		attribute.Bool("args.keep_project_roles", req.KeepProjectRoles),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
@@ -437,8 +437,8 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 
 func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.SetOrganizationMemberRoleRequest) (*adminv1.SetOrganizationMemberRoleResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.Organization),
-		attribute.String("role", req.Role),
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.role", req.Role),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
@@ -503,7 +503,7 @@ func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.Set
 
 func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrganizationRequest) (*adminv1.LeaveOrganizationResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.Organization),
+		attribute.String("args.org", req.Organization),
 	)
 
 	// Check the request is made by an authenticated user
@@ -563,9 +563,9 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 
 func (s *Server) CreateAutoinviteDomain(ctx context.Context, req *adminv1.CreateAutoinviteDomainRequest) (*adminv1.CreateAutoinviteDomainResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.Organization),
-		attribute.String("domain", req.Domain),
-		attribute.String("role", req.Role),
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.domain", req.Domain),
+		attribute.String("args.role", req.Role),
 	)
 
 	claims := auth.GetClaims(ctx)
@@ -604,8 +604,8 @@ func (s *Server) CreateAutoinviteDomain(ctx context.Context, req *adminv1.Create
 
 func (s *Server) RemoveAutoinviteDomain(ctx context.Context, req *adminv1.RemoveAutoinviteDomainRequest) (*adminv1.RemoveAutoinviteDomainResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.Organization),
-		attribute.String("domain", req.Domain),
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.args.domain", req.Domain),
 	)
 
 	claims := auth.GetClaims(ctx)

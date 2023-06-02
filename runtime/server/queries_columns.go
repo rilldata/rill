@@ -14,11 +14,11 @@ import (
 
 func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKRequest) (*runtimev1.ColumnTopKResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("table", req.TableName),
-		attribute.String("column", req.ColumnName),
-		attribute.Int("k", int(req.K)),
-		attribute.Int("priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.String("args.column", req.ColumnName),
+		attribute.Int("args.k", int(req.K)),
+		attribute.Int("args.priority", int(req.Priority)),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
@@ -58,10 +58,10 @@ func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKReques
 
 func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullCountRequest) (*runtimev1.ColumnNullCountResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("table", req.TableName),
-		attribute.String("column", req.ColumnName),
-		attribute.Int("priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.String("args.column", req.ColumnName),
+		attribute.Int("args.priority", int(req.Priority)),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
@@ -85,10 +85,10 @@ func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullC
 
 func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1.ColumnDescriptiveStatisticsRequest) (*runtimev1.ColumnDescriptiveStatisticsResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("table", req.TableName),
-		attribute.String("column", req.ColumnName),
-		attribute.Int("priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.String("args.column", req.ColumnName),
+		attribute.Int("args.priority", int(req.Priority)),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
@@ -146,10 +146,10 @@ func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1
 
 func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeGrainRequest) (*runtimev1.ColumnTimeGrainResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("table", req.TableName),
-		attribute.String("column", req.ColumnName),
-		attribute.Int("priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.String("args.column", req.ColumnName),
+		attribute.Int("args.priority", int(req.Priority)),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
@@ -171,11 +171,11 @@ func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeG
 
 func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.ColumnNumericHistogramRequest) (*runtimev1.ColumnNumericHistogramResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("table", req.TableName),
-		attribute.String("column", req.ColumnName),
-		attribute.String("histogram", req.HistogramMethod.String()),
-		attribute.Int("priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.String("args.column", req.ColumnName),
+		attribute.String("args.histogram", req.HistogramMethod.String()),
+		attribute.Int("args.priority", int(req.Priority)),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
@@ -207,10 +207,10 @@ func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.Colu
 
 func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRugHistogramRequest) (*runtimev1.ColumnRugHistogramResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("table", req.TableName),
-		attribute.String("column", req.ColumnName),
-		attribute.Int("priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.String("args.column", req.ColumnName),
+		attribute.Int("args.priority", int(req.Priority)),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
@@ -238,10 +238,10 @@ func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRu
 
 func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeRangeRequest) (*runtimev1.ColumnTimeRangeResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("table", req.TableName),
-		attribute.String("column", req.ColumnName),
-		attribute.Int("priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.String("args.column", req.ColumnName),
+		attribute.Int("args.priority", int(req.Priority)),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
@@ -263,10 +263,10 @@ func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeR
 
 func (s *Server) ColumnCardinality(ctx context.Context, req *runtimev1.ColumnCardinalityRequest) (*runtimev1.ColumnCardinalityResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("table", req.TableName),
-		attribute.String("column", req.ColumnName),
-		attribute.Int("priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.String("args.column", req.ColumnName),
+		attribute.Int("args.priority", int(req.Priority)),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {

@@ -14,7 +14,7 @@ import (
 
 func (s *Server) TriggerReconcile(ctx context.Context, req *adminv1.TriggerReconcileRequest) (*adminv1.TriggerReconcileResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("deployment_id", req.DeploymentId),
+		attribute.String("args.deployment_id", req.DeploymentId),
 	)
 
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
@@ -42,8 +42,8 @@ func (s *Server) TriggerReconcile(ctx context.Context, req *adminv1.TriggerRecon
 
 func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.TriggerRefreshSourcesRequest) (*adminv1.TriggerRefreshSourcesResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("deployment_id", req.DeploymentId),
-		attribute.StringSlice("sources", req.Sources),
+		attribute.String("args.deployment_id", req.DeploymentId),
+		attribute.StringSlice("args.sources", req.Sources),
 	)
 
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
@@ -103,7 +103,7 @@ func (s *Server) triggerRefreshSourcesInternal(w http.ResponseWriter, r *http.Re
 
 func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedeployRequest) (*adminv1.TriggerRedeployResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("deployment_id", req.DeploymentId),
+		attribute.String("args.deployment_id", req.DeploymentId),
 	)
 
 	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)

@@ -15,9 +15,9 @@ const _tableHeadDefaultLimit = 25
 // Table level profiling APIs.
 func (s *Server) TableCardinality(ctx context.Context, req *runtimev1.TableCardinalityRequest) (*runtimev1.TableCardinalityResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("table", req.TableName),
-		attribute.Int("priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.Int("args.priority", int(req.Priority)),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
@@ -46,7 +46,7 @@ func (s *Server) TableColumns(ctx context.Context, req *runtimev1.TableColumnsRe
 	observability.SetRequestAttributes(ctx,
 		attribute.String("instance_id", req.InstanceId),
 		attribute.String("table", req.TableName),
-		attribute.Int("priority", int(req.Priority)),
+		attribute.Int("args.priority", int(req.Priority)),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
@@ -69,10 +69,10 @@ func (s *Server) TableColumns(ctx context.Context, req *runtimev1.TableColumnsRe
 
 func (s *Server) TableRows(ctx context.Context, req *runtimev1.TableRowsRequest) (*runtimev1.TableRowsResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("table", req.TableName),
-		attribute.Int("limit", int(req.Limit)),
-		attribute.Int("priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.Int("args.limit", int(req.Limit)),
+		attribute.Int("args.priority", int(req.Priority)),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {

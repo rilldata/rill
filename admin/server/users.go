@@ -37,7 +37,7 @@ func (s *Server) ListSuperusers(ctx context.Context, req *adminv1.ListSuperusers
 
 func (s *Server) SetSuperuser(ctx context.Context, req *adminv1.SetSuperuserRequest) (*adminv1.SetSuperuserResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.Bool("super_user", req.Superuser),
+		attribute.Bool("args.superuser", req.Superuser),
 	)
 
 	claims := auth.GetClaims(ctx)
@@ -120,7 +120,7 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 // IssueRepresentativeAuthToken returns the temporary auth token for representing email
 func (s *Server) IssueRepresentativeAuthToken(ctx context.Context, req *adminv1.IssueRepresentativeAuthTokenRequest) (*adminv1.IssueRepresentativeAuthTokenResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.Int64("ttl_minutes", req.TtlMinutes),
+		attribute.Int64("args.ttl_minutes", req.TtlMinutes),
 	)
 
 	claims := auth.GetClaims(ctx)

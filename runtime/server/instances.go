@@ -35,7 +35,7 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 // GetInstance implements RuntimeService.
 func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequest) (*runtimev1.GetInstanceResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
+		attribute.String("args.instance_id", req.InstanceId),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadInstance) {
@@ -58,9 +58,9 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 // CreateInstance implements RuntimeService.
 func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstanceRequest) (*runtimev1.CreateInstanceResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("olap_driver", req.OlapDriver),
-		attribute.String("repo_driver", req.RepoDriver),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.olap_driver", req.OlapDriver),
+		attribute.String("args.repo_driver", req.RepoDriver),
 	)
 
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
@@ -91,9 +91,9 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 // EditInstance implements RuntimeService.
 func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRequest) (*runtimev1.EditInstanceResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("olap_driver", req.OlapDriver),
-		attribute.String("repo_driver", req.RepoDriver),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.olap_driver", req.OlapDriver),
+		attribute.String("args.repo_driver", req.RepoDriver),
 	)
 
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
@@ -124,8 +124,8 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 // DeleteInstance implements RuntimeService.
 func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstanceRequest) (*runtimev1.DeleteInstanceResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.Bool("drop_db", req.DropDb),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.Bool("args.drop_db", req.DropDb),
 	)
 
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {

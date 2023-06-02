@@ -13,10 +13,10 @@ import (
 // Metrics/Timeseries APIs
 func (s *Server) ColumnRollupInterval(ctx context.Context, req *runtimev1.ColumnRollupIntervalRequest) (*runtimev1.ColumnRollupIntervalResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("table", req.TableName),
-		attribute.String("column", req.ColumnName),
-		attribute.Int("priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.String("args.column", req.ColumnName),
+		attribute.Int("args.priority", int(req.Priority)),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
@@ -37,16 +37,20 @@ func (s *Server) ColumnRollupInterval(ctx context.Context, req *runtimev1.Column
 
 func (s *Server) ColumnTimeSeries(ctx context.Context, req *runtimev1.ColumnTimeSeriesRequest) (*runtimev1.ColumnTimeSeriesResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("table", req.TableName),
-		attribute.StringSlice("measures", marshalProtoSlice(req.Measures)),
-		attribute.String("timestamp_column", req.TimestampColumnName),
-		attribute.String("time_range", marshalProto(req.TimeRange)),
-		attribute.Int("Filters", filterCount(req.Filters)),
-		attribute.Int("pixels", int(req.Pixels)),
-		attribute.Int("sample_size", int(req.SampleSize)),
-		attribute.Int("priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.StringSlice("args.measures.ids", marshalColumnTimeSeriesRequest_BasicMeasure(req.Measures)),
+		attribute.String("args.timestamp_column", req.TimestampColumnName),
+		attribute.Int("args.filter_count", filterCount(req.Filters)),
+		attribute.Int("args.pixels", int(req.Pixels)),
+		attribute.Int("args.sample_size", int(req.SampleSize)),
+		attribute.Int("args.priority", int(req.Priority)),
 	)
+	if req.TimeRange != nil {
+		observability.SetRequestAttributes(ctx, attribute.String("args.time_range.start", safeTimeStr(req.TimeRange.Start)))
+		observability.SetRequestAttributes(ctx, attribute.String("args.time_range.end", safeTimeStr(req.TimeRange.End)))
+		observability.SetRequestAttributes(ctx, attribute.String("args.time_range.interval", req.TimeRange.Interval.String()))
+	}
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden

@@ -21,7 +21,7 @@ import (
 
 func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.ListProjectsForOrganizationRequest) (*adminv1.ListProjectsForOrganizationResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.OrganizationName),
+		attribute.String("args.org", req.OrganizationName),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
@@ -75,8 +75,8 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.OrganizationName),
-		attribute.String("project", req.Name),
+		attribute.String("args.org", req.OrganizationName),
+		attribute.String("args.project", req.Name),
 	)
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
@@ -147,16 +147,16 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.OrganizationName),
-		attribute.String("project", req.Name),
-		attribute.String("description", req.Description),
-		attribute.Bool("public", req.Public),
-		attribute.String("region", req.Region),
-		attribute.String("prod_olap_driver", req.ProdOlapDriver),
-		attribute.Int64("prod_slots", req.ProdSlots),
-		attribute.String("sub_path", req.Subpath),
-		attribute.String("prod_branch", req.ProdBranch),
-		attribute.String("github_url", req.GithubUrl),
+		attribute.String("args.org", req.OrganizationName),
+		attribute.String("args.project", req.Name),
+		attribute.String("args.description", req.Description),
+		attribute.Bool("args.public", req.Public),
+		attribute.String("args.region", req.Region),
+		attribute.String("args.prod_olap_driver", req.ProdOlapDriver),
+		attribute.Int64("args.prod_slots", req.ProdSlots),
+		attribute.String("args.sub_path", req.Subpath),
+		attribute.String("args.prod_branch", req.ProdBranch),
+		attribute.String("args.github_url", req.GithubUrl),
 	)
 
 	// Check the request is made by a user
@@ -235,8 +235,8 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 
 func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRequest) (*adminv1.DeleteProjectResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.OrganizationName),
-		attribute.String("project", req.Name),
+		attribute.String("args.org", req.OrganizationName),
+		attribute.String("args.project", req.Name),
 	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
@@ -259,14 +259,14 @@ func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRe
 
 func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRequest) (*adminv1.UpdateProjectResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.OrganizationName),
-		attribute.String("project", req.Name),
-		attribute.String("description", req.Description),
-		attribute.Bool("public", req.Public),
-		attribute.String("region", req.Region),
-		attribute.Int64("prod_slots", req.ProdSlots),
-		attribute.String("prod_branch", req.ProdBranch),
-		attribute.String("github_url", req.GithubUrl),
+		attribute.String("args.org", req.OrganizationName),
+		attribute.String("args.project", req.Name),
+		attribute.String("args.description", req.Description),
+		attribute.Bool("args.public", req.Public),
+		attribute.String("args.region", req.Region),
+		attribute.Int64("args.prod_slots", req.ProdSlots),
+		attribute.String("args.prod_branch", req.ProdBranch),
+		attribute.String("args.github_url", req.GithubUrl),
 	)
 
 	// Find project
@@ -317,8 +317,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 
 func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjectVariablesRequest) (*adminv1.GetProjectVariablesResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.OrganizationName),
-		attribute.String("project", req.Name),
+		attribute.String("args.org", req.OrganizationName),
+		attribute.String("args.project", req.Name),
 	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
@@ -367,8 +367,8 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 
 func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjectMembersRequest) (*adminv1.ListProjectMembersResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.Organization),
-		attribute.String("project", req.Project),
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
 	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
@@ -410,8 +410,8 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 
 func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjectInvitesRequest) (*adminv1.ListProjectInvitesResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.Organization),
-		attribute.String("project", req.Project),
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
 	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
@@ -454,9 +454,9 @@ func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjec
 
 func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMemberRequest) (*adminv1.AddProjectMemberResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.Organization),
-		attribute.String("project", req.Project),
-		attribute.String("role", req.Role),
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.role", req.Role),
 	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
@@ -524,8 +524,8 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 
 func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemoveProjectMemberRequest) (*adminv1.RemoveProjectMemberResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.Organization),
-		attribute.String("project", req.Project),
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
 	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
@@ -568,9 +568,9 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 
 func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProjectMemberRoleRequest) (*adminv1.SetProjectMemberRoleResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("org", req.Organization),
-		attribute.String("project", req.Project),
-		attribute.String("role", req.Role),
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.role", req.Role),
 	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)

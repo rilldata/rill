@@ -37,9 +37,9 @@ func (s *Server) ListExamples(ctx context.Context, req *runtimev1.ListExamplesRe
 
 func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExampleRequest) (*runtimev1.UnpackExampleResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("name", req.Name),
-		attribute.Bool("force", req.Force),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.name", req.Name),
+		attribute.Bool("args.force", req.Force),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
@@ -110,9 +110,9 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 
 func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequest) (*runtimev1.UnpackEmptyResponse, error) {
 	observability.SetRequestAttributes(ctx,
-		attribute.String("instance_id", req.InstanceId),
-		attribute.String("title", req.Title),
-		attribute.Bool("force", req.Force),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.title", req.Title),
+		attribute.Bool("args.force", req.Force),
 	)
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden

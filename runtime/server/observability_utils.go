@@ -2,8 +2,6 @@ package server
 
 import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -14,25 +12,56 @@ func safeTimeStr(t *timestamppb.Timestamp) string {
 	return t.AsTime().String()
 }
 
-func marshalProtoSlice[K proto.Message](s []K) []string {
-	res := make([]string, len(s))
-	for i := 0; i < len(res); i++ {
-		res[i] = marshalProto(s[i])
-	}
-	return res
-}
-
-func marshalProto(pb proto.Message) string {
-	b, err := protojson.Marshal(pb)
-	if err != nil {
-		return ""
-	}
-	return string(b)
-}
-
 func filterCount(m *runtimev1.MetricsViewFilter) int {
 	if m == nil {
 		return 0
 	}
 	return len(m.Include) + len(m.Exclude)
+}
+
+func marshalInlineMeasure(ms []*runtimev1.InlineMeasure) []string {
+	if len(ms) == 0 {
+		return make([]string, 0)
+	}
+
+	names := make([]string, len(ms))
+	for i := 0; i < len(ms); i++ {
+		names[i] = ms[i].Name
+	}
+	return nil
+}
+
+func marshalMetricsViewComparisonSort(ms []*runtimev1.MetricsViewComparisonSort) []string {
+	if len(ms) == 0 {
+		return make([]string, 0)
+	}
+
+	names := make([]string, len(ms))
+	for i := 0; i < len(ms); i++ {
+		names[i] = ms[i].MeasureName
+	}
+	return nil
+}
+
+func marshalMetricsViewSort(ms []*runtimev1.MetricsViewSort) []string {
+	if len(ms) == 0 {
+		return make([]string, 0)
+	}
+
+	names := make([]string, len(ms))
+	for i := 0; i < len(ms); i++ {
+		names[i] = ms[i].Name
+	}
+	return nil
+}
+
+func marshalColumnTimeSeriesRequest_BasicMeasure(m []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) []string {
+	if len(m) == 0 {
+		return make([]string, 0)
+	}
+	ids := make([]string, len(m))
+	for i := 0; i < len(m); i++ {
+		ids[i] = m[i].Id
+	}
+	return ids
 }
