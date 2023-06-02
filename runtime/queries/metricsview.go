@@ -123,12 +123,12 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 // buildFilterClauseForMetricsViewFilter builds a SQL string of conditions joined with AND.
 // Unless the result is empty, it is prefixed with "AND".
 // I.e. it has the format "AND (...) AND (...) ...".
-func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter, dialect drivers.Dialect) (string, []any, error) {
+func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter, dimNameToColMap map[string]string, dialect drivers.Dialect) (string, []any, error) {
 	var clauses []string
 	var args []any
 
 	if filter != nil && filter.Include != nil {
-		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Include, false, dialect)
+		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Include, dimNameToColMap, false, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -137,7 +137,7 @@ func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter, 
 	}
 
 	if filter != nil && filter.Exclude != nil {
-		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Exclude, true, dialect)
+		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Exclude, dimNameToColMap, true, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -149,12 +149,17 @@ func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter, 
 }
 
 // buildFilterClauseForConditions returns a string with the format "AND (...) AND (...) ..."
-func buildFilterClauseForConditions(conds []*runtimev1.MetricsViewFilter_Cond, exclude bool, dialect drivers.Dialect) (string, []any, error) {
+func buildFilterClauseForConditions(
+	conds []*runtimev1.MetricsViewFilter_Cond,
+	dimNameToColMap map[string]string,
+	exclude bool,
+	dialect drivers.Dialect,
+) (string, []any, error) {
 	var clauses []string
 	var args []any
 
 	for _, cond := range conds {
-		condClause, condArgs, err := buildFilterClauseForCondition(cond, exclude, dialect)
+		condClause, condArgs, err := buildFilterClauseForCondition(cond, dimNameToColMap, exclude, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -169,11 +174,19 @@ func buildFilterClauseForConditions(conds []*runtimev1.MetricsViewFilter_Cond, e
 }
 
 // buildFilterClauseForCondition returns a string with the format "AND (...)"
-func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclude bool, dialect drivers.Dialect) (string, []any, error) {
+func buildFilterClauseForCondition(
+	cond *runtimev1.MetricsViewFilter_Cond,
+	dimNameToColMap map[string]string,
+	exclude bool,
+	dialect drivers.Dialect,
+) (string, []any, error) {
 	var clauses []string
 	var args []any
 
-	name := safeName(cond.Name)
+	name, ok := dimNameToColMap[cond.Name]
+	if !ok {
+		return "", nil, fmt.Errorf("dimension %s not found", cond.Name)
+	}
 	notKeyword := ""
 	if exclude {
 		notKeyword = "NOT"
@@ -260,51 +273,33 @@ func repeatString(val string, n int) []string {
 	return res
 }
 
-func validateAndGetDimension(mv *runtimev1.MetricsView, dimName string) (string, error) {
+func metricsViewDimensionToSafeColumn(mv *runtimev1.MetricsView, dimName string) (string, error) {
 	dimName = strings.ToLower(dimName)
 	for _, dimension := range mv.Dimensions {
 		if strings.EqualFold(dimension.Name, dimName) {
 			if dimension.Column != "" {
-				return dimension.Column, nil
+				return safeName(dimension.Column), nil
 			}
 			// backwards compatibility for older projects that have not run reconcile on this dashboard
 			// in that case `column` will not be present
-			return dimension.Name, nil
+			return safeName(dimension.Name), nil
 		}
 	}
 	return "", fmt.Errorf("dimension %s not found", dimName)
 }
 
-func convertFilterToColumn(mv *runtimev1.MetricsView, filter *runtimev1.MetricsViewFilter) error {
-	if filter == nil {
-		return nil
-	}
-
-	dimNameMap := make(map[string]string)
+// metricsViewDimensionNameMap creates a map of dimension name to safe name of column
+func metricsViewDimensionNameMap(mv *runtimev1.MetricsView) map[string]string {
+	dimNameToColMap := make(map[string]string)
 	for _, dimension := range mv.Dimensions {
 		if dimension.Column != "" {
-			dimNameMap[dimension.Name] = dimension.Column
+			dimNameToColMap[dimension.Name] = safeName(dimension.Column)
 		} else {
 			// backwards compatibility for older projects that have not run reconcile on this dashboard
 			// in that case `column` will not be present
-			dimNameMap[dimension.Name] = dimension.Name
+			dimNameToColMap[dimension.Name] = safeName(dimension.Name)
 		}
 	}
 
-	for _, cond := range filter.Include {
-		col, ok := dimNameMap[cond.Name]
-		if !ok {
-			return fmt.Errorf("dimension %s not found", cond.Name)
-		}
-		cond.Name = col
-	}
-	for _, cond := range filter.Exclude {
-		col, ok := dimNameMap[cond.Name]
-		if !ok {
-			return fmt.Errorf("dimension %s not found", cond.Name)
-		}
-		cond.Name = col
-	}
-
-	return nil
+	return dimNameToColMap
 }

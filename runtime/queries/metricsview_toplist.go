@@ -76,11 +76,6 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	err = convertFilterToColumn(mv, q.Filter)
-	if err != nil {
-		return err
-	}
-
 	// Build query
 	sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect())
 	if err != nil {
@@ -107,13 +102,12 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 		return "", nil, err
 	}
 
-	dimName, err := validateAndGetDimension(mv, q.DimensionName)
+	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
 	}
 
-	dimName = safeName(dimName)
-	selectCols := []string{dimName}
+	selectCols := []string{colName}
 	for _, m := range ms {
 		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
 		selectCols = append(selectCols, expr)
@@ -133,7 +127,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 	}
 
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, dialect)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, metricsViewDimensionNameMap(mv), dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -165,7 +159,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 		strings.Join(selectCols, ", "),
 		mv.Model,
 		whereClause,
-		dimName,
+		colName,
 		orderClause,
 		q.Limit,
 		q.Offset,

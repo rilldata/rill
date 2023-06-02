@@ -69,11 +69,6 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	err = convertFilterToColumn(mv, q.Filter)
-	if err != nil {
-		return err
-	}
-
 	olap, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
@@ -111,6 +106,7 @@ func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.R
 		Measures: measures,
 		Filters:  q.Filter,
 	}
+	tsq.WithCatalogName(mv.Name)
 	err = rt.Query(ctx, instanceID, tsq, priority)
 	if err != nil {
 		return err
@@ -216,7 +212,7 @@ func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.Met
 	}
 
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, drivers.DialectDruid)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, metricsViewDimensionNameMap(mv), drivers.DialectDruid)
 		if err != nil {
 			return "", "", nil, err
 		}

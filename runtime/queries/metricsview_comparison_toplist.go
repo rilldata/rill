@@ -80,11 +80,6 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 		return q.executeComparisonToplist(ctx, olap, mv, priority)
 	}
 
-	err = convertFilterToColumn(mv, q.Filter)
-	if err != nil {
-		return err
-	}
-
 	return q.executeToplist(ctx, olap, mv, priority)
 }
 
@@ -241,13 +236,12 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 		return "", nil, err
 	}
 
-	dimName, err := validateAndGetDimension(mv, q.DimensionName)
+	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
 	}
 
-	dimName = safeName(dimName)
-	selectCols := []string{dimName}
+	selectCols := []string{colName}
 	for _, m := range ms {
 		expr := fmt.Sprintf(`%s as %s`, m.Expression, safeName(m.Name))
 		selectCols = append(selectCols, expr)
@@ -261,7 +255,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 
 	baseWhereClause += timeRangeClause(q.BaseTimeRange, td, &args)
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, dialect)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, metricsViewDimensionNameMap(mv), dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -289,7 +283,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 	sql := fmt.Sprintf(
 		`SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s LIMIT %[6]d OFFSET %[7]d`,
 		selectClause,    // 1
-		dimName,         // 2
+		colName,         // 2
 		mv.Model,        // 3
 		baseWhereClause, // 4
 		orderClause,     // 5
@@ -306,13 +300,12 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		return "", nil, err
 	}
 
-	dimName, err := validateAndGetDimension(mv, q.DimensionName)
+	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
 	}
 
-	dimName = safeName(dimName)
-	selectCols := []string{dimName}
+	selectCols := []string{colName}
 
 	finalSelectCols := []string{}
 	measureMap := make(map[string]int)
@@ -350,10 +343,11 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 	}
 
 	td := safeName(mv.TimeDimension)
+	dimNameToCol := metricsViewDimensionNameMap(mv)
 
 	baseWhereClause += timeRangeClause(q.BaseTimeRange, td, &args)
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, dialect)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, dimNameToCol, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -364,7 +358,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 
 	comparisonWhereClause += timeRangeClause(q.ComparisonTimeRange, td, &args)
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, dialect)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, dimNameToCol, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -435,7 +429,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			%[8]d
 		`,
 			subSelectClause,       // 1
-			dimName,               // 2
+			colName,               // 2
 			mv.Model,              // 3
 			baseWhereClause,       // 4
 			comparisonWhereClause, // 5
@@ -506,7 +500,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 					%[8]d
 				`,
 				subSelectClause,     // 1
-				dimName,             // 2
+				colName,             // 2
 				mv.Model,            // 3
 				leftWhereClause,     // 4
 				rightWhereClause,    // 5
@@ -539,7 +533,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 					%[8]d
 				`,
 				subSelectClause,       // 1
-				dimName,               // 2
+				colName,               // 2
 				mv.Model,              // 3
 				baseWhereClause,       // 4
 				comparisonWhereClause, // 5
