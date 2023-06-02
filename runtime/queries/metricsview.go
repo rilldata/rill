@@ -173,6 +173,8 @@ func buildFilterClauseForCondition(mv *runtimev1.MetricsView, cond *runtimev1.Me
 	var clauses []string
 	var args []any
 
+	// NOTE: Looking up for dimension like this will lead to O(nm).
+	//       Ideal way would be to create a map, but we need to find a clean solution down the line
 	name, err := metricsViewDimensionToSafeColumn(mv, cond.Name)
 	if err != nil {
 		return "", nil, err
