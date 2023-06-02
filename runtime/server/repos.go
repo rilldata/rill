@@ -7,7 +7,9 @@ import (
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -16,6 +18,11 @@ import (
 
 // ListFiles implements RuntimeService.
 func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest) (*runtimev1.ListFilesResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("instance_id", req.InstanceId),
+		attribute.String("glob", req.Glob),
+	)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadRepo) {
 		return nil, ErrForbidden
 	}
@@ -35,6 +42,11 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 
 // GetFile implements RuntimeService.
 func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*runtimev1.GetFileResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("instance_id", req.InstanceId),
+		attribute.String("path", req.Path),
+	)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadRepo) {
 		return nil, ErrForbidden
 	}
@@ -49,6 +61,13 @@ func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*r
 
 // PutFile implements RuntimeService.
 func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*runtimev1.PutFileResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("instance_id", req.InstanceId),
+		attribute.String("path", req.Path),
+		attribute.Bool("create", req.Create),
+		attribute.Bool("create_only", req.CreateOnly),
+	)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
 	}
@@ -63,6 +82,11 @@ func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*r
 
 // DeleteFile implements RuntimeService.
 func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileRequest) (*runtimev1.DeleteFileResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("instance_id", req.InstanceId),
+		attribute.String("path", req.Path),
+	)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
 	}
@@ -77,6 +101,12 @@ func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileReques
 
 // RenameFile implements RuntimeService.
 func (s *Server) RenameFile(ctx context.Context, req *runtimev1.RenameFileRequest) (*runtimev1.RenameFileResponse, error) {
+	observability.SetRequestAttributes(ctx,
+		attribute.String("instance_id", req.InstanceId),
+		attribute.String("from_path", req.FromPath),
+		attribute.String("to_path", req.ToPath),
+	)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
 	}
@@ -113,6 +143,11 @@ func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request, p
 		http.Error(w, "must have a path to file", http.StatusBadRequest)
 		return
 	}
+
+	observability.SetRequestAttributes(ctx,
+		attribute.String("instance_id", pathParams["instance_id"]),
+		attribute.String("path", pathParams["path"]),
+	)
 
 	err = s.runtime.PutFile(ctx, pathParams["instance_id"], pathParams["path"], f, true, false)
 	if err != nil {
