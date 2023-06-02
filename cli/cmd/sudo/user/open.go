@@ -14,7 +14,7 @@ func OpenCmd(cfg *config.Config) *cobra.Command {
 	openCmd := &cobra.Command{
 		Use:   "open",
 		Args:  cobra.NoArgs,
-		Short: "Open",
+		Short: "Open browser as the current user",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			authURL := cfg.AdminURL
 			if strings.Contains(authURL, "http://localhost:9090") {

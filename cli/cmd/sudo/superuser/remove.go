@@ -13,7 +13,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 	removeCmd := &cobra.Command{
 		Use:   "remove <email>",
 		Args:  cobra.ExactArgs(1),
-		Short: "remove access as superuser",
+		Short: "Remove a superuser",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -31,7 +31,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter(fmt.Sprintf("Removed superuser role for %q", args[0]))
+			cmdutil.SuccessPrinter(fmt.Sprintf("Removed superuser from %q", args[0]))
 
 			return nil
 		},

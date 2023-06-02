@@ -8,7 +8,7 @@ import (
 func UserCmd(cfg *config.Config) *cobra.Command {
 	userCmd := &cobra.Command{
 		Use:   "user",
-		Short: "Manage superusers",
+		Short: "Manage users",
 	}
 
 	userCmd.AddCommand(SearchCmd(cfg))

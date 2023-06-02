@@ -11,7 +11,7 @@ func SearchCmd(cfg *config.Config) *cobra.Command {
 	searchCmd := &cobra.Command{
 		Use:   "search <email-pattern>",
 		Args:  cobra.ExactArgs(1),
-		Short: "Search users by email",
+		Short: "Search users by email pattern (use % as wildcard)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
