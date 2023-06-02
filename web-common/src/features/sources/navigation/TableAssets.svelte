@@ -8,6 +8,7 @@
     useSourceNames,
   } from "@rilldata/web-common/features/sources/selectors";
   import {
+    createRuntimeServiceListCatalogEntries,
     createRuntimeServicePutFileAndReconcile,
     V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
@@ -63,6 +64,9 @@
     showRenameTableModal = true;
     renameTableName = tableName;
   };
+
+  $: catalogQuery = createRuntimeServiceListCatalogEntries($runtime.instanceId);
+  $: hasNoAssets = $catalogQuery?.data?.entries.length === 0;
 </script>
 
 <NavigationHeader bind:show={showTables} toggleText="sources"
@@ -110,6 +114,7 @@
     <AddAssetButton
       id="add-table"
       label="Add source"
+      bold={hasNoAssets}
       on:click={openShowAddSourceModal}
     />
   </div>

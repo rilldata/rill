@@ -12,11 +12,13 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
   import { getName } from "../../entity-management/name-utils";
+  import { useSourceNames } from "../../sources/selectors";
   import { createModel } from "../createModel";
   import { useModelNames } from "../selectors";
   import ModelMenuItems from "./ModelMenuItems.svelte";
   import ModelTooltip from "./ModelTooltip.svelte";
 
+  $: sourceNames = useSourceNames($runtime.instanceId);
   $: modelNames = useModelNames($runtime.instanceId);
 
   const queryClient = useQueryClient();
@@ -45,6 +47,9 @@
     showRenameModelModal = true;
     renameModelName = modelName;
   };
+
+  $: hasSourceButNoModels =
+    $sourceNames?.data?.length > 0 && $modelNames?.data?.length === 0;
 </script>
 
 <NavigationHeader bind:show={showModels} toggleText="models"
@@ -89,6 +94,7 @@
     <AddAssetButton
       id="create-model-button"
       label="Add model"
+      bold={hasSourceButNoModels}
       on:click={handleAddModel}
     />
   </div>
