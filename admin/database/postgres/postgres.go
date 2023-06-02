@@ -456,6 +456,17 @@ func (c *connection) FindUserByEmail(ctx context.Context, email string) (*databa
 	return res, nil
 }
 
+func (c *connection) FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*database.User, error) {
+	var res []*database.User
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u 
+	WHERE lower(u.email) LIKE lower($1) AND lower(u.email) > lower($2) 
+	ORDER BY lower(u.email) LIMIT $3`, emailPattern, afterEmail, limit)
+	if err != nil {
+		return nil, parseErr("users", err)
+	}
+	return res, nil
+}
+
 func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOptions) (*database.User, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
@@ -553,9 +564,9 @@ func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.Ins
 
 	res := &database.UserAuthToken{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id)
-		VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID,
+		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id, representing_user_id, expires_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID, opts.RepresentingUserID, opts.ExpiresOn,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("auth token", err)
@@ -566,6 +577,11 @@ func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.Ins
 func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE id=$1", id)
 	return checkDeleteRow("auth token", res, err)
+}
+
+func (c *connection) DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
+	return parseErr("auth token", err)
 }
 
 func (c *connection) FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.DeviceAuthCode, error) {
@@ -605,6 +621,11 @@ func (c *connection) DeleteDeviceAuthCode(ctx context.Context, deviceCode string
 func (c *connection) UpdateDeviceAuthCode(ctx context.Context, id, userID string, approvalState database.DeviceAuthCodeState) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "UPDATE device_auth_codes SET approval_state=$1, user_id=$2, updated_on=now() WHERE id=$3", approvalState, userID, id)
 	return checkUpdateRow("device auth code", res, err)
+}
+
+func (c *connection) DeleteExpiredDeviceAuthCodes(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM device_auth_codes WHERE expires_on + $1 < now()", retention)
+	return parseErr("device auth code", err)
 }
 
 func (c *connection) FindOrganizationRole(ctx context.Context, name string) (*database.OrganizationRole, error) {

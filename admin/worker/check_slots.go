@@ -37,7 +37,7 @@ func (w *Worker) checkSlots(ctx context.Context) error {
 	}
 
 	// Check there's at least one runtime with at least 30% free slots
-	if minPctUsed >= 0.7 {
+	if slotsUsed != 0 && minPctUsed >= 0.7 {
 		w.logger.Warn(`slots check: +70% of slots used on every runtime`, zap.Int("slots_total", slotsTotal), zap.Int("slots_used", slotsUsed), zap.Float64("min_pct_used", minPctUsed))
 	}
 

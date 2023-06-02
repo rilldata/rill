@@ -28,21 +28,21 @@
       title: "Cost Monitoring",
       description: "Monitoring cloud infrastructure",
       image:
-        "bg-[url('/img/welcome-bg-cost-monitoring.png')] bg-no-repeat bg-cover",
+        "bg-[url('$img/welcome-bg-cost-monitoring.png')] bg-no-repeat bg-cover",
       firstPage: "/dashboard/customer_margin_dash",
     },
     {
       name: "rill-openrtb-prog-ads",
       title: "OpenRTB Programmatic Ads",
       description: "Real-time Bidding (RTB) advertising",
-      image: "bg-[url('/img/welcome-bg-openrtb.png')] bg-no-repeat bg-cover",
+      image: "bg-[url('$img/welcome-bg-openrtb.png')] bg-no-repeat bg-cover",
       firstPage: "dashboard/auction",
     },
     {
       name: "rill-311-ops",
       title: "311 Call Center Operations",
       description: "Citizen reports across US cities",
-      image: "bg-[url('/img/welcome-bg-311.png')] bg-no-repeat bg-cover",
+      image: "bg-[url('$img/welcome-bg-311.png')] bg-no-repeat bg-cover",
       firstPage: "dashboard/call_center_metrics",
     },
   ];

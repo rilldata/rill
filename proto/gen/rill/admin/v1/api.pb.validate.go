@@ -7656,6 +7656,274 @@ var _ interface {
 	ErrorName() string
 } = GetCurrentUserResponseValidationError{}
 
+// Validate checks the field values on SearchUsersRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SearchUsersRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SearchUsersRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SearchUsersRequestMultiError, or nil if none found.
+func (m *SearchUsersRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SearchUsersRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetEmailPattern()) < 1 {
+		err := SearchUsersRequestValidationError{
+			field:  "EmailPattern",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 100 {
+			err := SearchUsersRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 100",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
+	if len(errors) > 0 {
+		return SearchUsersRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SearchUsersRequestMultiError is an error wrapping multiple validation errors
+// returned by SearchUsersRequest.ValidateAll() if the designated constraints
+// aren't met.
+type SearchUsersRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SearchUsersRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SearchUsersRequestMultiError) AllErrors() []error { return m }
+
+// SearchUsersRequestValidationError is the validation error returned by
+// SearchUsersRequest.Validate if the designated constraints aren't met.
+type SearchUsersRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SearchUsersRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SearchUsersRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SearchUsersRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SearchUsersRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SearchUsersRequestValidationError) ErrorName() string {
+	return "SearchUsersRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SearchUsersRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSearchUsersRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SearchUsersRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SearchUsersRequestValidationError{}
+
+// Validate checks the field values on SearchUsersResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SearchUsersResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SearchUsersResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SearchUsersResponseMultiError, or nil if none found.
+func (m *SearchUsersResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SearchUsersResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetUsers() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SearchUsersResponseValidationError{
+						field:  fmt.Sprintf("Users[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SearchUsersResponseValidationError{
+						field:  fmt.Sprintf("Users[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SearchUsersResponseValidationError{
+					field:  fmt.Sprintf("Users[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for NextPageToken
+
+	if len(errors) > 0 {
+		return SearchUsersResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SearchUsersResponseMultiError is an error wrapping multiple validation
+// errors returned by SearchUsersResponse.ValidateAll() if the designated
+// constraints aren't met.
+type SearchUsersResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SearchUsersResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SearchUsersResponseMultiError) AllErrors() []error { return m }
+
+// SearchUsersResponseValidationError is the validation error returned by
+// SearchUsersResponse.Validate if the designated constraints aren't met.
+type SearchUsersResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SearchUsersResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SearchUsersResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SearchUsersResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SearchUsersResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SearchUsersResponseValidationError) ErrorName() string {
+	return "SearchUsersResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SearchUsersResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSearchUsersResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SearchUsersResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SearchUsersResponseValidationError{}
+
 // Validate checks the field values on RevokeCurrentAuthTokenRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -7863,6 +8131,282 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = RevokeCurrentAuthTokenResponseValidationError{}
+
+// Validate checks the field values on IssueRepresentativeAuthTokenRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *IssueRepresentativeAuthTokenRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on IssueRepresentativeAuthTokenRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// IssueRepresentativeAuthTokenRequestMultiError, or nil if none found.
+func (m *IssueRepresentativeAuthTokenRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *IssueRepresentativeAuthTokenRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = IssueRepresentativeAuthTokenRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for TtlMinutes
+
+	if len(errors) > 0 {
+		return IssueRepresentativeAuthTokenRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *IssueRepresentativeAuthTokenRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *IssueRepresentativeAuthTokenRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
+}
+
+// IssueRepresentativeAuthTokenRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// IssueRepresentativeAuthTokenRequest.ValidateAll() if the designated
+// constraints aren't met.
+type IssueRepresentativeAuthTokenRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m IssueRepresentativeAuthTokenRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m IssueRepresentativeAuthTokenRequestMultiError) AllErrors() []error { return m }
+
+// IssueRepresentativeAuthTokenRequestValidationError is the validation error
+// returned by IssueRepresentativeAuthTokenRequest.Validate if the designated
+// constraints aren't met.
+type IssueRepresentativeAuthTokenRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e IssueRepresentativeAuthTokenRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e IssueRepresentativeAuthTokenRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e IssueRepresentativeAuthTokenRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e IssueRepresentativeAuthTokenRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e IssueRepresentativeAuthTokenRequestValidationError) ErrorName() string {
+	return "IssueRepresentativeAuthTokenRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e IssueRepresentativeAuthTokenRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sIssueRepresentativeAuthTokenRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = IssueRepresentativeAuthTokenRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = IssueRepresentativeAuthTokenRequestValidationError{}
+
+// Validate checks the field values on IssueRepresentativeAuthTokenResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *IssueRepresentativeAuthTokenResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on IssueRepresentativeAuthTokenResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// IssueRepresentativeAuthTokenResponseMultiError, or nil if none found.
+func (m *IssueRepresentativeAuthTokenResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *IssueRepresentativeAuthTokenResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Token
+
+	if len(errors) > 0 {
+		return IssueRepresentativeAuthTokenResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// IssueRepresentativeAuthTokenResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// IssueRepresentativeAuthTokenResponse.ValidateAll() if the designated
+// constraints aren't met.
+type IssueRepresentativeAuthTokenResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m IssueRepresentativeAuthTokenResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m IssueRepresentativeAuthTokenResponseMultiError) AllErrors() []error { return m }
+
+// IssueRepresentativeAuthTokenResponseValidationError is the validation error
+// returned by IssueRepresentativeAuthTokenResponse.Validate if the designated
+// constraints aren't met.
+type IssueRepresentativeAuthTokenResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e IssueRepresentativeAuthTokenResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e IssueRepresentativeAuthTokenResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e IssueRepresentativeAuthTokenResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e IssueRepresentativeAuthTokenResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e IssueRepresentativeAuthTokenResponseValidationError) ErrorName() string {
+	return "IssueRepresentativeAuthTokenResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e IssueRepresentativeAuthTokenResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sIssueRepresentativeAuthTokenResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = IssueRepresentativeAuthTokenResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = IssueRepresentativeAuthTokenResponseValidationError{}
 
 // Validate checks the field values on GetGithubRepoStatusRequest with the
 // rules defined in the proto definition for this message. If any rules are
