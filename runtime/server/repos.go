@@ -18,7 +18,7 @@ import (
 
 // ListFiles implements RuntimeService.
 func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest) (*runtimev1.ListFilesResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.glob", req.Glob),
 	)
@@ -42,7 +42,7 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 
 // GetFile implements RuntimeService.
 func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*runtimev1.GetFileResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.path", req.Path),
 	)
@@ -61,7 +61,7 @@ func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*r
 
 // PutFile implements RuntimeService.
 func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*runtimev1.PutFileResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.path", req.Path),
 		attribute.Bool("args.create", req.Create),
@@ -82,7 +82,7 @@ func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*r
 
 // DeleteFile implements RuntimeService.
 func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileRequest) (*runtimev1.DeleteFileResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.path", req.Path),
 	)
@@ -101,7 +101,7 @@ func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileReques
 
 // RenameFile implements RuntimeService.
 func (s *Server) RenameFile(ctx context.Context, req *runtimev1.RenameFileRequest) (*runtimev1.RenameFileResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.from_path", req.FromPath),
 		attribute.String("args.to_path", req.ToPath),
@@ -144,7 +144,7 @@ func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", pathParams["instance_id"]),
 		attribute.String("args.path", pathParams["path"]),
 	)

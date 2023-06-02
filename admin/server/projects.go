@@ -20,7 +20,7 @@ import (
 )
 
 func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.ListProjectsForOrganizationRequest) (*adminv1.ListProjectsForOrganizationResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
 	)
 
@@ -74,7 +74,7 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 }
 
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
 		attribute.String("args.project", req.Name),
 	)
@@ -146,7 +146,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 }
 
 func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
 		attribute.String("args.project", req.Name),
 		attribute.String("args.description", req.Description),
@@ -234,7 +234,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 }
 
 func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRequest) (*adminv1.DeleteProjectResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
 		attribute.String("args.project", req.Name),
 	)
@@ -258,7 +258,7 @@ func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRe
 }
 
 func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRequest) (*adminv1.UpdateProjectResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
 		attribute.String("args.project", req.Name),
 		attribute.String("args.description", req.Description),
@@ -316,7 +316,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 }
 
 func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjectVariablesRequest) (*adminv1.GetProjectVariablesResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
 		attribute.String("args.project", req.Name),
 	)
@@ -366,7 +366,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 }
 
 func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjectMembersRequest) (*adminv1.ListProjectMembersResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
 	)
@@ -409,7 +409,7 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 }
 
 func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjectInvitesRequest) (*adminv1.ListProjectInvitesResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
 	)
@@ -453,7 +453,7 @@ func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjec
 }
 
 func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMemberRequest) (*adminv1.AddProjectMemberResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.role", req.Role),
@@ -523,7 +523,7 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 }
 
 func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemoveProjectMemberRequest) (*adminv1.RemoveProjectMemberResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
 	)
@@ -567,7 +567,7 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 }
 
 func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProjectMemberRoleRequest) (*adminv1.SetProjectMemberRoleResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.role", req.Role),

@@ -14,7 +14,7 @@ const _tableHeadDefaultLimit = 25
 
 // Table level profiling APIs.
 func (s *Server) TableCardinality(ctx context.Context, req *runtimev1.TableCardinalityRequest) (*runtimev1.TableCardinalityResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.table", req.TableName),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -43,7 +43,7 @@ type ColumnInfo struct {
 }
 
 func (s *Server) TableColumns(ctx context.Context, req *runtimev1.TableColumnsRequest) (*runtimev1.TableColumnsResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.table", req.TableName),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -68,7 +68,7 @@ func (s *Server) TableColumns(ctx context.Context, req *runtimev1.TableColumnsRe
 }
 
 func (s *Server) TableRows(ctx context.Context, req *runtimev1.TableRowsRequest) (*runtimev1.TableRowsResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.table", req.TableName),
 		attribute.Int("args.limit", int(req.Limit)),

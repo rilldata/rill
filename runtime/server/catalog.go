@@ -17,7 +17,7 @@ import (
 
 // ListCatalogEntries implements RuntimeService.
 func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCatalogEntriesRequest) (*runtimev1.ListCatalogEntriesResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.type", req.Type.String()),
 	)
@@ -45,7 +45,7 @@ func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCata
 
 // GetCatalogEntry implements RuntimeService.
 func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogEntryRequest) (*runtimev1.GetCatalogEntryResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.name", req.Name),
 	)
@@ -69,7 +69,7 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 
 // Reconcile implements RuntimeService.
 func (s *Server) Reconcile(ctx context.Context, req *runtimev1.ReconcileRequest) (*runtimev1.ReconcileResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
@@ -89,7 +89,7 @@ func (s *Server) Reconcile(ctx context.Context, req *runtimev1.ReconcileRequest)
 
 // PutFileAndReconcile implements RuntimeService.
 func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFileAndReconcileRequest) (*runtimev1.PutFileAndReconcileResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
 
@@ -117,7 +117,7 @@ func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFile
 
 // RenameFileAndReconcile implements RuntimeService.
 func (s *Server) RenameFileAndReconcile(ctx context.Context, req *runtimev1.RenameFileAndReconcileRequest) (*runtimev1.RenameFileAndReconcileResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
 	claims := auth.GetClaims(ctx)
@@ -144,7 +144,7 @@ func (s *Server) RenameFileAndReconcile(ctx context.Context, req *runtimev1.Rena
 
 // DeleteFileAndReconcile implements RuntimeService.
 func (s *Server) DeleteFileAndReconcile(ctx context.Context, req *runtimev1.DeleteFileAndReconcileRequest) (*runtimev1.DeleteFileAndReconcileResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
 	claims := auth.GetClaims(ctx)
@@ -171,7 +171,7 @@ func (s *Server) DeleteFileAndReconcile(ctx context.Context, req *runtimev1.Dele
 
 // RefreshAndReconcile implements RuntimeService.
 func (s *Server) RefreshAndReconcile(ctx context.Context, req *runtimev1.RefreshAndReconcileRequest) (*runtimev1.RefreshAndReconcileResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
@@ -192,7 +192,7 @@ func (s *Server) RefreshAndReconcile(ctx context.Context, req *runtimev1.Refresh
 
 // TriggerRefresh implements RuntimeService.
 func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefreshRequest) (*runtimev1.TriggerRefreshResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
@@ -209,7 +209,7 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefre
 
 // TriggerSync implements RuntimeService.
 func (s *Server) TriggerSync(ctx context.Context, req *runtimev1.TriggerSyncRequest) (*runtimev1.TriggerSyncResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
 	err := s.runtime.SyncExistingTables(ctx, req.InstanceId)

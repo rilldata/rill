@@ -14,7 +14,7 @@ import (
 
 // MetricsViewToplist implements QueryService.
 func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsViewToplistRequest) (*runtimev1.MetricsViewToplistResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.metric_view", req.MetricsViewName),
 		attribute.String("args.dimension", req.DimensionName),
@@ -60,7 +60,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 
 // MetricsViewComparisonToplist implements QueryService.
 func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev1.MetricsViewComparisonToplistRequest) (*runtimev1.MetricsViewComparisonToplistResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.metric_view", req.MetricsViewName),
 		attribute.String("args.dimension", req.DimensionName),
@@ -73,12 +73,12 @@ func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 	if req.BaseTimeRange != nil {
-		observability.SetRequestAttributes(ctx, attribute.String("args.base_time_range.start", safeTimeStr(req.BaseTimeRange.Start)))
-		observability.SetRequestAttributes(ctx, attribute.String("args.base_time_range.end", safeTimeStr(req.BaseTimeRange.End)))
+		observability.AddRequestAttributes(ctx, attribute.String("args.base_time_range.start", safeTimeStr(req.BaseTimeRange.Start)))
+		observability.AddRequestAttributes(ctx, attribute.String("args.base_time_range.end", safeTimeStr(req.BaseTimeRange.End)))
 	}
 	if req.ComparisonTimeRange != nil {
-		observability.SetRequestAttributes(ctx, attribute.String("args.comparison_time_range.start", safeTimeStr(req.ComparisonTimeRange.Start)))
-		observability.SetRequestAttributes(ctx, attribute.String("args.comparison_time_range.end", safeTimeStr(req.ComparisonTimeRange.End)))
+		observability.AddRequestAttributes(ctx, attribute.String("args.comparison_time_range.start", safeTimeStr(req.ComparisonTimeRange.Start)))
+		observability.AddRequestAttributes(ctx, attribute.String("args.comparison_time_range.end", safeTimeStr(req.ComparisonTimeRange.End)))
 	}
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
@@ -112,7 +112,7 @@ func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev
 
 // MetricsViewTimeSeries implements QueryService.
 func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.MetricsViewTimeSeriesRequest) (*runtimev1.MetricsViewTimeSeriesResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.metric_view", req.MetricsViewName),
 		attribute.StringSlice("args.measures", req.MeasureNames),
@@ -177,7 +177,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 
 // MetricsViewRows implements QueryService.
 func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsViewRowsRequest) (*runtimev1.MetricsViewRowsResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.metric_view", req.MetricsViewName),
 		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),

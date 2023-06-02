@@ -12,7 +12,7 @@ import (
 
 // Metrics/Timeseries APIs
 func (s *Server) ColumnRollupInterval(ctx context.Context, req *runtimev1.ColumnRollupIntervalRequest) (*runtimev1.ColumnRollupIntervalResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
@@ -36,7 +36,7 @@ func (s *Server) ColumnRollupInterval(ctx context.Context, req *runtimev1.Column
 }
 
 func (s *Server) ColumnTimeSeries(ctx context.Context, req *runtimev1.ColumnTimeSeriesRequest) (*runtimev1.ColumnTimeSeriesResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.table", req.TableName),
 		attribute.StringSlice("args.measures.ids", marshalColumnTimeSeriesRequestBasicMeasure(req.Measures)),
@@ -47,9 +47,9 @@ func (s *Server) ColumnTimeSeries(ctx context.Context, req *runtimev1.ColumnTime
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 	if req.TimeRange != nil {
-		observability.SetRequestAttributes(ctx, attribute.String("args.time_range.start", safeTimeStr(req.TimeRange.Start)))
-		observability.SetRequestAttributes(ctx, attribute.String("args.time_range.end", safeTimeStr(req.TimeRange.End)))
-		observability.SetRequestAttributes(ctx, attribute.String("args.time_range.interval", req.TimeRange.Interval.String()))
+		observability.AddRequestAttributes(ctx, attribute.String("args.time_range.start", safeTimeStr(req.TimeRange.Start)))
+		observability.AddRequestAttributes(ctx, attribute.String("args.time_range.end", safeTimeStr(req.TimeRange.End)))
+		observability.AddRequestAttributes(ctx, attribute.String("args.time_range.interval", req.TimeRange.Interval.String()))
 	}
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {

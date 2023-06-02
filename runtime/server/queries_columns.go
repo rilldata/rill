@@ -13,7 +13,7 @@ import (
 )
 
 func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKRequest) (*runtimev1.ColumnTopKResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
@@ -57,7 +57,7 @@ func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKReques
 }
 
 func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullCountRequest) (*runtimev1.ColumnNullCountResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
@@ -84,7 +84,7 @@ func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullC
 }
 
 func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1.ColumnDescriptiveStatisticsRequest) (*runtimev1.ColumnDescriptiveStatisticsResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
@@ -145,7 +145,7 @@ func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1
  */
 
 func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeGrainRequest) (*runtimev1.ColumnTimeGrainResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
@@ -170,7 +170,7 @@ func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeG
 }
 
 func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.ColumnNumericHistogramRequest) (*runtimev1.ColumnNumericHistogramResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
@@ -206,7 +206,7 @@ func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.Colu
 }
 
 func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRugHistogramRequest) (*runtimev1.ColumnRugHistogramResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
@@ -237,7 +237,7 @@ func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRu
 }
 
 func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeRangeRequest) (*runtimev1.ColumnTimeRangeResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
@@ -262,7 +262,7 @@ func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeR
 }
 
 func (s *Server) ColumnCardinality(ctx context.Context, req *runtimev1.ColumnCardinalityRequest) (*runtimev1.ColumnCardinalityResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),

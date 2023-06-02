@@ -36,7 +36,7 @@ func (s *Server) ListExamples(ctx context.Context, req *runtimev1.ListExamplesRe
 }
 
 func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExampleRequest) (*runtimev1.UnpackExampleResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.name", req.Name),
 		attribute.Bool("args.force", req.Force),
@@ -109,7 +109,7 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 }
 
 func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequest) (*runtimev1.UnpackEmptyResponse, error) {
-	observability.SetRequestAttributes(ctx,
+	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.title", req.Title),
 		attribute.Bool("args.force", req.Force),
