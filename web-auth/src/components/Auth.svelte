@@ -110,7 +110,17 @@
             password: password,
           },
           (err) => {
-            if (err) displayError({ message: err?.description });
+            // Auth0 is not consistent with its error message fields
+            const errorText =
+              typeof err?.description === "string"
+                ? err?.description
+                : typeof err?.policy === "string"
+                ? err?.policy
+                : typeof err?.error_description === "string"
+                ? err?.error_description
+                : err?.message;
+
+            if (err) displayError({ message: errorText });
             isEmailDisabled = false;
           }
         );
