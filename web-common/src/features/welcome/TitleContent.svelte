@@ -22,9 +22,8 @@
   </RadixH1>
   <div class="flex flex-col gap-y-2">
     <Subheading twColor="text-slate-600">
-      A Rill project lets you build an <span class="text-base font-semibold"
-        >un-dashboard</span
-      > that people will actually use.
+      You're on your way to building fast, exploratory dashboards your team will
+      actually use.
     </Subheading>
     <Subheading twColor="text-slate-600">Let’s get started.</Subheading>
   </div>
