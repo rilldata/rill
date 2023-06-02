@@ -71,7 +71,8 @@ type Measure struct {
 type Dimension struct {
 	Name        string
 	Label       string
-	Column      string `yaml:"property"`
+	Property    string `yaml:"property,omitempty"`
+	Column      string
 	Description string
 	Ignore      bool `yaml:"ignore,omitempty"`
 }
@@ -316,6 +317,10 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 	for _, dimension := range metrics.Dimensions {
 		if dimension.Ignore {
 			continue
+		}
+		if dimension.Property != "" && dimension.Column == "" {
+			// backwards compatibility when we were using `property` instead of `column`
+			dimension.Column = dimension.Property
 		}
 		dimensions = append(dimensions, dimension)
 	}

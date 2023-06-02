@@ -32,11 +32,11 @@ measures: []
 dimensions:
   - name: dimension
     label: ""
-    property: ""
+    column: ""
     description: ""
 `);
     internalRepresentation.updateDimension(0, "label", "Publisher");
-    internalRepresentation.updateDimension(0, "property", "publisher");
+    internalRepresentation.updateDimension(0, "column", "publisher");
     expect(internalRepresentation.internalYAML)
       .toEqual(`# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
@@ -49,7 +49,7 @@ measures: []
 dimensions:
   - name: dimension
     label: Publisher
-    property: publisher
+    column: publisher
     description: ""
 `);
   });
@@ -272,7 +272,7 @@ dimensions:
 `;
     [
       [
-        "From an old project without dimension name keys",
+        "From an old project without dimension name and column keys",
         `
   - label: Publisher
     property: publisher
@@ -282,40 +282,40 @@ dimensions:
     description: ""`,
         `
   - label: Publisher
-    property: publisher
     description: ""
     name: dimension
+    column: publisher
   - label: Domain
-    property: domain
     description: ""
     name: dimension_1
+    column: domain
   - name: dimension_2
     label: ""
-    property: ""
+    column: ""
     description: ""`,
       ],
       [
-        "From an old project with some dimension name keys",
+        "From an old project with some dimension name and column keys",
         `
   - name: dimension_1
     label: Publisher
     property: publisher
     description: ""
   - label: Domain
-    property: domain
+    column: domain
     description: ""`,
         `
   - name: dimension_1
     label: Publisher
-    property: publisher
     description: ""
+    column: publisher
   - label: Domain
-    property: domain
+    column: domain
     description: ""
     name: dimension
   - name: dimension_2
     label: ""
-    property: ""
+    column: ""
     description: ""`,
       ],
     ].forEach(([title, original, expected]) => {

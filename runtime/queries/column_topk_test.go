@@ -34,11 +34,11 @@ func TestColumnTopK(t *testing.T) {
 	require.Equal(t, 4, len(q.Result.Entries))
 	require.Equal(t, "abc", q.Result.Entries[0].Value.GetStringValue())
 	require.Equal(t, 2, int(q.Result.Entries[0].Count))
-	require.Equal(t, structpb.NewNullValue(), q.Result.Entries[1].Value)
+	require.Equal(t, "12", q.Result.Entries[1].Value.GetStringValue())
 	require.Equal(t, 1, int(q.Result.Entries[1].Count))
-	require.Equal(t, "12", q.Result.Entries[2].Value.GetStringValue())
+	require.Equal(t, "def", q.Result.Entries[2].Value.GetStringValue())
 	require.Equal(t, 1, int(q.Result.Entries[2].Count))
-	require.Equal(t, "def", q.Result.Entries[3].Value.GetStringValue())
+	require.Equal(t, structpb.NewNullValue(), q.Result.Entries[3].Value)
 	require.Equal(t, 1, int(q.Result.Entries[3].Count))
 
 	q = &ColumnTopK{
@@ -55,9 +55,9 @@ func TestColumnTopK(t *testing.T) {
 	require.Equal(t, 5, int(q.Result.Entries[0].Count))
 	require.Equal(t, "abc", q.Result.Entries[1].Value.GetStringValue())
 	require.Equal(t, 4, int(q.Result.Entries[1].Count))
-	require.Equal(t, structpb.NewNullValue(), q.Result.Entries[2].Value)
+	require.Equal(t, "12", q.Result.Entries[2].Value.GetStringValue())
 	require.Equal(t, 1, int(q.Result.Entries[2].Count))
-	require.Equal(t, "12", q.Result.Entries[3].Value.GetStringValue())
+	require.Equal(t, structpb.NewNullValue(), q.Result.Entries[3].Value)
 	require.Equal(t, 1, int(q.Result.Entries[3].Count))
 
 	q = &ColumnTopK{

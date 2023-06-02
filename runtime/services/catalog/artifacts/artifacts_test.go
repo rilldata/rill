@@ -142,11 +142,11 @@ default_time_range: P1D
 dimensions:
     - name: dim0
       label: Dim0_L
-      property: prop0
+      column: prop0
       description: Dim0_D
     - name: dim1
       label: Dim1_L
-      property: prop1
+      column: prop1
       description: Dim1_D
 measures:
     - label: Mea0_L
@@ -345,7 +345,7 @@ smallest_time_grain: day
 default_time_range: P1D
 dimensions:
     - label: Dim0_L
-      property: prop0
+      column: prop0
       description: Dim0_D
     - name: dim1
       label: Dim1_L
@@ -403,6 +403,66 @@ measures:
 					Expression:  "avg(c1)",
 					Description: "Mea1_D",
 					Format:      "humanise",
+				},
+			},
+		},
+	}, readCatalog)
+}
+
+func TestDimensionColumnBackwardsCompatibility(t *testing.T) {
+	dir := t.TempDir()
+	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	require.NoError(t, err)
+	repoStore, _ := fileStore.RepoStore()
+	ctx := context.Background()
+
+	require.NoError(t, repoStore.Put(ctx, "test", "dashboards/MetricsView.yaml", bytes.NewReader([]byte(`display_name: dashboard name
+description: long description for dashboard
+model: Model
+timeseries: time
+smallest_time_grain: day
+default_time_range: P1D
+dimensions:
+    - label: Dim0_L
+      property: prop0
+    - name: dim1
+      property: prop1
+      column: col1
+      label: Dim1_L
+    - label: Dim2
+      column: col2
+measures: []
+`))))
+
+	readCatalog, err := artifacts.Read(ctx, repoStore, registryStore(t), "test", "dashboards/MetricsView.yaml")
+	require.NoError(t, err)
+	require.Equal(t, &drivers.CatalogEntry{
+		Name: "MetricsView",
+		Path: "dashboards/MetricsView.yaml",
+		Type: drivers.ObjectTypeMetricsView,
+		Object: &runtimev1.MetricsView{
+			Name:              "MetricsView",
+			Model:             "Model",
+			TimeDimension:     "time",
+			SmallestTimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+			DefaultTimeRange:  "P1D",
+			Label:             "dashboard name",
+			Description:       "long description for dashboard",
+			Dimensions: []*runtimev1.MetricsView_Dimension{
+				{
+					Name:   "prop0",
+					Column: "prop0",
+					Label:  "Dim0_L",
+				},
+				{
+					Name:   "dim1",
+					Column: "col1",
+					Label:  "Dim1_L",
+				},
+				{
+					Name:   "col2",
+					Column: "col2",
+					Label:  "Dim2",
 				},
 			},
 		},

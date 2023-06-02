@@ -239,7 +239,7 @@ func (a *Authenticator) getAccessToken(w http.ResponseWriter, r *http.Request) {
 	}
 	// TODO handle too many requests
 
-	authToken, err := a.admin.IssueUserAuthToken(r.Context(), *authCode.UserID, authCode.ClientID, "")
+	authToken, err := a.admin.IssueUserAuthToken(r.Context(), *authCode.UserID, authCode.ClientID, "", nil, nil)
 	if err != nil {
 		internalServerError(w, fmt.Errorf("failed to issue access token, %w", err))
 		return

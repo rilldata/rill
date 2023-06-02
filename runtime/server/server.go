@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
@@ -13,6 +14,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
@@ -92,6 +94,7 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
+			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
 			observability.TracingStreamServerInterceptor(),
 			observability.LoggingStreamServerInterceptor(s.logger),
 			errorMappingStreamServerInterceptor(),
@@ -99,6 +102,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			auth.StreamServerInterceptor(s.aud),
 		),
 		grpc.ChainUnaryInterceptor(
+			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
 			observability.TracingUnaryServerInterceptor(),
 			observability.LoggingUnaryServerInterceptor(s.logger),
 			errorMappingUnaryServerInterceptor(),
@@ -215,6 +219,16 @@ func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gate
 		err = &gateway.HTTPStatusError{HTTPStatus: http.StatusBadRequest, Err: err}
 	}
 	gateway.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
+}
+
+func timeoutSelector(service, method string) time.Duration {
+	if service == "rill.runtime.v1.RuntimeService" && (strings.Contains(method, "Trigger") || strings.Contains(method, "Reconcile")) {
+		return time.Minute * 30
+	}
+	if service == "rill.runtime.v1.QueryService" {
+		return time.Minute * 5
+	}
+	return time.Second * 30
 }
 
 // errorMappingUnaryServerInterceptor is an interceptor that applies mapGRPCError.

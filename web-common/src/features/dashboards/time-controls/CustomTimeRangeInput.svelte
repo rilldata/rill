@@ -50,7 +50,7 @@
     if (start > end) {
       return "Start date must be before end date";
     } else if (!isGrainPossible) {
-      return "Range is smaller than min time grain";
+      return "Range is not valid for given min time grain";
     } else {
       return undefined;
     }
@@ -108,7 +108,7 @@
   </div>
   <div class="flex mt-3 items-center">
     {#if error}
-      <div style:font-size="11px" class="text-red-600">
+      <div style:font-size="11px" class="text-red-600 mr-2">
         {error}
       </div>
     {/if}

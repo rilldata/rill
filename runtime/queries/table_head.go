@@ -58,8 +58,9 @@ func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID
 	}
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("SELECT * FROM %s LIMIT %d", safeName(q.TableName), q.Limit),
-		Priority: priority,
+		Query:            fmt.Sprintf("SELECT * FROM %s LIMIT %d", safeName(q.TableName), q.Limit),
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err

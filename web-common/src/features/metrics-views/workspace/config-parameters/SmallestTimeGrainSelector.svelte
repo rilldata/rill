@@ -57,6 +57,7 @@
   let selectableTimeGrains: TimeGrainOption[] = [];
   let maxTimeGrainPossibleIndex = 0;
   $: if (allTimeRange) {
+    // FIXME: we should be deprecating this getTimeGrainOptions in favor of getAllowedTimeGrains.
     selectableTimeGrains = getTimeGrainOptions(
       allTimeRange.start,
       allTimeRange.end

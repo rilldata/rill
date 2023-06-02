@@ -184,6 +184,14 @@ service AdminService {
     };
   }
 
+  // IssueRepresentativeAuthToken returns the temporary token for given email
+  rpc IssueRepresentativeAuthToken(IssueRepresentativeAuthTokenRequest) returns (IssueRepresentativeAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/tokens/represent",
+      body: "*"
+    };
+  }
+
   // RevokeCurrentAuthToken revoke the current auth token
   rpc RevokeCurrentAuthToken(RevokeCurrentAuthTokenRequest) returns (RevokeCurrentAuthTokenResponse) {
     option (google.api.http) = {delete: "/v1/tokens/current"};
@@ -206,6 +214,11 @@ service AdminService {
   // RemoveAutoinviteDomain removes a domain from the autoinvite list
   rpc RemoveAutoinviteDomain(RemoveAutoinviteDomainRequest) returns (RemoveAutoinviteDomainResponse) {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/autoinvite/{domain}"};
+  }
+
+   // GetUsersByEmail returns user by email
+  rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse) {
+    option (google.api.http) = {get: "/v1/users/search"};
   }
 
   // ListSuperusers lists all the superusers
@@ -502,10 +515,31 @@ message GetCurrentUserResponse {
   User user = 1;
 }
 
+// It can be some string as well so not validating for email here
+message SearchUsersRequest {
+  string email_pattern = 1 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 3;
+}
+
+message SearchUsersResponse {
+  repeated User users = 1;
+  string next_page_token = 2;
+}
+
 message RevokeCurrentAuthTokenRequest {}
 
 message RevokeCurrentAuthTokenResponse {
   string token_id = 1;
+}
+
+message IssueRepresentativeAuthTokenRequest {
+  string email = 1 [(validate.rules).string.email = true];
+  int64 ttl_minutes = 2;
+}
+
+message IssueRepresentativeAuthTokenResponse {
+  string token = 1;
 }
 
 message GetGithubRepoStatusRequest {
