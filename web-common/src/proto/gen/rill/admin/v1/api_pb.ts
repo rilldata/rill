@@ -2583,6 +2583,100 @@ export class GetCurrentUserResponse extends Message<GetCurrentUserResponse> {
 }
 
 /**
+ * It can be some string as well so not validating for email here
+ *
+ * @generated from message rill.admin.v1.SearchUsersRequest
+ */
+export class SearchUsersRequest extends Message<SearchUsersRequest> {
+  /**
+   * @generated from field: string email_pattern = 1;
+   */
+  emailPattern = "";
+
+  /**
+   * @generated from field: uint32 page_size = 2;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 3;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<SearchUsersRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SearchUsersRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "email_pattern", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SearchUsersRequest {
+    return new SearchUsersRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SearchUsersRequest {
+    return new SearchUsersRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SearchUsersRequest {
+    return new SearchUsersRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SearchUsersRequest | PlainMessage<SearchUsersRequest> | undefined, b: SearchUsersRequest | PlainMessage<SearchUsersRequest> | undefined): boolean {
+    return proto3.util.equals(SearchUsersRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SearchUsersResponse
+ */
+export class SearchUsersResponse extends Message<SearchUsersResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.User users = 1;
+   */
+  users: User[] = [];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
+  constructor(data?: PartialMessage<SearchUsersResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SearchUsersResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "users", kind: "message", T: User, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SearchUsersResponse {
+    return new SearchUsersResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SearchUsersResponse {
+    return new SearchUsersResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SearchUsersResponse {
+    return new SearchUsersResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SearchUsersResponse | PlainMessage<SearchUsersResponse> | undefined, b: SearchUsersResponse | PlainMessage<SearchUsersResponse> | undefined): boolean {
+    return proto3.util.equals(SearchUsersResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.RevokeCurrentAuthTokenRequest
  */
 export class RevokeCurrentAuthTokenRequest extends Message<RevokeCurrentAuthTokenRequest> {
@@ -2647,6 +2741,86 @@ export class RevokeCurrentAuthTokenResponse extends Message<RevokeCurrentAuthTok
 
   static equals(a: RevokeCurrentAuthTokenResponse | PlainMessage<RevokeCurrentAuthTokenResponse> | undefined, b: RevokeCurrentAuthTokenResponse | PlainMessage<RevokeCurrentAuthTokenResponse> | undefined): boolean {
     return proto3.util.equals(RevokeCurrentAuthTokenResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.IssueRepresentativeAuthTokenRequest
+ */
+export class IssueRepresentativeAuthTokenRequest extends Message<IssueRepresentativeAuthTokenRequest> {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email = "";
+
+  /**
+   * @generated from field: int64 ttl_minutes = 2;
+   */
+  ttlMinutes = protoInt64.zero;
+
+  constructor(data?: PartialMessage<IssueRepresentativeAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.IssueRepresentativeAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "ttl_minutes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueRepresentativeAuthTokenRequest {
+    return new IssueRepresentativeAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): IssueRepresentativeAuthTokenRequest {
+    return new IssueRepresentativeAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): IssueRepresentativeAuthTokenRequest {
+    return new IssueRepresentativeAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: IssueRepresentativeAuthTokenRequest | PlainMessage<IssueRepresentativeAuthTokenRequest> | undefined, b: IssueRepresentativeAuthTokenRequest | PlainMessage<IssueRepresentativeAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(IssueRepresentativeAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.IssueRepresentativeAuthTokenResponse
+ */
+export class IssueRepresentativeAuthTokenResponse extends Message<IssueRepresentativeAuthTokenResponse> {
+  /**
+   * @generated from field: string token = 1;
+   */
+  token = "";
+
+  constructor(data?: PartialMessage<IssueRepresentativeAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.IssueRepresentativeAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueRepresentativeAuthTokenResponse {
+    return new IssueRepresentativeAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): IssueRepresentativeAuthTokenResponse {
+    return new IssueRepresentativeAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): IssueRepresentativeAuthTokenResponse {
+    return new IssueRepresentativeAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: IssueRepresentativeAuthTokenResponse | PlainMessage<IssueRepresentativeAuthTokenResponse> | undefined, b: IssueRepresentativeAuthTokenResponse | PlainMessage<IssueRepresentativeAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(IssueRepresentativeAuthTokenResponse, a, b);
   }
 }
 

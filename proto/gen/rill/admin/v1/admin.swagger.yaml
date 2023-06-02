@@ -898,6 +898,27 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
+  /v1/tokens/represent:
+    post:
+      summary: IssueRepresentativeAuthToken returns the temporary token for given email
+      operationId: AdminService_IssueRepresentativeAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1IssueRepresentativeAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1IssueRepresentativeAuthTokenRequest'
+      tags:
+        - AdminService
   /v1/users/current:
     get:
       summary: GetCurrentUser returns the currently authenticated user (if any)
@@ -911,6 +932,35 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
+  /v1/users/search:
+    get:
+      summary: GetUsersByEmail returns user by email
+      operationId: AdminService_SearchUsers
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SearchUsersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: emailPattern
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
       tags:
         - AdminService
 definitions:
@@ -1040,6 +1090,19 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  v1IssueRepresentativeAuthTokenRequest:
+    type: object
+    properties:
+      email:
+        type: string
+      ttlMinutes:
+        type: string
+        format: int64
+  v1IssueRepresentativeAuthTokenResponse:
+    type: object
+    properties:
+      token:
+        type: string
   v1LeaveOrganizationResponse:
     type: object
   v1ListOrganizationInvitesResponse:
@@ -1242,6 +1305,16 @@ definitions:
     type: object
     properties:
       tokenId:
+        type: string
+  v1SearchUsersResponse:
+    type: object
+    properties:
+      users:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1User'
+      nextPageToken:
         type: string
   v1SetOrganizationMemberRoleResponse:
     type: object

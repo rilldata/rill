@@ -64,7 +64,7 @@ type DB interface {
 	InsertOrganizationAutoinviteDomain(ctx context.Context, opts *InsertOrganizationAutoinviteDomainOptions) (*OrganizationAutoinviteDomain, error)
 	DeleteOrganizationAutoinviteDomain(ctx context.Context, id string) error
 
-	FindProjects(ctx context.Context, orgName string) ([]*Project, error)
+	FindProjects(ctx context.Context, afterName string, limit int) ([]*Project, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
@@ -79,7 +79,7 @@ type DB interface {
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 
-	FindDeployments(ctx context.Context, projectID string) ([]*Deployment, error)
+	FindDeploymentsForProject(ctx context.Context, projectID string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
@@ -90,6 +90,7 @@ type DB interface {
 	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
 
 	FindUsers(ctx context.Context) ([]*User, error)
+	FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*User, error)
 	FindUser(ctx context.Context, id string) (*User, error)
 	FindUserByEmail(ctx context.Context, email string) (*User, error)
 	InsertUser(ctx context.Context, opts *InsertUserOptions) (*User, error)
@@ -107,12 +108,14 @@ type DB interface {
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
 	DeleteUserAuthToken(ctx context.Context, id string) error
+	DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error
 
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
 	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
 	InsertDeviceAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*DeviceAuthCode, error)
 	DeleteDeviceAuthCode(ctx context.Context, deviceCode string) error
 	UpdateDeviceAuthCode(ctx context.Context, id, userID string, state DeviceAuthCodeState) error
+	DeleteExpiredDeviceAuthCodes(ctx context.Context, retention time.Duration) error
 
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
@@ -352,21 +355,25 @@ type InsertUsergroupOptions struct {
 
 // UserAuthToken is a persistent API token for a user.
 type UserAuthToken struct {
-	ID           string
-	SecretHash   []byte    `db:"secret_hash"`
-	UserID       string    `db:"user_id"`
-	DisplayName  string    `db:"display_name"`
-	AuthClientID *string   `db:"auth_client_id"`
-	CreatedOn    time.Time `db:"created_on"`
+	ID                 string
+	SecretHash         []byte     `db:"secret_hash"`
+	UserID             string     `db:"user_id"`
+	DisplayName        string     `db:"display_name"`
+	AuthClientID       *string    `db:"auth_client_id"`
+	RepresentingUserID *string    `db:"representing_user_id"`
+	CreatedOn          time.Time  `db:"created_on"`
+	ExpiresOn          *time.Time `db:"expires_on"`
 }
 
 // InsertUserAuthTokenOptions defines options for creating a UserAuthToken.
 type InsertUserAuthTokenOptions struct {
-	ID           string
-	SecretHash   []byte
-	UserID       string
-	DisplayName  string
-	AuthClientID *string
+	ID                 string
+	SecretHash         []byte
+	UserID             string
+	DisplayName        string
+	AuthClientID       *string
+	RepresentingUserID *string
+	ExpiresOn          *time.Time
 }
 
 // AuthClient is a client that requests and consumes auth tokens.
@@ -379,8 +386,9 @@ type AuthClient struct {
 
 // Hard-coded auth client IDs (created in the migrations).
 const (
-	AuthClientIDRillWeb = "12345678-0000-0000-0000-000000000001"
-	AuthClientIDRillCLI = "12345678-0000-0000-0000-000000000002"
+	AuthClientIDRillWeb     = "12345678-0000-0000-0000-000000000001"
+	AuthClientIDRillCLI     = "12345678-0000-0000-0000-000000000002"
+	AuthClientIDRillSupport = "12345678-0000-0000-0000-000000000003"
 )
 
 // DeviceAuthCodeState is an enum representing the approval state of a DeviceAuthCode

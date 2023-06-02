@@ -2,11 +2,11 @@ package admin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/mail"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
 )
 
@@ -224,7 +224,7 @@ func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string)
 
 	role, err := s.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to find organization admin role"))
+		panic(err)
 	}
 
 	// Add user to created org with org admin role

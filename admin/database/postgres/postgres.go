@@ -48,7 +48,7 @@ func (c *connection) Close() error {
 
 func (c *connection) FindOrganizations(ctx context.Context, afterName string, limit int) ([]*database.Organization, error) {
 	var res []*database.Organization
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs WHERE lower(name) > $1 ORDER BY lower(name) LIMIT $2", afterName, limit)
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs WHERE lower(name) > lower($1) ORDER BY lower(name) LIMIT $2", afterName, limit)
 	if err != nil {
 		return nil, parseErr("orgs", err)
 	}
@@ -68,7 +68,7 @@ func (c *connection) FindOrganizationsForUser(ctx context.Context, userID, after
 		SELECT o.* FROM orgs o JOIN projects p ON o.id = p.org_id
 		JOIN users_projects_roles upr ON p.id = upr.project_id
 		WHERE upr.user_id = $1) u 
-		WHERE lower(u.name) > $2 ORDER BY lower(u.name) LIMIT $3
+		WHERE lower(u.name) > lower($2) ORDER BY lower(u.name) LIMIT $3
 	`, userID, afterName, limit)
 	if err != nil {
 		return nil, parseErr("orgs", err)
@@ -201,9 +201,9 @@ func (c *connection) DeleteOrganizationAutoinviteDomain(ctx context.Context, id 
 	return checkDeleteRow("org autoinvite domain", res, err)
 }
 
-func (c *connection) FindProjects(ctx context.Context, orgName string) ([]*database.Project, error) {
+func (c *connection) FindProjects(ctx context.Context, afterName string, limit int) ([]*database.Project, error) {
 	var res []*database.Project
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p JOIN orgs o ON p.org_id = o.id WHERE lower(o.name)=lower($1) ORDER BY lower(p.name)", orgName)
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE lower(name) > lower($1) ORDER BY lower(p.name) LIMIT $2", afterName, limit)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
@@ -229,8 +229,8 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
 	var res []*database.Project
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT p.* FROM projects p 
-		WHERE p.org_id=$1 AND lower(p.name) > $2 
+		SELECT p.* FROM projects p
+		WHERE p.org_id=$1 AND lower(p.name) > lower($2)
 		ORDER BY lower(p.name) LIMIT $3
 	`, orgID, afterProjectName, limit)
 	if err != nil {
@@ -243,7 +243,7 @@ func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userI
 	var res []*database.Project
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT p.* FROM projects p
-		WHERE p.org_id = $1 AND lower(p.name) > $2 AND (p.public = true OR p.id IN (
+		WHERE p.org_id = $1 AND lower(p.name) > lower($2) AND (p.public = true OR p.id IN (
 			SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $3
 			UNION
 			SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $3
@@ -259,7 +259,7 @@ func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID
 	var res []*database.Project
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT p.* FROM projects p 
-		WHERE p.org_id = $1 AND p.public = true AND lower(p.name) > $2 
+		WHERE p.org_id = $1 AND p.public = true AND lower(p.name) > lower($2)
 		ORDER BY lower(p.name) LIMIT $3
 	`, orgID, afterProjectName, limit)
 	if err != nil {
@@ -352,7 +352,7 @@ func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID str
 	return count, nil
 }
 
-func (c *connection) FindDeployments(ctx context.Context, projectID string) ([]*database.Deployment, error) {
+func (c *connection) FindDeploymentsForProject(ctx context.Context, projectID string) ([]*database.Deployment, error) {
 	var res []*database.Deployment
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM deployments d WHERE d.project_id=$1", projectID)
 	if err != nil {
@@ -456,6 +456,17 @@ func (c *connection) FindUserByEmail(ctx context.Context, email string) (*databa
 	return res, nil
 }
 
+func (c *connection) FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*database.User, error) {
+	var res []*database.User
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u 
+	WHERE lower(u.email) LIKE lower($1) AND lower(u.email) > lower($2) 
+	ORDER BY lower(u.email) LIMIT $3`, emailPattern, afterEmail, limit)
+	if err != nil {
+		return nil, parseErr("users", err)
+	}
+	return res, nil
+}
+
 func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOptions) (*database.User, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
@@ -553,9 +564,9 @@ func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.Ins
 
 	res := &database.UserAuthToken{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id)
-		VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID,
+		INSERT INTO user_auth_tokens (id, secret_hash, user_id, display_name, auth_client_id, representing_user_id, expires_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.UserID, opts.DisplayName, opts.AuthClientID, opts.RepresentingUserID, opts.ExpiresOn,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("auth token", err)
@@ -566,6 +577,11 @@ func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.Ins
 func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE id=$1", id)
 	return checkDeleteRow("auth token", res, err)
+}
+
+func (c *connection) DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
+	return parseErr("auth token", err)
 }
 
 func (c *connection) FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.DeviceAuthCode, error) {
@@ -605,6 +621,11 @@ func (c *connection) DeleteDeviceAuthCode(ctx context.Context, deviceCode string
 func (c *connection) UpdateDeviceAuthCode(ctx context.Context, id, userID string, approvalState database.DeviceAuthCodeState) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "UPDATE device_auth_codes SET approval_state=$1, user_id=$2, updated_on=now() WHERE id=$3", approvalState, userID, id)
 	return checkUpdateRow("device auth code", res, err)
+}
+
+func (c *connection) DeleteExpiredDeviceAuthCodes(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM device_auth_codes WHERE expires_on + $1 < now()", retention)
+	return parseErr("device auth code", err)
 }
 
 func (c *connection) FindOrganizationRole(ctx context.Context, name string) (*database.OrganizationRole, error) {
@@ -665,7 +686,7 @@ func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, aft
 		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u 
     	JOIN users_orgs_roles uor ON u.id = uor.user_id
 		JOIN org_roles r ON r.id = uor.org_role_id 
-		WHERE uor.org_id=$1 AND lower(u.email) > $2 
+		WHERE uor.org_id=$1 AND lower(u.email) > lower($2) 
 		ORDER BY lower(u.email) LIMIT $3
 	`, orgID, afterEmail, limit)
 	if err != nil {
@@ -730,7 +751,7 @@ func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, afte
 		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u 
     	JOIN users_projects_roles upr ON u.id = upr.user_id
 		JOIN project_roles r ON r.id = upr.project_role_id 
-		WHERE upr.project_id=$1 AND lower(u.email) > $2 
+		WHERE upr.project_id=$1 AND lower(u.email) > lower($2) 
 		ORDER BY lower(u.email) LIMIT $3
 	`, projectID, afterEmail, limit)
 	if err != nil {
@@ -799,7 +820,7 @@ func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEm
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT uoi.email, ur.name as role, u.email as invited_by 
 		FROM org_invites uoi JOIN org_roles ur ON uoi.org_role_id = ur.id JOIN users u ON uoi.invited_by_user_id = u.id 
-		WHERE uoi.org_id = $1 AND lower(uoi.email) > $2 
+		WHERE uoi.org_id = $1 AND lower(uoi.email) > lower($2) 
 		ORDER BY lower(uoi.email) LIMIT $3
 	`, orgID, afterEmail, limit)
 	if err != nil {
@@ -869,7 +890,7 @@ func (c *connection) FindProjectInvites(ctx context.Context, projectID, afterEma
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 			SELECT upi.email, ur.name as role, u.email as invited_by 
 			FROM project_invites upi JOIN project_roles ur ON upi.project_role_id = ur.id JOIN users u ON upi.invited_by_user_id = u.id 
-			WHERE upi.project_id = $1 AND lower(upi.email) > $2 
+			WHERE upi.project_id = $1 AND lower(upi.email) > lower($2)
 			ORDER BY lower(upi.email) LIMIT $3
 	`, projectID, afterEmail, limit)
 	if err != nil {
