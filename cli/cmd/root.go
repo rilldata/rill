@@ -79,11 +79,11 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		fmt.Printf("Warning: version check failed: %v\n", err)
 	}
 
+	// Print warning if currently acting as an assumed user
 	representingUser, err := dotrill.GetRepresentingUser()
 	if err != nil {
 		fmt.Printf("could not parse representing user email")
 	}
-
 	if representingUser != "" {
 		cmdutil.WarnPrinter(fmt.Sprintf("Warning: Running action as %q\n", representingUser))
 	}

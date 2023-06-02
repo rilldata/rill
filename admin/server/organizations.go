@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
+	"errors"
 
-	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -389,7 +389,7 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to find organization admin role"))
+		panic(err)
 	}
 
 	// check if the user is the last owner
@@ -480,7 +480,7 @@ func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.Set
 	if role.Name != database.OrganizationRoleNameAdmin {
 		adminRole, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 		if err != nil {
-			panic(errors.Wrap(err, "failed to find organization admin role"))
+			panic(err)
 		}
 		// TODO optimize this, may be extract roles during auth token validation
 		//  and store as part of the claims and fetch admins only if the user is an admin
@@ -523,7 +523,7 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to find organization admin role"))
+		panic(err)
 	}
 
 	// check if the user is the last owner

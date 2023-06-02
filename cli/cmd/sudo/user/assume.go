@@ -1,6 +1,7 @@
 package user
 
 import (
+	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
@@ -55,6 +56,13 @@ func AssumeCmd(cfg *config.Config) *cobra.Command {
 
 			// set the default token to the one we just got
 			cfg.AdminTokenDefault = res.Token
+
+			// Select org for new user
+			err = auth.SelectOrgFlow(ctx, cfg)
+			if err != nil {
+				return err
+			}
+
 			return nil
 		},
 	}
