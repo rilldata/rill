@@ -42,9 +42,13 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import AddAssetButton from "../entity-management/AddAssetButton.svelte";
   import RenameAssetModal from "../entity-management/RenameAssetModal.svelte";
+  import { useModelNames } from "../models/selectors";
+  import { useSourceNames } from "../sources/selectors";
 
   $: instanceId = $runtime.instanceId;
 
+  $: sourceNames = useSourceNames(instanceId);
+  $: modelNames = useModelNames(instanceId);
   $: dashboardNames = useDashboardNames(instanceId);
 
   const queryClient = useQueryClient();
@@ -182,6 +186,11 @@
   };
 
   $: canAddDashboard = $featureFlags.readOnly === false;
+
+  $: hasSourceAndModelButNoDashboards =
+    $sourceNames?.data?.length > 0 &&
+    $modelNames?.data?.length > 0 &&
+    $dashboardNames?.data?.length === 0;
 </script>
 
 <NavigationHeader bind:show={showMetricsDefs} toggleText="dashboards"
@@ -254,6 +263,7 @@
       <AddAssetButton
         id="add-dashboard"
         label="Add dashboard"
+        bold={hasSourceAndModelButNoDashboards}
         on:click={() => dispatchAddEmptyMetricsDef()}
       />
     {/if}
