@@ -61,7 +61,6 @@ func (c Connector) ListBuckets(ctx context.Context, env *connectors.Env) ([]stri
 }
 
 func (c Connector) ListObjects(ctx context.Context, req *runtimev1.S3ListObjectsRequest, env *connectors.Env) ([]*runtimev1.S3Object, string, error) {
-	// todo :: check for cases when accessing public buckets but env configured
 	creds, err := getCredentials(env)
 	if err != nil {
 		return nil, "", err
