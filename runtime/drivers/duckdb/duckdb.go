@@ -103,6 +103,24 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 	return c, nil
 }
 
+func (d Driver) Drop(dsn string, logger *zap.Logger) error {
+	cfg, err := newConfig(dsn)
+	if err != nil {
+		return err
+	}
+
+	if cfg.DBFilePath != "" {
+		err = os.Remove(cfg.DBFilePath)
+		if err != nil {
+			return err
+		}
+		// Hacky approach to remove the wal file
+		_ = os.Remove(cfg.DBFilePath + ".wal")
+	}
+
+	return nil
+}
+
 type connection struct {
 	db     *sqlx.DB
 	logger *zap.Logger

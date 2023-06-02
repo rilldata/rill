@@ -8,8 +8,11 @@ import (
 	"runtime"
 	"time"
 
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
@@ -94,6 +97,9 @@ func LoggingUnaryServerInterceptor(logger *zap.Logger) grpc.UnaryServerIntercept
 			logger.Log(lvl, "grpc finished call", fields...)
 		}()
 
+		// Add log fields to context
+		ctx = contextWithLogFields(ctx, &fields)
+
 		logger.Log(lvl, "grpc started call", fields...)
 		return handler(ctx, req)
 	}
@@ -145,8 +151,12 @@ func LoggingStreamServerInterceptor(logger *zap.Logger) grpc.StreamServerInterce
 			logger.Log(lvl, "grpc finished call")
 		}()
 
+		// Add log fields to context
+		wss := grpc_middleware.WrapServerStream(ss)
+		wss.WrappedContext = contextWithLogFields(ss.Context(), &fields)
+
 		logger.Info("grpc started call", fields...)
-		return handler(srv, ss)
+		return handler(srv, wss)
 	}
 }
 
@@ -238,6 +248,9 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 			logger.Info("http request finished", fields...)
 		}()
 
+		// Add log fields to context
+		r = r.WithContext(contextWithLogFields(r.Context(), &fields))
+
 		// Print start message
 		logger.Info("http request started", fields...)
 
@@ -279,4 +292,34 @@ func (rw *wrappedResponseWriter) WriteHeader(code int) {
 	rw.status = code
 	rw.ResponseWriter.WriteHeader(code)
 	rw.wroteHeader = true
+}
+
+// logFieldsContextKey is used to set and get request log fields in the context.
+type logFieldsContextKey struct{}
+
+func contextWithLogFields(ctx context.Context, fields *[]zap.Field) context.Context {
+	return context.WithValue(ctx, logFieldsContextKey{}, fields)
+}
+
+func logFieldsFromContext(ctx context.Context) *[]zap.Field {
+	v, ok := ctx.Value(logFieldsContextKey{}).(*[]zap.Field)
+	if !ok {
+		return nil
+	}
+	return v
+}
+
+// SetRequestAttributes sets attributes on both the current trace span and the finish log of the current request.
+func SetRequestAttributes(ctx context.Context, attrs ...attribute.KeyValue) {
+	// Set attributes on the span
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attrs...)
+
+	// Add attributes in request log fields
+	fields := logFieldsFromContext(ctx)
+	if fields != nil {
+		for _, attr := range attrs {
+			*fields = append(*fields, zap.Any(string(attr.Key), attr.Value.AsInterface()))
+		}
+	}
 }
