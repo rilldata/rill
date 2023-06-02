@@ -44,6 +44,9 @@
       <slot name="leaderboards" />
     </div>
   </div>
+  <div>
+    <slot name="rows" />
+  </div>
 </section>
 
 <style>
