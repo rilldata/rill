@@ -55,7 +55,7 @@ func marshalMetricsViewSort(ms []*runtimev1.MetricsViewSort) []string {
 	return nil
 }
 
-func marshalColumnTimeSeriesRequest_BasicMeasure(m []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) []string {
+func marshalColumnTimeSeriesRequestBasicMeasure(m []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) []string {
 	if len(m) == 0 {
 		return make([]string, 0)
 	}

@@ -39,7 +39,7 @@ func (s *Server) ColumnTimeSeries(ctx context.Context, req *runtimev1.ColumnTime
 	observability.SetRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.table", req.TableName),
-		attribute.StringSlice("args.measures.ids", marshalColumnTimeSeriesRequest_BasicMeasure(req.Measures)),
+		attribute.StringSlice("args.measures.ids", marshalColumnTimeSeriesRequestBasicMeasure(req.Measures)),
 		attribute.String("args.timestamp_column", req.TimestampColumnName),
 		attribute.Int("args.filter_count", filterCount(req.Filters)),
 		attribute.Int("args.pixels", int(req.Pixels)),
