@@ -3,5 +3,5 @@ import { HstSvelte } from "@histoire/plugin-svelte";
 
 export default defineConfig({
   plugins: [HstSvelte()],
-  setupFile: "histoire.setup.ts",
+  setupFile: "./histoire.setup.ts",
 });

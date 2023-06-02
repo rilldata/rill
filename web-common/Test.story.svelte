@@ -7,6 +7,6 @@
   <Hst.Variant>🐱</Hst.Variant>
 
   <Hst.Variant>
-    {foo}
+    <div class="bg-purple-400">{foo}</div>
   </Hst.Variant>
 </Hst.Story>
