@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/queries/downloads"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -16,15 +15,7 @@ func (s *Server) Download(ctx context.Context, req *runtimev1.DownloadLinkReques
 		return nil, err
 	}
 
-	out := fmt.Sprintf("/v1/downloads?%s=%s", downloads.Request, base64.StdEncoding.EncodeToString(r))
-
-	if req.Limit > 0 {
-		out += fmt.Sprintf("&%s=%d", downloads.Limit, req.Limit)
-	}
-
-	if req.Format != runtimev1.DownloadFormat_DOWNLOAD_FORMAT_UNSPECIFIED {
-		out += fmt.Sprintf("&%s=%s", downloads.Format, req.Format)
-	}
+	out := fmt.Sprintf("/v1/downloads?%s=%s", "request", base64.StdEncoding.EncodeToString(r))
 
 	return &runtimev1.DownloadLinkResponse{
 		DownloadUrlPath: out,
