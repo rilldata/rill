@@ -25,8 +25,9 @@
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import {
     compileCreateSourceYAML,
-    sourceErrorTelemetryHandler,
-    sourceSuccessTelemetryHandler,
+    getSourceError,
+    emitSourceErrorTelemetry,
+    emitSourceSuccessTelemetry,
   } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { hasDuckDBUnicodeError, niceDuckdbUnicodeError } from "./errors";
@@ -115,16 +116,17 @@
         handleDeleteSource(tableName);
       }
 
-      if ($createSourceMutation.isError || errors.length) {
-        sourceErrorTelemetryHandler(
+      const sourceError = getSourceError(errors, tableName);
+      if ($createSourceMutation.isError || sourceError) {
+        emitSourceErrorTelemetry(
           MetricsEventSpace.Modal,
           $appScreen,
-          createSourceMutationError?.message ?? errors[0]?.message,
+          createSourceMutationError?.message ?? sourceError?.message,
           SourceConnectionType.Local,
           filePath
         );
       } else {
-        sourceSuccessTelemetryHandler(
+        emitSourceSuccessTelemetry(
           MetricsEventSpace.Modal,
           $appScreen,
           BehaviourEventMedium.Button,

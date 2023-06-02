@@ -12,8 +12,9 @@
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import {
     compileCreateSourceYAML,
-    sourceErrorTelemetryHandler,
-    sourceSuccessTelemetryHandler,
+    getSourceError,
+    emitSourceErrorTelemetry,
+    emitSourceSuccessTelemetry,
   } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { uploadTableFiles } from "./file-upload";
@@ -72,16 +73,17 @@
           $createSourceMutation
         );
 
-        if (createSourceMutationError.isError || errors.length) {
-          sourceErrorTelemetryHandler(
+        const sourceError = getSourceError(errors, tableName);
+        if (createSourceMutationError.isError || sourceError) {
+          emitSourceErrorTelemetry(
             MetricsEventSpace.Workspace,
             $appScreen,
-            createSourceMutationError?.message ?? errors[0]?.message,
+            createSourceMutationError?.message ?? sourceError?.message,
             SourceConnectionType.Local,
             filePath
           );
         } else {
-          sourceSuccessTelemetryHandler(
+          emitSourceSuccessTelemetry(
             MetricsEventSpace.Workspace,
             $appScreen,
             BehaviourEventMedium.Drag,

@@ -28,9 +28,10 @@
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import {
     compileCreateSourceYAML,
+    getSourceError,
     inferSourceName,
-    sourceErrorTelemetryHandler,
-    sourceSuccessTelemetryHandler,
+    emitSourceErrorTelemetry,
+    emitSourceSuccessTelemetry,
   } from "../sourceUtils";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { createSource } from "./createSource";
@@ -127,6 +128,7 @@
             yaml,
             $createSourceMutation
           );
+
           error = errors[0];
           if (!error) {
             dispatch("close");
@@ -142,16 +144,18 @@
               false
             );
           }
-          if ($createSourceMutation.isError || error) {
-            sourceErrorTelemetryHandler(
+
+          const sourceError = getSourceError(errors, values.sourceName);
+          if ($createSourceMutation.isError || sourceError) {
+            emitSourceErrorTelemetry(
               MetricsEventSpace.Modal,
               $appScreen,
-              createSourceMutationError?.message ?? error?.message,
+              createSourceMutationError?.message ?? sourceError?.message,
               connectorToSourceConnectionType[connector.name],
               formValues?.uri
             );
           } else {
-            sourceSuccessTelemetryHandler(
+            emitSourceSuccessTelemetry(
               MetricsEventSpace.Modal,
               $appScreen,
               BehaviourEventMedium.Button,

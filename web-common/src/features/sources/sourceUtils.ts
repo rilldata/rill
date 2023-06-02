@@ -1,4 +1,7 @@
-import type { V1Connector } from "@rilldata/web-common/runtime-client";
+import type {
+  V1Connector,
+  V1ReconcileError,
+} from "@rilldata/web-common/runtime-client";
 import { sanitizeEntityName } from "./extract-table-name";
 import type { SourceConnectionType } from "../../metrics/service/SourceEventTypes";
 import { behaviourEvent, errorEvent } from "../../metrics/initMetrics";
@@ -8,6 +11,8 @@ import type {
   MetricsEventSpace,
 } from "../../metrics/service/MetricsTypes";
 import type { BehaviourEventMedium } from "../../metrics/service/BehaviourEventTypes";
+import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
+import { EntityType } from "../entity-management/types";
 
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,
@@ -66,9 +71,13 @@ export function getFileTypeFromPath(fileName) {
   return fileType;
 }
 
-// function
+export function getSourceError(errors: V1ReconcileError[], sourceName) {
+  const path = getFilePathFromNameAndType(sourceName, EntityType.Table);
 
-export function sourceErrorTelemetryHandler(
+  return errors?.find((error) => error?.filePath === path);
+}
+
+export function emitSourceErrorTelemetry(
   space: MetricsEventSpace,
   screenName: MetricsEventScreenName,
   errorMessage: string,
@@ -89,7 +98,7 @@ export function sourceErrorTelemetryHandler(
   );
 }
 
-export function sourceSuccessTelemetryHandler(
+export function emitSourceSuccessTelemetry(
   space: MetricsEventSpace,
   screenName: MetricsEventScreenName,
   medium: BehaviourEventMedium,
