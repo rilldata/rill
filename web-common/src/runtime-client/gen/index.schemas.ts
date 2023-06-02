@@ -416,7 +416,7 @@ export interface V1S3ListBucketsResponse {
   buckets?: string[];
 }
 
-export interface V1S3GetCredentialInfoResponse {
+export interface V1S3GetCredentialsInfoResponse {
   exist?: boolean;
   provider?: string;
 }
@@ -801,7 +801,7 @@ export interface V1GCSListBucketsResponse {
   buckets?: string[];
 }
 
-export interface V1GCSGetCredentialInfoResponse {
+export interface V1GCSGetCredentialsInfoResponse {
   exist?: boolean;
   projectId?: string;
 }

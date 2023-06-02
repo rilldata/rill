@@ -106,7 +106,7 @@ func (c Connector) ListObjects(ctx context.Context, req *runtimev1.GCSListObject
 	return gcsObjects, string(nextToken), nil
 }
 
-func (c Connector) GetCredentialInfo(ctx context.Context, env *connectors.Env) (string, bool, error) {
+func (c Connector) GetCredentialsInfo(ctx context.Context, env *connectors.Env) (string, bool, error) {
 	creds, err := resolvedCredentials(ctx, env)
 	if err != nil {
 		if errors.Is(err, errNoCredentials) {

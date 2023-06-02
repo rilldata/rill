@@ -134,15 +134,15 @@ paths:
           type: string
       tags:
         - ConnectorService
-  /v1/gcs/credential_info:
+  /v1/gcs/credentials_info:
     get:
-      summary: GCSGetCredentialInfo returns metadata for the given bucket.
-      operationId: ConnectorService_GCSGetCredentialInfo
+      summary: GCSGetCredentialsInfo returns metadata for the given bucket.
+      operationId: ConnectorService_GCSGetCredentialsInfo
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1GCSGetCredentialInfoResponse'
+            $ref: '#/definitions/v1GCSGetCredentialsInfoResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1619,15 +1619,15 @@ paths:
           type: string
       tags:
         - ConnectorService
-  /v1/s3/credential_info:
+  /v1/s3/credentials_info:
     get:
-      summary: S3GetCredentialInfo returns metadata for the given bucket.
-      operationId: ConnectorService_S3GetCredentialInfo
+      summary: S3GetCredentialsInfo returns metadata for the given bucket.
+      operationId: ConnectorService_S3GetCredentialsInfo
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1S3GetCredentialInfoResponse'
+            $ref: '#/definitions/v1S3GetCredentialsInfoResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -2092,7 +2092,7 @@ definitions:
         type: string
       description:
         type: string
-  v1GCSGetCredentialInfoResponse:
+  v1GCSGetCredentialsInfoResponse:
     type: object
     properties:
       exist:
@@ -2759,7 +2759,7 @@ definitions:
     properties:
       region:
         type: string
-  v1S3GetCredentialInfoResponse:
+  v1S3GetCredentialsInfoResponse:
     type: object
     properties:
       exist:

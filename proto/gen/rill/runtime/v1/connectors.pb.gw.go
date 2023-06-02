@@ -189,20 +189,20 @@ func local_request_ConnectorService_S3GetBucketMetadata_0(ctx context.Context, m
 
 }
 
-func request_ConnectorService_S3GetCredentialInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ConnectorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq S3GetCredentialInfoRequest
+func request_ConnectorService_S3GetCredentialsInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ConnectorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq S3GetCredentialsInfoRequest
 	var metadata runtime.ServerMetadata
 
-	msg, err := client.S3GetCredentialInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.S3GetCredentialsInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_ConnectorService_S3GetCredentialInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ConnectorServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq S3GetCredentialInfoRequest
+func local_request_ConnectorService_S3GetCredentialsInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ConnectorServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq S3GetCredentialsInfoRequest
 	var metadata runtime.ServerMetadata
 
-	msg, err := server.S3GetCredentialInfo(ctx, &protoReq)
+	msg, err := server.S3GetCredentialsInfo(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -313,20 +313,20 @@ func local_request_ConnectorService_GCSListObjects_0(ctx context.Context, marsha
 
 }
 
-func request_ConnectorService_GCSGetCredentialInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ConnectorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GCSGetCredentialInfoRequest
+func request_ConnectorService_GCSGetCredentialsInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ConnectorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GCSGetCredentialsInfoRequest
 	var metadata runtime.ServerMetadata
 
-	msg, err := client.GCSGetCredentialInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.GCSGetCredentialsInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_ConnectorService_GCSGetCredentialInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ConnectorServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GCSGetCredentialInfoRequest
+func local_request_ConnectorService_GCSGetCredentialsInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ConnectorServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GCSGetCredentialsInfoRequest
 	var metadata runtime.ServerMetadata
 
-	msg, err := server.GCSGetCredentialInfo(ctx, &protoReq)
+	msg, err := server.GCSGetCredentialsInfo(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -412,7 +412,7 @@ func RegisterConnectorServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 
 	})
 
-	mux.Handle("GET", pattern_ConnectorService_S3GetCredentialInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_ConnectorService_S3GetCredentialsInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -420,12 +420,12 @@ func RegisterConnectorServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/S3GetCredentialInfo", runtime.WithHTTPPathPattern("/v1/s3/credential_info"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/S3GetCredentialsInfo", runtime.WithHTTPPathPattern("/v1/s3/credentials_info"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ConnectorService_S3GetCredentialInfo_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ConnectorService_S3GetCredentialsInfo_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -433,7 +433,7 @@ func RegisterConnectorServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 			return
 		}
 
-		forward_ConnectorService_S3GetCredentialInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ConnectorService_S3GetCredentialsInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -487,7 +487,7 @@ func RegisterConnectorServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 
 	})
 
-	mux.Handle("GET", pattern_ConnectorService_GCSGetCredentialInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_ConnectorService_GCSGetCredentialsInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -495,12 +495,12 @@ func RegisterConnectorServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/GCSGetCredentialInfo", runtime.WithHTTPPathPattern("/v1/gcs/credential_info"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/GCSGetCredentialsInfo", runtime.WithHTTPPathPattern("/v1/gcs/credentials_info"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ConnectorService_GCSGetCredentialInfo_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ConnectorService_GCSGetCredentialsInfo_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -508,7 +508,7 @@ func RegisterConnectorServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 			return
 		}
 
-		forward_ConnectorService_GCSGetCredentialInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ConnectorService_GCSGetCredentialsInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -619,25 +619,25 @@ func RegisterConnectorServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 
 	})
 
-	mux.Handle("GET", pattern_ConnectorService_S3GetCredentialInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_ConnectorService_S3GetCredentialsInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/S3GetCredentialInfo", runtime.WithHTTPPathPattern("/v1/s3/credential_info"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/S3GetCredentialsInfo", runtime.WithHTTPPathPattern("/v1/s3/credentials_info"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ConnectorService_S3GetCredentialInfo_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ConnectorService_S3GetCredentialsInfo_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_ConnectorService_S3GetCredentialInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ConnectorService_S3GetCredentialsInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -685,25 +685,25 @@ func RegisterConnectorServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 
 	})
 
-	mux.Handle("GET", pattern_ConnectorService_GCSGetCredentialInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_ConnectorService_GCSGetCredentialsInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/GCSGetCredentialInfo", runtime.WithHTTPPathPattern("/v1/gcs/credential_info"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/GCSGetCredentialsInfo", runtime.WithHTTPPathPattern("/v1/gcs/credentials_info"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ConnectorService_GCSGetCredentialInfo_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ConnectorService_GCSGetCredentialsInfo_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_ConnectorService_GCSGetCredentialInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ConnectorService_GCSGetCredentialsInfo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -717,13 +717,13 @@ var (
 
 	pattern_ConnectorService_S3GetBucketMetadata_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "s3", "bucket", "metadata"}, ""))
 
-	pattern_ConnectorService_S3GetCredentialInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "s3", "credential_info"}, ""))
+	pattern_ConnectorService_S3GetCredentialsInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "s3", "credentials_info"}, ""))
 
 	pattern_ConnectorService_GCSListBuckets_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "gcs", "buckets"}, ""))
 
 	pattern_ConnectorService_GCSListObjects_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "gcs", "bucket", "objects"}, ""))
 
-	pattern_ConnectorService_GCSGetCredentialInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "gcs", "credential_info"}, ""))
+	pattern_ConnectorService_GCSGetCredentialsInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "gcs", "credentials_info"}, ""))
 )
 
 var (
@@ -733,11 +733,11 @@ var (
 
 	forward_ConnectorService_S3GetBucketMetadata_0 = runtime.ForwardResponseMessage
 
-	forward_ConnectorService_S3GetCredentialInfo_0 = runtime.ForwardResponseMessage
+	forward_ConnectorService_S3GetCredentialsInfo_0 = runtime.ForwardResponseMessage
 
 	forward_ConnectorService_GCSListBuckets_0 = runtime.ForwardResponseMessage
 
 	forward_ConnectorService_GCSListObjects_0 = runtime.ForwardResponseMessage
 
-	forward_ConnectorService_GCSGetCredentialInfo_0 = runtime.ForwardResponseMessage
+	forward_ConnectorService_GCSGetCredentialsInfo_0 = runtime.ForwardResponseMessage
 )

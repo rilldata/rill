@@ -338,40 +338,40 @@ export class S3GetBucketMetadataResponse extends Message<S3GetBucketMetadataResp
 }
 
 /**
- * @generated from message rill.runtime.v1.S3GetCredentialInfoRequest
+ * @generated from message rill.runtime.v1.S3GetCredentialsInfoRequest
  */
-export class S3GetCredentialInfoRequest extends Message<S3GetCredentialInfoRequest> {
-  constructor(data?: PartialMessage<S3GetCredentialInfoRequest>) {
+export class S3GetCredentialsInfoRequest extends Message<S3GetCredentialsInfoRequest> {
+  constructor(data?: PartialMessage<S3GetCredentialsInfoRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.S3GetCredentialInfoRequest";
+  static readonly typeName = "rill.runtime.v1.S3GetCredentialsInfoRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): S3GetCredentialInfoRequest {
-    return new S3GetCredentialInfoRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): S3GetCredentialsInfoRequest {
+    return new S3GetCredentialsInfoRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): S3GetCredentialInfoRequest {
-    return new S3GetCredentialInfoRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): S3GetCredentialsInfoRequest {
+    return new S3GetCredentialsInfoRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): S3GetCredentialInfoRequest {
-    return new S3GetCredentialInfoRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): S3GetCredentialsInfoRequest {
+    return new S3GetCredentialsInfoRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: S3GetCredentialInfoRequest | PlainMessage<S3GetCredentialInfoRequest> | undefined, b: S3GetCredentialInfoRequest | PlainMessage<S3GetCredentialInfoRequest> | undefined): boolean {
-    return proto3.util.equals(S3GetCredentialInfoRequest, a, b);
+  static equals(a: S3GetCredentialsInfoRequest | PlainMessage<S3GetCredentialsInfoRequest> | undefined, b: S3GetCredentialsInfoRequest | PlainMessage<S3GetCredentialsInfoRequest> | undefined): boolean {
+    return proto3.util.equals(S3GetCredentialsInfoRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.runtime.v1.S3GetCredentialInfoResponse
+ * @generated from message rill.runtime.v1.S3GetCredentialsInfoResponse
  */
-export class S3GetCredentialInfoResponse extends Message<S3GetCredentialInfoResponse> {
+export class S3GetCredentialsInfoResponse extends Message<S3GetCredentialsInfoResponse> {
   /**
    * @generated from field: bool exist = 1;
    */
@@ -382,32 +382,32 @@ export class S3GetCredentialInfoResponse extends Message<S3GetCredentialInfoResp
    */
   provider = "";
 
-  constructor(data?: PartialMessage<S3GetCredentialInfoResponse>) {
+  constructor(data?: PartialMessage<S3GetCredentialsInfoResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.S3GetCredentialInfoResponse";
+  static readonly typeName = "rill.runtime.v1.S3GetCredentialsInfoResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "exist", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "provider", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): S3GetCredentialInfoResponse {
-    return new S3GetCredentialInfoResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): S3GetCredentialsInfoResponse {
+    return new S3GetCredentialsInfoResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): S3GetCredentialInfoResponse {
-    return new S3GetCredentialInfoResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): S3GetCredentialsInfoResponse {
+    return new S3GetCredentialsInfoResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): S3GetCredentialInfoResponse {
-    return new S3GetCredentialInfoResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): S3GetCredentialsInfoResponse {
+    return new S3GetCredentialsInfoResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: S3GetCredentialInfoResponse | PlainMessage<S3GetCredentialInfoResponse> | undefined, b: S3GetCredentialInfoResponse | PlainMessage<S3GetCredentialInfoResponse> | undefined): boolean {
-    return proto3.util.equals(S3GetCredentialInfoResponse, a, b);
+  static equals(a: S3GetCredentialsInfoResponse | PlainMessage<S3GetCredentialsInfoResponse> | undefined, b: S3GetCredentialsInfoResponse | PlainMessage<S3GetCredentialsInfoResponse> | undefined): boolean {
+    return proto3.util.equals(S3GetCredentialsInfoResponse, a, b);
   }
 }
 
@@ -669,40 +669,40 @@ export class GCSListObjectsResponse extends Message<GCSListObjectsResponse> {
 }
 
 /**
- * @generated from message rill.runtime.v1.GCSGetCredentialInfoRequest
+ * @generated from message rill.runtime.v1.GCSGetCredentialsInfoRequest
  */
-export class GCSGetCredentialInfoRequest extends Message<GCSGetCredentialInfoRequest> {
-  constructor(data?: PartialMessage<GCSGetCredentialInfoRequest>) {
+export class GCSGetCredentialsInfoRequest extends Message<GCSGetCredentialsInfoRequest> {
+  constructor(data?: PartialMessage<GCSGetCredentialsInfoRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.GCSGetCredentialInfoRequest";
+  static readonly typeName = "rill.runtime.v1.GCSGetCredentialsInfoRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GCSGetCredentialInfoRequest {
-    return new GCSGetCredentialInfoRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GCSGetCredentialsInfoRequest {
+    return new GCSGetCredentialsInfoRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GCSGetCredentialInfoRequest {
-    return new GCSGetCredentialInfoRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GCSGetCredentialsInfoRequest {
+    return new GCSGetCredentialsInfoRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GCSGetCredentialInfoRequest {
-    return new GCSGetCredentialInfoRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GCSGetCredentialsInfoRequest {
+    return new GCSGetCredentialsInfoRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GCSGetCredentialInfoRequest | PlainMessage<GCSGetCredentialInfoRequest> | undefined, b: GCSGetCredentialInfoRequest | PlainMessage<GCSGetCredentialInfoRequest> | undefined): boolean {
-    return proto3.util.equals(GCSGetCredentialInfoRequest, a, b);
+  static equals(a: GCSGetCredentialsInfoRequest | PlainMessage<GCSGetCredentialsInfoRequest> | undefined, b: GCSGetCredentialsInfoRequest | PlainMessage<GCSGetCredentialsInfoRequest> | undefined): boolean {
+    return proto3.util.equals(GCSGetCredentialsInfoRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.runtime.v1.GCSGetCredentialInfoResponse
+ * @generated from message rill.runtime.v1.GCSGetCredentialsInfoResponse
  */
-export class GCSGetCredentialInfoResponse extends Message<GCSGetCredentialInfoResponse> {
+export class GCSGetCredentialsInfoResponse extends Message<GCSGetCredentialsInfoResponse> {
   /**
    * @generated from field: bool exist = 1;
    */
@@ -713,32 +713,32 @@ export class GCSGetCredentialInfoResponse extends Message<GCSGetCredentialInfoRe
    */
   projectId = "";
 
-  constructor(data?: PartialMessage<GCSGetCredentialInfoResponse>) {
+  constructor(data?: PartialMessage<GCSGetCredentialsInfoResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.GCSGetCredentialInfoResponse";
+  static readonly typeName = "rill.runtime.v1.GCSGetCredentialsInfoResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "exist", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GCSGetCredentialInfoResponse {
-    return new GCSGetCredentialInfoResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GCSGetCredentialsInfoResponse {
+    return new GCSGetCredentialsInfoResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GCSGetCredentialInfoResponse {
-    return new GCSGetCredentialInfoResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GCSGetCredentialsInfoResponse {
+    return new GCSGetCredentialsInfoResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GCSGetCredentialInfoResponse {
-    return new GCSGetCredentialInfoResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GCSGetCredentialsInfoResponse {
+    return new GCSGetCredentialsInfoResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GCSGetCredentialInfoResponse | PlainMessage<GCSGetCredentialInfoResponse> | undefined, b: GCSGetCredentialInfoResponse | PlainMessage<GCSGetCredentialInfoResponse> | undefined): boolean {
-    return proto3.util.equals(GCSGetCredentialInfoResponse, a, b);
+  static equals(a: GCSGetCredentialsInfoResponse | PlainMessage<GCSGetCredentialsInfoResponse> | undefined, b: GCSGetCredentialsInfoResponse | PlainMessage<GCSGetCredentialsInfoResponse> | undefined): boolean {
+    return proto3.util.equals(GCSGetCredentialsInfoResponse, a, b);
   }
 }
 

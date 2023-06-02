@@ -17,13 +17,13 @@ import type {
   ConnectorServiceGCSListObjectsParams,
   V1GCSListBucketsResponse,
   ConnectorServiceGCSListBucketsParams,
-  V1GCSGetCredentialInfoResponse,
+  V1GCSGetCredentialsInfoResponse,
   V1S3GetBucketMetadataResponse,
   V1S3ListObjectsResponse,
   ConnectorServiceS3ListObjectsParams,
   V1S3ListBucketsResponse,
   ConnectorServiceS3ListBucketsParams,
-  V1S3GetCredentialInfoResponse,
+  V1S3GetCredentialsInfoResponse,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
@@ -154,30 +154,30 @@ export const createConnectorServiceGCSListBuckets = <
 };
 
 /**
- * @summary GCSGetCredentialInfo returns metadata for the given bucket.
+ * @summary GCSGetCredentialsInfo returns metadata for the given bucket.
  */
-export const connectorServiceGCSGetCredentialInfo = (signal?: AbortSignal) => {
-  return httpClient<V1GCSGetCredentialInfoResponse>({
-    url: `/v1/gcs/credential_info`,
+export const connectorServiceGCSGetCredentialsInfo = (signal?: AbortSignal) => {
+  return httpClient<V1GCSGetCredentialsInfoResponse>({
+    url: `/v1/gcs/credentials_info`,
     method: "get",
     signal,
   });
 };
 
-export const getConnectorServiceGCSGetCredentialInfoQueryKey = () =>
-  [`/v1/gcs/credential_info`] as const;
+export const getConnectorServiceGCSGetCredentialsInfoQueryKey = () =>
+  [`/v1/gcs/credentials_info`] as const;
 
-export type ConnectorServiceGCSGetCredentialInfoQueryResult = NonNullable<
-  Awaited<ReturnType<typeof connectorServiceGCSGetCredentialInfo>>
+export type ConnectorServiceGCSGetCredentialsInfoQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectorServiceGCSGetCredentialsInfo>>
 >;
-export type ConnectorServiceGCSGetCredentialInfoQueryError = RpcStatus;
+export type ConnectorServiceGCSGetCredentialsInfoQueryError = RpcStatus;
 
-export const createConnectorServiceGCSGetCredentialInfo = <
-  TData = Awaited<ReturnType<typeof connectorServiceGCSGetCredentialInfo>>,
+export const createConnectorServiceGCSGetCredentialsInfo = <
+  TData = Awaited<ReturnType<typeof connectorServiceGCSGetCredentialsInfo>>,
   TError = RpcStatus
 >(options?: {
   query?: CreateQueryOptions<
-    Awaited<ReturnType<typeof connectorServiceGCSGetCredentialInfo>>,
+    Awaited<ReturnType<typeof connectorServiceGCSGetCredentialsInfo>>,
     TError,
     TData
   >;
@@ -185,14 +185,15 @@ export const createConnectorServiceGCSGetCredentialInfo = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getConnectorServiceGCSGetCredentialInfoQueryKey();
+    queryOptions?.queryKey ??
+    getConnectorServiceGCSGetCredentialsInfoQueryKey();
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof connectorServiceGCSGetCredentialInfo>>
-  > = ({ signal }) => connectorServiceGCSGetCredentialInfo(signal);
+    Awaited<ReturnType<typeof connectorServiceGCSGetCredentialsInfo>>
+  > = ({ signal }) => connectorServiceGCSGetCredentialsInfo(signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof connectorServiceGCSGetCredentialInfo>>,
+    Awaited<ReturnType<typeof connectorServiceGCSGetCredentialsInfo>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
@@ -394,30 +395,30 @@ export const createConnectorServiceS3ListBuckets = <
 };
 
 /**
- * @summary S3GetCredentialInfo returns metadata for the given bucket.
+ * @summary S3GetCredentialsInfo returns metadata for the given bucket.
  */
-export const connectorServiceS3GetCredentialInfo = (signal?: AbortSignal) => {
-  return httpClient<V1S3GetCredentialInfoResponse>({
-    url: `/v1/s3/credential_info`,
+export const connectorServiceS3GetCredentialsInfo = (signal?: AbortSignal) => {
+  return httpClient<V1S3GetCredentialsInfoResponse>({
+    url: `/v1/s3/credentials_info`,
     method: "get",
     signal,
   });
 };
 
-export const getConnectorServiceS3GetCredentialInfoQueryKey = () =>
-  [`/v1/s3/credential_info`] as const;
+export const getConnectorServiceS3GetCredentialsInfoQueryKey = () =>
+  [`/v1/s3/credentials_info`] as const;
 
-export type ConnectorServiceS3GetCredentialInfoQueryResult = NonNullable<
-  Awaited<ReturnType<typeof connectorServiceS3GetCredentialInfo>>
+export type ConnectorServiceS3GetCredentialsInfoQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectorServiceS3GetCredentialsInfo>>
 >;
-export type ConnectorServiceS3GetCredentialInfoQueryError = RpcStatus;
+export type ConnectorServiceS3GetCredentialsInfoQueryError = RpcStatus;
 
-export const createConnectorServiceS3GetCredentialInfo = <
-  TData = Awaited<ReturnType<typeof connectorServiceS3GetCredentialInfo>>,
+export const createConnectorServiceS3GetCredentialsInfo = <
+  TData = Awaited<ReturnType<typeof connectorServiceS3GetCredentialsInfo>>,
   TError = RpcStatus
 >(options?: {
   query?: CreateQueryOptions<
-    Awaited<ReturnType<typeof connectorServiceS3GetCredentialInfo>>,
+    Awaited<ReturnType<typeof connectorServiceS3GetCredentialsInfo>>,
     TError,
     TData
   >;
@@ -425,14 +426,14 @@ export const createConnectorServiceS3GetCredentialInfo = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getConnectorServiceS3GetCredentialInfoQueryKey();
+    queryOptions?.queryKey ?? getConnectorServiceS3GetCredentialsInfoQueryKey();
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof connectorServiceS3GetCredentialInfo>>
-  > = ({ signal }) => connectorServiceS3GetCredentialInfo(signal);
+    Awaited<ReturnType<typeof connectorServiceS3GetCredentialsInfo>>
+  > = ({ signal }) => connectorServiceS3GetCredentialsInfo(signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof connectorServiceS3GetCredentialInfo>>,
+    Awaited<ReturnType<typeof connectorServiceS3GetCredentialsInfo>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<

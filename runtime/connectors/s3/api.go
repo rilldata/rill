@@ -134,7 +134,7 @@ func (c Connector) GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBu
 	return "", fmt.Errorf("unable to get region")
 }
 
-func (c Connector) GetCredentialInfo(ctx context.Context, env *connectors.Env) (provider string, exist bool, err error) {
+func (c Connector) GetCredentialsInfo(ctx context.Context, env *connectors.Env) (provider string, exist bool, err error) {
 	creds, err := getCredentials(env)
 	if creds == credentials.AnonymousCredentials {
 		return "", false, nil

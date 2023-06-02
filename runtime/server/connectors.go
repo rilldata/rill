@@ -109,19 +109,19 @@ func (s *Server) S3GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBu
 	}, nil
 }
 
-func (s *Server) S3GetCredentialInfo(ctx context.Context, req *runtimev1.S3GetCredentialInfoRequest) (*runtimev1.S3GetCredentialInfoResponse, error) {
+func (s *Server) S3GetCredentialsInfo(ctx context.Context, req *runtimev1.S3GetCredentialsInfoRequest) (*runtimev1.S3GetCredentialsInfoResponse, error) {
 	connector, ok := connectors.Connectors["s3"]
 	if !ok {
 		panic("s3 connector not found")
 	}
 
 	s3Conn := connector.(s3.Connector)
-	provider, exist, err := s3Conn.GetCredentialInfo(ctx, &connectors.Env{AllowHostAccess: s.runtime.AllowHostAccess()})
+	provider, exist, err := s3Conn.GetCredentialsInfo(ctx, &connectors.Env{AllowHostAccess: s.runtime.AllowHostAccess()})
 	if err != nil {
 		return nil, err
 	}
 
-	return &runtimev1.S3GetCredentialInfoResponse{
+	return &runtimev1.S3GetCredentialsInfoResponse{
 		Exist:    exist,
 		Provider: provider,
 	}, nil
@@ -163,19 +163,19 @@ func (s *Server) GCSListObjects(ctx context.Context, req *runtimev1.GCSListObjec
 	}, nil
 }
 
-func (s *Server) GCSGetCredentialInfo(ctx context.Context, req *runtimev1.GCSGetCredentialInfoRequest) (*runtimev1.GCSGetCredentialInfoResponse, error) {
+func (s *Server) GCSGetCredentialsInfo(ctx context.Context, req *runtimev1.GCSGetCredentialsInfoRequest) (*runtimev1.GCSGetCredentialsInfoResponse, error) {
 	connector, ok := connectors.Connectors["gcs"]
 	if !ok {
 		panic("gcs connector not found")
 	}
 
 	gcsConn := connector.(gcs.Connector)
-	projectID, exist, err := gcsConn.GetCredentialInfo(ctx, &connectors.Env{AllowHostAccess: s.runtime.AllowHostAccess()})
+	projectID, exist, err := gcsConn.GetCredentialsInfo(ctx, &connectors.Env{AllowHostAccess: s.runtime.AllowHostAccess()})
 	if err != nil {
 		return nil, err
 	}
 
-	return &runtimev1.GCSGetCredentialInfoResponse{
+	return &runtimev1.GCSGetCredentialsInfoResponse{
 		ProjectId: projectID,
 		Exist:     exist,
 	}, nil

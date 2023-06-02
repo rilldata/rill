@@ -873,22 +873,22 @@ var _ interface {
 	ErrorName() string
 } = S3GetBucketMetadataResponseValidationError{}
 
-// Validate checks the field values on S3GetCredentialInfoRequest with the
+// Validate checks the field values on S3GetCredentialsInfoRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *S3GetCredentialInfoRequest) Validate() error {
+func (m *S3GetCredentialsInfoRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on S3GetCredentialInfoRequest with the
+// ValidateAll checks the field values on S3GetCredentialsInfoRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// S3GetCredentialInfoRequestMultiError, or nil if none found.
-func (m *S3GetCredentialInfoRequest) ValidateAll() error {
+// S3GetCredentialsInfoRequestMultiError, or nil if none found.
+func (m *S3GetCredentialsInfoRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *S3GetCredentialInfoRequest) validate(all bool) error {
+func (m *S3GetCredentialsInfoRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -896,19 +896,19 @@ func (m *S3GetCredentialInfoRequest) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return S3GetCredentialInfoRequestMultiError(errors)
+		return S3GetCredentialsInfoRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// S3GetCredentialInfoRequestMultiError is an error wrapping multiple
-// validation errors returned by S3GetCredentialInfoRequest.ValidateAll() if
+// S3GetCredentialsInfoRequestMultiError is an error wrapping multiple
+// validation errors returned by S3GetCredentialsInfoRequest.ValidateAll() if
 // the designated constraints aren't met.
-type S3GetCredentialInfoRequestMultiError []error
+type S3GetCredentialsInfoRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m S3GetCredentialInfoRequestMultiError) Error() string {
+func (m S3GetCredentialsInfoRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -917,11 +917,12 @@ func (m S3GetCredentialInfoRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m S3GetCredentialInfoRequestMultiError) AllErrors() []error { return m }
+func (m S3GetCredentialsInfoRequestMultiError) AllErrors() []error { return m }
 
-// S3GetCredentialInfoRequestValidationError is the validation error returned
-// by S3GetCredentialInfoRequest.Validate if the designated constraints aren't met.
-type S3GetCredentialInfoRequestValidationError struct {
+// S3GetCredentialsInfoRequestValidationError is the validation error returned
+// by S3GetCredentialsInfoRequest.Validate if the designated constraints
+// aren't met.
+type S3GetCredentialsInfoRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -929,24 +930,24 @@ type S3GetCredentialInfoRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e S3GetCredentialInfoRequestValidationError) Field() string { return e.field }
+func (e S3GetCredentialsInfoRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e S3GetCredentialInfoRequestValidationError) Reason() string { return e.reason }
+func (e S3GetCredentialsInfoRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e S3GetCredentialInfoRequestValidationError) Cause() error { return e.cause }
+func (e S3GetCredentialsInfoRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e S3GetCredentialInfoRequestValidationError) Key() bool { return e.key }
+func (e S3GetCredentialsInfoRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e S3GetCredentialInfoRequestValidationError) ErrorName() string {
-	return "S3GetCredentialInfoRequestValidationError"
+func (e S3GetCredentialsInfoRequestValidationError) ErrorName() string {
+	return "S3GetCredentialsInfoRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e S3GetCredentialInfoRequestValidationError) Error() string {
+func (e S3GetCredentialsInfoRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -958,14 +959,14 @@ func (e S3GetCredentialInfoRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sS3GetCredentialInfoRequest.%s: %s%s",
+		"invalid %sS3GetCredentialsInfoRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = S3GetCredentialInfoRequestValidationError{}
+var _ error = S3GetCredentialsInfoRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -973,24 +974,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = S3GetCredentialInfoRequestValidationError{}
+} = S3GetCredentialsInfoRequestValidationError{}
 
-// Validate checks the field values on S3GetCredentialInfoResponse with the
+// Validate checks the field values on S3GetCredentialsInfoResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *S3GetCredentialInfoResponse) Validate() error {
+func (m *S3GetCredentialsInfoResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on S3GetCredentialInfoResponse with the
+// ValidateAll checks the field values on S3GetCredentialsInfoResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// S3GetCredentialInfoResponseMultiError, or nil if none found.
-func (m *S3GetCredentialInfoResponse) ValidateAll() error {
+// S3GetCredentialsInfoResponseMultiError, or nil if none found.
+func (m *S3GetCredentialsInfoResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *S3GetCredentialInfoResponse) validate(all bool) error {
+func (m *S3GetCredentialsInfoResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1002,19 +1003,19 @@ func (m *S3GetCredentialInfoResponse) validate(all bool) error {
 	// no validation rules for Provider
 
 	if len(errors) > 0 {
-		return S3GetCredentialInfoResponseMultiError(errors)
+		return S3GetCredentialsInfoResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// S3GetCredentialInfoResponseMultiError is an error wrapping multiple
-// validation errors returned by S3GetCredentialInfoResponse.ValidateAll() if
+// S3GetCredentialsInfoResponseMultiError is an error wrapping multiple
+// validation errors returned by S3GetCredentialsInfoResponse.ValidateAll() if
 // the designated constraints aren't met.
-type S3GetCredentialInfoResponseMultiError []error
+type S3GetCredentialsInfoResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m S3GetCredentialInfoResponseMultiError) Error() string {
+func (m S3GetCredentialsInfoResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1023,12 +1024,12 @@ func (m S3GetCredentialInfoResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m S3GetCredentialInfoResponseMultiError) AllErrors() []error { return m }
+func (m S3GetCredentialsInfoResponseMultiError) AllErrors() []error { return m }
 
-// S3GetCredentialInfoResponseValidationError is the validation error returned
-// by S3GetCredentialInfoResponse.Validate if the designated constraints
+// S3GetCredentialsInfoResponseValidationError is the validation error returned
+// by S3GetCredentialsInfoResponse.Validate if the designated constraints
 // aren't met.
-type S3GetCredentialInfoResponseValidationError struct {
+type S3GetCredentialsInfoResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1036,24 +1037,24 @@ type S3GetCredentialInfoResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e S3GetCredentialInfoResponseValidationError) Field() string { return e.field }
+func (e S3GetCredentialsInfoResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e S3GetCredentialInfoResponseValidationError) Reason() string { return e.reason }
+func (e S3GetCredentialsInfoResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e S3GetCredentialInfoResponseValidationError) Cause() error { return e.cause }
+func (e S3GetCredentialsInfoResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e S3GetCredentialInfoResponseValidationError) Key() bool { return e.key }
+func (e S3GetCredentialsInfoResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e S3GetCredentialInfoResponseValidationError) ErrorName() string {
-	return "S3GetCredentialInfoResponseValidationError"
+func (e S3GetCredentialsInfoResponseValidationError) ErrorName() string {
+	return "S3GetCredentialsInfoResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e S3GetCredentialInfoResponseValidationError) Error() string {
+func (e S3GetCredentialsInfoResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1065,14 +1066,14 @@ func (e S3GetCredentialInfoResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sS3GetCredentialInfoResponse.%s: %s%s",
+		"invalid %sS3GetCredentialsInfoResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = S3GetCredentialInfoResponseValidationError{}
+var _ error = S3GetCredentialsInfoResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -1080,7 +1081,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = S3GetCredentialInfoResponseValidationError{}
+} = S3GetCredentialsInfoResponseValidationError{}
 
 // Validate checks the field values on GCSObject with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -1715,22 +1716,22 @@ var _ interface {
 	ErrorName() string
 } = GCSListObjectsResponseValidationError{}
 
-// Validate checks the field values on GCSGetCredentialInfoRequest with the
+// Validate checks the field values on GCSGetCredentialsInfoRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GCSGetCredentialInfoRequest) Validate() error {
+func (m *GCSGetCredentialsInfoRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GCSGetCredentialInfoRequest with the
+// ValidateAll checks the field values on GCSGetCredentialsInfoRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// GCSGetCredentialInfoRequestMultiError, or nil if none found.
-func (m *GCSGetCredentialInfoRequest) ValidateAll() error {
+// GCSGetCredentialsInfoRequestMultiError, or nil if none found.
+func (m *GCSGetCredentialsInfoRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GCSGetCredentialInfoRequest) validate(all bool) error {
+func (m *GCSGetCredentialsInfoRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1738,19 +1739,19 @@ func (m *GCSGetCredentialInfoRequest) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return GCSGetCredentialInfoRequestMultiError(errors)
+		return GCSGetCredentialsInfoRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// GCSGetCredentialInfoRequestMultiError is an error wrapping multiple
-// validation errors returned by GCSGetCredentialInfoRequest.ValidateAll() if
+// GCSGetCredentialsInfoRequestMultiError is an error wrapping multiple
+// validation errors returned by GCSGetCredentialsInfoRequest.ValidateAll() if
 // the designated constraints aren't met.
-type GCSGetCredentialInfoRequestMultiError []error
+type GCSGetCredentialsInfoRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GCSGetCredentialInfoRequestMultiError) Error() string {
+func (m GCSGetCredentialsInfoRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1759,12 +1760,12 @@ func (m GCSGetCredentialInfoRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GCSGetCredentialInfoRequestMultiError) AllErrors() []error { return m }
+func (m GCSGetCredentialsInfoRequestMultiError) AllErrors() []error { return m }
 
-// GCSGetCredentialInfoRequestValidationError is the validation error returned
-// by GCSGetCredentialInfoRequest.Validate if the designated constraints
+// GCSGetCredentialsInfoRequestValidationError is the validation error returned
+// by GCSGetCredentialsInfoRequest.Validate if the designated constraints
 // aren't met.
-type GCSGetCredentialInfoRequestValidationError struct {
+type GCSGetCredentialsInfoRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1772,24 +1773,24 @@ type GCSGetCredentialInfoRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e GCSGetCredentialInfoRequestValidationError) Field() string { return e.field }
+func (e GCSGetCredentialsInfoRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GCSGetCredentialInfoRequestValidationError) Reason() string { return e.reason }
+func (e GCSGetCredentialsInfoRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GCSGetCredentialInfoRequestValidationError) Cause() error { return e.cause }
+func (e GCSGetCredentialsInfoRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GCSGetCredentialInfoRequestValidationError) Key() bool { return e.key }
+func (e GCSGetCredentialsInfoRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GCSGetCredentialInfoRequestValidationError) ErrorName() string {
-	return "GCSGetCredentialInfoRequestValidationError"
+func (e GCSGetCredentialsInfoRequestValidationError) ErrorName() string {
+	return "GCSGetCredentialsInfoRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GCSGetCredentialInfoRequestValidationError) Error() string {
+func (e GCSGetCredentialsInfoRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1801,14 +1802,14 @@ func (e GCSGetCredentialInfoRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGCSGetCredentialInfoRequest.%s: %s%s",
+		"invalid %sGCSGetCredentialsInfoRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GCSGetCredentialInfoRequestValidationError{}
+var _ error = GCSGetCredentialsInfoRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -1816,24 +1817,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GCSGetCredentialInfoRequestValidationError{}
+} = GCSGetCredentialsInfoRequestValidationError{}
 
-// Validate checks the field values on GCSGetCredentialInfoResponse with the
+// Validate checks the field values on GCSGetCredentialsInfoResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GCSGetCredentialInfoResponse) Validate() error {
+func (m *GCSGetCredentialsInfoResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on GCSGetCredentialInfoResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GCSGetCredentialInfoResponseMultiError, or nil if none found.
-func (m *GCSGetCredentialInfoResponse) ValidateAll() error {
+// ValidateAll checks the field values on GCSGetCredentialsInfoResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GCSGetCredentialsInfoResponseMultiError, or nil if none found.
+func (m *GCSGetCredentialsInfoResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *GCSGetCredentialInfoResponse) validate(all bool) error {
+func (m *GCSGetCredentialsInfoResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1845,19 +1846,19 @@ func (m *GCSGetCredentialInfoResponse) validate(all bool) error {
 	// no validation rules for ProjectId
 
 	if len(errors) > 0 {
-		return GCSGetCredentialInfoResponseMultiError(errors)
+		return GCSGetCredentialsInfoResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// GCSGetCredentialInfoResponseMultiError is an error wrapping multiple
-// validation errors returned by GCSGetCredentialInfoResponse.ValidateAll() if
-// the designated constraints aren't met.
-type GCSGetCredentialInfoResponseMultiError []error
+// GCSGetCredentialsInfoResponseMultiError is an error wrapping multiple
+// validation errors returned by GCSGetCredentialsInfoResponse.ValidateAll()
+// if the designated constraints aren't met.
+type GCSGetCredentialsInfoResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m GCSGetCredentialInfoResponseMultiError) Error() string {
+func (m GCSGetCredentialsInfoResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1866,12 +1867,12 @@ func (m GCSGetCredentialInfoResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m GCSGetCredentialInfoResponseMultiError) AllErrors() []error { return m }
+func (m GCSGetCredentialsInfoResponseMultiError) AllErrors() []error { return m }
 
-// GCSGetCredentialInfoResponseValidationError is the validation error returned
-// by GCSGetCredentialInfoResponse.Validate if the designated constraints
-// aren't met.
-type GCSGetCredentialInfoResponseValidationError struct {
+// GCSGetCredentialsInfoResponseValidationError is the validation error
+// returned by GCSGetCredentialsInfoResponse.Validate if the designated
+// constraints aren't met.
+type GCSGetCredentialsInfoResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1879,24 +1880,24 @@ type GCSGetCredentialInfoResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e GCSGetCredentialInfoResponseValidationError) Field() string { return e.field }
+func (e GCSGetCredentialsInfoResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e GCSGetCredentialInfoResponseValidationError) Reason() string { return e.reason }
+func (e GCSGetCredentialsInfoResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e GCSGetCredentialInfoResponseValidationError) Cause() error { return e.cause }
+func (e GCSGetCredentialsInfoResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e GCSGetCredentialInfoResponseValidationError) Key() bool { return e.key }
+func (e GCSGetCredentialsInfoResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e GCSGetCredentialInfoResponseValidationError) ErrorName() string {
-	return "GCSGetCredentialInfoResponseValidationError"
+func (e GCSGetCredentialsInfoResponseValidationError) ErrorName() string {
+	return "GCSGetCredentialsInfoResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e GCSGetCredentialInfoResponseValidationError) Error() string {
+func (e GCSGetCredentialsInfoResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1908,14 +1909,14 @@ func (e GCSGetCredentialInfoResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sGCSGetCredentialInfoResponse.%s: %s%s",
+		"invalid %sGCSGetCredentialsInfoResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = GCSGetCredentialInfoResponseValidationError{}
+var _ error = GCSGetCredentialsInfoResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -1923,4 +1924,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = GCSGetCredentialInfoResponseValidationError{}
+} = GCSGetCredentialsInfoResponseValidationError{}
