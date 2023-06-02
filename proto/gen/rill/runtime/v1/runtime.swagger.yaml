@@ -1187,8 +1187,6 @@ paths:
                 type: string
               timeRange:
                 $ref: '#/definitions/v1TimeSeriesTimeRange'
-              filters:
-                $ref: '#/definitions/v1MetricsViewFilter'
               pixels:
                 type: integer
                 format: int32

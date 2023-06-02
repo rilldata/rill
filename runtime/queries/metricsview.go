@@ -123,12 +123,12 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 // buildFilterClauseForMetricsViewFilter builds a SQL string of conditions joined with AND.
 // Unless the result is empty, it is prefixed with "AND".
 // I.e. it has the format "AND (...) AND (...) ...".
-func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter, dialect drivers.Dialect) (string, []any, error) {
+func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsView, filter *runtimev1.MetricsViewFilter, dialect drivers.Dialect) (string, []any, error) {
 	var clauses []string
 	var args []any
 
 	if filter != nil && filter.Include != nil {
-		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Include, false, dialect)
+		clause, clauseArgs, err := buildFilterClauseForConditions(mv, filter.Include, false, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -137,7 +137,7 @@ func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter, 
 	}
 
 	if filter != nil && filter.Exclude != nil {
-		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Exclude, true, dialect)
+		clause, clauseArgs, err := buildFilterClauseForConditions(mv, filter.Exclude, true, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -149,12 +149,12 @@ func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter, 
 }
 
 // buildFilterClauseForConditions returns a string with the format "AND (...) AND (...) ..."
-func buildFilterClauseForConditions(conds []*runtimev1.MetricsViewFilter_Cond, exclude bool, dialect drivers.Dialect) (string, []any, error) {
+func buildFilterClauseForConditions(mv *runtimev1.MetricsView, conds []*runtimev1.MetricsViewFilter_Cond, exclude bool, dialect drivers.Dialect) (string, []any, error) {
 	var clauses []string
 	var args []any
 
 	for _, cond := range conds {
-		condClause, condArgs, err := buildFilterClauseForCondition(cond, exclude, dialect)
+		condClause, condArgs, err := buildFilterClauseForCondition(mv, cond, exclude, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -169,11 +169,17 @@ func buildFilterClauseForConditions(conds []*runtimev1.MetricsViewFilter_Cond, e
 }
 
 // buildFilterClauseForCondition returns a string with the format "AND (...)"
-func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclude bool, dialect drivers.Dialect) (string, []any, error) {
+func buildFilterClauseForCondition(mv *runtimev1.MetricsView, cond *runtimev1.MetricsViewFilter_Cond, exclude bool, dialect drivers.Dialect) (string, []any, error) {
 	var clauses []string
 	var args []any
 
-	name := safeName(cond.Name)
+	// NOTE: Looking up for dimension like this will lead to O(nm).
+	//       Ideal way would be to create a map, but we need to find a clean solution down the line
+	name, err := metricsViewDimensionToSafeColumn(mv, cond.Name)
+	if err != nil {
+		return "", nil, err
+	}
+
 	notKeyword := ""
 	if exclude {
 		notKeyword = "NOT"
@@ -258,4 +264,19 @@ func repeatString(val string, n int) []string {
 		res[i] = val
 	}
 	return res
+}
+
+func metricsViewDimensionToSafeColumn(mv *runtimev1.MetricsView, dimName string) (string, error) {
+	dimName = strings.ToLower(dimName)
+	for _, dimension := range mv.Dimensions {
+		if strings.EqualFold(dimension.Name, dimName) {
+			if dimension.Column != "" {
+				return safeName(dimension.Column), nil
+			}
+			// backwards compatibility for older projects that have not run reconcile on this dashboard
+			// in that case `column` will not be present
+			return safeName(dimension.Name), nil
+		}
+	}
+	return "", fmt.Errorf("dimension %s not found", dimName)
 }

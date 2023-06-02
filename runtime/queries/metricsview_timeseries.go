@@ -103,8 +103,9 @@ func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.R
 			End:      q.TimeEnd,
 			Interval: q.TimeGranularity,
 		},
-		Measures: measures,
-		Filters:  q.Filter,
+		Measures:          measures,
+		MetricsView:       mv,
+		MetricsViewFilter: q.Filter,
 	}
 	err = rt.Query(ctx, instanceID, tsq, priority)
 	if err != nil {
@@ -211,7 +212,7 @@ func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.Met
 	}
 
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, drivers.DialectDruid)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, drivers.DialectDruid)
 		if err != nil {
 			return "", "", nil, err
 		}

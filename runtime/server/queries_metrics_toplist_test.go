@@ -296,7 +296,7 @@ func TestServer_MetricsViewToplist_complete_source_sanity_test(t *testing.T) {
 	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		DimensionName:   "domain",
+		DimensionName:   "dom",
 		MeasureNames:    []string{"measure_0"},
 		Sort: []*runtimev1.MetricsViewSort{
 			{
@@ -307,7 +307,38 @@ func TestServer_MetricsViewToplist_complete_source_sanity_test(t *testing.T) {
 		Filter: &runtimev1.MetricsViewFilter{
 			Exclude: []*runtimev1.MetricsViewFilter_Cond{
 				{
-					Name: "publisher",
+					Name: "pub",
+					In: []*structpb.Value{
+						structpb.NewStringValue("Yahoo"),
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.True(t, len(tr.Data) > 1)
+	require.Equal(t, 2, len(tr.Data[0].Fields))
+}
+
+func TestServer_MetricsViewToplist_DimensionsByName(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "dom",
+		MeasureNames:    []string{"measure_0"},
+		Sort: []*runtimev1.MetricsViewSort{
+			{
+				Name:      "measure_0",
+				Ascending: true,
+			},
+		},
+		Filter: &runtimev1.MetricsViewFilter{
+			Exclude: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "pub",
 					In: []*structpb.Value{
 						structpb.NewStringValue("Yahoo"),
 					},

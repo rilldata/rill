@@ -35,7 +35,6 @@ func (s *Server) ColumnTimeSeries(ctx context.Context, req *runtimev1.ColumnTime
 		TableName:           req.TableName,
 		TimestampColumnName: req.TimestampColumnName,
 		Measures:            req.Measures,
-		Filters:             req.Filters,
 		TimeRange:           req.TimeRange,
 		Pixels:              req.Pixels,
 		SampleSize:          req.SampleSize,

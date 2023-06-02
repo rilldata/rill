@@ -2784,11 +2784,6 @@ export class ColumnTimeSeriesRequest extends Message<ColumnTimeSeriesRequest> {
   timeRange?: TimeSeriesTimeRange;
 
   /**
-   * @generated from field: rill.runtime.v1.MetricsViewFilter filters = 6;
-   */
-  filters?: MetricsViewFilter;
-
-  /**
    * @generated from field: int32 pixels = 7;
    */
   pixels = 0;
@@ -2816,7 +2811,6 @@ export class ColumnTimeSeriesRequest extends Message<ColumnTimeSeriesRequest> {
     { no: 3, name: "measures", kind: "message", T: ColumnTimeSeriesRequest_BasicMeasure, repeated: true },
     { no: 4, name: "timestamp_column_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "time_range", kind: "message", T: TimeSeriesTimeRange },
-    { no: 6, name: "filters", kind: "message", T: MetricsViewFilter },
     { no: 7, name: "pixels", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 8, name: "sample_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 9, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
