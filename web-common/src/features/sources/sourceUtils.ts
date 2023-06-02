@@ -60,7 +60,8 @@ export function inferSourceName(connector: V1Connector, path: string) {
 }
 
 export function getFileTypeFromPath(fileName) {
-  const fileType = fileName.split(".").pop();
+  if (!fileName.includes(".")) return "";
+  const fileType = fileName.split(/[#?]/)[0].split(".").pop();
 
   if (!fileType) return "";
 
