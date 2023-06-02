@@ -2,7 +2,6 @@ package queries
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -26,23 +25,23 @@ func instanceWith2RowsModel(t *testing.T) (*runtime.Runtime, string) {
 
 func instanceWithSparkModel(t *testing.T) (*runtime.Runtime, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
-		SELECT 2.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
 		UNION ALL
-		SELECT 3.0 AS clicks, TIMESTAMP '2019-01-02T00:00:00Z' AS time, 'iphone' AS device
+		SELECT 2.0 AS clicks, TIMESTAMP '2019-01-02T00:00:00Z' AS time, 'iphone' AS device
 		UNION ALL
-		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-03T00:00:00Z' AS time, 'iphone' AS device
+		SELECT 3.0 AS clicks, TIMESTAMP '2019-01-03T00:00:00Z' AS time, 'iphone' AS device
 		UNION ALL
-		SELECT 2.0 AS clicks, TIMESTAMP '2019-01-04T00:00:00Z' AS time, 'android' AS device
+		SELECT 4.0 AS clicks, TIMESTAMP '2019-01-04T00:00:00Z' AS time, 'android' AS device
 		UNION ALL
-		SELECT 2.0 AS clicks, TIMESTAMP '2019-01-05T00:00:00Z' AS time, 'iphone' AS device
+		SELECT 5.0 AS clicks, TIMESTAMP '2019-01-05T00:00:00Z' AS time, 'iphone' AS device
 		UNION ALL
-		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-06T00:00:00Z' AS time, 'android' AS device
+		SELECT 4.5 AS clicks, TIMESTAMP '2019-01-06T00:00:00Z' AS time, 'android' AS device
 		UNION ALL
-		SELECT 4.0 AS clicks, TIMESTAMP '2019-01-07T00:00:00Z' AS time, 'android' AS device
+		SELECT 3.5 AS clicks, TIMESTAMP '2019-01-07T00:00:00Z' AS time, 'android' AS device
 		UNION ALL
-		SELECT 3 AS clicks, TIMESTAMP '2019-01-08T00:00:00Z' AS time, 'iphone' AS device
+		SELECT 2.5 AS clicks, TIMESTAMP '2019-01-08T00:00:00Z' AS time, 'iphone' AS device
 		UNION ALL
-		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-09T00:00:00Z' AS time, 'iphone' AS device
+		SELECT 1.5 AS clicks, TIMESTAMP '2019-01-09T00:00:00Z' AS time, 'iphone' AS device
 	`)
 	return rt, instanceID
 }
@@ -122,20 +121,21 @@ func TestTimeseries_SparkOnly(t *testing.T) {
 	values, err := q.createTimestampRollupReduction(context.Background(), rt, olap, instanceID, 0, "test", "time", "clicks")
 	require.NoError(t, err)
 
+	// for i := 0; i < 12; i++ {
+	// 	fmt.Println(fmt.Sprintf("%s %.1f %.1f", values[i].Ts.AsTime(), values[i].Bin, values[i].Records.Fields["count"].GetNumberValue()))
+	// }
+
 	require.Equal(t, 12, len(values))
-	for i := 0; i < 12; i++ {
-		fmt.Println(fmt.Sprintf("%s %.0f %.0f", values[i].Ts.AsTime(), values[i].Bin, values[i].Records.Fields["count"].GetNumberValue()))
-	}
 	require.Equal(t, parseTime(t, "2019-01-01T00:00:00Z"), values[0].Ts)
-	require.Equal(t, parseTime(t, "2019-01-02T00:00:00Z"), values[1].Ts)
-	require.Equal(t, parseTime(t, "2019-01-03T00:00:00Z"), values[2].Ts)
-	require.Equal(t, parseTime(t, "2019-01-04T00:00:00Z"), values[3].Ts)
-	require.Equal(t, parseTime(t, "2019-01-05T00:00:00Z"), values[4].Ts)
-	require.Equal(t, parseTime(t, "2019-01-06T00:00:00Z"), values[5].Ts)
-	require.Equal(t, parseTime(t, "2019-01-07T00:00:00Z"), values[6].Ts)
-	require.Equal(t, parseTime(t, "2019-01-08T00:00:00Z"), values[7].Ts)
-	require.Equal(t, parseTime(t, "2019-01-09T00:00:00Z"), values[8].Ts)
-	require.Equal(t, parseTime(t, "2019-01-09T00:00:00Z"), values[9].Ts)
+	require.Equal(t, parseTime(t, "2019-01-01T00:00:00Z"), values[1].Ts)
+	require.Equal(t, parseTime(t, "2019-01-02T00:00:00Z"), values[2].Ts)
+	require.Equal(t, parseTime(t, "2019-01-02T00:00:00Z"), values[3].Ts)
+	require.Equal(t, parseTime(t, "2019-01-03T00:00:00Z"), values[4].Ts)
+	require.Equal(t, parseTime(t, "2019-01-03T00:00:00Z"), values[5].Ts)
+	require.Equal(t, parseTime(t, "2019-01-05T00:00:00Z"), values[6].Ts)
+	require.Equal(t, parseTime(t, "2019-01-06T00:00:00Z"), values[7].Ts)
+	require.Equal(t, parseTime(t, "2019-01-07T00:00:00Z"), values[8].Ts)
+	require.Equal(t, parseTime(t, "2019-01-07T00:00:00Z"), values[9].Ts)
 	require.Equal(t, parseTime(t, "2019-01-09T00:00:00Z"), values[10].Ts)
 	require.Equal(t, parseTime(t, "2019-01-09T00:00:00Z"), values[11].Ts)
 
@@ -152,18 +152,18 @@ func TestTimeseries_SparkOnly(t *testing.T) {
 	require.Equal(t, 2.0, values[10].Bin)
 	require.Equal(t, 2.0, values[11].Bin)
 
-	require.Equal(t, 2.0, values[0].Records.Fields["count"].GetNumberValue())
-	require.Equal(t, 3.0, values[1].Records.Fields["count"].GetNumberValue())
-	require.Equal(t, 1.0, values[2].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, 1.0, values[0].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, 1.0, values[1].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, 2.0, values[2].Records.Fields["count"].GetNumberValue())
 	require.Equal(t, 2.0, values[3].Records.Fields["count"].GetNumberValue())
-	require.Equal(t, 2.0, values[4].Records.Fields["count"].GetNumberValue())
-	require.Equal(t, 1.0, values[5].Records.Fields["count"].GetNumberValue())
-	require.Equal(t, 4.0, values[6].Records.Fields["count"].GetNumberValue())
-	require.Equal(t, 3.0, values[7].Records.Fields["count"].GetNumberValue())
-	require.Equal(t, 1.0, values[8].Records.Fields["count"].GetNumberValue())
-	require.Equal(t, 1.0, values[9].Records.Fields["count"].GetNumberValue())
-	require.Equal(t, 1.0, values[10].Records.Fields["count"].GetNumberValue())
-	require.Equal(t, 1.0, values[11].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, 3.0, values[4].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, 3.0, values[5].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, 5.0, values[6].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, 4.5, values[7].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, 3.5, values[8].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, 3.5, values[9].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, 1.5, values[10].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, 1.5, values[11].Records.Fields["count"].GetNumberValue())
 }
 
 func TestTimeseries_Key(t *testing.T) {

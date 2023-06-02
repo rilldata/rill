@@ -64,6 +64,8 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				Public:           proj.Public,
 				ProdBranch:       proj.ProdBranch,
 				GithubUrl:        proj.GithubUrl,
+				ProdSlots:        proj.ProdSlots,
+				Region:           proj.Region,
 			})
 			if err != nil {
 				return err

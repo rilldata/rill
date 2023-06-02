@@ -8,14 +8,12 @@
     getAvailableComparisonsForTimeRange,
     getComparisonRange,
   } from "@rilldata/web-common/lib/time/comparisons";
-  import {
-    DEFAULT_TIME_RANGES,
-    TIME_GRAIN,
-  } from "@rilldata/web-common/lib/time/config";
+  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
   import {
     checkValidTimeGrain,
     getDefaultTimeGrain,
-    getTimeGrainOptions,
+    findValidTimeGrain,
+    getAllowedTimeGrains,
   } from "@rilldata/web-common/lib/time/grains";
   import {
     ISODurationToTimePreset,
@@ -25,7 +23,7 @@
   import {
     DashboardTimeControls,
     TimeComparisonOption,
-    TimeGrainOption,
+    TimeGrain,
     TimeRange,
     TimeRangePreset,
     TimeRangeType,
@@ -157,9 +155,8 @@
 
   // we get the timeGrainOptions so that we can assess whether or not the
   // activeTimeGrain is valid whenever the baseTimeRange changes
-  let timeGrainOptions: TimeGrainOption[];
-  // FIXME: we should be deprecating this getTimeGrainOptions in favor of getAllowedTimeGrains.
-  $: timeGrainOptions = getTimeGrainOptions(
+  let timeGrainOptions: TimeGrain[];
+  $: timeGrainOptions = getAllowedTimeGrains(
     new Date($dashboardStore?.selectedTimeRange?.start),
     new Date($dashboardStore?.selectedTimeRange?.end)
   );
@@ -170,9 +167,15 @@
       start: new Date(start),
       end: new Date(end),
     };
+
+    const defaultTimeGrain = getDefaultTimeGrain(
+      baseTimeRange.start,
+      baseTimeRange.end
+    ).grain;
+
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
-      $dashboardStore.selectedTimeRange?.interval,
+      defaultTimeGrain,
       // reset the comparison range
       {}
     );
@@ -211,33 +214,21 @@
     const { name, start, end } = timeRange;
 
     // validate time range name + time grain combination
-    // (necessary because when the time range name is changed, the current time grain may not be valid for the new time range name)
-    timeGrainOptions = getTimeGrainOptions(start, end);
+    // (necessary because when the time range name is changed, the default time grain may not be valid for the new time range name)
+    timeGrainOptions = getAllowedTimeGrains(start, end);
     const isValidTimeGrain = checkValidTimeGrain(
       timeGrain,
       timeGrainOptions,
       minTimeGrain
     );
+
     if (!isValidTimeGrain) {
       const defaultTimeGrain = getDefaultTimeGrain(start, end).grain;
-      const timeGrainEnums = Object.values(TIME_GRAIN).map(
-        (timeGrain) => timeGrain.grain
+      timeGrain = findValidTimeGrain(
+        defaultTimeGrain,
+        timeGrainOptions,
+        minTimeGrain
       );
-
-      const defaultGrainIndex = timeGrainEnums.indexOf(defaultTimeGrain);
-      timeGrain = defaultTimeGrain;
-      let i = defaultGrainIndex;
-      // loop through time grains until we find a valid one
-      while (!checkValidTimeGrain(timeGrain, timeGrainOptions, minTimeGrain)) {
-        timeGrain = timeGrainEnums[i + 1] as V1TimeGrain;
-        i = i == timeGrainEnums.length - 1 ? -1 : i + 1;
-        if (i == defaultGrainIndex) {
-          // if we've looped through all the time grains and haven't found
-          // a valid one, use default
-          timeGrain = defaultTimeGrain;
-          break;
-        }
-      }
     }
 
     // the adjusted time range

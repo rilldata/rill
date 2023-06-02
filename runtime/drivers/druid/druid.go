@@ -29,6 +29,10 @@ func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 	return conn, nil
 }
 
+func (d driver) Drop(dsn string, logger *zap.Logger) error {
+	return drivers.ErrDropNotSupported
+}
+
 type connection struct {
 	db *sqlx.DB
 }
