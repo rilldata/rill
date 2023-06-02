@@ -54,7 +54,7 @@ export function inferSourceName(connector: V1Connector, path: string) {
   return sanitizeEntityName(fileName);
 }
 
-function getFileTypeFromName(fileName) {
+export function getFileTypeFromPath(fileName) {
   const fileType = fileName.split(".").pop();
 
   if (!fileType) return "";
@@ -66,6 +66,8 @@ function getFileTypeFromName(fileName) {
   return fileType;
 }
 
+// function
+
 export function sourceErrorTelemetryHandler(
   space: MetricsEventSpace,
   screenName: MetricsEventScreenName,
@@ -74,7 +76,7 @@ export function sourceErrorTelemetryHandler(
   fileName: string
 ) {
   const categorizedError = categorizeSourceError(errorMessage);
-  const fileType = getFileTypeFromName(fileName);
+  const fileType = getFileTypeFromPath(fileName);
   const isGlob = fileName.includes("*");
 
   errorEvent.fireSourceErrorEvent(
@@ -94,7 +96,7 @@ export function sourceSuccessTelemetryHandler(
   connectionType: SourceConnectionType,
   fileName: string
 ) {
-  const fileType = getFileTypeFromName(fileName);
+  const fileType = getFileTypeFromPath(fileName);
   const isGlob = fileName.includes("*");
 
   behaviourEvent.fireSourceSuccessEvent(
