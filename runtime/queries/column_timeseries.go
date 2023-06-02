@@ -13,8 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -34,12 +32,13 @@ type ColumnTimeseries struct {
 	Measures            []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure `json:"measures"`
 	TimestampColumnName string                                            `json:"timestamp_column_name"`
 	TimeRange           *runtimev1.TimeSeriesTimeRange                    `json:"time_range"`
-	Filters             *runtimev1.MetricsViewFilter                      `json:"filters"`
 	Pixels              int32                                             `json:"pixels"`
 	SampleSize          int32                                             `json:"sample_size"`
 	Result              *ColumnTimeseriesResult                           `json:"-"`
 
-	catalogName string
+	// MetricsView-related fields. These can be removed when MetricsViewTimeSeries is refactored to a standalone implementation.
+	MetricsView       *runtimev1.MetricsView       `json:"-"`
+	MetricsViewFilter *runtimev1.MetricsViewFilter `json:"filters"`
 }
 
 var _ runtime.Query = &ColumnTimeseries{}
@@ -93,17 +92,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	}
 
 	return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context) error {
-		catalogName := q.catalogName
-		if catalogName == "" {
-			catalogName = q.TableName
-		}
-
-		dimNameToColMap, err := dimensionMapForTable(ctx, rt, instanceID, catalogName)
-		if err != nil {
-			return err
-		}
-
-		filter, args, err := buildFilterClauseForMetricsViewFilter(q.Filters, dimNameToColMap, olap.Dialect())
+		filter, args, err := buildFilterClauseForMetricsViewFilter(q.MetricsView, q.MetricsViewFilter, olap.Dialect())
 		if err != nil {
 			return err
 		}
@@ -224,10 +213,6 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}
 		return nil
 	})
-}
-
-func (q *ColumnTimeseries) WithCatalogName(catalogName string) {
-	q.catalogName = catalogName
 }
 
 func (q *ColumnTimeseries) resolveNormaliseTimeRange(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) (*runtimev1.TimeSeriesTimeRange, error) {
@@ -548,41 +533,4 @@ func approxSize(c *ColumnTimeseriesResult) int64 {
 	size += sizeProtoMessage(c.TimeRange)
 	size += int64(reflect.TypeOf(c.SampleSize).Size())
 	return size
-}
-
-func dimensionMapForTable(ctx context.Context, rt *runtime.Runtime, instanceID, tableName string) (map[string]string, error) {
-	obj, err := rt.GetCatalogEntry(ctx, instanceID, tableName)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	switch obj.Type {
-	case drivers.ObjectTypeMetricsView:
-		return metricsViewDimensionNameMap(obj.GetMetricsView()), nil
-
-	case drivers.ObjectTypeModel:
-		return dimensionMapFromSchema(obj.GetModel().Schema), nil
-
-	case drivers.ObjectTypeSource:
-		return dimensionMapFromSchema(obj.GetSource().Schema), nil
-
-	case drivers.ObjectTypeTable:
-		return dimensionMapFromSchema(obj.GetTable().Schema), nil
-	}
-
-	return make(map[string]string), nil
-}
-
-func dimensionMapFromSchema(schema *runtimev1.StructType) map[string]string {
-	dimensionMap := make(map[string]string)
-	if schema == nil {
-		return dimensionMap
-	}
-
-	for _, field := range schema.Fields {
-		// Non-metric view types will not have different name and column.
-		dimensionMap[field.Name] = field.Name
-	}
-
-	return dimensionMap
 }
