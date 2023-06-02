@@ -109,8 +109,9 @@
             email: email,
             password: password,
           },
-          (err) => {
-            // Auth0 is not consistent with its error message fields
+          // explicitly typing as any to avoid missing property TS/svelte-check error
+          (err: any) => {
+            // Auth0 is not consistent in the naming of the error description field
             const errorText =
               typeof err?.description === "string"
                 ? err?.description
