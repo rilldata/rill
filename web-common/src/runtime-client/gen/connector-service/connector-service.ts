@@ -17,11 +17,13 @@ import type {
   ConnectorServiceGCSListObjectsParams,
   V1GCSListBucketsResponse,
   ConnectorServiceGCSListBucketsParams,
+  V1GCSGetCredentialInfoResponse,
   V1S3GetBucketMetadataResponse,
   V1S3ListObjectsResponse,
   ConnectorServiceS3ListObjectsParams,
   V1S3ListBucketsResponse,
   ConnectorServiceS3ListBucketsParams,
+  V1S3GetCredentialInfoResponse,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
@@ -139,6 +141,58 @@ export const createConnectorServiceGCSListBuckets = <
 
   const query = createQuery<
     Awaited<ReturnType<typeof connectorServiceGCSListBuckets>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary GCSGetCredentialInfo returns metadata for the given bucket.
+ */
+export const connectorServiceGCSGetCredentialInfo = (signal?: AbortSignal) => {
+  return httpClient<V1GCSGetCredentialInfoResponse>({
+    url: `/v1/gcs/credential_info`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getConnectorServiceGCSGetCredentialInfoQueryKey = () =>
+  [`/v1/gcs/credential_info`] as const;
+
+export type ConnectorServiceGCSGetCredentialInfoQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectorServiceGCSGetCredentialInfo>>
+>;
+export type ConnectorServiceGCSGetCredentialInfoQueryError = RpcStatus;
+
+export const createConnectorServiceGCSGetCredentialInfo = <
+  TData = Awaited<ReturnType<typeof connectorServiceGCSGetCredentialInfo>>,
+  TError = RpcStatus
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof connectorServiceGCSGetCredentialInfo>>,
+    TError,
+    TData
+  >;
+}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getConnectorServiceGCSGetCredentialInfoQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof connectorServiceGCSGetCredentialInfo>>
+  > = ({ signal }) => connectorServiceGCSGetCredentialInfo(signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof connectorServiceGCSGetCredentialInfo>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
@@ -327,6 +381,58 @@ export const createConnectorServiceS3ListBuckets = <
 
   const query = createQuery<
     Awaited<ReturnType<typeof connectorServiceS3ListBuckets>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary S3GetCredentialInfo returns metadata for the given bucket.
+ */
+export const connectorServiceS3GetCredentialInfo = (signal?: AbortSignal) => {
+  return httpClient<V1S3GetCredentialInfoResponse>({
+    url: `/v1/s3/credential_info`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getConnectorServiceS3GetCredentialInfoQueryKey = () =>
+  [`/v1/s3/credential_info`] as const;
+
+export type ConnectorServiceS3GetCredentialInfoQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectorServiceS3GetCredentialInfo>>
+>;
+export type ConnectorServiceS3GetCredentialInfoQueryError = RpcStatus;
+
+export const createConnectorServiceS3GetCredentialInfo = <
+  TData = Awaited<ReturnType<typeof connectorServiceS3GetCredentialInfo>>,
+  TError = RpcStatus
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof connectorServiceS3GetCredentialInfo>>,
+    TError,
+    TData
+  >;
+}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getConnectorServiceS3GetCredentialInfoQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof connectorServiceS3GetCredentialInfo>>
+  > = ({ signal }) => connectorServiceS3GetCredentialInfo(signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof connectorServiceS3GetCredentialInfo>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<

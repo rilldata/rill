@@ -19,11 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ConnectorService_S3ListBuckets_FullMethodName       = "/rill.runtime.v1.ConnectorService/S3ListBuckets"
-	ConnectorService_S3ListObjects_FullMethodName       = "/rill.runtime.v1.ConnectorService/S3ListObjects"
-	ConnectorService_S3GetBucketMetadata_FullMethodName = "/rill.runtime.v1.ConnectorService/S3GetBucketMetadata"
-	ConnectorService_GCSListBuckets_FullMethodName      = "/rill.runtime.v1.ConnectorService/GCSListBuckets"
-	ConnectorService_GCSListObjects_FullMethodName      = "/rill.runtime.v1.ConnectorService/GCSListObjects"
+	ConnectorService_S3ListBuckets_FullMethodName        = "/rill.runtime.v1.ConnectorService/S3ListBuckets"
+	ConnectorService_S3ListObjects_FullMethodName        = "/rill.runtime.v1.ConnectorService/S3ListObjects"
+	ConnectorService_S3GetBucketMetadata_FullMethodName  = "/rill.runtime.v1.ConnectorService/S3GetBucketMetadata"
+	ConnectorService_S3GetCredentialInfo_FullMethodName  = "/rill.runtime.v1.ConnectorService/S3GetCredentialInfo"
+	ConnectorService_GCSListBuckets_FullMethodName       = "/rill.runtime.v1.ConnectorService/GCSListBuckets"
+	ConnectorService_GCSListObjects_FullMethodName       = "/rill.runtime.v1.ConnectorService/GCSListObjects"
+	ConnectorService_GCSGetCredentialInfo_FullMethodName = "/rill.runtime.v1.ConnectorService/GCSGetCredentialInfo"
 )
 
 // ConnectorServiceClient is the client API for ConnectorService service.
@@ -36,10 +38,14 @@ type ConnectorServiceClient interface {
 	S3ListObjects(ctx context.Context, in *S3ListObjectsRequest, opts ...grpc.CallOption) (*S3ListObjectsResponse, error)
 	// S3GetBucketMetadata returns metadata for the given bucket.
 	S3GetBucketMetadata(ctx context.Context, in *S3GetBucketMetadataRequest, opts ...grpc.CallOption) (*S3GetBucketMetadataResponse, error)
+	// S3GetCredentialInfo returns metadata for the given bucket.
+	S3GetCredentialInfo(ctx context.Context, in *S3GetCredentialInfoRequest, opts ...grpc.CallOption) (*S3GetCredentialInfoResponse, error)
 	// GCSListBuckets lists buckets accessible with the configured credentials.
 	GCSListBuckets(ctx context.Context, in *GCSListBucketsRequest, opts ...grpc.CallOption) (*GCSListBucketsResponse, error)
 	// GCSListObjects lists objects for the given bucket.
 	GCSListObjects(ctx context.Context, in *GCSListObjectsRequest, opts ...grpc.CallOption) (*GCSListObjectsResponse, error)
+	// GCSGetCredentialInfo returns metadata for the given bucket.
+	GCSGetCredentialInfo(ctx context.Context, in *GCSGetCredentialInfoRequest, opts ...grpc.CallOption) (*GCSGetCredentialInfoResponse, error)
 }
 
 type connectorServiceClient struct {
@@ -77,6 +83,15 @@ func (c *connectorServiceClient) S3GetBucketMetadata(ctx context.Context, in *S3
 	return out, nil
 }
 
+func (c *connectorServiceClient) S3GetCredentialInfo(ctx context.Context, in *S3GetCredentialInfoRequest, opts ...grpc.CallOption) (*S3GetCredentialInfoResponse, error) {
+	out := new(S3GetCredentialInfoResponse)
+	err := c.cc.Invoke(ctx, ConnectorService_S3GetCredentialInfo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *connectorServiceClient) GCSListBuckets(ctx context.Context, in *GCSListBucketsRequest, opts ...grpc.CallOption) (*GCSListBucketsResponse, error) {
 	out := new(GCSListBucketsResponse)
 	err := c.cc.Invoke(ctx, ConnectorService_GCSListBuckets_FullMethodName, in, out, opts...)
@@ -95,6 +110,15 @@ func (c *connectorServiceClient) GCSListObjects(ctx context.Context, in *GCSList
 	return out, nil
 }
 
+func (c *connectorServiceClient) GCSGetCredentialInfo(ctx context.Context, in *GCSGetCredentialInfoRequest, opts ...grpc.CallOption) (*GCSGetCredentialInfoResponse, error) {
+	out := new(GCSGetCredentialInfoResponse)
+	err := c.cc.Invoke(ctx, ConnectorService_GCSGetCredentialInfo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConnectorServiceServer is the server API for ConnectorService service.
 // All implementations must embed UnimplementedConnectorServiceServer
 // for forward compatibility
@@ -105,10 +129,14 @@ type ConnectorServiceServer interface {
 	S3ListObjects(context.Context, *S3ListObjectsRequest) (*S3ListObjectsResponse, error)
 	// S3GetBucketMetadata returns metadata for the given bucket.
 	S3GetBucketMetadata(context.Context, *S3GetBucketMetadataRequest) (*S3GetBucketMetadataResponse, error)
+	// S3GetCredentialInfo returns metadata for the given bucket.
+	S3GetCredentialInfo(context.Context, *S3GetCredentialInfoRequest) (*S3GetCredentialInfoResponse, error)
 	// GCSListBuckets lists buckets accessible with the configured credentials.
 	GCSListBuckets(context.Context, *GCSListBucketsRequest) (*GCSListBucketsResponse, error)
 	// GCSListObjects lists objects for the given bucket.
 	GCSListObjects(context.Context, *GCSListObjectsRequest) (*GCSListObjectsResponse, error)
+	// GCSGetCredentialInfo returns metadata for the given bucket.
+	GCSGetCredentialInfo(context.Context, *GCSGetCredentialInfoRequest) (*GCSGetCredentialInfoResponse, error)
 	mustEmbedUnimplementedConnectorServiceServer()
 }
 
@@ -125,11 +153,17 @@ func (UnimplementedConnectorServiceServer) S3ListObjects(context.Context, *S3Lis
 func (UnimplementedConnectorServiceServer) S3GetBucketMetadata(context.Context, *S3GetBucketMetadataRequest) (*S3GetBucketMetadataResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method S3GetBucketMetadata not implemented")
 }
+func (UnimplementedConnectorServiceServer) S3GetCredentialInfo(context.Context, *S3GetCredentialInfoRequest) (*S3GetCredentialInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method S3GetCredentialInfo not implemented")
+}
 func (UnimplementedConnectorServiceServer) GCSListBuckets(context.Context, *GCSListBucketsRequest) (*GCSListBucketsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GCSListBuckets not implemented")
 }
 func (UnimplementedConnectorServiceServer) GCSListObjects(context.Context, *GCSListObjectsRequest) (*GCSListObjectsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GCSListObjects not implemented")
+}
+func (UnimplementedConnectorServiceServer) GCSGetCredentialInfo(context.Context, *GCSGetCredentialInfoRequest) (*GCSGetCredentialInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GCSGetCredentialInfo not implemented")
 }
 func (UnimplementedConnectorServiceServer) mustEmbedUnimplementedConnectorServiceServer() {}
 
@@ -198,6 +232,24 @@ func _ConnectorService_S3GetBucketMetadata_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ConnectorService_S3GetCredentialInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(S3GetCredentialInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConnectorServiceServer).S3GetCredentialInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConnectorService_S3GetCredentialInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConnectorServiceServer).S3GetCredentialInfo(ctx, req.(*S3GetCredentialInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ConnectorService_GCSListBuckets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GCSListBucketsRequest)
 	if err := dec(in); err != nil {
@@ -234,6 +286,24 @@ func _ConnectorService_GCSListObjects_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ConnectorService_GCSGetCredentialInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GCSGetCredentialInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConnectorServiceServer).GCSGetCredentialInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConnectorService_GCSGetCredentialInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConnectorServiceServer).GCSGetCredentialInfo(ctx, req.(*GCSGetCredentialInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ConnectorService_ServiceDesc is the grpc.ServiceDesc for ConnectorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -254,12 +324,20 @@ var ConnectorService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ConnectorService_S3GetBucketMetadata_Handler,
 		},
 		{
+			MethodName: "S3GetCredentialInfo",
+			Handler:    _ConnectorService_S3GetCredentialInfo_Handler,
+		},
+		{
 			MethodName: "GCSListBuckets",
 			Handler:    _ConnectorService_GCSListBuckets_Handler,
 		},
 		{
 			MethodName: "GCSListObjects",
 			Handler:    _ConnectorService_GCSListObjects_Handler,
+		},
+		{
+			MethodName: "GCSGetCredentialInfo",
+			Handler:    _ConnectorService_GCSGetCredentialInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

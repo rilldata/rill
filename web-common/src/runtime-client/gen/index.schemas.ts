@@ -416,6 +416,11 @@ export interface V1S3ListBucketsResponse {
   buckets?: string[];
 }
 
+export interface V1S3GetCredentialInfoResponse {
+  exist?: boolean;
+  provider?: string;
+}
+
 export interface V1S3GetBucketMetadataResponse {
   region?: string;
 }
@@ -794,6 +799,11 @@ export interface V1GCSListObjectsResponse {
 export interface V1GCSListBucketsResponse {
   nextPageToken?: string;
   buckets?: string[];
+}
+
+export interface V1GCSGetCredentialInfoResponse {
+  exist?: boolean;
+  projectId?: string;
 }
 
 export interface V1Example {

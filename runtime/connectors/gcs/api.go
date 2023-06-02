@@ -3,12 +3,15 @@ package gcs
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 
 	"cloud.google.com/go/storage"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/gcsblob"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -26,14 +29,9 @@ func (c Connector) ListBuckets(ctx context.Context, req *runtimev1.GCSListBucket
 	}
 	defer client.Close()
 
-	projectID := credentials.ProjectID
-	if projectID == "" {
-		f := &credentialsFile{}
-		if err := json.Unmarshal(credentials.JSON, f); err != nil {
-			return nil, "", err
-		}
-
-		projectID = f.getProjectID()
+	projectID, err := getProjectID(credentials)
+	if err != nil {
+		return nil, "", err
 	}
 
 	pageSize := int(req.PageSize)
@@ -106,6 +104,35 @@ func (c Connector) ListObjects(ctx context.Context, req *runtimev1.GCSListObject
 		}
 	}
 	return gcsObjects, string(nextToken), nil
+}
+
+func (c Connector) GetCredentialInfo(ctx context.Context, env *connectors.Env) (string, bool, error) {
+	creds, err := resolvedCredentials(ctx, env)
+	if err != nil {
+		if errors.Is(err, errNoCredentials) {
+			return "", false, nil
+		}
+		return "", false, err
+	}
+
+	projectID, err := getProjectID(creds)
+	return projectID, err == nil, err
+}
+
+func getProjectID(credentials *google.Credentials) (string, error) {
+	projectID := credentials.ProjectID
+	if projectID == "" {
+		if len(credentials.JSON) == 0 {
+			return "", fmt.Errorf("unable to get project ID")
+		}
+		f := &credentialsFile{}
+		if err := json.Unmarshal(credentials.JSON, f); err != nil {
+			return "", err
+		}
+
+		projectID = f.getProjectID()
+	}
+	return projectID, nil
 }
 
 // credentialsFile is the unmarshalled representation of a credentials file.

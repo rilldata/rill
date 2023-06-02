@@ -134,6 +134,21 @@ paths:
           type: string
       tags:
         - ConnectorService
+  /v1/gcs/credential_info:
+    get:
+      summary: GCSGetCredentialInfo returns metadata for the given bucket.
+      operationId: ConnectorService_GCSGetCredentialInfo
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GCSGetCredentialInfoResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - ConnectorService
   /v1/instances:
     get:
       summary: ListInstances lists all the instances currently managed by the runtime
@@ -1604,6 +1619,21 @@ paths:
           type: string
       tags:
         - ConnectorService
+  /v1/s3/credential_info:
+    get:
+      summary: S3GetCredentialInfo returns metadata for the given bucket.
+      operationId: ConnectorService_S3GetCredentialInfo
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1S3GetCredentialInfoResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - ConnectorService
 definitions:
   ColumnTimeSeriesRequestBasicMeasure:
     type: object
@@ -2061,6 +2091,13 @@ definitions:
       title:
         type: string
       description:
+        type: string
+  v1GCSGetCredentialInfoResponse:
+    type: object
+    properties:
+      exist:
+        type: boolean
+      projectId:
         type: string
   v1GCSListBucketsResponse:
     type: object
@@ -2721,6 +2758,13 @@ definitions:
     type: object
     properties:
       region:
+        type: string
+  v1S3GetCredentialInfoResponse:
+    type: object
+    properties:
+      exist:
+        type: boolean
+      provider:
         type: string
   v1S3ListBucketsResponse:
     type: object

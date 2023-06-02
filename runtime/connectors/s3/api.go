@@ -2,9 +2,12 @@ package s3
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -23,9 +26,13 @@ func (c Connector) ListBuckets(ctx context.Context, env *connectors.Env) ([]stri
 		return nil, fmt.Errorf("no credentials exist")
 	}
 
+	sharedConfigState := session.SharedConfigDisable
+	if env.AllowHostAccess {
+		sharedConfigState = session.SharedConfigEnable // Tells to look for default region set with `aws configure`
+	}
 	// Create a session that tries to infer the region from the environment
 	sess, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable, // Tells to look for default region set with `aws configure`
+		SharedConfigState: sharedConfigState,
 		Config: aws.Config{
 			Credentials: creds,
 		},
@@ -60,7 +67,7 @@ func (c Connector) ListObjects(ctx context.Context, req *runtimev1.S3ListObjects
 		return nil, "", err
 	}
 
-	bucket, err := openBucket(ctx, &Config{AWSRegion: req.Region}, req.Bucket, creds)
+	bucket, err := openBucket(ctx, &Config{AWSRegion: req.Region}, req.Bucket, creds, env)
 	if err != nil {
 		return nil, "", err
 	}
@@ -77,20 +84,23 @@ func (c Connector) ListObjects(ctx context.Context, req *runtimev1.S3ListObjects
 	if pageSize == 0 {
 		pageSize = defaultPageSize
 	}
-	objects, nextToken, err := bucket.ListPage(ctx, pageToken, pageSize, &blob.ListOptions{
-		Prefix:    req.Prefix,
-		Delimiter: req.Delimiter,
-		BeforeList: func(as func(interface{}) bool) error {
-			if req.StartAfter == "" {
-				return nil
+	objects, nextToken, err := fetchObjects(ctx, bucket, pageToken, pageSize, req)
+	if err != nil {
+		var failureErr awserr.RequestFailure
+		if !errors.As(err, &failureErr) {
+			return nil, "", err
+		}
+
+		if (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) && creds != credentials.AnonymousCredentials {
+			// try again with anonymous credentials
+			creds = credentials.AnonymousCredentials
+			bucketObj, bucketErr := openBucket(ctx, &Config{AWSRegion: req.Region}, req.Bucket, creds, env)
+			if bucketErr != nil {
+				return nil, "", fmt.Errorf("failed to open bucket %q, %w", req.Bucket, bucketErr)
 			}
-			var q *s3.ListObjectsV2Input
-			if as(&q) {
-				q.StartAfter = &req.StartAfter
-			}
-			return nil
-		},
-	})
+			objects, nextToken, err = fetchObjects(ctx, bucketObj, pageToken, pageSize, req)
+		}
+	}
 	if err != nil {
 		return nil, "", err
 	}
@@ -113,7 +123,7 @@ func (c Connector) GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBu
 		return "", err
 	}
 
-	sess, err := getAwsSessionConfig(ctx, &Config{}, req.Bucket, creds)
+	sess, err := getAwsSessionConfig(ctx, &Config{}, req.Bucket, creds, env)
 	if err != nil {
 		return "", err
 	}
@@ -122,4 +132,39 @@ func (c Connector) GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBu
 		return *sess.Config.Region, nil
 	}
 	return "", fmt.Errorf("unable to get region")
+}
+
+func (c Connector) GetCredentialInfo(ctx context.Context, env *connectors.Env) (provider string, exist bool, err error) {
+	creds, err := getCredentials(env)
+	if creds == credentials.AnonymousCredentials {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, err
+	}
+
+	val, err := creds.Get()
+	if err != nil {
+		return "", false, err
+	}
+
+	return val.ProviderName, true, nil
+}
+
+func fetchObjects(ctx context.Context, bucket *blob.Bucket, pageToken []byte, pageSize int, req *runtimev1.S3ListObjectsRequest) ([]*blob.ListObject, []byte, error) {
+	objects, nextToken, err := bucket.ListPage(ctx, pageToken, pageSize, &blob.ListOptions{
+		Prefix:    req.Prefix,
+		Delimiter: req.Delimiter,
+		BeforeList: func(as func(interface{}) bool) error {
+			if req.StartAfter == "" {
+				return nil
+			}
+			var q *s3.ListObjectsV2Input
+			if as(&q) {
+				q.StartAfter = &req.StartAfter
+			}
+			return nil
+		},
+	})
+	return objects, nextToken, err
 }

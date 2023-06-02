@@ -21,6 +21,11 @@ service ConnectorService {
     option (google.api.http) = {get: "/v1/s3/bucket/{bucket}/metadata"};
   }
 
+  // S3GetCredentialInfo returns metadata for the given bucket.
+  rpc S3GetCredentialInfo(S3GetCredentialInfoRequest) returns (S3GetCredentialInfoResponse) {
+    option (google.api.http) = {get: "/v1/s3/credential_info"};
+  }
+
   // GCSListBuckets lists buckets accessible with the configured credentials.
   rpc GCSListBuckets(GCSListBucketsRequest) returns (GCSListBucketsResponse) {
     option (google.api.http) = {get: "/v1/gcs/buckets"};
@@ -29,6 +34,11 @@ service ConnectorService {
   // GCSListObjects lists objects for the given bucket.
   rpc GCSListObjects(GCSListObjectsRequest) returns (GCSListObjectsResponse) {
     option (google.api.http) = {get: "/v1/gcs/bucket/{bucket}/objects"};
+  }
+
+  // GCSGetCredentialInfo returns metadata for the given bucket.
+  rpc GCSGetCredentialInfo(GCSGetCredentialInfoRequest) returns (GCSGetCredentialInfoResponse) {
+    option (google.api.http) = {get: "/v1/gcs/credential_info"};
   }
 }
 
@@ -72,6 +82,13 @@ message S3GetBucketMetadataResponse {
   string region = 1;
 }
 
+message S3GetCredentialInfoRequest {}
+
+message S3GetCredentialInfoResponse {
+  bool exist = 1;
+  string provider = 2;
+}
+
 message GCSObject {
   string name = 1;
   google.protobuf.Timestamp modified_on = 2;
@@ -102,4 +119,11 @@ message GCSListObjectsRequest {
 message GCSListObjectsResponse {
   string next_page_token = 1;
   repeated GCSObject objects = 2;
+}
+
+message GCSGetCredentialInfoRequest {}
+
+message GCSGetCredentialInfoResponse {
+  bool exist = 1;
+  string project_id = 2;
 }
