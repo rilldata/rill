@@ -1,6 +1,7 @@
 <script lang="ts">
   import AddSourceModal from "@rilldata/web-common/features/sources/add-source/AddSourceModal.svelte";
   import Button from "../../components/button/Button.svelte";
+  import Add from "../../components/icons/Add.svelte";
   import { WorkspaceContainer } from "../../layout/workspace";
 
   interface OnboardingStep {
@@ -60,9 +61,10 @@
               <p>{step.description}</p>
             </div>
             {#if step.id === "source"}
-              <Button type="secondary" on:click={openAddSourceModal}
-                >Add data</Button
-              >
+              <Button type="secondary" compact on:click={openAddSourceModal}>
+                <Add className="text-gray-800" />
+                <span class="text-gray-800">Add data</span>
+              </Button>
             {/if}
           </div>
         </li>
