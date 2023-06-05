@@ -176,21 +176,21 @@ func (it *blobIterator) NextBatch(n int) ([]string, error) {
 			if err != nil {
 				return err
 			}
+			defer file.Close()
 
 			it.localFiles[index-start] = file.Name()
 			ext := filepath.Ext(obj.obj.Key)
 			partialReader, isPartialDownloadSupported := _partialDownloadReaders[ext]
 			downloadFull := obj.full || !isPartialDownloadSupported
 
-			startTime := time.Now()
 			// Collect metrics of download size and time
+			startTime := time.Now()
 			defer func() {
 				size := obj.obj.Size
 				st, err := file.Stat()
 				if err == nil {
 					size = st.Size()
 				}
-				file.Close()
 
 				duration := time.Since(startTime)
 				it.logger.Info("download complete", zap.String("object", obj.obj.Key), zap.Duration("duration", duration), observability.ZapCtx(it.ctx))
@@ -245,9 +245,9 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 		return nil, err
 	}
 
-	listOpts, singleFile := listOptions(it.opts.GlobPattern)
-	it.logger.Info("planner started", zap.String("glob", it.opts.GlobPattern), zap.String("prefix", listOpts.Prefix), observability.ZapCtx(it.ctx))
-	if singleFile {
+	listOpts, ok := listOptions(it.opts.GlobPattern)
+	if !ok {
+		it.logger.Info("glob pattern corresponds to single object", zap.String("glob", it.opts.GlobPattern))
 		// required to fetch size to enforce disk limits
 		attr, err := it.bucket.Attributes(it.ctx, it.opts.GlobPattern)
 		if err != nil {
@@ -263,6 +263,7 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 		}
 		return planner.items(), nil
 	}
+	it.logger.Info("planner started", zap.String("glob", it.opts.GlobPattern), zap.String("prefix", listOpts.Prefix), observability.ZapCtx(it.ctx))
 	token := blob.FirstPageToken
 	for token != nil && !planner.done() {
 		objs, nextToken, err := it.bucket.ListPage(it.ctx, token, it.opts.GlobPageSize, listOpts)
@@ -311,12 +312,12 @@ func listOptions(globPattern string) (*blob.ListOptions, bool) {
 	if !fileutil.IsGlob(glob) {
 		// single file
 		listOptions.Prefix = globPattern
-		return listOptions, true
+		return nil, false
 	} else if prefix != "." {
 		listOptions.Prefix = prefix
 	}
 
-	return listOptions, false
+	return listOptions, true
 }
 
 // download full object
