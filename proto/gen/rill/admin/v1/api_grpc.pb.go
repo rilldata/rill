@@ -50,8 +50,9 @@ const (
 	AdminService_IssueRepresentativeAuthToken_FullMethodName = "/rill.admin.v1.AdminService/IssueRepresentativeAuthToken"
 	AdminService_RevokeCurrentAuthToken_FullMethodName       = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
 	AdminService_GetGithubRepoStatus_FullMethodName          = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
-	AdminService_CreateAutoinviteDomain_FullMethodName       = "/rill.admin.v1.AdminService/CreateAutoinviteDomain"
-	AdminService_RemoveAutoinviteDomain_FullMethodName       = "/rill.admin.v1.AdminService/RemoveAutoinviteDomain"
+	AdminService_CreateWhitelistedDomain_FullMethodName      = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
+	AdminService_RemoveWhitelistedDomain_FullMethodName      = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
+	AdminService_ListWhitelistedDomains_FullMethodName       = "/rill.admin.v1.AdminService/ListWhitelistedDomains"
 	AdminService_SearchUsers_FullMethodName                  = "/rill.admin.v1.AdminService/SearchUsers"
 	AdminService_ListSuperusers_FullMethodName               = "/rill.admin.v1.AdminService/ListSuperusers"
 	AdminService_SetSuperuser_FullMethodName                 = "/rill.admin.v1.AdminService/SetSuperuser"
@@ -124,10 +125,12 @@ type AdminServiceClient interface {
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
 	GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error)
-	// CreateAutoinviteDomain adds a domain to the autoinvite list
-	CreateAutoinviteDomain(ctx context.Context, in *CreateAutoinviteDomainRequest, opts ...grpc.CallOption) (*CreateAutoinviteDomainResponse, error)
-	// RemoveAutoinviteDomain removes a domain from the autoinvite list
-	RemoveAutoinviteDomain(ctx context.Context, in *RemoveAutoinviteDomainRequest, opts ...grpc.CallOption) (*RemoveAutoinviteDomainResponse, error)
+	// CreateWhitelistedDomain adds a domain to the whitelist
+	CreateWhitelistedDomain(ctx context.Context, in *CreateWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateWhitelistedDomainResponse, error)
+	// RemoveWhitelistedDomain removes a domain from the whitelist list
+	RemoveWhitelistedDomain(ctx context.Context, in *RemoveWhitelistedDomainRequest, opts ...grpc.CallOption) (*RemoveWhitelistedDomainResponse, error)
+	// ListWhitelistedDomains lists all the whitelisted domains for the organization
+	ListWhitelistedDomains(ctx context.Context, in *ListWhitelistedDomainsRequest, opts ...grpc.CallOption) (*ListWhitelistedDomainsResponse, error)
 	// GetUsersByEmail returns user by email
 	SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error)
 	// ListSuperusers lists all the superusers
@@ -423,18 +426,27 @@ func (c *adminServiceClient) GetGithubRepoStatus(ctx context.Context, in *GetGit
 	return out, nil
 }
 
-func (c *adminServiceClient) CreateAutoinviteDomain(ctx context.Context, in *CreateAutoinviteDomainRequest, opts ...grpc.CallOption) (*CreateAutoinviteDomainResponse, error) {
-	out := new(CreateAutoinviteDomainResponse)
-	err := c.cc.Invoke(ctx, AdminService_CreateAutoinviteDomain_FullMethodName, in, out, opts...)
+func (c *adminServiceClient) CreateWhitelistedDomain(ctx context.Context, in *CreateWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateWhitelistedDomainResponse, error) {
+	out := new(CreateWhitelistedDomainResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateWhitelistedDomain_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *adminServiceClient) RemoveAutoinviteDomain(ctx context.Context, in *RemoveAutoinviteDomainRequest, opts ...grpc.CallOption) (*RemoveAutoinviteDomainResponse, error) {
-	out := new(RemoveAutoinviteDomainResponse)
-	err := c.cc.Invoke(ctx, AdminService_RemoveAutoinviteDomain_FullMethodName, in, out, opts...)
+func (c *adminServiceClient) RemoveWhitelistedDomain(ctx context.Context, in *RemoveWhitelistedDomainRequest, opts ...grpc.CallOption) (*RemoveWhitelistedDomainResponse, error) {
+	out := new(RemoveWhitelistedDomainResponse)
+	err := c.cc.Invoke(ctx, AdminService_RemoveWhitelistedDomain_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListWhitelistedDomains(ctx context.Context, in *ListWhitelistedDomainsRequest, opts ...grpc.CallOption) (*ListWhitelistedDomainsResponse, error) {
+	out := new(ListWhitelistedDomainsResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListWhitelistedDomains_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -535,10 +547,12 @@ type AdminServiceServer interface {
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
 	GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error)
-	// CreateAutoinviteDomain adds a domain to the autoinvite list
-	CreateAutoinviteDomain(context.Context, *CreateAutoinviteDomainRequest) (*CreateAutoinviteDomainResponse, error)
-	// RemoveAutoinviteDomain removes a domain from the autoinvite list
-	RemoveAutoinviteDomain(context.Context, *RemoveAutoinviteDomainRequest) (*RemoveAutoinviteDomainResponse, error)
+	// CreateWhitelistedDomain adds a domain to the whitelist
+	CreateWhitelistedDomain(context.Context, *CreateWhitelistedDomainRequest) (*CreateWhitelistedDomainResponse, error)
+	// RemoveWhitelistedDomain removes a domain from the whitelist list
+	RemoveWhitelistedDomain(context.Context, *RemoveWhitelistedDomainRequest) (*RemoveWhitelistedDomainResponse, error)
+	// ListWhitelistedDomains lists all the whitelisted domains for the organization
+	ListWhitelistedDomains(context.Context, *ListWhitelistedDomainsRequest) (*ListWhitelistedDomainsResponse, error)
 	// GetUsersByEmail returns user by email
 	SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error)
 	// ListSuperusers lists all the superusers
@@ -645,11 +659,14 @@ func (UnimplementedAdminServiceServer) RevokeCurrentAuthToken(context.Context, *
 func (UnimplementedAdminServiceServer) GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGithubRepoStatus not implemented")
 }
-func (UnimplementedAdminServiceServer) CreateAutoinviteDomain(context.Context, *CreateAutoinviteDomainRequest) (*CreateAutoinviteDomainResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateAutoinviteDomain not implemented")
+func (UnimplementedAdminServiceServer) CreateWhitelistedDomain(context.Context, *CreateWhitelistedDomainRequest) (*CreateWhitelistedDomainResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateWhitelistedDomain not implemented")
 }
-func (UnimplementedAdminServiceServer) RemoveAutoinviteDomain(context.Context, *RemoveAutoinviteDomainRequest) (*RemoveAutoinviteDomainResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RemoveAutoinviteDomain not implemented")
+func (UnimplementedAdminServiceServer) RemoveWhitelistedDomain(context.Context, *RemoveWhitelistedDomainRequest) (*RemoveWhitelistedDomainResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveWhitelistedDomain not implemented")
+}
+func (UnimplementedAdminServiceServer) ListWhitelistedDomains(context.Context, *ListWhitelistedDomainsRequest) (*ListWhitelistedDomainsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListWhitelistedDomains not implemented")
 }
 func (UnimplementedAdminServiceServer) SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchUsers not implemented")
@@ -1231,38 +1248,56 @@ func _AdminService_GetGithubRepoStatus_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_CreateAutoinviteDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateAutoinviteDomainRequest)
+func _AdminService_CreateWhitelistedDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateWhitelistedDomainRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).CreateAutoinviteDomain(ctx, in)
+		return srv.(AdminServiceServer).CreateWhitelistedDomain(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_CreateAutoinviteDomain_FullMethodName,
+		FullMethod: AdminService_CreateWhitelistedDomain_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).CreateAutoinviteDomain(ctx, req.(*CreateAutoinviteDomainRequest))
+		return srv.(AdminServiceServer).CreateWhitelistedDomain(ctx, req.(*CreateWhitelistedDomainRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_RemoveAutoinviteDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RemoveAutoinviteDomainRequest)
+func _AdminService_RemoveWhitelistedDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveWhitelistedDomainRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).RemoveAutoinviteDomain(ctx, in)
+		return srv.(AdminServiceServer).RemoveWhitelistedDomain(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_RemoveAutoinviteDomain_FullMethodName,
+		FullMethod: AdminService_RemoveWhitelistedDomain_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).RemoveAutoinviteDomain(ctx, req.(*RemoveAutoinviteDomainRequest))
+		return srv.(AdminServiceServer).RemoveWhitelistedDomain(ctx, req.(*RemoveWhitelistedDomainRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListWhitelistedDomains_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListWhitelistedDomainsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListWhitelistedDomains(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListWhitelistedDomains_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListWhitelistedDomains(ctx, req.(*ListWhitelistedDomainsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1453,12 +1488,16 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetGithubRepoStatus_Handler,
 		},
 		{
-			MethodName: "CreateAutoinviteDomain",
-			Handler:    _AdminService_CreateAutoinviteDomain_Handler,
+			MethodName: "CreateWhitelistedDomain",
+			Handler:    _AdminService_CreateWhitelistedDomain_Handler,
 		},
 		{
-			MethodName: "RemoveAutoinviteDomain",
-			Handler:    _AdminService_RemoveAutoinviteDomain_Handler,
+			MethodName: "RemoveWhitelistedDomain",
+			Handler:    _AdminService_RemoveWhitelistedDomain_Handler,
+		},
+		{
+			MethodName: "ListWhitelistedDomains",
+			Handler:    _AdminService_ListWhitelistedDomains_Handler,
 		},
 		{
 			MethodName: "SearchUsers",

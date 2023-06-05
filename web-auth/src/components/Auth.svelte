@@ -109,8 +109,19 @@
             email: email,
             password: password,
           },
-          (err) => {
-            if (err) displayError({ message: err?.description });
+          // explicitly typing as any to avoid missing property TS/svelte-check error
+          (err: any) => {
+            // Auth0 is not consistent in the naming of the error description field
+            const errorText =
+              typeof err?.description === "string"
+                ? err.description
+                : typeof err?.policy === "string"
+                ? err.policy
+                : typeof err?.error_description === "string"
+                ? err.error_description
+                : err?.message;
+
+            if (err) displayError({ message: errorText });
             isEmailDisabled = false;
           }
         );

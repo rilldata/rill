@@ -49,6 +49,11 @@ export type AdminServiceListProjectsForOrganizationParams = {
   pageToken?: string;
 };
 
+export type AdminServiceCreateWhitelistedDomainBody = {
+  domain?: string;
+  role?: string;
+};
+
 export type AdminServiceListProjectMembersParams = {
   pageSize?: number;
   pageToken?: string;
@@ -71,11 +76,6 @@ export type AdminServiceListOrganizationMembersParams = {
 export type AdminServiceListOrganizationInvitesParams = {
   pageSize?: number;
   pageToken?: string;
-};
-
-export type AdminServiceCreateAutoinviteDomainBody = {
-  domain?: string;
-  role?: string;
 };
 
 export type AdminServiceUpdateOrganizationBody = {
@@ -106,6 +106,11 @@ export type AdminServiceSetOrganizationMemberRoleBodyBody = {
 };
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
+
+export interface V1WhitelistedDomain {
+  domain?: string;
+  role?: string;
+}
 
 export interface V1UserInvite {
   email?: string;
@@ -176,15 +181,15 @@ export interface V1RevokeCurrentAuthTokenResponse {
   tokenId?: string;
 }
 
+export interface V1RemoveWhitelistedDomainResponse {
+  [key: string]: any;
+}
+
 export interface V1RemoveProjectMemberResponse {
   [key: string]: any;
 }
 
 export interface V1RemoveOrganizationMemberResponse {
-  [key: string]: any;
-}
-
-export interface V1RemoveAutoinviteDomainResponse {
   [key: string]: any;
 }
 
@@ -251,6 +256,10 @@ export interface V1Member {
   roleName?: string;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export interface V1ListWhitelistedDomainsResponse {
+  domains?: V1WhitelistedDomain[];
 }
 
 export interface V1ListSuperusersResponse {
@@ -329,7 +338,7 @@ export interface V1GetCurrentUserResponse {
 }
 
 export type V1DeploymentStatus =
-  (typeof V1DeploymentStatus)[keyof typeof V1DeploymentStatus];
+  typeof V1DeploymentStatus[keyof typeof V1DeploymentStatus];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1DeploymentStatus = {
@@ -361,6 +370,10 @@ export interface V1DeleteOrganizationResponse {
   [key: string]: any;
 }
 
+export interface V1CreateWhitelistedDomainResponse {
+  [key: string]: any;
+}
+
 export interface V1CreateProjectResponse {
   project?: V1Project;
 }
@@ -372,10 +385,6 @@ export interface V1CreateOrganizationResponse {
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
-}
-
-export interface V1CreateAutoinviteDomainResponse {
-  [key: string]: any;
 }
 
 export interface V1AddProjectMemberResponse {
