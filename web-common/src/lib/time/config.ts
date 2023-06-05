@@ -175,12 +175,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [
-        {
-          period: Period.HOUR,
-          truncationType: TimeTruncationType.START_OF_PERIOD,
-        },
-      ],
+      transformation: [],
     },
   },
   WEEK_TO_DATE: {
@@ -198,12 +193,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [
-        {
-          period: Period.HOUR,
-          truncationType: TimeTruncationType.START_OF_PERIOD,
-        },
-      ],
+      transformation: [],
     },
   },
   MONTH_TO_DATE: {
@@ -221,12 +211,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [
-        {
-          period: Period.DAY,
-          truncationType: TimeTruncationType.START_OF_PERIOD,
-        },
-      ],
+      transformation: [],
     },
   },
   YEAR_TO_DATE: {
@@ -244,12 +229,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [
-        {
-          period: Period.DAY,
-          truncationType: TimeTruncationType.START_OF_PERIOD,
-        },
-      ],
+      transformation: [],
     },
   },
 };
