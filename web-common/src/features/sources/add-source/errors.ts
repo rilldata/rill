@@ -118,6 +118,9 @@ const errorTelemetryMap = {
   "invalid file": SourceErrorCodes.MismatchedSchema,
   "failed to fetch url": SourceErrorCodes.URLBroken,
   "file type not supported": SourceErrorCodes.UnsupportedFileType,
+  // Runtime errors
+  "context deadline exceeded": SourceErrorCodes.RuntimeError,
+  timeout: SourceErrorCodes.RuntimeError,
 };
 
 export function categorizeSourceError(errorMessage: string) {
