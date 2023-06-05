@@ -50,7 +50,7 @@
       <p>Building data intuition at every step of analysis</p>
     </div>
     <ol
-      class="w-full lg:w-2/3 xl:w-1/2 2xl:w-2/5 flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-gray-50 rounded-lg border border-gray-200"
+      class="max-w-fit flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-gray-50 rounded-lg border border-gray-200"
     >
       {#each steps as step, i (step.heading)}
         <li class="flex gap-x-0.5">
