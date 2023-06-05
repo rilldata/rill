@@ -20,6 +20,7 @@
   import { NicelyFormattedTypes } from "../humanize-numbers";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardMeasureSelector from "./LeaderboardMeasureSelector.svelte";
+  import { makeInclusive } from "../../../lib/time/ranges";
 
   export let metricViewName: string;
 
@@ -65,7 +66,7 @@
         ...totalsQueryParams,
         ...{
           timeStart: metricsExplorer.selectedTimeRange?.start,
-          timeEnd: metricsExplorer.selectedTimeRange?.end,
+          timeEnd: makeInclusive(metricsExplorer.selectedTimeRange?.end),
         },
       };
     }

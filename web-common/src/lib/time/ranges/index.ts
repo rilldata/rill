@@ -343,3 +343,11 @@ export function getAdjustedChartTime(
     end: adjustedEnd,
   };
 }
+
+export function makeInclusive(date: Date) {
+  if (!date) return undefined;
+  let dt = new Date(date);
+  dt = new Date(dt.setSeconds(dt.getSeconds() + 1));
+
+  return dt.toISOString();
+}
