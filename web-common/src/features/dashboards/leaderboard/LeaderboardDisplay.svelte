@@ -54,10 +54,13 @@
       measureNames: selectedMeasureNames,
       timeStart: metricsExplorer.selectedTimeRange?.start.toISOString(),
       timeEnd: metricsExplorer.selectedTimeRange?.end.toISOString(),
+      filter: metricsExplorer?.filters,
     },
     {
       query: {
-        enabled: hasTimeSeries ? !!metricsExplorer.selectedTimeRange : true,
+        enabled:
+          (hasTimeSeries ? !!metricsExplorer.selectedTimeRange : true) &&
+          !!metricsExplorer?.filters,
       },
     }
   );

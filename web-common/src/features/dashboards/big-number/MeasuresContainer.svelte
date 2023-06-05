@@ -142,7 +142,9 @@
     },
     {
       query: {
-        enabled: hasTimeSeries ? !!metricsExplorer.selectedTimeRange : true,
+        enabled:
+          (hasTimeSeries ? !!metricsExplorer.selectedTimeRange : true) &&
+          !!metricsExplorer?.filters,
       },
     }
   );

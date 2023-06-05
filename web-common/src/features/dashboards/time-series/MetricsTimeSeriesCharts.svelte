@@ -67,13 +67,14 @@
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      filter: $dashboardStore?.filters,
       timeStart: $dashboardStore?.selectedTimeRange?.start.toISOString(),
       timeEnd: $dashboardStore?.selectedTimeRange?.end.toISOString(),
+      filter: $dashboardStore?.filters,
     },
     {
       query: {
-        enabled: !!$dashboardStore?.selectedTimeRange,
+        enabled:
+          !!$dashboardStore?.selectedTimeRange && !!$dashboardStore?.filters,
       },
     }
   );
@@ -91,15 +92,17 @@
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      filter: $dashboardStore?.filters,
       timeStart:
         $dashboardStore?.selectedComparisonTimeRange?.start.toISOString(),
       timeEnd: $dashboardStore?.selectedComparisonTimeRange?.end.toISOString(),
+      filter: $dashboardStore?.filters,
     },
     {
       query: {
         enabled: Boolean(
-          displayComparison && !!$dashboardStore?.selectedComparisonTimeRange
+          displayComparison &&
+            !!$dashboardStore?.selectedComparisonTimeRange &&
+            !!$dashboardStore?.filters
         ),
       },
     }
