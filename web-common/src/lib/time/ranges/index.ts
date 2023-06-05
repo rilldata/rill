@@ -29,7 +29,6 @@ import {
   TimeRangeType,
 } from "../types";
 import { removeTimezoneOffset } from "../../formatters";
-import { getEndOfPeriod } from "../transforms";
 
 /**
  * Returns true if the range defined by start and end is completely

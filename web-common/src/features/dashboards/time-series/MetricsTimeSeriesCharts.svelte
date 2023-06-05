@@ -13,7 +13,6 @@
     useModelAllTimeRange,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import {
     V1MetricsViewTimeSeriesResponse,
