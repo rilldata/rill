@@ -83,8 +83,10 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 
 	// Try to get from cache
 	if val, ok := r.queryCache.cache.Get(key); ok {
+		observability.AddRequestAttributes(ctx, attribute.Bool("query.cache_hit", true))
 		return query.UnmarshalResult(val)
 	}
+	observability.AddRequestAttributes(ctx, attribute.Bool("query.cache_hit", false))
 
 	// Load with singleflight
 	owner := false

@@ -39,9 +39,8 @@ func NewService(
 		Olap:          olap,
 		RegistryStore: registry,
 		InstID:        instID,
-		logger:        logger,
-
-		Meta: m,
+		logger:        logger.With(zap.String("instance_id", instID)),
+		Meta:          m,
 	}
 }
 
