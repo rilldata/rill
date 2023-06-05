@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,15 +11,14 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/global"
-	"go.uber.org/zap"
 )
 
 // Create instruments
 var (
-	meter                 = global.Meter("runtime/drivers/duckdb")
+	meter                 = otel.Meter("github.com/rilldata/rill/runtime/drivers/duckdb")
 	queriesCounter        = observability.Must(meter.Int64Counter("queries"))
 	queueLatencyHistogram = observability.Must(meter.Int64Histogram("queue_latency", metric.WithUnit("ms")))
 	queryLatencyHistogram = observability.Must(meter.Int64Histogram("query_latency", metric.WithUnit("ms")))
@@ -183,21 +181,4 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	}
 
 	return &runtimev1.StructType{Fields: fields}, nil
-}
-
-func (c *connection) DropDB() error {
-	// ignoring close error
-	err := c.Close()
-	if err != nil {
-		c.logger.Error("duckdb: drop db: failed to close", zap.Error(err))
-	}
-	if c.config.DBFilePath != "" {
-		err = os.Remove(c.config.DBFilePath)
-		if err != nil {
-			return err
-		}
-		// Hacky approach to remove the wal file
-		_ = os.Remove(c.config.DBFilePath + ".wal")
-	}
-	return nil
 }

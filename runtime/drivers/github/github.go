@@ -74,6 +74,10 @@ func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, err
 	}, nil
 }
 
+func (d driver) Drop(dsn string, logger *zap.Logger) error {
+	return drivers.ErrDropNotSupported
+}
+
 type connection struct {
 	dsnStr              string
 	dsn                 DSN
