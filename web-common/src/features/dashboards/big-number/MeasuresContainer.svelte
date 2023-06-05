@@ -1,16 +1,13 @@
 <script lang="ts">
   import {
-    useMetaQuery,
     selectBestMeasureStrings,
     selectMeasureKeys,
+    useMetaQuery,
+    useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
-  import {
-    createQueryServiceMetricsViewTotals,
-    V1MetricsViewTotalsResponse,
-  } from "@rilldata/web-common/runtime-client";
-  import type { CreateQueryResult } from "@tanstack/svelte-query";
+  import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { MEASURE_CONFIG } from "../config";
   import {
@@ -130,26 +127,25 @@
     }
   }
 
-  let totalsQuery: CreateQueryResult<V1MetricsViewTotalsResponse, Error>;
   $: numColumns = 3;
 
-  $: if (
-    metricsExplorer &&
-    metaQuery &&
-    $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching
-  ) {
-    let totalsQueryParams = {
+  $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
+  $: hasTimeSeries = $metricTimeSeries.data;
+  $: totalsQuery = createQueryServiceMetricsViewTotals(
+    instanceId,
+    metricViewName,
+    {
       measureNames: selectedMeasureNames,
+      timeStart: metricsExplorer.selectedTimeRange?.start.toISOString(),
+      timeEnd: metricsExplorer.selectedTimeRange?.end.toISOString(),
       filter: metricsExplorer?.filters,
-    };
-
-    totalsQuery = createQueryServiceMetricsViewTotals(
-      instanceId,
-      metricViewName,
-      totalsQueryParams
-    );
-  }
+    },
+    {
+      query: {
+        enabled: hasTimeSeries ? !!metricsExplorer.selectedTimeRange : true,
+      },
+    }
+  );
 
   let measureNodes = [];
 

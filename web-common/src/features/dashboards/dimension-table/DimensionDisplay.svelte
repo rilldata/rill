@@ -233,29 +233,20 @@
     displayComparison = false;
   }
 
-  let totalsQuery;
-  $: if (
-    metricsExplorer &&
-    metaQuery &&
-    $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching
-  ) {
-    let totalsQueryParams = { measureNames: selectedMeasureNames };
-    if (hasTimeSeries) {
-      totalsQueryParams = {
-        ...totalsQueryParams,
-        ...{
-          timeStart: metricsExplorer.selectedTimeRange?.start,
-          timeEnd: metricsExplorer.selectedTimeRange?.end,
-        },
-      };
+  $: totalsQuery = createQueryServiceMetricsViewTotals(
+    instanceId,
+    metricViewName,
+    {
+      measureNames: selectedMeasureNames,
+      timeStart: metricsExplorer.selectedTimeRange?.start.toISOString(),
+      timeEnd: metricsExplorer.selectedTimeRange?.end.toISOString(),
+    },
+    {
+      query: {
+        enabled: hasTimeSeries ? !!metricsExplorer.selectedTimeRange : true,
+      },
     }
-    totalsQuery = createQueryServiceMetricsViewTotals(
-      instanceId,
-      metricViewName,
-      totalsQueryParams
-    );
-  }
+  );
 
   let referenceValues = {};
   $: if ($totalsQuery?.data?.data) {

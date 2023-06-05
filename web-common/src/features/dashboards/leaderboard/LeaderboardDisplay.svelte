@@ -6,11 +6,10 @@
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import {
-    MetricsViewDimension,
-    V1MetricsViewTotalsResponse,
     createQueryServiceMetricsViewTotals,
+    MetricsViewDimension,
   } from "@rilldata/web-common/runtime-client";
-  import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
@@ -48,33 +47,24 @@
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
+  $: totalsQuery = createQueryServiceMetricsViewTotals(
+    $runtime.instanceId,
+    metricViewName,
+    {
+      measureNames: selectedMeasureNames,
+      timeStart: metricsExplorer.selectedTimeRange?.start.toISOString(),
+      timeEnd: metricsExplorer.selectedTimeRange?.end.toISOString(),
+    },
+    {
+      query: {
+        enabled: hasTimeSeries ? !!metricsExplorer.selectedTimeRange : true,
+      },
+    }
+  );
+
   $: formatPreset =
     (activeMeasure?.format as NicelyFormattedTypes) ??
     NicelyFormattedTypes.HUMANIZE;
-
-  let totalsQuery: CreateQueryResult<V1MetricsViewTotalsResponse, Error>;
-  $: if (
-    metricsExplorer &&
-    metaQuery &&
-    $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching
-  ) {
-    let totalsQueryParams = { measureNames: selectedMeasureNames };
-    if (hasTimeSeries) {
-      totalsQueryParams = {
-        ...totalsQueryParams,
-        ...{
-          timeStart: metricsExplorer.selectedTimeRange?.start,
-          timeEnd: metricsExplorer.selectedTimeRange?.end,
-        },
-      };
-    }
-    totalsQuery = createQueryServiceMetricsViewTotals(
-      $runtime.instanceId,
-      metricViewName,
-      totalsQueryParams
-    );
-  }
 
   let referenceValue: number;
   $: if (activeMeasure?.name && $totalsQuery?.data?.data) {
