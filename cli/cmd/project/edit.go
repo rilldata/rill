@@ -56,7 +56,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			cmd.Flag("prod_ttl_seconds").DefValue = fmt.Sprintf("%v", proj.ProdTtlSeconds)
 
 			if cfg.Interactive {
-				err = cmdutil.SetFlagsByInputPrompts(*cmd, "description", "prod-branch", "public")
+				err = cmdutil.SetFlagsByInputPrompts(*cmd, "description", "prod-branch", "public", "prod_ttl_seconds")
 				if err != nil {
 					return err
 				}
