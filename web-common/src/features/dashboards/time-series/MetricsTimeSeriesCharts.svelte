@@ -67,8 +67,12 @@
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: $dashboardStore?.selectedTimeRange?.start.toISOString(),
-      timeEnd: $dashboardStore?.selectedTimeRange?.end.toISOString(),
+      timeStart: $dashboardStore?.selectedTimeRange?.start
+        ? $dashboardStore.selectedTimeRange.start.toISOString()
+        : undefined,
+      timeEnd: $dashboardStore?.selectedTimeRange?.end
+        ? $dashboardStore.selectedTimeRange.end.toISOString()
+        : undefined,
       filter: $dashboardStore?.filters,
     },
     {
@@ -92,9 +96,12 @@
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart:
-        $dashboardStore?.selectedComparisonTimeRange?.start.toISOString(),
-      timeEnd: $dashboardStore?.selectedComparisonTimeRange?.end.toISOString(),
+      timeStart: $dashboardStore?.selectedComparisonTimeRange?.start
+        ? $dashboardStore.selectedComparisonTimeRange.start.toISOString()
+        : undefined,
+      timeEnd: $dashboardStore?.selectedComparisonTimeRange?.end
+        ? $dashboardStore.selectedComparisonTimeRange.end.toISOString()
+        : undefined,
       filter: $dashboardStore?.filters,
     },
     {

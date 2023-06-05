@@ -136,8 +136,12 @@
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: metricsExplorer.selectedTimeRange?.start.toISOString(),
-      timeEnd: metricsExplorer.selectedTimeRange?.end.toISOString(),
+      timeStart: metricsExplorer.selectedTimeRange?.start
+        ? metricsExplorer.selectedTimeRange.start.toISOString()
+        : undefined,
+      timeEnd: metricsExplorer.selectedTimeRange?.end
+        ? metricsExplorer.selectedTimeRange.end.toISOString()
+        : undefined,
       filter: metricsExplorer?.filters,
     },
     {
