@@ -203,17 +203,22 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/repositories"};
   }
 
-  // CreateAutoinviteDomain adds a domain to the autoinvite list
-  rpc CreateAutoinviteDomain(CreateAutoinviteDomainRequest) returns (CreateAutoinviteDomainResponse) {
+  // CreateWhitelistedDomain adds a domain to the whitelist
+  rpc CreateWhitelistedDomain(CreateWhitelistedDomainRequest) returns (CreateWhitelistedDomainResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/autoinvite",
+      post: "/v1/organizations/{organization}/whitelisted",
       body: "*"
     };
   }
 
-  // RemoveAutoinviteDomain removes a domain from the autoinvite list
-  rpc RemoveAutoinviteDomain(RemoveAutoinviteDomainRequest) returns (RemoveAutoinviteDomainResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization}/autoinvite/{domain}"};
+  // RemoveWhitelistedDomain removes a domain from the whitelist list
+  rpc RemoveWhitelistedDomain(RemoveWhitelistedDomainRequest) returns (RemoveWhitelistedDomainResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/whitelisted/{domain}"};
+  }
+
+  // ListWhitelistedDomains lists all the whitelisted domains for the organization
+  rpc ListWhitelistedDomains(ListWhitelistedDomainsRequest) returns (ListWhitelistedDomainsResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/whitelisted"};
   }
 
    // GetUsersByEmail returns user by email
@@ -554,20 +559,28 @@ message GetGithubRepoStatusResponse {
   string default_branch = 3;
 }
 
-message CreateAutoinviteDomainRequest {
+message CreateWhitelistedDomainRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string domain = 2 [(validate.rules).string.min_len = 1];
   string role = 3 [(validate.rules).string.min_len = 1];
 }
 
-message CreateAutoinviteDomainResponse {}
+message CreateWhitelistedDomainResponse {}
 
-message RemoveAutoinviteDomainRequest {
+message RemoveWhitelistedDomainRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string domain = 2 [(validate.rules).string.min_len = 1];
 }
 
-message RemoveAutoinviteDomainResponse {}
+message RemoveWhitelistedDomainResponse {}
+
+message ListWhitelistedDomainsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+}
+
+message ListWhitelistedDomainsResponse {
+  repeated WhitelistedDomain domains = 1;
+}
 
 message User {
   string id = 1;
@@ -664,4 +677,9 @@ message UserInvite {
   string email = 1;
   string role = 2;
   string invited_by = 3;
+}
+
+message WhitelistedDomain {
+  string domain = 1;
+  string role = 2;
 }

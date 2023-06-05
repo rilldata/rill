@@ -1,4 +1,4 @@
-package autoinvite
+package whitelist
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 	removeCmd := &cobra.Command{
 		Use:   "remove <org> <domain>",
 		Args:  cobra.ExactArgs(2),
-		Short: "Remove autoinvite for an org and domain",
+		Short: "Remove whitelist for an org and domain",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -26,7 +26,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 			org := args[0]
 			domain := args[1]
 
-			_, err = client.RemoveAutoinviteDomain(ctx, &adminv1.RemoveAutoinviteDomainRequest{
+			_, err = client.RemoveWhitelistedDomain(ctx, &adminv1.RemoveWhitelistedDomainRequest{
 				Organization: org,
 				Domain:       domain,
 			})
@@ -34,7 +34,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter(fmt.Sprintf("Removed autoinvite for org %q and domain %q", org, domain))
+			cmdutil.SuccessPrinter(fmt.Sprintf("Removed whitelist for org %q and domain %q", org, domain))
 
 			return nil
 		},

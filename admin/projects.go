@@ -2,11 +2,11 @@ package admin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -27,11 +27,11 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	// Get roles for initial setup
 	adminRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameAdmin)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to find project admin role"))
+		panic(err)
 	}
 	viewerRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameViewer)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to find project viewer role"))
+		panic(err)
 	}
 
 	// Create the project and add initial members using a transaction.

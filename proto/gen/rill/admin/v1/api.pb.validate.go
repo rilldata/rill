@@ -8625,22 +8625,22 @@ var _ interface {
 	ErrorName() string
 } = GetGithubRepoStatusResponseValidationError{}
 
-// Validate checks the field values on CreateAutoinviteDomainRequest with the
+// Validate checks the field values on CreateWhitelistedDomainRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *CreateAutoinviteDomainRequest) Validate() error {
+func (m *CreateWhitelistedDomainRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on CreateAutoinviteDomainRequest with
+// ValidateAll checks the field values on CreateWhitelistedDomainRequest with
 // the rules defined in the proto definition for this message. If any rules
 // are violated, the result is a list of violation errors wrapped in
-// CreateAutoinviteDomainRequestMultiError, or nil if none found.
-func (m *CreateAutoinviteDomainRequest) ValidateAll() error {
+// CreateWhitelistedDomainRequestMultiError, or nil if none found.
+func (m *CreateWhitelistedDomainRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *CreateAutoinviteDomainRequest) validate(all bool) error {
+func (m *CreateWhitelistedDomainRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -8648,7 +8648,7 @@ func (m *CreateAutoinviteDomainRequest) validate(all bool) error {
 	var errors []error
 
 	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
-		err := CreateAutoinviteDomainRequestValidationError{
+		err := CreateWhitelistedDomainRequestValidationError{
 			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
@@ -8659,7 +8659,7 @@ func (m *CreateAutoinviteDomainRequest) validate(all bool) error {
 	}
 
 	if utf8.RuneCountInString(m.GetDomain()) < 1 {
-		err := CreateAutoinviteDomainRequestValidationError{
+		err := CreateWhitelistedDomainRequestValidationError{
 			field:  "Domain",
 			reason: "value length must be at least 1 runes",
 		}
@@ -8670,7 +8670,7 @@ func (m *CreateAutoinviteDomainRequest) validate(all bool) error {
 	}
 
 	if utf8.RuneCountInString(m.GetRole()) < 1 {
-		err := CreateAutoinviteDomainRequestValidationError{
+		err := CreateWhitelistedDomainRequestValidationError{
 			field:  "Role",
 			reason: "value length must be at least 1 runes",
 		}
@@ -8681,19 +8681,19 @@ func (m *CreateAutoinviteDomainRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return CreateAutoinviteDomainRequestMultiError(errors)
+		return CreateWhitelistedDomainRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// CreateAutoinviteDomainRequestMultiError is an error wrapping multiple
-// validation errors returned by CreateAutoinviteDomainRequest.ValidateAll()
+// CreateWhitelistedDomainRequestMultiError is an error wrapping multiple
+// validation errors returned by CreateWhitelistedDomainRequest.ValidateAll()
 // if the designated constraints aren't met.
-type CreateAutoinviteDomainRequestMultiError []error
+type CreateWhitelistedDomainRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m CreateAutoinviteDomainRequestMultiError) Error() string {
+func (m CreateWhitelistedDomainRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -8702,12 +8702,12 @@ func (m CreateAutoinviteDomainRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m CreateAutoinviteDomainRequestMultiError) AllErrors() []error { return m }
+func (m CreateWhitelistedDomainRequestMultiError) AllErrors() []error { return m }
 
-// CreateAutoinviteDomainRequestValidationError is the validation error
-// returned by CreateAutoinviteDomainRequest.Validate if the designated
+// CreateWhitelistedDomainRequestValidationError is the validation error
+// returned by CreateWhitelistedDomainRequest.Validate if the designated
 // constraints aren't met.
-type CreateAutoinviteDomainRequestValidationError struct {
+type CreateWhitelistedDomainRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -8715,24 +8715,24 @@ type CreateAutoinviteDomainRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e CreateAutoinviteDomainRequestValidationError) Field() string { return e.field }
+func (e CreateWhitelistedDomainRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e CreateAutoinviteDomainRequestValidationError) Reason() string { return e.reason }
+func (e CreateWhitelistedDomainRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e CreateAutoinviteDomainRequestValidationError) Cause() error { return e.cause }
+func (e CreateWhitelistedDomainRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e CreateAutoinviteDomainRequestValidationError) Key() bool { return e.key }
+func (e CreateWhitelistedDomainRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e CreateAutoinviteDomainRequestValidationError) ErrorName() string {
-	return "CreateAutoinviteDomainRequestValidationError"
+func (e CreateWhitelistedDomainRequestValidationError) ErrorName() string {
+	return "CreateWhitelistedDomainRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e CreateAutoinviteDomainRequestValidationError) Error() string {
+func (e CreateWhitelistedDomainRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -8744,14 +8744,14 @@ func (e CreateAutoinviteDomainRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sCreateAutoinviteDomainRequest.%s: %s%s",
+		"invalid %sCreateWhitelistedDomainRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = CreateAutoinviteDomainRequestValidationError{}
+var _ error = CreateWhitelistedDomainRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -8759,24 +8759,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = CreateAutoinviteDomainRequestValidationError{}
+} = CreateWhitelistedDomainRequestValidationError{}
 
-// Validate checks the field values on CreateAutoinviteDomainResponse with the
+// Validate checks the field values on CreateWhitelistedDomainResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *CreateAutoinviteDomainResponse) Validate() error {
+func (m *CreateWhitelistedDomainResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on CreateAutoinviteDomainResponse with
+// ValidateAll checks the field values on CreateWhitelistedDomainResponse with
 // the rules defined in the proto definition for this message. If any rules
 // are violated, the result is a list of violation errors wrapped in
-// CreateAutoinviteDomainResponseMultiError, or nil if none found.
-func (m *CreateAutoinviteDomainResponse) ValidateAll() error {
+// CreateWhitelistedDomainResponseMultiError, or nil if none found.
+func (m *CreateWhitelistedDomainResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *CreateAutoinviteDomainResponse) validate(all bool) error {
+func (m *CreateWhitelistedDomainResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -8784,19 +8784,19 @@ func (m *CreateAutoinviteDomainResponse) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return CreateAutoinviteDomainResponseMultiError(errors)
+		return CreateWhitelistedDomainResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// CreateAutoinviteDomainResponseMultiError is an error wrapping multiple
-// validation errors returned by CreateAutoinviteDomainResponse.ValidateAll()
+// CreateWhitelistedDomainResponseMultiError is an error wrapping multiple
+// validation errors returned by CreateWhitelistedDomainResponse.ValidateAll()
 // if the designated constraints aren't met.
-type CreateAutoinviteDomainResponseMultiError []error
+type CreateWhitelistedDomainResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m CreateAutoinviteDomainResponseMultiError) Error() string {
+func (m CreateWhitelistedDomainResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -8805,12 +8805,12 @@ func (m CreateAutoinviteDomainResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m CreateAutoinviteDomainResponseMultiError) AllErrors() []error { return m }
+func (m CreateWhitelistedDomainResponseMultiError) AllErrors() []error { return m }
 
-// CreateAutoinviteDomainResponseValidationError is the validation error
-// returned by CreateAutoinviteDomainResponse.Validate if the designated
+// CreateWhitelistedDomainResponseValidationError is the validation error
+// returned by CreateWhitelistedDomainResponse.Validate if the designated
 // constraints aren't met.
-type CreateAutoinviteDomainResponseValidationError struct {
+type CreateWhitelistedDomainResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -8818,24 +8818,24 @@ type CreateAutoinviteDomainResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e CreateAutoinviteDomainResponseValidationError) Field() string { return e.field }
+func (e CreateWhitelistedDomainResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e CreateAutoinviteDomainResponseValidationError) Reason() string { return e.reason }
+func (e CreateWhitelistedDomainResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e CreateAutoinviteDomainResponseValidationError) Cause() error { return e.cause }
+func (e CreateWhitelistedDomainResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e CreateAutoinviteDomainResponseValidationError) Key() bool { return e.key }
+func (e CreateWhitelistedDomainResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e CreateAutoinviteDomainResponseValidationError) ErrorName() string {
-	return "CreateAutoinviteDomainResponseValidationError"
+func (e CreateWhitelistedDomainResponseValidationError) ErrorName() string {
+	return "CreateWhitelistedDomainResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e CreateAutoinviteDomainResponseValidationError) Error() string {
+func (e CreateWhitelistedDomainResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -8847,14 +8847,14 @@ func (e CreateAutoinviteDomainResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sCreateAutoinviteDomainResponse.%s: %s%s",
+		"invalid %sCreateWhitelistedDomainResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = CreateAutoinviteDomainResponseValidationError{}
+var _ error = CreateWhitelistedDomainResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -8862,24 +8862,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = CreateAutoinviteDomainResponseValidationError{}
+} = CreateWhitelistedDomainResponseValidationError{}
 
-// Validate checks the field values on RemoveAutoinviteDomainRequest with the
+// Validate checks the field values on RemoveWhitelistedDomainRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *RemoveAutoinviteDomainRequest) Validate() error {
+func (m *RemoveWhitelistedDomainRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on RemoveAutoinviteDomainRequest with
+// ValidateAll checks the field values on RemoveWhitelistedDomainRequest with
 // the rules defined in the proto definition for this message. If any rules
 // are violated, the result is a list of violation errors wrapped in
-// RemoveAutoinviteDomainRequestMultiError, or nil if none found.
-func (m *RemoveAutoinviteDomainRequest) ValidateAll() error {
+// RemoveWhitelistedDomainRequestMultiError, or nil if none found.
+func (m *RemoveWhitelistedDomainRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *RemoveAutoinviteDomainRequest) validate(all bool) error {
+func (m *RemoveWhitelistedDomainRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -8887,7 +8887,7 @@ func (m *RemoveAutoinviteDomainRequest) validate(all bool) error {
 	var errors []error
 
 	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
-		err := RemoveAutoinviteDomainRequestValidationError{
+		err := RemoveWhitelistedDomainRequestValidationError{
 			field:  "Organization",
 			reason: "value length must be at least 1 runes",
 		}
@@ -8898,7 +8898,7 @@ func (m *RemoveAutoinviteDomainRequest) validate(all bool) error {
 	}
 
 	if utf8.RuneCountInString(m.GetDomain()) < 1 {
-		err := RemoveAutoinviteDomainRequestValidationError{
+		err := RemoveWhitelistedDomainRequestValidationError{
 			field:  "Domain",
 			reason: "value length must be at least 1 runes",
 		}
@@ -8909,19 +8909,19 @@ func (m *RemoveAutoinviteDomainRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return RemoveAutoinviteDomainRequestMultiError(errors)
+		return RemoveWhitelistedDomainRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// RemoveAutoinviteDomainRequestMultiError is an error wrapping multiple
-// validation errors returned by RemoveAutoinviteDomainRequest.ValidateAll()
+// RemoveWhitelistedDomainRequestMultiError is an error wrapping multiple
+// validation errors returned by RemoveWhitelistedDomainRequest.ValidateAll()
 // if the designated constraints aren't met.
-type RemoveAutoinviteDomainRequestMultiError []error
+type RemoveWhitelistedDomainRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m RemoveAutoinviteDomainRequestMultiError) Error() string {
+func (m RemoveWhitelistedDomainRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -8930,12 +8930,12 @@ func (m RemoveAutoinviteDomainRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m RemoveAutoinviteDomainRequestMultiError) AllErrors() []error { return m }
+func (m RemoveWhitelistedDomainRequestMultiError) AllErrors() []error { return m }
 
-// RemoveAutoinviteDomainRequestValidationError is the validation error
-// returned by RemoveAutoinviteDomainRequest.Validate if the designated
+// RemoveWhitelistedDomainRequestValidationError is the validation error
+// returned by RemoveWhitelistedDomainRequest.Validate if the designated
 // constraints aren't met.
-type RemoveAutoinviteDomainRequestValidationError struct {
+type RemoveWhitelistedDomainRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -8943,24 +8943,24 @@ type RemoveAutoinviteDomainRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e RemoveAutoinviteDomainRequestValidationError) Field() string { return e.field }
+func (e RemoveWhitelistedDomainRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e RemoveAutoinviteDomainRequestValidationError) Reason() string { return e.reason }
+func (e RemoveWhitelistedDomainRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e RemoveAutoinviteDomainRequestValidationError) Cause() error { return e.cause }
+func (e RemoveWhitelistedDomainRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e RemoveAutoinviteDomainRequestValidationError) Key() bool { return e.key }
+func (e RemoveWhitelistedDomainRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e RemoveAutoinviteDomainRequestValidationError) ErrorName() string {
-	return "RemoveAutoinviteDomainRequestValidationError"
+func (e RemoveWhitelistedDomainRequestValidationError) ErrorName() string {
+	return "RemoveWhitelistedDomainRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e RemoveAutoinviteDomainRequestValidationError) Error() string {
+func (e RemoveWhitelistedDomainRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -8972,14 +8972,14 @@ func (e RemoveAutoinviteDomainRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sRemoveAutoinviteDomainRequest.%s: %s%s",
+		"invalid %sRemoveWhitelistedDomainRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = RemoveAutoinviteDomainRequestValidationError{}
+var _ error = RemoveWhitelistedDomainRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -8987,24 +8987,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = RemoveAutoinviteDomainRequestValidationError{}
+} = RemoveWhitelistedDomainRequestValidationError{}
 
-// Validate checks the field values on RemoveAutoinviteDomainResponse with the
+// Validate checks the field values on RemoveWhitelistedDomainResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *RemoveAutoinviteDomainResponse) Validate() error {
+func (m *RemoveWhitelistedDomainResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on RemoveAutoinviteDomainResponse with
+// ValidateAll checks the field values on RemoveWhitelistedDomainResponse with
 // the rules defined in the proto definition for this message. If any rules
 // are violated, the result is a list of violation errors wrapped in
-// RemoveAutoinviteDomainResponseMultiError, or nil if none found.
-func (m *RemoveAutoinviteDomainResponse) ValidateAll() error {
+// RemoveWhitelistedDomainResponseMultiError, or nil if none found.
+func (m *RemoveWhitelistedDomainResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *RemoveAutoinviteDomainResponse) validate(all bool) error {
+func (m *RemoveWhitelistedDomainResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -9012,19 +9012,19 @@ func (m *RemoveAutoinviteDomainResponse) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return RemoveAutoinviteDomainResponseMultiError(errors)
+		return RemoveWhitelistedDomainResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// RemoveAutoinviteDomainResponseMultiError is an error wrapping multiple
-// validation errors returned by RemoveAutoinviteDomainResponse.ValidateAll()
+// RemoveWhitelistedDomainResponseMultiError is an error wrapping multiple
+// validation errors returned by RemoveWhitelistedDomainResponse.ValidateAll()
 // if the designated constraints aren't met.
-type RemoveAutoinviteDomainResponseMultiError []error
+type RemoveWhitelistedDomainResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m RemoveAutoinviteDomainResponseMultiError) Error() string {
+func (m RemoveWhitelistedDomainResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -9033,12 +9033,12 @@ func (m RemoveAutoinviteDomainResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m RemoveAutoinviteDomainResponseMultiError) AllErrors() []error { return m }
+func (m RemoveWhitelistedDomainResponseMultiError) AllErrors() []error { return m }
 
-// RemoveAutoinviteDomainResponseValidationError is the validation error
-// returned by RemoveAutoinviteDomainResponse.Validate if the designated
+// RemoveWhitelistedDomainResponseValidationError is the validation error
+// returned by RemoveWhitelistedDomainResponse.Validate if the designated
 // constraints aren't met.
-type RemoveAutoinviteDomainResponseValidationError struct {
+type RemoveWhitelistedDomainResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -9046,24 +9046,24 @@ type RemoveAutoinviteDomainResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e RemoveAutoinviteDomainResponseValidationError) Field() string { return e.field }
+func (e RemoveWhitelistedDomainResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e RemoveAutoinviteDomainResponseValidationError) Reason() string { return e.reason }
+func (e RemoveWhitelistedDomainResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e RemoveAutoinviteDomainResponseValidationError) Cause() error { return e.cause }
+func (e RemoveWhitelistedDomainResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e RemoveAutoinviteDomainResponseValidationError) Key() bool { return e.key }
+func (e RemoveWhitelistedDomainResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e RemoveAutoinviteDomainResponseValidationError) ErrorName() string {
-	return "RemoveAutoinviteDomainResponseValidationError"
+func (e RemoveWhitelistedDomainResponseValidationError) ErrorName() string {
+	return "RemoveWhitelistedDomainResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e RemoveAutoinviteDomainResponseValidationError) Error() string {
+func (e RemoveWhitelistedDomainResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -9075,14 +9075,14 @@ func (e RemoveAutoinviteDomainResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sRemoveAutoinviteDomainResponse.%s: %s%s",
+		"invalid %sRemoveWhitelistedDomainResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = RemoveAutoinviteDomainResponseValidationError{}
+var _ error = RemoveWhitelistedDomainResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -9090,7 +9090,258 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = RemoveAutoinviteDomainResponseValidationError{}
+} = RemoveWhitelistedDomainResponseValidationError{}
+
+// Validate checks the field values on ListWhitelistedDomainsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListWhitelistedDomainsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListWhitelistedDomainsRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListWhitelistedDomainsRequestMultiError, or nil if none found.
+func (m *ListWhitelistedDomainsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListWhitelistedDomainsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := ListWhitelistedDomainsRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return ListWhitelistedDomainsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListWhitelistedDomainsRequestMultiError is an error wrapping multiple
+// validation errors returned by ListWhitelistedDomainsRequest.ValidateAll()
+// if the designated constraints aren't met.
+type ListWhitelistedDomainsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListWhitelistedDomainsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListWhitelistedDomainsRequestMultiError) AllErrors() []error { return m }
+
+// ListWhitelistedDomainsRequestValidationError is the validation error
+// returned by ListWhitelistedDomainsRequest.Validate if the designated
+// constraints aren't met.
+type ListWhitelistedDomainsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListWhitelistedDomainsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListWhitelistedDomainsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListWhitelistedDomainsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListWhitelistedDomainsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListWhitelistedDomainsRequestValidationError) ErrorName() string {
+	return "ListWhitelistedDomainsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListWhitelistedDomainsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListWhitelistedDomainsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListWhitelistedDomainsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListWhitelistedDomainsRequestValidationError{}
+
+// Validate checks the field values on ListWhitelistedDomainsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListWhitelistedDomainsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListWhitelistedDomainsResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListWhitelistedDomainsResponseMultiError, or nil if none found.
+func (m *ListWhitelistedDomainsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListWhitelistedDomainsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetDomains() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListWhitelistedDomainsResponseValidationError{
+						field:  fmt.Sprintf("Domains[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListWhitelistedDomainsResponseValidationError{
+						field:  fmt.Sprintf("Domains[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListWhitelistedDomainsResponseValidationError{
+					field:  fmt.Sprintf("Domains[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListWhitelistedDomainsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListWhitelistedDomainsResponseMultiError is an error wrapping multiple
+// validation errors returned by ListWhitelistedDomainsResponse.ValidateAll()
+// if the designated constraints aren't met.
+type ListWhitelistedDomainsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListWhitelistedDomainsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListWhitelistedDomainsResponseMultiError) AllErrors() []error { return m }
+
+// ListWhitelistedDomainsResponseValidationError is the validation error
+// returned by ListWhitelistedDomainsResponse.Validate if the designated
+// constraints aren't met.
+type ListWhitelistedDomainsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListWhitelistedDomainsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListWhitelistedDomainsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListWhitelistedDomainsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListWhitelistedDomainsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListWhitelistedDomainsResponseValidationError) ErrorName() string {
+	return "ListWhitelistedDomainsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListWhitelistedDomainsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListWhitelistedDomainsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListWhitelistedDomainsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListWhitelistedDomainsResponseValidationError{}
 
 // Validate checks the field values on User with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error
@@ -10286,3 +10537,109 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = UserInviteValidationError{}
+
+// Validate checks the field values on WhitelistedDomain with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *WhitelistedDomain) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on WhitelistedDomain with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// WhitelistedDomainMultiError, or nil if none found.
+func (m *WhitelistedDomain) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WhitelistedDomain) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Domain
+
+	// no validation rules for Role
+
+	if len(errors) > 0 {
+		return WhitelistedDomainMultiError(errors)
+	}
+
+	return nil
+}
+
+// WhitelistedDomainMultiError is an error wrapping multiple validation errors
+// returned by WhitelistedDomain.ValidateAll() if the designated constraints
+// aren't met.
+type WhitelistedDomainMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WhitelistedDomainMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WhitelistedDomainMultiError) AllErrors() []error { return m }
+
+// WhitelistedDomainValidationError is the validation error returned by
+// WhitelistedDomain.Validate if the designated constraints aren't met.
+type WhitelistedDomainValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WhitelistedDomainValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WhitelistedDomainValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WhitelistedDomainValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WhitelistedDomainValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WhitelistedDomainValidationError) ErrorName() string {
+	return "WhitelistedDomainValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e WhitelistedDomainValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWhitelistedDomain.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WhitelistedDomainValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WhitelistedDomainValidationError{}

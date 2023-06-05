@@ -58,11 +58,11 @@ type DB interface {
 	UpdateOrganization(ctx context.Context, id string, opts *UpdateOrganizationOptions) (*Organization, error)
 	UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
 
-	FindOrganizationAutoinviteDomain(ctx context.Context, orgID string, domain string) (*OrganizationAutoinviteDomain, error)
-	FindOrganizationAutoinviteDomainsForOrganization(ctx context.Context, orgID string) ([]*OrganizationAutoinviteDomain, error)
-	FindOrganizationAutoinviteDomainsForDomain(ctx context.Context, domain string) ([]*OrganizationAutoinviteDomain, error)
-	InsertOrganizationAutoinviteDomain(ctx context.Context, opts *InsertOrganizationAutoinviteDomainOptions) (*OrganizationAutoinviteDomain, error)
-	DeleteOrganizationAutoinviteDomain(ctx context.Context, id string) error
+	FindOrganizationWhitelistedDomain(ctx context.Context, orgID string, domain string) (*OrganizationWhitelistedDomain, error)
+	FindOrganizationWhitelistedDomainForOrganizationWithJoinedRoleNames(ctx context.Context, orgID string) ([]*OrganizationWhitelistedDomainWithJoinedRoleNames, error)
+	FindOrganizationWhitelistedDomainsForDomain(ctx context.Context, domain string) ([]*OrganizationWhitelistedDomain, error)
+	InsertOrganizationWhitelistedDomain(ctx context.Context, opts *InsertOrganizationWhitelistedDomainOptions) (*OrganizationWhitelistedDomain, error)
+	DeleteOrganizationWhitelistedDomain(ctx context.Context, id string) error
 
 	FindProjects(ctx context.Context, afterName string, limit int) ([]*Project, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
@@ -101,6 +101,7 @@ type DB interface {
 	CheckUsersEmpty(ctx context.Context) (bool, error)
 	FindSuperusers(ctx context.Context) ([]*User, error)
 	UpdateSuperuser(ctx context.Context, userID string, superuser bool) error
+	CheckUserIsAnOrganizationMember(ctx context.Context, userID, orgID string) (bool, error)
 
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
 	InsertUsergroupMember(ctx context.Context, groupID, userID string) error
@@ -502,7 +503,7 @@ type DeploymentsCount struct {
 	Slots       int
 }
 
-type OrganizationAutoinviteDomain struct {
+type OrganizationWhitelistedDomain struct {
 	ID        string
 	OrgID     string `db:"org_id"`
 	OrgRoleID string `db:"org_role_id"`
@@ -511,10 +512,16 @@ type OrganizationAutoinviteDomain struct {
 	UpdatedOn time.Time `db:"updated_on"`
 }
 
-type InsertOrganizationAutoinviteDomainOptions struct {
+type InsertOrganizationWhitelistedDomainOptions struct {
 	OrgID     string `validate:"required"`
 	OrgRoleID string `validate:"required"`
 	Domain    string `validate:"domain"`
+}
+
+// OrganizationWhitelistedDomainWithJoinedRoleNames convenience type used for display-friendly representation of an OrganizationWhitelistedDomain.
+type OrganizationWhitelistedDomainWithJoinedRoleNames struct {
+	Domain   string
+	RoleName string `db:"name"`
 }
 
 const (

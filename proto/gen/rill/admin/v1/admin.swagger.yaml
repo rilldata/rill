@@ -224,60 +224,6 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/autoinvite:
-    post:
-      summary: CreateAutoinviteDomain adds a domain to the autoinvite list
-      operationId: AdminService_CreateAutoinviteDomain
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1CreateAutoinviteDomainResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              domain:
-                type: string
-              role:
-                type: string
-      tags:
-        - AdminService
-  /v1/organizations/{organization}/autoinvite/{domain}:
-    delete:
-      summary: RemoveAutoinviteDomain removes a domain from the autoinvite list
-      operationId: AdminService_RemoveAutoinviteDomain
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1RemoveAutoinviteDomainResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
-        - name: domain
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
   /v1/organizations/{organization}/invites:
     get:
       summary: ListOrganizationInvites lists all the org invites
@@ -604,6 +550,79 @@ paths:
             properties:
               role:
                 type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/whitelisted:
+    get:
+      summary: ListWhitelistedDomains lists all the whitelisted domains for the organization
+      operationId: AdminService_ListWhitelistedDomains
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListWhitelistedDomainsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: CreateWhitelistedDomain adds a domain to the whitelist
+      operationId: AdminService_CreateWhitelistedDomain
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateWhitelistedDomainResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              domain:
+                type: string
+              role:
+                type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/whitelisted/{domain}:
+    delete:
+      summary: RemoveWhitelistedDomain removes a domain from the whitelist list
+      operationId: AdminService_RemoveWhitelistedDomain
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveWhitelistedDomainResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: domain
+          in: path
+          required: true
+          type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects:
@@ -999,8 +1018,6 @@ definitions:
     properties:
       pendingSignup:
         type: boolean
-  v1CreateAutoinviteDomainResponse:
-    type: object
   v1CreateOrganizationRequest:
     type: object
     properties:
@@ -1018,6 +1035,8 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
+  v1CreateWhitelistedDomainResponse:
+    type: object
   v1DeleteOrganizationResponse:
     type: object
   v1DeleteProjectResponse:
@@ -1179,6 +1198,14 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1User'
+  v1ListWhitelistedDomainsResponse:
+    type: object
+    properties:
+      domains:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1WhitelistedDomain'
   v1Member:
     type: object
     properties:
@@ -1304,11 +1331,11 @@ definitions:
         type: boolean
       manageProjectMembers:
         type: boolean
-  v1RemoveAutoinviteDomainResponse:
-    type: object
   v1RemoveOrganizationMemberResponse:
     type: object
   v1RemoveProjectMemberResponse:
+    type: object
+  v1RemoveWhitelistedDomainResponse:
     type: object
   v1RevokeCurrentAuthTokenResponse:
     type: object
@@ -1386,4 +1413,11 @@ definitions:
       role:
         type: string
       invitedBy:
+        type: string
+  v1WhitelistedDomain:
+    type: object
+    properties:
+      domain:
+        type: string
+      role:
         type: string
