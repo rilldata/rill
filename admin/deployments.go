@@ -185,40 +185,57 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 
 // HIBERNATE free deployments
 func (s *Service) HibernateDeployments(ctx context.Context) error {
-	// Not checking any permissions as its use only internally by scheduled job, will add if required
-	projects, err := s.DB.FindAllProjects(ctx)
+	depls, err := s.DB.FindExpiredDeployments(ctx)
 	if err != nil {
 		return err
 	}
 
-	for _, proj := range projects {
-		depl, err := s.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
-		if err != nil {
-			fmt.Printf("depl not found for proj %s", proj.Name)
-			continue
-		}
-
+	for _, depl := range depls {
+		fmt.Println("expired deployments are: ", depl)
 		if depl.Status == database.DeploymentStatusReconciling && time.Since(depl.UpdatedOn) < 30*time.Minute {
 			fmt.Printf("skipping because it is already running\n")
 			continue
 		}
 
-		if proj.ProdTTL < time.Since(depl.UpdatedOn) {
-			err := s.teardownDeployment(ctx, proj, depl)
-			if err != nil {
-				fmt.Printf("could not teardown deployment, error:%v\n", err)
-				continue
-			}
+		proj, err := s.DB.FindProject(ctx, depl.ProjectID)
+		if err != nil {
+			s.logger.Error("skipping because error while find project", zap.String("projectId", proj.ID), zap.String("deplId", depl.ID), zap.Error(err))
+			continue
+		}
 
-			updatedDepl, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusHibernated, "")
-			if err != nil {
-				fmt.Printf("could not update status: %v \n", err)
-				continue
-			}
-
-			fmt.Printf("updated depl, Project %s, Depl ID: %s", proj.Name, updatedDepl.ID)
+		err = s.hibernateDeployment(ctx, proj, depl)
+		if err != nil {
+			s.logger.Error("skipping because error while hibernate deployment", zap.String("projectId", proj.ID), zap.String("deplId", depl.ID), zap.Error(err))
+			continue
 		}
 	}
+
+	return nil
+}
+
+func (s *Service) hibernateDeployment(ctx context.Context, proj *database.Project, depl *database.Deployment) error {
+	// Connect to the deployment's runtime
+	rt, err := s.openRuntimeClientForDeployment(depl)
+	if err != nil {
+		return err
+	}
+	defer rt.Close()
+
+	// Delete the instance
+	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
+		InstanceId: depl.RuntimeInstanceID,
+		DropDb:     proj.ProdOLAPDriver == "duckdb", // Only drop DB if it's DuckDB
+	})
+	if err != nil {
+		return err
+	}
+
+	updatedDepl, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusHibernated, "")
+	if err != nil {
+		return err
+	}
+
+	s.logger.Info("Updated deployment", zap.String("deplId", updatedDepl.ID), zap.String("projectId", proj.ID))
 
 	return nil
 }

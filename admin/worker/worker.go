@@ -42,6 +42,11 @@ func (w *Worker) Run(ctx context.Context) error {
 	group.Go(func() error {
 		return w.schedule(ctx, "delete_expired_device_auth_codes", w.deleteExpiredDeviceAuthCodes, 6*time.Hour)
 	})
+
+	group.Go(func() error {
+		return w.schedule(ctx, "hibernateExpiredDeployments", w.hibernateExpiredDeployments, 2*time.Minute)
+	})
+
 	// NOTE: Add new scheduled jobs here
 
 	w.logger.Info("worker started")

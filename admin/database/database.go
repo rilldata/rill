@@ -58,7 +58,6 @@ type DB interface {
 	UpdateOrganization(ctx context.Context, id string, opts *UpdateOrganizationOptions) (*Organization, error)
 	UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
 
-	FindAllProjects(ctx context.Context) ([]*Project, error)
 	FindOrganizationAutoinviteDomain(ctx context.Context, orgID string, domain string) (*OrganizationAutoinviteDomain, error)
 	FindOrganizationAutoinviteDomainsForOrganization(ctx context.Context, orgID string) ([]*OrganizationAutoinviteDomain, error)
 	FindOrganizationAutoinviteDomainsForDomain(ctx context.Context, domain string) ([]*OrganizationAutoinviteDomain, error)
@@ -80,6 +79,7 @@ type DB interface {
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 
+	FindExpiredDeployments(ctx context.Context) ([]*Deployment, error)
 	FindDeploymentsForProject(ctx context.Context, projectID string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
@@ -212,18 +212,18 @@ type Project struct {
 	Description          string
 	Public               bool
 	Region               string
-	GithubURL            *string       `db:"github_url"`
-	GithubInstallationID *int64        `db:"github_installation_id"`
-	Subpath              string        `db:"subpath"`
-	ProdBranch           string        `db:"prod_branch"`
-	ProdVariables        Variables     `db:"prod_variables"`
-	ProdOLAPDriver       string        `db:"prod_olap_driver"`
-	ProdOLAPDSN          string        `db:"prod_olap_dsn"`
-	ProdSlots            int           `db:"prod_slots"`
-	ProdDeploymentID     *string       `db:"prod_deployment_id"`
-	ProdTTL              time.Duration `db:"prod_ttl"`
-	CreatedOn            time.Time     `db:"created_on"`
-	UpdatedOn            time.Time     `db:"updated_on"`
+	GithubURL            *string   `db:"github_url"`
+	GithubInstallationID *int64    `db:"github_installation_id"`
+	Subpath              string    `db:"subpath"`
+	ProdBranch           string    `db:"prod_branch"`
+	ProdVariables        Variables `db:"prod_variables"`
+	ProdOLAPDriver       string    `db:"prod_olap_driver"`
+	ProdOLAPDSN          string    `db:"prod_olap_dsn"`
+	ProdSlots            int       `db:"prod_slots"`
+	ProdDeploymentID     *string   `db:"prod_deployment_id"`
+	ProdTTL              *int64    `db:"prod_ttl_seconds"`
+	CreatedOn            time.Time `db:"created_on"`
+	UpdatedOn            time.Time `db:"updated_on"`
 }
 
 // Variables implements JSON SQL encoding of variables in Project.
@@ -252,6 +252,7 @@ type InsertProjectOptions struct {
 	ProdOLAPDriver       string
 	ProdOLAPDSN          string
 	ProdSlots            int
+	ProdTTL              *int64
 }
 
 // UpdateProjectOptions defines options for updating a Project.
@@ -265,6 +266,7 @@ type UpdateProjectOptions struct {
 	ProdVariables        map[string]string
 	ProdDeploymentID     *string
 	ProdSlots            int
+	ProdTTL              *int64
 	Region               string
 }
 

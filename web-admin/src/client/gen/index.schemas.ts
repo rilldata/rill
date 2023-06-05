@@ -26,6 +26,7 @@ export type AdminServiceUpdateProjectBody = {
   githubUrl?: string;
   prodSlots?: string;
   region?: string;
+  prodTtlSeconds?: string;
 };
 
 export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
@@ -42,6 +43,7 @@ export type AdminServiceCreateProjectBody = {
   prodBranch?: string;
   githubUrl?: string;
   variables?: AdminServiceCreateProjectBodyVariables;
+  prodTtlSeconds?: string;
 };
 
 export type AdminServiceListProjectsForOrganizationParams = {
@@ -217,6 +219,7 @@ export interface V1Project {
   prodSlots?: string;
   prodDeploymentId?: string;
   frontendUrl?: string;
+  prodTtlSeconds?: string;
   createdOn?: string;
   updatedOn?: string;
 }

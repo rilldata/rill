@@ -17,22 +17,17 @@ type Options struct {
 	ProvisionerSpec string
 }
 
-type updateTSCache struct {
-	cache map[string]bool
-	lock  sync.Mutex
-}
-
 type Service struct {
 	DB             database.DB
 	Provisioner    *provisioner.StaticProvisioner
 	Email          *email.Client
+	UsedFlusher    *usedFlusher
 	opts           *Options
 	logger         *zap.Logger
 	github         Github
 	issuer         *auth.Issuer
 	closeCtx       context.Context
 	closeCtxCancel context.CancelFunc
-	deplTSCache    *updateTSCache
 	reconcileWg    sync.WaitGroup
 }
 
@@ -71,20 +66,21 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 	// Create context that we cancel in Close() (for background reconciles)
 	ctx, cancel := context.WithCancel(context.Background())
 
+	usedFlusher := newUsedFlusher(*logger, db)
 	adm := &Service{
 		DB:             db,
 		Provisioner:    prov,
 		Email:          emailClient,
+		UsedFlusher:    usedFlusher,
 		opts:           opts,
 		logger:         logger,
 		github:         github,
 		issuer:         issuer,
 		closeCtx:       ctx,
 		closeCtxCancel: cancel,
-		deplTSCache:    &updateTSCache{cache: make(map[string]bool)},
 	}
 
-	adm.LastUsedFlusher(ctx)
+	adm.UsedFlusher.LastUsedFlusher(ctx)
 
 	return adm, nil
 }
@@ -92,6 +88,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 func (s *Service) Close() error {
 	s.closeCtxCancel()
 	s.reconcileWg.Wait()
+	s.UsedFlusher.Close()
 
 	return s.DB.Close()
 }

@@ -2331,6 +2331,8 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for Variables
 
+	// no validation rules for ProdTtlSeconds
+
 	if len(errors) > 0 {
 		return CreateProjectRequestMultiError(errors)
 	}
@@ -2807,6 +2809,8 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 	// no validation rules for ProdSlots
 
 	// no validation rules for Region
+
+	// no validation rules for ProdTtlSeconds
 
 	if len(errors) > 0 {
 		return UpdateProjectRequestMultiError(errors)
@@ -9465,6 +9469,8 @@ func (m *Project) validate(all bool) error {
 	// no validation rules for ProdDeploymentId
 
 	// no validation rules for FrontendUrl
+
+	// no validation rules for ProdTtlSeconds
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

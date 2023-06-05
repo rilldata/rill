@@ -40,6 +40,7 @@ const (
 func DeployCmd(cfg *config.Config) *cobra.Command {
 	var description, projectPath, subPath, region, dbDriver, dbDSN, prodBranch, name, remote, orgName string
 	var slots int
+	var prodTTL int64
 	var public bool
 
 	deployCmd := &cobra.Command{
@@ -47,7 +48,6 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 		Short: "Deploy project to Rill Cloud",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-
 			warn := color.New(color.Bold).Add(color.FgYellow)
 			info := color.New(color.Bold).Add(color.FgWhite)
 			success := color.New(color.Bold).Add(color.FgGreen)
@@ -251,8 +251,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			// Create the project (automatically deploys prod branch)
-			res, err := createProjectFlow(ctx, client, &adminv1.CreateProjectRequest{
+			opts := &adminv1.CreateProjectRequest{
 				OrganizationName: cfg.Org,
 				Name:             name,
 				Description:      description,
@@ -264,7 +263,27 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				ProdBranch:       prodBranch,
 				Public:           public,
 				GithubUrl:        githubURL,
-			})
+			}
+
+			if prodTTL > 0 {
+				opts = &adminv1.CreateProjectRequest{
+					OrganizationName: cfg.Org,
+					Name:             name,
+					Description:      description,
+					Region:           region,
+					ProdOlapDriver:   dbDriver,
+					ProdOlapDsn:      dbDSN,
+					ProdSlots:        int64(slots),
+					Subpath:          subPath,
+					ProdBranch:       prodBranch,
+					Public:           public,
+					GithubUrl:        githubURL,
+					ProdTtlSeconds:   prodTTL,
+				}
+			}
+
+			// Create the project (automatically deploys prod branch)
+			res, err := createProjectFlow(ctx, client, opts)
 			if err != nil {
 				if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
 					errorWriter.Printf("You do not have the permissions needed to create a project in org %q. Please reach out to your Rill admin.\n", cfg.Org)
@@ -295,6 +314,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	deployCmd.Flags().StringVar(&projectPath, "path", ".", "Path to project repository")
 	deployCmd.Flags().StringVar(&orgName, "org", cfg.Org, "Org to deploy project")
 	deployCmd.Flags().IntVar(&slots, "prod-slots", 2, "Slots to allocate for production deployments")
+	deployCmd.Flags().Int64Var(&prodTTL, "prod_ttl_seconds", 0, "Prod deployment TTL in seconds")
 	deployCmd.Flags().StringVar(&description, "description", "", "Project description")
 	deployCmd.Flags().StringVar(&region, "region", "", "Deployment region")
 	deployCmd.Flags().StringVar(&dbDriver, "prod-db-driver", "duckdb", "Database driver")

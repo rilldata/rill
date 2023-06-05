@@ -156,15 +156,6 @@ func (c *connection) UpdateOrganizationAllUsergroup(ctx context.Context, orgID, 
 	return res, nil
 }
 
-func (c *connection) FindAllProjects(ctx context.Context) ([]*database.Project, error) {
-	var res []*database.Project
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects")
-	if err != nil {
-		return nil, parseErr("projects", err)
-	}
-	return res, nil
-}
-
 func (c *connection) FindOrganizationAutoinviteDomainsForOrganization(ctx context.Context, orgID string) ([]*database.OrganizationAutoinviteDomain, error) {
 	var res []*database.OrganizationAutoinviteDomain
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs_autoinvite_domains WHERE org_id=$1", orgID)
@@ -320,9 +311,9 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, region, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, github_url, github_installation_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.Region, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID,
+		INSERT INTO projects (org_id, name, description, public, region, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, github_url, github_installation_id, prod_ttl_seconds)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.Region, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProdTTL,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -342,9 +333,9 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, prod_deployment_id=$8, region=$9, prod_slots=$10, updated_on=now()
-		WHERE id=$11 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProdDeploymentID, opts.Region, opts.ProdSlots, id,
+		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, prod_deployment_id=$8, region=$9, prod_slots=$10, prod_ttl_seconds=$11, updated_on=now()
+		WHERE id=$12 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProdDeploymentID, opts.Region, opts.ProdSlots, opts.ProdTTL, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -359,6 +350,19 @@ func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID str
 		return 0, parseErr("project count", err)
 	}
 	return count, nil
+}
+
+// FindExpiredDeployments returns all the deployments which are expired as per prod ttl
+func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.Deployment, error) {
+	var res []*database.Deployment
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+	SELECT d.* FROM deployments d 
+	JOIN projects p ON d.project_id = p.id
+	WHERE p.prod_ttl_seconds is not null AND d.used_on + p.prod_ttl_seconds * interval '1 second' < now()`)
+	if err != nil {
+		return nil, parseErr("deployments", err)
+	}
+	return res, nil
 }
 
 func (c *connection) FindDeploymentsForProject(ctx context.Context, projectID string) ([]*database.Deployment, error) {

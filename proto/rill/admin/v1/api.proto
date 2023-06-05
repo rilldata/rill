@@ -332,6 +332,7 @@ message CreateProjectRequest {
   string prod_branch = 9;
   string github_url = 10;
   map<string, string> variables = 11;
+  int64 prod_ttl_seconds = 13; 
 }
 
 message CreateProjectResponse {
@@ -355,6 +356,7 @@ message UpdateProjectRequest {
   string github_url = 7;
   int64 prod_slots = 8;
   string region = 9;
+  int64 prod_ttl_seconds = 10;
 }
 
 message UpdateProjectResponse {
@@ -600,6 +602,7 @@ message Project {
   int64 prod_slots = 12;
   string prod_deployment_id = 13;
   string frontend_url = 16;
+  int64 prod_ttl_seconds = 18;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
 }

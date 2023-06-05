@@ -852,6 +852,11 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
    */
   variables: { [key: string]: string } = {};
 
+  /**
+   * @generated from field: int64 prod_ttl_seconds = 13;
+   */
+  prodTtlSeconds = protoInt64.zero;
+
   constructor(data?: PartialMessage<CreateProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -872,6 +877,7 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 13, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateProjectRequest {
@@ -1051,6 +1057,11 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
    */
   region = "";
 
+  /**
+   * @generated from field: int64 prod_ttl_seconds = 10;
+   */
+  prodTtlSeconds = protoInt64.zero;
+
   constructor(data?: PartialMessage<UpdateProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1068,6 +1079,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 7, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 9, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectRequest {
@@ -3276,6 +3288,11 @@ export class Project extends Message<Project> {
   frontendUrl = "";
 
   /**
+   * @generated from field: int64 prod_ttl_seconds = 18;
+   */
+  prodTtlSeconds = protoInt64.zero;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 14;
    */
   createdOn?: Timestamp;
@@ -3308,6 +3325,7 @@ export class Project extends Message<Project> {
     { no: 12, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 13, name: "prod_deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 14, name: "created_on", kind: "message", T: Timestamp },
     { no: 15, name: "updated_on", kind: "message", T: Timestamp },
   ]);

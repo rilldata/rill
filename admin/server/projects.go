@@ -126,7 +126,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
 	}
 
-	s.admin.UpdateDeplTS(ctx, depl.ID)
+	s.admin.UsedFlusher.UpdateDeplTS(ctx, depl.ID)
 
 	return &adminv1.GetProjectResponse{
 		Project:            s.projToDTO(proj, org.Name),
@@ -201,6 +201,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		GithubURL:            &req.GithubUrl,
 		GithubInstallationID: &installationID,
 		ProdVariables:        req.Variables,
+		ProdTTL:              &req.ProdTtlSeconds,
 	})
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -265,6 +266,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            int(req.ProdSlots),
+		ProdTTL:              &req.ProdTtlSeconds,
 		Region:               req.Region,
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts, true)
@@ -312,6 +314,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            proj.ProdSlots,
 		Region:               proj.Region,
+		ProdTTL:              proj.ProdTTL,
 		ProdVariables:        req.Variables,
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts, false)

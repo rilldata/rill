@@ -683,6 +683,9 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
+              prodTtlSeconds:
+                type: string
+                format: int64
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}:
@@ -774,6 +777,9 @@ paths:
                 format: int64
               region:
                 type: string
+              prodTtlSeconds:
+                type: string
+                format: int64
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}/variables:
@@ -1266,6 +1272,9 @@ definitions:
         type: string
       frontendUrl:
         type: string
+      prodTtlSeconds:
+        type: string
+        format: int64
       createdOn:
         type: string
         format: date-time
