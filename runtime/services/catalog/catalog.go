@@ -33,13 +33,16 @@ func NewService(
 	if logger == nil {
 		logger = zap.NewNop()
 	}
+	if instID != "default" {
+		logger = logger.With(zap.String("instance_id", instID))
+	}
 	return &Service{
 		Catalog:       catalog,
 		Repo:          repo,
 		Olap:          olap,
 		RegistryStore: registry,
 		InstID:        instID,
-		logger:        logger.With(zap.String("instance_id", instID)),
+		logger:        logger,
 		Meta:          m,
 	}
 }
