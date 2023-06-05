@@ -114,11 +114,11 @@
             // Auth0 is not consistent in the naming of the error description field
             const errorText =
               typeof err?.description === "string"
-                ? err?.description
+                ? err.description
                 : typeof err?.policy === "string"
-                ? err?.policy
+                ? err.policy
                 : typeof err?.error_description === "string"
-                ? err?.error_description
+                ? err.error_description
                 : err?.message;
 
             if (err) displayError({ message: errorText });
