@@ -88,22 +88,22 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		addedToOrgs[org.ID] = true
 	}
 
-	// check if users email domain is in autoinvite list
+	// check if users email domain is whitelisted
 	domain := email[strings.LastIndex(email, "@")+1:]
-	autoinvites, err := s.DB.FindOrganizationAutoinviteDomainsForDomain(ctx, domain)
+	whitelists, err := s.DB.FindOrganizationWhitelistedDomainsForDomain(ctx, domain)
 	if err != nil {
 		return nil, err
 	}
-	for _, autoinvite := range autoinvites {
-		// if user is already a member of the org then skip, prefer explicit invite over autoinvite
-		if _, ok := addedToOrgs[autoinvite.OrgID]; ok {
+	for _, whitelist := range whitelists {
+		// if user is already a member of the org then skip, prefer explicit invite to whitelist
+		if _, ok := addedToOrgs[whitelist.OrgID]; ok {
 			continue
 		}
-		org, err := s.DB.FindOrganization(ctx, autoinvite.OrgID)
+		org, err := s.DB.FindOrganization(ctx, whitelist.OrgID)
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.InsertOrganizationMemberUser(ctx, autoinvite.OrgID, user.ID, autoinvite.OrgRoleID)
+		err = s.DB.InsertOrganizationMemberUser(ctx, whitelist.OrgID, user.ID, whitelist.OrgRoleID)
 		if err != nil {
 			return nil, err
 		}
