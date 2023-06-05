@@ -33,7 +33,7 @@ func loadPublicEmailProvidersList() (map[string]bool, error) {
 		if strings.HasPrefix(domain, "#") {
 			continue
 		}
-		providers[strings.TrimSpace(scanner.Text())] = true
+		providers[strings.ToLower(strings.TrimSpace(scanner.Text()))] = true
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -53,6 +53,6 @@ func IsPublic(domain string) bool {
 		}
 	})
 
-	_, ok := providers[domain]
+	_, ok := providers[strings.ToLower(domain)]
 	return ok
 }

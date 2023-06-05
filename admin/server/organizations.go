@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"math"
 	"strings"
 
 	"github.com/rilldata/rill/admin/database"
@@ -609,6 +610,25 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	// find existing users belonging to the whitelisted domain to the org
+	users, err := s.admin.DB.FindUsersByEmailPattern(ctx, "%@"+req.Domain, "", math.MaxInt)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// filter out users who are already members of the org
+	newUsers := make([]*database.User, 0)
+	for _, user := range users {
+		// check if user is already a member of the org
+		exists, err := s.admin.DB.CheckUserIsAnOrganizationMember(ctx, user.ID, org.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if !exists {
+			newUsers = append(newUsers, user)
+		}
+	}
+
 	ctx, tx, err := s.admin.DB.NewTx(ctx)
 	if err != nil {
 		return nil, err
@@ -625,33 +645,16 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// add existing users belonging to the whitelisted domain to the org
-	users, err := s.admin.DB.FindUsers(ctx)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
+	for _, user := range newUsers {
+		err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 
-	for _, user := range users {
-		if strings.HasSuffix(user.Email, "@"+req.Domain) {
-			// check if user is already a member of the org
-			exists, err := s.admin.DB.CheckUserIsAnOrganizationMember(ctx, user.ID, org.ID)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			if exists {
-				continue
-			}
-
-			err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-
-			// add to all user group
-			err = s.admin.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
+		// add to all user group
+		err = s.admin.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
 
