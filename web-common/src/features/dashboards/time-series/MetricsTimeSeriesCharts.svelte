@@ -23,6 +23,7 @@
   } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
   import {
+    getAdjustedChartTime,
     getAdjustedFetchTime,
     isRangeInsideOther,
   } from "../../../lib/time/ranges";
@@ -212,13 +213,14 @@
     $dashboardStore?.selectedTimeRange &&
     $dashboardStore?.selectedTimeRange?.start
   ) {
-    startValue = removeTimezoneOffset(
-      new Date($dashboardStore?.selectedTimeRange?.start)
+    const adjustedChartValue = getAdjustedChartTime(
+      $dashboardStore.selectedTimeRange?.start,
+      $dashboardStore.selectedTimeRange?.end,
+      interval
     );
 
-    // selectedTimeRange.end is exclusive and rounded to the time grain ("interval").
-    endValue = new Date($dashboardStore?.selectedTimeRange?.end);
-    endValue = removeTimezoneOffset(endValue);
+    startValue = adjustedChartValue?.start;
+    endValue = adjustedChartValue?.end;
   }
 
   // FIXME: this is pending the remaining state work for show/hide measures and dimensions

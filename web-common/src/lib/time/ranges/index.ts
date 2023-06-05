@@ -13,6 +13,7 @@ import {
   isGrainBigger,
 } from "../grains";
 import {
+  getDurationMultiple,
   getOffset,
   getStartOfPeriod,
   getTimeWidth,
@@ -27,6 +28,8 @@ import {
   TimeRangePreset,
   TimeRangeType,
 } from "../types";
+import { removeTimezoneOffset } from "../../formatters";
+import { getEndOfPeriod } from "../transforms";
 
 /**
  * Returns true if the range defined by start and end is completely
@@ -179,10 +182,6 @@ export const prettyFormatTimeRange = (start: Date, end: Date): string => {
     return "";
   }
 
-  // TODO: Do we still need to do this?
-  // timeRange.end is exclusive. We subtract one ms to render the last inclusive value.
-  end = new Date(end.getTime() - 1);
-
   const TIMEZONE = "UTC";
   // const TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone; // the user's local timezone
 
@@ -299,5 +298,49 @@ export function getAdjustedFetchTime(
   return {
     start: trucatedOffsetedStartTime.toISOString(),
     end: trucatedOffsetedEndTime.toISOString(),
+  };
+}
+
+export function getAdjustedChartTime(
+  start: Date,
+  end: Date,
+  interval: V1TimeGrain
+) {
+  if (!start || !end)
+    return {
+      start,
+      end,
+    };
+
+  const grainDuration = TIME_GRAIN[interval].duration;
+
+  let adjustedEnd = new Date(end);
+
+  // if the end date does not extend beyond the center of the
+  // latest (complete or incomplete) period, then we need to
+  // adjust it ensure that the chart is complete.
+
+  const endOfLatestPeriod = getStartOfPeriod(
+    getOffset(adjustedEnd, grainDuration, TimeOffsetType.ADD),
+    grainDuration
+  );
+
+  const offsetDuration = getDurationMultiple(grainDuration, 0.45);
+
+  const centerOfLatestPeriod = getOffset(
+    endOfLatestPeriod,
+    offsetDuration,
+    TimeOffsetType.SUBTRACT
+  );
+
+  if (adjustedEnd < centerOfLatestPeriod) {
+    adjustedEnd = centerOfLatestPeriod;
+  }
+
+  adjustedEnd = removeTimezoneOffset(adjustedEnd);
+
+  return {
+    start: removeTimezoneOffset(new Date(start)),
+    end: adjustedEnd,
   };
 }

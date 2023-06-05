@@ -47,12 +47,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [
-        {
-          period: Period.HOUR,
-          truncationType: TimeTruncationType.START_OF_PERIOD,
-        },
-      ],
+      transformation: [],
     },
   },
 
@@ -72,12 +67,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [
-        {
-          period: Period.HOUR,
-          truncationType: TimeTruncationType.START_OF_PERIOD,
-        },
-      ],
+      transformation: [],
     },
   },
 
@@ -97,12 +87,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [
-        {
-          period: Period.HOUR,
-          truncationType: TimeTruncationType.START_OF_PERIOD,
-        },
-      ],
+      transformation: [],
     },
   },
   LAST_14_DAYS: {
@@ -121,12 +106,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [
-        {
-          period: Period.HOUR,
-          truncationType: TimeTruncationType.START_OF_PERIOD,
-        },
-      ],
+      transformation: [],
     },
   },
   LAST_4_WEEKS: {
@@ -145,12 +125,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [
-        {
-          period: Period.HOUR,
-          truncationType: TimeTruncationType.START_OF_PERIOD,
-        },
-      ],
+      transformation: [],
     },
   },
   LAST_YEAR: {
@@ -169,12 +144,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [
-        {
-          period: Period.HOUR,
-          truncationType: TimeTruncationType.START_OF_PERIOD,
-        },
-      ],
+      transformation: [],
     },
   },
 };
