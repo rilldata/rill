@@ -12,20 +12,10 @@
 <Meta title="tooltip template" />
 
 <Template let:args>
-  <div class="px-5 mx-3 border-lime-500 stroke-orange-800">styled content</div>
-
-  <div class="px-5 mx-3 ui-copy-strong">styled content</div>
-  faksjdfl;aj
   <TooltipContent maxWidth="360px">
-    inside tooltip
     <TooltipTitle>
-      foo asdjflj
-      <!-- <FormattedDataType
-          slot="name"
-          value={12.23}
-          type={"RILL_PERCENTAGE_CHANGE"}
-          dark
-        /> -->
+      <div slot="name">Name</div>
+      <div slot="description">description</div>
     </TooltipTitle>
     <TooltipShortcutContainer>
       <div>
