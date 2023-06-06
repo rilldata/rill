@@ -6,9 +6,21 @@
   import CardTitle from "../../components/card/CardTitle.svelte";
   import { createRuntimeServiceUnpackEmpty } from "../../runtime-client";
   import { EMPTY_PROJECT_TITLE } from "./constants";
+  import { behaviourEvent } from "../../metrics/initMetrics";
+  import {
+    BehaviourEventAction,
+    BehaviourEventMedium,
+  } from "../../metrics/service/BehaviourEventTypes";
+  import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
 
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
   async function startWithEmptyProject() {
+    behaviourEvent.fireSplashEvent(
+      BehaviourEventAction.ProjectEmpty,
+      BehaviourEventMedium.Card,
+      MetricsEventSpace.Workspace
+    );
+
     $unpackEmptyProject.mutate(
       {
         instanceId: $runtime.instanceId,

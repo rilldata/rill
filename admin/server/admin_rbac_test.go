@@ -86,17 +86,17 @@ func TestAdmin_RBAC(t *testing.T) {
 	require.NotNil(t, testUser)
 
 	// issue admin and viewer tokens
-	adminAuthToken, err := service.IssueUserAuthToken(ctx, adminUser.ID, database.AuthClientIDRillWeb, "test")
+	adminAuthToken, err := service.IssueUserAuthToken(ctx, adminUser.ID, database.AuthClientIDRillWeb, "test", nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, adminAuthToken)
 	adminToken := adminAuthToken.Token().String()
 
-	viewerAuthToken, err := service.IssueUserAuthToken(ctx, viewerUser.ID, database.AuthClientIDRillWeb, "test")
+	viewerAuthToken, err := service.IssueUserAuthToken(ctx, viewerUser.ID, database.AuthClientIDRillWeb, "test", nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, viewerAuthToken)
 	viewerToken := viewerAuthToken.Token().String()
 
-	testAuthToken, err := service.IssueUserAuthToken(ctx, testUser.ID, database.AuthClientIDRillWeb, "test")
+	testAuthToken, err := service.IssueUserAuthToken(ctx, testUser.ID, database.AuthClientIDRillWeb, "test", nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, testAuthToken)
 	testToken := testAuthToken.Token().String()
@@ -652,4 +652,8 @@ func (m *mockGithub) AppClient() *github.Client {
 
 func (m *mockGithub) InstallationClient(installationID int64) (*github.Client, error) {
 	return nil, nil
+}
+
+func (m *mockGithub) InstallationToken(ctx context.Context, installationID int64) (string, error) {
+	return "", nil
 }

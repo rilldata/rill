@@ -4,10 +4,21 @@
   import RadixH1 from "@rilldata/web-common/components/typography/RadixH1.svelte";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
   import AddSourceModal from "@rilldata/web-common/features/sources/add-source/AddSourceModal.svelte";
+  import { behaviourEvent } from "../../metrics/initMetrics";
+  import {
+    BehaviourEventAction,
+    BehaviourEventMedium,
+  } from "../../metrics/service/BehaviourEventTypes";
+  import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
 
   let showAddSourceModal = false;
   const openShowAddSourceModal = () => {
     showAddSourceModal = true;
+    behaviourEvent.fireSplashEvent(
+      BehaviourEventAction.SourceModal,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.Workspace
+    );
   };
 </script>
 
@@ -22,9 +33,8 @@
   </RadixH1>
   <div class="flex flex-col gap-y-2">
     <Subheading twColor="text-slate-600">
-      A Rill project lets you build an <span class="text-base font-semibold"
-        >un-dashboard</span
-      > that people will actually use.
+      You're on your way to building fast, exploratory dashboards your team will
+      actually use.
     </Subheading>
     <Subheading twColor="text-slate-600">Let’s get started.</Subheading>
   </div>

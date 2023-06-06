@@ -4,6 +4,12 @@
  * rill/admin/v1/api.proto
  * OpenAPI spec version: version not set
  */
+export type AdminServiceSearchUsersParams = {
+  emailPattern?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
   [key: string]: string;
 };
@@ -43,6 +49,11 @@ export type AdminServiceListProjectsForOrganizationParams = {
   pageToken?: string;
 };
 
+export type AdminServiceCreateWhitelistedDomainBody = {
+  domain?: string;
+  role?: string;
+};
+
 export type AdminServiceListProjectMembersParams = {
   pageSize?: number;
   pageToken?: string;
@@ -65,11 +76,6 @@ export type AdminServiceListOrganizationMembersParams = {
 export type AdminServiceListOrganizationInvitesParams = {
   pageSize?: number;
   pageToken?: string;
-};
-
-export type AdminServiceCreateAutoinviteDomainBody = {
-  domain?: string;
-  role?: string;
 };
 
 export type AdminServiceUpdateOrganizationBody = {
@@ -100,6 +106,11 @@ export type AdminServiceSetOrganizationMemberRoleBodyBody = {
 };
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
+
+export interface V1WhitelistedDomain {
+  domain?: string;
+  role?: string;
+}
 
 export interface V1UserInvite {
   email?: string;
@@ -161,8 +172,17 @@ export interface V1SetOrganizationMemberRoleResponse {
   [key: string]: any;
 }
 
+export interface V1SearchUsersResponse {
+  users?: V1User[];
+  nextPageToken?: string;
+}
+
 export interface V1RevokeCurrentAuthTokenResponse {
   tokenId?: string;
+}
+
+export interface V1RemoveWhitelistedDomainResponse {
+  [key: string]: any;
 }
 
 export interface V1RemoveProjectMemberResponse {
@@ -170,10 +190,6 @@ export interface V1RemoveProjectMemberResponse {
 }
 
 export interface V1RemoveOrganizationMemberResponse {
-  [key: string]: any;
-}
-
-export interface V1RemoveAutoinviteDomainResponse {
   [key: string]: any;
 }
 
@@ -242,6 +258,10 @@ export interface V1Member {
   updatedOn?: string;
 }
 
+export interface V1ListWhitelistedDomainsResponse {
+  domains?: V1WhitelistedDomain[];
+}
+
 export interface V1ListSuperusersResponse {
   users?: V1User[];
 }
@@ -280,6 +300,15 @@ export interface V1LeaveOrganizationResponse {
   [key: string]: any;
 }
 
+export interface V1IssueRepresentativeAuthTokenResponse {
+  token?: string;
+}
+
+export interface V1IssueRepresentativeAuthTokenRequest {
+  email?: string;
+  ttlMinutes?: string;
+}
+
 export type V1GetProjectVariablesResponseVariables = { [key: string]: string };
 
 export interface V1GetProjectVariablesResponse {
@@ -302,6 +331,14 @@ export interface V1GetGithubRepoStatusResponse {
   hasAccess?: boolean;
   grantAccessUrl?: string;
   defaultBranch?: string;
+}
+
+export interface V1GetGitCredentialsResponse {
+  repoUrl?: string;
+  username?: string;
+  password?: string;
+  subpath?: string;
+  prodBranch?: string;
 }
 
 export interface V1GetCurrentUserResponse {
@@ -341,6 +378,10 @@ export interface V1DeleteOrganizationResponse {
   [key: string]: any;
 }
 
+export interface V1CreateWhitelistedDomainResponse {
+  [key: string]: any;
+}
+
 export interface V1CreateProjectResponse {
   project?: V1Project;
 }
@@ -352,10 +393,6 @@ export interface V1CreateOrganizationResponse {
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
-}
-
-export interface V1CreateAutoinviteDomainResponse {
-  [key: string]: any;
 }
 
 export interface V1AddProjectMemberResponse {

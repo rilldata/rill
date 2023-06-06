@@ -2,11 +2,11 @@ package admin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -27,11 +27,11 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	// Get roles for initial setup
 	adminRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameAdmin)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to find project admin role"))
+		panic(err)
 	}
 	viewerRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameViewer)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to find project viewer role"))
+		panic(err)
 	}
 
 	// Create the project and add initial members using a transaction.
@@ -114,7 +114,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 
 // TeardownProject tears down a project and all its deployments.
 func (s *Service) TeardownProject(ctx context.Context, p *database.Project) error {
-	ds, err := s.DB.FindDeployments(ctx, p.ID)
+	ds, err := s.DB.FindDeploymentsForProject(ctx, p.ID)
 	if err != nil {
 		return err
 	}
@@ -186,11 +186,11 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	impactsDeployments := (proj.ProdBranch != opts.ProdBranch ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
-		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables))
+		!reflect.DeepEqual(map[string]string(proj.ProdVariables), opts.ProdVariables))
 
 	if impactsDeployments {
 		s.logger.Info("updating deployments", observability.ZapCtx(ctx))
-		ds, err := s.DB.FindDeployments(ctx, proj.ID)
+		ds, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -277,7 +277,9 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 // TriggerReconcile triggers a reconcile for a deployment.
 func (s *Service) TriggerReconcile(ctx context.Context, depl *database.Deployment) error {
 	// Run reconcile in the background (since it's sync)
+	s.reconcileWg.Add(1)
 	go func() {
+		defer s.reconcileWg.Done()
 		s.logger.Info("reconcile: starting", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 		err := s.triggerReconcile(s.closeCtx, depl) // Use s.closeCtx to cancel if the service is stopped
 		if err == nil {
@@ -308,7 +310,9 @@ func (s *Service) triggerReconcile(ctx context.Context, depl *database.Deploymen
 // TriggerRefreshSource triggers refresh of a deployment's sources. If the sources slice is nil, it will refresh all sources.f
 func (s *Service) TriggerRefreshSources(ctx context.Context, depl *database.Deployment, sources []string) error {
 	// Run reconcile in the background (since it's sync)
+	s.reconcileWg.Add(1)
 	go func() {
+		defer s.reconcileWg.Done()
 		s.logger.Info("refresh sources: starting", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 		err := s.triggerRefreshSources(s.closeCtx, depl, sources) // Use s.closeCtx to cancel if the service is stopped
 		if err == nil {

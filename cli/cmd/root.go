@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/sudo"
 	"github.com/rilldata/rill/cli/cmd/user"
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/update"
@@ -76,6 +77,15 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	err := update.CheckVersion(ctx, cfg.Version.Number)
 	if err != nil {
 		fmt.Printf("Warning: version check failed: %v\n", err)
+	}
+
+	// Print warning if currently acting as an assumed user
+	representingUser, err := dotrill.GetRepresentingUser()
+	if err != nil {
+		fmt.Printf("could not parse representing user email")
+	}
+	if representingUser != "" {
+		cmdutil.WarnPrinter(fmt.Sprintf("Warning: Running action as %q\n", representingUser))
 	}
 
 	// Load admin token from .rill (may later be overridden by flag --api-token)

@@ -184,6 +184,14 @@ service AdminService {
     };
   }
 
+  // IssueRepresentativeAuthToken returns the temporary token for given email
+  rpc IssueRepresentativeAuthToken(IssueRepresentativeAuthTokenRequest) returns (IssueRepresentativeAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/tokens/represent",
+      body: "*"
+    };
+  }
+
   // RevokeCurrentAuthToken revoke the current auth token
   rpc RevokeCurrentAuthToken(RevokeCurrentAuthTokenRequest) returns (RevokeCurrentAuthTokenResponse) {
     option (google.api.http) = {delete: "/v1/tokens/current"};
@@ -195,17 +203,32 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/repositories"};
   }
 
-  // CreateAutoinviteDomain adds a domain to the autoinvite list
-  rpc CreateAutoinviteDomain(CreateAutoinviteDomainRequest) returns (CreateAutoinviteDomainResponse) {
+  // GetGitCredentials returns credentials and other details for a project's Git repository.
+  rpc GetGitCredentials(GetGitCredentialsRequest) returns (GetGitCredentialsResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/git-credentials"};
+  }
+
+  // CreateWhitelistedDomain adds a domain to the whitelist
+  rpc CreateWhitelistedDomain(CreateWhitelistedDomainRequest) returns (CreateWhitelistedDomainResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/autoinvite",
+      post: "/v1/organizations/{organization}/whitelisted",
       body: "*"
     };
   }
 
-  // RemoveAutoinviteDomain removes a domain from the autoinvite list
-  rpc RemoveAutoinviteDomain(RemoveAutoinviteDomainRequest) returns (RemoveAutoinviteDomainResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization}/autoinvite/{domain}"};
+  // RemoveWhitelistedDomain removes a domain from the whitelist list
+  rpc RemoveWhitelistedDomain(RemoveWhitelistedDomainRequest) returns (RemoveWhitelistedDomainResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/whitelisted/{domain}"};
+  }
+
+  // ListWhitelistedDomains lists all the whitelisted domains for the organization
+  rpc ListWhitelistedDomains(ListWhitelistedDomainsRequest) returns (ListWhitelistedDomainsResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/whitelisted"};
+  }
+
+   // GetUsersByEmail returns user by email
+  rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse) {
+    option (google.api.http) = {get: "/v1/users/search"};
   }
 
   // ListSuperusers lists all the superusers
@@ -502,10 +525,31 @@ message GetCurrentUserResponse {
   User user = 1;
 }
 
+// It can be some string as well so not validating for email here
+message SearchUsersRequest {
+  string email_pattern = 1 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 3;
+}
+
+message SearchUsersResponse {
+  repeated User users = 1;
+  string next_page_token = 2;
+}
+
 message RevokeCurrentAuthTokenRequest {}
 
 message RevokeCurrentAuthTokenResponse {
   string token_id = 1;
+}
+
+message IssueRepresentativeAuthTokenRequest {
+  string email = 1 [(validate.rules).string.email = true];
+  int64 ttl_minutes = 2;
+}
+
+message IssueRepresentativeAuthTokenResponse {
+  string token = 1;
 }
 
 message GetGithubRepoStatusRequest {
@@ -518,20 +562,41 @@ message GetGithubRepoStatusResponse {
   string default_branch = 3;
 }
 
-message CreateAutoinviteDomainRequest {
+message GetGitCredentialsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+}
+
+message GetGitCredentialsResponse {
+  string repo_url = 1;
+  string username = 2;
+  string password = 3;
+  string subpath = 4;
+  string prod_branch = 5;
+}
+
+message CreateWhitelistedDomainRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string domain = 2 [(validate.rules).string.min_len = 1];
   string role = 3 [(validate.rules).string.min_len = 1];
 }
 
-message CreateAutoinviteDomainResponse {}
+message CreateWhitelistedDomainResponse {}
 
-message RemoveAutoinviteDomainRequest {
+message RemoveWhitelistedDomainRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string domain = 2 [(validate.rules).string.min_len = 1];
 }
 
-message RemoveAutoinviteDomainResponse {}
+message RemoveWhitelistedDomainResponse {}
+
+message ListWhitelistedDomainsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+}
+
+message ListWhitelistedDomainsResponse {
+  repeated WhitelistedDomain domains = 1;
+}
 
 message User {
   string id = 1;
@@ -627,4 +692,9 @@ message UserInvite {
   string email = 1;
   string role = 2;
   string invited_by = 3;
+}
+
+message WhitelistedDomain {
+  string domain = 1;
+  string role = 2;
 }

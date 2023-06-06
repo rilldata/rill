@@ -17,6 +17,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/oauth2"
 	githuboauth "golang.org/x/oauth2/github"
 	"google.golang.org/grpc/codes"
@@ -30,6 +31,10 @@ const (
 )
 
 func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithubRepoStatusRequest) (*adminv1.GetGithubRepoStatusResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.github_url", req.GithubUrl),
+	)
+
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
 	if claims.OwnerType() != auth.OwnerTypeUser {
@@ -101,6 +106,35 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 		DefaultBranch: *repository.DefaultBranch,
 	}
 	return res, nil
+}
+
+func (s *Server) GetGitCredentials(ctx context.Context, req *adminv1.GetGitCredentialsRequest) (*adminv1.GetGitCredentialsResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "superuser permission required to get git credentials")
+	}
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if proj.GithubURL == nil || proj.GithubInstallationID == nil {
+		return nil, status.Error(codes.FailedPrecondition, "project does not have a github integration")
+	}
+
+	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &adminv1.GetGitCredentialsResponse{
+		RepoUrl:    *proj.GithubURL + ".git", // TODO: Can the clone URL be different from the HTTP URL of a Github repo?
+		Username:   "x-access-token",
+		Password:   token,
+		Subpath:    proj.Subpath,
+		ProdBranch: proj.ProdBranch,
+	}, nil
 }
 
 // registerGithubEndpoints registers the non-gRPC endpoints for the Github integration.

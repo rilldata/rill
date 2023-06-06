@@ -13,6 +13,12 @@
   import { invalidateAfterReconcile } from "../../runtime-client/invalidation";
   import { runtime } from "../../runtime-client/runtime-store";
   import EmptyProject from "./EmptyProject.svelte";
+  import { behaviourEvent } from "../../metrics/initMetrics";
+  import {
+    BehaviourEventAction,
+    BehaviourEventMedium,
+  } from "../../metrics/service/BehaviourEventTypes";
+  import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
 
   const queryClient = useQueryClient();
 
@@ -22,21 +28,21 @@
       title: "Cost Monitoring",
       description: "Monitoring cloud infrastructure",
       image:
-        "bg-[url('/img/welcome-bg-cost-monitoring.png')] bg-no-repeat bg-cover",
+        "bg-[url('$img/welcome-bg-cost-monitoring.png')] bg-no-repeat bg-cover",
       firstPage: "/dashboard/customer_margin_dash",
     },
     {
       name: "rill-openrtb-prog-ads",
       title: "OpenRTB Programmatic Ads",
       description: "Real-time Bidding (RTB) advertising",
-      image: "bg-[url('/img/welcome-bg-openrtb.png')] bg-no-repeat bg-cover",
+      image: "bg-[url('$img/welcome-bg-openrtb.png')] bg-no-repeat bg-cover",
       firstPage: "dashboard/auction",
     },
     {
       name: "rill-311-ops",
       title: "311 Call Center Operations",
       description: "Citizen reports across US cities",
-      image: "bg-[url('/img/welcome-bg-311.png')] bg-no-repeat bg-cover",
+      image: "bg-[url('$img/welcome-bg-311.png')] bg-no-repeat bg-cover",
       firstPage: "dashboard/call_center_metrics",
     },
   ];
@@ -71,6 +77,24 @@
       },
     },
   });
+
+  function startWithExampleProject(example: (typeof EXAMPLES)[number]) {
+    behaviourEvent.fireSplashEvent(
+      BehaviourEventAction.ExampleAdd,
+      BehaviourEventMedium.Card,
+      MetricsEventSpace.Workspace,
+      example.name
+    );
+
+    firstPage = example.firstPage;
+    $unpackExampleProject.mutate({
+      instanceId: $runtime.instanceId,
+      data: {
+        name: example.name,
+        force: true,
+      },
+    });
+  }
 </script>
 
 <section class="flex flex-col items-center gap-y-5 mt-4 mb-6">
@@ -81,14 +105,7 @@
       <Card
         bgClasses={example.image}
         on:click={() => {
-          firstPage = example.firstPage;
-          $unpackExampleProject.mutate({
-            instanceId: $runtime.instanceId,
-            data: {
-              name: example.name,
-              force: true,
-            },
-          });
+          startWithExampleProject(example);
         }}
       >
         <CardTitle>{example.title}</CardTitle>

@@ -4,6 +4,7 @@ info:
   version: version not set
 tags:
   - name: RuntimeService
+  - name: ConnectorService
   - name: QueryService
 consumes:
   - application/json
@@ -63,6 +64,91 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
+  /v1/gcs/bucket/{bucket}/objects:
+    get:
+      summary: GCSListObjects lists objects for the given bucket.
+      operationId: ConnectorService_GCSListObjects
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GCSListObjectsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+        - name: prefix
+          in: query
+          required: false
+          type: string
+        - name: startOffset
+          in: query
+          required: false
+          type: string
+        - name: endOffset
+          in: query
+          required: false
+          type: string
+        - name: delimiter
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/gcs/buckets:
+    get:
+      summary: GCSListBuckets lists buckets accessible with the configured credentials.
+      operationId: ConnectorService_GCSListBuckets
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GCSListBucketsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/gcs/credentials_info:
+    get:
+      summary: GCSGetCredentialsInfo returns metadata for the given bucket.
+      operationId: ConnectorService_GCSGetCredentialsInfo
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GCSGetCredentialsInfoResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - ConnectorService
   /v1/instances:
     get:
       summary: ListInstances lists all the instances currently managed by the runtime
@@ -1443,6 +1529,111 @@ paths:
             $ref: '#/definitions/v1RenameFileAndReconcileRequest'
       tags:
         - RuntimeService
+  /v1/s3/bucket/{bucket}/metadata:
+    get:
+      summary: S3GetBucketMetadata returns metadata for the given bucket.
+      operationId: ConnectorService_S3GetBucketMetadata
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1S3GetBucketMetadataResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          type: string
+      tags:
+        - ConnectorService
+  /v1/s3/bucket/{bucket}/objects:
+    get:
+      summary: S3ListBuckets lists objects for the given bucket.
+      operationId: ConnectorService_S3ListObjects
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1S3ListObjectsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+        - name: region
+          in: query
+          required: false
+          type: string
+        - name: prefix
+          in: query
+          required: false
+          type: string
+        - name: startAfter
+          in: query
+          required: false
+          type: string
+        - name: delimiter
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/s3/buckets:
+    get:
+      summary: S3ListBuckets lists buckets accessible with the configured credentials.
+      operationId: ConnectorService_S3ListBuckets
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1S3ListBucketsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/s3/credentials_info:
+    get:
+      summary: S3GetCredentialsInfo returns metadata for the given bucket.
+      operationId: ConnectorService_S3GetCredentialsInfo
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1S3GetCredentialsInfoResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - ConnectorService
 definitions:
   ColumnTimeSeriesRequestBasicMeasure:
     type: object
@@ -1901,6 +2092,45 @@ definitions:
         type: string
       description:
         type: string
+  v1GCSGetCredentialsInfoResponse:
+    type: object
+    properties:
+      exist:
+        type: boolean
+      projectId:
+        type: string
+  v1GCSListBucketsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      buckets:
+        type: array
+        items:
+          type: string
+  v1GCSListObjectsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      objects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1GCSObject'
+  v1GCSObject:
+    type: object
+    properties:
+      name:
+        type: string
+      modifiedOn:
+        type: string
+        format: date-time
+      size:
+        type: string
+        format: int64
+      isDir:
+        type: boolean
   v1GetCatalogEntryResponse:
     type: object
     properties:
@@ -2524,6 +2754,50 @@ definitions:
   v1RenameFileResponse:
     type: object
     title: Response message for RuntimeService.RenameFile
+  v1S3GetBucketMetadataResponse:
+    type: object
+    properties:
+      region:
+        type: string
+  v1S3GetCredentialsInfoResponse:
+    type: object
+    properties:
+      exist:
+        type: boolean
+      provider:
+        type: string
+  v1S3ListBucketsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      buckets:
+        type: array
+        items:
+          type: string
+  v1S3ListObjectsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      objects:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1S3Object'
+  v1S3Object:
+    type: object
+    properties:
+      name:
+        type: string
+      modifiedOn:
+        type: string
+        format: date-time
+      size:
+        type: string
+        format: int64
+      isDir:
+        type: boolean
   v1Source:
     type: object
     properties:

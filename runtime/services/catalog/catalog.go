@@ -33,6 +33,9 @@ func NewService(
 	if logger == nil {
 		logger = zap.NewNop()
 	}
+	if instID != "default" {
+		logger = logger.With(zap.String("instance_id", instID))
+	}
 	return &Service{
 		Catalog:       catalog,
 		Repo:          repo,
@@ -40,8 +43,7 @@ func NewService(
 		RegistryStore: registry,
 		InstID:        instID,
 		logger:        logger,
-
-		Meta: m,
+		Meta:          m,
 	}
 }
 
