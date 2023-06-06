@@ -47,23 +47,25 @@
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
+  $: timeStart = metricsExplorer?.selectedTimeRange?.start
+    ? metricsExplorer.selectedTimeRange.start.toISOString()
+    : undefined;
+  $: timeEnd = metricsExplorer?.selectedTimeRange?.end
+    ? metricsExplorer.selectedTimeRange.end.toISOString()
+    : undefined;
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: metricsExplorer.selectedTimeRange?.start
-        ? metricsExplorer.selectedTimeRange.start.toISOString()
-        : undefined,
-      timeEnd: metricsExplorer.selectedTimeRange?.end
-        ? metricsExplorer.selectedTimeRange.end.toISOString()
-        : undefined,
+      timeStart: timeStart,
+      timeEnd: timeEnd,
       filter: metricsExplorer?.filters,
     },
     {
       query: {
         enabled:
-          (hasTimeSeries ? !!metricsExplorer.selectedTimeRange : true) &&
+          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
           !!metricsExplorer?.filters,
       },
     }

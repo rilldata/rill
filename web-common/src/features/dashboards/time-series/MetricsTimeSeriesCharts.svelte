@@ -62,23 +62,24 @@
     name = $dashboardStore.selectedTimeRange.name;
   }
 
+  $: timeStart = $dashboardStore?.selectedTimeRange?.start
+    ? $dashboardStore.selectedTimeRange.start.toISOString()
+    : undefined;
+  $: timeEnd = $dashboardStore?.selectedTimeRange?.end
+    ? $dashboardStore.selectedTimeRange.end.toISOString()
+    : undefined;
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: $dashboardStore?.selectedTimeRange?.start
-        ? $dashboardStore.selectedTimeRange.start.toISOString()
-        : undefined,
-      timeEnd: $dashboardStore?.selectedTimeRange?.end
-        ? $dashboardStore.selectedTimeRange.end.toISOString()
-        : undefined,
+      timeStart: timeStart,
+      timeEnd: timeEnd,
       filter: $dashboardStore?.filters,
     },
     {
       query: {
-        enabled:
-          !!$dashboardStore?.selectedTimeRange && !!$dashboardStore?.filters,
+        enabled: !!timeStart && !!timeEnd && !!$dashboardStore?.filters,
       },
     }
   );
