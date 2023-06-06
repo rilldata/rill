@@ -186,7 +186,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	impactsDeployments := (proj.ProdBranch != opts.ProdBranch ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
-		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables))
+		!reflect.DeepEqual(map[string]string(proj.ProdVariables), opts.ProdVariables))
 
 	if impactsDeployments {
 		s.logger.Info("updating deployments", observability.ZapCtx(ctx))
