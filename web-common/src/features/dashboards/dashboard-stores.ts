@@ -28,19 +28,6 @@ export interface MetricsExplorerEntity {
   // selected measure names to be shown
   selectedMeasureNames: Array<string>;
 
-  /** 
-  FIXME For now we are using the user supplied `expression` for measures
-  and `name` (column name) for dimensions to determine which measures and
-  dimensions are visible. These are used because they are the only fields
-  that are required to exist in measures/dimensions for them to be shown
-  in the dashboard
-
-  This may lead to problems if there are ever duplicates among
-  these. Hamilton has started discussions with Benjamin about
-  adding unique keys that could be used to replace these temporary keys. 
-  Once those become available the logic around the fields below
-  should be updated.
-*/
   // This array controls which measures are visible in
   // explorer on the client. Note that this will need to be
   // updated to include all measure keys upon initialization
@@ -118,6 +105,38 @@ function includeExcludeModeFromFilters(filters: V1MetricsViewFilter) {
   return map;
 }
 
+function removeNonExistentMeasures(
+  metricsView: V1MetricsView,
+  metricsExplorer: MetricsExplorerEntity
+) {
+  const measuresMap = getMapFromArray(
+    metricsView.measures,
+    (measure) => measure.name
+  );
+
+  // sync measures with selected leaderboard measure.
+  if (
+    metricsView.measures.length &&
+    (!metricsExplorer.leaderboardMeasureName ||
+      !measuresMap.has(metricsExplorer.leaderboardMeasureName))
+  ) {
+    metricsExplorer.leaderboardMeasureName = metricsView.measures[0].name;
+  } else if (!metricsView.measures.length) {
+    metricsExplorer.leaderboardMeasureName = undefined;
+  }
+  // TODO: how does this differ from visibleMeasureKeys?
+  metricsExplorer.selectedMeasureNames = metricsView.measures.map(
+    (measure) => measure.name
+  );
+
+  // remove any keys from visible measure if it doesn't exist anymore
+  for (const measureKey of metricsExplorer.visibleMeasureKeys) {
+    if (!measuresMap.has(measureKey)) {
+      metricsExplorer.visibleMeasureKeys.delete(measureKey);
+    }
+  }
+}
+
 function removeNonExistentDimensions(
   metricsView: V1MetricsView,
   metricsExplorer: MetricsExplorerEntity
@@ -139,6 +158,13 @@ function removeNonExistentDimensions(
     !dimensionsMap.has(metricsExplorer.selectedDimensionName)
   ) {
     metricsExplorer.selectedDimensionName = undefined;
+  }
+
+  // remove any keys from visible dimension if it doesn't exist anymore
+  for (const dimensionKey of metricsExplorer.visibleDimensionKeys) {
+    if (!dimensionsMap.has(dimensionKey)) {
+      metricsExplorer.visibleDimensionKeys.delete(dimensionKey);
+    }
   }
 }
 
@@ -180,32 +206,8 @@ const metricViewReducers = {
     updateMetricsExplorerByName(
       name,
       (metricsExplorer) => {
-        // sync measures with selected leaderboard measure.
-        if (
-          metricsView.measures.length &&
-          (!metricsExplorer.leaderboardMeasureName ||
-            !metricsView.measures.find(
-              (measure) =>
-                measure.name === metricsExplorer.leaderboardMeasureName
-            ))
-        ) {
-          metricsExplorer.leaderboardMeasureName = metricsView.measures[0].name;
-        } else if (!metricsView.measures.length) {
-          metricsExplorer.leaderboardMeasureName = undefined;
-        }
-        // TODO: how does this differ from visibleMeasureKeys?
-        metricsExplorer.selectedMeasureNames = metricsView.measures.map(
-          (measure) => measure.name
-        );
-
-        // visible measure and dimensions sync
-        metricsExplorer.visibleMeasureKeys = new Set(
-          metricsView.measures.map((measure) => measure.expression)
-        );
-
-        metricsExplorer.visibleDimensionKeys = new Set(
-          metricsView.dimensions.map((dim) => dim.name)
-        );
+        // remove references to non existent measures
+        removeNonExistentMeasures(metricsView, metricsExplorer);
 
         // remove references to non existent dimensions
         removeNonExistentDimensions(metricsView, metricsExplorer);
@@ -217,7 +219,7 @@ const metricViewReducers = {
         ),
 
         visibleMeasureKeys: new Set(
-          metricsView.measures.map((measure) => measure.expression)
+          metricsView.measures.map((measure) => measure.name)
         ),
         visibleDimensionKeys: new Set(
           metricsView.dimensions.map((dim) => dim.name)

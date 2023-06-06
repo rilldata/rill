@@ -89,7 +89,7 @@ export const selectMeasureKeys = (
   metaQuery: QueryObserverResult<V1MetricsView, RpcStatus>
 ): string[] => {
   if (metaQuery && metaQuery.isSuccess && !metaQuery.isRefetching) {
-    return metaQuery.data?.measures?.map((m) => m.expression) ?? [];
+    return metaQuery.data?.measures?.map((m) => m.name) ?? [];
   }
   return [];
 };

@@ -53,6 +53,13 @@ export function getDashboardStateFromProto(
     entity.selectedDimensionName = dashboard.selectedDimension;
   }
 
+  if (dashboard.visibleMeasures?.length) {
+    entity.visibleMeasureKeys = new Set(dashboard.visibleMeasures);
+  }
+  if (dashboard.visibleDimensions?.length) {
+    entity.visibleDimensionKeys = new Set(dashboard.visibleDimensions);
+  }
+
   return entity;
 }
 

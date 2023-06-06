@@ -163,6 +163,11 @@
   $: visibleMeasuresBitmask = availableMeasureKeys.map((k) =>
     visibleMeasureKeys.has(k)
   );
+  $: console.log(
+    availableMeasureKeys,
+    visibleMeasureKeys,
+    visibleMeasuresBitmask
+  );
 
   const toggleMeasureVisibility = (e) => {
     metricsExplorerStore.toggleMeasureVisibilityByKey(
@@ -183,9 +188,9 @@
 
 <svelte:window on:resize={() => calculateGridColumns()} />
 <div
-  use:listenToNodeResize
   style:height="calc(100% - {GRID_MARGIN_TOP}px)"
   style:width={containerWidths[numColumns]}
+  use:listenToNodeResize
 >
   <div
     bind:this={measuresWrapper}
@@ -194,12 +199,12 @@
   >
     <div class="bg-white sticky top-0" style="z-index:100">
       <SeachableFilterButton
+        label="Measures"
+        on:deselect-all={setAllMeasuresNotVisible}
+        on:item-clicked={toggleMeasureVisibility}
+        on:select-all={setAllMeasuresVisible}
         selectableItems={availableMeasureLabels}
         selectedItems={visibleMeasuresBitmask}
-        on:item-clicked={toggleMeasureVisibility}
-        on:deselect-all={setAllMeasuresNotVisible}
-        on:select-all={setAllMeasuresVisible}
-        label="Measures"
         tooltipText="Choose measures to display"
       />
     </div>

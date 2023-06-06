@@ -22,6 +22,10 @@ message DashboardState {
   optional string selected_dimension = 6;
 
   optional bool show_comparison = 7;
+
+  // Selected measures and dimensions to be shown
+  repeated string visible_measures = 8;
+  repeated string visible_dimensions = 9;
 }
 
 message DashboardTimeRange {

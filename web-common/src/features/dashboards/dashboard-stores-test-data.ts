@@ -110,6 +110,16 @@ export function assertMetricsView(
   expect(metricsView.leaderboardMeasureName).toEqual(selectedMeasure);
 }
 
+export function assertVisiblePartsOfMetricsView(
+  name: string,
+  measures: Array<string>,
+  dimensions: Array<string>
+) {
+  const metricsView = get(metricsExplorerStore).entities[name];
+  expect([...metricsView.visibleMeasureKeys]).toEqual(measures);
+  expect([...metricsView.visibleDimensionKeys]).toEqual(dimensions);
+}
+
 export const AD_BIDS_BASE_FILTER = {
   include: [
     {
