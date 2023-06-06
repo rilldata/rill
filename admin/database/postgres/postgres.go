@@ -400,6 +400,20 @@ func (c *connection) InsertDeployment(ctx context.Context, opts *database.Insert
 	return res, nil
 }
 
+func (c *connection) UpdateDeployment(ctx context.Context, id string, opts *database.UpdateDeploymentOptions) (*database.Deployment, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.Deployment{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET project_id=$1, slots=$2, branch=$3, runtime_host=$4, runtime_instance_id=$5, runtime_audience=$6, status=$7, logs=$8, updated_on=now() WHERE id=$3 RETURNING *",
+		opts.ProjectID, opts.Slots, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.Logs, id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("deployment", err)
+	}
+	return res, nil
+}
+
 func (c *connection) DeleteDeployment(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM deployments WHERE id=$1", id)
 	return checkDeleteRow("deployment", res, err)

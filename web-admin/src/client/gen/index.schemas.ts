@@ -145,6 +145,10 @@ export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
 }
 
+export interface V1TriggerReprovisionResponse {
+  [key: string]: any;
+}
+
 export interface V1TriggerRefreshSourcesResponse {
   [key: string]: any;
 }

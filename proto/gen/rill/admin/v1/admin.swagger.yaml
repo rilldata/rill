@@ -89,6 +89,31 @@ paths:
                   type: string
       tags:
         - AdminService
+  /v1/deployments/{deploymentId}/reprovision:
+    post:
+      summary: TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+      operationId: AdminService_TriggerReprovision
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TriggerReprovisionResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
   /v1/github/repositories:
     get:
       summary: |-
@@ -1371,6 +1396,8 @@ definitions:
   v1TriggerRedeployResponse:
     type: object
   v1TriggerRefreshSourcesResponse:
+    type: object
+  v1TriggerReprovisionResponse:
     type: object
   v1UpdateOrganizationResponse:
     type: object

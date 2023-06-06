@@ -128,3 +128,31 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 
 	return &adminv1.TriggerRedeployResponse{}, nil
 }
+
+func (s *Server) TriggerReprovision(ctx context.Context, req *adminv1.TriggerReprovisionRequest) (*adminv1.TriggerReprovisionResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.deployment_id", req.DeploymentId),
+	)
+
+	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, depl.ProjectID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, depl.ProjectID).ManageProd {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
+	}
+
+	err = s.admin.ReprovisionDeployment(ctx, proj, depl)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &adminv1.TriggerReprovisionResponse{}, nil
+}

@@ -1439,6 +1439,74 @@ export class TriggerRedeployResponse extends Message<TriggerRedeployResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.TriggerReprovisionRequest
+ */
+export class TriggerReprovisionRequest extends Message<TriggerReprovisionRequest> {
+  /**
+   * @generated from field: string deployment_id = 1;
+   */
+  deploymentId = "";
+
+  constructor(data?: PartialMessage<TriggerReprovisionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.TriggerReprovisionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TriggerReprovisionRequest {
+    return new TriggerReprovisionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TriggerReprovisionRequest {
+    return new TriggerReprovisionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TriggerReprovisionRequest {
+    return new TriggerReprovisionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TriggerReprovisionRequest | PlainMessage<TriggerReprovisionRequest> | undefined, b: TriggerReprovisionRequest | PlainMessage<TriggerReprovisionRequest> | undefined): boolean {
+    return proto3.util.equals(TriggerReprovisionRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.TriggerReprovisionResponse
+ */
+export class TriggerReprovisionResponse extends Message<TriggerReprovisionResponse> {
+  constructor(data?: PartialMessage<TriggerReprovisionResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.TriggerReprovisionResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TriggerReprovisionResponse {
+    return new TriggerReprovisionResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TriggerReprovisionResponse {
+    return new TriggerReprovisionResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TriggerReprovisionResponse {
+    return new TriggerReprovisionResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TriggerReprovisionResponse | PlainMessage<TriggerReprovisionResponse> | undefined, b: TriggerReprovisionResponse | PlainMessage<TriggerReprovisionResponse> | undefined): boolean {
+    return proto3.util.equals(TriggerReprovisionResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListOrganizationMembersRequest
  */
 export class ListOrganizationMembersRequest extends Message<ListOrganizationMembersRequest> {

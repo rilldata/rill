@@ -110,6 +110,14 @@ service AdminService {
     };
   }
 
+   // TriggerReprovision re-provision the hibernated deployment
+  rpc TriggerReprovision(TriggerReprovisionRequest) returns (TriggerReprovisionResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/{deployment_id}/reprovision",
+      body: "*"
+    };
+  }
+
   // ListOrganizationMembers lists all the org members
   rpc ListOrganizationMembers(ListOrganizationMembersRequest) returns (ListOrganizationMembersResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/members"};
@@ -396,6 +404,12 @@ message TriggerRedeployRequest {
 }
 
 message TriggerRedeployResponse {}
+
+message TriggerReprovisionRequest {
+  string deployment_id = 1;
+}
+
+message TriggerReprovisionResponse {}
 
 message ListOrganizationMembersRequest {
   string organization = 1;
