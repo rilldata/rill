@@ -97,7 +97,7 @@ func (g *githubClient) InstallationToken(ctx context.Context, installationID int
 		return "", fmt.Errorf("failed to create token: %w", err)
 	}
 
-	return token, err
+	return token, nil
 }
 
 // GetGithubInstallation returns a non zero Github installation ID if the Github App is installed on the repository

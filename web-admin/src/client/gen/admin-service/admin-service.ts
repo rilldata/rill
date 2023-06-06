@@ -923,7 +923,7 @@ export const createAdminServiceLeaveOrganization = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary GetGitCredentials returns details and a token for accessing the git repo for a project.
+ * @summary GetGitCredentials returns credentials and other details for a project's Git repository.
  */
 export const adminServiceGetGitCredentials = (
   organization: string,

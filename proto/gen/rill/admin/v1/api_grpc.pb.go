@@ -126,7 +126,7 @@ type AdminServiceClient interface {
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
 	GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error)
-	// GetGitCredentials returns details and a token for accessing the git repo for a project.
+	// GetGitCredentials returns credentials and other details for a project's Git repository.
 	GetGitCredentials(ctx context.Context, in *GetGitCredentialsRequest, opts ...grpc.CallOption) (*GetGitCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
 	CreateWhitelistedDomain(ctx context.Context, in *CreateWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateWhitelistedDomainResponse, error)
@@ -559,7 +559,7 @@ type AdminServiceServer interface {
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
 	GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error)
-	// GetGitCredentials returns details and a token for accessing the git repo for a project.
+	// GetGitCredentials returns credentials and other details for a project's Git repository.
 	GetGitCredentials(context.Context, *GetGitCredentialsRequest) (*GetGitCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
 	CreateWhitelistedDomain(context.Context, *CreateWhitelistedDomainRequest) (*CreateWhitelistedDomainResponse, error)

@@ -203,7 +203,7 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/repositories"};
   }
 
-  // GetGitCredentials returns details and a token for accessing the git repo for a project.
+  // GetGitCredentials returns credentials and other details for a project's Git repository.
   rpc GetGitCredentials(GetGitCredentialsRequest) returns (GetGitCredentialsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/git-credentials"};
   }
