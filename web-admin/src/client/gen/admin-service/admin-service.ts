@@ -41,6 +41,7 @@ import type {
   V1SetOrganizationMemberRoleResponse,
   AdminServiceSetOrganizationMemberRoleBodyBody,
   V1LeaveOrganizationResponse,
+  V1GetGitCredentialsResponse,
   V1ListProjectInvitesResponse,
   AdminServiceListProjectInvitesParams,
   V1ListProjectMembersResponse,
@@ -921,6 +922,75 @@ export const createAdminServiceLeaveOrganization = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary GetGitCredentials returns details and a token for accessing the git repo for a project.
+ */
+export const adminServiceGetGitCredentials = (
+  organization: string,
+  project: string,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1GetGitCredentialsResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/git-credentials`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetGitCredentialsQueryKey = (
+  organization: string,
+  project: string
+) =>
+  [
+    `/v1/organizations/${organization}/projects/${project}/git-credentials`,
+  ] as const;
+
+export type AdminServiceGetGitCredentialsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetGitCredentials>>
+>;
+export type AdminServiceGetGitCredentialsQueryError = RpcStatus;
+
+export const createAdminServiceGetGitCredentials = <
+  TData = Awaited<ReturnType<typeof adminServiceGetGitCredentials>>,
+  TError = RpcStatus
+>(
+  organization: string,
+  project: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetGitCredentials>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetGitCredentialsQueryKey(organization, project);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetGitCredentials>>
+  > = ({ signal }) =>
+    adminServiceGetGitCredentials(organization, project, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetGitCredentials>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(organization && project),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary ListProjectInvites lists all the project invites
  */

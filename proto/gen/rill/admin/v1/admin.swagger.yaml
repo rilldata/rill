@@ -390,6 +390,30 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/organizations/{organization}/projects/{project}/git-credentials:
+    get:
+      summary: GetGitCredentials returns details and a token for accessing the git repo for a project.
+      operationId: AdminService_GetGitCredentials
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetGitCredentialsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/organizations/{organization}/projects/{project}/invites:
     get:
       summary: ListProjectInvites lists all the project invites
@@ -1075,6 +1099,19 @@ definitions:
     properties:
       user:
         $ref: '#/definitions/v1User'
+  v1GetGitCredentialsResponse:
+    type: object
+    properties:
+      repoUrl:
+        type: string
+      username:
+        type: string
+      password:
+        type: string
+      subpath:
+        type: string
+      prodBranch:
+        type: string
   v1GetGithubRepoStatusResponse:
     type: object
     properties:
