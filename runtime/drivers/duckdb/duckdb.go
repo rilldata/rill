@@ -31,6 +31,8 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 	bootQueries := []string{
 		"INSTALL 'json'",
 		"LOAD 'json'",
+		"INSTALL 'icu'",
+		"LOAD 'icu'",
 		"INSTALL 'parquet'",
 		"LOAD 'parquet'",
 		"INSTALL 'httpfs'",
