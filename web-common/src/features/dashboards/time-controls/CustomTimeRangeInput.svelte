@@ -7,6 +7,7 @@
   import { Button } from "../../../components/button";
   import type { DashboardTimeControls } from "../../../lib/time/types";
   import type { V1TimeGrain } from "../../../runtime-client";
+  import DatePicker from "@rilldata/web-common/components/date-picker/DatePicker.svelte";
 
   export let minTimeGrain: V1TimeGrain;
   export let boundaryStart: Date;
@@ -73,6 +74,12 @@
   }
 
   let labelClasses = "font-semibold text-[10px]";
+
+  let startEl, endEl;
+
+  $: {
+    console.log({ startEl, endEl });
+  }
 </script>
 
 <form
@@ -83,6 +90,7 @@
   <div class="flex flex-col gap-y-1">
     <label class={labelClasses} for="start-date">Start date</label>
     <input
+      bind:this={startEl}
       bind:value={start}
       class="cursor-pointer"
       id="start-date"
@@ -90,20 +98,21 @@
       {min}
       name="start-date"
       on:blur={() => dispatch("close-calendar")}
-      type="date"
+      type="text"
     />
   </div>
 
   <div class="flex flex-col gap-y-1">
     <label class={labelClasses} for="end-date">End date</label>
     <input
+      bind:this={endEl}
       bind:value={end}
       id="end-date"
       {min}
       {max}
       name="end-date"
       on:blur={() => dispatch("close-calendar")}
-      type="date"
+      type="text"
     />
   </div>
   <div class="flex mt-3 items-center">
@@ -117,4 +126,7 @@
       Apply
     </Button>
   </div>
+  {#if startEl && endEl}
+    <DatePicker {startEl} {endEl} />
+  {/if}
 </form>

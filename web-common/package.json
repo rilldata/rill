@@ -10,6 +10,8 @@
     "test:watch": "npm run test -- --watch"
   },
   "devDependencies": {
+    "@easepick/base-plugin": "^1.2.1",
+    "@easepick/core": "^1.2.1",
     "@tanstack/svelte-query": "^4.27.0",
     "@typescript-eslint/eslint-plugin": "^5.27.0",
     "@typescript-eslint/parser": "^5.27.0",
