@@ -84,6 +84,7 @@ installBinary() {
 # Run the installed binary and print the version
 testInstalledBinary() {
     RILL_VERSION=$(rill version)
+    rill verify-install 1>/dev/null || true
     boldon=`tput smso`
     boldoff=`tput rmso`
     printf "\nInstallation of ${RILL_VERSION} completed!\n"
