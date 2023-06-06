@@ -1,6 +1,4 @@
-// import "tailwindcss/tailwind.css";
 import "../src/app.css";
-// import "../static/app.css";
 import "../static/fonts/fonts.css";
 
 import type { Preview } from "@storybook/svelte";
