@@ -27,9 +27,22 @@
   </TooltipContent>
 </Template>
 
-<Story name="base case" args={{ name: "name", description:"description" }} />
+<Story name="base case" args={{ name: "name", description: "description" }} />
 
-<Story name="long name" args={{ name: "A_very_long_string_in_the_name_field_that_has_no_whitespace_like_a_terrible_database_column_name" ,description:"description"}} />
+<Story
+  name="long name"
+  args={{
+    name: "A_very_long_string_in_the_name_field_that_has_no_whitespace_like_a_terrible_database_column_name",
+    description: "description",
+  }}
+/>
 
-<Story name="long description" source args={{ name:"name",description: "A long string in the description field that does have whitespace like a longish string in a database field" }} />
-
+<Story
+  name="long description"
+  source
+  args={{
+    name: "name",
+    description:
+      "A long string in the description field that does have whitespace like a longish string in a database field",
+  }}
+/>
