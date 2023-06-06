@@ -17,6 +17,7 @@ func SudoCmd(cfg *config.Config) *cobra.Command {
 	sudoCmd.AddCommand(whitelist.WhitelistCmd(cfg))
 	sudoCmd.AddCommand(superuser.SuperuserCmd(cfg))
 	sudoCmd.AddCommand(user.UserCmd(cfg))
+	sudoCmd.AddCommand(gitCloneCmd(cfg))
 
 	return sudoCmd
 }

@@ -108,6 +108,35 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 	return res, nil
 }
 
+func (s *Server) GetGitCredentials(ctx context.Context, req *adminv1.GetGitCredentialsRequest) (*adminv1.GetGitCredentialsResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "superuser permission required to get git credentials")
+	}
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if proj.GithubURL == nil || proj.GithubInstallationID == nil {
+		return nil, status.Error(codes.FailedPrecondition, "project does not have a github integration")
+	}
+
+	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &adminv1.GetGitCredentialsResponse{
+		RepoUrl:    *proj.GithubURL + ".git", // TODO: Can the clone URL be different from the HTTP URL of a Github repo?
+		Username:   "x-access-token",
+		Password:   token,
+		Subpath:    proj.Subpath,
+		ProdBranch: proj.ProdBranch,
+	}, nil
+}
+
 // registerGithubEndpoints registers the non-gRPC endpoints for the Github integration.
 func (s *Server) registerGithubEndpoints(mux *http.ServeMux) {
 	// TODO: Add helper utils to clean this up

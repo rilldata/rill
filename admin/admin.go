@@ -21,9 +21,9 @@ type Service struct {
 	DB             database.DB
 	Provisioner    *provisioner.StaticProvisioner
 	Email          *email.Client
+	Github         Github
 	opts           *Options
 	logger         *zap.Logger
-	github         Github
 	issuer         *auth.Issuer
 	closeCtx       context.Context
 	closeCtxCancel context.CancelFunc
@@ -69,9 +69,9 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		DB:             db,
 		Provisioner:    prov,
 		Email:          emailClient,
+		Github:         github,
 		opts:           opts,
 		logger:         logger,
-		github:         github,
 		issuer:         issuer,
 		closeCtx:       ctx,
 		closeCtxCancel: cancel,

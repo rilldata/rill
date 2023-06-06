@@ -333,12 +333,20 @@ export interface V1GetGithubRepoStatusResponse {
   defaultBranch?: string;
 }
 
+export interface V1GetGitCredentialsResponse {
+  repoUrl?: string;
+  username?: string;
+  password?: string;
+  subpath?: string;
+  prodBranch?: string;
+}
+
 export interface V1GetCurrentUserResponse {
   user?: V1User;
 }
 
 export type V1DeploymentStatus =
-  typeof V1DeploymentStatus[keyof typeof V1DeploymentStatus];
+  (typeof V1DeploymentStatus)[keyof typeof V1DeploymentStatus];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1DeploymentStatus = {
