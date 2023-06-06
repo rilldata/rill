@@ -7,7 +7,7 @@
     uploadTableFiles,
   } from "@rilldata/web-common/features/sources/add-source/file-upload";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import { appStore } from "@rilldata/web-common/layout/app-store";
+  import { appScreen, appStore } from "@rilldata/web-common/layout/app-store";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
@@ -23,9 +23,17 @@
   import { useModelNames } from "../../models/selectors";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
-  import { compileCreateSourceYAML } from "../sourceUtils";
+  import {
+    compileCreateSourceYAML,
+    getSourceError,
+    emitSourceErrorTelemetry,
+    emitSourceSuccessTelemetry,
+  } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { hasDuckDBUnicodeError, niceDuckdbUnicodeError } from "./errors";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
 
   const dispatch = createEventDispatcher();
 
@@ -40,6 +48,9 @@
   const createSourceMutation = createRuntimeServicePutFileAndReconcile();
   const deleteSource = createRuntimeServiceDeleteFileAndReconcile();
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
+
+  $: createSourceMutationError = ($createSourceMutation?.error as any)?.response
+    ?.data;
 
   async function handleOpenFileDialog() {
     return handleUpload(await openFileUploadDialog());
@@ -103,6 +114,25 @@
       } else {
         // if the upload didn't work, delete the source file.
         handleDeleteSource(tableName);
+      }
+
+      const sourceError = getSourceError(errors, tableName);
+      if ($createSourceMutation.isError || sourceError) {
+        emitSourceErrorTelemetry(
+          MetricsEventSpace.Modal,
+          $appScreen,
+          createSourceMutationError?.message ?? sourceError?.message,
+          SourceConnectionType.Local,
+          filePath
+        );
+      } else {
+        emitSourceSuccessTelemetry(
+          MetricsEventSpace.Modal,
+          $appScreen,
+          BehaviourEventMedium.Button,
+          SourceConnectionType.Local,
+          filePath
+        );
       }
     }
   }

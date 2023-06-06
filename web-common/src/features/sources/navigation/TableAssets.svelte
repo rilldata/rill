@@ -26,6 +26,13 @@
   import EmbeddedSourceNav from "./EmbeddedSourceNav.svelte";
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
+  import { behaviourEvent } from "../../../metrics/initMetrics";
+  import {
+    BehaviourEventAction,
+    BehaviourEventMedium,
+  } from "../../../metrics/service/BehaviourEventTypes";
+  import { appScreen } from "../../../layout/app-store";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
 
   $: sourceNames = useSourceNames($runtime.instanceId);
   $: modelNames = useModelNames($runtime.instanceId);
@@ -43,6 +50,13 @@
 
   const openShowAddSourceModal = () => {
     showAddSourceModal = true;
+
+    behaviourEvent?.fireSourceTriggerEvent(
+      BehaviourEventAction.SourceAdd,
+      BehaviourEventMedium.Button,
+      $appScreen,
+      MetricsEventSpace.LeftPanel
+    );
   };
 
   const queryHandler = async (tableName: string) => {
