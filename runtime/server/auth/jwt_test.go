@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -73,7 +74,7 @@ func newTestIssuerAndAudience(t *testing.T) (*Issuer, *Audience, func()) {
 
 	// Create Audience
 	audienceURL := "http://example.org"
-	aud, err := OpenAudience(zap.NewNop(), srv.URL, audienceURL)
+	aud, err := OpenAudience(context.Background(), zap.NewNop(), srv.URL, audienceURL)
 	require.NoError(t, err)
 
 	return iss, aud, func() { srv.Close(); aud.Close() }
