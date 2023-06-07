@@ -1,19 +1,14 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, createEventDispatcher } from "svelte";
   import { easepick } from "@easepick/core";
   import { RangePlugin } from "./range-plugin";
 
   let datepicker;
   let picker;
-  export let startEl, endEl;
+  export let startEl, endEl, defaultStart, defaultEnd;
   let editingDate = 0;
 
-  const handleFocus = (v) => {
-    if (picker) {
-      picker.show();
-      picker.setEditingDate(v);
-    }
-  };
+  const dispatch = createEventDispatcher();
 
   const handleStartFocus = () => {
     if (picker) {
@@ -30,7 +25,6 @@
   };
 
   onMount(() => {
-    console.log({ startEl, endEl });
     picker = new easepick.create({
       element: datepicker,
       calendars: 2,
@@ -44,16 +38,31 @@
       zIndex: 10,
       plugins: [RangePlugin],
       inline: false,
-      autoApply: false,
+      autoApply: true,
       format: "MM/DD/YYYY",
       RangePlugin: {
         startEl,
         endEl,
+        startDate: defaultStart,
+        endDate: defaultEnd,
       },
     });
 
     picker.on("editingDate", (v) => {
       editingDate = v.detail;
+      dispatch("editing", v.detail);
+    });
+
+    picker.on("select", (d) => {
+      dispatch("change", d.detail);
+    });
+
+    picker.on("hide", (d) => {
+      dispatch("toggle", false);
+    });
+
+    picker.on("show", (d) => {
+      dispatch("toggle", true);
     });
 
     startEl.addEventListener("focus", handleStartFocus);

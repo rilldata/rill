@@ -168,18 +168,23 @@ export class RangePlugin extends BasePlugin implements IPlugin {
 
     // TODO Can we make this UTC?
     this.options.startEl.addEventListener("blur", (e) => {
-      const maybeStartDate = new Date(e.target.value + " EDT");
+      const maybeStartDate = new Date(e.target.value);
       if (!isNaN(maybeStartDate.valueOf())) {
         this.setStartDate(new DateTime(maybeStartDate));
       }
     });
 
     this.options.endEl.addEventListener("blur", (e) => {
-      const maybeEndDate = new Date(e.target.value + " EDT");
+      const maybeEndDate = new Date(e.target.value);
       if (!isNaN(maybeEndDate.valueOf())) {
         this.setEndDate(new DateTime(maybeEndDate));
       }
     });
+
+    // this.picker.datePicked = [
+    //   new DateTime(this.options.startDate),
+    //   new DateTime(this.options.endDate),
+    // ];
   }
 
   /**
@@ -458,6 +463,22 @@ export class RangePlugin extends BasePlugin implements IPlugin {
     }
   }
 
+  private emitUpdatedRange() {
+    const start = this.picker.getStartDate();
+    const end = this.picker.getEndDate();
+    if (
+      this._lastStart?.valueOf() !== start?.valueOf() ||
+      this._lastEnd?.valueOf() !== end?.valueOf()
+    ) {
+      this.picker.trigger("select", {
+        start,
+        end,
+      });
+      this._lastStart = start;
+      this._lastEnd = end;
+    }
+  }
+
   /**
    * Set startDate programmatically
    *
@@ -471,7 +492,7 @@ export class RangePlugin extends BasePlugin implements IPlugin {
 
     // TODO maybe rename updateValues to updateDisplayValues
     this.updateValues();
-
+    this.emitUpdatedRange();
     this.picker.renderAll();
   }
 
@@ -487,7 +508,7 @@ export class RangePlugin extends BasePlugin implements IPlugin {
     this.picker.datePicked[1] = date;
 
     this.updateValues();
-
+    this.emitUpdatedRange();
     this.picker.renderAll();
   }
 
@@ -518,8 +539,11 @@ export class RangePlugin extends BasePlugin implements IPlugin {
     this.options.startDate = startDate ? startDate.clone() : null;
     this.options.endDate = endDate ? endDate.clone() : null;
 
-    this.updateValues();
+    // TODO, why is datePicked even needed, vs the options stuff?
+    this.picker.datePicked = [this.options.startDate, this.options.endDate];
 
+    this.updateValues();
+    this.emitUpdatedRange();
     this.picker.renderAll();
   }
 
@@ -562,18 +586,33 @@ export class RangePlugin extends BasePlugin implements IPlugin {
       if (!(element instanceof HTMLElement)) return;
 
       if (this.picker.isCalendarDay(element)) {
-        if (this.picker.datePicked.length !== 1) return;
-
-        let date1 = this.picker.datePicked[0].clone();
-        let date2 = new DateTime(element.dataset.time);
+        // Get proposed new dates
         let isFlipped = false;
-
-        if (date1.isAfter(date2, "day")) {
-          const tempDate = date1.clone();
-          date1 = date2.clone();
-          date2 = tempDate.clone();
+        let date1 = this.picker.datePicked[0];
+        let date2 = this.picker.datePicked[1];
+        let hoveredDate = new DateTime(element.dataset.time);
+        // If editing start date
+        if (this.picker.editingDate === 0) {
+          date1 = hoveredDate;
           isFlipped = true;
+        } else if (this.picker.editingDate === 1) {
+          date2 = hoveredDate;
+          //   if (hoveredDate.isAfter(date1, "day")) date2 = hoveredDate;
+          //   else {
+          //     date1 = hoveredDate;
+          //     isFlipped = true;
+          //   }
         }
+
+        // let date1 = this.picker.datePicked[0].clone();
+        // let date2 = new DateTime(element.dataset.time);
+
+        // if (date1.isAfter(date2, "day")) {
+        //   const tempDate = date1.clone();
+        //   date1 = date2.clone();
+        //   date2 = tempDate.clone();
+        //   isFlipped = true;
+        // }
 
         const days = [...this.picker.ui.container.querySelectorAll(".day")];
 
@@ -585,9 +624,22 @@ export class RangePlugin extends BasePlugin implements IPlugin {
             dayView.classList.add("in-range");
           }
 
-          if (date.isSame(this.picker.datePicked[0], "day")) {
+          // If start date and picking end date, show start arrow
+          if (
+            date.isSame(this.picker.datePicked[0], "day") &&
+            this.picker.editingDate === 1
+          ) {
             dayView.classList.add("start");
-            dayView.classList.toggle("flipped", isFlipped);
+            dayView.classList.remove("end");
+          }
+
+          // If end date and picking start date, show end arrow
+          if (
+            date.isSame(this.picker.datePicked[1], "day") &&
+            this.picker.editingDate === 0
+          ) {
+            dayView.classList.add("end");
+            dayView.classList.remove("start");
           }
 
           if (d === element) {
@@ -622,15 +674,8 @@ export class RangePlugin extends BasePlugin implements IPlugin {
    * @param event
    */
   private onMouseLeave(event) {
-    if (this.isContainer(event.target) && this.options.repick) {
-      const start = this.getStartDate();
-      const end = this.getEndDate();
-
-      if (start && end) {
-        this.picker.datePicked.length = 0;
-
-        this.picker.renderAll();
-      }
+    if (this.isContainer(event.target)) {
+      this.picker.renderAll();
     }
   }
 
@@ -638,8 +683,10 @@ export class RangePlugin extends BasePlugin implements IPlugin {
     if (this.picker.isCalendarDay(element)) {
       const date = new DateTime(element.dataset.time);
       this.picker.datePicked.length = 2;
-      this.picker.datePicked[this.picker.editingDate] = date;
-      this.setEditingDate(this.picker.editingDate === 0 ? 1 : 0);
+      const editingDate = this.picker.editingDate;
+      const previousDates = [...this.picker.datePicked];
+      this.picker.datePicked[editingDate] = date;
+      let nextEditDate = editingDate === 0 ? 1 : 0;
 
       if (!this.picker.datePicked[0]) {
         this.picker.datePicked[0] = this.picker.datePicked[1].clone();
@@ -647,33 +694,46 @@ export class RangePlugin extends BasePlugin implements IPlugin {
         this.picker.datePicked[1] = this.picker.datePicked[0].clone();
       }
 
-      // This flips the dates if they are in the wrong order,
-      // But should it reset instead?
+      // If selecting an end date before start date, set as start date and flip back to end date
       if (
-        this.picker.datePicked[0] &&
+        editingDate === 1 &&
         this.picker.datePicked[0].isAfter(this.picker.datePicked[1])
       ) {
-        const tempDate = this.picker.datePicked[1].clone();
+        // this.picker.datePicked = [this.picker.datePicked[1], previousDates[1]];
+        // nextEditDate = 1;
+        this.picker.datePicked = [
+          this.picker.datePicked[1],
+          this.picker.datePicked[1],
+        ];
+      }
+
+      // If selecting a start date after an end date, set as start date and default end date to 1 day after
+      if (
+        editingDate === 0 &&
+        this.picker.datePicked[0].isAfter(this.picker.datePicked[1])
+      ) {
         this.picker.datePicked[1] = this.picker.datePicked[0].clone();
-        this.picker.datePicked[0] = tempDate.clone();
       }
 
       this.setDateRange(this.picker.datePicked[0], this.picker.datePicked[1]);
+      this.picker.renderAll();
+      this.setEditingDate(nextEditDate);
 
-      if (this.picker.options.autoApply) {
-        this.setDateRange(this.picker.datePicked[0], this.picker.datePicked[1]);
+      // TODO get rid of autoapply stuff
+      //   if (this.picker.options.autoApply) {
+      //     this.setDateRange(this.picker.datePicked[0], this.picker.datePicked[1]);
 
-        this.picker.trigger("select", {
-          start: this.picker.getStartDate(),
-          end: this.picker.getEndDate(),
-        });
+      //     this.picker.trigger("select", {
+      //       start: this.picker.getStartDate(),
+      //       end: this.picker.getEndDate(),
+      //     });
 
-        this.picker.hide();
-      } else {
-        this.hideTooltip();
+      //     this.picker.hide();
+      //   } else {
+      //     this.hideTooltip();
 
-        this.picker.renderAll();
-      }
+      //     this.picker.renderAll();
+      //   }
     }
   }
 

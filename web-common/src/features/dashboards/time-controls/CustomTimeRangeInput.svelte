@@ -27,6 +27,12 @@
   // functions for extracting the right kind of date string out of
   // a Date object. Used in the input elements.
   export function getDateFromObject(date: Date): string {
+    return date.toLocaleDateString([], {
+      timeZone: "UTC",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
     return getDateFromISOString(date.toISOString());
   }
 
@@ -35,6 +41,7 @@
   }
 
   export function getISOStringFromDate(date: string): string {
+    return new Date(`${date} UTC`).toISOString();
     return date + "T00:00:00.000Z";
   }
 
@@ -73,48 +80,60 @@
     });
   }
 
+  let startEl, endEl, editingDate, isOpen;
+
+  const handleDatePickerChange = (d) => {
+    start = getDateFromObject(d.detail.start);
+    end = getDateFromObject(d.detail.end);
+  };
+
+  const handleEditingChange = (d) => {
+    editingDate = d.detail;
+  };
+
+  const handleToggle = (d) => (isOpen = d.detail);
+
   let labelClasses = "font-semibold text-[10px]";
 
-  let startEl, endEl;
-
-  $: {
-    console.log({ startEl, endEl });
-  }
+  $: getInputClasses = (v) =>
+    `cursor-pointer ${isOpen && v === editingDate ? "input-outline" : ""} `;
 </script>
 
 <form
-  class="flex flex-col gap-y-3 mt-3 mb-1 px-3"
+  class="flex flex-col gap-y-3 mt-3 mb-1 px-3 relative"
   id="custom-time-range-form"
   on:submit|preventDefault={applyCustomTimeRange}
 >
-  <div class="flex flex-col gap-y-1">
-    <label class={labelClasses} for="start-date">Start date</label>
-    <input
-      bind:this={startEl}
-      bind:value={start}
-      class="cursor-pointer"
-      id="start-date"
-      {max}
-      {min}
-      name="start-date"
-      on:blur={() => dispatch("close-calendar")}
-      type="text"
-    />
+  <div class="flex flex-row gap-x-3">
+    <div class="flex flex-col gap-y-1">
+      <label class={labelClasses} for="start-date">Start date</label>
+      <input
+        bind:this={startEl}
+        class={getInputClasses(0)}
+        id="start-date"
+        {max}
+        {min}
+        name="start-date"
+        on:blur={() => dispatch("close-calendar")}
+        type="text"
+      />
+    </div>
+
+    <div class="flex flex-col gap-y-1">
+      <label class={labelClasses} for="end-date">End date</label>
+      <input
+        bind:this={endEl}
+        id="end-date"
+        {min}
+        {max}
+        name="end-date"
+        class={getInputClasses(1)}
+        on:blur={() => dispatch("close-calendar")}
+        type="text"
+      />
+    </div>
   </div>
 
-  <div class="flex flex-col gap-y-1">
-    <label class={labelClasses} for="end-date">End date</label>
-    <input
-      bind:this={endEl}
-      bind:value={end}
-      id="end-date"
-      {min}
-      {max}
-      name="end-date"
-      on:blur={() => dispatch("close-calendar")}
-      type="text"
-    />
-  </div>
   <div class="flex mt-3 items-center">
     {#if error}
       <div style:font-size="11px" class="text-red-600 mr-2">
@@ -127,6 +146,26 @@
     </Button>
   </div>
   {#if startEl && endEl}
-    <DatePicker {startEl} {endEl} />
+    <div class="absolute top-0 left-full">
+      <DatePicker
+        {startEl}
+        {endEl}
+        defaultStart={start}
+        defaultEnd={end}
+        on:change={handleDatePickerChange}
+        on:editing={handleEditingChange}
+        on:toggle={handleToggle}
+      />
+    </div>
   {/if}
 </form>
+
+<style>
+  .input-outline {
+    outline-offset: 0px;
+    /* FF */
+    outline: Highlight auto 1px;
+    /* Chrome/Safari */
+    outline: -webkit-focus-ring-color auto 1px;
+  }
+</style>

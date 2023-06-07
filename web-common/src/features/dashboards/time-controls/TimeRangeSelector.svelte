@@ -162,6 +162,7 @@
     on:escape={toggleFloatingElement}
     slot="floating-element"
     label="Time range selector"
+    maxWidth="300px"
   >
     {@const allTime = {
       name: TimeRangePreset.ALL_TIME,
