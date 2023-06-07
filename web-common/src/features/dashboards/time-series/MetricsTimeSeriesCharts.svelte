@@ -3,21 +3,17 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
-  import {
-    metricsExplorerStore,
-    useDashboardStore,
-  } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import {
     NicelyFormattedTypes,
     humanizeDataType,
     nicelyFormattedTypesToNumberKind,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import {
-    selectBestMeasureStrings,
-    selectMeasureKeys,
     useMetaQuery,
     useModelAllTimeRange,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -218,30 +214,16 @@
     endValue = removeTimezoneOffset(endValue);
   }
 
-  // FIXME: this is pending the remaining state work for show/hide measures and dimensions
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
-
-  $: availableMeasureLabels = selectBestMeasureStrings($metaQuery);
-  $: availableMeasureKeys = selectMeasureKeys($metaQuery);
-  $: visibleMeasureKeys = metricsExplorer?.visibleMeasureKeys;
-  $: visibleMeasuresBitmask = availableMeasureKeys.map((k) =>
-    visibleMeasureKeys.has(k)
-  );
+  $: showHideMeasures = createShowHideMeasuresStore(metricViewName, metaQuery);
 
   const toggleMeasureVisibility = (e) => {
-    metricsExplorerStore.toggleMeasureVisibilityByKey(
-      metricViewName,
-      availableMeasureKeys[e.detail.index]
-    );
+    showHideMeasures.toggleVisibility(e.detail.name);
   };
   const setAllMeasuresNotVisible = () => {
-    metricsExplorerStore.hideAllMeasures(metricViewName);
+    showHideMeasures.setAllToNotVisible();
   };
   const setAllMeasuresVisible = () => {
-    metricsExplorerStore.setMultipleMeasuresVisible(
-      metricViewName,
-      availableMeasureKeys
-    );
+    showHideMeasures.setAllToVisible();
   };
 </script>
 
@@ -252,8 +234,8 @@
       on:deselect-all={setAllMeasuresNotVisible}
       on:item-clicked={toggleMeasureVisibility}
       on:select-all={setAllMeasuresVisible}
-      selectableItems={availableMeasureLabels}
-      selectedItems={visibleMeasuresBitmask}
+      selectableItems={$showHideMeasures.selectableItems}
+      selectedItems={$showHideMeasures.selectedItems}
       tooltipText="Choose measures to display"
     />
   </div>
@@ -276,7 +258,7 @@
   <!-- bignumbers and line charts -->
   {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
     <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
-    {#each $metaQuery.data?.measures.filter((_, i) => visibleMeasuresBitmask[i]) as measure, index (measure.name)}
+    {#each $metaQuery.data?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure, index (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
       {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
       {@const showComparison = displayComparison}

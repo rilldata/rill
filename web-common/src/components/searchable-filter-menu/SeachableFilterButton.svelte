@@ -22,6 +22,7 @@ props as needed.
 
 -->
 <script lang="ts">
+  import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import { fly } from "svelte/transition";
   import WithTogglableFloatingElement from "../floating-element/WithTogglableFloatingElement.svelte";
 
@@ -30,7 +31,7 @@ props as needed.
   import SearchableFilterDropdown from "./SearchableFilterDropdown.svelte";
   import SelectButton from "../menu/triggers/SelectButton.svelte";
 
-  export let selectableItems: string[];
+  export let selectableItems: SearchableFilterSelectableItem[];
   export let selectedItems: boolean[];
   export let tooltipText: string;
   export let label: string;
@@ -55,16 +56,16 @@ props as needed.
 </script>
 
 <WithTogglableFloatingElement
-  let:toggleFloatingElement
+  alignment="start"
   bind:active
   distance={8}
-  alignment="start"
+  let:toggleFloatingElement
 >
   <Tooltip
-    location="bottom"
+    activeDelay={60}
     alignment="start"
     distance={8}
-    activeDelay={60}
+    location="bottom"
     suppress={active}
   >
     <SelectButton disabled={false} on:click={toggleFloatingElement}
@@ -77,15 +78,15 @@ props as needed.
     </div>
   </Tooltip>
   <SearchableFilterDropdown
-    {selectedItems}
-    {selectableItems}
-    slot="floating-element"
-    on:escape={toggleFloatingElement}
-    on:click-outside={toggleFloatingElement}
     on:apply
-    on:search
-    on:item-clicked
+    on:click-outside={toggleFloatingElement}
     on:deselect-all
+    on:escape={toggleFloatingElement}
+    on:item-clicked
+    on:search
     on:select-all
+    {selectableItems}
+    {selectedItems}
+    slot="floating-element"
   />
 </WithTogglableFloatingElement>

@@ -93,7 +93,9 @@
       : metricsExplorer?.filters.include.find((d) => d.name === dimension?.name)
           ?.in) ?? [];
 
-  $: allMeasures = $metaQuery.data?.measures;
+  $: allMeasures = $metaQuery.data?.measures.filter((m) =>
+    metricsExplorer?.visibleMeasureKeys.has(m.name)
+  );
 
   $: sortByColumn = $leaderboardMeasureQuery.data?.name;
   $: sortDirection = sortDirection || "desc";
@@ -279,7 +281,11 @@
 
     let columnNames: Array<string> = columnsMeta
       .map((c) => c.name)
-      .filter((name) => name !== dimension?.column);
+      .filter(
+        (name) =>
+          name !== dimension?.column &&
+          metricsExplorer.visibleMeasureKeys.has(name)
+      );
 
     const selectedMeasure = allMeasures.find((m) => m.name === sortByColumn);
     const sortByColumnIndex = columnNames.indexOf(sortByColumn);

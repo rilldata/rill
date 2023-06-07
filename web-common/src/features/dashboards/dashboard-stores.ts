@@ -76,7 +76,7 @@ function updateMetricsExplorerProto(metricsExplorer: MetricsExplorerEntity) {
   }
 }
 
-const updateMetricsExplorerByName = (
+export const updateMetricsExplorerByName = (
   name: string,
   callback: (metricsExplorer: MetricsExplorerEntity) => void,
   absenceCallback?: () => MetricsExplorerEntity

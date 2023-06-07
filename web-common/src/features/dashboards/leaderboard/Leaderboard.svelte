@@ -267,8 +267,6 @@
       })) ?? [];
   }
 
-  $: console.log();
-
   let hovered: boolean;
 </script>
 

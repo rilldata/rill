@@ -1,6 +1,7 @@
 <script lang="ts">
   import { SelectMenu } from "@rilldata/web-common/components/menu";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
+  import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { MetricsViewMeasure } from "@rilldata/web-common/runtime-client";
   import { crossfade, fly } from "svelte/transition";
@@ -10,11 +11,7 @@
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";
-  import {
-    selectBestDimensionStrings,
-    selectDimensionKeys,
-    useMetaQuery,
-  } from "../selectors";
+  import { useMetaQuery } from "../selectors";
 
   export let metricViewName;
 
@@ -70,27 +67,19 @@
   /** set the selection only if measures is not undefined */
   $: selection = measures ? activeLeaderboardMeasure : [];
 
-  $: availableDimensionLabels = selectBestDimensionStrings($metaQuery);
-  $: availableDimensionKeys = selectDimensionKeys($metaQuery);
-  $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
-  $: visibleDimensionsBitmask = availableDimensionKeys.map((k) =>
-    visibleDimensionKeys.has(k)
+  $: showHideDimensions = createShowHideDimensionsStore(
+    metricViewName,
+    metaQuery
   );
 
   const toggleDimensionVisibility = (e) => {
-    metricsExplorerStore.toggleDimensionVisibilityByKey(
-      metricViewName,
-      availableDimensionKeys[e.detail.index]
-    );
+    showHideDimensions.toggleVisibility(e.detail.name);
   };
   const setAllDimensionsNotVisible = () => {
-    metricsExplorerStore.hideAllDimensions(metricViewName);
+    showHideDimensions.setAllToNotVisible();
   };
   const setAllDimensionsVisible = () => {
-    metricsExplorerStore.setMultipleDimensionsVisible(
-      metricViewName,
-      availableDimensionKeys
-    );
+    showHideDimensions.setAllToVisible();
   };
 </script>
 
@@ -104,8 +93,8 @@
       style:max-width="450px"
     >
       <SeachableFilterButton
-        selectableItems={availableDimensionLabels}
-        selectedItems={visibleDimensionsBitmask}
+        selectableItems={$showHideDimensions.selectableItems}
+        selectedItems={$showHideDimensions.selectedItems}
         on:item-clicked={toggleDimensionVisibility}
         on:deselect-all={setAllDimensionsNotVisible}
         on:select-all={setAllDimensionsVisible}

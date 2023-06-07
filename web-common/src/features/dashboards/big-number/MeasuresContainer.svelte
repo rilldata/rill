@@ -1,9 +1,6 @@
 <script lang="ts">
-  import {
-    useMetaQuery,
-    selectBestMeasureStrings,
-    selectMeasureKeys,
-  } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
+  import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
@@ -157,32 +154,16 @@
     calculateGridColumns();
   }
 
-  $: availableMeasureLabels = selectBestMeasureStrings($metaQuery);
-  $: availableMeasureKeys = selectMeasureKeys($metaQuery);
-  $: visibleMeasureKeys = metricsExplorer?.visibleMeasureKeys;
-  $: visibleMeasuresBitmask = availableMeasureKeys.map((k) =>
-    visibleMeasureKeys.has(k)
-  );
-  $: console.log(
-    availableMeasureKeys,
-    visibleMeasureKeys,
-    visibleMeasuresBitmask
-  );
+  $: showHideMeasures = createShowHideMeasuresStore(metricViewName, metaQuery);
 
   const toggleMeasureVisibility = (e) => {
-    metricsExplorerStore.toggleMeasureVisibilityByKey(
-      metricViewName,
-      availableMeasureKeys[e.detail.index]
-    );
+    showHideMeasures.toggleVisibility(e.detail.name);
   };
   const setAllMeasuresNotVisible = () => {
-    metricsExplorerStore.hideAllMeasures(metricViewName);
+    showHideMeasures.setAllToNotVisible();
   };
   const setAllMeasuresVisible = () => {
-    metricsExplorerStore.setMultipleMeasuresVisible(
-      metricViewName,
-      availableMeasureKeys
-    );
+    showHideMeasures.setAllToVisible();
   };
 </script>
 
@@ -203,13 +184,13 @@
         on:deselect-all={setAllMeasuresNotVisible}
         on:item-clicked={toggleMeasureVisibility}
         on:select-all={setAllMeasuresVisible}
-        selectableItems={availableMeasureLabels}
-        selectedItems={visibleMeasuresBitmask}
+        selectableItems={$showHideMeasures.selectableItems}
+        selectedItems={$showHideMeasures.selectedItems}
         tooltipText="Choose measures to display"
       />
     </div>
     {#if $metaQuery.data?.measures}
-      {#each $metaQuery.data?.measures.filter((_, i) => visibleMeasuresBitmask[i]) as measure, index (measure.name)}
+      {#each $metaQuery.data?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure, index (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
         {@const bigNum = $totalsQuery?.data?.data?.[measure.name]}
         <div
