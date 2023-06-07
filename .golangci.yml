@@ -98,7 +98,7 @@ linters-settings:
   goimports:
     # ensure placement of imports with this prefix after all other imports
     # corresponds to `goimports -local`
-    local-prefixes: github.com/rilldata/rill-developer
+    local-prefixes: github.com/rilldata/rill
   gomnd:
     settings:
       mnd:

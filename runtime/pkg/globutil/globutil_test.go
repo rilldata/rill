@@ -15,13 +15,13 @@ func TestParseURL(t *testing.T) {
 	}{
 		{
 			name:    "valid s3",
-			args:    "s3://bucket.rill-developer.io/**/path_?/{0,1,2}000016[1-2]/*.parquet",
-			url:     &URL{Scheme: "s3", Host: "bucket.rill-developer.io", Path: "**/path_?/{0,1,2}000016[1-2]/*.parquet"},
+			args:    "s3://bucket.rilldata.io/**/path_?/{0,1,2}000016[1-2]/*.parquet",
+			url:     &URL{Scheme: "s3", Host: "bucket.rill.io", Path: "**/path_?/{0,1,2}000016[1-2]/*.parquet"},
 			wantErr: false,
 		},
 		{
 			name:    "invalid s3",
-			args:    "s3:/bucket.rill-developer.io/**/path_?/{0,1,2}000016[1-2]/*.parquet",
+			args:    "s3:/bucket.rilldata.io/**/path_?/{0,1,2}000016[1-2]/*.parquet",
 			url:     nil,
 			wantErr: true,
 		},

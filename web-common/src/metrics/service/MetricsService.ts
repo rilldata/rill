@@ -52,7 +52,7 @@ export class MetricsService
   public async loadCommonFields() {
     const projectPathParts = this.localConfig.project_path.split("/");
     this.commonFields = {
-      app_name: "rill-developer",
+      app_name: "rill",
       install_id: this.localConfig.install_id,
       client_id: this.getOrSetClientID(),
       build_id: this.localConfig.build_commit,
