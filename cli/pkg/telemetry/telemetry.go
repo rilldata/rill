@@ -18,7 +18,7 @@ const (
 	intakeURL  = "https://intake.rilldata.io/events/data-modeler-metrics"
 	intakeUser = "data-modeler"
 	intakeKey  = "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug=="
-	appName    = "rill"
+	appName    = "rill-developer"
 )
 
 var ErrRillIntake = errors.New("failed to fire telemetry")
