@@ -11,7 +11,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 	addCmd := &cobra.Command{
 		Use:   "list",
 		Args:  cobra.NoArgs,
-		Short: "List all superusers",
+		Short: "List superusers",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 

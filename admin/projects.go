@@ -2,11 +2,11 @@ package admin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -27,11 +27,11 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	// Get roles for initial setup
 	adminRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameAdmin)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to find project admin role"))
+		panic(err)
 	}
 	viewerRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameViewer)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to find project viewer role"))
+		panic(err)
 	}
 
 	// Create the project and add initial members using a transaction.
@@ -101,6 +101,9 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		err3 := s.DB.DeleteProject(ctx, proj.ID)
 		return nil, multierr.Combine(err, err2, err3)
 	}
+
+	// Log project creation
+	s.logger.Info("created project", zap.String("id", proj.ID), zap.String("name", proj.Name), zap.String("org", org.Name), zap.String("user_id", userID))
 
 	// Trigger reconcile
 	err = s.TriggerReconcile(ctx, depl)
@@ -186,7 +189,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	impactsDeployments := (proj.ProdBranch != opts.ProdBranch ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
-		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables))
+		!reflect.DeepEqual(map[string]string(proj.ProdVariables), opts.ProdVariables))
 
 	if impactsDeployments {
 		s.logger.Info("updating deployments", observability.ZapCtx(ctx))

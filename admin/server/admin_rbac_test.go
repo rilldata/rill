@@ -110,6 +110,7 @@ func TestAdmin_RBAC(t *testing.T) {
 	server := Server{
 		admin:         service,
 		authenticator: authenticator,
+		logger:        logger,
 	}
 
 	// create a mock bufconn listener
@@ -652,4 +653,8 @@ func (m *mockGithub) AppClient() *github.Client {
 
 func (m *mockGithub) InstallationClient(installationID int64) (*github.Client, error) {
 	return nil, nil
+}
+
+func (m *mockGithub) InstallationToken(ctx context.Context, installationID int64) (string, error) {
+	return "", nil
 }

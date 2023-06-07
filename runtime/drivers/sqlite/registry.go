@@ -121,10 +121,15 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		return err
 	}
 
+	projVariables, err := mapToJSON(inst.ProjectVariables)
+	if err != nil {
+		return err
+	}
+
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"UPDATE instances SET olap_driver = $2, olap_dsn = $3, repo_driver = $4, repo_dsn = $5, embed_catalog = $6, variables = $7, updated_on = $8, ingestion_limit_bytes = $9 "+
+		"UPDATE instances SET olap_driver = $2, olap_dsn = $3, repo_driver = $4, repo_dsn = $5, embed_catalog = $6, variables = $7, project_variables = $8, updated_on = $9, ingestion_limit_bytes = $10 "+
 			"WHERE id = $1",
 		inst.ID,
 		inst.OLAPDriver,
@@ -133,6 +138,7 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		inst.RepoDSN,
 		inst.EmbedCatalog,
 		variables,
+		projVariables,
 		now,
 		inst.IngestionLimitBytes,
 	)

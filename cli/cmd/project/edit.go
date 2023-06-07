@@ -83,7 +83,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Updated project")
+			cmdutil.PrintlnSuccess("Updated project")
 			cmdutil.TablePrinter(toRow(updatedProj.Project))
 			return nil
 		},
