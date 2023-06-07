@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/admin/database"
+	"go.uber.org/zap"
 )
 
 func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL string) (*database.User, error) {
@@ -129,6 +130,8 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	if err != nil {
 		return nil, err
 	}
+
+	s.logger.Info("created user", zap.String("user_id", user.ID))
 
 	return user, nil
 }
