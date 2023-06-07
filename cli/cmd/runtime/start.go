@@ -115,6 +115,9 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}
 			defer rt.Close()
 
+			// Create ctx that cancels on termination signals
+			ctx := graceful.WithCancelOnTerminate(context.Background())
+
 			// Init server
 			srvOpts := &server.Options{
 				HTTPPort:        conf.HTTPPort,
@@ -125,13 +128,12 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				AuthIssuerURL:   conf.AuthIssuerURL,
 				AuthAudienceURL: conf.AuthAudienceURL,
 			}
-			s, err := server.NewServer(srvOpts, rt, logger)
+			s, err := server.NewServer(ctx, srvOpts, rt, logger)
 			if err != nil {
 				logger.Fatal("error: could not create server", zap.Error(err))
 			}
 
 			// Run server
-			ctx := graceful.WithCancelOnTerminate(context.Background())
 			group, cctx := errgroup.WithContext(ctx)
 			group.Go(func() error { return s.ServeGRPC(cctx) })
 			group.Go(func() error { return s.ServeHTTP(cctx, nil) })
