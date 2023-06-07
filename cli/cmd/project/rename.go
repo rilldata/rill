@@ -71,8 +71,8 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Renamed project")
-			cmdutil.SuccessPrinter(fmt.Sprintf("New web url is: %s\n", updatedProj.Project.FrontendUrl))
+			cmdutil.PrintlnSuccess("Renamed project")
+			cmdutil.PrintlnSuccess(fmt.Sprintf("New web url is: %s\n", updatedProj.Project.FrontendUrl))
 			cmdutil.TablePrinter(toRow(updatedProj.Project))
 
 			return nil

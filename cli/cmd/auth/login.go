@@ -106,7 +106,7 @@ func SelectOrgFlow(ctx context.Context, cfg *config.Config) error {
 	}
 
 	if len(res.Organizations) == 0 {
-		cmdutil.WarnPrinter("You are not part of an org. Run `rill org create` or `rill deploy` to create one.")
+		cmdutil.PrintlnWarn("You are not part of an org. Run `rill org create` or `rill deploy` to create one.")
 		return nil
 	}
 
