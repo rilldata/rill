@@ -131,19 +131,21 @@
 
   $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
+  $: timeStart = metricsExplorer.selectedTimeRange?.start?.toISOString();
+  $: timeEnd = metricsExplorer.selectedTimeRange?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: metricsExplorer.selectedTimeRange?.start?.toISOString(),
-      timeEnd: metricsExplorer.selectedTimeRange?.end?.toISOString(),
+      timeStart: timeStart,
+      timeEnd: timeEnd,
       filter: metricsExplorer?.filters,
     },
     {
       query: {
         enabled:
-          (hasTimeSeries ? !!metricsExplorer.selectedTimeRange : true) &&
+          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
           !!metricsExplorer?.filters,
       },
     }

@@ -233,17 +233,19 @@
     displayComparison = false;
   }
 
+  $: timeStart = metricsExplorer.selectedTimeRange?.start?.toISOString();
+  $: timeEnd = metricsExplorer.selectedTimeRange?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: metricsExplorer.selectedTimeRange?.start?.toISOString(),
-      timeEnd: metricsExplorer.selectedTimeRange?.end?.toISOString(),
+      timeStart: timeStart,
+      timeEnd: timeEnd,
     },
     {
       query: {
-        enabled: hasTimeSeries ? !!metricsExplorer.selectedTimeRange : true,
+        enabled: hasTimeSeries ? !!timeStart && !!timeEnd : true,
       },
     }
   );

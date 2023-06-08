@@ -62,19 +62,20 @@
     name = $dashboardStore.selectedTimeRange.name;
   }
 
+  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
+  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: $dashboardStore?.selectedTimeRange?.start?.toISOString(),
-      timeEnd: $dashboardStore?.selectedTimeRange?.end?.toISOString(),
+      timeStart: timeStart,
+      timeEnd: timeEnd,
       filter: $dashboardStore?.filters,
     },
     {
       query: {
-        enabled:
-          !!$dashboardStore?.selectedTimeRange && !!$dashboardStore?.filters,
+        enabled: !!timeStart && !!timeEnd && !!$dashboardStore?.filters,
       },
     }
   );
@@ -87,21 +88,26 @@
     $dashboardStore?.selectedComparisonTimeRange?.end
   );
   $: displayComparison = showComparison && isComparisonRangeAvailable;
+
+  $: comparisonTimeStart =
+    $dashboardStore?.selectedComparisonTimeRange?.start?.toISOString();
+  $: comparisonTimeEnd =
+    $dashboardStore?.selectedComparisonTimeRange?.end?.toISOString();
   $: totalsComparisonQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart:
-        $dashboardStore?.selectedComparisonTimeRange?.start?.toISOString(),
-      timeEnd: $dashboardStore?.selectedComparisonTimeRange?.end?.toISOString(),
+      timeStart: comparisonTimeStart,
+      timeEnd: comparisonTimeEnd,
       filter: $dashboardStore?.filters,
     },
     {
       query: {
         enabled: Boolean(
           displayComparison &&
-            !!$dashboardStore?.selectedComparisonTimeRange &&
+            !!comparisonTimeStart &&
+            !!comparisonTimeEnd &&
             !!$dashboardStore?.filters
         ),
       },
