@@ -284,6 +284,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
 
+	githubURL := proj.GithubURL
 	if req.GithubUrl != nil {
 		// If changing the Github URL, check github app is installed and caller has access on the repo
 		if safeStr(proj.GithubURL) != *req.GithubUrl {
@@ -291,12 +292,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 			if err != nil {
 				return nil, err
 			}
+			githubURL = req.GithubUrl
 		}
-	}
-
-	githubURL := proj.GithubURL
-	if req.GithubUrl != nil && *req.GithubUrl != "" {
-		githubURL = req.GithubUrl
 	}
 
 	opts := &database.UpdateProjectOptions{
