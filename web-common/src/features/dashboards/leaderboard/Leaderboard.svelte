@@ -115,17 +115,21 @@
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
   }
 
-  let topListQuery;
-
-  $: if (
-    measure?.name &&
-    $dashboardStore &&
-    $metaQuery?.isSuccess &&
-    !$metaQuery?.isRefetching
-  ) {
-    let topListParams = {
+  $: timeStart = $dashboardStore?.selectedTimeRange?.start
+    ? $dashboardStore.selectedTimeRange.start.toISOString()
+    : undefined;
+  $: timeEnd = $dashboardStore?.selectedTimeRange?.end
+    ? $dashboardStore.selectedTimeRange.end.toISOString()
+    : undefined;
+  $: topListQuery = createQueryServiceMetricsViewToplist(
+    $runtime.instanceId,
+    metricViewName,
+    {
       dimensionName: dimensionName,
       measureNames: [measure.name],
+      timeStart: timeStart,
+      timeEnd: timeEnd,
+      filter: filterForDimension,
       limit: "250",
       offset: "0",
       sort: [
@@ -134,25 +138,15 @@
           ascending: false,
         },
       ],
-      filter: filterForDimension,
-    };
-
-    if (hasTimeSeries) {
-      topListParams = {
-        ...topListParams,
-        ...{
-          timeStart: $dashboardStore.selectedTimeRange?.start,
-          timeEnd: $dashboardStore.selectedTimeRange?.end,
-        },
-      };
+    },
+    {
+      query: {
+        enabled:
+          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
+          !!filterForDimension,
+      },
     }
-
-    topListQuery = createQueryServiceMetricsViewToplist(
-      $runtime.instanceId,
-      metricViewName,
-      topListParams
-    );
-  }
+  );
 
   let values = [];
   let comparisonValues = [];
@@ -187,47 +181,42 @@
       return b.value - a.value;
     });
 
-  let comparisonTopListQuery;
-  let isComparisonRangeAvailable = false;
-  let displayComparison = false;
-
-  // create the right compareTopListParams.
-  $: if (
-    !$topListQuery?.isFetching &&
-    hasTimeSeries &&
-    timeRangeName !== undefined &&
-    $dashboardStore?.selectedComparisonTimeRange?.start
-  ) {
-    const values = $topListQuery?.data?.data;
-
-    isComparisonRangeAvailable = isRangeInsideOther(
-      allTimeRange?.start,
-      allTimeRange?.end,
-      $dashboardStore?.selectedComparisonTimeRange?.start,
-      $dashboardStore?.selectedComparisonTimeRange?.end
-    );
-    displayComparison =
-      $dashboardStore?.showComparison && isComparisonRangeAvailable;
-
-    const selectedComparisonTimeRange =
-      $dashboardStore?.selectedComparisonTimeRange;
-    const { start, end } = selectedComparisonTimeRange;
-    // add all sliced and active values to the include filter.
-    const currentVisibleValues =
-      values
-        ?.slice(0, slice)
-        ?.concat(selectedValuesThatAreBelowTheFold)
-        ?.map((v) => v[dimensionName]) ?? [];
-
-    const updatedFilters = getFilterForComparsion(
-      filterForDimension,
-      dimensionName,
-      currentVisibleValues
-    );
-
-    let comparisonParams = {
+  // Compose the comparison /toplist query
+  $: displayComparison =
+    $dashboardStore?.showComparison && isComparisonRangeAvailable;
+  $: isComparisonRangeAvailable = isRangeInsideOther(
+    allTimeRange?.start,
+    allTimeRange?.end,
+    $dashboardStore?.selectedComparisonTimeRange?.start,
+    $dashboardStore?.selectedComparisonTimeRange?.end
+  );
+  $: console.log("isComparisonRangeAvailable", isComparisonRangeAvailable);
+  // add all sliced and active values to the include filter.
+  $: currentVisibleValues =
+    $topListQuery?.data?.data
+      ?.slice(0, slice)
+      ?.concat(selectedValuesThatAreBelowTheFold)
+      ?.map((v) => v[dimensionName]) ?? [];
+  $: updatedFilters = getFilterForComparsion(
+    filterForDimension,
+    dimensionName,
+    currentVisibleValues
+  );
+  $: comparisonTimeStart = $dashboardStore?.selectedComparisonTimeRange?.start
+    ? $dashboardStore.selectedComparisonTimeRange.start.toISOString()
+    : undefined;
+  $: comparisonTimeEnd = $dashboardStore?.selectedComparisonTimeRange?.end
+    ? $dashboardStore.selectedComparisonTimeRange.end.toISOString()
+    : undefined;
+  $: comparisonTopListQuery = createQueryServiceMetricsViewToplist(
+    $runtime.instanceId,
+    metricViewName,
+    {
       dimensionName: dimensionName,
       measureNames: [measure.name],
+      timeStart: comparisonTimeStart,
+      timeEnd: comparisonTimeEnd,
+      filter: updatedFilters,
       limit: currentVisibleValues.length.toString(),
       offset: "0",
       sort: [
@@ -236,28 +225,17 @@
           ascending: false,
         },
       ],
-      filter: updatedFilters,
-    };
-
-    if (hasTimeSeries) {
-      comparisonParams = {
-        ...comparisonParams,
-
-        ...{
-          timeStart: start,
-          timeEnd: end,
-        },
-      };
+    },
+    {
+      query: {
+        enabled:
+          displayComparison &&
+          !!comparisonTimeStart &&
+          !!comparisonTimeEnd &&
+          !!updatedFilters,
+      },
     }
-
-    comparisonTopListQuery = createQueryServiceMetricsViewToplist(
-      $runtime.instanceId,
-      metricViewName,
-      comparisonParams
-    );
-  } else if (!hasTimeSeries) {
-    isComparisonRangeAvailable = false;
-  }
+  );
 
   $: if (!$comparisonTopListQuery?.isFetching) {
     comparisonValues =
