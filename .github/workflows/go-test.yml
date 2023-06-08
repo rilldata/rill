@@ -1,4 +1,11 @@
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/go-test.yml"
+      - "**.go"
+      - "go.mod"
   pull_request:
     paths:
       - ".github/workflows/go-test.yml"
@@ -24,4 +31,10 @@ jobs:
     - name: Go fmt
       run: test -z $(gofmt -l .)
     - name: Go test
-      run: go test -short -v ./...
+      run: |-
+        # Build list of packages to include in coverage, excluding generated code in 'proto/gen'
+        PACKAGES=$(go list ./... | grep -v 'proto/gen/' | tr '\n' ',' | sed -e 's/,$//' | sed -e 's/github.com\/rilldata\/rill/./g')
+        # Run tests with coverage output
+        go test ./... -short -v -coverprofile=coverage.out -coverpkg=$PACKAGES
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
