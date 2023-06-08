@@ -127,50 +127,72 @@ func handleDuckDBInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, e
 }
 
 func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPStore, priority int) error {
-	rangeSQL := fmt.Sprintf(
-		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", timestampdiff(SECOND, min(%[1]s), max(%[1]s)) as \"interval\" FROM %[2]s",
+	minSQL := fmt.Sprintf(
+		"SELECT min(%[1]s) as \"min\" FROM %[2]s",
+		safeName(q.ColumnName),
+		safeName(q.TableName),
+	)
+	maxSQL := fmt.Sprintf(
+		"SELECT max(%[1]s) as \"max\" FROM %[2]s",
 		safeName(q.ColumnName),
 		safeName(q.TableName),
 	)
 
-	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:            rangeSQL,
+	minRows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            minSQL,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer minRows.Close()
 
-	if rows.Next() {
-		summary := &runtimev1.TimeRangeSummary{}
-		rowMap := make(map[string]any)
-		err = rows.MapScan(rowMap)
+	maxRows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            maxSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return err
+	}
+	defer maxRows.Close()
+
+	summary := &runtimev1.TimeRangeSummary{}
+
+	if minRows.Next() && maxRows.Next() {
+		minRowMap := make(map[string]any)
+		err = minRows.MapScan(minRowMap)
 		if err != nil {
 			return err
 		}
-		if v := rowMap["min"]; v != nil {
+		maxRowMap := make(map[string]any)
+		err = maxRows.MapScan(maxRowMap)
+		if err != nil {
+			return err
+		}
+		if v := minRowMap["min"]; v != nil {
 			minTime, ok := v.(time.Time)
 			if !ok {
 				return fmt.Errorf("not a timestamp column")
 			}
 			summary.Min = timestamppb.New(minTime)
-			summary.Max = timestamppb.New(rowMap["max"].(time.Time))
-
-			interval, ok := rowMap["interval"].(int64)
-			if !ok {
-				return fmt.Errorf("cannot handle interval type %T", interval)
-			}
+			maxTime := maxRowMap["max"].(time.Time)
+			summary.Max = timestamppb.New(maxTime)
 			summary.Interval = &runtimev1.TimeRangeSummary_Interval{
-				Micros: interval * int64(time.Second) / int64(time.Microsecond),
+				Micros: maxTime.Sub(minTime).Microseconds(),
 			}
 		}
 		q.Result = summary
 		return nil
 	}
 
-	err = rows.Err()
+	err = minRows.Err()
+	if err != nil {
+		return err
+	}
+
+	err = maxRows.Err()
 	if err != nil {
 		return err
 	}
