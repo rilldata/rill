@@ -98,7 +98,7 @@ export function isTimeRangeValidForTimeGrain(
 // Maps a TimeRangeName to an ISO duration.
 // This should eventually be deprecated once we have
 // changed the runtime definition for default_time_range to be a preset string.
-// see https://github.com/rilldata/rill-developer/issues/1961
+// see https://github.com/rilldata/rill/issues/1961
 export const timeRangeToISODuration = (
   timeRangeName: TimeRangeName_DEPRECATE
 ): string => {
@@ -120,7 +120,7 @@ export const timeRangeToISODuration = (
 
 // This should eventually be deprecated once we have
 // changed the runtime definition for default_time_range to be a preset string.
-// see https://github.com/rilldata/rill-developer/issues/1961
+// see https://github.com/rilldata/rill/issues/1961
 export const ISODurationToTimeRange = (
   isoDuration: string,
   defaultToAllTime = true
