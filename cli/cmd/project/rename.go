@@ -60,12 +60,6 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				Id:               proj.Id,
 				OrganizationName: cfg.Org,
 				Name:             newName,
-				Description:      proj.Description,
-				Public:           proj.Public,
-				ProdBranch:       proj.ProdBranch,
-				GithubUrl:        proj.GithubUrl,
-				ProdSlots:        proj.ProdSlots,
-				Region:           proj.Region,
 			})
 			if err != nil {
 				return err

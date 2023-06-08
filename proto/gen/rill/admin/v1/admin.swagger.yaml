@@ -195,7 +195,7 @@ paths:
           type: string
       tags:
         - AdminService
-    put:
+    patch:
       summary: UpdateOrganization deletes an organizations
       operationId: AdminService_UpdateOrganization
       responses:
@@ -775,7 +775,7 @@ paths:
           type: string
       tags:
         - AdminService
-    put:
+    patch:
       summary: UpdateProject updates a project
       operationId: AdminService_UpdateProject
       responses:

@@ -261,13 +261,17 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
 		attribute.String("args.project", req.Name),
-		attribute.String("args.description", req.Description),
-		attribute.Bool("args.public", req.Public),
-		attribute.String("args.region", req.Region),
-		attribute.Int64("args.prod_slots", req.ProdSlots),
-		attribute.String("args.prod_branch", req.ProdBranch),
-		attribute.String("args.github_url", req.GithubUrl),
+		attribute.String("args.description", safeStr(req.Description)),
+		attribute.String("args.region", safeStr(req.Region)),
+		attribute.String("args.prod_branch", safeStr(req.ProdBranch)),
+		attribute.String("args.github_url", safeStr(req.GithubUrl)),
 	)
+	if req.Public != nil {
+		observability.AddRequestAttributes(ctx, attribute.Bool("args.public", *req.Public))
+	}
+	if req.ProdSlots != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_slots", *req.ProdSlots))
+	}
 
 	// Find project
 	proj, err := s.admin.DB.FindProject(ctx, req.Id)
@@ -280,30 +284,32 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
 
-	// If changing the Github URL, check github app is installed and caller has access on the repo
-	if safeStr(proj.GithubURL) != req.GithubUrl {
-		_, err = s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, claims.OwnerID())
-		if err != nil {
-			return nil, err
+	if req.GithubUrl != nil {
+		// If changing the Github URL, check github app is installed and caller has access on the repo
+		if safeStr(proj.GithubURL) != *req.GithubUrl {
+			_, err = s.getAndCheckGithubInstallationID(ctx, *req.GithubUrl, claims.OwnerID())
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
 	githubURL := proj.GithubURL
-	if req.GithubUrl != "" {
-		githubURL = &req.GithubUrl
+	if req.GithubUrl != nil && *req.GithubUrl != "" {
+		githubURL = req.GithubUrl
 	}
 
 	opts := &database.UpdateProjectOptions{
 		Name:                 req.Name,
-		Description:          req.Description,
-		Public:               req.Public,
-		ProdBranch:           req.ProdBranch,
+		Description:          valOrDefault(req.Description, proj.Description),
+		Public:               valOrDefault(req.Public, proj.Public),
+		ProdBranch:           valOrDefault(req.ProdBranch, proj.ProdBranch),
 		ProdVariables:        proj.ProdVariables,
 		GithubURL:            githubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdDeploymentID:     proj.ProdDeploymentID,
-		ProdSlots:            int(req.ProdSlots),
-		Region:               req.Region,
+		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
+		Region:               valOrDefault(req.Region, proj.Region),
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts, true)
 	if err != nil {
@@ -713,4 +719,11 @@ func safeStr(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+func valOrDefault[T any](ptr *T, def T) T {
+	if ptr != nil {
+		return *ptr
+	}
+	return def
 }

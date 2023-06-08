@@ -164,7 +164,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.id", req.Id),
 		attribute.String("args.org", req.Name),
-		attribute.String("args.description", req.Description),
+		attribute.String("args.description", safeStr(req.Description)),
 	)
 
 	org, err := s.admin.DB.FindOrganization(ctx, req.Id)
@@ -179,7 +179,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 
 	org, err = s.admin.DB.UpdateOrganization(ctx, req.Id, &database.UpdateOrganizationOptions{
 		Name:        req.Name,
-		Description: req.Description,
+		Description: valOrDefault(req.Description, org.Description),
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

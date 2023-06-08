@@ -447,9 +447,9 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
   name = "";
 
   /**
-   * @generated from field: string description = 3;
+   * @generated from field: optional string description = 3;
    */
-  description = "";
+  description?: string;
 
   constructor(data?: PartialMessage<UpdateOrganizationRequest>) {
     super();
@@ -461,7 +461,7 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateOrganizationRequest {
@@ -1022,34 +1022,34 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   name = "";
 
   /**
-   * @generated from field: string description = 4;
+   * @generated from field: optional string description = 4;
    */
-  description = "";
+  description?: string;
 
   /**
-   * @generated from field: bool public = 5;
+   * @generated from field: optional bool public = 5;
    */
-  public = false;
+  public?: boolean;
 
   /**
-   * @generated from field: string prod_branch = 6;
+   * @generated from field: optional string prod_branch = 6;
    */
-  prodBranch = "";
+  prodBranch?: string;
 
   /**
-   * @generated from field: string github_url = 7;
+   * @generated from field: optional string github_url = 7;
    */
-  githubUrl = "";
+  githubUrl?: string;
 
   /**
-   * @generated from field: int64 prod_slots = 8;
+   * @generated from field: optional int64 prod_slots = 8;
    */
-  prodSlots = protoInt64.zero;
+  prodSlots?: bigint;
 
   /**
-   * @generated from field: string region = 9;
+   * @generated from field: optional string region = 9;
    */
-  region = "";
+  region?: string;
 
   constructor(data?: PartialMessage<UpdateProjectRequest>) {
     super();
@@ -1062,12 +1062,12 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 6, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 9, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 6, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 7, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 8, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 9, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectRequest {

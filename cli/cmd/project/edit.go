@@ -66,18 +66,19 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			if !cmd.Flags().Changed("region") {
 				region = proj.Region
 			}
+			prodSlots := int64(slots)
 			// Todo: Need to add prompt for repo_path <path_for_monorepo>
 
 			updatedProj, err := client.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
 				Id:               proj.Id,
 				OrganizationName: cfg.Org,
 				Name:             proj.Name,
-				Description:      description,
-				Public:           public,
-				ProdBranch:       prodBranch,
-				GithubUrl:        proj.GithubUrl,
-				ProdSlots:        int64(slots),
-				Region:           region,
+				Description:      &description,
+				Public:           &public,
+				ProdBranch:       &prodBranch,
+				GithubUrl:        &proj.GithubUrl,
+				ProdSlots:        &prodSlots,
+				Region:           &region,
 			})
 			if err != nil {
 				return err
