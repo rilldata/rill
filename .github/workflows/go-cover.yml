@@ -3,7 +3,7 @@ on:
     branches:
       - main
     paths:
-      - ".github/workflows/go-test.yml"
+      - ".github/workflows/go-cover.yml"
       - "**.go"
       - "go.mod"
 name: Test Go code with coverage
