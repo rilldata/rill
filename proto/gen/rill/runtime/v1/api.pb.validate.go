@@ -1456,37 +1456,53 @@ func (m *EditInstanceRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if _, ok := _EditInstanceRequest_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
-		err := EditInstanceRequestValidationError{
-			field:  "OlapDriver",
-			reason: "value must be in list [duckdb druid]",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for OlapDsn
-
-	if _, ok := _EditInstanceRequest_RepoDriver_InLookup[m.GetRepoDriver()]; !ok {
-		err := EditInstanceRequestValidationError{
-			field:  "RepoDriver",
-			reason: "value must be in list [file metastore github]",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for RepoDsn
-
-	// no validation rules for EmbedCatalog
-
 	// no validation rules for Variables
 
-	// no validation rules for IngestionLimitBytes
+	if m.OlapDriver != nil {
+
+		if _, ok := _EditInstanceRequest_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
+			err := EditInstanceRequestValidationError{
+				field:  "OlapDriver",
+				reason: "value must be in list [duckdb druid]",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if m.OlapDsn != nil {
+		// no validation rules for OlapDsn
+	}
+
+	if m.RepoDriver != nil {
+
+		if _, ok := _EditInstanceRequest_RepoDriver_InLookup[m.GetRepoDriver()]; !ok {
+			err := EditInstanceRequestValidationError{
+				field:  "RepoDriver",
+				reason: "value must be in list [file metastore github]",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if m.RepoDsn != nil {
+		// no validation rules for RepoDsn
+	}
+
+	if m.EmbedCatalog != nil {
+		// no validation rules for EmbedCatalog
+	}
+
+	if m.IngestionLimitBytes != nil {
+		// no validation rules for IngestionLimitBytes
+	}
 
 	if len(errors) > 0 {
 		return EditInstanceRequestMultiError(errors)

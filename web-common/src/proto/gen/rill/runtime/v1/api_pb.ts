@@ -581,29 +581,29 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   instanceId = "";
 
   /**
-   * @generated from field: string olap_driver = 2;
+   * @generated from field: optional string olap_driver = 2;
    */
-  olapDriver = "";
+  olapDriver?: string;
 
   /**
-   * @generated from field: string olap_dsn = 3;
+   * @generated from field: optional string olap_dsn = 3;
    */
-  olapDsn = "";
+  olapDsn?: string;
 
   /**
-   * @generated from field: string repo_driver = 4;
+   * @generated from field: optional string repo_driver = 4;
    */
-  repoDriver = "";
+  repoDriver?: string;
 
   /**
-   * @generated from field: string repo_dsn = 5;
+   * @generated from field: optional string repo_dsn = 5;
    */
-  repoDsn = "";
+  repoDsn?: string;
 
   /**
-   * @generated from field: bool embed_catalog = 6;
+   * @generated from field: optional bool embed_catalog = 6;
    */
-  embedCatalog = false;
+  embedCatalog?: boolean;
 
   /**
    * @generated from field: map<string, string> variables = 7;
@@ -611,9 +611,9 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   variables: { [key: string]: string } = {};
 
   /**
-   * @generated from field: int64 ingestion_limit_bytes = 8;
+   * @generated from field: optional int64 ingestion_limit_bytes = 8;
    */
-  ingestionLimitBytes = protoInt64.zero;
+  ingestionLimitBytes?: bigint;
 
   constructor(data?: PartialMessage<EditInstanceRequest>) {
     super();
@@ -624,13 +624,13 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   static readonly typeName = "rill.runtime.v1.EditInstanceRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "repo_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "repo_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "repo_driver", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "repo_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceRequest {

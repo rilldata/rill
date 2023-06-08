@@ -37,7 +37,7 @@ service RuntimeService {
   // EditInstance edits an existing instance
   rpc EditInstance(EditInstanceRequest) returns (EditInstanceResponse) {
     option (google.api.http) = {
-      put: "/v1/instances/{instance_id}",
+      patch: "/v1/instances/{instance_id}",
       body: "*"
     };
   }
@@ -307,13 +307,13 @@ message DeleteInstanceResponse {}
 // See message Instance for field descriptions.
 message EditInstanceRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string olap_driver = 2 [(validate.rules).string = {in: ["duckdb", "druid"]}];
-  string olap_dsn = 3; 
-  string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore", "github"]}];
-  string repo_dsn = 5; 
-  bool embed_catalog = 6;
+  optional string olap_driver = 2 [(validate.rules).string = {in: ["duckdb", "druid"]}];
+  optional string olap_dsn = 3; 
+  optional string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore", "github"]}];
+  optional string repo_dsn = 5; 
+  optional bool embed_catalog = 6;
   map<string, string> variables = 7;
-  int64 ingestion_limit_bytes = 8; 
+  optional int64 ingestion_limit_bytes = 8; 
 }
 
 // Response message for RuntimeService.EditInstance

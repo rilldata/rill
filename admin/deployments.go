@@ -150,13 +150,13 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
 		InstanceId:          inst.InstanceId,
-		OlapDriver:          inst.OlapDriver,
-		OlapDsn:             inst.OlapDsn,
-		RepoDriver:          repoDriver,
-		RepoDsn:             repoDSN,
-		EmbedCatalog:        inst.EmbedCatalog,
+		OlapDriver:          &inst.OlapDriver,
+		OlapDsn:             &inst.OlapDsn,
+		RepoDriver:          &repoDriver,
+		RepoDsn:             &repoDSN,
+		EmbedCatalog:        &inst.EmbedCatalog,
 		Variables:           opts.Variables,
-		IngestionLimitBytes: inst.IngestionLimitBytes,
+		IngestionLimitBytes: &inst.IngestionLimitBytes,
 	})
 	if err != nil {
 		return err

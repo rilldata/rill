@@ -441,7 +441,7 @@ export const runtimeServiceEditInstance = (
 ) => {
   return httpClient<V1EditInstanceResponse>({
     url: `/v1/instances/${instanceId}`,
-    method: "put",
+    method: "patch",
     headers: { "Content-Type": "application/json" },
     data: runtimeServiceEditInstanceBody,
   });

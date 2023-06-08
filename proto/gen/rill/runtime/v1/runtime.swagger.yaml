@@ -245,7 +245,7 @@ paths:
             title: Request message for RuntimeService.DeleteInstance
       tags:
         - RuntimeService
-    put:
+    patch:
       summary: EditInstance edits an existing instance
       operationId: RuntimeService_EditInstance
       responses:
