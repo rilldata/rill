@@ -10,6 +10,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -127,75 +128,87 @@ func handleDuckDBInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, e
 }
 
 func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPStore, priority int) error {
-	minSQL := fmt.Sprintf(
-		"SELECT min(%[1]s) as \"min\" FROM %[2]s",
-		safeName(q.ColumnName),
-		safeName(q.TableName),
-	)
-	maxSQL := fmt.Sprintf(
-		"SELECT max(%[1]s) as \"max\" FROM %[2]s",
-		safeName(q.ColumnName),
-		safeName(q.TableName),
-	)
+	var minTime, maxTime time.Time
+	group, ctx := errgroup.WithContext(ctx)
 
-	minRows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:            minSQL,
-		Priority:         priority,
-		ExecutionTimeout: defaultExecutionTimeout,
+	group.Go(func() error {
+		minSQL := fmt.Sprintf(
+			"SELECT min(%[1]s) as \"min\" FROM %[2]s",
+			safeName(q.ColumnName),
+			safeName(q.TableName),
+		)
+
+		rows, err := olap.Execute(ctx, &drivers.Statement{
+			Query:            minSQL,
+			Priority:         priority,
+			ExecutionTimeout: defaultExecutionTimeout,
+		})
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		if rows.Next() {
+			err = rows.Scan(&minTime)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = rows.Err()
+			if err != nil {
+				return err
+			}
+			return errors.New("no rows returned for min time")
+		}
+
+		return nil
 	})
+
+	group.Go(func() error {
+		maxSQL := fmt.Sprintf(
+			"SELECT max(%[1]s) as \"max\" FROM %[2]s",
+			safeName(q.ColumnName),
+			safeName(q.TableName),
+		)
+
+		rows, err := olap.Execute(ctx, &drivers.Statement{
+			Query:            maxSQL,
+			Priority:         priority,
+			ExecutionTimeout: defaultExecutionTimeout,
+		})
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		if rows.Next() {
+			err = rows.Scan(&maxTime)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = rows.Err()
+			if err != nil {
+				return err
+			}
+			return errors.New("no rows returned for max time")
+		}
+
+		return nil
+	})
+
+	err := group.Wait()
 	if err != nil {
 		return err
 	}
-	defer minRows.Close()
-
-	maxRows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:            maxSQL,
-		Priority:         priority,
-		ExecutionTimeout: defaultExecutionTimeout,
-	})
-	if err != nil {
-		return err
-	}
-	defer maxRows.Close()
 
 	summary := &runtimev1.TimeRangeSummary{}
-
-	if minRows.Next() && maxRows.Next() {
-		minRowMap := make(map[string]any)
-		err = minRows.MapScan(minRowMap)
-		if err != nil {
-			return err
-		}
-		maxRowMap := make(map[string]any)
-		err = maxRows.MapScan(maxRowMap)
-		if err != nil {
-			return err
-		}
-		if v := minRowMap["min"]; v != nil {
-			minTime, ok := v.(time.Time)
-			if !ok {
-				return fmt.Errorf("not a timestamp column")
-			}
-			summary.Min = timestamppb.New(minTime)
-			maxTime := maxRowMap["max"].(time.Time)
-			summary.Max = timestamppb.New(maxTime)
-			summary.Interval = &runtimev1.TimeRangeSummary_Interval{
-				Micros: maxTime.Sub(minTime).Microseconds(),
-			}
-		}
-		q.Result = summary
-		return nil
+	summary.Min = timestamppb.New(minTime)
+	summary.Max = timestamppb.New(maxTime)
+	summary.Interval = &runtimev1.TimeRangeSummary_Interval{
+		Micros: maxTime.Sub(minTime).Microseconds(),
 	}
+	q.Result = summary
 
-	err = minRows.Err()
-	if err != nil {
-		return err
-	}
-
-	err = maxRows.Err()
-	if err != nil {
-		return err
-	}
-
-	return errors.New("no rows returned")
+	return nil
 }
