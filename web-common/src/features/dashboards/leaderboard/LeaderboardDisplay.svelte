@@ -43,25 +43,19 @@
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start
-    ? $dashboardStore.selectedTimeRange.start.toISOString()
-    : undefined;
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end
-    ? $dashboardStore.selectedTimeRange.end.toISOString()
-    : undefined;
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart: $dashboardStore?.selectedTimeRange?.start?.toISOString(),
+      timeEnd: $dashboardStore?.selectedTimeRange?.end?.toISOString(),
       filter: $dashboardStore?.filters,
     },
     {
       query: {
         enabled:
-          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
+          (hasTimeSeries ? !!$dashboardStore?.selectedTimeRange : true) &&
           !!$dashboardStore?.filters,
       },
     }
