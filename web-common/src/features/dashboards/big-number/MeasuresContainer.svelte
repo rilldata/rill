@@ -10,10 +10,7 @@
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { MEASURE_CONFIG } from "../config";
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "../dashboard-stores";
+  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
 
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
@@ -39,15 +36,14 @@
     MEASURES_PADDING_LEFT -
     LEADERBOARD_PADDING_RIGHT;
 
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: dashboardStore = useDashboardStore(metricViewName);
 
   $: instanceId = $runtime.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
 
-  $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
+  $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
@@ -131,8 +127,8 @@
 
   $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
-  $: timeStart = metricsExplorer.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = metricsExplorer.selectedTimeRange?.end?.toISOString();
+  $: timeStart = $dashboardStore.selectedTimeRange?.start?.toISOString();
+  $: timeEnd = $dashboardStore.selectedTimeRange?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
@@ -140,13 +136,13 @@
       measureNames: selectedMeasureNames,
       timeStart: timeStart,
       timeEnd: timeEnd,
-      filter: metricsExplorer?.filters,
+      filter: $dashboardStore?.filters,
     },
     {
       query: {
         enabled:
           (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
-          !!metricsExplorer?.filters,
+          !!$dashboardStore?.filters,
       },
     }
   );
@@ -159,7 +155,7 @@
 
   $: availableMeasureLabels = selectBestMeasureStrings($metaQuery);
   $: availableMeasureKeys = selectMeasureKeys($metaQuery);
-  $: visibleMeasureKeys = metricsExplorer?.visibleMeasureKeys;
+  $: visibleMeasureKeys = $dashboardStore?.visibleMeasureKeys;
   $: visibleMeasuresBitmask = availableMeasureKeys.map((k) =>
     visibleMeasureKeys.has(k)
   );
