@@ -91,15 +91,6 @@
       body: `The dashboard you requested could not be found. Please check that you have provided a valid dashboard name.`,
     });
   }
-
-  $: console.log(
-    "dashboard list items status",
-    $dashboardListItems.isSuccess,
-    "project deployment status",
-    $projectDeploymentStatus.data,
-    "currentDashboard",
-    currentDashboard
-  );
 </script>
 
 <svelte:head>
