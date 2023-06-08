@@ -100,9 +100,7 @@
 <!-- Note: Project and dashboard states might appear to diverge. A project could be errored 
   because dashboard #1 is errored, but dashboard #2 could be OK.  -->
 
-{#if isProjectPending}
-  <ProjectBuilding organization={orgName} project={projectName} />
-{:else if isProjectReconciling && isDashboardNotFound}
+{#if isProjectPending || (isProjectReconciling && isDashboardNotFound)}
   <ProjectBuilding organization={orgName} project={projectName} />
 {:else if isDashboardOK}
   <DashboardStateProvider metricViewName={dashboardName}>
