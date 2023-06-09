@@ -25,7 +25,6 @@
     getAdjustedChartTime,
     getAdjustedFetchTime,
     isRangeInsideOther,
-    makeInclusive,
   } from "../../../lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
@@ -98,7 +97,7 @@
       measureNames: selectedMeasureNames,
       filter: $dashboardStore?.filters,
       timeStart: $dashboardStore.selectedTimeRange?.start.toISOString(),
-      timeEnd: makeInclusive($dashboardStore.selectedTimeRange?.end),
+      timeEnd: $dashboardStore.selectedTimeRange?.end.toISOString(),
     };
 
     totalsQuery = createQueryServiceMetricsViewTotals(
@@ -116,7 +115,7 @@
           ? $dashboardStore?.selectedComparisonTimeRange?.start.toISOString()
           : undefined,
         timeEnd: displayComparison
-          ? makeInclusive($dashboardStore?.selectedComparisonTimeRange?.end)
+          ? $dashboardStore?.selectedComparisonTimeRange?.end.toISOString()
           : undefined,
       }
     );

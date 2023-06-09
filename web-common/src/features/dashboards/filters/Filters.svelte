@@ -31,7 +31,6 @@ The main feature-set component for dashboard filters
     metricsExplorerStore,
   } from "../dashboard-stores";
   import { getDisplayName } from "./getDisplayName";
-  import { makeInclusive } from "../../../lib/time/ranges";
 
   export let metricViewName;
 
@@ -107,7 +106,7 @@ The main feature-set component for dashboard filters
           ...topListParams,
           ...{
             timeStart: metricsExplorer?.selectedTimeRange?.start,
-            timeEnd: makeInclusive(metricsExplorer?.selectedTimeRange?.end),
+            timeEnd: metricsExplorer?.selectedTimeRange?.end,
           },
         };
       }

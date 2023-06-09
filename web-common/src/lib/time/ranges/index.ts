@@ -71,13 +71,6 @@ export function getChildTimeRanges(
         timeRange.end
       );
 
-      const timeRangeIsSmallerThanAllTime = isRangeInsideOther(
-        start,
-        end,
-        timeRangeDates.startDate,
-        timeRangeDates.endDate
-      );
-
       // check if time range is possible with given minTimeGrain
       const thisRangeAllowedGrains = getAllowedTimeGrains(
         timeRangeDates.startDate,
@@ -96,11 +89,7 @@ export function getChildTimeRanges(
         minTimeGrain,
         allowedMaxGrain.grain
       );
-      if (
-        timeRangeIsSmallerThanAllTime &&
-        isGrainPossible &&
-        hasSomeGrainMatches
-      ) {
+      if (isGrainPossible && hasSomeGrainMatches) {
         timeRanges.push({
           name: timePreset,
           label: timeRange.label,
@@ -342,12 +331,4 @@ export function getAdjustedChartTime(
     start: removeTimezoneOffset(new Date(start)),
     end: adjustedEnd,
   };
-}
-
-export function makeInclusive(date: Date) {
-  if (!date) return undefined;
-  let dt = new Date(date);
-  dt = new Date(dt.setSeconds(dt.getSeconds() + 1));
-
-  return dt.toISOString();
 }

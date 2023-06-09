@@ -22,7 +22,7 @@
     MetricsViewMeasure,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { isRangeInsideOther, makeInclusive } from "../../../lib/time/ranges";
+  import { isRangeInsideOther } from "../../../lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
@@ -142,7 +142,7 @@
         ...topListParams,
         ...{
           timeStart: $dashboardStore.selectedTimeRange?.start,
-          timeEnd: makeInclusive($dashboardStore.selectedTimeRange?.end),
+          timeEnd: $dashboardStore.selectedTimeRange?.end,
         },
       };
     }

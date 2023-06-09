@@ -42,7 +42,6 @@
   } from "./dimension-table-utils";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
-  import { makeInclusive } from "../../../lib/time/ranges";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -138,7 +137,7 @@
         ...topListParams,
         ...{
           timeStart: metricsExplorer.selectedTimeRange?.start,
-          timeEnd: makeInclusive(metricsExplorer.selectedTimeRange?.end),
+          timeEnd: metricsExplorer.selectedTimeRange?.end,
         },
       };
     }
@@ -247,7 +246,7 @@
         ...totalsQueryParams,
         ...{
           timeStart: metricsExplorer.selectedTimeRange?.start,
-          timeEnd: makeInclusive(metricsExplorer.selectedTimeRange?.end),
+          timeEnd: metricsExplorer.selectedTimeRange?.end,
         },
       };
     }
