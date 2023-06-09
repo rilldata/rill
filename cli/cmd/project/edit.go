@@ -43,7 +43,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			if name == "" {
 				return fmt.Errorf("pass project name as argument or with --project flag")
 			}
-			
+
 			req := &adminv1.UpdateProjectRequest{
 				OrganizationName: cfg.Org,
 				Name:             name,
