@@ -96,6 +96,12 @@
   let labelClasses = "font-semibold text-[10px]";
   $: getInputClasses = (v) =>
     `cursor-pointer ${isOpen && v === editingDate ? "input-outline" : ""} `;
+
+  const handleInputKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.currentTarget.blur();
+    }
+  };
 </script>
 
 <form
@@ -114,6 +120,7 @@
         {min}
         name="start-date"
         on:blur={() => dispatch("close-calendar")}
+        on:keydown={handleInputKeyDown}
         type="text"
       />
     </div>
@@ -128,6 +135,7 @@
         name="end-date"
         class={getInputClasses(1)}
         on:blur={() => dispatch("close-calendar")}
+        on:keydown={handleInputKeyDown}
         type="text"
       />
     </div>

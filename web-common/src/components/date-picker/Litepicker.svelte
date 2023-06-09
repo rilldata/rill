@@ -237,5 +237,19 @@
 
   :global(.litepicker .container__tooltip) {
     z-index: 1000;
+    @apply bg-gray-700;
+    @apply text-gray-50;
+  }
+
+  :global(.litepicker .container__tooltip:after) {
+    @apply border-t-gray-700;
+  }
+
+  :global(.litepicker .button-previous-month svg) {
+    transform: scale(0.65);
+  }
+
+  :global(.litepicker .button-next-month svg) {
+    transform: scale(0.65);
   }
 </style>
