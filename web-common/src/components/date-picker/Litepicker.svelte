@@ -2,11 +2,14 @@
   import { onDestroy, onMount, createEventDispatcher } from "svelte";
   import Custompicker from "./custom-picker";
 
-  export let startEl, endEl, defaultStart, defaultEnd;
-  let datepicker;
-  let picker;
+  export let startEl,
+    endEl,
+    defaultStart,
+    defaultEnd,
+    openOnMount = false,
+    editingDate = 0;
 
-  let editingDate = 0;
+  let datepicker, picker;
 
   const dispatch = createEventDispatcher();
 
@@ -62,6 +65,8 @@
 
     startEl.addEventListener("focus", handleStartFocus);
     endEl.addEventListener("focus", handleEndFocus);
+
+    if (openOnMount) startEl.focus();
   });
 
   onDestroy(() => {

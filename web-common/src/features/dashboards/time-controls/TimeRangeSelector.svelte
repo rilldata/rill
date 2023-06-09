@@ -108,6 +108,7 @@
   // closes *before* the `click-outside` event is fired. A workaround is to check for `isCalendarRecentlyClosed`.
   function onCalendarClose() {
     isCalendarRecentlyClosed = true;
+
     setTimeout(() => {
       isCalendarRecentlyClosed = false;
     }, 300);
@@ -115,6 +116,12 @@
 
   $: currentSelection = $dashboardStore?.selectedTimeRange?.name;
   $: intermediateSelection = currentSelection;
+
+  const handleMenuOpen = () => {
+    if (intermediateSelection !== TimeRangePreset.CUSTOM) {
+      isCustomRangeOpen = false;
+    }
+  };
 </script>
 
 <WithTogglableFloatingElement
@@ -122,6 +129,7 @@
   distance={8}
   let:active
   let:toggleFloatingElement
+  on:open={handleMenuOpen}
 >
   <button
     class:bg-gray-200={active}

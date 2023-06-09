@@ -160,6 +160,7 @@
       {endEl}
       defaultStart={start}
       defaultEnd={end}
+      openOnMount
       on:change={handleDatePickerChange}
       on:editing={handleEditingChange}
       on:toggle={handleToggle}
