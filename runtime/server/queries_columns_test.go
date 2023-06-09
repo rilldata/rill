@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -62,13 +63,13 @@ func TestServer_GetTopK(t *testing.T) {
 		t,
 		`
 		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times, DATE '2007-04-01' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times, DATE '2009-06-01' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-04-11' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-11-21' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 12 AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2011-06-30' AS dates
 		`,
 		5,
@@ -88,11 +89,11 @@ func TestServer_GetTopK(t *testing.T) {
 	require.Equal(t, 4, len(topk.Entries))
 	require.Equal(t, "abc", topk.Entries[0].Value.GetStringValue())
 	require.Equal(t, 2, int(topk.Entries[0].Count))
-	require.Equal(t, structpb.NewNullValue().GetNullValue(), topk.Entries[1].Value.GetNullValue())
+	require.Equal(t, "12", topk.Entries[1].Value.GetStringValue())
 	require.Equal(t, 1, int(topk.Entries[1].Count))
-	require.Equal(t, "12", topk.Entries[2].Value.GetStringValue())
+	require.Equal(t, "def", topk.Entries[2].Value.GetStringValue())
 	require.Equal(t, 1, int(topk.Entries[2].Count))
-	require.Equal(t, "def", topk.Entries[3].Value.GetStringValue())
+	require.Equal(t, structpb.NewNullValue().GetNullValue(), topk.Entries[3].Value.GetNullValue())
 	require.Equal(t, 1, int(topk.Entries[3].Count))
 
 	agg := "sum(val)"
@@ -104,9 +105,9 @@ func TestServer_GetTopK(t *testing.T) {
 	require.Equal(t, 5, int(res.CategoricalSummary.GetTopK().Entries[0].Count))
 	require.Equal(t, "abc", res.CategoricalSummary.GetTopK().Entries[1].Value.GetStringValue())
 	require.Equal(t, 4, int(res.CategoricalSummary.GetTopK().Entries[1].Count))
-	require.Equal(t, structpb.NewNullValue().GetNullValue(), res.CategoricalSummary.GetTopK().Entries[2].Value.GetNullValue())
+	require.Equal(t, "12", res.CategoricalSummary.GetTopK().Entries[2].Value.GetStringValue())
 	require.Equal(t, 1, int(res.CategoricalSummary.GetTopK().Entries[2].Count))
-	require.Equal(t, "12", res.CategoricalSummary.GetTopK().Entries[3].Value.GetStringValue())
+	require.Equal(t, structpb.NewNullValue().GetNullValue(), res.CategoricalSummary.GetTopK().Entries[3].Value.GetNullValue())
 	require.Equal(t, 1, int(res.CategoricalSummary.GetTopK().Entries[3].Count))
 
 	k := int32(1)
@@ -519,13 +520,13 @@ func TestServer_GetCardinalityOfColumn(t *testing.T) {
 func getColumnTestServer(t *testing.T) (*Server, string) {
 	sql := `
 		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times, DATE '2007-04-01' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 'def' AS col, 5 AS val, TIMESTAMP '2022-11-02 00:00:00' AS times, DATE '2009-06-01' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 'abc' AS col, 3 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-04-11' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT null AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2010-11-21' AS dates
-		UNION ALL 
+		UNION ALL
 		SELECT 12 AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2011-06-30' AS dates
 	`
 
@@ -542,7 +543,7 @@ func getColumnTestServerWithEmptyModel(t *testing.T) (*Server, string) {
 func getColumnTestServerWithModel(t *testing.T, sql string, expectation int) (*Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", sql)
 
-	server, err := NewServer(&Options{}, rt, nil)
+	server, err := NewServer(context.Background(), &Options{}, rt, nil)
 	require.NoError(t, err)
 
 	olap, err := rt.OLAP(testCtx(), instanceID)

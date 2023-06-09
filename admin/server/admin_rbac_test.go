@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"strconv"
 	"testing"
@@ -11,13 +10,12 @@ import (
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/email"
+	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/admin/server/cookies"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -30,29 +28,10 @@ import (
 
 func TestAdmin_RBAC(t *testing.T) {
 	//---------Setup-----------//
+	pg := pgtestcontainer.New(t)
+	defer pg.Terminate(t)
+
 	ctx := context.Background()
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		Started: true,
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "postgres:14",
-			ExposedPorts: []string{"5432/tcp"},
-			WaitingFor:   wait.ForListeningPort("5432/tcp"),
-			Env: map[string]string{
-				"POSTGRES_USER":     "postgres",
-				"POSTGRES_PASSWORD": "postgres",
-				"POSTGRES_DB":       "postgres",
-			},
-		},
-	})
-	require.NoError(t, err)
-	defer container.Terminate(ctx)
-
-	host, err := container.Host(ctx)
-	require.NoError(t, err)
-	port, err := container.MappedPort(ctx, "5432/tcp")
-	require.NoError(t, err)
-	databaseURL := fmt.Sprintf("postgres://postgres:postgres@%s:%d/postgres", host, port.Int())
-
 	logger := zap.NewNop()
 
 	sender, err := email.NewConsoleSender(logger, "rill-test@rilldata.io", "")
@@ -69,7 +48,7 @@ func TestAdmin_RBAC(t *testing.T) {
 	service, err := admin.New(context.Background(),
 		&admin.Options{
 			DatabaseDriver:  "postgres",
-			DatabaseDSN:     databaseURL,
+			DatabaseDSN:     pg.DatabaseURL,
 			ProvisionerSpec: provisionerSpec,
 		},
 		logger,
@@ -107,17 +86,17 @@ func TestAdmin_RBAC(t *testing.T) {
 	require.NotNil(t, testUser)
 
 	// issue admin and viewer tokens
-	adminAuthToken, err := service.IssueUserAuthToken(ctx, adminUser.ID, database.AuthClientIDRillWeb, "test")
+	adminAuthToken, err := service.IssueUserAuthToken(ctx, adminUser.ID, database.AuthClientIDRillWeb, "test", nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, adminAuthToken)
 	adminToken := adminAuthToken.Token().String()
 
-	viewerAuthToken, err := service.IssueUserAuthToken(ctx, viewerUser.ID, database.AuthClientIDRillWeb, "test")
+	viewerAuthToken, err := service.IssueUserAuthToken(ctx, viewerUser.ID, database.AuthClientIDRillWeb, "test", nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, viewerAuthToken)
 	viewerToken := viewerAuthToken.Token().String()
 
-	testAuthToken, err := service.IssueUserAuthToken(ctx, testUser.ID, database.AuthClientIDRillWeb, "test")
+	testAuthToken, err := service.IssueUserAuthToken(ctx, testUser.ID, database.AuthClientIDRillWeb, "test", nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, testAuthToken)
 	testToken := testAuthToken.Token().String()
@@ -131,6 +110,7 @@ func TestAdmin_RBAC(t *testing.T) {
 	server := Server{
 		admin:         service,
 		authenticator: authenticator,
+		logger:        logger,
 	}
 
 	// create a mock bufconn listener
@@ -673,4 +653,8 @@ func (m *mockGithub) AppClient() *github.Client {
 
 func (m *mockGithub) InstallationClient(installationID int64) (*github.Client, error) {
 	return nil, nil
+}
+
+func (m *mockGithub) InstallationToken(ctx context.Context, installationID int64) (string, error) {
+	return "", nil
 }

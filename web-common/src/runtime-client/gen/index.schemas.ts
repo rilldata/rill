@@ -4,6 +4,20 @@
  * rill/runtime/v1/schema.proto
  * OpenAPI spec version: version not set
  */
+export type ConnectorServiceS3ListBucketsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type ConnectorServiceS3ListObjectsParams = {
+  pageSize?: number;
+  pageToken?: string;
+  region?: string;
+  prefix?: string;
+  startAfter?: string;
+  delimiter?: string;
+};
+
 export type RuntimeServiceReconcileBody = {
   /** Changed paths provides a way to "hint" what files have changed in the repo, enabling
 reconciliation to execute faster by not scanning all code artifacts for changes. */
@@ -229,6 +243,20 @@ export type RuntimeServiceListInstancesParams = {
   pageToken?: string;
 };
 
+export type ConnectorServiceGCSListBucketsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type ConnectorServiceGCSListObjectsParams = {
+  pageSize?: number;
+  pageToken?: string;
+  prefix?: string;
+  startOffset?: string;
+  endOffset?: string;
+  delimiter?: string;
+};
+
 export interface V1UnpackExampleResponse {
   [key: string]: any;
 }
@@ -300,7 +328,6 @@ export interface V1TimeSeriesTimeRange {
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
-  timeRange?: V1TimeSeriesTimeRange;
   sampleSize?: number;
 }
 
@@ -372,11 +399,56 @@ export interface V1Source {
   timeoutSeconds?: number;
 }
 
+export interface V1S3Object {
+  name?: string;
+  modifiedOn?: string;
+  size?: string;
+  isDir?: boolean;
+}
+
+export interface V1S3ListObjectsResponse {
+  nextPageToken?: string;
+  objects?: V1S3Object[];
+}
+
+export interface V1S3ListBucketsResponse {
+  nextPageToken?: string;
+  buckets?: string[];
+}
+
+export interface V1S3GetCredentialsInfoResponse {
+  exist?: boolean;
+  provider?: string;
+}
+
+export interface V1S3GetBucketMetadataResponse {
+  region?: string;
+}
+
 export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
 export interface V1RenameFileAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+}
+
+export interface V1RenameFileAndReconcileRequest {
+  instanceId?: string;
+  fromPath?: string;
+  toPath?: string;
+  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
+  dry?: boolean;
+  strict?: boolean;
+}
+
+export interface V1RefreshAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
   errors?: V1ReconcileError[];
@@ -440,16 +512,6 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: ReconcileErrorCharLocation;
   endLocation?: ReconcileErrorCharLocation;
-}
-
-export interface V1RefreshAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
 }
 
 export interface V1ReconcileResponse {
@@ -572,11 +634,6 @@ export interface V1MetricsViewSort {
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
-
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
@@ -653,6 +710,11 @@ export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
+}
+
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
 }
 
 export interface V1MetricsView {
@@ -748,6 +810,28 @@ export interface V1GetFileResponse {
 
 export interface V1GetCatalogEntryResponse {
   entry?: V1CatalogEntry;
+}
+
+export interface V1GCSObject {
+  name?: string;
+  modifiedOn?: string;
+  size?: string;
+  isDir?: boolean;
+}
+
+export interface V1GCSListObjectsResponse {
+  nextPageToken?: string;
+  objects?: V1GCSObject[];
+}
+
+export interface V1GCSListBucketsResponse {
+  nextPageToken?: string;
+  buckets?: string[];
+}
+
+export interface V1GCSGetCredentialsInfoResponse {
+  exist?: boolean;
+  projectId?: string;
 }
 
 export interface V1Example {

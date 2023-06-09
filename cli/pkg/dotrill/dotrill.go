@@ -21,13 +21,15 @@ const (
 
 // Constants for YAML keys
 const (
-	DefaultOrgConfigKey       = "org"
-	DefaultAdminURLConfigKey  = "api_url"
-	AnalyticsEnabledConfigKey = "analytics_enabled"
-	AccessTokenCredentialsKey = "token"
-	InstallIDStateKey         = "install_id"
-	VersionKey                = "latest_version"
-	VersionUpdatedAtKey       = "latest_version_checked_at"
+	DefaultOrgConfigKey            = "org"
+	DefaultAdminURLConfigKey       = "api_url"
+	AnalyticsEnabledConfigKey      = "analytics_enabled"
+	AccessTokenCredentialsKey      = "token"
+	InstallIDStateKey              = "install_id"
+	RepresentingUserCredentialsKey = "representing_user"
+	BackupTokenCredentialsKey      = "backup_token"
+	VersionKey                     = "latest_version"
+	VersionUpdatedAtKey            = "latest_version_checked_at"
 )
 
 // homeDir is the user's home directory. We keep this as a global to override in unit tests.
@@ -129,6 +131,26 @@ func SetAccessToken(token string) error {
 	return Set(CredentialsFilename, AccessTokenCredentialsKey, token)
 }
 
+// GetBackupToken loads the original auth token
+func GetBackupToken() (string, error) {
+	return Get(CredentialsFilename, BackupTokenCredentialsKey)
+}
+
+// SetBackupToken saves original auth token
+func SetBackupToken(token string) error {
+	return Set(CredentialsFilename, BackupTokenCredentialsKey, token)
+}
+
+// GetRepresentingUser loads the current representing user email
+func GetRepresentingUser() (string, error) {
+	return Get(CredentialsFilename, RepresentingUserCredentialsKey)
+}
+
+// SetRepresentingUser saves representing user email
+func SetRepresentingUser(email string) error {
+	return Set(CredentialsFilename, RepresentingUserCredentialsKey, email)
+}
+
 func SetVersion(version string) error {
 	return Set(StateFilename, VersionKey, version)
 }
@@ -153,7 +175,7 @@ func AnalyticsInfo() (installID string, enabled bool, err error) {
 	// Migrate from earlier analytics tracking, if necessary
 	err = migrateOldAnalyticsConfig()
 	if err != nil {
-		fmt.Printf("state migration in ~/.rill failed: %s\n", err.Error())
+		fmt.Printf("state migration in ~/.rill did not succeed: %s\n", err.Error())
 	}
 
 	// Get installID

@@ -9,7 +9,9 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/examples"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // ListExamples returns a list of embedded examples
@@ -34,6 +36,12 @@ func (s *Server) ListExamples(ctx context.Context, req *runtimev1.ListExamplesRe
 }
 
 func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExampleRequest) (*runtimev1.UnpackExampleResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.name", req.Name),
+		attribute.Bool("args.force", req.Force),
+	)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
 	}
@@ -61,7 +69,7 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 	}
 
 	paths := make([]string, 0)
-	err = fs.WalkDir(exampleFS, "./", func(path string, d fs.DirEntry, err error) error {
+	err = fs.WalkDir(exampleFS, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -101,6 +109,11 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 }
 
 func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequest) (*runtimev1.UnpackEmptyResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.title", req.Title),
+		attribute.Bool("args.force", req.Force),
+	)
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
 	}

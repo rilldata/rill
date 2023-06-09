@@ -22,7 +22,7 @@ func LogoutCmd(cfg *config.Config) *cobra.Command {
 
 			token := cfg.AdminToken()
 			if token == "" {
-				cmdutil.WarnPrinter("You are already logged out.")
+				cmdutil.PrintlnWarn("You are already logged out.")
 				return nil
 			}
 
@@ -51,6 +51,18 @@ func Logout(ctx context.Context, cfg *config.Config) error {
 	}
 
 	err = dotrill.SetAccessToken("")
+	if err != nil {
+		return err
+	}
+
+	// Set original_token as empty
+	err = dotrill.SetBackupToken("")
+	if err != nil {
+		return err
+	}
+
+	// Set representing user email as empty
+	err = dotrill.SetRepresentingUser("")
 	if err != nil {
 		return err
 	}

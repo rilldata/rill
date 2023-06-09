@@ -6,7 +6,7 @@
   import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import { appStore } from "@rilldata/web-common/layout/app-store";
+  import { appScreen, appStore } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     ConnectorProperty,
@@ -26,7 +26,14 @@
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
-  import { compileCreateSourceYAML, inferSourceName } from "../sourceUtils";
+  import {
+    compileCreateSourceYAML,
+    getSourceError,
+    inferSourceName,
+    emitSourceErrorTelemetry,
+    emitSourceSuccessTelemetry,
+  } from "../sourceUtils";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { createSource } from "./createSource";
   import { humanReadableErrorMessage } from "./errors";
   import {
@@ -34,6 +41,12 @@
     getYupSchema,
     toYupFriendlyKey,
   } from "./yupSchemas";
+  import { connectorToSourceConnectionType } from "../../../metrics/service/SourceEventTypes";
+  import {
+    BehaviourEventAction,
+    BehaviourEventMedium,
+  } from "../../../metrics/service/BehaviourEventTypes";
+  import { behaviourEvent } from "../../../metrics/initMetrics";
 
   export let connector: V1Connector;
 
@@ -78,6 +91,13 @@
       },
       validationSchema: yupSchema,
       onSubmit: async (values) => {
+        behaviourEvent?.fireSourceTriggerEvent(
+          BehaviourEventAction.SourceAdd,
+          BehaviourEventMedium.Button,
+          $appScreen,
+          MetricsEventSpace.Modal
+        );
+
         overlay.set({ title: `Importing ${values.sourceName}` });
 
         // If project is uninitialized, initialize an empty project
@@ -108,6 +128,7 @@
             yaml,
             $createSourceMutation
           );
+
           error = errors[0];
           if (!error) {
             dispatch("close");
@@ -121,6 +142,25 @@
               $appStore.activeEntity,
               $sourceNames.data,
               false
+            );
+          }
+
+          const sourceError = getSourceError(errors, values.sourceName);
+          if ($createSourceMutation.isError || sourceError) {
+            emitSourceErrorTelemetry(
+              MetricsEventSpace.Modal,
+              $appScreen,
+              createSourceMutationError?.message ?? sourceError?.message,
+              connectorToSourceConnectionType[connector.name],
+              formValues?.uri
+            );
+          } else {
+            emitSourceSuccessTelemetry(
+              MetricsEventSpace.Modal,
+              $appScreen,
+              BehaviourEventMedium.Button,
+              connectorToSourceConnectionType[connector.name],
+              formValues?.uri
             );
           }
         } catch (err) {

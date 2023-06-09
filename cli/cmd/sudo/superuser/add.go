@@ -13,7 +13,7 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 	addCmd := &cobra.Command{
 		Use:   "add <email>",
 		Args:  cobra.ExactArgs(1),
-		Short: "invite users as superuser",
+		Short: "Add new superuser",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -31,7 +31,7 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter(fmt.Sprintf("Updated role of user %q as superuser", args[0]))
+			cmdutil.PrintlnSuccess(fmt.Sprintf("Granted superuser to %q", args[0]))
 
 			return nil
 		},

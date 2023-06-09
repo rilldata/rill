@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,15 +11,14 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/global"
-	"go.uber.org/zap"
 )
 
 // Create instruments
 var (
-	meter                 = global.Meter("runtime/drivers/duckdb")
+	meter                 = otel.Meter("github.com/rilldata/rill/runtime/drivers/duckdb")
 	queriesCounter        = observability.Must(meter.Int64Counter("queries"))
 	queueLatencyHistogram = observability.Must(meter.Int64Histogram("queue_latency", metric.WithUnit("ms")))
 	queryLatencyHistogram = observability.Must(meter.Int64Histogram("query_latency", metric.WithUnit("ms")))
@@ -116,21 +114,40 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	// NOTE: We can't just "defer release()" because release() will block until rows.Close() is called.
 	// We must be careful to make sure release() is called on all code paths.
 
+	var cancelFunc context.CancelFunc
+	if stmt.ExecutionTimeout != 0 {
+		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
+	}
+
 	rows, err := conn.QueryxContext(ctx, stmt.Query, stmt.Args...)
 	if err != nil {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+
 		_ = release()
 		return nil, err
 	}
 
 	schema, err := rowsToSchema(rows)
 	if err != nil {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+
 		_ = rows.Close()
 		_ = release()
 		return nil, err
 	}
 
 	res = &drivers.Result{Rows: rows, Schema: schema}
-	res.SetCleanupFunc(release) // Will call release when res.Close() is called.
+	res.SetCleanupFunc(func() error {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+
+		return release()
+	})
 
 	return res, nil
 }
@@ -164,21 +181,4 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	}
 
 	return &runtimev1.StructType{Fields: fields}, nil
-}
-
-func (c *connection) DropDB() error {
-	// ignoring close error
-	err := c.Close()
-	if err != nil {
-		c.logger.Error("duckdb: drop db: failed to close", zap.Error(err))
-	}
-	if c.config.DBFilePath != "" {
-		err = os.Remove(c.config.DBFilePath)
-		if err != nil {
-			return err
-		}
-		// Hacky approach to remove the wal file
-		_ = os.Remove(c.config.DBFilePath + ".wal")
-	}
-	return nil
 }

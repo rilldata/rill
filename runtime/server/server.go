@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
@@ -13,6 +14,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries/downloads"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -40,6 +42,7 @@ type Options struct {
 type Server struct {
 	runtimev1.UnsafeRuntimeServiceServer
 	runtimev1.UnsafeQueryServiceServer
+	runtimev1.UnsafeConnectorServiceServer
 	runtime *runtime.Runtime
 	opts    *Options
 	logger  *zap.Logger
@@ -47,11 +50,14 @@ type Server struct {
 }
 
 var (
-	_ runtimev1.RuntimeServiceServer = (*Server)(nil)
-	_ runtimev1.QueryServiceServer   = (*Server)(nil)
+	_ runtimev1.RuntimeServiceServer   = (*Server)(nil)
+	_ runtimev1.QueryServiceServer     = (*Server)(nil)
+	_ runtimev1.ConnectorServiceServer = (*Server)(nil)
 )
 
-func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server, error) {
+// NewServer creates a new runtime server.
+// The provided ctx is used for the lifetime of the server for background refresh of the JWKS that is used to validate auth tokens.
+func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server, error) {
 	srv := &Server{
 		opts:    opts,
 		runtime: rt,
@@ -59,7 +65,7 @@ func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server,
 	}
 
 	if opts.AuthEnable {
-		aud, err := auth.OpenAudience(logger, opts.AuthIssuerURL, opts.AuthAudienceURL)
+		aud, err := auth.OpenAudience(ctx, logger, opts.AuthIssuerURL, opts.AuthAudienceURL)
 		if err != nil {
 			return nil, err
 		}
@@ -93,6 +99,7 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
+			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
 			observability.TracingStreamServerInterceptor(),
 			observability.LoggingStreamServerInterceptor(s.logger),
 			errorMappingStreamServerInterceptor(),
@@ -100,6 +107,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			auth.StreamServerInterceptor(s.aud),
 		),
 		grpc.ChainUnaryInterceptor(
+			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
 			observability.TracingUnaryServerInterceptor(),
 			observability.LoggingUnaryServerInterceptor(s.logger),
 			errorMappingUnaryServerInterceptor(),
@@ -110,6 +118,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 
 	runtimev1.RegisterRuntimeServiceServer(server, s)
 	runtimev1.RegisterQueryServiceServer(server, s)
+	runtimev1.RegisterConnectorServiceServer(server, s)
 	s.logger.Named("console").Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
@@ -137,6 +146,10 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 		return nil, err
 	}
 	err = runtimev1.RegisterQueryServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
+	if err != nil {
+		return nil, err
+	}
+	err = runtimev1.RegisterConnectorServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -218,6 +231,16 @@ func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gate
 		err = &gateway.HTTPStatusError{HTTPStatus: http.StatusBadRequest, Err: err}
 	}
 	gateway.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
+}
+
+func timeoutSelector(service, method string) time.Duration {
+	if service == "rill.runtime.v1.RuntimeService" && (strings.Contains(method, "Trigger") || strings.Contains(method, "Reconcile")) {
+		return time.Minute * 30
+	}
+	if service == "rill.runtime.v1.QueryService" {
+		return time.Minute * 5
+	}
+	return time.Second * 30
 }
 
 // errorMappingUnaryServerInterceptor is an interceptor that applies mapGRPCError.

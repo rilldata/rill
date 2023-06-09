@@ -67,9 +67,10 @@ func resolveMeasures(mv *runtimev1.MetricsView, inlines []*runtimev1.InlineMeasu
 
 func metricsQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql string, args []any) ([]*runtimev1.MetricsViewColumn, []*structpb.Struct, error) {
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    sql,
-		Args:     args,
-		Priority: priority,
+		Query:            sql,
+		Args:             args,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return nil, nil, status.Error(codes.InvalidArgument, err.Error())

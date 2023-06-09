@@ -186,6 +186,12 @@ func (it *blobIterator) NextBatch(n int) ([]string, error) {
 			// Collect metrics of download size and time
 			startTime := time.Now()
 			defer func() {
+				size := obj.obj.Size
+				st, err := file.Stat()
+				if err == nil {
+					size = st.Size()
+				}
+
 				duration := time.Since(startTime)
 				it.logger.Info("download complete", zap.String("object", obj.obj.Key), zap.Duration("duration", duration), observability.ZapCtx(it.ctx))
 				connectors.RecordDownloadMetrics(grpCtx, &connectors.DownloadMetrics{
@@ -193,7 +199,7 @@ func (it *blobIterator) NextBatch(n int) ([]string, error) {
 					Ext:       ext,
 					Partial:   !downloadFull,
 					Duration:  duration,
-					Size:      obj.obj.Size,
+					Size:      size,
 				})
 			}()
 
@@ -239,7 +245,24 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 		return nil, err
 	}
 
-	listOpts := listOptions(it.opts.GlobPattern)
+	listOpts, ok := listOptions(it.opts.GlobPattern)
+	if !ok {
+		it.logger.Info("glob pattern corresponds to single object", zap.String("glob", it.opts.GlobPattern))
+		// required to fetch size to enforce disk limits
+		attr, err := it.bucket.Attributes(it.ctx, it.opts.GlobPattern)
+		if err != nil {
+			// can fail due to permission not available
+			it.logger.Info("failed to fetch attributes of the object", zap.Error(err))
+		} else {
+			size = attr.Size
+		}
+
+		planner.add(&blob.ListObject{Key: it.opts.GlobPattern, Size: size})
+		if err := it.opts.validateLimits(size, 1, 1); err != nil {
+			return nil, err
+		}
+		return planner.items(), nil
+	}
 	it.logger.Info("planner started", zap.String("glob", it.opts.GlobPattern), zap.String("prefix", listOpts.Prefix), observability.ZapCtx(it.ctx))
 	token := blob.FirstPageToken
 	for token != nil && !planner.done() {
@@ -274,7 +297,7 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 }
 
 // listOptions for page listing api
-func listOptions(globPattern string) *blob.ListOptions {
+func listOptions(globPattern string) (*blob.ListOptions, bool) {
 	listOptions := &blob.ListOptions{BeforeList: func(as func(interface{}) bool) error {
 		// Access storage.Query via q here.
 		var q *storage.Query
@@ -289,11 +312,12 @@ func listOptions(globPattern string) *blob.ListOptions {
 	if !fileutil.IsGlob(glob) {
 		// single file
 		listOptions.Prefix = globPattern
+		return nil, false
 	} else if prefix != "." {
 		listOptions.Prefix = prefix
 	}
 
-	return listOptions
+	return listOptions, true
 }
 
 // download full object

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -12,7 +13,7 @@ import (
 func getMetricsTestServer(t *testing.T, projectName string) (*Server, string) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, projectName)
 
-	server, err := NewServer(&Options{}, rt, nil)
+	server, err := NewServer(context.Background(), &Options{}, rt, nil)
 	require.NoError(t, err)
 
 	return server, instanceID

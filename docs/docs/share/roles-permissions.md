@@ -7,7 +7,7 @@ sidebar_position: 30
 
 Access permissions in Rill Cloud are organized into roles at the organization and project level. It is usually sufficient to grant access at the organization-level because those permissions are inherited for projects by default. 
 
-For information about granting, revoking and changing roles, see [Share with others](./share-rill.md).
+For information about granting, revoking and changing roles, see [Share with others](./user-management.md).
 
 ## Role inheritance
 

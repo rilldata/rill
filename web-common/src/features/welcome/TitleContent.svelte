@@ -1,36 +1,25 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
   import RadixH1 from "@rilldata/web-common/components/typography/RadixH1.svelte";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
   import AddSourceModal from "@rilldata/web-common/features/sources/add-source/AddSourceModal.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { createRuntimeServiceUnpackEmpty } from "../../runtime-client";
-  import { EMPTY_PROJECT_TITLE } from "./constants";
+  import { behaviourEvent } from "../../metrics/initMetrics";
+  import {
+    BehaviourEventAction,
+    BehaviourEventMedium,
+  } from "../../metrics/service/BehaviourEventTypes";
+  import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
 
   let showAddSourceModal = false;
   const openShowAddSourceModal = () => {
     showAddSourceModal = true;
-  };
-
-  const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
-  async function startWithEmptyProject() {
-    $unpackEmptyProject.mutate(
-      {
-        instanceId: $runtime.instanceId,
-        data: {
-          title: EMPTY_PROJECT_TITLE,
-          force: true,
-        },
-      },
-      {
-        onSuccess: () => {
-          goto("/");
-        },
-      }
+    behaviourEvent.fireSplashEvent(
+      BehaviourEventAction.SourceModal,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.Workspace
     );
-  }
+  };
 </script>
 
 <section class="flex flex-col gap-y-6 items-center text-center">
@@ -44,9 +33,8 @@
   </RadixH1>
   <div class="flex flex-col gap-y-2">
     <Subheading twColor="text-slate-600">
-      A Rill project lets you build an <span class="text-base font-semibold"
-        >un-dashboard</span
-      > that people will actually use.
+      You're on your way to building fast, exploratory dashboards your team will
+      actually use.
     </Subheading>
     <Subheading twColor="text-slate-600">Let’s get started.</Subheading>
   </div>
@@ -60,12 +48,6 @@
       <Add className="text-white" />
       Add data
     </div>
-  </button>
-  <button
-    class="px-2 font-medium text-xs text-blue-500 hover:text-blue-400"
-    on:click={startWithEmptyProject}
-  >
-    Or start with an empty project
   </button>
   {#if showAddSourceModal}
     <AddSourceModal

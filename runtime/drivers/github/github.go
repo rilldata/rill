@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -72,6 +71,10 @@ func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, err
 		projectdir:   projectDir,
 		singleflight: &singleflight.Group{},
 	}, nil
+}
+
+func (d driver) Drop(dsn string, logger *zap.Logger) error {
+	return drivers.ErrDropNotSupported
 }
 
 type connection struct {
@@ -229,11 +232,11 @@ func (c *connection) cloneURL(ctx context.Context) (string, error) {
 	// Get a Github token for this installation ID
 	itr, err := ghinstallation.New(http.DefaultTransport, appID, c.dsn.InstallationID, []byte(privateKey))
 	if err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("failed to create github installation transport: %w", err)
 	}
 	token, err := itr.Token(ctx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create token: %w", err)
 	}
 
 	// Create clone URL

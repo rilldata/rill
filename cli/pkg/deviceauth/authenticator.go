@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,7 +14,6 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
 )
 
@@ -104,7 +104,7 @@ func (d *DeviceAuthenticator) VerifyDevice(ctx context.Context, redirectURL stri
 	deviceCodeRes := &DeviceCodeResponse{}
 	err = json.NewDecoder(res.Body).Decode(deviceCodeRes)
 	if err != nil {
-		return nil, errors.Wrap(err, "error decoding device code response")
+		return nil, fmt.Errorf("error decoding device code response: %w", err)
 	}
 
 	checkInterval := time.Duration(deviceCodeRes.PollingInterval) * time.Second
@@ -169,12 +169,12 @@ func (d *DeviceAuthenticator) requestToken(ctx context.Context, deviceCode, clie
 		"client_id":   []string{clientID},
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "error creating request")
+		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
 	res, err := d.client.Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "error performing http request")
+		return nil, fmt.Errorf("error performing http request: %w", err)
 	}
 	defer res.Body.Close()
 
@@ -191,7 +191,7 @@ func (d *DeviceAuthenticator) requestToken(ctx context.Context, deviceCode, clie
 	tokenRes := &OAuthTokenResponse{}
 	err = json.NewDecoder(res.Body).Decode(tokenRes)
 	if err != nil {
-		return nil, errors.Wrap(err, "error decoding token response")
+		return nil, fmt.Errorf("error decoding token response: %w", err)
 	}
 
 	return tokenRes, nil

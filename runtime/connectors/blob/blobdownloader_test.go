@@ -41,12 +41,6 @@ func TestFetchFileNames(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "single file absent",
-			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/01/01/eata.txt", StorageLimitInBytes: TenGB}},
-			want:    nil,
-			wantErr: true,
-		},
-		{
 			name:    "recursive glob",
 			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/**/*.txt", StorageLimitInBytes: TenGB}},
 			want:    map[string]struct{}{"hello": {}, "world": {}, "writing": {}, "test": {}},

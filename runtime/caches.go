@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"go.uber.org/zap"
 )
@@ -73,7 +74,11 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn strin
 	key := instanceID + driver + dsn
 	val, ok := c.cache.Get(key)
 	if !ok {
-		conn, err := drivers.Open(driver, dsn, c.logger.With(zap.String("instance_id", instanceID), zap.String("driver", driver)))
+		logger := c.logger
+		if instanceID != "default" {
+			logger = c.logger.With(zap.String("instance_id", instanceID), zap.String("driver", driver))
+		}
+		conn, err := drivers.Open(driver, dsn, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -102,8 +107,10 @@ func (c *connectionCache) evict(ctx context.Context, instanceID, driver, dsn str
 	key := instanceID + driver + dsn
 	conn, ok := c.cache.Get(key)
 	if ok {
-		// closing this would mean that any running query might also fail
-		conn.(drivers.Connection).Close()
+		err := conn.(drivers.Connection).Close()
+		if err != nil {
+			c.logger.Error("connection cache: failed to close cached connection", zap.Error(err), zap.String("instance", instanceID), observability.ZapCtx(ctx))
+		}
 		c.cache.Remove(key)
 	}
 	return ok

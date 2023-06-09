@@ -20,21 +20,34 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *Service) createDeployment(ctx context.Context, proj *database.Project) (*database.Deployment, error) {
+type createDeploymentOptions struct {
+	ProjectID            string
+	Region               string
+	GithubURL            *string
+	GithubInstallationID *int64
+	Subpath              string
+	ProdBranch           string
+	ProdVariables        database.Variables
+	ProdOLAPDriver       string
+	ProdOLAPDSN          string
+	ProdSlots            int
+}
+
+func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOptions) (*database.Deployment, error) {
 	// We require Github info on project to create a deployment
-	if proj.GithubURL == nil || proj.GithubInstallationID == nil || proj.ProdBranch == "" {
+	if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == "" {
 		return nil, fmt.Errorf("cannot create project without github info")
 	}
-	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*proj.GithubURL, *proj.GithubInstallationID, proj.Subpath, proj.ProdBranch)
+	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*opts.GithubURL, *opts.GithubInstallationID, opts.Subpath, opts.ProdBranch)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get a runtime with capacity for the deployment
 	alloc, err := s.Provisioner.Provision(ctx, &provisioner.ProvisionOptions{
-		OLAPDriver: proj.ProdOLAPDriver,
-		Slots:      proj.ProdSlots,
-		Region:     proj.Region,
+		OLAPDriver: opts.ProdOLAPDriver,
+		Slots:      opts.ProdSlots,
+		Region:     opts.Region,
 	})
 	if err != nil {
 		return nil, err
@@ -42,15 +55,15 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 
 	// Build instance config
 	instanceID := strings.ReplaceAll(uuid.New().String(), "-", "")
-	olapDriver := proj.ProdOLAPDriver
-	olapDSN := proj.ProdOLAPDSN
+	olapDriver := opts.ProdOLAPDriver
+	olapDSN := opts.ProdOLAPDSN
 	var embedCatalog bool
 	var ingestionLimit int64
 	if olapDriver == "duckdb" {
 		if olapDSN != "" {
 			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb'")
 		}
-		if proj.ProdSlots == 0 {
+		if opts.ProdSlots == 0 {
 			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb'")
 		}
 
@@ -75,7 +88,7 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 		RepoDriver:          repoDriver,
 		RepoDsn:             repoDSN,
 		EmbedCatalog:        embedCatalog,
-		Variables:           proj.ProdVariables,
+		Variables:           opts.ProdVariables,
 		IngestionLimitBytes: ingestionLimit,
 	})
 	if err != nil {
@@ -84,9 +97,9 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 
 	// Create the deployment
 	depl, err := s.DB.InsertDeployment(ctx, &database.InsertDeploymentOptions{
-		ProjectID:         proj.ID,
-		Branch:            proj.ProdBranch,
-		Slots:             proj.ProdSlots,
+		ProjectID:         opts.ProjectID,
+		Branch:            opts.ProdBranch,
+		Slots:             opts.ProdSlots,
 		RuntimeHost:       alloc.Host,
 		RuntimeInstanceID: instanceID,
 		RuntimeAudience:   alloc.Audience,
