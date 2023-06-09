@@ -624,6 +624,11 @@ export class MetricsView_Measure extends Message<MetricsView_Measure> {
    */
   format = "";
 
+  /**
+   * @generated from field: bool show_percent_of_total = 6;
+   */
+  showPercentOfTotal = false;
+
   constructor(data?: PartialMessage<MetricsView_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -637,6 +642,7 @@ export class MetricsView_Measure extends Message<MetricsView_Measure> {
     { no: 3, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "format", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "show_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsView_Measure {

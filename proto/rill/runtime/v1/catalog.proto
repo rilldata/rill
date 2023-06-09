@@ -93,6 +93,7 @@ message MetricsView {
     string expression = 3;
     string description = 4;
     string format = 5;
+    bool show_percent_of_total = 6;
   }
   // Name of the metrics view
   string name = 1;

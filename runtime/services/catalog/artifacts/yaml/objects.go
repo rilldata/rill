@@ -62,12 +62,13 @@ type MetricsView struct {
 }
 
 type Measure struct {
-	Label       string
-	Name        string
-	Expression  string
-	Description string
-	Format      string `yaml:"format_preset"`
-	Ignore      bool   `yaml:"ignore,omitempty"`
+	Label              string
+	Name               string
+	Expression         string
+	Description        string
+	Format             string `yaml:"format_preset"`
+	Ignore             bool   `yaml:"ignore,omitempty"`
+	ShowPercentOfTotal bool   `yaml:"show_percent_of_total,omitempty"`
 }
 
 type Dimension struct {

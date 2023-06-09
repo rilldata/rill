@@ -1033,6 +1033,7 @@ export interface MetricsViewMeasure {
   expression?: string;
   description?: string;
   format?: string;
+  showPercentOfTotal?: boolean;
 }
 
 export interface MetricsViewFilterCond {

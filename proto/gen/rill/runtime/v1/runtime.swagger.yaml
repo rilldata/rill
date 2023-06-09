@@ -1726,6 +1726,8 @@ definitions:
         type: string
       format:
         type: string
+      showPercentOfTotal:
+        type: boolean
     title: Measures are aggregated computed values
   ModelDialect:
     type: string
