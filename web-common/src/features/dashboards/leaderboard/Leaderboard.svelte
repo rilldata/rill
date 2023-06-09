@@ -190,7 +190,6 @@
     $dashboardStore?.selectedComparisonTimeRange?.start,
     $dashboardStore?.selectedComparisonTimeRange?.end
   );
-  $: console.log("isComparisonRangeAvailable", isComparisonRangeAvailable);
   // add all sliced and active values to the include filter.
   $: currentVisibleValues =
     $topListQuery?.data?.data
@@ -202,12 +201,10 @@
     dimensionName,
     currentVisibleValues
   );
-  $: comparisonTimeStart = $dashboardStore?.selectedComparisonTimeRange?.start
-    ? $dashboardStore.selectedComparisonTimeRange.start.toISOString()
-    : undefined;
-  $: comparisonTimeEnd = $dashboardStore?.selectedComparisonTimeRange?.end
-    ? $dashboardStore.selectedComparisonTimeRange.end.toISOString()
-    : undefined;
+  $: comparisonTimeStart =
+    $dashboardStore?.selectedComparisonTimeRange?.start?.toISOString();
+  $: comparisonTimeEnd =
+    $dashboardStore?.selectedComparisonTimeRange?.end?.toISOString();
   $: comparisonTopListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,
