@@ -47,13 +47,9 @@
 
   const queryClient = useQueryClient();
 
+  $: dashboardStore = useDashboardStore(metricViewName);
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
-  $: dashboardStore = useDashboardStore(metricViewName);
-
-  // the timeRangeName is the key to a selected time range's associated presets.
-  $: timeRangeName = $dashboardStore?.selectedTimeRange?.name;
-  // we'll need to get the entire time range.
   $: allTimeRangeQuery = useModelAllTimeRange(
     $runtime.instanceId,
     $metaQuery.data.model,
@@ -64,7 +60,6 @@
       },
     }
   );
-  $: allTimeRange = $allTimeRangeQuery?.data;
 
   let filterExcludeMode: boolean;
   $: filterExcludeMode =
@@ -185,8 +180,8 @@
   $: displayComparison =
     $dashboardStore?.showComparison && isComparisonRangeAvailable;
   $: isComparisonRangeAvailable = isRangeInsideOther(
-    allTimeRange?.start,
-    allTimeRange?.end,
+    $allTimeRangeQuery?.data?.start,
+    $allTimeRangeQuery?.data?.end,
     $dashboardStore?.selectedComparisonTimeRange?.start,
     $dashboardStore?.selectedComparisonTimeRange?.end
   );

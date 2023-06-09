@@ -159,12 +159,8 @@
     $dashboardStore.selectedTimeRange.start,
     $dashboardStore.selectedTimeRange.end
   );
-  $: comparisonTimeStart = isFinite(comparisonTimeRange?.start?.getTime())
-    ? comparisonTimeRange.start.toISOString()
-    : undefined;
-  $: comparisonTimeEnd = isFinite(comparisonTimeRange?.end?.getTime())
-    ? comparisonTimeRange.end.toISOString()
-    : undefined;
+  $: comparisonTimeStart = comparisonTimeRange?.start?.toISOString();
+  $: comparisonTimeEnd = comparisonTimeRange?.end?.toISOString();
   $: comparisonFilterSet = getFilterForComparisonTable(
     filterForDimension,
     dimensionName,
