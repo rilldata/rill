@@ -215,7 +215,8 @@
     const adjustedChartValue = getAdjustedChartTime(
       $dashboardStore.selectedTimeRange?.start,
       $dashboardStore.selectedTimeRange?.end,
-      interval
+      interval,
+      allTimeRange?.end
     );
 
     startValue = adjustedChartValue?.start;

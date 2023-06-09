@@ -14,6 +14,7 @@ import {
 } from "../grains";
 import {
   getDurationMultiple,
+  getEndOfPeriod,
   getOffset,
   getStartOfPeriod,
   getTimeWidth,
@@ -292,7 +293,8 @@ export function getAdjustedFetchTime(
 export function getAdjustedChartTime(
   start: Date,
   end: Date,
-  interval: V1TimeGrain
+  interval: V1TimeGrain,
+  boundEnd: Date
 ) {
   if (!start || !end)
     return {
@@ -302,28 +304,13 @@ export function getAdjustedChartTime(
 
   const grainDuration = TIME_GRAIN[interval].duration;
 
-  let adjustedEnd = new Date(end);
+  // Only plot the chart till the last period containing a datum
+  let adjustedEnd = new Date(boundEnd);
+  adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration);
 
-  // if the end date does not extend beyond the center of the
-  // latest (complete or incomplete) period, then we need to
-  // adjust it ensure that the chart is complete.
-
-  const endOfLatestPeriod = getStartOfPeriod(
-    getOffset(adjustedEnd, grainDuration, TimeOffsetType.ADD),
-    grainDuration
-  );
-
-  const offsetDuration = getDurationMultiple(grainDuration, 0.45);
-
-  const centerOfLatestPeriod = getOffset(
-    endOfLatestPeriod,
-    offsetDuration,
-    TimeOffsetType.SUBTRACT
-  );
-
-  if (adjustedEnd < centerOfLatestPeriod) {
-    adjustedEnd = centerOfLatestPeriod;
-  }
+  // Remove half extra period with no data from chart
+  const halfPeriod = getDurationMultiple(grainDuration, 0.4);
+  adjustedEnd = getOffset(adjustedEnd, halfPeriod, TimeOffsetType.SUBTRACT);
 
   adjustedEnd = removeTimezoneOffset(adjustedEnd);
 
