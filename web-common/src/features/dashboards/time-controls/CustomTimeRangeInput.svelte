@@ -95,7 +95,9 @@
 
   let labelClasses = "font-semibold text-[10px]";
   $: getInputClasses = (v) =>
-    `cursor-pointer ${isOpen && v === editingDate ? "input-outline" : ""} `;
+    `cursor-pointer w-full ${
+      isOpen && v === editingDate ? "input-outline" : ""
+    } `;
 
   const handleInputKeyDown = (e) => {
     if (e.key === "Enter") {
@@ -110,7 +112,7 @@
   on:submit|preventDefault={applyCustomTimeRange}
 >
   <div class="flex flex-row gap-x-3">
-    <div class="flex flex-col gap-y-1">
+    <div class="flex flex-col gap-y-1 relative">
       <label class={labelClasses} for="start-date">Start date</label>
       <input
         bind:this={startEl}
@@ -125,7 +127,7 @@
       />
     </div>
 
-    <div class="flex flex-col gap-y-1">
+    <div class="flex flex-col gap-y-1 relative">
       <label class={labelClasses} for="end-date">End date</label>
       <input
         bind:this={endEl}
@@ -167,7 +169,7 @@
 
 <style>
   .input-outline {
-    outline-offset: 0px;
+    outline-offset: 2px;
     /* FF */
     outline: Highlight auto 1px;
     /* Chrome/Safari */
