@@ -102,6 +102,9 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		return nil, multierr.Combine(err, err2, err3)
 	}
 
+	// Log project creation
+	s.logger.Info("created project", zap.String("id", proj.ID), zap.String("name", proj.Name), zap.String("org", org.Name), zap.String("user_id", userID))
+
 	// Trigger reconcile
 	err = s.TriggerReconcile(ctx, depl)
 	if err != nil {

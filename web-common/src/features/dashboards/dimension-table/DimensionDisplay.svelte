@@ -25,10 +25,7 @@
   import { DEFAULT_TIME_RANGES } from "../../../lib/time/config";
   import type { TimeComparisonOption } from "../../../lib/time/types";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "../dashboard-stores";
+  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import {
     humanizeGroupByColumns,
     NicelyFormattedTypes,
@@ -61,10 +58,9 @@
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
 
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: dashboardStore = useDashboardStore(metricViewName);
 
-  $: leaderboardMeasureName = metricsExplorer?.leaderboardMeasureName;
+  $: leaderboardMeasureName = $dashboardStore?.leaderboardMeasureName;
   $: leaderboardMeasureQuery = useMetaMeasure(
     instanceId,
     metricViewName,
@@ -72,24 +68,24 @@
   );
 
   let excludeValues: Array<MetricsViewFilterCond>;
-  $: excludeValues = metricsExplorer?.filters.exclude;
+  $: excludeValues = $dashboardStore?.filters.exclude;
 
   $: excludeMode =
-    metricsExplorer?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
+    $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 
   $: filterForDimension = getFilterForDimension(
-    metricsExplorer?.filters,
+    $dashboardStore?.filters,
     dimensionName
   );
 
-  $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
+  $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
 
   let selectedValues: Array<unknown>;
   $: selectedValues =
     (excludeMode
-      ? metricsExplorer?.filters.exclude.find((d) => d.name === dimension?.name)
+      ? $dashboardStore?.filters.exclude.find((d) => d.name === dimension?.name)
           ?.in
-      : metricsExplorer?.filters.include.find((d) => d.name === dimension?.name)
+      : $dashboardStore?.filters.include.find((d) => d.name === dimension?.name)
           ?.in) ?? [];
 
   $: allMeasures = $metaQuery.data?.measures;
@@ -100,12 +96,6 @@
   $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
 
-  $: timeStart = metricsExplorer?.selectedTimeRange?.start
-    ? metricsExplorer.selectedTimeRange.start.toISOString()
-    : undefined;
-  $: timeEnd = metricsExplorer?.selectedTimeRange?.end
-    ? metricsExplorer.selectedTimeRange.end.toISOString()
-    : undefined;
   $: filterSet = updateFilterOnSearch(
     filterForDimension,
     searchText,
@@ -153,21 +143,21 @@
   $: allTimeRange = $allTimeRangeQuery?.data;
 
   // the timeRangeName is the key to a selected time range's associated presets.
-  $: timeRangeName = metricsExplorer?.selectedTimeRange?.name;
+  $: timeRangeName = $dashboardStore?.selectedTimeRange?.name;
 
   // Compose the comparison /toplist query
   $: displayComparison =
-    metricsExplorer?.showComparison &&
+    $dashboardStore?.showComparison &&
     comparisonTimeRange.isComparisonRangeAvailable;
   $: comparisonTimeRange = getTimeComparisonParametersForComponent(
-    (metricsExplorer?.selectedComparisonTimeRange
+    ($dashboardStore?.selectedComparisonTimeRange
       ?.name as TimeComparisonOption) ||
       (DEFAULT_TIME_RANGES[timeRangeName]
         .defaultComparison as TimeComparisonOption),
     allTimeRange?.start,
     allTimeRange?.end,
-    metricsExplorer.selectedTimeRange.start,
-    metricsExplorer.selectedTimeRange.end
+    $dashboardStore.selectedTimeRange.start,
+    $dashboardStore.selectedTimeRange.end
   );
   $: comparisonTimeStart = isFinite(comparisonTimeRange?.start?.getTime())
     ? comparisonTimeRange.start.toISOString()
@@ -209,30 +199,22 @@
     }
   );
 
-  let totalsQuery;
-  $: if (
-    metricsExplorer &&
-    metaQuery &&
-    $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching
-  ) {
-    let totalsQueryParams = { measureNames: selectedMeasureNames };
-    if (hasTimeSeries) {
-      totalsQueryParams = {
-        ...totalsQueryParams,
-        ...{
-          timeStart: metricsExplorer.selectedTimeRange?.start,
-          timeEnd: metricsExplorer.selectedTimeRange?.end,
-        },
-      };
+  $: timeStart = $dashboardStore.selectedTimeRange?.start?.toISOString();
+  $: timeEnd = $dashboardStore.selectedTimeRange?.end?.toISOString();
+  $: totalsQuery = createQueryServiceMetricsViewTotals(
+    instanceId,
+    metricViewName,
+    {
+      measureNames: selectedMeasureNames,
+      timeStart: timeStart,
+      timeEnd: timeEnd,
+    },
+    {
+      query: {
+        enabled: hasTimeSeries ? !!timeStart && !!timeEnd : true,
+      },
     }
-    totalsQuery = createQueryServiceMetricsViewTotals(
-      instanceId,
-      metricViewName,
-      totalsQueryParams,
-      { query: { enabled: false } }
-    );
-  }
+  );
 
   let referenceValues = {};
   $: if ($totalsQuery?.data?.data) {
