@@ -20,6 +20,7 @@
     "eslint": "^8.16.0",
     "eslint-config-prettier": "^8.3.0",
     "jest": "^27.5.1",
+    "litepicker": "^2.0.12",
     "match-sorter": "^6.3.1",
     "orval": "^6.12.0",
     "prettier": "^2.6.2",

@@ -7,7 +7,7 @@
   import { Button } from "../../../components/button";
   import type { DashboardTimeControls } from "../../../lib/time/types";
   import type { V1TimeGrain } from "../../../runtime-client";
-  import DatePicker from "@rilldata/web-common/components/date-picker/DatePicker.svelte";
+  import Litepicker from "@rilldata/web-common/components/date-picker/Litepicker.svelte";
 
   export let minTimeGrain: V1TimeGrain;
   export let boundaryStart: Date;
@@ -33,7 +33,6 @@
       month: "2-digit",
       day: "2-digit",
     });
-    return getDateFromISOString(date.toISOString());
   }
 
   export function getDateFromISOString(isoDate: string): string {
@@ -42,7 +41,6 @@
 
   export function getISOStringFromDate(date: string): string {
     return new Date(`${date} UTC`).toISOString();
-    return date + "T00:00:00.000Z";
   }
 
   function validateTimeRange(
@@ -91,10 +89,11 @@
     editingDate = d.detail;
   };
 
-  const handleToggle = (d) => (isOpen = d.detail);
+  const handleToggle = (d) => {
+    isOpen = d.detail;
+  };
 
   let labelClasses = "font-semibold text-[10px]";
-
   $: getInputClasses = (v) =>
     `cursor-pointer ${isOpen && v === editingDate ? "input-outline" : ""} `;
 </script>
@@ -146,17 +145,15 @@
     </Button>
   </div>
   {#if startEl && endEl}
-    <div class="absolute top-0 left-full">
-      <DatePicker
-        {startEl}
-        {endEl}
-        defaultStart={start}
-        defaultEnd={end}
-        on:change={handleDatePickerChange}
-        on:editing={handleEditingChange}
-        on:toggle={handleToggle}
-      />
-    </div>
+    <Litepicker
+      {startEl}
+      {endEl}
+      defaultStart={start}
+      defaultEnd={end}
+      on:change={handleDatePickerChange}
+      on:editing={handleEditingChange}
+      on:toggle={handleToggle}
+    />
   {/if}
 </form>
 
