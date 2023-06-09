@@ -48,7 +48,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 	case *runtimev1.DownloadLinkRequest_MetricsViewRowsRequest:
-		v.MetricsViewRowsRequest.Limit = int32(request.Limit)
+		v.MetricsViewRowsRequest.Limit = request.Limit
 		err = s.executeRowsQuery(req.Context(), w, v.MetricsViewRowsRequest, request.Format)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

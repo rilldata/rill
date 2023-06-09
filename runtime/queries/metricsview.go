@@ -275,8 +275,8 @@ func writeCSV(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writ
 	record = record[:0]
 
 	for _, structs := range data {
-		for _, field := range structs.Fields {
-			record = append(record, fmt.Sprintf("%v", field.AsInterface()))
+		for _, field := range meta {
+			record = append(record, fmt.Sprintf("%v", structs.Fields[field.Name].AsInterface()))
 		}
 		if err := w.Write(record); err != nil {
 			return err
