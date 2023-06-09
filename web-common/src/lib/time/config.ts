@@ -36,18 +36,22 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
-        // start during the last full hour.
         {
-          period: Period.HOUR, //TODO: How to handle user selected timegrains?
+          period: Period.HOUR, // this is the offset alias for the given time range alias
           truncationType: TimeTruncationType.START_OF_PERIOD,
         }, // truncation
-        // then offset that by 6 hours
-        { duration: "PT6H", operationType: TimeOffsetType.SUBTRACT }, // operation
+        // then offset that by 5 hours
+        { duration: "PT5H", operationType: TimeOffsetType.SUBTRACT }, // operation
       ],
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [],
+      transformation: [
+        {
+          period: Period.HOUR,
+          truncationType: TimeTruncationType.END_OF_PERIOD,
+        },
+      ],
     },
   },
 
@@ -58,16 +62,21 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
-        { duration: "P1D", operationType: TimeOffsetType.SUBTRACT }, // operation
         {
-          period: Period.HOUR, //TODO: How to handle user selected timegrains?
+          period: Period.HOUR,
           truncationType: TimeTruncationType.START_OF_PERIOD,
         }, // truncation
+        { duration: "PT23H", operationType: TimeOffsetType.SUBTRACT }, // operation
       ],
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [],
+      transformation: [
+        {
+          period: Period.HOUR,
+          truncationType: TimeTruncationType.END_OF_PERIOD,
+        },
+      ],
     },
   },
 
@@ -78,16 +87,21 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
-        { duration: "P1W", operationType: TimeOffsetType.SUBTRACT }, // operation
         {
-          period: Period.HOUR, //TODO: How to handle user selected timegrains?
+          period: Period.DAY,
           truncationType: TimeTruncationType.START_OF_PERIOD,
         }, // truncation
+        { duration: "P6D", operationType: TimeOffsetType.SUBTRACT }, // operation
       ],
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [],
+      transformation: [
+        {
+          period: Period.DAY,
+          truncationType: TimeTruncationType.END_OF_PERIOD,
+        },
+      ],
     },
   },
   LAST_14_DAYS: {
@@ -97,16 +111,21 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
-        { duration: "P2W", operationType: TimeOffsetType.SUBTRACT }, // operation
         {
-          period: Period.HOUR, //TODO: How to handle user selected timegrains?
+          period: Period.DAY,
           truncationType: TimeTruncationType.START_OF_PERIOD,
-        }, // truncation
+        },
+        { duration: "P13D", operationType: TimeOffsetType.SUBTRACT },
       ],
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [],
+      transformation: [
+        {
+          period: Period.DAY,
+          truncationType: TimeTruncationType.END_OF_PERIOD,
+        },
+      ],
     },
   },
   LAST_4_WEEKS: {
@@ -116,16 +135,21 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
-        { duration: "P4W", operationType: TimeOffsetType.SUBTRACT }, // operation
         {
-          period: Period.HOUR, //TODO: How to handle user selected timegrains?
+          period: Period.WEEK,
           truncationType: TimeTruncationType.START_OF_PERIOD,
         }, // truncation
+        { duration: "P3W", operationType: TimeOffsetType.SUBTRACT },
       ],
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [],
+      transformation: [
+        {
+          period: Period.WEEK,
+          truncationType: TimeTruncationType.END_OF_PERIOD,
+        },
+      ],
     },
   },
   LAST_YEAR: {
@@ -135,16 +159,20 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
-        { duration: "P1Y", operationType: TimeOffsetType.SUBTRACT }, // operation
         {
-          period: Period.HOUR, //TODO: How to handle user selected timegrains?
+          period: Period.YEAR,
           truncationType: TimeTruncationType.START_OF_PERIOD,
-        }, // truncation
+        },
       ],
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [],
+      transformation: [
+        {
+          period: Period.YEAR,
+          truncationType: TimeTruncationType.END_OF_PERIOD,
+        },
+      ],
     },
   },
 };
@@ -168,14 +196,19 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
         {
-          period: Period.DAY, //TODO: How to handle user selected timegrains?
+          period: Period.DAY,
           truncationType: TimeTruncationType.START_OF_PERIOD,
-        }, // truncation
+        },
       ],
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [],
+      transformation: [
+        {
+          period: Period.DAY,
+          truncationType: TimeTruncationType.END_OF_PERIOD,
+        },
+      ],
     },
   },
   WEEK_TO_DATE: {
@@ -186,14 +219,19 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
         {
-          period: Period.WEEK, //TODO: How to handle user selected timegrains?
+          period: Period.WEEK,
           truncationType: TimeTruncationType.START_OF_PERIOD,
-        }, // truncation
+        },
       ],
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [],
+      transformation: [
+        {
+          period: Period.WEEK,
+          truncationType: TimeTruncationType.END_OF_PERIOD,
+        },
+      ],
     },
   },
   MONTH_TO_DATE: {
@@ -204,14 +242,19 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
         {
-          period: Period.MONTH, //TODO: How to handle user selected timegrains?
+          period: Period.MONTH,
           truncationType: TimeTruncationType.START_OF_PERIOD,
-        }, // truncation
+        },
       ],
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [],
+      transformation: [
+        {
+          period: Period.MONTH,
+          truncationType: TimeTruncationType.END_OF_PERIOD,
+        },
+      ],
     },
   },
   YEAR_TO_DATE: {
@@ -222,14 +265,19 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
         {
-          period: Period.YEAR, //TODO: How to handle user selected timegrains?
+          period: Period.YEAR,
           truncationType: TimeTruncationType.START_OF_PERIOD,
-        }, // truncation
+        },
       ],
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
-      transformation: [],
+      transformation: [
+        {
+          period: Period.YEAR,
+          truncationType: TimeTruncationType.END_OF_PERIOD,
+        },
+      ],
     },
   },
 };
