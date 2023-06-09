@@ -220,11 +220,12 @@
     },
     {
       query: {
-        enabled:
+        enabled: Boolean(
           displayComparison &&
-          !!comparisonTimeStart &&
-          !!comparisonTimeEnd &&
-          !!updatedFilters,
+            !!comparisonTimeStart &&
+            !!comparisonTimeEnd &&
+            !!updatedFilters
+        ),
       },
     }
   );
