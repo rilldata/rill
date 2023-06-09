@@ -51,7 +51,8 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 
 			updatedProj, err := client.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
 				OrganizationName: cfg.Org,
-				Name:             newName,
+				Name:             name,
+				NewName:          &newName,
 			})
 			if err != nil {
 				return err

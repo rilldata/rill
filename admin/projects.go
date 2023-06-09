@@ -225,7 +225,6 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 // UpdateProjectVariables updates project's variables and pushes the updated variables to deployments.
 // NOTE : this does not trigger reconcile.
 func (s *Service) UpdateProjectVariables(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
-	s.logger.Info("updating deployments", observability.ZapCtx(ctx))
 	ds, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
 	if err != nil {
 		return nil, err
