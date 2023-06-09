@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func (s *Server) Download(ctx context.Context, req *runtimev1.DownloadLinkRequest) (*runtimev1.DownloadLinkResponse, error) {
+func (s *Server) DownloadLink(ctx context.Context, req *runtimev1.DownloadLinkRequest) (*runtimev1.DownloadLinkResponse, error) {
 	r, err := proto.Marshal(req)
 	if err != nil {
 		return nil, err
