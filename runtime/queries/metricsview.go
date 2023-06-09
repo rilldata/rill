@@ -2,7 +2,9 @@ package queries
 
 import (
 	"context"
+	"encoding/csv"
 	"fmt"
+	"io"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -257,4 +259,31 @@ func repeatString(val string, n int) []string {
 		res[i] = val
 	}
 	return res
+}
+
+func writeCSV(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writer io.Writer) error {
+	w := csv.NewWriter(writer)
+
+	record := make([]string, 0, len(meta))
+	for _, field := range meta {
+		record = append(record, field.Name)
+	}
+	if err := w.Write(record); err != nil {
+		return err
+	}
+	record = record[:0]
+
+	for _, structs := range data {
+		for _, field := range structs.Fields {
+			record = append(record, fmt.Sprintf("%v", field.AsInterface()))
+		}
+		if err := w.Write(record); err != nil {
+			return err
+		}
+		record = record[:0]
+	}
+
+	w.Flush()
+
+	return nil
 }

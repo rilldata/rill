@@ -165,9 +165,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	// Add httpMux on gRPC-gateway
 	httpMux.Handle("/v1/", gwMux)
 
-	httpMux.Handle("/v1/downloads", &downloads.DownloadHandler{
-		Runtime: s.runtime,
-	})
+	httpMux.HandleFunc("/v1/downloads", s.downloadHandler)
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {

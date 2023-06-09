@@ -58,7 +58,7 @@ import type {
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
-export const queryServiceDownload = (
+export const queryServiceDownloadLink = (
   v1DownloadLinkRequest: V1DownloadLinkRequest
 ) => {
   return httpClient<V1DownloadLinkResponse>({
@@ -69,18 +69,18 @@ export const queryServiceDownload = (
   });
 };
 
-export type QueryServiceDownloadMutationResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceDownload>>
+export type QueryServiceDownloadLinkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceDownloadLink>>
 >;
-export type QueryServiceDownloadMutationBody = V1DownloadLinkRequest;
-export type QueryServiceDownloadMutationError = RpcStatus;
+export type QueryServiceDownloadLinkMutationBody = V1DownloadLinkRequest;
+export type QueryServiceDownloadLinkMutationError = RpcStatus;
 
-export const createQueryServiceDownload = <
+export const createQueryServiceDownloadLink = <
   TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof queryServiceDownload>>,
+    Awaited<ReturnType<typeof queryServiceDownloadLink>>,
     TError,
     { data: V1DownloadLinkRequest },
     TContext
@@ -89,16 +89,16 @@ export const createQueryServiceDownload = <
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof queryServiceDownload>>,
+    Awaited<ReturnType<typeof queryServiceDownloadLink>>,
     { data: V1DownloadLinkRequest }
   > = (props) => {
     const { data } = props ?? {};
 
-    return queryServiceDownload(data);
+    return queryServiceDownloadLink(data);
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof queryServiceDownload>>,
+    Awaited<ReturnType<typeof queryServiceDownloadLink>>,
     TError,
     { data: V1DownloadLinkRequest },
     TContext

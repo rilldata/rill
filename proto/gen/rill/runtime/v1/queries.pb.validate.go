@@ -8488,7 +8488,16 @@ func (m *DownloadLinkRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Limit
+	if m.GetLimit() >= 10000 {
+		err := DownloadLinkRequestValidationError{
+			field:  "Limit",
+			reason: "value must be less than 10000",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Format
 

@@ -50,7 +50,7 @@ paths:
         - RuntimeService
   /v1/download-link:
     post:
-      operationId: QueryService_Download
+      operationId: QueryService_DownloadLink
       responses:
         "200":
           description: A successful response.
@@ -1913,7 +1913,6 @@ definitions:
       - DOWNLOAD_FORMAT_CSV
       - DOWNLOAD_FORMAT_PARQUET
     default: DOWNLOAD_FORMAT_UNSPECIFIED
-    title: '- DOWNLOAD_FORMAT_UNSPECIFIED: assumes CSV'
   v1DownloadLinkRequest:
     type: object
     properties:

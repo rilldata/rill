@@ -77,8 +77,6 @@ proto3.util.setEnumType(HistogramMethod, "rill.runtime.v1.HistogramMethod", [
  */
 export enum DownloadFormat {
   /**
-   * assumes CSV
-   *
    * @generated from enum value: DOWNLOAD_FORMAT_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,

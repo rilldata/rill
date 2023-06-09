@@ -140,7 +140,7 @@ service QueryService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
   }
 
-  rpc Download(DownloadLinkRequest) returns (DownloadLinkResponse) {
+  rpc DownloadLink(DownloadLinkRequest) returns (DownloadLinkResponse) {
     option (google.api.http) = {
       post: "/v1/download-link",
       body: "*"
@@ -614,7 +614,7 @@ message TableRowsResponse {
 }
 
 message DownloadLinkRequest {
-  int32 limit = 1;
+  int32 limit = 1 [(validate.rules).int32.lt = 10000];
   DownloadFormat format = 2;
   oneof request {
     MetricsViewToplistRequest metrics_view_toplist_request = 3;
@@ -623,7 +623,7 @@ message DownloadLinkRequest {
 }
 
 enum DownloadFormat {
-  DOWNLOAD_FORMAT_UNSPECIFIED = 0; // assumes CSV
+  DOWNLOAD_FORMAT_UNSPECIFIED = 0;
   DOWNLOAD_FORMAT_CSV = 1;
   DOWNLOAD_FORMAT_PARQUET = 2;
 }

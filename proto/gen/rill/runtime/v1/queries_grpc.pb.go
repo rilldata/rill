@@ -38,7 +38,7 @@ const (
 	QueryService_TableCardinality_FullMethodName             = "/rill.runtime.v1.QueryService/TableCardinality"
 	QueryService_TableColumns_FullMethodName                 = "/rill.runtime.v1.QueryService/TableColumns"
 	QueryService_TableRows_FullMethodName                    = "/rill.runtime.v1.QueryService/TableRows"
-	QueryService_Download_FullMethodName                     = "/rill.runtime.v1.QueryService/Download"
+	QueryService_DownloadLink_FullMethodName                 = "/rill.runtime.v1.QueryService/DownloadLink"
 )
 
 // QueryServiceClient is the client API for QueryService service.
@@ -86,7 +86,7 @@ type QueryServiceClient interface {
 	TableColumns(ctx context.Context, in *TableColumnsRequest, opts ...grpc.CallOption) (*TableColumnsResponse, error)
 	// TableRows returns table rows
 	TableRows(ctx context.Context, in *TableRowsRequest, opts ...grpc.CallOption) (*TableRowsResponse, error)
-	Download(ctx context.Context, in *DownloadLinkRequest, opts ...grpc.CallOption) (*DownloadLinkResponse, error)
+	DownloadLink(ctx context.Context, in *DownloadLinkRequest, opts ...grpc.CallOption) (*DownloadLinkResponse, error)
 }
 
 type queryServiceClient struct {
@@ -268,9 +268,9 @@ func (c *queryServiceClient) TableRows(ctx context.Context, in *TableRowsRequest
 	return out, nil
 }
 
-func (c *queryServiceClient) Download(ctx context.Context, in *DownloadLinkRequest, opts ...grpc.CallOption) (*DownloadLinkResponse, error) {
+func (c *queryServiceClient) DownloadLink(ctx context.Context, in *DownloadLinkRequest, opts ...grpc.CallOption) (*DownloadLinkResponse, error) {
 	out := new(DownloadLinkResponse)
-	err := c.cc.Invoke(ctx, QueryService_Download_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, QueryService_DownloadLink_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +322,7 @@ type QueryServiceServer interface {
 	TableColumns(context.Context, *TableColumnsRequest) (*TableColumnsResponse, error)
 	// TableRows returns table rows
 	TableRows(context.Context, *TableRowsRequest) (*TableRowsResponse, error)
-	Download(context.Context, *DownloadLinkRequest) (*DownloadLinkResponse, error)
+	DownloadLink(context.Context, *DownloadLinkRequest) (*DownloadLinkResponse, error)
 	mustEmbedUnimplementedQueryServiceServer()
 }
 
@@ -387,8 +387,8 @@ func (UnimplementedQueryServiceServer) TableColumns(context.Context, *TableColum
 func (UnimplementedQueryServiceServer) TableRows(context.Context, *TableRowsRequest) (*TableRowsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TableRows not implemented")
 }
-func (UnimplementedQueryServiceServer) Download(context.Context, *DownloadLinkRequest) (*DownloadLinkResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Download not implemented")
+func (UnimplementedQueryServiceServer) DownloadLink(context.Context, *DownloadLinkRequest) (*DownloadLinkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DownloadLink not implemented")
 }
 func (UnimplementedQueryServiceServer) mustEmbedUnimplementedQueryServiceServer() {}
 
@@ -745,20 +745,20 @@ func _QueryService_TableRows_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _QueryService_Download_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _QueryService_DownloadLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DownloadLinkRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServiceServer).Download(ctx, in)
+		return srv.(QueryServiceServer).DownloadLink(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: QueryService_Download_FullMethodName,
+		FullMethod: QueryService_DownloadLink_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServiceServer).Download(ctx, req.(*DownloadLinkRequest))
+		return srv.(QueryServiceServer).DownloadLink(ctx, req.(*DownloadLinkRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -847,8 +847,8 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _QueryService_TableRows_Handler,
 		},
 		{
-			MethodName: "Download",
-			Handler:    _QueryService_Download_Handler,
+			MethodName: "DownloadLink",
+			Handler:    _QueryService_DownloadLink_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
