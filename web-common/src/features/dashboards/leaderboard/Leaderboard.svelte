@@ -110,12 +110,8 @@
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
   }
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start
-    ? $dashboardStore.selectedTimeRange.start.toISOString()
-    : undefined;
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end
-    ? $dashboardStore.selectedTimeRange.end.toISOString()
-    : undefined;
+  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
+  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
   $: topListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,
