@@ -19,13 +19,13 @@ export type AdminServiceUpdateProjectVariablesBody = {
 };
 
 export type AdminServiceUpdateProjectBody = {
-  id?: string;
   description?: string;
   public?: boolean;
   prodBranch?: string;
   githubUrl?: string;
   prodSlots?: string;
   region?: string;
+  newName?: string;
 };
 
 export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
@@ -79,8 +79,8 @@ export type AdminServiceListOrganizationInvitesParams = {
 };
 
 export type AdminServiceUpdateOrganizationBody = {
-  id?: string;
   description?: string;
+  newName?: string;
 };
 
 export type AdminServiceListOrganizationsParams = {

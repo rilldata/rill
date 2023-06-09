@@ -115,7 +115,6 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 }
 
 // EditInstance edits exisiting instance.
-// Confirming to put api specs, it is expected to send entire existing instance data.
 // The API compares and only evicts caches if drivers or dsn is changed.
 // This is done to ensure that db handlers are not unnecessarily closed
 func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) error {

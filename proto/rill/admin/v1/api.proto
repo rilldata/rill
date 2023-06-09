@@ -288,9 +288,9 @@ message DeleteOrganizationRequest {
 message DeleteOrganizationResponse {}
 
 message UpdateOrganizationRequest {
-  string id = 1 [(validate.rules).string.min_len = 1];
   string name = 2 [(validate.rules).string.min_len = 1];
   optional string description = 3;
+  optional string new_name = 4;
 }
 
 message UpdateOrganizationResponse {
@@ -356,7 +356,6 @@ message DeleteProjectRequest {
 message DeleteProjectResponse {}
 
 message UpdateProjectRequest {
-  string id = 1 [(validate.rules).string.min_len = 1];
   string organization_name = 2 [(validate.rules).string.min_len = 1];
   string name = 3 [(validate.rules).string.min_len = 1];
   optional string description = 4;
@@ -365,6 +364,7 @@ message UpdateProjectRequest {
   optional string github_url = 7;
   optional int64 prod_slots = 8;
   optional string region = 9;
+  optional string new_name = 10;
 }
 
 message UpdateProjectResponse {

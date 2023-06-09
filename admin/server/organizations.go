@@ -162,12 +162,16 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 
 func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrganizationRequest) (*adminv1.UpdateOrganizationResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.id", req.Id),
 		attribute.String("args.org", req.Name),
-		attribute.String("args.description", safeStr(req.Description)),
 	)
+	if req.Description != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.description", *req.Description))
+	}
+	if req.NewName != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
+	}
 
-	org, err := s.admin.DB.FindOrganization(ctx, req.Id)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -177,8 +181,8 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
 	}
 
-	org, err = s.admin.DB.UpdateOrganization(ctx, req.Id, &database.UpdateOrganizationOptions{
-		Name:        req.Name,
+	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:        valOrDefault(req.NewName, org.Name),
 		Description: valOrDefault(req.Description, org.Description),
 	})
 	if err != nil {

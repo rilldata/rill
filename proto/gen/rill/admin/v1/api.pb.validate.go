@@ -1259,17 +1259,6 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetId()) < 1 {
-		err := UpdateOrganizationRequestValidationError{
-			field:  "Id",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
 	if utf8.RuneCountInString(m.GetName()) < 1 {
 		err := UpdateOrganizationRequestValidationError{
 			field:  "Name",
@@ -1283,6 +1272,10 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 
 	if m.Description != nil {
 		// no validation rules for Description
+	}
+
+	if m.NewName != nil {
+		// no validation rules for NewName
 	}
 
 	if len(errors) > 0 {
@@ -2783,17 +2776,6 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetId()) < 1 {
-		err := UpdateProjectRequestValidationError{
-			field:  "Id",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
 	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
 		err := UpdateProjectRequestValidationError{
 			field:  "OrganizationName",
@@ -2838,6 +2820,10 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 
 	if m.Region != nil {
 		// no validation rules for Region
+	}
+
+	if m.NewName != nil {
+		// no validation rules for NewName
 	}
 
 	if len(errors) > 0 {

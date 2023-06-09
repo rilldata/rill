@@ -218,9 +218,9 @@ paths:
           schema:
             type: object
             properties:
-              id:
-                type: string
               description:
+                type: string
+              newName:
                 type: string
       tags:
         - AdminService
@@ -802,8 +802,6 @@ paths:
           schema:
             type: object
             properties:
-              id:
-                type: string
               description:
                 type: string
               public:
@@ -816,6 +814,8 @@ paths:
                 type: string
                 format: int64
               region:
+                type: string
+              newName:
                 type: string
       tags:
         - AdminService

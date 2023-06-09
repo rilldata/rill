@@ -26,6 +26,8 @@ import type {
   V1GetInstanceResponse,
   V1DeleteInstanceResponse,
   RuntimeServiceDeleteInstanceBody,
+  V1EditInstanceVariablesResponse,
+  RuntimeServiceEditInstanceVariablesBody,
   V1EditInstanceResponse,
   RuntimeServiceEditInstanceBody,
   V1ListCatalogEntriesResponse,
@@ -429,6 +431,57 @@ export const createRuntimeServiceDeleteInstance = <
     Awaited<ReturnType<typeof runtimeServiceDeleteInstance>>,
     TError,
     { instanceId: string; data: RuntimeServiceDeleteInstanceBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary EditInstanceVariables edits the instance variable
+ */
+export const runtimeServiceEditInstanceVariables = (
+  instanceId: string,
+  runtimeServiceEditInstanceVariablesBody: RuntimeServiceEditInstanceVariablesBody
+) => {
+  return httpClient<V1EditInstanceVariablesResponse>({
+    url: `/v1/instances/${instanceId}`,
+    method: "put",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceEditInstanceVariablesBody,
+  });
+};
+
+export type RuntimeServiceEditInstanceVariablesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceEditInstanceVariables>>
+>;
+export type RuntimeServiceEditInstanceVariablesMutationBody =
+  RuntimeServiceEditInstanceVariablesBody;
+export type RuntimeServiceEditInstanceVariablesMutationError = RpcStatus;
+
+export const createRuntimeServiceEditInstanceVariables = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceEditInstanceVariables>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceEditInstanceVariablesBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceEditInstanceVariables>>,
+    { instanceId: string; data: RuntimeServiceEditInstanceVariablesBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceEditInstanceVariables(instanceId, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof runtimeServiceEditInstanceVariables>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceEditInstanceVariablesBody },
     TContext
   >(mutationFn, mutationOptions);
 };

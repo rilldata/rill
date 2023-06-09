@@ -64,7 +64,6 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			updatedOrg, err := client.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
-				Id:          org.Id,
 				Name:        org.Name,
 				Description: &description,
 			})

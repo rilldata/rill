@@ -218,8 +218,6 @@ export type RuntimeServiceListCatalogEntriesParams = {
   type?: RuntimeServiceListCatalogEntriesType;
 };
 
-export type RuntimeServiceEditInstanceBodyVariables = { [key: string]: string };
-
 /**
  * Request message for RuntimeService.EditInstance.
 See message Instance for field descriptions.
@@ -230,8 +228,18 @@ export type RuntimeServiceEditInstanceBody = {
   repoDriver?: string;
   repoDsn?: string;
   embedCatalog?: boolean;
-  variables?: RuntimeServiceEditInstanceBodyVariables;
   ingestionLimitBytes?: string;
+};
+
+export type RuntimeServiceEditInstanceVariablesBodyVariables = {
+  [key: string]: string;
+};
+
+/**
+ * Request message for RuntimeService.EditInstanceVariables.
+ */
+export type RuntimeServiceEditInstanceVariablesBody = {
+  variables?: RuntimeServiceEditInstanceVariablesBodyVariables;
 };
 
 export type RuntimeServiceDeleteInstanceBody = {
@@ -810,6 +818,10 @@ export interface V1Example {
   name?: string;
   title?: string;
   description?: string;
+}
+
+export interface V1EditInstanceVariablesResponse {
+  instance?: V1Instance;
 }
 
 export interface V1EditInstanceResponse {

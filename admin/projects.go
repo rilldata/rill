@@ -139,7 +139,7 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 
 // UpdateProject updates a project and any impacted deployments.
 // It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
-func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions, reconcileDeployment bool) (*database.Project, error) {
+func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
 	if proj.Region != opts.Region || proj.ProdSlots != opts.ProdSlots { // require new deployments
 		s.logger.Info("recreating deployment", observability.ZapCtx(ctx))
 		var oldDepl *database.Deployment
@@ -188,8 +188,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 
 	impactsDeployments := (proj.ProdBranch != opts.ProdBranch ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
-		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
-		!reflect.DeepEqual(map[string]string(proj.ProdVariables), opts.ProdVariables))
+		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID))
 
 	if impactsDeployments {
 		s.logger.Info("updating deployments", observability.ZapCtx(ctx))
@@ -207,7 +206,6 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 				Subpath:              proj.Subpath,
 				Branch:               opts.ProdBranch,
 				Variables:            opts.ProdVariables,
-				Reconcile:            reconcileDeployment,
 			})
 			if err != nil {
 				// TODO: This may leave things in an inconsistent state. (Although presently, there's almost never multiple deployments.)
@@ -222,6 +220,28 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	}
 
 	return proj, nil
+}
+
+// UpdateProjectVariables updates project's variables and pushes the updated variables to deployments.
+// NOTE : this does not trigger reconcile.
+func (s *Service) UpdateProjectVariables(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
+	s.logger.Info("updating deployments", observability.ZapCtx(ctx))
+	ds, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// NOTE: This assumes every deployment (almost always, there's just one) deploys the prod branch.
+	// It needs to be refactored when implementing preview deploys.
+	for _, d := range ds {
+		err := s.updateDeplVariables(ctx, d, opts.ProdVariables)
+		if err != nil {
+			// TODO: This may leave things in an inconsistent state. (Although presently, there's almost never multiple deployments.)
+			return nil, err
+		}
+	}
+
+	return s.DB.UpdateProject(ctx, proj.ID, opts)
 }
 
 // TriggerRedeploy de-provisions and re-provisions a project's prod deployment.

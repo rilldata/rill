@@ -42,6 +42,14 @@ service RuntimeService {
     };
   }
 
+  // EditInstanceVariables edits the instance variable
+  rpc EditInstanceVariables(EditInstanceVariablesRequest) returns (EditInstanceVariablesResponse) {
+    option (google.api.http) = {
+      put: "/v1/instances/{instance_id}",
+      body: "*"
+    };
+  }
+
   // DeleteInstance deletes an instance
   rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse) {
     option (google.api.http) = {
@@ -312,12 +320,22 @@ message EditInstanceRequest {
   optional string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore", "github"]}];
   optional string repo_dsn = 5; 
   optional bool embed_catalog = 6;
-  map<string, string> variables = 7;
   optional int64 ingestion_limit_bytes = 8; 
 }
 
 // Response message for RuntimeService.EditInstance
 message EditInstanceResponse {
+  Instance instance = 1;
+}
+
+// Request message for RuntimeService.EditInstanceVariables.
+message EditInstanceVariablesRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  map<string, string> variables = 2;
+}
+
+// Response message for RuntimeService.EditInstanceVariables
+message EditInstanceVariablesResponse {
   Instance instance = 1;
 }
 

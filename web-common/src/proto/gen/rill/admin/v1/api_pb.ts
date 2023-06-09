@@ -437,11 +437,6 @@ export class DeleteOrganizationResponse extends Message<DeleteOrganizationRespon
  */
 export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest> {
   /**
-   * @generated from field: string id = 1;
-   */
-  id = "";
-
-  /**
    * @generated from field: string name = 2;
    */
   name = "";
@@ -451,6 +446,11 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
    */
   description?: string;
 
+  /**
+   * @generated from field: optional string new_name = 4;
+   */
+  newName?: string;
+
   constructor(data?: PartialMessage<UpdateOrganizationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -459,9 +459,9 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.UpdateOrganizationRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateOrganizationRequest {
@@ -1007,11 +1007,6 @@ export class DeleteProjectResponse extends Message<DeleteProjectResponse> {
  */
 export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   /**
-   * @generated from field: string id = 1;
-   */
-  id = "";
-
-  /**
    * @generated from field: string organization_name = 2;
    */
   organizationName = "";
@@ -1051,6 +1046,11 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
    */
   region?: string;
 
+  /**
+   * @generated from field: optional string new_name = 10;
+   */
+  newName?: string;
+
   constructor(data?: PartialMessage<UpdateProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1059,7 +1059,6 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.UpdateProjectRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
@@ -1068,6 +1067,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 7, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 9, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 10, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectRequest {

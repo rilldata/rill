@@ -261,20 +261,31 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
 		attribute.String("args.project", req.Name),
-		attribute.String("args.description", safeStr(req.Description)),
-		attribute.String("args.region", safeStr(req.Region)),
-		attribute.String("args.prod_branch", safeStr(req.ProdBranch)),
-		attribute.String("args.github_url", safeStr(req.GithubUrl)),
 	)
+	if req.Description != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.description", *req.Description))
+	}
+	if req.Region != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.region", *req.Region))
+	}
+	if req.ProdBranch != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.prod_branch", *req.ProdBranch))
+	}
+	if req.GithubUrl != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.github_url", *req.GithubUrl))
+	}
 	if req.Public != nil {
 		observability.AddRequestAttributes(ctx, attribute.Bool("args.public", *req.Public))
 	}
 	if req.ProdSlots != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_slots", *req.ProdSlots))
 	}
+	if req.NewName != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
+	}
 
 	// Find project
-	proj, err := s.admin.DB.FindProject(ctx, req.Id)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -297,7 +308,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	}
 
 	opts := &database.UpdateProjectOptions{
-		Name:                 req.Name,
+		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
 		Public:               valOrDefault(req.Public, proj.Public),
 		ProdBranch:           valOrDefault(req.ProdBranch, proj.ProdBranch),
@@ -308,7 +319,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		Region:               valOrDefault(req.Region, proj.Region),
 	}
-	proj, err = s.admin.UpdateProject(ctx, proj, opts, true)
+	proj, err = s.admin.UpdateProject(ctx, proj, opts)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -360,7 +371,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		Region:               proj.Region,
 		ProdVariables:        req.Variables,
 	}
-	proj, err = s.admin.UpdateProject(ctx, proj, opts, false)
+	proj, err = s.admin.UpdateProjectVariables(ctx, proj, opts)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "variables updated failed with error %s", err.Error())
 	}

@@ -245,6 +245,36 @@ paths:
             title: Request message for RuntimeService.DeleteInstance
       tags:
         - RuntimeService
+    put:
+      summary: EditInstanceVariables edits the instance variable
+      operationId: RuntimeService_EditInstanceVariables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1EditInstanceVariablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              variables:
+                type: object
+                additionalProperties:
+                  type: string
+            description: Request message for RuntimeService.EditInstanceVariables.
+      tags:
+        - RuntimeService
     patch:
       summary: EditInstance edits an existing instance
       operationId: RuntimeService_EditInstance
@@ -278,10 +308,6 @@ paths:
                 type: string
               embedCatalog:
                 type: boolean
-              variables:
-                type: object
-                additionalProperties:
-                  type: string
               ingestionLimitBytes:
                 type: string
                 format: int64
@@ -2083,6 +2109,12 @@ definitions:
       instance:
         $ref: '#/definitions/v1Instance'
     title: Response message for RuntimeService.EditInstance
+  v1EditInstanceVariablesResponse:
+    type: object
+    properties:
+      instance:
+        $ref: '#/definitions/v1Instance'
+    title: Response message for RuntimeService.EditInstanceVariables
   v1Example:
     type: object
     properties:
