@@ -1,5 +1,9 @@
 # CONTRIBUTING
 
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/rilldata/rill)](https://pkg.go.dev/github.com/rilldata/rill)
+[![Go Report Card](https://goreportcard.com/badge/github.com/rilldata/rill)](https://goreportcard.com/report/github.com/rilldata/rill)
+[![codecov](https://codecov.io/gh/rilldata/rill/branch/main/graph/badge.svg?token=RQA182JGA5)](https://codecov.io/gh/rilldata/rill)
+
 This file should serve as an entrypoint for learning about and contributing to Rill Developer.
 
 ## Development environment
