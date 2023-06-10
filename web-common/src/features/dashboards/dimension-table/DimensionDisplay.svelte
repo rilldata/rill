@@ -23,7 +23,10 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getTimeComparisonParametersForComponent } from "../../../lib/time/comparisons";
   import { DEFAULT_TIME_RANGES } from "../../../lib/time/config";
-  import type { TimeComparisonOption } from "../../../lib/time/types";
+  import type {
+    TimeComparisonOption,
+    TimeRange,
+  } from "../../../lib/time/types";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import {
@@ -140,7 +143,6 @@
       },
     }
   );
-  $: allTimeRange = $allTimeRangeQuery?.data;
 
   // the timeRangeName is the key to a selected time range's associated presets.
   $: timeRangeName = $dashboardStore?.selectedTimeRange?.name;
@@ -154,8 +156,8 @@
       ?.name as TimeComparisonOption) ||
       (DEFAULT_TIME_RANGES[timeRangeName]
         .defaultComparison as TimeComparisonOption),
-    allTimeRange?.start,
-    allTimeRange?.end,
+    ($allTimeRangeQuery?.data as TimeRange)?.start,
+    ($allTimeRangeQuery?.data as TimeRange)?.end,
     $dashboardStore.selectedTimeRange.start,
     $dashboardStore.selectedTimeRange.end
   );
