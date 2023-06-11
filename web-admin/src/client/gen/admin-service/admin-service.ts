@@ -30,9 +30,6 @@ import type {
   V1DeleteOrganizationResponse,
   V1UpdateOrganizationResponse,
   AdminServiceUpdateOrganizationBody,
-  V1CreateAutoinviteDomainResponse,
-  AdminServiceCreateAutoinviteDomainBody,
-  V1RemoveAutoinviteDomainResponse,
   V1ListOrganizationInvitesResponse,
   AdminServiceListOrganizationInvitesParams,
   V1ListOrganizationMembersResponse,
@@ -44,6 +41,7 @@ import type {
   V1SetOrganizationMemberRoleResponse,
   AdminServiceSetOrganizationMemberRoleBodyBody,
   V1LeaveOrganizationResponse,
+  V1GetGitCredentialsResponse,
   V1ListProjectInvitesResponse,
   AdminServiceListProjectInvitesParams,
   V1ListProjectMembersResponse,
@@ -51,6 +49,10 @@ import type {
   V1AddProjectMemberResponse,
   V1RemoveProjectMemberResponse,
   V1SetProjectMemberRoleResponse,
+  V1ListWhitelistedDomainsResponse,
+  V1CreateWhitelistedDomainResponse,
+  AdminServiceCreateWhitelistedDomainBody,
+  V1RemoveWhitelistedDomainResponse,
   V1ListProjectsForOrganizationResponse,
   AdminServiceListProjectsForOrganizationParams,
   V1CreateProjectResponse,
@@ -63,8 +65,15 @@ import type {
   V1UpdateProjectVariablesResponse,
   AdminServiceUpdateProjectVariablesBody,
   V1PingResponse,
+  V1ListSuperusersResponse,
+  V1SetSuperuserResponse,
+  V1SetSuperuserRequest,
   V1RevokeCurrentAuthTokenResponse,
+  V1IssueRepresentativeAuthTokenResponse,
+  V1IssueRepresentativeAuthTokenRequest,
   V1GetCurrentUserResponse,
+  V1SearchUsersResponse,
+  AdminServiceSearchUsersParams,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
@@ -550,105 +559,6 @@ export const createAdminServiceUpdateOrganization = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary CreateAutoinviteDomain adds a domain to the autoinvite list
- */
-export const adminServiceCreateAutoinviteDomain = (
-  organization: string,
-  adminServiceCreateAutoinviteDomainBody: AdminServiceCreateAutoinviteDomainBody
-) => {
-  return httpClient<V1CreateAutoinviteDomainResponse>({
-    url: `/v1/organizations/${organization}/autoinvite`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: adminServiceCreateAutoinviteDomainBody,
-  });
-};
-
-export type AdminServiceCreateAutoinviteDomainMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceCreateAutoinviteDomain>>
->;
-export type AdminServiceCreateAutoinviteDomainMutationBody =
-  AdminServiceCreateAutoinviteDomainBody;
-export type AdminServiceCreateAutoinviteDomainMutationError = RpcStatus;
-
-export const createAdminServiceCreateAutoinviteDomain = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceCreateAutoinviteDomain>>,
-    TError,
-    { organization: string; data: AdminServiceCreateAutoinviteDomainBody },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceCreateAutoinviteDomain>>,
-    { organization: string; data: AdminServiceCreateAutoinviteDomainBody }
-  > = (props) => {
-    const { organization, data } = props ?? {};
-
-    return adminServiceCreateAutoinviteDomain(organization, data);
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof adminServiceCreateAutoinviteDomain>>,
-    TError,
-    { organization: string; data: AdminServiceCreateAutoinviteDomainBody },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
- * @summary RemoveAutoinviteDomain removes a domain from the autoinvite list
- */
-export const adminServiceRemoveAutoinviteDomain = (
-  organization: string,
-  domain: string
-) => {
-  return httpClient<V1RemoveAutoinviteDomainResponse>({
-    url: `/v1/organizations/${organization}/autoinvite/${domain}`,
-    method: "delete",
-  });
-};
-
-export type AdminServiceRemoveAutoinviteDomainMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceRemoveAutoinviteDomain>>
->;
-
-export type AdminServiceRemoveAutoinviteDomainMutationError = RpcStatus;
-
-export const createAdminServiceRemoveAutoinviteDomain = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRemoveAutoinviteDomain>>,
-    TError,
-    { organization: string; domain: string },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceRemoveAutoinviteDomain>>,
-    { organization: string; domain: string }
-  > = (props) => {
-    const { organization, domain } = props ?? {};
-
-    return adminServiceRemoveAutoinviteDomain(organization, domain);
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof adminServiceRemoveAutoinviteDomain>>,
-    TError,
-    { organization: string; domain: string },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
  * @summary ListOrganizationInvites lists all the org invites
  */
 export const adminServiceListOrganizationInvites = (
@@ -1013,6 +923,75 @@ export const createAdminServiceLeaveOrganization = <
   >(mutationFn, mutationOptions);
 };
 /**
+ * @summary GetGitCredentials returns credentials and other details for a project's Git repository.
+ */
+export const adminServiceGetGitCredentials = (
+  organization: string,
+  project: string,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1GetGitCredentialsResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/git-credentials`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetGitCredentialsQueryKey = (
+  organization: string,
+  project: string
+) =>
+  [
+    `/v1/organizations/${organization}/projects/${project}/git-credentials`,
+  ] as const;
+
+export type AdminServiceGetGitCredentialsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetGitCredentials>>
+>;
+export type AdminServiceGetGitCredentialsQueryError = RpcStatus;
+
+export const createAdminServiceGetGitCredentials = <
+  TData = Awaited<ReturnType<typeof adminServiceGetGitCredentials>>,
+  TError = RpcStatus
+>(
+  organization: string,
+  project: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetGitCredentials>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetGitCredentialsQueryKey(organization, project);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetGitCredentials>>
+  > = ({ signal }) =>
+    adminServiceGetGitCredentials(organization, project, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetGitCredentials>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(organization && project),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
  * @summary ListProjectInvites lists all the project invites
  */
 export const adminServiceListProjectInvites = (
@@ -1338,6 +1317,167 @@ export const createAdminServiceSetProjectMemberRole = <
       email: string;
       data: AdminServiceSetOrganizationMemberRoleBodyBody;
     },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary ListWhitelistedDomains lists all the whitelisted domains for the organization
+ */
+export const adminServiceListWhitelistedDomains = (
+  organization: string,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1ListWhitelistedDomainsResponse>({
+    url: `/v1/organizations/${organization}/whitelisted`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceListWhitelistedDomainsQueryKey = (
+  organization: string
+) => [`/v1/organizations/${organization}/whitelisted`] as const;
+
+export type AdminServiceListWhitelistedDomainsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListWhitelistedDomains>>
+>;
+export type AdminServiceListWhitelistedDomainsQueryError = RpcStatus;
+
+export const createAdminServiceListWhitelistedDomains = <
+  TData = Awaited<ReturnType<typeof adminServiceListWhitelistedDomains>>,
+  TError = RpcStatus
+>(
+  organization: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListWhitelistedDomains>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListWhitelistedDomainsQueryKey(organization);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListWhitelistedDomains>>
+  > = ({ signal }) => adminServiceListWhitelistedDomains(organization, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceListWhitelistedDomains>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!organization,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary CreateWhitelistedDomain adds a domain to the whitelist
+ */
+export const adminServiceCreateWhitelistedDomain = (
+  organization: string,
+  adminServiceCreateWhitelistedDomainBody: AdminServiceCreateWhitelistedDomainBody
+) => {
+  return httpClient<V1CreateWhitelistedDomainResponse>({
+    url: `/v1/organizations/${organization}/whitelisted`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateWhitelistedDomainBody,
+  });
+};
+
+export type AdminServiceCreateWhitelistedDomainMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateWhitelistedDomain>>
+>;
+export type AdminServiceCreateWhitelistedDomainMutationBody =
+  AdminServiceCreateWhitelistedDomainBody;
+export type AdminServiceCreateWhitelistedDomainMutationError = RpcStatus;
+
+export const createAdminServiceCreateWhitelistedDomain = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateWhitelistedDomain>>,
+    TError,
+    { organization: string; data: AdminServiceCreateWhitelistedDomainBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateWhitelistedDomain>>,
+    { organization: string; data: AdminServiceCreateWhitelistedDomainBody }
+  > = (props) => {
+    const { organization, data } = props ?? {};
+
+    return adminServiceCreateWhitelistedDomain(organization, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceCreateWhitelistedDomain>>,
+    TError,
+    { organization: string; data: AdminServiceCreateWhitelistedDomainBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary RemoveWhitelistedDomain removes a domain from the whitelist list
+ */
+export const adminServiceRemoveWhitelistedDomain = (
+  organization: string,
+  domain: string
+) => {
+  return httpClient<V1RemoveWhitelistedDomainResponse>({
+    url: `/v1/organizations/${organization}/whitelisted/${domain}`,
+    method: "delete",
+  });
+};
+
+export type AdminServiceRemoveWhitelistedDomainMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRemoveWhitelistedDomain>>
+>;
+
+export type AdminServiceRemoveWhitelistedDomainMutationError = RpcStatus;
+
+export const createAdminServiceRemoveWhitelistedDomain = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRemoveWhitelistedDomain>>,
+    TError,
+    { organization: string; domain: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRemoveWhitelistedDomain>>,
+    { organization: string; domain: string }
+  > = (props) => {
+    const { organization, domain } = props ?? {};
+
+    return adminServiceRemoveWhitelistedDomain(organization, domain);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceRemoveWhitelistedDomain>>,
+    TError,
+    { organization: string; domain: string },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -1821,6 +1961,107 @@ export const createAdminServicePing = <
 };
 
 /**
+ * @summary ListSuperusers lists all the superusers
+ */
+export const adminServiceListSuperusers = (signal?: AbortSignal) => {
+  return httpClient<V1ListSuperusersResponse>({
+    url: `/v1/superuser/members`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceListSuperusersQueryKey = () =>
+  [`/v1/superuser/members`] as const;
+
+export type AdminServiceListSuperusersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListSuperusers>>
+>;
+export type AdminServiceListSuperusersQueryError = RpcStatus;
+
+export const createAdminServiceListSuperusers = <
+  TData = Awaited<ReturnType<typeof adminServiceListSuperusers>>,
+  TError = RpcStatus
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceListSuperusers>>,
+    TError,
+    TData
+  >;
+}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceListSuperusersQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListSuperusers>>
+  > = ({ signal }) => adminServiceListSuperusers(signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceListSuperusers>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary SetSuperuser adds/remove a superuser
+ */
+export const adminServiceSetSuperuser = (
+  v1SetSuperuserRequest: V1SetSuperuserRequest
+) => {
+  return httpClient<V1SetSuperuserResponse>({
+    url: `/v1/superuser/members`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1SetSuperuserRequest,
+  });
+};
+
+export type AdminServiceSetSuperuserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSetSuperuser>>
+>;
+export type AdminServiceSetSuperuserMutationBody = V1SetSuperuserRequest;
+export type AdminServiceSetSuperuserMutationError = RpcStatus;
+
+export const createAdminServiceSetSuperuser = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSetSuperuser>>,
+    TError,
+    { data: V1SetSuperuserRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSetSuperuser>>,
+    { data: V1SetSuperuserRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSetSuperuser(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceSetSuperuser>>,
+    TError,
+    { data: V1SetSuperuserRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
  * @summary RevokeCurrentAuthToken revoke the current auth token
  */
 export const adminServiceRevokeCurrentAuthToken = () => {
@@ -1865,6 +2106,57 @@ export const createAdminServiceRevokeCurrentAuthToken = <
   >(mutationFn, mutationOptions);
 };
 /**
+ * @summary IssueRepresentativeAuthToken returns the temporary token for given email
+ */
+export const adminServiceIssueRepresentativeAuthToken = (
+  v1IssueRepresentativeAuthTokenRequest: V1IssueRepresentativeAuthTokenRequest
+) => {
+  return httpClient<V1IssueRepresentativeAuthTokenResponse>({
+    url: `/v1/tokens/represent`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1IssueRepresentativeAuthTokenRequest,
+  });
+};
+
+export type AdminServiceIssueRepresentativeAuthTokenMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceIssueRepresentativeAuthToken>>
+  >;
+export type AdminServiceIssueRepresentativeAuthTokenMutationBody =
+  V1IssueRepresentativeAuthTokenRequest;
+export type AdminServiceIssueRepresentativeAuthTokenMutationError = RpcStatus;
+
+export const createAdminServiceIssueRepresentativeAuthToken = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceIssueRepresentativeAuthToken>>,
+    TError,
+    { data: V1IssueRepresentativeAuthTokenRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceIssueRepresentativeAuthToken>>,
+    { data: V1IssueRepresentativeAuthTokenRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceIssueRepresentativeAuthToken(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceIssueRepresentativeAuthToken>>,
+    TError,
+    { data: V1IssueRepresentativeAuthTokenRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
  * @summary GetCurrentUser returns the currently authenticated user (if any)
  */
 export const adminServiceGetCurrentUser = (signal?: AbortSignal) => {
@@ -1904,6 +2196,66 @@ export const createAdminServiceGetCurrentUser = <
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceGetCurrentUser>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary GetUsersByEmail returns user by email
+ */
+export const adminServiceSearchUsers = (
+  params?: AdminServiceSearchUsersParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1SearchUsersResponse>({
+    url: `/v1/users/search`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceSearchUsersQueryKey = (
+  params?: AdminServiceSearchUsersParams
+) => [`/v1/users/search`, ...(params ? [params] : [])] as const;
+
+export type AdminServiceSearchUsersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSearchUsers>>
+>;
+export type AdminServiceSearchUsersQueryError = RpcStatus;
+
+export const createAdminServiceSearchUsers = <
+  TData = Awaited<ReturnType<typeof adminServiceSearchUsers>>,
+  TError = RpcStatus
+>(
+  params?: AdminServiceSearchUsersParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceSearchUsers>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceSearchUsersQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceSearchUsers>>
+  > = ({ signal }) => adminServiceSearchUsers(params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceSearchUsers>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<

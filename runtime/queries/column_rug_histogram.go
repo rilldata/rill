@@ -25,8 +25,16 @@ func (q *ColumnRugHistogram) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnRugHistogram) MarshalResult() any {
-	return q.Result
+func (q *ColumnRugHistogram) MarshalResult() *runtime.QueryResult {
+	var size int64
+	if len(q.Result) > 0 {
+		// approx
+		size = sizeProtoMessage(q.Result[0]) * int64(len(q.Result))
+	}
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: size,
+	}
 }
 
 func (q *ColumnRugHistogram) UnmarshalResult(v any) error {
@@ -114,8 +122,9 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	  WHERE present=true`, selectColumn, sanitizedColumnName, safeName(q.TableName), outlierPseudoBucketSize)
 
 	outlierResults, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    rugSQL,
-		Priority: priority,
+		Query:            rugSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err

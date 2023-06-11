@@ -29,6 +29,7 @@ func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux) {
 	inner := http.NewServeMux()
 	inner.Handle("/auth/login", otelhttp.WithRouteTag("/auth/login", http.HandlerFunc(a.authLogin)))
 	inner.Handle("/auth/callback", otelhttp.WithRouteTag("/auth/callback", http.HandlerFunc(a.authLoginCallback)))
+	inner.Handle("/auth/with-token", otelhttp.WithRouteTag("/auth/with-token", http.HandlerFunc(a.authWithToken)))
 	inner.Handle("/auth/logout", otelhttp.WithRouteTag("/auth/logout", http.HandlerFunc(a.authLogout)))
 	inner.Handle("/auth/logout/callback", otelhttp.WithRouteTag("/auth/logout/callback", http.HandlerFunc(a.authLogoutCallback)))
 	inner.Handle("/auth/oauth/device_authorization", otelhttp.WithRouteTag("/auth/oauth/device_authorization", http.HandlerFunc(a.handleDeviceCodeRequest)))
@@ -121,6 +122,11 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 		http.Error(w, "claim 'email' not found", http.StatusInternalServerError)
 		return
 	}
+	emailVerified, ok := profile["email_verified"].(bool)
+	if !ok {
+		http.Error(w, "claim 'email_verified' not found", http.StatusInternalServerError)
+		return
+	}
 	name, ok := profile["name"].(string)
 	if !ok {
 		http.Error(w, "claim 'name' not found", http.StatusInternalServerError)
@@ -129,6 +135,18 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	photoURL, ok := profile["picture"].(string)
 	if !ok {
 		http.Error(w, "claim 'picture' not found", http.StatusInternalServerError)
+		return
+	}
+
+	// Check that the user's email is verified
+	if !emailVerified {
+		errorRedirect, err := url.JoinPath(a.opts.FrontendURL, "/-/auth/verify-email")
+		if err != nil {
+			internalServerError(w, fmt.Errorf("failed to email verify uri: %w", err))
+			return
+		}
+
+		http.Redirect(w, r, errorRedirect, http.StatusTemporaryRedirect)
 		return
 	}
 
@@ -150,7 +168,7 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	}
 
 	// Issue a new persistent auth token
-	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session")
+	authToken, err := a.admin.IssueUserAuthToken(r.Context(), user.ID, database.AuthClientIDRillWeb, "Browser session", nil, nil)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to issue API token: %s", err), http.StatusInternalServerError)
 		return
@@ -174,6 +192,40 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 
 	// Redirect to UI (usually)
 	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
+}
+
+func (a *Authenticator) authWithToken(w http.ResponseWriter, r *http.Request) {
+	// Get new auth token
+	newToken := r.URL.Query().Get("token")
+	if newToken == "" {
+		http.Error(w, "token not provided", http.StatusBadRequest)
+		return
+	}
+
+	// Get auth cookie
+	sess := a.cookies.Get(r, cookieName)
+
+	// If there's already a token in the cookie, revoke it (since we're now setting a new one)
+	oldAuthToken, ok := sess.Values[cookieFieldAccessToken].(string)
+	if ok && oldAuthToken != "" {
+		err := a.admin.RevokeAuthToken(r.Context(), oldAuthToken)
+		if err != nil {
+			a.logger.Error("failed to revoke old user auth token during new auth", zap.Error(err), observability.ZapCtx(r.Context()))
+			// The old token was probably manually revoked. We can still continue.
+		}
+	}
+
+	// Set auth token in cookie
+	sess.Values[cookieFieldAccessToken] = newToken
+
+	// Save cookie
+	if err := sess.Save(r, w); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Redirect to UI
+	http.Redirect(w, r, a.opts.FrontendURL, http.StatusTemporaryRedirect)
 }
 
 // authLogout implements user logout. It revokes the current user auth token, then redirects to the auth provider's logout flow.

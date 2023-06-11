@@ -4,7 +4,10 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { MetricsWorkspace } from "@rilldata/web-common/features/metrics-views";
-  import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+  import {
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceGetFile,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
   import { onMount } from "svelte";
@@ -33,6 +36,14 @@
       },
     }
   );
+
+  $: catalogQuery = createRuntimeServiceGetCatalogEntry(
+    $runtime.instanceId,
+    metricViewName
+  );
+
+  $: isValidCatalogEntry = !!$catalogQuery?.data?.entry;
+
   let yaml;
   $: if ($fileQuery?.isSuccess) yaml = $fileQuery.data?.blob || "";
   let nonStandardError: string | undefined;

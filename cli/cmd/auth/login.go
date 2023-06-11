@@ -21,51 +21,28 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 		Use:   "login",
 		Short: "Authenticate with the Rill API",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			warn := color.New(color.Bold).Add(color.FgYellow)
 			ctx := cmd.Context()
 
+			// updating this as its not required to logout first and login again
 			if cfg.AdminTokenDefault != "" {
-				warn.Println("You are already logged in. To log in again, run `rill logout` first.")
-				return nil
+				err := Logout(ctx, cfg)
+				if err != nil {
+					return err
+				}
 			}
 
 			// Login user
-			if err := Login(ctx, cfg, ""); err != nil {
+			err := Login(ctx, cfg, "")
+			if err != nil {
 				return err
 			}
 
 			// Set default org after login
-			client, err := cmdutil.Client(cfg)
-			if err != nil {
-				return err
-			}
-			defer client.Close()
-
-			res2, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
+			err = SelectOrgFlow(ctx, cfg)
 			if err != nil {
 				return err
 			}
 
-			if len(res2.Organizations) > 0 {
-				var orgNames []string
-				for _, org := range res2.Organizations {
-					orgNames = append(orgNames, org.Name)
-				}
-
-				defaultOrg := orgNames[0]
-				if len(orgNames) > 1 {
-					defaultOrg = cmdutil.SelectPrompt("Select default org (to change later, run `rill org switch`).", orgNames, defaultOrg)
-				}
-
-				err = dotrill.SetDefaultOrg(defaultOrg)
-				if err != nil {
-					return err
-				}
-
-				fmt.Printf("Set default organization to %q. Change using `rill org switch`.\n", defaultOrg)
-			} else {
-				warn.Println("You are not part of any org. Run `rill org create` or `rill deploy` to create one.")
-			}
 			return nil
 		},
 	}
@@ -113,5 +90,43 @@ func Login(ctx context.Context, cfg *config.Config, redirectURL string) error {
 	// set the default token to the one we just got
 	cfg.AdminTokenDefault = res1.AccessToken
 	bold.Print("Successfully logged in. Welcome to Rill!\n")
+	return nil
+}
+
+func SelectOrgFlow(ctx context.Context, cfg *config.Config) error {
+	client, err := cmdutil.Client(cfg)
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+
+	res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
+	if err != nil {
+		return err
+	}
+
+	if len(res.Organizations) == 0 {
+		cmdutil.WarnPrinter("You are not part of an org. Run `rill org create` or `rill deploy` to create one.")
+		return nil
+	}
+
+	var orgNames []string
+	for _, org := range res.Organizations {
+		orgNames = append(orgNames, org.Name)
+	}
+
+	defaultOrg := orgNames[0]
+	if len(orgNames) > 1 {
+		defaultOrg = cmdutil.SelectPrompt("Select default org (to change later, run `rill org switch`).", orgNames, defaultOrg)
+	}
+
+	err = dotrill.SetDefaultOrg(defaultOrg)
+	if err != nil {
+		return err
+	}
+
+	cfg.Org = defaultOrg
+
+	fmt.Printf("Set default organization to %q. Change using `rill org switch`.\n", defaultOrg)
 	return nil
 }

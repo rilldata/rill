@@ -25,6 +25,7 @@ export enum MetricsEventSpace {
   RightPanel = "right-panel",
   Workspace = "workspace",
   LeftPanel = "left-panel",
+  Modal = "modal",
 }
 
 export enum MetricsEventScreenName {
@@ -32,6 +33,9 @@ export enum MetricsEventScreenName {
   Model = "model",
   Dashboard = "dashboard",
   MetricsDefinition = "metrics-definition",
+  CLI = "cli",
+  Splash = "splash",
+  Home = "home",
 }
 
 export const EntityTypeToScreenMap = {

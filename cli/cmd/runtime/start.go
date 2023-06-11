@@ -47,7 +47,7 @@ type Config struct {
 	AuthAudienceURL     string                 `default:"" split_words:"true"`
 	SafeSourceRefresh   bool                   `default:"false" split_words:"true"`
 	ConnectionCacheSize int                    `default:"100" split_words:"true"`
-	QueryCacheSize      int                    `default:"10000" split_words:"true"`
+	QueryCacheSizeBytes int64                  `default:"104857600" split_words:"true"` // 100MB by default
 	// AllowHostAccess controls whether instance can use host credentials and
 	// local_file sources can access directory outside repo
 	AllowHostAccess bool `default:"false" split_words:"true"`
@@ -73,6 +73,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			// Init logger
 			cfg := zap.NewProductionConfig()
 			cfg.Level.SetLevel(conf.LogLevel)
+			cfg.EncoderConfig.NameKey = zapcore.OmitKey
 			logger, err := cfg.Build()
 			if err != nil {
 				fmt.Printf("error: failed to create logger: %s", err.Error())
@@ -104,7 +105,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				ConnectionCacheSize: conf.ConnectionCacheSize,
 				MetastoreDriver:     conf.MetastoreDriver,
 				MetastoreDSN:        conf.MetastoreURL,
-				QueryCacheSize:      conf.QueryCacheSize,
+				QueryCacheSizeBytes: conf.QueryCacheSizeBytes,
 				AllowHostAccess:     conf.AllowHostAccess,
 				SafeSourceRefresh:   conf.SafeSourceRefresh,
 			}
@@ -136,7 +137,8 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			group.Go(func() error { return s.ServeHTTP(cctx, nil) })
 			err = group.Wait()
 			if err != nil {
-				logger.Fatal("server crashed", zap.Error(err))
+				logger.Error("server crashed", zap.Error(err))
+				return
 			}
 
 			logger.Info("server shutdown gracefully")

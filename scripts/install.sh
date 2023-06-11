@@ -84,8 +84,11 @@ installBinary() {
 # Run the installed binary and print the version
 testInstalledBinary() {
     RILL_VERSION=$(rill version)
+    rill verify-install 1>/dev/null || true
+    boldon=`tput smso`
+    boldoff=`tput rmso`
     printf "\nInstallation of ${RILL_VERSION} completed!\n"
-    printf "\nThis application is in beta and we want to hear from you if you have any questions or ideas to share! You can reach us in our Rill Discord server at https://rilldata.link/cli.\n"
+    printf "\nTo start a new project in Rill, execute the command:\n\n ${boldon}rill start my-rill-project${boldoff}\n\n"
 }
 
 # Parse input flag

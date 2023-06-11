@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/prometheus"
-	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -42,7 +41,7 @@ type ShutdownFunc func(context.Context) error
 
 // Start configures traces and metrics globally.
 // Use "go.opentelemetry.io/otel.Tracer" to access global tracers.
-// Use "go.opentelemetry.io/otel/metric/global.Meter" to access global meters.
+// Use "go.opentelemetry.io/otel.Meter" to access global meters.
 // If using OtelExporter (otel collector), make sure to set the OTEL_EXPORTER_OTLP_ENDPOINT env var.
 // For a full list of Otel env vars, see: https://github.com/open-telemetry/opentelemetry-go/tree/main/exporters/otlp/otlptrace.
 func Start(ctx context.Context, logger *zap.Logger, opts *Options) (ShutdownFunc, error) {
@@ -89,7 +88,7 @@ func Start(ctx context.Context, logger *zap.Logger, opts *Options) (ShutdownFunc
 
 	// Set global meter provider
 	if meterProvider != nil {
-		global.SetMeterProvider(meterProvider)
+		otel.SetMeterProvider(meterProvider)
 	}
 
 	// Create global traces exporter

@@ -102,9 +102,27 @@
   .ui-measure-bar-excluded {
     @apply bg-gray-100 dark:bg-gray-700;
   }
+
+
+  .ui-editor-text-error {
+    color: var(--ui-editor-error-foreground);
+  }
+
+  .ui-editor-bg-error {
+    @apply bg-red-50;
+  }
+
+  .ui-editor-border-error {
+    border-color: var(--ui-editor-error-foreground);
+  }
 }
 
 @layer base {
+
+  :root {
+    --ui-editor-error-foreground: hsl(0, 75%, 45%);
+  }
+
   h1,
   h2,
   h3,

@@ -3,8 +3,10 @@
   import { indentGuide } from "@rilldata/web-common/components/editor/indent-guide";
   import { createLineStatusSystem } from "@rilldata/web-common/components/editor/plugins/line-status-decoration";
   import { editorTheme } from "@rilldata/web-common/components/editor/theme";
-  import { tooltipPlugin } from "@rilldata/web-common/components/editor/tooltip";
+  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
+  import { slide } from "svelte/transition";
   import { parseDocument } from "yaml";
   import {
     createPlaceholderElement,
@@ -31,32 +33,6 @@
     MissingDimension = "at least one dimension should be present",
     MissingMeasure = "at least one measure should be present",
     Malformed = "did not find expected key",
-  }
-
-  /** fixme: move to a file */
-  enum YAMLSyntaxErrors {
-    ALIAS_PROPS = "Alias node should not have any properties",
-    BAD_ALIAS = "Alias node should be followed by a single non-empty plain scalar",
-    BAD_DIRECTIVE = 'Expected "#", "YAML", "TAG" or whitespace but "%c" found',
-    BAD_DQ_ESCAPE = 'Unexpected escape sequence "\\"%c"',
-    BAD_INDENT = "Incorrect indentation in flow collection",
-    BAD_LITERAL = "Unexpected end of the document within a single quoted scalar",
-    BAD_PROP_ORDER = "Anchors and tags must be placed after the ?, : and - indicators",
-    BAD_SCALAR_START = "Plain scalars cannot start with a block scalar indicator, or one of the two reserved characters: @ and `. To fix, use a block or quoted scalar for the value.",
-    BLOCK_AS_IMPLICIT_KEY = "There's probably something wrong with the indentation, or you're trying to parse something like a: b: c, where it's not clear what's the key and what's the value.",
-    BLOCK_IN_FLOW = "YAML scalars and collections both have block and flow styles. Flow is allowed within block, but not the other way around.",
-    DUPLICATE_KEY = "Map keys must be unique",
-    IMPOSSIBLE = "This really should not happen. If you encounter this error code, please file a bug.",
-    KEY_OVER_1024_CHARS = "Keys longer than 1024 characters are not supported",
-    MISSING_ANCHOR = "Alias node should be preceded by a non-empty anchor",
-    MISSING_CHAR = "Some character or characters are missing here",
-    MULTILINE_IMPLICIT_KEY = "Implicit keys need to be on a single line. Does the input include a plain scalar with a : followed by whitespace, which is getting parsed as a map key?",
-    MULTIPLE_ANCHORS = "A node is only allowed to have one anchor.",
-    MULTIPLE_DOCS = "A YAML stream may include multiple documents.",
-    MULTIPLE_TAGS = "A node is only allowed to have one tag.",
-    TAB_AS_INDENT = "Tabs are not allowed as indentation characters. Please use spaces instead.",
-    TAG_RESOLVE_FAILED = "Failed to resolve tag",
-    UNEXPECTED_TOKEN = "A token was encountered in a place where it wasn't expected.",
   }
 
   function runtimeErrorToLine(message: string, yaml: string) {
@@ -99,7 +75,6 @@
 
   $: errors = $fileArtifactsStore?.entities?.[path]?.errors;
   $: mappedErrors = mapRuntimeErrorsToLines(errors);
-  $: nonLineErrors = mappedErrors.filter((error) => !error.line);
 
   let mappedSyntaxErrors = [];
   $: if (parsedYAML?.errors?.length) {
@@ -117,36 +92,52 @@
     mappedSyntaxErrors = [];
   }
 
+  /** We display the mainError even if there are multiple errors elsewhere. */
+  $: mainError = [
+    ...mappedSyntaxErrors,
+    ...(mappedErrors || []),
+    ...(errors || []),
+  ]?.at(0);
+
   const { createUpdater, extension: lineStatusExtensions } =
     createLineStatusSystem();
   $: updateLineStatus = createUpdater([...mappedErrors, ...mappedSyntaxErrors]);
 
   let cursor;
-
   let hasFocus;
 </script>
 
-<div
-  class="overflow-y-auto bg-white rounded {hasFocus ? 'ring-[1px]' : ''}"
-  class:ring={hasFocus}
-  class:ring-gray-300={hasFocus}
->
-  <div class="rounded border">
-    <YAMLEditor
-      content={yaml}
-      on:update
-      on:cursor={(event) => {
-        cursor = event.detail;
-      }}
-      bind:hasFocus
-      plugins={[
-        editorTheme(),
-        placeholder,
-        lineStatusExtensions,
-        indentGuide,
-        tooltipPlugin,
-      ]}
-      stateFieldUpdaters={[updateLineStatus]}
-    />
+<div class="grid w-full" style:grid-template-rows="auto max-content">
+  <div
+    class="flex overflow-y-auto bg-white rounded-t border"
+    class:rounded-b={!mappedErrors?.length}
+  >
+    <div class="rounded border w-full" class:border-b-transparent={mainError}>
+      <YAMLEditor
+        content={yaml}
+        on:update
+        on:cursor={(event) => {
+          cursor = event.detail;
+        }}
+        bind:hasFocus
+        plugins={[
+          editorTheme(),
+          placeholder,
+          lineStatusExtensions,
+          indentGuide,
+        ]}
+        stateFieldUpdaters={[updateLineStatus]}
+      />
+    </div>
   </div>
+  {#if mainError}
+    <div
+      transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
+      class="ui-editor-text-error ui-editor-bg-error border border-red-500 border-l-4 px-2 py-5"
+    >
+      <div class="flex gap-x-2 items-center">
+        <CancelCircle />{mainError.message}
+      </div>
+    </div>
+  {/if}
 </div>

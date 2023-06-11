@@ -92,7 +92,7 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 	// Return nice error for old macOS versions
 	conn, err := c.db.Connx(context.Background())
 	if err != nil && strings.Contains(err.Error(), "Symbol not found") {
-		fmt.Printf("This MacOS version is not supported. Please upgrade.")
+		fmt.Printf("Your version of macOS is not supported. Please upgrade to the latest major release of macOS. See this link for details: https://support.apple.com/en-in/macos/upgrade")
 		os.Exit(1)
 	} else if err == nil {
 		conn.Close()
@@ -101,6 +101,24 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 	}
 
 	return c, nil
+}
+
+func (d Driver) Drop(dsn string, logger *zap.Logger) error {
+	cfg, err := newConfig(dsn)
+	if err != nil {
+		return err
+	}
+
+	if cfg.DBFilePath != "" {
+		err = os.Remove(cfg.DBFilePath)
+		if err != nil {
+			return err
+		}
+		// Hacky approach to remove the wal file
+		_ = os.Remove(cfg.DBFilePath + ".wal")
+	}
+
+	return nil
 }
 
 type connection struct {

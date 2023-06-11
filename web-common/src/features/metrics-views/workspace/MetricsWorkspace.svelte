@@ -68,50 +68,16 @@
     const { content } = event.detail;
     callReconcileAndUpdateYaml(content);
   }
-
-  // let validDimensionSelectorOption = [];
-  // $: if (model) {
-  //   const selectedMetricsDefModelProfile = model?.schema?.fields ?? [];
-  //   validDimensionSelectorOption = selectedMetricsDefModelProfile.map(
-  //     (column) => ({ label: column.name, value: column.name })
-  //   );
-  // } else {
-  //   validDimensionSelectorOption = [];
-  // }
-
-  // $: MeasuresColumns = initMeasuresColumns(
-  //   handleUpdateMeasure,
-  //   handleMeasureExpressionValidation
-  // );
-  // $: DimensionColumns = initDimensionColumns(
-  //   handleUpdateDimension,
-  //   validDimensionSelectorOption
-  // );
-
-  // let errors: Array<V1ReconcileError>;
-  // $: errors =
-  //   $fileArtifactsStore.entities[
-  //     getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
-  //   ]?.errors;
-
-  // $: metricsSourceSelectionError = nonStandardError
-  //   ? nonStandardError
-  //   : MetricsSourceSelectionError(errors);
 </script>
 
 <WorkspaceContainer inspector={true} assetID={`${metricsDefName}-config`}>
   <MetricsWorkspaceHeader slot="header" {metricsDefName} {yaml} />
   <div slot="body" use:listenToNodeResize>
     <div
-      class="editor-pane bg-gray-100 p-6 grid  content-stretch"
+      class="editor-pane bg-gray-100 p-6 grid content-stretch"
       style:height="calc(100vh - var(--header-height))"
     >
       <MetricsEditor on:update={updateYAML} {yaml} {metricsDefName} />
-      <!-- {#each [...mappedErrors, ...mappedSyntaxErrors] as error}
-        <div>
-          {JSON.stringify(error)}
-        </div>
-      {/each} -->
     </div>
   </div>
   <ConfigInspector slot="inspector" {metricsDefName} {yaml} />

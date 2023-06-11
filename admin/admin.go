@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"sync"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/email"
@@ -18,14 +19,15 @@ type Options struct {
 
 type Service struct {
 	DB             database.DB
+	Provisioner    *provisioner.StaticProvisioner
+	Email          *email.Client
+	Github         Github
 	opts           *Options
 	logger         *zap.Logger
-	github         Github
-	provisioner    provisioner.Provisioner
 	issuer         *auth.Issuer
 	closeCtx       context.Context
 	closeCtxCancel context.CancelFunc
-	Email          *email.Client
+	reconcileWg    sync.WaitGroup
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github) (*Service, error) {
@@ -65,20 +67,28 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 
 	return &Service{
 		DB:             db,
+		Provisioner:    prov,
+		Email:          emailClient,
+		Github:         github,
 		opts:           opts,
 		logger:         logger,
-		github:         github,
-		provisioner:    prov,
 		issuer:         issuer,
 		closeCtx:       ctx,
 		closeCtxCancel: cancel,
-		Email:          emailClient,
 	}, nil
 }
 
 func (s *Service) Close() error {
 	s.closeCtxCancel()
-	// TODO: Also wait for background items to finish (up to a timeout)
+	s.reconcileWg.Wait()
 
 	return s.DB.Close()
+}
+
+// UnsafeWaitForReconciles waits for all background reconciles to finish.
+// It is unsafe because while it is running, no new reconciles should be started.
+// It's a temporary solution until the runtime is able to reconcile asynchronously.
+// Unlike s.Close(), it does not cancel currently running reconciles, it just waits for them to finish.
+func (s *Service) UnsafeWaitForReconciles() {
+	s.reconcileWg.Wait()
 }

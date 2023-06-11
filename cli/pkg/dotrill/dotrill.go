@@ -21,13 +21,15 @@ const (
 
 // Constants for YAML keys
 const (
-	DefaultOrgConfigKey       = "org"
-	DefaultAdminURLConfigKey  = "api_url"
-	AnalyticsEnabledConfigKey = "analytics_enabled"
-	AccessTokenCredentialsKey = "token"
-	InstallIDStateKey         = "install_id"
-	VersionKey                = "latest_version"
-	VersionUpdatedAtKey       = "latest_version_checked_at"
+	DefaultOrgConfigKey            = "org"
+	DefaultAdminURLConfigKey       = "api_url"
+	AnalyticsEnabledConfigKey      = "analytics_enabled"
+	AccessTokenCredentialsKey      = "token"
+	InstallIDStateKey              = "install_id"
+	RepresentingUserCredentialsKey = "representing_user"
+	BackupTokenCredentialsKey      = "backup_token"
+	VersionKey                     = "latest_version"
+	VersionUpdatedAtKey            = "latest_version_checked_at"
 )
 
 // homeDir is the user's home directory. We keep this as a global to override in unit tests.
@@ -40,7 +42,7 @@ func init() {
 // GetAll loads all values from ~/.rill/{filename}.
 // It assumes filename identifies a YAML file.
 func GetAll(filename string) (map[string]string, error) {
-	filename, err := resolveFilename(filename, false)
+	filename, err := ResolveFilename(filename, false)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +88,7 @@ func Set(filename, key, value string) error {
 	}
 	conf[key] = value
 
-	filename, err = resolveFilename(filename, true)
+	filename, err = ResolveFilename(filename, true)
 	if err != nil {
 		return err
 	}
@@ -109,6 +111,11 @@ func SetDefaultOrg(orgName string) error {
 	return Set(ConfigFilename, DefaultOrgConfigKey, orgName)
 }
 
+// SetDefaultAdminURL loads the default admin URL (if set)
+func SetDefaultAdminURL(url string) error {
+	return Set(ConfigFilename, DefaultAdminURLConfigKey, url)
+}
+
 // GetDefaultAdminURL loads the default admin URL (if set)
 func GetDefaultAdminURL() (string, error) {
 	return Get(ConfigFilename, DefaultAdminURLConfigKey)
@@ -122,6 +129,26 @@ func GetAccessToken() (string, error) {
 // SetToken saves an auth token
 func SetAccessToken(token string) error {
 	return Set(CredentialsFilename, AccessTokenCredentialsKey, token)
+}
+
+// GetBackupToken loads the original auth token
+func GetBackupToken() (string, error) {
+	return Get(CredentialsFilename, BackupTokenCredentialsKey)
+}
+
+// SetBackupToken saves original auth token
+func SetBackupToken(token string) error {
+	return Set(CredentialsFilename, BackupTokenCredentialsKey, token)
+}
+
+// GetRepresentingUser loads the current representing user email
+func GetRepresentingUser() (string, error) {
+	return Get(CredentialsFilename, RepresentingUserCredentialsKey)
+}
+
+// SetRepresentingUser saves representing user email
+func SetRepresentingUser(email string) error {
+	return Set(CredentialsFilename, RepresentingUserCredentialsKey, email)
 }
 
 func SetVersion(version string) error {
@@ -194,7 +221,7 @@ type oldAnalyticsConfig struct {
 // We are deprecating it to centralize user-facing config in config.yaml and to prevent confusion around the local.json file.
 // It has been replaced with a config key ("analytics_enabled") and an install ID stored separately in ~/.rill/state.yaml.
 func migrateOldAnalyticsConfig() error {
-	filename, err := resolveFilename("local.json", false)
+	filename, err := ResolveFilename("local.json", false)
 	if err != nil {
 		return err
 	}
@@ -244,9 +271,9 @@ func migrateOldAnalyticsConfig() error {
 	return nil
 }
 
-// resolveFilename resolves a file name to a full path to ~/.rill.
+// ResolveFilename resolves a file name to a full path to ~/.rill.
 // If mkdir is true, it will create the .rill directory if it doesn't exist.
-func resolveFilename(name string, mkdir bool) (string, error) {
+func ResolveFilename(name string, mkdir bool) (string, error) {
 	if homeDir == "" {
 		return "", fmt.Errorf("home directory not found")
 	}

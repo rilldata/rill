@@ -7,12 +7,13 @@
     uploadTableFiles,
   } from "@rilldata/web-common/features/sources/add-source/file-upload";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import { appStore } from "@rilldata/web-common/layout/app-store";
+  import { appScreen, appStore } from "@rilldata/web-common/layout/app-store";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     createRuntimeServiceDeleteFileAndReconcile,
     createRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceUnpackEmpty,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
@@ -20,9 +21,19 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { useModelNames } from "../../models/selectors";
-  import { compileCreateSourceYAML } from "../sourceUtils";
+  import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
+  import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
+  import {
+    compileCreateSourceYAML,
+    getSourceError,
+    emitSourceErrorTelemetry,
+    emitSourceSuccessTelemetry,
+  } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { hasDuckDBUnicodeError, niceDuckdbUnicodeError } from "./errors";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
 
   const dispatch = createEventDispatcher();
 
@@ -32,9 +43,14 @@
 
   $: sourceNames = useSourceNames(runtimeInstanceId);
   $: modelNames = useModelNames(runtimeInstanceId);
+  $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
 
   const createSourceMutation = createRuntimeServicePutFileAndReconcile();
   const deleteSource = createRuntimeServiceDeleteFileAndReconcile();
+  const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
+
+  $: createSourceMutationError = ($createSourceMutation?.error as any)?.response
+    ?.data;
 
   async function handleOpenFileDialog() {
     return handleUpload(await openFileUploadDialog());
@@ -64,6 +80,16 @@
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
+        // If project is uninitialized, initialize an empty project
+        if (!$isProjectInitialized.data) {
+          $unpackEmptyProject.mutate({
+            instanceId: $runtime.instanceId,
+            data: {
+              title: EMPTY_PROJECT_TITLE,
+            },
+          });
+        }
+
         const yaml = compileCreateSourceYAML(
           {
             sourceName: tableName,
@@ -88,6 +114,25 @@
       } else {
         // if the upload didn't work, delete the source file.
         handleDeleteSource(tableName);
+      }
+
+      const sourceError = getSourceError(errors, tableName);
+      if ($createSourceMutation.isError || sourceError) {
+        emitSourceErrorTelemetry(
+          MetricsEventSpace.Modal,
+          $appScreen,
+          createSourceMutationError?.message ?? sourceError?.message,
+          SourceConnectionType.Local,
+          filePath
+        );
+      } else {
+        emitSourceSuccessTelemetry(
+          MetricsEventSpace.Modal,
+          $appScreen,
+          BehaviourEventMedium.Button,
+          SourceConnectionType.Local,
+          filePath
+        );
       }
     }
   }

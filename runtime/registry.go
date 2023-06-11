@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
@@ -29,7 +28,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 	defer olap.Close()
 
 	// Check repo connection
-	repo, repoStore, err := r.checkRepoConnection(inst)
+	repo, _, err := r.checkRepoConnection(inst)
 	if err != nil {
 		return err
 	}
@@ -53,12 +52,6 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 		return fmt.Errorf("failed to prepare instance: %w", err)
 	}
 
-	c := rillv1beta.New(repoStore, inst.ID)
-	proj, err := c.ProjectConfig(ctx)
-	if err != nil {
-		return err
-	}
-	inst.ProjectVariables = proj.Variables
 	// this is a hack to set variables and pass to connectors
 	// ideally the runtime should propagate this flag to connectors.Env
 	if inst.Variables == nil {
@@ -84,34 +77,40 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 		return err
 	}
 
-	// delete instance related data if catalog is not embedded
+	// For idempotency, it's ok for some steps to fail
+
+	// Delete instance related data if catalog is not embedded
 	if !inst.EmbedCatalog {
 		catalog, err := r.Catalog(ctx, instanceID)
-		if err != nil {
-			return err
+		if err == nil {
+			err = catalog.DeleteEntries(ctx, instanceID)
 		}
-
-		err = catalog.DeleteEntries(ctx, instanceID)
 		if err != nil {
-			return err
+			r.logger.Error("delete instance: error deleting catalog", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
 	}
 
+	// Drop the underlying data store
 	if dropDB {
-		olap, err := r.OLAP(ctx, instanceID)
-		if err != nil {
-			return err
+		conn, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, inst.OLAPDSN)
+		if err == nil {
+			err = conn.Close()
+			if err != nil {
+				r.logger.Error("delete instance: error closing connection", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
+			}
+		} else {
+			r.logger.Error("delete instance: error getting connection", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
 
-		// ignoring the dropDB error since if db is already dropped it may not be possible to retry
-		err = olap.DropDB()
+		err = drivers.Drop(inst.OLAPDriver, inst.OLAPDSN, r.logger)
 		if err != nil {
 			r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
 	}
 
+	// Evict cached data and connections for the instance
 	r.evictCaches(ctx, inst)
-	// delete instance
+
 	return r.Registry().DeleteInstance(ctx, instanceID)
 }
 

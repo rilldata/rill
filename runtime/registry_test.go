@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
@@ -242,6 +243,50 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 	}
 }
 
+func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
+	// We require the ability to delete instances and drop database files created with old versions of DuckDB, which can no longer be opened.
+
+	// Prepare
+	ctx := context.Background()
+	rt := NewTestRunTime(t)
+	dbpath := filepath.Join(t.TempDir(), "test.db")
+
+	// Create instance
+	inst := &drivers.Instance{
+		ID:           "default",
+		OLAPDriver:   "duckdb",
+		OLAPDSN:      dbpath,
+		RepoDriver:   "file",
+		RepoDSN:      t.TempDir(),
+		EmbedCatalog: true,
+	}
+	err := rt.CreateInstance(context.Background(), inst)
+	require.NoError(t, err)
+
+	// Put some data into it to create a .db file on disk
+	olap, err := rt.OLAP(ctx, inst.ID)
+	require.NoError(t, err)
+	err = olap.Exec(ctx, &drivers.Statement{Query: "CREATE TABLE data(id INTEGER, name VARCHAR)"})
+	require.NoError(t, err)
+
+	// Close OLAP connection
+	evicted := rt.connCache.evict(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
+	require.True(t, evicted)
+
+	// Corrupt database file
+	err = os.WriteFile(dbpath, []byte("corrupted"), 0644)
+
+	// Check we can't open it anymore
+	_, err = rt.OLAP(ctx, inst.ID)
+	require.Error(t, err)
+	require.FileExists(t, dbpath)
+
+	// Delete instance and check it still drops the .db file
+	err = rt.DeleteInstance(ctx, inst.ID, true)
+	require.NoError(t, err)
+	require.NoFileExists(t, dbpath)
+}
+
 // New returns a runtime configured for use in tests.
 func NewTestRunTime(t *testing.T) *Runtime {
 	opts := &Options{
@@ -249,11 +294,14 @@ func NewTestRunTime(t *testing.T) *Runtime {
 		MetastoreDriver:     "sqlite",
 		// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 		// "cache=shared" is needed to prevent threading problems.
-		MetastoreDSN:    fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
-		QueryCacheSize:  10000,
-		AllowHostAccess: true,
+		MetastoreDSN:        fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
+		QueryCacheSizeBytes: int64(datasize.MB) * 100,
+		AllowHostAccess:     true,
 	}
 	rt, err := New(opts, zap.NewNop())
+	t.Cleanup(func() {
+		rt.Close()
+	})
 	require.NoError(t, err)
 
 	return rt

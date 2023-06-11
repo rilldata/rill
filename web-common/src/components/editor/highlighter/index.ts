@@ -10,7 +10,9 @@ import { lineStatusesStateField, updateLineStatuses } from "../line-status";
 const lineBackground = (level) =>
   Decoration.line({
     class: `cm-line-${level}`,
-    // attributes: { style: "background-color: #FEF2F2" },
+    style: {
+      "font-style": "italic",
+    },
   });
 
 function errorLinesDecoration(view) {

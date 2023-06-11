@@ -5,15 +5,27 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/dgraph-io/ristretto"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"go.opentelemetry.io/otel/metric/global"
+	"github.com/rilldata/rill/runtime/pkg/singleflight"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 )
 
 var (
-	meter                   = global.Meter("runtime")
-	queryCacheHitsCounter   = observability.Must(meter.Int64Counter("query_cache.hits"))
-	queryCacheMissesCounter = observability.Must(meter.Int64Counter("query_cache.misses"))
+	meter                        = otel.Meter("github.com/rilldata/rill/runtime")
+	queryCacheHitsCounter        = observability.Must(meter.Int64ObservableCounter("query_cache.hits"))
+	queryCacheMissesCounter      = observability.Must(meter.Int64ObservableCounter("query_cache.misses"))
+	queryCacheItemCountGauge     = observability.Must(meter.Int64ObservableGauge("query_cache.items"))
+	queryCacheSizeBytesGauge     = observability.Must(meter.Int64ObservableGauge("query_cache.size", metric.WithUnit("bytes")))
+	queryCacheEntrySizeHistogram = observability.Must(meter.Int64Histogram("query_cache.entry_size", metric.WithUnit("bytes")))
 )
+
+type QueryResult struct {
+	Value any
+	Bytes int64
+}
 
 type Query interface {
 	// Key should return a cache key that uniquely identifies the query
@@ -21,20 +33,13 @@ type Query interface {
 	// Deps should return the source and model names that the query targets.
 	// It's used to invalidate cached queries when the underlying data changes.
 	Deps() []string
-	// MarshalResult should return the query result for caching.
-	// TODO: Also return estimated cost in bytes.
-	MarshalResult() any
+	// MarshalResult should return the query result and estimated cost in bytes for caching
+	MarshalResult() *QueryResult
 	// UnmarshalResult should populate a query with a cached result
 	UnmarshalResult(v any) error
 	// Resolve should execute the query against the instance's infra.
 	// Error can be nil along with a nil result in general, i.e. when a model contains no rows aggregation results can be nil.
 	Resolve(ctx context.Context, rt *Runtime, instanceID string, priority int) error
-}
-
-type queryCacheKey struct {
-	instanceID    string
-	queryKey      string
-	dependencyKey string
 }
 
 func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, priority int) error {
@@ -74,20 +79,100 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		instanceID:    instanceID,
 		queryKey:      query.Key(),
 		dependencyKey: depKey,
-	}
+	}.String()
 
-	val, ok := r.queryCache.get(key)
-	if ok {
-		queryCacheHitsCounter.Add(ctx, 1)
+	// Try to get from cache
+	if val, ok := r.queryCache.cache.Get(key); ok {
+		observability.AddRequestAttributes(ctx, attribute.Bool("query.cache_hit", true))
 		return query.UnmarshalResult(val)
 	}
-	queryCacheMissesCounter.Add(ctx, 1)
+	observability.AddRequestAttributes(ctx, attribute.Bool("query.cache_hit", false))
 
-	// Cache miss. Run the query.
-	err := query.Resolve(ctx, r, instanceID, priority)
+	// Load with singleflight
+	owner := false
+	val, err := r.queryCache.singleflight.Do(ctx, key, func(ctx context.Context) (any, error) {
+		// Try cache again
+		if val, ok := r.queryCache.cache.Get(key); ok {
+			return val, nil
+		}
+
+		// Load
+		err := query.Resolve(ctx, r, instanceID, priority)
+		if err != nil {
+			return nil, err
+		}
+
+		owner = true
+		res := query.MarshalResult()
+		r.queryCache.cache.Set(key, res.Value, res.Bytes)
+		queryCacheEntrySizeHistogram.Record(ctx, res.Bytes, metric.WithAttributes(attribute.String("query", queryName(query))))
+		return res.Value, nil
+	})
 	if err != nil {
 		return err
 	}
-	r.queryCache.add(key, query.MarshalResult())
+
+	if !owner {
+		return query.UnmarshalResult(val)
+	}
 	return nil
+}
+
+type queryCacheKey struct {
+	instanceID    string
+	queryKey      string
+	dependencyKey string
+}
+
+func (k queryCacheKey) String() string {
+	return fmt.Sprintf("inst:%s deps:%s qry:%s", k.instanceID, k.dependencyKey, k.queryKey)
+}
+
+type queryCache struct {
+	cache        *ristretto.Cache
+	singleflight *singleflight.Group[string, any]
+	metrics      metric.Registration
+}
+
+func newQueryCache(sizeInBytes int64) *queryCache {
+	if sizeInBytes <= 100 {
+		panic(fmt.Sprintf("invalid cache size should be greater than 100: %v", sizeInBytes))
+	}
+	cache, err := ristretto.NewCache(&ristretto.Config{
+		// Use 5% of cache memory for storing counters. Each counter takes roughly 3 bytes.
+		// Recommended value is 10x the number of items in cache when full.
+		// Tune this again based on metrics.
+		NumCounters: int64(float64(sizeInBytes) * 0.05 / 3),
+		MaxCost:     int64(float64(sizeInBytes) * 0.95),
+		BufferItems: 64,
+		Metrics:     true,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	metrics := observability.Must(meter.RegisterCallback(func(ctx context.Context, observer metric.Observer) error {
+		observer.ObserveInt64(queryCacheHitsCounter, int64(cache.Metrics.Hits()))
+		observer.ObserveInt64(queryCacheMissesCounter, int64(cache.Metrics.Misses()))
+		observer.ObserveInt64(queryCacheItemCountGauge, int64(cache.Metrics.KeysAdded()-cache.Metrics.KeysEvicted()))
+		observer.ObserveInt64(queryCacheSizeBytesGauge, int64(cache.Metrics.CostAdded()-cache.Metrics.CostEvicted()))
+		return nil
+	}, queryCacheHitsCounter, queryCacheMissesCounter, queryCacheItemCountGauge, queryCacheSizeBytesGauge))
+
+	return &queryCache{
+		cache:        cache,
+		singleflight: &singleflight.Group[string, any]{},
+		metrics:      metrics,
+	}
+}
+
+func (c *queryCache) close() error {
+	c.cache.Close()
+	return c.metrics.Unregister()
+}
+
+func queryName(q Query) string {
+	nameWithPkg := fmt.Sprintf("%T", q)
+	_, after, _ := strings.Cut(nameWithPkg, ".")
+	return after
 }

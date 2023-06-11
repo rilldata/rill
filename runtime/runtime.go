@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -13,7 +14,7 @@ type Options struct {
 	ConnectionCacheSize int
 	MetastoreDriver     string
 	MetastoreDSN        string
-	QueryCacheSize      int
+	QueryCacheSizeBytes int64
 	AllowHostAccess     bool
 	SafeSourceRefresh   bool
 }
@@ -50,15 +51,18 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 		logger:             logger,
 		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger),
 		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
-		queryCache:         newQueryCache(opts.QueryCacheSize),
+		queryCache:         newQueryCache(opts.QueryCacheSizeBytes),
 	}, nil
 }
 
+func (r *Runtime) AllowHostAccess() bool {
+	return r.opts.AllowHostAccess
+}
+
 func (r *Runtime) Close() error {
-	err1 := r.metastore.Close()
-	err2 := r.connCache.Close()
-	if err1 != nil {
-		return err1
-	}
-	return err2
+	return errors.Join(
+		r.metastore.Close(),
+		r.connCache.Close(),
+		r.queryCache.close(),
+	)
 }

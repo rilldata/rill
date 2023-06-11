@@ -43,15 +43,11 @@
   let showColumns = true;
 </script>
 
-{#if modelName && !$modelQuery?.isError && isValidModel}
-  <!-- <ConfigPreviews {modelName} {metricsDefName} /> -->
-  <!-- <ModelInspectorModelProfile {modelName} /> -->
-  <div class="model-profile">
-    {#if entry && entry?.model?.sql?.trim()?.length}
-      <!-- <References {modelName} /> -->
-
-      <div class="pb-4 pt-4">
-        <div class=" pl-4 pr-4">
+<div>
+  {#if modelName && !$modelQuery?.isError && isValidModel}
+    <div class="model-profile pb-4 pt-4">
+      {#if entry && entry?.model?.sql?.trim()?.length}
+        <div class="pl-4 pr-4">
           <CollapsibleSectionTitle
             tooltipText="selected columns"
             bind:active={showColumns}
@@ -71,11 +67,26 @@
             <!-- {/key} -->
           </div>
         {/if}
-      </div>
-    {/if}
-  </div>
-{:else if modelName !== undefined}
-  Model {modelName} not found.
-{:else}
-  Let's get started. add <code>model: MODEL_NAME</code> to connect a Model.
-{/if}
+      {/if}
+    </div>
+  {:else}
+    <div
+      class="px-4 py-24 italic ui-copy-disabled text-center"
+      style:text-wrap="balance"
+      style:max-inline-size="50ch"
+    >
+      {#if !yaml?.length}
+        <p>Let's get started.</p>
+        <p>add <code>model: MODEL_NAME</code> to connect a Model.</p>
+      {:else if modelName !== undefined}
+        <div>
+          <p>Model not defined.</p>
+          <p>
+            Set a model with <code>model: MODEL_NAME</code> to connect your metrics
+            to a model.
+          </p>
+        </div>
+      {/if}
+    </div>
+  {/if}
+</div>

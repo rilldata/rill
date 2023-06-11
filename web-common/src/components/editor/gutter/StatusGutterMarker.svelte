@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import CancelCircle from "../../icons/CancelCircle.svelte";
   import InfoCircle from "../../icons/InfoCircle.svelte";
   import WarningIcon from "../../icons/WarningIcon.svelte";
   export let level: "error" | "warning" | "info" = undefined;
@@ -12,7 +12,7 @@
 
 <Tooltip distance={8} suppress={message === undefined}>
   <div
-    class="grid justify-between pr-2"
+    class="grid justify-between pr-2 text-gray-500"
     style:grid-template-columns="[icon] 24px [line-number] auto [code-fold] 8px"
     class:bg-red-50={level === "error" && !active}
     class:bg-red-100={level === "error" && active}
@@ -34,7 +34,7 @@
       class="grid justify-center items-center"
     >
       {#if level === "error"}
-        <Cancel />
+        <CancelCircle />
       {:else if level === "warning"}
         <WarningIcon />
       {:else if level === "info"}

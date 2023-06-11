@@ -29,8 +29,11 @@ func (q *ColumnTimeRange) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnTimeRange) MarshalResult() any {
-	return q.Result
+func (q *ColumnTimeRange) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *ColumnTimeRange) UnmarshalResult(v any) error {
@@ -66,8 +69,9 @@ func (q *ColumnTimeRange) resolveDuckDB(ctx context.Context, olap drivers.OLAPSt
 	)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    rangeSQL,
-		Priority: priority,
+		Query:            rangeSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err
@@ -130,8 +134,9 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 	)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    rangeSQL,
-		Priority: priority,
+		Query:            rangeSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err

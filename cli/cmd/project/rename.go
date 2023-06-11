@@ -28,7 +28,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 
 			fmt.Println("Warn: Renaming an project would invalidate dashboard URLs")
 
-			if !cmd.Flags().Changed("project") {
+			if !cmd.Flags().Changed("project") && cfg.Interactive {
 				projectNames, err := cmdutil.ProjectNamesByOrg(ctx, client, cfg.Org)
 				if err != nil {
 					return err
@@ -37,15 +37,14 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				name = cmdutil.SelectPrompt("Select project to rename", projectNames, "")
 			}
 
-			if !cmd.Flags().Changed("new-name") {
-				// Get the new project name from user if not provided in the flag, passing current name as default
-				newName, err = cmdutil.InputPrompt("Rename to", name)
+			if cfg.Interactive {
+				err = cmdutil.SetFlagsByInputPrompts(*cmd, "new-name")
 				if err != nil {
 					return err
 				}
 			}
 
-			msg := fmt.Sprintf("Do you want to rename project \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName))
+			msg := fmt.Sprintf("Do you want to rename the project \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName))
 			if !cmdutil.ConfirmPrompt(msg, "", false) {
 				return nil
 			}
@@ -65,12 +64,15 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				Public:           proj.Public,
 				ProdBranch:       proj.ProdBranch,
 				GithubUrl:        proj.GithubUrl,
+				ProdSlots:        proj.ProdSlots,
+				Region:           proj.Region,
 			})
 			if err != nil {
 				return err
 			}
 
 			cmdutil.SuccessPrinter("Renamed project")
+			cmdutil.SuccessPrinter(fmt.Sprintf("New web url is: %s\n", updatedProj.Project.FrontendUrl))
 			cmdutil.TablePrinter(toRow(updatedProj.Project))
 
 			return nil

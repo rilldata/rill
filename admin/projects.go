@@ -2,11 +2,11 @@ package admin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -27,11 +27,11 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	// Get roles for initial setup
 	adminRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameAdmin)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to find project admin role"))
+		panic(err)
 	}
 	viewerRole, err := s.DB.FindProjectRole(ctx, database.ProjectRoleNameViewer)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to find project viewer role"))
+		panic(err)
 	}
 
 	// Create the project and add initial members using a transaction.
@@ -66,7 +66,18 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 
 	// Provision prod deployment.
 	// Start using original context again since transaction in txCtx is done.
-	depl, err := s.createDeployment(ctx, proj)
+	depl, err := s.createDeployment(ctx, &createDeploymentOptions{
+		ProjectID:            proj.ID,
+		Region:               proj.Region,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		Subpath:              proj.Subpath,
+		ProdBranch:           proj.ProdBranch,
+		ProdVariables:        proj.ProdVariables,
+		ProdOLAPDriver:       proj.ProdOLAPDriver,
+		ProdOLAPDSN:          proj.ProdOLAPDSN,
+		ProdSlots:            proj.ProdSlots,
+	})
 	if err != nil {
 		err2 := s.DB.DeleteProject(ctx, proj.ID)
 		return nil, multierr.Combine(err, err2)
@@ -81,6 +92,8 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdBranch:           proj.ProdBranch,
 		ProdVariables:        proj.ProdVariables,
+		ProdSlots:            proj.ProdSlots,
+		Region:               proj.Region,
 		ProdDeploymentID:     &depl.ID,
 	})
 	if err != nil {
@@ -101,7 +114,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 
 // TeardownProject tears down a project and all its deployments.
 func (s *Service) TeardownProject(ctx context.Context, p *database.Project) error {
-	ds, err := s.DB.FindDeployments(ctx, p.ID)
+	ds, err := s.DB.FindDeploymentsForProject(ctx, p.ID)
 	if err != nil {
 		return err
 	}
@@ -124,13 +137,60 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 // UpdateProject updates a project and any impacted deployments.
 // It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
 func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions, reconcileDeployment bool) (*database.Project, error) {
+	if proj.Region != opts.Region || proj.ProdSlots != opts.ProdSlots { // require new deployments
+		s.logger.Info("recreating deployment", observability.ZapCtx(ctx))
+		var oldDepl *database.Deployment
+		var err error
+		if proj.ProdDeploymentID != nil {
+			oldDepl, err = s.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+			if err != nil && !errors.Is(err, database.ErrNotFound) {
+				return nil, err
+			}
+		}
+
+		depl, err := s.createDeployment(ctx, &createDeploymentOptions{
+			ProjectID:            proj.ID,
+			Subpath:              proj.Subpath,
+			ProdOLAPDriver:       proj.ProdOLAPDriver,
+			ProdOLAPDSN:          proj.ProdOLAPDSN,
+			Region:               opts.Region,
+			GithubURL:            opts.GithubURL,
+			GithubInstallationID: opts.GithubInstallationID,
+			ProdBranch:           opts.ProdBranch,
+			ProdVariables:        opts.ProdVariables,
+			ProdSlots:            opts.ProdSlots,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		opts.ProdDeploymentID = &depl.ID
+		res, err := s.DB.UpdateProject(ctx, proj.ID, opts)
+		if err != nil {
+			return nil, multierr.Combine(err, s.teardownDeployment(ctx, proj, depl))
+		}
+
+		if oldDepl != nil {
+			if err := s.teardownDeployment(context.Background(), proj, oldDepl); err != nil {
+				s.logger.Error("could not delete old deploymnet", zap.Error(err), observability.ZapCtx(ctx))
+			}
+		}
+
+		if err := s.TriggerReconcile(ctx, depl); err != nil {
+			return nil, fmt.Errorf("reconcile failed with error %w", err)
+		}
+
+		return res, nil
+	}
+
 	impactsDeployments := (proj.ProdBranch != opts.ProdBranch ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
-		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables))
+		!reflect.DeepEqual(map[string]string(proj.ProdVariables), opts.ProdVariables))
 
 	if impactsDeployments {
-		ds, err := s.DB.FindDeployments(ctx, proj.ID)
+		s.logger.Info("updating deployments", observability.ZapCtx(ctx))
+		ds, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -164,7 +224,18 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 // TriggerRedeploy de-provisions and re-provisions a project's prod deployment.
 func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) error {
 	// Provision new deployment
-	newDepl, err := s.createDeployment(ctx, proj)
+	newDepl, err := s.createDeployment(ctx, &createDeploymentOptions{
+		ProjectID:            proj.ID,
+		Region:               proj.Region,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		Subpath:              proj.Subpath,
+		ProdBranch:           proj.ProdBranch,
+		ProdVariables:        proj.ProdVariables,
+		ProdOLAPDriver:       proj.ProdOLAPDriver,
+		ProdOLAPDSN:          proj.ProdOLAPDSN,
+		ProdSlots:            proj.ProdSlots,
+	})
 	if err != nil {
 		return err
 	}
@@ -178,6 +249,8 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdBranch:           proj.ProdBranch,
 		ProdVariables:        proj.ProdVariables,
+		ProdSlots:            proj.ProdSlots,
+		Region:               proj.Region,
 		ProdDeploymentID:     &newDepl.ID,
 	})
 	if err != nil {
@@ -188,7 +261,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 	// Delete old prod deployment
 	err = s.teardownDeployment(ctx, proj, prevDepl)
 	if err != nil {
-		s.logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err))
+		s.logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
 	}
 
 	// Trigger reconcile on new deployment
@@ -204,7 +277,9 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 // TriggerReconcile triggers a reconcile for a deployment.
 func (s *Service) TriggerReconcile(ctx context.Context, depl *database.Deployment) error {
 	// Run reconcile in the background (since it's sync)
+	s.reconcileWg.Add(1)
 	go func() {
+		defer s.reconcileWg.Done()
 		s.logger.Info("reconcile: starting", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 		err := s.triggerReconcile(s.closeCtx, depl) // Use s.closeCtx to cancel if the service is stopped
 		if err == nil {
@@ -235,7 +310,9 @@ func (s *Service) triggerReconcile(ctx context.Context, depl *database.Deploymen
 // TriggerRefreshSource triggers refresh of a deployment's sources. If the sources slice is nil, it will refresh all sources.f
 func (s *Service) TriggerRefreshSources(ctx context.Context, depl *database.Deployment, sources []string) error {
 	// Run reconcile in the background (since it's sync)
+	s.reconcileWg.Add(1)
 	go func() {
+		defer s.reconcileWg.Done()
 		s.logger.Info("refresh sources: starting", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 		err := s.triggerRefreshSources(s.closeCtx, depl, sources) // Use s.closeCtx to cancel if the service is stopped
 		if err == nil {

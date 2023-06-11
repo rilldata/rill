@@ -34,6 +34,9 @@ type Source struct {
 	ExtractPolicy         *ExtractPolicy `yaml:"extract,omitempty"`
 	Format                string         `yaml:"format,omitempty" mapstructure:"format,omitempty"`
 	DuckDBProps           map[string]any `yaml:"duckdb,omitempty" mapstructure:"duckdb,omitempty"`
+	Headers               map[string]any `yaml:"headers,omitempty" mapstructure:"headers,omitempty"`
+	AllowFieldRelaxation  *bool          `yaml:"ingest.allow_field_relaxation,omitempty" mapstructure:"allow_field_relaxation,omitempty"`
+	AllowFieldAddition    *bool          `yaml:"ingest.allow_field_addition,omitempty" mapstructure:"allow_field_addition,omitempty"`
 }
 
 type ExtractPolicy struct {
@@ -189,6 +192,18 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 
 	if source.Format != "" {
 		props["format"] = source.Format
+	}
+
+	if source.Headers != nil {
+		props["headers"] = source.Headers
+	}
+
+	if source.AllowFieldAddition != nil {
+		props["allow_field_addition"] = *source.AllowFieldAddition
+	}
+
+	if source.AllowFieldRelaxation != nil {
+		props["allow_field_relaxation"] = *source.AllowFieldRelaxation
 	}
 
 	propsPB, err := structpb.NewStruct(props)

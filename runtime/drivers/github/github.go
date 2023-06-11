@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
@@ -19,11 +19,13 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
+	"golang.org/x/sync/singleflight"
 )
 
 const (
-	retryN    = 3
-	retryWait = 500 * time.Millisecond
+	pullTimeout = 10 * time.Minute
+	retryN      = 3
+	retryWait   = 500 * time.Millisecond
 )
 
 type DSN struct {
@@ -46,55 +48,44 @@ func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, err
 		return nil, err
 	}
 
-	var c *connection
-
-	r := retrier.New(retrier.ExponentialBackoff(retryN, retryWait), nil)
-	err = r.Run(func() error {
-		tempdir, err := os.MkdirTemp("", "github_repo_driver")
-		if err != nil {
-			return err
-		}
-
-		tempdir, err = filepath.Abs(tempdir)
-		if err != nil {
-			return err
-		}
-
-		projectDir := tempdir
-		if dsn.Subpath != "" {
-			projectDir = filepath.Join(tempdir, dsn.Subpath)
-		}
-
-		c = &connection{
-			dsnStr:     dsnStr,
-			dsn:        dsn,
-			tempdir:    tempdir,
-			projectdir: projectDir,
-		}
-
-		err = c.clone(context.Background())
-		if err != nil {
-			_ = os.RemoveAll(tempdir)
-			return err
-		}
-
-		return nil
-	})
+	tempdir, err := os.MkdirTemp("", "github_repo_driver")
 	if err != nil {
 		return nil, err
 	}
 
-	return c, nil
+	tempdir, err = filepath.Abs(tempdir)
+	if err != nil {
+		return nil, err
+	}
+
+	projectDir := tempdir
+	if dsn.Subpath != "" {
+		projectDir = filepath.Join(tempdir, dsn.Subpath)
+	}
+
+	// NOTE :: project isn't cloned yet
+	return &connection{
+		dsnStr:       dsnStr,
+		dsn:          dsn,
+		tempdir:      tempdir,
+		projectdir:   projectDir,
+		singleflight: &singleflight.Group{},
+	}, nil
+}
+
+func (d driver) Drop(dsn string, logger *zap.Logger) error {
+	return drivers.ErrDropNotSupported
 }
 
 type connection struct {
-	dsnStr string
-	dsn    DSN
-	// tempdir path should be absolute
-	tempdir             string
+	dsnStr              string
+	dsn                 DSN
+	tempdir             string // tempdir path should be absolute
 	projectdir          string
 	cloneURLWithToken   string
 	cloneURLRefreshedOn time.Time
+	singleflight        *singleflight.Group
+	cloned              atomic.Bool
 }
 
 // Close implements drivers.Connection.
@@ -137,38 +128,58 @@ func (c *connection) MigrationStatus(ctx context.Context) (current, desired int,
 	return 0, 0, nil
 }
 
-// clone runs the initial clone of the repo.
-func (c *connection) clone(ctx context.Context) error {
-	cloneURL, err := c.cloneURL(ctx)
-	if err != nil {
-		return err
+// cloneOrPull clones or pulls the repo with an exponential backoff retry on retryable errors.
+// It's safe for concurrent calls, which are deduplicated.
+func (c *connection) cloneOrPull(ctx context.Context, onlyClone bool) error {
+	if onlyClone && c.cloned.Load() {
+		return nil
 	}
 
-	_, err = git.PlainClone(c.tempdir, false, &git.CloneOptions{
-		URL:           cloneURL,
-		ReferenceName: plumbing.NewBranchReferenceName(c.dsn.Branch),
-		SingleBranch:  true,
+	ch := c.singleflight.DoChan("pullOrClone", func() (interface{}, error) {
+		ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)
+		defer cancel()
+
+		r := retrier.New(retrier.ExponentialBackoff(retryN, retryWait), retryErrClassifier{})
+		err := r.Run(func() error { return c.cloneOrPullUnsafe(ctx) })
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
 	})
-	if err != nil {
-		return err
-	}
 
-	return nil
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case res := <-ch:
+		return res.Err
+	}
 }
 
-// pull pulls changes from the repo. It must have been successfully cloned already.
-func (c *connection) pull(ctx context.Context) error {
-	cloneURL, err := c.cloneURL(ctx)
-	if err != nil {
+// cloneOrPullUnsafe pulls changes from the repo. Also clones the repo if it hasn't been cloned already.
+func (c *connection) cloneOrPullUnsafe(ctx context.Context) error {
+	if !c.cloned.Load() {
+		err := c.cloneUnsafe(ctx)
+		c.cloned.Store(err == nil)
 		return err
 	}
 
+	return c.pullUnsafe(ctx)
+}
+
+// pullUnsafe pulls changes from the repo. Requires repo to be cloned already.
+// Unsafe for concurrent use.
+func (c *connection) pullUnsafe(ctx context.Context) error {
 	repo, err := git.PlainOpen(c.tempdir)
 	if err != nil {
 		return err
 	}
 
 	wt, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	cloneURL, err := c.cloneURL(ctx)
 	if err != nil {
 		return err
 	}
@@ -181,6 +192,21 @@ func (c *connection) pull(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// cloneUnsafe runs the initial clone of the repo.
+func (c *connection) cloneUnsafe(ctx context.Context) error {
+	cloneURL, err := c.cloneURL(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = git.PlainClone(c.tempdir, false, &git.CloneOptions{
+		URL:           cloneURL,
+		ReferenceName: plumbing.NewBranchReferenceName(c.dsn.Branch),
+		SingleBranch:  true,
+	})
+	return err
 }
 
 const cloneURLTTL = 30 * time.Minute
@@ -206,11 +232,11 @@ func (c *connection) cloneURL(ctx context.Context) (string, error) {
 	// Get a Github token for this installation ID
 	itr, err := ghinstallation.New(http.DefaultTransport, appID, c.dsn.InstallationID, []byte(privateKey))
 	if err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("failed to create github installation transport: %w", err)
 	}
 	token, err := itr.Token(ctx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create token: %w", err)
 	}
 
 	// Create clone URL
@@ -228,4 +254,24 @@ func (c *connection) cloneURL(ctx context.Context) (string, error) {
 
 	// Done
 	return cloneURL, nil
+}
+
+// retryErrClassifier classifies Github request errors as retryable or not.
+type retryErrClassifier struct{}
+
+func (retryErrClassifier) Classify(err error) retrier.Action {
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		return retrier.Fail
+	}
+
+	ghinstallationErr := &ghinstallation.HTTPError{}
+	if errors.As(err, &ghinstallationErr) && ghinstallationErr.Response != nil {
+		statusCode := ghinstallationErr.Response.StatusCode
+		if statusCode/100 == 4 && statusCode != 429 {
+			// Any 4xx error apart from 429 is non retryable
+			return retrier.Fail
+		}
+	}
+
+	return retrier.Retry
 }

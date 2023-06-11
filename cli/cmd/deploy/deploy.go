@@ -14,7 +14,6 @@ import (
 	adminclient "github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/cmd/auth"
-	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -25,6 +24,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
+	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
@@ -92,8 +92,8 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				warn.Printf("Directory at %q doesn't contain a valid Rill project.\n\n", fullpath)
-				warn.Printf("Run \"rill deploy\" from a Rill project directory or use \"--path\" to pass a project path.\n")
-				warn.Printf("Run \"rill start\" to initialize a new Rill project.\n")
+				warn.Printf("Run `rill deploy` from a Rill project directory or use `--path` to pass a project path.\n")
+				warn.Printf("Run `rill start` to initialize a new Rill project.\n")
 				return nil
 			}
 
@@ -220,7 +220,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("org creation failed with error: %w", err)
 				}
-				success.Printf("Created org %q. Run \"rill org edit\" to change name if required.\n", cfg.Org)
+				success.Printf("Created org %q. Run `rill org edit` to change name if required.\n", cfg.Org)
 			} else {
 				info.Printf("Using org %q.\n", cfg.Org)
 			}
@@ -251,12 +251,6 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			// Run flow to get connector credentials and other variables
-			variables, err := env.VariablesFlow(ctx, fullProjectPath, tel)
-			if err != nil {
-				return err
-			}
-
 			// Create the project (automatically deploys prod branch)
 			res, err := createProjectFlow(ctx, client, &adminv1.CreateProjectRequest{
 				OrganizationName: cfg.Org,
@@ -270,7 +264,6 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				ProdBranch:       prodBranch,
 				Public:           public,
 				GithubUrl:        githubURL,
-				Variables:        variables,
 			})
 			if err != nil {
 				if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
@@ -281,8 +274,10 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Success!
-			success.Printf("Created project \"%s/%s\". Use \"rill project rename\" to change name if required.\n\n", cfg.Org, res.Project.Name)
+			success.Printf("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", cfg.Org, res.Project.Name)
 			success.Printf("Rill projects deploy continuously when you push changes to Github.\n")
+			// Run flow to check connector credentials
+			variablesFlow(ctx, fullProjectPath, name)
 			if res.Project.FrontendUrl != "" {
 				success.Printf("Your project can be accessed at: %s\n", res.Project.FrontendUrl)
 				// TODO :: add a doc link here
@@ -309,6 +304,11 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	deployCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().StringVar(&name, "project", "", "Project name (default: Git repo name)")
 	deployCmd.Flags().StringVar(&remote, "remote", "", "Remote name (defaults: first github remote)")
+	if !cfg.IsDev() {
+		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
+			panic(err)
+		}
+	}
 
 	return deployCmd
 }
@@ -381,7 +381,7 @@ func createOrgFlow(ctx context.Context, cfg *config.Config, client *adminclient.
 		Name: defaultName,
 	})
 	if err != nil {
-		if !isNameExistsErr(err) {
+		if !errMsgContains(err, "an org with that name already exists") {
 			return err
 		}
 
@@ -453,7 +453,7 @@ func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adm
 	// Create the project (automatically deploys prod branch)
 	res, err := client.CreateProject(ctx, req)
 	if err != nil {
-		if !isNameExistsErr(err) {
+		if !errMsgContains(err, "a project with that name already exists in the org") {
 			return nil, err
 		}
 
@@ -471,6 +471,38 @@ func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adm
 		return client.CreateProject(ctx, req)
 	}
 	return res, err
+}
+
+func variablesFlow(ctx context.Context, projectPath, projectName string) {
+	connectorList, err := rillv1beta.ExtractConnectors(ctx, projectPath)
+	if err != nil {
+		fmt.Printf("failed to extract connectors %s", err)
+		return
+	}
+
+	// collect all sources
+	srcs := make([]*connectors.Source, 0)
+	for _, c := range connectorList {
+		if !c.AnonymousAccess {
+			srcs = append(srcs, c.Sources...)
+		}
+	}
+	if len(srcs) == 0 {
+		return
+	}
+
+	warn := color.New(color.Bold).Add(color.FgYellow)
+	warn.Printf("\nCould not ingest all sources. Rill requires credentials for the following sources:\n\n")
+	for _, src := range srcs {
+		if _, ok := src.Properties["path"]; ok {
+			// print URL wherever applicable
+			warn.Printf(" - %s\n", src.Properties["path"])
+		} else {
+			warn.Printf(" - %s\n", src.Name)
+		}
+	}
+	warn.Printf("\nRun `rill env configure --project %s` to provide credentials.\n\n", projectName)
+	time.Sleep(2 * time.Second)
 }
 
 func repoInSyncFlow(projectPath, branch, remoteName string) bool {
@@ -528,9 +560,9 @@ func projectNamePrompt(ctx context.Context, client *adminclient.Client, orgName 
 	return name, nil
 }
 
-func isNameExistsErr(err error) bool {
+func errMsgContains(err error, msg string) bool {
 	if st, ok := status.FromError(err); ok && st != nil {
-		return strings.Contains(st.Message(), "violates unique constraint")
+		return strings.Contains(st.Message(), msg)
 	}
 	return false
 }
@@ -558,11 +590,15 @@ Follow these steps to push your project to Github.
 	
 	git remote add origin https://github.com/your-account/your-repo.git
 	
-5. Push your repository
+5. Rename master branch to main
+	
+	git branch -M main
+
+6. Push your repository
 	
 	git push -u origin main
 	
-6. Deploy Rill to your repository
+7. Deploy Rill to your repository
 	
 	rill deploy
 	

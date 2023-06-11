@@ -18,6 +18,7 @@ import type {
   RpcStatus,
   V1DeleteFileAndReconcileResponse,
   V1DeleteFileAndReconcileRequest,
+  V1ListExamplesResponse,
   V1ListInstancesResponse,
   RuntimeServiceListInstancesParams,
   V1CreateInstanceResponse,
@@ -39,6 +40,10 @@ import type {
   RuntimeServicePutFileBody,
   V1RenameFileResponse,
   RuntimeServiceRenameFileBody,
+  V1UnpackEmptyResponse,
+  RuntimeServiceUnpackEmptyBody,
+  V1UnpackExampleResponse,
+  RuntimeServiceUnpackExampleBody,
   V1ReconcileResponse,
   RuntimeServiceReconcileBody,
   V1TriggerSyncResponse,
@@ -155,6 +160,58 @@ export const createRuntimeServiceDeleteFileAndReconcile = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary ListExamples lists all the examples embedded into binary
+ */
+export const runtimeServiceListExamples = (signal?: AbortSignal) => {
+  return httpClient<V1ListExamplesResponse>({
+    url: `/v1/examples`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getRuntimeServiceListExamplesQueryKey = () =>
+  [`/v1/examples`] as const;
+
+export type RuntimeServiceListExamplesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListExamples>>
+>;
+export type RuntimeServiceListExamplesQueryError = RpcStatus;
+
+export const createRuntimeServiceListExamples = <
+  TData = Awaited<ReturnType<typeof runtimeServiceListExamples>>,
+  TError = RpcStatus
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceListExamples>>,
+    TError,
+    TData
+  >;
+}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getRuntimeServiceListExamplesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceListExamples>>
+  > = ({ signal }) => runtimeServiceListExamples(signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceListExamples>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary ListInstances lists all the instances currently managed by the runtime
  */
@@ -885,6 +942,108 @@ export const createRuntimeServiceRenameFile = <
     Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
     TError,
     { instanceId: string; data: RuntimeServiceRenameFileBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary UnpackEmpty unpacks an empty project
+ */
+export const runtimeServiceUnpackEmpty = (
+  instanceId: string,
+  runtimeServiceUnpackEmptyBody: RuntimeServiceUnpackEmptyBody
+) => {
+  return httpClient<V1UnpackEmptyResponse>({
+    url: `/v1/instances/${instanceId}/files/unpack-empty`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceUnpackEmptyBody,
+  });
+};
+
+export type RuntimeServiceUnpackEmptyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceUnpackEmpty>>
+>;
+export type RuntimeServiceUnpackEmptyMutationBody =
+  RuntimeServiceUnpackEmptyBody;
+export type RuntimeServiceUnpackEmptyMutationError = RpcStatus;
+
+export const createRuntimeServiceUnpackEmpty = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceUnpackEmpty>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceUnpackEmptyBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceUnpackEmpty>>,
+    { instanceId: string; data: RuntimeServiceUnpackEmptyBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceUnpackEmpty(instanceId, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof runtimeServiceUnpackEmpty>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceUnpackEmptyBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary UnpackExample unpacks an example project
+ */
+export const runtimeServiceUnpackExample = (
+  instanceId: string,
+  runtimeServiceUnpackExampleBody: RuntimeServiceUnpackExampleBody
+) => {
+  return httpClient<V1UnpackExampleResponse>({
+    url: `/v1/instances/${instanceId}/files/unpack-example`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceUnpackExampleBody,
+  });
+};
+
+export type RuntimeServiceUnpackExampleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceUnpackExample>>
+>;
+export type RuntimeServiceUnpackExampleMutationBody =
+  RuntimeServiceUnpackExampleBody;
+export type RuntimeServiceUnpackExampleMutationError = RpcStatus;
+
+export const createRuntimeServiceUnpackExample = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceUnpackExampleBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
+    { instanceId: string; data: RuntimeServiceUnpackExampleBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceUnpackExample(instanceId, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceUnpackExampleBody },
     TContext
   >(mutationFn, mutationOptions);
 };

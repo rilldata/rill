@@ -29,8 +29,15 @@ func (q *ColumnNumericHistogram) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnNumericHistogram) MarshalResult() any {
-	return q.Result
+func (q *ColumnNumericHistogram) MarshalResult() *runtime.QueryResult {
+	var size int64
+	if len(q.Result) > 0 {
+		size = sizeProtoMessage(q.Result[0]) * int64(len(q.Result))
+	}
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: size,
+	}
 }
 
 func (q *ColumnNumericHistogram) UnmarshalResult(v any) error {
@@ -73,8 +80,9 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 	)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    querySQL,
-		Priority: priority,
+		Query:            querySQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return 0, err
@@ -192,8 +200,9 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	)
 
 	histogramRows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    histogramSQL,
-		Priority: priority,
+		Query:            histogramSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err
@@ -245,8 +254,9 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 	)
 
 	minMaxRow, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    minMaxSQL,
-		Priority: priority,
+		Query:            minMaxSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err
@@ -341,8 +351,9 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 	)
 
 	histogramRows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    histogramSQL,
-		Priority: priority,
+		Query:            histogramSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err

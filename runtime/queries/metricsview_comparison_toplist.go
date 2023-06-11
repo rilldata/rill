@@ -41,8 +41,11 @@ func (q *MetricsViewComparisonToplist) Deps() []string {
 	return []string{q.MetricsViewName}
 }
 
-func (q *MetricsViewComparisonToplist) MarshalResult() any {
-	return q.Result
+func (q *MetricsViewComparisonToplist) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *MetricsViewComparisonToplist) UnmarshalResult(v any) error {
@@ -301,12 +304,21 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		measureMap[m.Name] = i
 		expr := fmt.Sprintf(`%s as %s`, m.Expression, safeName(m.Name))
 		selectCols = append(selectCols, expr)
+		var columnsTuple string
+		if dialect != drivers.DialectDruid {
+			columnsTuple = fmt.Sprintf(
+				"base.%[1]s, comparison.%[1]s, comparison.%[1]s - base.%[1]s, (comparison.%[1]s - base.%[1]s)/base.%[1]s::DOUBLE",
+				safeName(m.Name),
+			)
+		} else {
+			columnsTuple = fmt.Sprintf(
+				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(comparison.%[1]s - base.%[1]s), ANY_VALUE(SAFE_DIVIDE(comparison.%[1]s - base.%[1]s, CAST(base.%[1]s AS FLOAT))",
+				safeName(m.Name),
+			)
+		}
 		finalSelectCols = append(
 			finalSelectCols,
-			fmt.Sprintf(
-				"base.%[1]s, comparison.%[1]s, comparison.%[1]s - base.%[1]s, (comparison.%[1]s - base.%[1]s)/base.%[1]s::DOUBLE",
-				m.Name,
-			),
+			columnsTuple,
 		)
 	}
 
@@ -345,13 +357,20 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		args = append(args, clauseArgs...)
 	}
 
+	err = validateSort(q.Sort)
+	if err != nil {
+		return "", nil, err
+	}
+
 	orderClause := "true"
+	subQueryOrderClause := "true"
 	for _, s := range q.Sort {
 		i, ok := measureMap[s.MeasureName]
 		if !ok {
 			return "", nil, fmt.Errorf("Metrics view '%s' doesn't contain '%s' sort column", q.MetricsViewName, s.MeasureName)
 		}
 		orderClause += ", "
+		subQueryOrderClause += ", "
 		var pos int
 		switch s.Type {
 		case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE:
@@ -366,6 +385,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			return "", nil, fmt.Errorf("undefined sort type for measure %s", s.MeasureName)
 		}
 		orderClause += fmt.Sprint(pos)
+		subQueryOrderClause += fmt.Sprint(i + 2)
 		if !s.Ascending {
 			orderClause += " DESC"
 		}
@@ -378,7 +398,9 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		q.Limit = 100
 	}
 
-	sql := fmt.Sprintf(`
+	var sql string
+	if dialect != drivers.DialectDruid {
+		sql = fmt.Sprintf(`
 		SELECT COALESCE(base.%[2]s, comparison.%[2]s), %[9]s FROM 
 			(
 				SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s
@@ -396,16 +418,136 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		OFFSET
 			%[8]d
 		`,
-		subSelectClause,       // 1
-		dimName,               // 2
-		mv.Model,              // 3
-		baseWhereClause,       // 4
-		comparisonWhereClause, // 5
-		orderClause,           // 6
-		q.Limit,               // 7
-		q.Offset,              // 8
-		finalSelectClause,     // 9
-	)
+			subSelectClause,       // 1
+			dimName,               // 2
+			mv.Model,              // 3
+			baseWhereClause,       // 4
+			comparisonWhereClause, // 5
+			orderClause,           // 6
+			q.Limit,               // 7
+			q.Offset,              // 8
+			finalSelectClause,     // 9
+		)
+	} else {
+		/*
+			Example of the SQL query:
+
+			SELECT COALESCE(a."user", b."user"),
+			       ANY_VALUE(a."measure"),
+			       ANY_VALUE(b."measure"),
+			       ANY_VALUE(a."measure" - b."measure"),
+			       ANY_VALUE(SAFE_DIVIDE(a."measure" - b."measure",a."measure"))
+			FROM
+			  (SELECT "user",
+			          sum(added)
+			   FROM "wikipedia"
+			   WHERE 1=1
+			   GROUP BY "user"
+			   ORDER BY 2
+			   LIMIT 10) b
+			LEFT OUTER JOIN
+			  (SELECT "user",
+			          sum(added)
+			   FROM "wikipedia"
+			   WHERE 1=1
+			   GROUP BY 2
+			   ORDER BY "measure"
+			   LIMIT 10) a ON a."user" = b."user"
+			GROUP BY 1
+			ORDER BY 2
+			LIMIT 10
+		*/
+		// Apache Druid requires that one part of the JOIN fits in memory, that can be achieved by pushing down the limit clause to a subquery (works only if the sorting is based entirely on a single subquery result)
+		if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE || q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE {
+			leftSubQueryAlias := "base"
+			rightSubQueryAlias := "comparison"
+			leftWhereClause := baseWhereClause
+			rightWhereClause := comparisonWhereClause
+
+			if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE {
+				leftSubQueryAlias = "comparison"
+				rightSubQueryAlias = "base"
+				leftWhereClause = comparisonWhereClause
+				rightWhereClause = baseWhereClause
+			}
+
+			sql = fmt.Sprintf(`
+				SELECT COALESCE(base.%[2]s, comparison.%[2]s), %[9]s FROM 
+					(
+						SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[13]s LIMIT %[10]d OFFSET %[8]d 
+					) %[11]s
+				LEFT OUTER JOIN
+					(
+						SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
+					) %[12]s
+				ON
+						base.%[2]s = comparison.%[2]s
+				ORDER BY
+					%[6]s
+				LIMIT
+					%[7]d
+				OFFSET
+					%[8]d
+				`,
+				subSelectClause,     // 1
+				dimName,             // 2
+				mv.Model,            // 3
+				leftWhereClause,     // 4
+				rightWhereClause,    // 5
+				orderClause,         // 6
+				q.Limit,             // 7
+				q.Offset,            // 8
+				finalSelectClause,   // 9
+				q.Limit*2,           // 10
+				leftSubQueryAlias,   // 11
+				rightSubQueryAlias,  // 12
+				subQueryOrderClause, // 13
+			)
+		} else {
+			sql = fmt.Sprintf(`
+				SELECT COALESCE(base.%[2]s, comparison.%[2]s), %[9]s FROM 
+					(
+						SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s
+					) base
+				FULL JOIN
+					(
+						SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
+					) comparison
+				ON
+						base.%[2]s = comparison.%[2]s
+				ORDER BY
+					%[6]s
+				LIMIT
+					%[7]d
+				OFFSET
+					%[8]d
+				`,
+				subSelectClause,       // 1
+				dimName,               // 2
+				mv.Model,              // 3
+				baseWhereClause,       // 4
+				comparisonWhereClause, // 5
+				orderClause,           // 6
+				q.Limit,               // 7
+				q.Offset,              // 8
+				finalSelectClause,     // 9
+			)
+		}
+	}
 
 	return sql, args, nil
+}
+
+func validateSort(sorts []*runtimev1.MetricsViewComparisonSort) error {
+	if len(sorts) == 0 {
+		return fmt.Errorf("Sorting is required")
+	}
+	firstSort := sorts[0]
+
+	for _, s := range sorts {
+		if firstSort != s {
+			return fmt.Errorf("Diffirent sort types are not supported in a single query")
+		}
+	}
+	return nil
 }
