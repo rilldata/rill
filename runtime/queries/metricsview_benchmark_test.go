@@ -15,10 +15,6 @@ func Benchmark_writeCSV(b *testing.B) {
 	meta := []*runtimev1.MetricsViewColumn{}
 	fields := make(map[string]*structpb.Value)
 	data := []*structpb.Struct{}
-	// 	{
-	// 		Fields: fields,
-	// 	},
-	// }
 
 	for i := 0; i < 100; i++ {
 		col := fmt.Sprintf("col%d", i)
@@ -43,17 +39,4 @@ func Benchmark_writeCSV(b *testing.B) {
 		err = writeCSV(meta, data, w)
 		require.NoError(b, err)
 	}
-	w.Close()
-	// require.NoError(t, err)
-	// require.Equal(t, "col\n\n", buf.String())
-	// for i := 0; i < b.N; i++ {
-	// 	writeCSV()
-	// 	q := &MetricsViewTotals{
-	// 		MetricsViewName: "ad_bids_metrics",
-	// 		MeasureNames:    []string{"measure_0"},
-	// 	}
-	// 	err := q.Resolve(context.Background(), rt, instanceID, 0)
-	// 	require.NoError(b, err)
-	// 	require.NotEmpty(b, q.Result)
-	// }
 }
