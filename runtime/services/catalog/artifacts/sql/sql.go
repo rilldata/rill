@@ -31,7 +31,7 @@ func (r *artifact) DeSerialise(ctx context.Context, filePath, blob string, mater
 	if materialize == MaterializeInvalid {
 		return nil, errors.New("invalid materialize type")
 	}
-	if materialize == MaterializeInferred {
+	if materialize == MaterializeUnspecified {
 		if materializeDefault {
 			materialize = MaterializeTrue
 		} else {
