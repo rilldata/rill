@@ -11,7 +11,145 @@ import (
 	"testing"
 )
 
-func Test_writeCSV(t *testing.T) {
+func Test_writeCSV_emptystring(t *testing.T) {
+	meta := []*runtimev1.MetricsViewColumn{
+		{
+			Name: "col",
+		},
+	}
+	fields := make(map[string]*structpb.Value)
+	fields["col"] = structpb.NewStringValue("")
+	data := []*structpb.Struct{
+		{
+			Fields: fields,
+		},
+	}
+
+	var buf bytes.Buffer
+
+	err := writeCSV(meta, data, &buf)
+	require.NoError(t, err)
+	require.Equal(t, "col\n\n", buf.String())
+}
+
+func Test_writeCSV_number(t *testing.T) {
+	meta := []*runtimev1.MetricsViewColumn{
+		{
+			Name: "col",
+		},
+	}
+	fields := make(map[string]*structpb.Value)
+	fields["col"] = structpb.NewNumberValue(2.5)
+	data := []*structpb.Struct{
+		{
+			Fields: fields,
+		},
+	}
+
+	var buf bytes.Buffer
+
+	err := writeCSV(meta, data, &buf)
+	require.NoError(t, err)
+	require.Equal(t, "col\n2.5\n", buf.String())
+}
+
+func Test_writeCSV_null(t *testing.T) {
+	meta := []*runtimev1.MetricsViewColumn{
+		{
+			Name: "col",
+		},
+	}
+	fields := make(map[string]*structpb.Value)
+	fields["col"] = structpb.NewNullValue()
+	data := []*structpb.Struct{
+		{
+			Fields: fields,
+		},
+	}
+
+	var buf bytes.Buffer
+
+	err := writeCSV(meta, data, &buf)
+	require.NoError(t, err)
+	require.Equal(t, "col\n\n", buf.String())
+}
+
+func Test_writeCSV_bool(t *testing.T) {
+	meta := []*runtimev1.MetricsViewColumn{
+		{
+			Name: "col",
+		},
+	}
+	fields := make(map[string]*structpb.Value)
+	fields["col"] = structpb.NewBoolValue(true)
+	data := []*structpb.Struct{
+		{
+			Fields: fields,
+		},
+	}
+
+	var buf bytes.Buffer
+
+	err := writeCSV(meta, data, &buf)
+	require.NoError(t, err)
+	require.Equal(t, "col\ntrue\n", buf.String())
+}
+
+func Test_writeCSV_struct(t *testing.T) {
+	meta := []*runtimev1.MetricsViewColumn{
+		{
+			Name: "col",
+		},
+	}
+	fields := make(map[string]*structpb.Value)
+	subfields := make(map[string]*structpb.Value)
+	subfields["a"] = structpb.NewNumberValue(2.5)
+
+	fields["col"] = structpb.NewStructValue(&structpb.Struct{
+		Fields: subfields,
+	})
+	data := []*structpb.Struct{
+		{
+			Fields: fields,
+		},
+	}
+
+	var buf bytes.Buffer
+
+	err := writeCSV(meta, data, &buf)
+	require.NoError(t, err)
+	require.Equal(t, "col\n\"{\"\"a\"\":2.5}\"\n", buf.String())
+}
+
+func Test_writeCSV_list(t *testing.T) {
+	meta := []*runtimev1.MetricsViewColumn{
+		{
+			Name: "col",
+		},
+	}
+	fields := make(map[string]*structpb.Value)
+	data := []*structpb.Struct{
+		{
+			Fields: fields,
+		},
+	}
+
+	fields["col"] = structpb.NewListValue(
+		&structpb.ListValue{
+			Values: []*structpb.Value{
+				structpb.NewNumberValue(2.5),
+				structpb.NewBoolValue(true),
+			},
+		},
+	)
+
+	var buf bytes.Buffer
+	err := writeCSV(meta, data, &buf)
+	require.NoError(t, err)
+	require.Equal(t, "col\n[2.5 true]\n", buf.String())
+}
+
+func Test_writeCSV_quotes(t *testing.T) {
 	meta := []*runtimev1.MetricsViewColumn{
 		{
 			Name: "col1\"",
@@ -42,28 +180,4 @@ func Test_writeCSV(t *testing.T) {
 	)
 	require.Equal(t, expected, buf.String())
 	buf.Reset()
-
-	delete(fields, "col1\"")
-	delete(fields, "col2")
-	meta = []*runtimev1.MetricsViewColumn{
-		{
-			Name: "col1",
-		},
-	}
-	fields["col1"] = structpb.NewNumberValue(2.5)
-	err = writeCSV(meta, data, &buf)
-	require.NoError(t, err)
-	require.Equal(t, "col1\n2.5\n", buf.String())
-	buf.Reset()
-
-	l := &structpb.ListValue{
-		Values: []*structpb.Value{
-			structpb.NewNumberValue(2.5),
-			structpb.NewBoolValue(true),
-		},
-	}
-	fields["col1"] = structpb.NewListValue(l)
-	err = writeCSV(meta, data, &buf)
-	require.NoError(t, err)
-	require.Equal(t, "col1\n[2.5 true]\n", buf.String())
 }

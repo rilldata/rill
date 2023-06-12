@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -276,11 +277,26 @@ func writeCSV(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writ
 
 	for _, structs := range data {
 		for _, field := range meta {
-			record = append(record, fmt.Sprintf("%v", structs.Fields[field.Name].AsInterface()))
+			pbvalue := structs.Fields[field.Name]
+			switch pbvalue.GetKind().(type) {
+			case *structpb.Value_StructValue:
+				bts, err := json.Marshal(pbvalue)
+				if err != nil {
+					return err
+				}
+
+				record = append(record, string(bts))
+			case *structpb.Value_NullValue:
+				record = append(record, "")
+			default:
+				record = append(record, fmt.Sprintf("%v", pbvalue.AsInterface()))
+			}
 		}
+
 		if err := w.Write(record); err != nil {
 			return err
 		}
+
 		record = record[:0]
 	}
 
