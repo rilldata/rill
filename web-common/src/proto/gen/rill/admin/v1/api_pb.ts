@@ -437,17 +437,17 @@ export class DeleteOrganizationResponse extends Message<DeleteOrganizationRespon
  */
 export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest> {
   /**
-   * @generated from field: string name = 2;
+   * @generated from field: string name = 1;
    */
   name = "";
 
   /**
-   * @generated from field: optional string description = 3;
+   * @generated from field: optional string description = 2;
    */
   description?: string;
 
   /**
-   * @generated from field: optional string new_name = 4;
+   * @generated from field: optional string new_name = 3;
    */
   newName?: string;
 
@@ -459,9 +459,9 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.UpdateOrganizationRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 4, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateOrganizationRequest {
@@ -1007,47 +1007,47 @@ export class DeleteProjectResponse extends Message<DeleteProjectResponse> {
  */
 export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   /**
-   * @generated from field: string organization_name = 2;
+   * @generated from field: string organization_name = 1;
    */
   organizationName = "";
 
   /**
-   * @generated from field: string name = 3;
+   * @generated from field: string name = 2;
    */
   name = "";
 
   /**
-   * @generated from field: optional string description = 4;
+   * @generated from field: optional string description = 3;
    */
   description?: string;
 
   /**
-   * @generated from field: optional bool public = 5;
+   * @generated from field: optional bool public = 4;
    */
   public?: boolean;
 
   /**
-   * @generated from field: optional string prod_branch = 6;
+   * @generated from field: optional string prod_branch = 5;
    */
   prodBranch?: string;
 
   /**
-   * @generated from field: optional string github_url = 7;
+   * @generated from field: optional string github_url = 6;
    */
   githubUrl?: string;
 
   /**
-   * @generated from field: optional int64 prod_slots = 8;
+   * @generated from field: optional int64 prod_slots = 7;
    */
   prodSlots?: bigint;
 
   /**
-   * @generated from field: optional string region = 9;
+   * @generated from field: optional string region = 8;
    */
   region?: string;
 
   /**
-   * @generated from field: optional string new_name = 10;
+   * @generated from field: optional string new_name = 9;
    */
   newName?: string;
 
@@ -1059,15 +1059,15 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.UpdateProjectRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 2, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 5, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 6, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 7, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 8, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
-    { no: 9, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 10, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 1, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 5, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 6, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 7, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 8, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 9, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectRequest {
