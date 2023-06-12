@@ -1,7 +1,7 @@
 // @ts-nocheck
 import Litepicker from "litepicker";
 import { DateTime } from "./datetime";
-import { findNestedMonthItem } from "./util.js";
+import { findNestedMonthItem } from "./util";
 
 const style = {
   dayItem: "day-item",
