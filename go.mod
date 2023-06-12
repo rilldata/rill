@@ -235,6 +235,8 @@ require (
 	modernc.org/token v1.1.0 // indirect
 )
 
-replace github.com/apache/calcite-avatica-go/v5 v5.1.0 => github.com/begelundmuller/calcite-avatica-go/v5 v5.0.0-20230323102415-9c0eba2fbe15
+replace github.com/apache/calcite-avatica-go/v5 v5.2.0 => github.com/rilldata/calcite-avatica-go/v5 v5.0.0-20230606111224-6232cec4e6ab
+
+replace github.com/marcboeker/go-duckdb/v2 v2.0.1 => github.com/rilldata/go-duckdb/v2 v2.0.0-20230606140517-35086e782f75
 
 exclude modernc.org/sqlite v1.18.1

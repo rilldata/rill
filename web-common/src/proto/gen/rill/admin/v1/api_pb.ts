@@ -2997,6 +2997,110 @@ export class GetGithubRepoStatusResponse extends Message<GetGithubRepoStatusResp
 }
 
 /**
+ * @generated from message rill.admin.v1.GetGitCredentialsRequest
+ */
+export class GetGitCredentialsRequest extends Message<GetGitCredentialsRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  constructor(data?: PartialMessage<GetGitCredentialsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetGitCredentialsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetGitCredentialsRequest {
+    return new GetGitCredentialsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetGitCredentialsRequest {
+    return new GetGitCredentialsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetGitCredentialsRequest {
+    return new GetGitCredentialsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetGitCredentialsRequest | PlainMessage<GetGitCredentialsRequest> | undefined, b: GetGitCredentialsRequest | PlainMessage<GetGitCredentialsRequest> | undefined): boolean {
+    return proto3.util.equals(GetGitCredentialsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetGitCredentialsResponse
+ */
+export class GetGitCredentialsResponse extends Message<GetGitCredentialsResponse> {
+  /**
+   * @generated from field: string repo_url = 1;
+   */
+  repoUrl = "";
+
+  /**
+   * @generated from field: string username = 2;
+   */
+  username = "";
+
+  /**
+   * @generated from field: string password = 3;
+   */
+  password = "";
+
+  /**
+   * @generated from field: string subpath = 4;
+   */
+  subpath = "";
+
+  /**
+   * @generated from field: string prod_branch = 5;
+   */
+  prodBranch = "";
+
+  constructor(data?: PartialMessage<GetGitCredentialsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetGitCredentialsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "repo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "username", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetGitCredentialsResponse {
+    return new GetGitCredentialsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetGitCredentialsResponse {
+    return new GetGitCredentialsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetGitCredentialsResponse {
+    return new GetGitCredentialsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetGitCredentialsResponse | PlainMessage<GetGitCredentialsResponse> | undefined, b: GetGitCredentialsResponse | PlainMessage<GetGitCredentialsResponse> | undefined): boolean {
+    return proto3.util.equals(GetGitCredentialsResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.CreateWhitelistedDomainRequest
  */
 export class CreateWhitelistedDomainRequest extends Message<CreateWhitelistedDomainRequest> {

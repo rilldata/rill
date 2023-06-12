@@ -51,6 +51,7 @@ const (
 	AdminService_IssueRepresentativeAuthToken_FullMethodName = "/rill.admin.v1.AdminService/IssueRepresentativeAuthToken"
 	AdminService_RevokeCurrentAuthToken_FullMethodName       = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
 	AdminService_GetGithubRepoStatus_FullMethodName          = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
+	AdminService_GetGitCredentials_FullMethodName            = "/rill.admin.v1.AdminService/GetGitCredentials"
 	AdminService_CreateWhitelistedDomain_FullMethodName      = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
 	AdminService_RemoveWhitelistedDomain_FullMethodName      = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
 	AdminService_ListWhitelistedDomains_FullMethodName       = "/rill.admin.v1.AdminService/ListWhitelistedDomains"
@@ -95,7 +96,7 @@ type AdminServiceClient interface {
 	TriggerRefreshSources(ctx context.Context, in *TriggerRefreshSourcesRequest, opts ...grpc.CallOption) (*TriggerRefreshSourcesResponse, error)
 	// TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
 	TriggerRedeploy(ctx context.Context, in *TriggerRedeployRequest, opts ...grpc.CallOption) (*TriggerRedeployResponse, error)
-	// TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+	// TriggerReprovision re-provision the hibernated deployment
 	TriggerReprovision(ctx context.Context, in *TriggerReprovisionRequest, opts ...grpc.CallOption) (*TriggerReprovisionResponse, error)
 	// ListOrganizationMembers lists all the org members
 	ListOrganizationMembers(ctx context.Context, in *ListOrganizationMembersRequest, opts ...grpc.CallOption) (*ListOrganizationMembersResponse, error)
@@ -128,6 +129,8 @@ type AdminServiceClient interface {
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
 	GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error)
+	// GetGitCredentials returns credentials and other details for a project's Git repository.
+	GetGitCredentials(ctx context.Context, in *GetGitCredentialsRequest, opts ...grpc.CallOption) (*GetGitCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
 	CreateWhitelistedDomain(ctx context.Context, in *CreateWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateWhitelistedDomainResponse, error)
 	// RemoveWhitelistedDomain removes a domain from the whitelist list
@@ -438,6 +441,15 @@ func (c *adminServiceClient) GetGithubRepoStatus(ctx context.Context, in *GetGit
 	return out, nil
 }
 
+func (c *adminServiceClient) GetGitCredentials(ctx context.Context, in *GetGitCredentialsRequest, opts ...grpc.CallOption) (*GetGitCredentialsResponse, error) {
+	out := new(GetGitCredentialsResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetGitCredentials_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) CreateWhitelistedDomain(ctx context.Context, in *CreateWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateWhitelistedDomainResponse, error) {
 	out := new(CreateWhitelistedDomainResponse)
 	err := c.cc.Invoke(ctx, AdminService_CreateWhitelistedDomain_FullMethodName, in, out, opts...)
@@ -528,7 +540,7 @@ type AdminServiceServer interface {
 	TriggerRefreshSources(context.Context, *TriggerRefreshSourcesRequest) (*TriggerRefreshSourcesResponse, error)
 	// TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
 	TriggerRedeploy(context.Context, *TriggerRedeployRequest) (*TriggerRedeployResponse, error)
-	// TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+	// TriggerReprovision re-provision the hibernated deployment
 	TriggerReprovision(context.Context, *TriggerReprovisionRequest) (*TriggerReprovisionResponse, error)
 	// ListOrganizationMembers lists all the org members
 	ListOrganizationMembers(context.Context, *ListOrganizationMembersRequest) (*ListOrganizationMembersResponse, error)
@@ -561,6 +573,8 @@ type AdminServiceServer interface {
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
 	GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error)
+	// GetGitCredentials returns credentials and other details for a project's Git repository.
+	GetGitCredentials(context.Context, *GetGitCredentialsRequest) (*GetGitCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
 	CreateWhitelistedDomain(context.Context, *CreateWhitelistedDomainRequest) (*CreateWhitelistedDomainResponse, error)
 	// RemoveWhitelistedDomain removes a domain from the whitelist list
@@ -675,6 +689,9 @@ func (UnimplementedAdminServiceServer) RevokeCurrentAuthToken(context.Context, *
 }
 func (UnimplementedAdminServiceServer) GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGithubRepoStatus not implemented")
+}
+func (UnimplementedAdminServiceServer) GetGitCredentials(context.Context, *GetGitCredentialsRequest) (*GetGitCredentialsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGitCredentials not implemented")
 }
 func (UnimplementedAdminServiceServer) CreateWhitelistedDomain(context.Context, *CreateWhitelistedDomainRequest) (*CreateWhitelistedDomainResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateWhitelistedDomain not implemented")
@@ -1283,6 +1300,24 @@ func _AdminService_GetGithubRepoStatus_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetGitCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGitCredentialsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetGitCredentials(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetGitCredentials_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetGitCredentials(ctx, req.(*GetGitCredentialsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_CreateWhitelistedDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateWhitelistedDomainRequest)
 	if err := dec(in); err != nil {
@@ -1525,6 +1560,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetGithubRepoStatus",
 			Handler:    _AdminService_GetGithubRepoStatus_Handler,
+		},
+		{
+			MethodName: "GetGitCredentials",
+			Handler:    _AdminService_GetGitCredentials_Handler,
 		},
 		{
 			MethodName: "CreateWhitelistedDomain",

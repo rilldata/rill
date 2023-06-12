@@ -9,6 +9,7 @@ import MD5 from "crypto-js/md5";
 import { v4 as uuidv4 } from "uuid";
 import type { BehaviourEventFactory } from "./BehaviourEventFactory";
 import type { MetricsEventFactory } from "./MetricsEventFactory";
+import type { ErrorEventFactory } from "./ErrorEventFactory";
 import type { CommonFields, MetricsEvent } from "./MetricsTypes";
 import type { ProductHealthEventFactory } from "./ProductHealthEventFactory";
 import type { RillIntakeClient } from "./RillIntakeClient";
@@ -20,7 +21,7 @@ export const ClientIDStorageKey = "client_id";
  */
 export type MetricsEventFactoryClasses = PickActionFunctions<
   CommonFields,
-  ProductHealthEventFactory & BehaviourEventFactory
+  ProductHealthEventFactory & BehaviourEventFactory & ErrorEventFactory
 >;
 export type MetricsActionDefinition = ExtractActionTypeDefinitions<
   CommonFields,

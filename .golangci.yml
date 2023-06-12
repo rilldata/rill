@@ -46,7 +46,6 @@ linters:
     - gofmt
     - gofumpt
     - goheader
-    - goimports
     - goprintffuncname
     - gosec
     - gosimple
@@ -95,10 +94,6 @@ linters-settings:
       - filepathJoin
       - hugeParam
       - octalLiteral
-  goimports:
-    # ensure placement of imports with this prefix after all other imports
-    # corresponds to `goimports -local`
-    local-prefixes: github.com/rilldata/rill-developer
   gomnd:
     settings:
       mnd:

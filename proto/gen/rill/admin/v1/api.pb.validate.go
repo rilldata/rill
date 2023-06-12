@@ -8831,6 +8831,242 @@ var _ interface {
 	ErrorName() string
 } = GetGithubRepoStatusResponseValidationError{}
 
+// Validate checks the field values on GetGitCredentialsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetGitCredentialsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetGitCredentialsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetGitCredentialsRequestMultiError, or nil if none found.
+func (m *GetGitCredentialsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetGitCredentialsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := GetGitCredentialsRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := GetGitCredentialsRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return GetGitCredentialsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetGitCredentialsRequestMultiError is an error wrapping multiple validation
+// errors returned by GetGitCredentialsRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetGitCredentialsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetGitCredentialsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetGitCredentialsRequestMultiError) AllErrors() []error { return m }
+
+// GetGitCredentialsRequestValidationError is the validation error returned by
+// GetGitCredentialsRequest.Validate if the designated constraints aren't met.
+type GetGitCredentialsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetGitCredentialsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetGitCredentialsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetGitCredentialsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetGitCredentialsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetGitCredentialsRequestValidationError) ErrorName() string {
+	return "GetGitCredentialsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetGitCredentialsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetGitCredentialsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetGitCredentialsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetGitCredentialsRequestValidationError{}
+
+// Validate checks the field values on GetGitCredentialsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetGitCredentialsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetGitCredentialsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetGitCredentialsResponseMultiError, or nil if none found.
+func (m *GetGitCredentialsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetGitCredentialsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for RepoUrl
+
+	// no validation rules for Username
+
+	// no validation rules for Password
+
+	// no validation rules for Subpath
+
+	// no validation rules for ProdBranch
+
+	if len(errors) > 0 {
+		return GetGitCredentialsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetGitCredentialsResponseMultiError is an error wrapping multiple validation
+// errors returned by GetGitCredentialsResponse.ValidateAll() if the
+// designated constraints aren't met.
+type GetGitCredentialsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetGitCredentialsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetGitCredentialsResponseMultiError) AllErrors() []error { return m }
+
+// GetGitCredentialsResponseValidationError is the validation error returned by
+// GetGitCredentialsResponse.Validate if the designated constraints aren't met.
+type GetGitCredentialsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetGitCredentialsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetGitCredentialsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetGitCredentialsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetGitCredentialsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetGitCredentialsResponseValidationError) ErrorName() string {
+	return "GetGitCredentialsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetGitCredentialsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetGitCredentialsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetGitCredentialsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetGitCredentialsResponseValidationError{}
+
 // Validate checks the field values on CreateWhitelistedDomainRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

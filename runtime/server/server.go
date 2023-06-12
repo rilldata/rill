@@ -54,7 +54,9 @@ var (
 	_ runtimev1.ConnectorServiceServer = (*Server)(nil)
 )
 
-func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server, error) {
+// NewServer creates a new runtime server.
+// The provided ctx is used for the lifetime of the server for background refresh of the JWKS that is used to validate auth tokens.
+func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server, error) {
 	srv := &Server{
 		opts:    opts,
 		runtime: rt,
@@ -62,7 +64,7 @@ func NewServer(opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server,
 	}
 
 	if opts.AuthEnable {
-		aud, err := auth.OpenAudience(logger, opts.AuthIssuerURL, opts.AuthAudienceURL)
+		aud, err := auth.OpenAudience(ctx, logger, opts.AuthIssuerURL, opts.AuthAudienceURL)
 		if err != nil {
 			return nil, err
 		}

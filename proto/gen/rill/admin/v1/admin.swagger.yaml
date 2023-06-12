@@ -91,7 +91,7 @@ paths:
         - AdminService
   /v1/deployments/{deploymentId}/reprovision:
     post:
-      summary: TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+      summary: TriggerReprovision re-provision the hibernated deployment
       operationId: AdminService_TriggerReprovision
       responses:
         "200":
@@ -410,6 +410,30 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: organization
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/git-credentials:
+    get:
+      summary: GetGitCredentials returns credentials and other details for a project's Git repository.
+      operationId: AdminService_GetGitCredentials
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetGitCredentialsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
           in: path
           required: true
           type: string
@@ -1107,6 +1131,19 @@ definitions:
     properties:
       user:
         $ref: '#/definitions/v1User'
+  v1GetGitCredentialsResponse:
+    type: object
+    properties:
+      repoUrl:
+        type: string
+      username:
+        type: string
+      password:
+        type: string
+      subpath:
+        type: string
+      prodBranch:
+        type: string
   v1GetGithubRepoStatusResponse:
     type: object
     properties:

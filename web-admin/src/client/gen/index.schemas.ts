@@ -340,6 +340,14 @@ export interface V1GetGithubRepoStatusResponse {
   defaultBranch?: string;
 }
 
+export interface V1GetGitCredentialsResponse {
+  repoUrl?: string;
+  username?: string;
+  password?: string;
+  subpath?: string;
+  prodBranch?: string;
+}
+
 export interface V1GetCurrentUserResponse {
   user?: V1User;
 }

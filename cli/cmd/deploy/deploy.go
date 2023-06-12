@@ -478,8 +478,7 @@ func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adm
 		}
 
 		warn.Println("Rill project names are derived from your Github repository name.")
-		warn.Printf("The %q project already exists under org %q.", req.Name, req.OrganizationName)
-		warn.Println("Please choose a different name below.")
+		warn.Printf("The %q project already exists under org %q. Please enter a different name.\n", req.Name, req.OrganizationName)
 
 		// project name already exists, prompt for project name and create project with new name again
 		name, err := projectNamePrompt(ctx, client, req.OrganizationName)
@@ -496,7 +495,7 @@ func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adm
 func variablesFlow(ctx context.Context, projectPath, projectName string) {
 	connectorList, err := rillv1beta.ExtractConnectors(ctx, projectPath)
 	if err != nil {
-		fmt.Printf("failed to extract connectors %s", err)
+		fmt.Printf("failed to extract connectors %s\n", err)
 		return
 	}
 

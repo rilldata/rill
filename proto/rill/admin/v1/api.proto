@@ -211,6 +211,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/repositories"};
   }
 
+  // GetGitCredentials returns credentials and other details for a project's Git repository.
+  rpc GetGitCredentials(GetGitCredentialsRequest) returns (GetGitCredentialsResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/git-credentials"};
+  }
+
   // CreateWhitelistedDomain adds a domain to the whitelist
   rpc CreateWhitelistedDomain(CreateWhitelistedDomainRequest) returns (CreateWhitelistedDomainResponse) {
     option (google.api.http) = {
@@ -571,6 +576,19 @@ message GetGithubRepoStatusResponse {
   bool has_access = 1;
   string grant_access_url = 2;
   string default_branch = 3;
+}
+
+message GetGitCredentialsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+}
+
+message GetGitCredentialsResponse {
+  string repo_url = 1;
+  string username = 2;
+  string password = 3;
+  string subpath = 4;
+  string prod_branch = 5;
 }
 
 message CreateWhitelistedDomainRequest {
