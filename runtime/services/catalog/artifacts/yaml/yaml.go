@@ -19,7 +19,7 @@ func init() {
 	artifacts.Register(".yaml", &artifact{})
 }
 
-func (r *artifact) DeSerialise(ctx context.Context, filePath, blob string, forceMaterialize bool) (*drivers.CatalogEntry, error) {
+func (r *artifact) DeSerialise(ctx context.Context, filePath, blob string, materializeDefault bool) (*drivers.CatalogEntry, error) {
 	dir := filepath.Base(filepath.Dir(filePath))
 	switch dir {
 	case "sources":

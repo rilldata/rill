@@ -24,15 +24,19 @@ func init() {
 	artifacts.Register(".sql", &artifact{})
 }
 
-func (r *artifact) DeSerialise(ctx context.Context, filePath, blob string, forceMaterialize bool) (*drivers.CatalogEntry, error) {
+func (r *artifact) DeSerialise(ctx context.Context, filePath, blob string, materializeDefault bool) (*drivers.CatalogEntry, error) {
 	name := fileutil.Stem(filePath)
 	// extract materialize option before sanitizing query as it will remove that comment
 	materialize := parseMaterializationInfo(blob)
 	if materialize == MaterializeInvalid {
 		return nil, errors.New("invalid materialize type")
 	}
-	if forceMaterialize {
-		materialize = MaterializeTrue
+	if materialize == MaterializeInferred {
+		if materializeDefault {
+			materialize = MaterializeTrue
+		} else {
+			materialize = MaterializeFalse
+		}
 	}
 	sanitizedSQL := sanitizeQuery(blob)
 	return &drivers.CatalogEntry{

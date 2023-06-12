@@ -31,7 +31,7 @@ func Register(name string, artifact Artifact) {
 }
 
 type Artifact interface {
-	DeSerialise(ctx context.Context, filePath string, blob string, forceMaterialize bool) (*drivers.CatalogEntry, error)
+	DeSerialise(ctx context.Context, filePath string, blob string, materializeDefault bool) (*drivers.CatalogEntry, error)
 	Serialise(ctx context.Context, catalogObject *drivers.CatalogEntry) (string, error)
 }
 
@@ -53,7 +53,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, registryStore driver
 	}
 
 	// Hacky solution to force model materialization
-	forceMaterialize, _ := strconv.ParseBool(instance.Variables["__force_materialize_models"])
+	materializeDefault, _ := strconv.ParseBool(instance.Variables["__materialize_default"])
 
 	// this is required in order to be able to use .env.KEY and not .KEY in template placeholders
 	env := map[string]map[string]string{"env": instance.ResolveVariables()}
@@ -75,7 +75,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, registryStore driver
 		return nil, err
 	}
 
-	catalog, err := artifact.DeSerialise(ctx, filePath, bw.String(), forceMaterialize)
+	catalog, err := artifact.DeSerialise(ctx, filePath, bw.String(), materializeDefault)
 	if err != nil {
 		return nil, err
 	}
