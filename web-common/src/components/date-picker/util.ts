@@ -1,4 +1,4 @@
-export function findNestedMonthItem(monthItem) {
+export function findNestedMonthItem(monthItem: HTMLElement) {
   const children = monthItem.parentNode.childNodes;
   for (let i = 0; i < children.length; i = i + 1) {
     const curNode = children.item(i);

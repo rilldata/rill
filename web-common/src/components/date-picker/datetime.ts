@@ -1,8 +1,8 @@
 export class DateTime {
   public static parseDateTime(
     date: Date | DateTime | string | number,
-    format: string = "YYYY-MM-DD",
-    lang: string = "en-US"
+    format = "YYYY-MM-DD",
+    lang = "en-US"
   ): Date {
     if (!date) return new Date(NaN);
 
@@ -105,7 +105,7 @@ export class DateTime {
   // replace to regexp lookbehind when most popular browsers will support
   // https://caniuse.com/#feat=js-regexp-lookbehind
   // /(?<!\\)(Y{2,4}|M{1,4}|D{1,2}|d{1,4}])/g
-  private static regex: RegExp = /(\\)?(Y{2,4}|M{1,4}|D{1,2}|d{1,4})/g;
+  private static regex = /(\\)?(Y{2,4}|M{1,4}|D{1,2}|d{1,4})/g;
 
   private static readonly MONTH_JS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
@@ -175,7 +175,7 @@ export class DateTime {
   constructor(
     date: Date | DateTime | number | string = null,
     format: object | string = null,
-    lang: string = "en-US"
+    lang = "en-US"
   ) {
     if (typeof format === "object" && format !== null) {
       // tslint:disable-next-line: max-line-length
@@ -236,12 +236,7 @@ export class DateTime {
     return this.dateInstance.setMonth(arg);
   }
 
-  public setHours(
-    hours: number = 0,
-    minutes: number = 0,
-    seconds: number = 0,
-    ms: number = 0
-  ) {
+  public setHours(hours = 0, minutes = 0, seconds = 0, ms = 0) {
     this.dateInstance.setHours(hours, minutes, seconds, ms);
   }
 
@@ -535,7 +530,7 @@ export class DateTime {
     }
   }
 
-  public format(format: object | string, lang: string = "en-US"): string {
+  public format(format: object | string, lang = "en-US"): string {
     if (typeof format === "object") {
       return (format as any).output(this.clone().toJSDate());
     }
