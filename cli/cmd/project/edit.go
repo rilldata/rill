@@ -90,7 +90,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				}
 				req.ProdBranch = &prodBranch
 
-				public = cmdutil.ConfirmPrompt("Is project public", "", proj.Public)
+				public = cmdutil.ConfirmPrompt("Make project public", "", proj.Public)
 				req.Public = &public
 			}
 

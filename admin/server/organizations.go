@@ -50,9 +50,7 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 }
 
 func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizationRequest) (*adminv1.GetOrganizationResponse, error) {
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Name),
-	)
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Name))
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
@@ -138,9 +136,7 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 }
 
 func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrganizationRequest) (*adminv1.DeleteOrganizationResponse, error) {
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Name),
-	)
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Name))
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
@@ -161,9 +157,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 }
 
 func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrganizationRequest) (*adminv1.UpdateOrganizationResponse, error) {
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Name),
-	)
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.Name))
 	if req.Description != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.description", *req.Description))
 	}

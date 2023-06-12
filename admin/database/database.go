@@ -77,6 +77,7 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
+	UpdateProjectVariables(ctx context.Context, id string, variables map[string]string) (*Project, error)
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 
 	FindDeploymentsForProject(ctx context.Context, projectID string) ([]*Deployment, error)

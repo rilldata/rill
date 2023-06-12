@@ -34,7 +34,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var minCliVersion = version.Must(version.NewVersion("0.20.0"))
+var minCliVersion = version.Must(version.NewVersion("0.28.0"))
 
 type Options struct {
 	HTTPPort               int

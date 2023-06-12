@@ -224,7 +224,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 
 // UpdateProjectVariables updates project's variables and pushes the updated variables to deployments.
 // NOTE : this does not trigger reconcile.
-func (s *Service) UpdateProjectVariables(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
+func (s *Service) UpdateProjectVariables(ctx context.Context, proj *database.Project, variables map[string]string) (*database.Project, error) {
 	ds, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
 	if err != nil {
 		return nil, err
@@ -233,14 +233,14 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, proj *database.Pro
 	// NOTE: This assumes every deployment (almost always, there's just one) deploys the prod branch.
 	// It needs to be refactored when implementing preview deploys.
 	for _, d := range ds {
-		err := s.updateDeplVariables(ctx, d, opts.ProdVariables)
+		err := s.updateDeplVariables(ctx, d, variables)
 		if err != nil {
 			// TODO: This may leave things in an inconsistent state. (Although presently, there's almost never multiple deployments.)
 			return nil, err
 		}
 	}
 
-	return s.DB.UpdateProject(ctx, proj.ID, opts)
+	return s.DB.UpdateProjectVariables(ctx, proj.ID, variables)
 }
 
 // TriggerRedeploy de-provisions and re-provisions a project's prod deployment.
