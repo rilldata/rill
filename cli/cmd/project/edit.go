@@ -48,7 +48,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				OrganizationName: cfg.Org,
 				Name:             name,
 			}
-			promptFlagValues := true
+			promptFlagValues := cfg.Interactive
 			if cmd.Flags().Changed("prod-slots") {
 				promptFlagValues = false
 				prodSlots := int64(slots)
