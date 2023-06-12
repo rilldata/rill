@@ -49,26 +49,6 @@ paths:
             $ref: '#/definitions/v1DeleteFileAndReconcileRequest'
       tags:
         - RuntimeService
-  /v1/download-link:
-    post:
-      operationId: QueryService_DownloadLink
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1DownloadLinkResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/v1DownloadLinkRequest'
-      tags:
-        - QueryService
   /v1/examples:
     get:
       summary: ListExamples lists all the examples embedded into binary
@@ -694,6 +674,40 @@ paths:
           required: false
           type: integer
           format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/export:
+    post:
+      operationId: QueryService_Export
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ExportResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              limit:
+                type: integer
+                format: int32
+              format:
+                $ref: '#/definitions/v1DownloadFormat'
+              metricsViewToplistRequest:
+                $ref: '#/definitions/v1MetricsViewToplistRequest'
+              metricsViewRowsRequest:
+                $ref: '#/definitions/v1MetricsViewRowsRequest'
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -2102,25 +2116,7 @@ definitions:
     enum:
       - DOWNLOAD_FORMAT_UNSPECIFIED
       - DOWNLOAD_FORMAT_CSV
-      - DOWNLOAD_FORMAT_PARQUET
     default: DOWNLOAD_FORMAT_UNSPECIFIED
-  v1DownloadLinkRequest:
-    type: object
-    properties:
-      limit:
-        type: integer
-        format: int32
-      format:
-        $ref: '#/definitions/v1DownloadFormat'
-      metricsViewToplistRequest:
-        $ref: '#/definitions/v1MetricsViewToplistRequest'
-      metricsViewRowsRequest:
-        $ref: '#/definitions/v1MetricsViewRowsRequest'
-  v1DownloadLinkResponse:
-    type: object
-    properties:
-      downloadUrlPath:
-        type: string
   v1EditInstanceResponse:
     type: object
     properties:
@@ -2135,6 +2131,11 @@ definitions:
       title:
         type: string
       description:
+        type: string
+  v1ExportResponse:
+    type: object
+    properties:
+      downloadUrlPath:
         type: string
   v1GCSGetCredentialsInfoResponse:
     type: object

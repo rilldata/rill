@@ -140,9 +140,9 @@ service QueryService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
   }
 
-  rpc DownloadLink(DownloadLinkRequest) returns (DownloadLinkResponse) {
+  rpc Export(ExportRequest) returns (ExportResponse) {
     option (google.api.http) = {
-      post: "/v1/download-link",
+      post: "/v1/instances/{instance_id}/queries/export",
       body: "*"
     };
   }
@@ -612,21 +612,21 @@ message TableRowsResponse {
   repeated google.protobuf.Struct data = 1;
 }
 
-message DownloadLinkRequest {
-  int32 limit = 1 [(validate.rules).int32.lt = 10000];
-  DownloadFormat format = 2;
+message ExportRequest {
+  string instance_id = 1;
+  int32 limit = 2 [(validate.rules).int32.lte = 10000];
+  DownloadFormat format = 3;
   oneof request {
-    MetricsViewToplistRequest metrics_view_toplist_request = 3;
-    MetricsViewRowsRequest metrics_view_rows_request = 4;
+    MetricsViewToplistRequest metrics_view_toplist_request = 4;
+    MetricsViewRowsRequest metrics_view_rows_request = 5;
   }
 }
 
 enum DownloadFormat {
   DOWNLOAD_FORMAT_UNSPECIFIED = 0;
   DOWNLOAD_FORMAT_CSV = 1;
-  DOWNLOAD_FORMAT_PARQUET = 2;
 }
 
-message DownloadLinkResponse {
+message ExportResponse {
   string download_url_path = 1;
 }

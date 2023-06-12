@@ -161,6 +161,13 @@ export type QueryServiceMetricsViewComparisonToplistBody = {
   priority?: number;
 };
 
+export type QueryServiceExportBody = {
+  limit?: number;
+  format?: V1DownloadFormat;
+  metricsViewToplistRequest?: V1MetricsViewToplistRequest;
+  metricsViewRowsRequest?: V1MetricsViewRowsRequest;
+};
+
 export type QueryServiceColumnDescriptiveStatisticsParams = {
   columnName?: string;
   priority?: number;
@@ -833,6 +840,10 @@ export interface V1GCSGetCredentialsInfoResponse {
   projectId?: string;
 }
 
+export interface V1ExportResponse {
+  downloadUrlPath?: string;
+}
+
 export interface V1Example {
   name?: string;
   title?: string;
@@ -843,10 +854,6 @@ export interface V1EditInstanceResponse {
   instance?: V1Instance;
 }
 
-export interface V1DownloadLinkResponse {
-  downloadUrlPath?: string;
-}
-
 export type V1DownloadFormat =
   (typeof V1DownloadFormat)[keyof typeof V1DownloadFormat];
 
@@ -854,15 +861,7 @@ export type V1DownloadFormat =
 export const V1DownloadFormat = {
   DOWNLOAD_FORMAT_UNSPECIFIED: "DOWNLOAD_FORMAT_UNSPECIFIED",
   DOWNLOAD_FORMAT_CSV: "DOWNLOAD_FORMAT_CSV",
-  DOWNLOAD_FORMAT_PARQUET: "DOWNLOAD_FORMAT_PARQUET",
 } as const;
-
-export interface V1DownloadLinkRequest {
-  limit?: number;
-  format?: V1DownloadFormat;
-  metricsViewToplistRequest?: V1MetricsViewToplistRequest;
-  metricsViewRowsRequest?: V1MetricsViewRowsRequest;
-}
 
 export interface V1DeleteInstanceResponse {
   [key: string]: any;

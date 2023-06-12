@@ -14,15 +14,15 @@ import type {
   QueryKey,
 } from "@tanstack/svelte-query";
 import type {
-  V1DownloadLinkResponse,
-  RpcStatus,
-  V1DownloadLinkRequest,
   V1ColumnCardinalityResponse,
+  RpcStatus,
   QueryServiceColumnCardinalityParams,
   V1TableColumnsResponse,
   QueryServiceTableColumnsParams,
   V1ColumnDescriptiveStatisticsResponse,
   QueryServiceColumnDescriptiveStatisticsParams,
+  V1ExportResponse,
+  QueryServiceExportBody,
   V1MetricsViewComparisonToplistResponse,
   QueryServiceMetricsViewComparisonToplistBody,
   V1MetricsViewRowsResponse,
@@ -58,52 +58,6 @@ import type {
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
-export const queryServiceDownloadLink = (
-  v1DownloadLinkRequest: V1DownloadLinkRequest
-) => {
-  return httpClient<V1DownloadLinkResponse>({
-    url: `/v1/download-link`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: v1DownloadLinkRequest,
-  });
-};
-
-export type QueryServiceDownloadLinkMutationResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceDownloadLink>>
->;
-export type QueryServiceDownloadLinkMutationBody = V1DownloadLinkRequest;
-export type QueryServiceDownloadLinkMutationError = RpcStatus;
-
-export const createQueryServiceDownloadLink = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof queryServiceDownloadLink>>,
-    TError,
-    { data: V1DownloadLinkRequest },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof queryServiceDownloadLink>>,
-    { data: V1DownloadLinkRequest }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return queryServiceDownloadLink(data);
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof queryServiceDownloadLink>>,
-    TError,
-    { data: V1DownloadLinkRequest },
-    TContext
-  >(mutationFn, mutationOptions);
-};
 /**
  * @summary Get cardinality for a column
  */
@@ -332,6 +286,53 @@ export const createQueryServiceColumnDescriptiveStatistics = <
   return query;
 };
 
+export const queryServiceExport = (
+  instanceId: string,
+  queryServiceExportBody: QueryServiceExportBody
+) => {
+  return httpClient<V1ExportResponse>({
+    url: `/v1/instances/${instanceId}/queries/export`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceExportBody,
+  });
+};
+
+export type QueryServiceExportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceExport>>
+>;
+export type QueryServiceExportMutationBody = QueryServiceExportBody;
+export type QueryServiceExportMutationError = RpcStatus;
+
+export const createQueryServiceExport = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceExport>>,
+    TError,
+    { instanceId: string; data: QueryServiceExportBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceExport>>,
+    { instanceId: string; data: QueryServiceExportBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return queryServiceExport(instanceId, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof queryServiceExport>>,
+    TError,
+    { instanceId: string; data: QueryServiceExportBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 export const queryServiceMetricsViewComparisonToplist = (
   instanceId: string,
   metricsViewName: string,

@@ -104,7 +104,9 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 	}
 
 	switch format {
-	case runtimev1.DownloadFormat_DOWNLOAD_FORMAT_UNSPECIFIED, runtimev1.DownloadFormat_DOWNLOAD_FORMAT_CSV:
+	case runtimev1.DownloadFormat_DOWNLOAD_FORMAT_UNSPECIFIED:
+		return fmt.Errorf("unspecified format")
+	case runtimev1.DownloadFormat_DOWNLOAD_FORMAT_CSV:
 		return writeCSV(q.Result.Meta, q.Result.Data, writer)
 	}
 

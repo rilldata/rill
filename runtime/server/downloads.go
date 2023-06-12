@@ -12,15 +12,15 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func (s *Server) DownloadLink(ctx context.Context, req *runtimev1.DownloadLinkRequest) (*runtimev1.DownloadLinkResponse, error) {
+func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*runtimev1.ExportResponse, error) {
 	r, err := proto.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
 
-	out := fmt.Sprintf("/v1/downloads?%s=%s", "request", base64.StdEncoding.EncodeToString(r))
+	out := fmt.Sprintf("/v1/download?%s=%s", "request", base64.StdEncoding.EncodeToString(r))
 
-	return &runtimev1.DownloadLinkResponse{
+	return &runtimev1.ExportResponse{
 		DownloadUrlPath: out,
 	}, nil
 }
@@ -32,7 +32,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	request := &runtimev1.DownloadLinkRequest{}
+	request := &runtimev1.ExportRequest{}
 	err = proto.Unmarshal(marshalled, request)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to parse request: %s", err), http.StatusBadRequest)
@@ -40,14 +40,14 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	switch v := request.Request.(type) {
-	case *runtimev1.DownloadLinkRequest_MetricsViewToplistRequest:
+	case *runtimev1.ExportRequest_MetricsViewToplistRequest:
 		v.MetricsViewToplistRequest.Limit = int64(request.Limit)
 		err = s.executeToplistQuery(req.Context(), w, v.MetricsViewToplistRequest, request.Format)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-	case *runtimev1.DownloadLinkRequest_MetricsViewRowsRequest:
+	case *runtimev1.ExportRequest_MetricsViewRowsRequest:
 		v.MetricsViewRowsRequest.Limit = request.Limit
 		err = s.executeRowsQuery(req.Context(), w, v.MetricsViewRowsRequest, request.Format)
 		if err != nil {

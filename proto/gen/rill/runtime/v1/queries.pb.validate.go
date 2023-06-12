@@ -8437,32 +8437,34 @@ var _ interface {
 	ErrorName() string
 } = TableRowsResponseValidationError{}
 
-// Validate checks the field values on DownloadLinkRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *DownloadLinkRequest) Validate() error {
+// Validate checks the field values on ExportRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ExportRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on DownloadLinkRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// DownloadLinkRequestMultiError, or nil if none found.
-func (m *DownloadLinkRequest) ValidateAll() error {
+// ValidateAll checks the field values on ExportRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ExportRequestMultiError, or
+// nil if none found.
+func (m *ExportRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *DownloadLinkRequest) validate(all bool) error {
+func (m *ExportRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	if m.GetLimit() >= 10000 {
-		err := DownloadLinkRequestValidationError{
+	// no validation rules for InstanceId
+
+	if m.GetLimit() > 10000 {
+		err := ExportRequestValidationError{
 			field:  "Limit",
-			reason: "value must be less than 10000",
+			reason: "value must be less than or equal to 10000",
 		}
 		if !all {
 			return err
@@ -8473,9 +8475,9 @@ func (m *DownloadLinkRequest) validate(all bool) error {
 	// no validation rules for Format
 
 	switch v := m.Request.(type) {
-	case *DownloadLinkRequest_MetricsViewToplistRequest:
+	case *ExportRequest_MetricsViewToplistRequest:
 		if v == nil {
-			err := DownloadLinkRequestValidationError{
+			err := ExportRequestValidationError{
 				field:  "Request",
 				reason: "oneof value cannot be a typed-nil",
 			}
@@ -8489,7 +8491,7 @@ func (m *DownloadLinkRequest) validate(all bool) error {
 			switch v := interface{}(m.GetMetricsViewToplistRequest()).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, DownloadLinkRequestValidationError{
+					errors = append(errors, ExportRequestValidationError{
 						field:  "MetricsViewToplistRequest",
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -8497,7 +8499,7 @@ func (m *DownloadLinkRequest) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, DownloadLinkRequestValidationError{
+					errors = append(errors, ExportRequestValidationError{
 						field:  "MetricsViewToplistRequest",
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -8506,7 +8508,7 @@ func (m *DownloadLinkRequest) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(m.GetMetricsViewToplistRequest()).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return DownloadLinkRequestValidationError{
+				return ExportRequestValidationError{
 					field:  "MetricsViewToplistRequest",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -8514,9 +8516,9 @@ func (m *DownloadLinkRequest) validate(all bool) error {
 			}
 		}
 
-	case *DownloadLinkRequest_MetricsViewRowsRequest:
+	case *ExportRequest_MetricsViewRowsRequest:
 		if v == nil {
-			err := DownloadLinkRequestValidationError{
+			err := ExportRequestValidationError{
 				field:  "Request",
 				reason: "oneof value cannot be a typed-nil",
 			}
@@ -8530,7 +8532,7 @@ func (m *DownloadLinkRequest) validate(all bool) error {
 			switch v := interface{}(m.GetMetricsViewRowsRequest()).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, DownloadLinkRequestValidationError{
+					errors = append(errors, ExportRequestValidationError{
 						field:  "MetricsViewRowsRequest",
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -8538,7 +8540,7 @@ func (m *DownloadLinkRequest) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, DownloadLinkRequestValidationError{
+					errors = append(errors, ExportRequestValidationError{
 						field:  "MetricsViewRowsRequest",
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -8547,7 +8549,7 @@ func (m *DownloadLinkRequest) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(m.GetMetricsViewRowsRequest()).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return DownloadLinkRequestValidationError{
+				return ExportRequestValidationError{
 					field:  "MetricsViewRowsRequest",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -8560,19 +8562,19 @@ func (m *DownloadLinkRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return DownloadLinkRequestMultiError(errors)
+		return ExportRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// DownloadLinkRequestMultiError is an error wrapping multiple validation
-// errors returned by DownloadLinkRequest.ValidateAll() if the designated
-// constraints aren't met.
-type DownloadLinkRequestMultiError []error
+// ExportRequestMultiError is an error wrapping multiple validation errors
+// returned by ExportRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ExportRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m DownloadLinkRequestMultiError) Error() string {
+func (m ExportRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -8581,11 +8583,11 @@ func (m DownloadLinkRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m DownloadLinkRequestMultiError) AllErrors() []error { return m }
+func (m ExportRequestMultiError) AllErrors() []error { return m }
 
-// DownloadLinkRequestValidationError is the validation error returned by
-// DownloadLinkRequest.Validate if the designated constraints aren't met.
-type DownloadLinkRequestValidationError struct {
+// ExportRequestValidationError is the validation error returned by
+// ExportRequest.Validate if the designated constraints aren't met.
+type ExportRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -8593,24 +8595,22 @@ type DownloadLinkRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e DownloadLinkRequestValidationError) Field() string { return e.field }
+func (e ExportRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e DownloadLinkRequestValidationError) Reason() string { return e.reason }
+func (e ExportRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e DownloadLinkRequestValidationError) Cause() error { return e.cause }
+func (e ExportRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e DownloadLinkRequestValidationError) Key() bool { return e.key }
+func (e ExportRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e DownloadLinkRequestValidationError) ErrorName() string {
-	return "DownloadLinkRequestValidationError"
-}
+func (e ExportRequestValidationError) ErrorName() string { return "ExportRequestValidationError" }
 
 // Error satisfies the builtin error interface
-func (e DownloadLinkRequestValidationError) Error() string {
+func (e ExportRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -8622,14 +8622,14 @@ func (e DownloadLinkRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sDownloadLinkRequest.%s: %s%s",
+		"invalid %sExportRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = DownloadLinkRequestValidationError{}
+var _ error = ExportRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -8637,24 +8637,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = DownloadLinkRequestValidationError{}
+} = ExportRequestValidationError{}
 
-// Validate checks the field values on DownloadLinkResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *DownloadLinkResponse) Validate() error {
+// Validate checks the field values on ExportResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ExportResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on DownloadLinkResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// DownloadLinkResponseMultiError, or nil if none found.
-func (m *DownloadLinkResponse) ValidateAll() error {
+// ValidateAll checks the field values on ExportResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ExportResponseMultiError,
+// or nil if none found.
+func (m *ExportResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *DownloadLinkResponse) validate(all bool) error {
+func (m *ExportResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -8664,19 +8664,19 @@ func (m *DownloadLinkResponse) validate(all bool) error {
 	// no validation rules for DownloadUrlPath
 
 	if len(errors) > 0 {
-		return DownloadLinkResponseMultiError(errors)
+		return ExportResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// DownloadLinkResponseMultiError is an error wrapping multiple validation
-// errors returned by DownloadLinkResponse.ValidateAll() if the designated
-// constraints aren't met.
-type DownloadLinkResponseMultiError []error
+// ExportResponseMultiError is an error wrapping multiple validation errors
+// returned by ExportResponse.ValidateAll() if the designated constraints
+// aren't met.
+type ExportResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m DownloadLinkResponseMultiError) Error() string {
+func (m ExportResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -8685,11 +8685,11 @@ func (m DownloadLinkResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m DownloadLinkResponseMultiError) AllErrors() []error { return m }
+func (m ExportResponseMultiError) AllErrors() []error { return m }
 
-// DownloadLinkResponseValidationError is the validation error returned by
-// DownloadLinkResponse.Validate if the designated constraints aren't met.
-type DownloadLinkResponseValidationError struct {
+// ExportResponseValidationError is the validation error returned by
+// ExportResponse.Validate if the designated constraints aren't met.
+type ExportResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -8697,24 +8697,22 @@ type DownloadLinkResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e DownloadLinkResponseValidationError) Field() string { return e.field }
+func (e ExportResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e DownloadLinkResponseValidationError) Reason() string { return e.reason }
+func (e ExportResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e DownloadLinkResponseValidationError) Cause() error { return e.cause }
+func (e ExportResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e DownloadLinkResponseValidationError) Key() bool { return e.key }
+func (e ExportResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e DownloadLinkResponseValidationError) ErrorName() string {
-	return "DownloadLinkResponseValidationError"
-}
+func (e ExportResponseValidationError) ErrorName() string { return "ExportResponseValidationError" }
 
 // Error satisfies the builtin error interface
-func (e DownloadLinkResponseValidationError) Error() string {
+func (e ExportResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -8726,14 +8724,14 @@ func (e DownloadLinkResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sDownloadLinkResponse.%s: %s%s",
+		"invalid %sExportResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = DownloadLinkResponseValidationError{}
+var _ error = ExportResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -8741,7 +8739,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = DownloadLinkResponseValidationError{}
+} = ExportResponseValidationError{}
 
 // Validate checks the field values on MetricsViewFilter_Cond with the rules
 // defined in the proto definition for this message. If any rules are
