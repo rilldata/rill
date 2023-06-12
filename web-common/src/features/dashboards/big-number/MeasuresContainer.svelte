@@ -127,8 +127,8 @@
 
   $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
-  $: timeStart = $dashboardStore.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore.selectedTimeRange?.end?.toISOString();
+  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
+  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
