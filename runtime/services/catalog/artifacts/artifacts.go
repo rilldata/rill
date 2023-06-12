@@ -52,7 +52,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, registryStore driver
 		return nil, err
 	}
 
-	// Hacky solution to force model materialization
+	// Hacky way to set a materialization default
 	materializeDefault, _ := strconv.ParseBool(instance.Variables["__materialize_default"])
 
 	// this is required in order to be able to use .env.KEY and not .KEY in template placeholders
