@@ -539,7 +539,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 	return sql, args, nil
 }
 
-func (q *MetricsViewComparisonToplist) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.DownloadFormat, w io.Writer) error {
+func (q *MetricsViewComparisonToplist) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error {
 	return ErrExportNotSupported
 }
 

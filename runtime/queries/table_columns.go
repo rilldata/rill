@@ -105,6 +105,6 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 	})
 }
 
-func (q *TableColumns) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.DownloadFormat, w io.Writer) error {
+func (q *TableColumns) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error {
 	return ErrExportNotSupported
 }

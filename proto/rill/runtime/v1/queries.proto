@@ -17,6 +17,14 @@ service QueryService {
     };
   }
 
+  // Export builds a URL to download the results of a query as a file.
+  rpc Export(ExportRequest) returns (ExportResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/export",
+      body: "*"
+    };
+  }
+
   // Explore APIs
 
   // MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
@@ -139,13 +147,6 @@ service QueryService {
   rpc TableRows(TableRowsRequest) returns (TableRowsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
   }
-
-  rpc Export(ExportRequest) returns (ExportResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/queries/export",
-      body: "*"
-    };
-  }
 }
 
 // Request message for QueryService.Query
@@ -168,6 +169,28 @@ message QueryResponse {
   StructType meta = 1;
   // Result data
   repeated google.protobuf.Struct data = 2;
+}
+
+// Request message for QueryService.Export
+message ExportRequest {
+  string instance_id = 1;
+  int32 limit = 2 [(validate.rules).int32.lte = 10000];
+  ExportFormat format = 3;
+  oneof request {
+    MetricsViewToplistRequest metrics_view_toplist_request = 4;
+    MetricsViewRowsRequest metrics_view_rows_request = 5;
+  }
+}
+
+// Response message for QueryService.Export
+message ExportResponse {
+  string download_url_path = 1;
+}
+
+// ExportFormat is a file format for a data export
+enum ExportFormat {
+  EXPORT_FORMAT_UNSPECIFIED = 0;
+  EXPORT_FORMAT_CSV = 1;
 }
 
 // **********
@@ -610,23 +633,4 @@ message TableRowsRequest {
 
 message TableRowsResponse {
   repeated google.protobuf.Struct data = 1;
-}
-
-message ExportRequest {
-  string instance_id = 1;
-  int32 limit = 2 [(validate.rules).int32.lte = 10000];
-  DownloadFormat format = 3;
-  oneof request {
-    MetricsViewToplistRequest metrics_view_toplist_request = 4;
-    MetricsViewRowsRequest metrics_view_rows_request = 5;
-  }
-}
-
-enum DownloadFormat {
-  DOWNLOAD_FORMAT_UNSPECIFIED = 0;
-  DOWNLOAD_FORMAT_CSV = 1;
-}
-
-message ExportResponse {
-  string download_url_path = 1;
 }

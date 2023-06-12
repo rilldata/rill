@@ -163,7 +163,7 @@ export type QueryServiceMetricsViewComparisonToplistBody = {
 
 export type QueryServiceExportBody = {
   limit?: number;
-  format?: V1DownloadFormat;
+  format?: V1ExportFormat;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
 };
@@ -750,6 +750,12 @@ export interface V1ListFilesResponse {
   paths?: string[];
 }
 
+export interface V1Example {
+  name?: string;
+  title?: string;
+  description?: string;
+}
+
 export interface V1ListExamplesResponse {
   examples?: V1Example[];
 }
@@ -844,24 +850,18 @@ export interface V1ExportResponse {
   downloadUrlPath?: string;
 }
 
-export interface V1Example {
-  name?: string;
-  title?: string;
-  description?: string;
-}
+export type V1ExportFormat =
+  (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExportFormat = {
+  EXPORT_FORMAT_UNSPECIFIED: "EXPORT_FORMAT_UNSPECIFIED",
+  EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
+} as const;
 
 export interface V1EditInstanceResponse {
   instance?: V1Instance;
 }
-
-export type V1DownloadFormat =
-  (typeof V1DownloadFormat)[keyof typeof V1DownloadFormat];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1DownloadFormat = {
-  DOWNLOAD_FORMAT_UNSPECIFIED: "DOWNLOAD_FORMAT_UNSPECIFIED",
-  DOWNLOAD_FORMAT_CSV: "DOWNLOAD_FORMAT_CSV",
-} as const;
 
 export interface V1DeleteInstanceResponse {
   [key: string]: any;

@@ -678,6 +678,7 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/export:
     post:
+      summary: Export builds a URL to download the results of a query as a file.
       operationId: QueryService_Export
       responses:
         "200":
@@ -703,11 +704,12 @@ paths:
                 type: integer
                 format: int32
               format:
-                $ref: '#/definitions/v1DownloadFormat'
+                $ref: '#/definitions/v1ExportFormat'
               metricsViewToplistRequest:
                 $ref: '#/definitions/v1MetricsViewToplistRequest'
               metricsViewRowsRequest:
                 $ref: '#/definitions/v1MetricsViewRowsRequest'
+            title: Request message for QueryService.Export
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -2111,12 +2113,6 @@ definitions:
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
-  v1DownloadFormat:
-    type: string
-    enum:
-      - DOWNLOAD_FORMAT_UNSPECIFIED
-      - DOWNLOAD_FORMAT_CSV
-    default: DOWNLOAD_FORMAT_UNSPECIFIED
   v1EditInstanceResponse:
     type: object
     properties:
@@ -2132,11 +2128,19 @@ definitions:
         type: string
       description:
         type: string
+  v1ExportFormat:
+    type: string
+    enum:
+      - EXPORT_FORMAT_UNSPECIFIED
+      - EXPORT_FORMAT_CSV
+    default: EXPORT_FORMAT_UNSPECIFIED
+    title: ExportFormat is a file format for a data export
   v1ExportResponse:
     type: object
     properties:
       downloadUrlPath:
         type: string
+    title: Response message for QueryService.Export
   v1GCSGetCredentialsInfoResponse:
     type: object
     properties:

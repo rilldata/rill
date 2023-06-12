@@ -97,16 +97,16 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	return nil
 }
 
-func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.DownloadFormat, writer io.Writer) error {
+func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, writer io.Writer) error {
 	err := q.Resolve(ctx, rt, instanceID, priority)
 	if err != nil {
 		return err
 	}
 
 	switch format {
-	case runtimev1.DownloadFormat_DOWNLOAD_FORMAT_UNSPECIFIED:
+	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
 		return fmt.Errorf("unspecified format")
-	case runtimev1.DownloadFormat_DOWNLOAD_FORMAT_CSV:
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
 		return writeCSV(q.Result.Meta, q.Result.Data, writer)
 	}
 

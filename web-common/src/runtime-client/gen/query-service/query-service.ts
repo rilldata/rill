@@ -286,6 +286,9 @@ export const createQueryServiceColumnDescriptiveStatistics = <
   return query;
 };
 
+/**
+ * @summary Export builds a URL to download the results of a query as a file.
+ */
 export const queryServiceExport = (
   instanceId: string,
   queryServiceExportBody: QueryServiceExportBody

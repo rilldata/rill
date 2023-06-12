@@ -88,6 +88,6 @@ func (q *RollupInterval) Resolve(ctx context.Context, rt *runtime.Runtime, insta
 	return nil
 }
 
-func (q *RollupInterval) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.DownloadFormat, w io.Writer) error {
+func (q *RollupInterval) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error {
 	return ErrExportNotSupported
 }

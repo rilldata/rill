@@ -10,10 +10,15 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/protobuf/proto"
 )
 
 func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*runtimev1.ExportResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
 	r, err := proto.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -45,18 +50,20 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	case *runtimev1.ExportRequest_MetricsViewToplistRequest:
 		v.MetricsViewToplistRequest.Limit = int64(request.Limit)
 		q, err = createToplistQuery(req.Context(), w, v.MetricsViewToplistRequest, request.Format)
-
 	case *runtimev1.ExportRequest_MetricsViewRowsRequest:
 		v.MetricsViewRowsRequest.Limit = request.Limit
 		q, err = createRowsQuery(req.Context(), w, v.MetricsViewRowsRequest, request.Format)
-
 	default:
 		http.Error(w, fmt.Sprintf("Unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)
 		return
 	}
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if !auth.GetClaims(req.Context()).CanInstance(request.InstanceId, auth.ReadMetrics) {
+		http.Error(w, "action not allowed", http.StatusUnauthorized)
 		return
 	}
 
@@ -66,14 +73,14 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if request.Format == runtimev1.DownloadFormat_DOWNLOAD_FORMAT_CSV {
+	if request.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV {
 		w.Header().Set("Content-Type", "text/csv")
 	}
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func createToplistQuery(ctx context.Context, writer http.ResponseWriter, req *runtimev1.MetricsViewToplistRequest, format runtimev1.DownloadFormat) (runtime.Query, error) {
+func createToplistQuery(ctx context.Context, writer http.ResponseWriter, req *runtimev1.MetricsViewToplistRequest, format runtimev1.ExportFormat) (runtime.Query, error) {
 	err := validateInlineMeasures(req.InlineMeasures)
 	if err != nil {
 		return nil, err
@@ -95,7 +102,7 @@ func createToplistQuery(ctx context.Context, writer http.ResponseWriter, req *ru
 	return q, nil
 }
 
-func createRowsQuery(ctx context.Context, writer http.ResponseWriter, req *runtimev1.MetricsViewRowsRequest, format runtimev1.DownloadFormat) (runtime.Query, error) {
+func createRowsQuery(ctx context.Context, writer http.ResponseWriter, req *runtimev1.MetricsViewRowsRequest, format runtimev1.ExportFormat) (runtime.Query, error) {
 	q := &queries.MetricsViewRows{
 		MetricsViewName: req.MetricsViewName,
 		TimeStart:       req.TimeStart,
