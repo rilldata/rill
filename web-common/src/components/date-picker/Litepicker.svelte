@@ -82,22 +82,22 @@
     --day-width: 42px;
     --day-height: 37px;
     --litepicker-tooltip-color-bg: #fff;
-    --litepicker-month-header-color: #333;
+    --litepicker-month-header-color: #394150;
     --litepicker-button-prev-month-color: #9e9e9e;
     --litepicker-button-next-month-color: #9e9e9e;
     --litepicker-button-prev-month-color-hover: #2a57e1;
     --litepicker-button-next-month-color-hover: #2a57e1;
     --litepicker-month-width: calc(var(--litepicker-day-width) * 7);
     --litepicker-day-width: 42px;
-    --litepicker-day-color: #333;
+    --litepicker-day-color: #394150;
     --litepicker-day-color-hover: #2a57e1;
     --litepicker-day-color-bg-hover: #b9d6fb;
-    --litepicker-is-today-color: #333;
-    --litepicker-is-in-range-color: #b9d6fb;
-    --litepicker-is-start-color: #fff;
-    --litepicker-is-start-color-bg: #3b76ee;
-    --litepicker-is-end-color: #fff;
-    --litepicker-is-end-color-bg: #3b76ee;
+    --litepicker-is-today-color: #394150;
+    --litepicker-is-in-range-color: #dee9fc;
+    --litepicker-is-start-color: #394150;
+    --litepicker-is-start-color-bg: #9dc4f8;
+    --litepicker-is-end-color: #394150;
+    --litepicker-is-end-color-bg: #9dc4f8;
     --litepicker-start-border-radius: 5px 0px 0px 5px;
     --litepicker-end-border-radius: 0px 5px 5px 0px;
   }
@@ -129,6 +129,7 @@
     -webkit-transition: none;
     transition: none;
     cursor: default;
+    font-weight: 600;
   }
 
   /* Triangles for current range boundaries */
@@ -230,7 +231,7 @@
 
   :global(.litepicker .day-item.is-in-proposed-range) {
     border-radius: 0px;
-    background: #f0f7fe;
+    background: #f3f8fe;
     /* Custom dashed line with svg */
     background-image: url("data:image/svg+xml,<svg width='100%' height='100%' xmlns='http://www.w3.org/2000/svg'><rect width='200%' x='-20px' height='100%' fill='none' stroke='%232A57E1' stroke-width='2' stroke-dasharray='2%2c6' stroke-dashoffset='0' stroke-linecap='square'/></svg>");
   }

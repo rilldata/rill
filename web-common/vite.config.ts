@@ -1,20 +1,41 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig } from "vitest/config";
 
-export default defineConfig({
-  resolve: {
-    alias: {
-      src: "/src", // trick to get absolute imports to work
-      "@rilldata/web-local": "/src",
-      "@rilldata/web-common": "/../web-common/src",
-    },
+const aliases: any = [
+  {
+    find: "src",
+    replacement: "/src",
   },
-  plugins: [svelte()],
-  test: {
-    coverage: {
-      provider: "c8",
-      src: ["./src"],
-      all: true,
-    },
+  {
+    find: "@rilldata/web-local",
+    replacement: "/src",
   },
+  {
+    find: "@rilldata/web-common",
+    replacement: "/../web-common/src",
+  },
+];
+
+export default defineConfig(({ mode, command, ssrBuild }) => {
+  if (mode === "test") {
+    aliases.push({
+      find: /^svelte$/,
+      replacement: "/../node_modules/svelte/index.mjs",
+    });
+  }
+
+  return {
+    resolve: {
+      alias: aliases,
+    },
+    plugins: [svelte()],
+    test: {
+      coverage: {
+        provider: "c8",
+        src: ["./src"],
+        all: true,
+      },
+      environment: "jsdom",
+    },
+  };
 });
