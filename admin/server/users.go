@@ -175,6 +175,59 @@ func (s *Server) RevokeCurrentAuthToken(ctx context.Context, req *adminv1.Revoke
 	}, nil
 }
 
+func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResourceRequest) (*adminv1.SudoGetResourceResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can lookup resource")
+	}
+
+	if req.GetOrgId() != "" {
+		org, err := s.admin.DB.FindOrganization(ctx, req.GetOrgId())
+		if err != nil {
+			return nil, err
+		}
+
+		return &adminv1.SudoGetResourceResponse{
+			Resource: &adminv1.SudoGetResourceResponse_Org{
+				Org: organizationToDTO(org),
+			},
+		}, nil
+	}
+
+	if req.GetUserId() != "" {
+		user, err := s.admin.DB.FindUser(ctx, req.GetUserId())
+		if err != nil {
+			return nil, err
+		}
+
+		return &adminv1.SudoGetResourceResponse{
+			Resource: &adminv1.SudoGetResourceResponse_User{
+				User: userToPB(user),
+			},
+		}, nil
+	}
+
+	if req.GetProjectId() != "" {
+		proj, err := s.admin.DB.FindProject(ctx, req.GetProjectId())
+		if err != nil {
+			return nil, err
+		}
+
+		org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+		if err != nil {
+			return nil, err
+		}
+
+		return &adminv1.SudoGetResourceResponse{
+			Resource: &adminv1.SudoGetResourceResponse_Project{
+				Project: s.projToDTO(proj, org.Name),
+			},
+		}, nil
+	}
+
+	return nil, nil
+}
+
 func userToPB(u *database.User) *adminv1.User {
 	return &adminv1.User{
 		Id:          u.ID,

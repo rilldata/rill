@@ -10,6 +10,12 @@ export type AdminServiceSearchUsersParams = {
   pageToken?: string;
 };
 
+export type AdminServiceSudoGetResourceParams = {
+  userId?: string;
+  orgId?: string;
+  projectId?: string;
+};
+
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
   [key: string]: string;
 };
@@ -153,6 +159,12 @@ export interface V1TriggerRedeployResponse {
 
 export interface V1TriggerReconcileResponse {
   [key: string]: any;
+}
+
+export interface V1SudoGetResourceResponse {
+  user?: V1User;
+  org?: V1Organization;
+  project?: V1Project;
 }
 
 export interface V1SetSuperuserResponse {
