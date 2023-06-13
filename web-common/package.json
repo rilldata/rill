@@ -8,7 +8,7 @@
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "test:watch": "npm run test -- --watch",
-    "storybook": "STORYBOOK_MODE=true STORY=123 storybook dev -p 6006",
+    "storybook": "STORYBOOK_MODE=true storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
   "devDependencies": {
