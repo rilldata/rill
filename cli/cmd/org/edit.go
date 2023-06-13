@@ -55,7 +55,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			req := &adminv1.UpdateOrganizationRequest{
 				Name: org.Name,
 			}
-			
+
 			promptFlagValues := cfg.Interactive
 			if cmd.Flags().Changed("description") {
 				promptFlagValues = false
