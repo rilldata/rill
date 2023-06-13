@@ -1,7 +1,10 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
-import { defineConfig } from "vitest/config";
+import { defineConfig, UserConfig } from "vitest/config";
 
-const aliases: any = [
+type Writeable<T> = { -readonly [P in keyof T]: T[P] };
+type Alias = Writeable<UserConfig["resolve"]["alias"]>;
+
+const alias: Alias = [
   {
     find: "src",
     replacement: "/src",
@@ -16,9 +19,9 @@ const aliases: any = [
   },
 ];
 
-export default defineConfig(({ mode, command, ssrBuild }) => {
+export default defineConfig(({ mode }) => {
   if (mode === "test") {
-    aliases.push({
+    alias.push({
       find: /^svelte$/,
       replacement: "/../node_modules/svelte/index.mjs",
     });
@@ -26,7 +29,7 @@ export default defineConfig(({ mode, command, ssrBuild }) => {
 
   return {
     resolve: {
-      alias: aliases,
+      alias,
     },
     plugins: [svelte()],
     test: {

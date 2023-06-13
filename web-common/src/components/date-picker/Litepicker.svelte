@@ -72,6 +72,7 @@
   onDestroy(() => {
     startEl.removeEventListener("focus", handleStartFocus);
     endEl.removeEventListener("focus", handleEndFocus);
+    picker?.destroy();
   });
 </script>
 

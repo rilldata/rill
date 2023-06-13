@@ -15,8 +15,6 @@ const style = {
 };
 
 export default class Custompicker extends Litepicker {
-  editingDate;
-
   constructor(options) {
     super(options);
     this.editingDate = 0;
@@ -24,6 +22,8 @@ export default class Custompicker extends Litepicker {
       new DateTime(options.startDate),
       new DateTime(options.endDate),
     ];
+
+    this.instance = instance++;
 
     this.updateValues();
 
@@ -308,5 +308,99 @@ export default class Custompicker extends Litepicker {
     this.ui.style.display = "none";
 
     this.emit("hide");
+  }
+
+  // Override Litepicker method to support removing event listeners
+  bindEvents() {
+    this.teardownFns = this.teardownFns || [];
+    const clickHandler = this.onClick.bind(this);
+    document.addEventListener("click", clickHandler, true);
+    this.teardownFns.push(() =>
+      document.removeEventListener("click", clickHandler, true)
+    );
+
+    this.ui = document.createElement("div");
+    this.ui.className = style.litepicker;
+    this.ui.style.display = "none";
+    const handleMouseEnter = this.onMouseEnter.bind(this);
+    const handleMouseLeave = this.onMouseLeave.bind(this);
+    this.ui.addEventListener("mouseenter", handleMouseEnter, true);
+    this.ui.addEventListener("mouseleave", handleMouseLeave, false);
+    this.teardownFns.push(() =>
+      this.ui.removeEventListener("mouseenter", handleMouseEnter, true)
+    );
+    this.teardownFns.push(() =>
+      this.ui.removeEventListener("mouseleave", handleMouseLeave, true)
+    );
+
+    if (this.options.autoRefresh) {
+      if (this.options.element instanceof HTMLElement) {
+        this.options.element.addEventListener(
+          "keyup",
+          this.onInput.bind(this),
+          true
+        );
+      }
+      if (this.options.elementEnd instanceof HTMLElement) {
+        this.options.elementEnd.addEventListener(
+          "keyup",
+          this.onInput.bind(this),
+          true
+        );
+      }
+    } else {
+      if (this.options.element instanceof HTMLElement) {
+        this.options.element.addEventListener(
+          "change",
+          this.onInput.bind(this),
+          true
+        );
+      }
+      if (this.options.elementEnd instanceof HTMLElement) {
+        this.options.elementEnd.addEventListener(
+          "change",
+          this.onInput.bind(this),
+          true
+        );
+      }
+    }
+
+    if (this.options.parentEl) {
+      if (this.options.parentEl instanceof HTMLElement) {
+        this.options.parentEl.appendChild(this.ui);
+      } else {
+        document.querySelector(this.options.parentEl).appendChild(this.ui);
+      }
+    } else {
+      if (this.options.inlineMode) {
+        if (this.options.element instanceof HTMLInputElement) {
+          this.options.element.parentNode.appendChild(this.ui);
+        } else {
+          this.options.element.appendChild(this.ui);
+        }
+      } else {
+        document.body.appendChild(this.ui);
+      }
+    }
+
+    this.updateInput();
+
+    this.init();
+
+    if (typeof this.options.setup === "function") {
+      this.options.setup.call(this, this);
+    }
+
+    this.render();
+
+    if (this.options.inlineMode) {
+      this.show();
+    }
+  }
+
+  // Teardown picker when done with it
+  destroy() {
+    this.teardownFns.forEach((fn) => fn());
+    this.ui.remove();
   }
 }
