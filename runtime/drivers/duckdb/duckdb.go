@@ -293,7 +293,7 @@ func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 
 // checkErr marks the DB for reopening if the error is an internal DuckDB error.
 // In all other cases, it just proxies the err.
-// It should be wrapped around errors returned from DuckDB queries.
+// It should be wrapped around errors returned from DuckDB queries. **It must be called while still holding an acquired DuckDB connection.**
 func (c *connection) checkErr(err error) error {
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "INTERNAL Error:") || strings.HasPrefix(err.Error(), "FATAL Error") {
