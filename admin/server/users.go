@@ -209,7 +209,7 @@ func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResour
 		return nil, status.Errorf(codes.Internal, "unexpected resource type %T", id)
 	}
 
-	return nil, nil
+	return res, nil
 }
 
 func userToPB(u *database.User) *adminv1.User {
