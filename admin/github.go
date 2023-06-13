@@ -29,6 +29,7 @@ var (
 type Github interface {
 	AppClient() *github.Client
 	InstallationClient(installationID int64) (*github.Client, error)
+	InstallationToken(ctx context.Context, installationID int64) (string, error)
 }
 
 // githubClient implements the Github interface.
@@ -85,6 +86,20 @@ func (g *githubClient) InstallationClient(installationID int64) (*github.Client,
 	return installationClient, nil
 }
 
+func (g *githubClient) InstallationToken(ctx context.Context, installationID int64) (string, error) {
+	itr, err := ghinstallation.New(http.DefaultTransport, g.appID, installationID, []byte(g.appPrivateKey))
+	if err != nil {
+		return "", fmt.Errorf("failed to create github installation transport: %w", err)
+	}
+
+	token, err := itr.Token(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to create token: %w", err)
+	}
+
+	return token, nil
+}
+
 // GetGithubInstallation returns a non zero Github installation ID if the Github App is installed on the repository
 // and is not in suspended state
 // The githubURL should be a HTTPS URL for a Github repository without the .git suffix.
@@ -94,7 +109,7 @@ func (s *Service) GetGithubInstallation(ctx context.Context, githubURL string) (
 		return 0, fmt.Errorf("invalid Github URL %q", githubURL)
 	}
 
-	installation, resp, err := s.github.AppClient().Apps.FindRepositoryInstallation(ctx, account, repo)
+	installation, resp, err := s.Github.AppClient().Apps.FindRepositoryInstallation(ctx, account, repo)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
 			// We don't have an installation on the repo
@@ -129,7 +144,7 @@ func (s *Service) LookupGithubRepoForUser(ctx context.Context, installationID in
 		return nil, fmt.Errorf("invalid gitUsername %q", gitUsername)
 	}
 
-	gh, err := s.github.InstallationClient(installationID)
+	gh, err := s.Github.InstallationClient(installationID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create github installation client: %w", err)
 	}

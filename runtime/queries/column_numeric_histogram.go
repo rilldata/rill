@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"math"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -65,6 +66,10 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 
 	return nil
+}
+
+func (q *ColumnNumericHistogram) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error {
+	return ErrExportNotSupported
 }
 
 func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, instanceID string, priority int) (float64, error) {

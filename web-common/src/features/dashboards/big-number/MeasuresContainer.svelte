@@ -1,22 +1,16 @@
 <script lang="ts">
   import {
-    useMetaQuery,
     selectBestMeasureStrings,
     selectMeasureKeys,
+    useMetaQuery,
+    useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
-  import {
-    createQueryServiceMetricsViewTotals,
-    V1MetricsViewTotalsResponse,
-  } from "@rilldata/web-common/runtime-client";
-  import type { CreateQueryResult } from "@tanstack/svelte-query";
+  import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { MEASURE_CONFIG } from "../config";
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "../dashboard-stores";
+  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
 
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
@@ -42,15 +36,14 @@
     MEASURES_PADDING_LEFT -
     LEADERBOARD_PADDING_RIGHT;
 
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: dashboardStore = useDashboardStore(metricViewName);
 
   $: instanceId = $runtime.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
 
-  $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
+  $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
@@ -130,26 +123,29 @@
     }
   }
 
-  let totalsQuery: CreateQueryResult<V1MetricsViewTotalsResponse, Error>;
   $: numColumns = 3;
 
-  $: if (
-    metricsExplorer &&
-    metaQuery &&
-    $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching
-  ) {
-    let totalsQueryParams = {
+  $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
+  $: hasTimeSeries = $metricTimeSeries.data;
+  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
+  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
+  $: totalsQuery = createQueryServiceMetricsViewTotals(
+    instanceId,
+    metricViewName,
+    {
       measureNames: selectedMeasureNames,
-      filter: metricsExplorer?.filters,
-    };
-
-    totalsQuery = createQueryServiceMetricsViewTotals(
-      instanceId,
-      metricViewName,
-      totalsQueryParams
-    );
-  }
+      timeStart: timeStart,
+      timeEnd: timeEnd,
+      filter: $dashboardStore?.filters,
+    },
+    {
+      query: {
+        enabled:
+          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
+          !!$dashboardStore?.filters,
+      },
+    }
+  );
 
   let measureNodes = [];
 
@@ -159,7 +155,7 @@
 
   $: availableMeasureLabels = selectBestMeasureStrings($metaQuery);
   $: availableMeasureKeys = selectMeasureKeys($metaQuery);
-  $: visibleMeasureKeys = metricsExplorer?.visibleMeasureKeys;
+  $: visibleMeasureKeys = $dashboardStore?.visibleMeasureKeys;
   $: visibleMeasuresBitmask = availableMeasureKeys.map((k) =>
     visibleMeasureKeys.has(k)
   );

@@ -1,3 +1,5 @@
+import { SourceErrorCodes } from "../../../metrics/service/SourceEventTypes";
+
 export function niceDuckdbUnicodeError(message: string) {
   const r =
     /(?:at line )([0-9]+)(?: in column "")(.*)(?:"": Invalid unicode \(byte sequence mismatch\) detected in CSV file)/gm;
@@ -69,6 +71,8 @@ export function humanReadableErrorMessage(
           return "The provided URL does not appear to have a valid dataset. Please check your path and try again.";
         } else if (serverError.includes("failed to fetch url")) {
           return "We could not connect to the provided URL. Please check your path and try again.";
+        } else if (serverError.includes("file type not supported")) {
+          return "Provided " + serverError;
         }
       }
 
@@ -87,4 +91,56 @@ export function humanReadableErrorMessage(
     default:
       return "An unknown error occurred. If the error persists, please reach out for help on <a href=https://bit.ly/3unvA05 target=_blank>Discord</a>.";
   }
+}
+
+const errorTelemetryMap = {
+  // AWS Errors
+  missingRegion: SourceErrorCodes.MissingRegion,
+  noCredentialProviders: SourceErrorCodes.Unauthorized,
+  invalidAccessKey: SourceErrorCodes.InvalidAccessKey,
+  signatureDoesNotMatch: SourceErrorCodes.SignatureDoesntMatch,
+  bucketRegionError: SourceErrorCodes.BucketRegionError,
+  accessDenied: SourceErrorCodes.AccessForbidden,
+  noSuchKey: SourceErrorCodes.NoSuchKey,
+  noSuchBucket: SourceErrorCodes.NoSuchBucket,
+  authorizationHeaderMalformed: SourceErrorCodes.MalformedHeader,
+  // GCP Errors
+  "could not find default credentials": SourceErrorCodes.Unauthorized,
+  NotFound: SourceErrorCodes.URLBroken,
+  Unauthorized: SourceErrorCodes.Unauthorized,
+  AccessDenied: SourceErrorCodes.AccessForbidden,
+  PermissionDenied: SourceErrorCodes.AccessForbidden,
+  "object doesn't exist": SourceErrorCodes.URLBroken,
+  "no files found": SourceErrorCodes.URLBroken,
+  // HTTPS Errors
+  "Conversion error": SourceErrorCodes.MismatchedSchema,
+  "Invalid Input Error": SourceErrorCodes.MismatchedSchema,
+  "invalid file": SourceErrorCodes.MismatchedSchema,
+  "failed to fetch url": SourceErrorCodes.URLBroken,
+  "file type not supported": SourceErrorCodes.UnsupportedFileType,
+  // Runtime errors
+  "context deadline exceeded": SourceErrorCodes.RuntimeError,
+  timeout: SourceErrorCodes.RuntimeError,
+};
+
+export function categorizeSourceError(errorMessage: string) {
+  // check for connector errors
+  for (const [key, value] of Object.entries(errorTelemetryMap)) {
+    if (errorMessage.includes(key)) {
+      return value;
+    }
+  }
+
+  // check for duckdb errors
+  if (errorMessage.match(/expected \d* values per row, but got \d*/)) {
+    return SourceErrorCodes.MismatchedSchema;
+  } else if (
+    errorMessage.match(/Catalog Error: Table with name .* does not exist/)
+  ) {
+    return SourceErrorCodes.RuntimeError;
+  } else if (hasDuckDBUnicodeError(errorMessage)) {
+    return SourceErrorCodes.UnicodeError;
+  }
+
+  return SourceErrorCodes.Uncategorized;
 }

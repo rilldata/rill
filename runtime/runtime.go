@@ -55,6 +55,10 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 	}, nil
 }
 
+func (r *Runtime) AllowHostAccess() bool {
+	return r.opts.AllowHostAccess
+}
+
 func (r *Runtime) Close() error {
 	return errors.Join(
 		r.metastore.Close(),

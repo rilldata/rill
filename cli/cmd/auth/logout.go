@@ -22,7 +22,7 @@ func LogoutCmd(cfg *config.Config) *cobra.Command {
 
 			token := cfg.AdminToken()
 			if token == "" {
-				cmdutil.WarnPrinter("You are already logged out.")
+				cmdutil.PrintlnWarn("You are already logged out.")
 				return nil
 			}
 

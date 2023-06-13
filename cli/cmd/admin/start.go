@@ -77,7 +77,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			var conf Config
 			err := envconfig.Process("rill_admin", &conf)
 			if err != nil {
-				fmt.Printf("failed to load config: %s", err.Error())
+				fmt.Printf("failed to load config: %s\n", err.Error())
 				os.Exit(1)
 			}
 
@@ -86,7 +86,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			cfg.Level.SetLevel(conf.LogLevel)
 			logger, err := cfg.Build()
 			if err != nil {
-				fmt.Printf("error: failed to create logger: %s", err.Error())
+				fmt.Printf("error: failed to create logger: %s\n", err.Error())
 				os.Exit(1)
 			}
 
