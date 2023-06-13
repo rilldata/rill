@@ -1,3 +1,4 @@
+// TODO: Refactor to include Home, Splash and remove stale types
 export enum EntityType {
   Table = "Table",
   Model = "Model",

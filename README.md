@@ -9,7 +9,7 @@ curl -s https://cdn.rilldata.com/install.sh | bash
 rill start my-rill-project
 ```
 
-![home-demo](https://github.com/rilldata/rill-developer/assets/5587788/49d17e80-5f27-408c-bbc9-fdbff7b6b627 "829237828")
+![home-demo](https://github.com/rilldata/rill/assets/5587788/49d17e80-5f27-408c-bbc9-fdbff7b6b627 "829237828")
 
 Rill's design principles:
 - _**Feels good to use**_ – powered by Sveltekit & DuckDB = conversation-fast, not wait-ten-seconds-for-result-set fast
@@ -23,8 +23,8 @@ Rill's design principles:
 
 We always appreciate hearing from our users and welcome any questions, comments, or concerns you may have. To get in touch with us, there are two options available:
 
-1. _**File an Issue**_: If you have encountered a bug or have a feature request, please [file an issue](https://github.com/rilldata/rill-developer/issues/new/choose) here (this GitHub page).
-2. _**Join our Discord Channel**_: For general inquiries or if you need help getting started with Rill, we encourage you to join our [Discord Community](https://bit.ly/3unvA05). Please abide by the [community policy](https://github.com/rilldata/rill-developer/blob/main/COMMUNITY-POLICY.md).
+1. _**File an Issue**_: If you have encountered a bug or have a feature request, please [file an issue](https://github.com/rilldata/rill/issues/new/choose) here (this GitHub page).
+2. _**Join our Discord Channel**_: For general inquiries or if you need help getting started with Rill, we encourage you to join our [Discord Community](https://bit.ly/3unvA05). Please abide by the [community policy](https://github.com/rilldata/rill/blob/main/COMMUNITY-POLICY.md).
 
 ## Legal
 

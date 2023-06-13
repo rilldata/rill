@@ -13,6 +13,12 @@
   import { invalidateAfterReconcile } from "../../runtime-client/invalidation";
   import { runtime } from "../../runtime-client/runtime-store";
   import EmptyProject from "./EmptyProject.svelte";
+  import { behaviourEvent } from "../../metrics/initMetrics";
+  import {
+    BehaviourEventAction,
+    BehaviourEventMedium,
+  } from "../../metrics/service/BehaviourEventTypes";
+  import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
 
   const queryClient = useQueryClient();
 
@@ -71,6 +77,24 @@
       },
     },
   });
+
+  function startWithExampleProject(example: (typeof EXAMPLES)[number]) {
+    behaviourEvent?.fireSplashEvent(
+      BehaviourEventAction.ExampleAdd,
+      BehaviourEventMedium.Card,
+      MetricsEventSpace.Workspace,
+      example.name
+    );
+
+    firstPage = example.firstPage;
+    $unpackExampleProject.mutate({
+      instanceId: $runtime.instanceId,
+      data: {
+        name: example.name,
+        force: true,
+      },
+    });
+  }
 </script>
 
 <section class="flex flex-col items-center gap-y-5 mt-4 mb-6">
@@ -81,14 +105,7 @@
       <Card
         bgClasses={example.image}
         on:click={() => {
-          firstPage = example.firstPage;
-          $unpackExampleProject.mutate({
-            instanceId: $runtime.instanceId,
-            data: {
-              name: example.name,
-              force: true,
-            },
-          });
+          startWithExampleProject(example);
         }}
       >
         <CardTitle>{example.title}</CardTitle>

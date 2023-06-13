@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/dag"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
+	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
 	// Load migrators
@@ -92,8 +93,15 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 	defer s.Meta.lock.Unlock()
 
 	result := NewReconcileResult()
+	s.logger.Info("reconcile started", zap.Any("config", conf))
 
 	if len(conf.ChangedPaths) == 0 || slices.Contains(conf.ChangedPaths, "rill.yaml") {
+		// check the project is initialized
+		c := rillv1beta.New(s.Repo, s.InstID)
+		if !c.IsInit(ctx) {
+			return nil, fmt.Errorf("not a valid project: rill.yaml not found")
+		}
+
 		// set project variables from rill.yaml in instance
 		if err := s.setProjectVariables(ctx); err != nil {
 			return nil, err
@@ -122,6 +130,7 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 		s.Meta.hasMigrated = true
 	}
 	result.collectAffectedPaths()
+	s.logger.Info("reconcile completed", zap.Any("result", result))
 	return result, nil
 }
 

@@ -309,8 +309,8 @@ func logFieldsFromContext(ctx context.Context) *[]zap.Field {
 	return v
 }
 
-// SetRequestAttributes sets attributes on both the current trace span and the finish log of the current request.
-func SetRequestAttributes(ctx context.Context, attrs ...attribute.KeyValue) {
+// AddRequestAttributes sets attributes on both the current trace span and the finish log of the current request.
+func AddRequestAttributes(ctx context.Context, attrs ...attribute.KeyValue) {
 	// Set attributes on the span
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(attrs...)

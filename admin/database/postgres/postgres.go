@@ -156,49 +156,49 @@ func (c *connection) UpdateOrganizationAllUsergroup(ctx context.Context, orgID, 
 	return res, nil
 }
 
-func (c *connection) FindOrganizationAutoinviteDomainsForOrganization(ctx context.Context, orgID string) ([]*database.OrganizationAutoinviteDomain, error) {
-	var res []*database.OrganizationAutoinviteDomain
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs_autoinvite_domains WHERE org_id=$1", orgID)
+func (c *connection) FindOrganizationWhitelistedDomainForOrganizationWithJoinedRoleNames(ctx context.Context, orgID string) ([]*database.OrganizationWhitelistedDomainWithJoinedRoleNames, error) {
+	var res []*database.OrganizationWhitelistedDomainWithJoinedRoleNames
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT oad.domain, r.name FROM orgs_autoinvite_domains oad JOIN org_roles r ON r.id = oad.org_role_id WHERE oad.org_id=$1", orgID)
 	if err != nil {
-		return nil, parseErr("org autoinvite domains", err)
+		return nil, parseErr("org whitelist domains", err)
 	}
 	return res, nil
 }
 
-func (c *connection) FindOrganizationAutoinviteDomainsForDomain(ctx context.Context, domain string) ([]*database.OrganizationAutoinviteDomain, error) {
-	var res []*database.OrganizationAutoinviteDomain
+func (c *connection) FindOrganizationWhitelistedDomainsForDomain(ctx context.Context, domain string) ([]*database.OrganizationWhitelistedDomain, error) {
+	var res []*database.OrganizationWhitelistedDomain
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM orgs_autoinvite_domains WHERE lower(domain)=lower($1)", domain)
 	if err != nil {
-		return nil, parseErr("org autoinvite domains", err)
+		return nil, parseErr("org whitelist domains", err)
 	}
 	return res, nil
 }
 
-func (c *connection) FindOrganizationAutoinviteDomain(ctx context.Context, orgID, domain string) (*database.OrganizationAutoinviteDomain, error) {
-	res := &database.OrganizationAutoinviteDomain{}
+func (c *connection) FindOrganizationWhitelistedDomain(ctx context.Context, orgID, domain string) (*database.OrganizationWhitelistedDomain, error) {
+	res := &database.OrganizationWhitelistedDomain{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM orgs_autoinvite_domains WHERE org_id=$1 AND lower(domain)=lower($2)", orgID, domain).StructScan(res)
 	if err != nil {
-		return nil, parseErr("org autoinvite domain", err)
+		return nil, parseErr("org whitelist domain", err)
 	}
 	return res, nil
 }
 
-func (c *connection) InsertOrganizationAutoinviteDomain(ctx context.Context, opts *database.InsertOrganizationAutoinviteDomainOptions) (*database.OrganizationAutoinviteDomain, error) {
+func (c *connection) InsertOrganizationWhitelistedDomain(ctx context.Context, opts *database.InsertOrganizationWhitelistedDomainOptions) (*database.OrganizationWhitelistedDomain, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
 	}
 
-	res := &database.OrganizationAutoinviteDomain{}
+	res := &database.OrganizationWhitelistedDomain{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs_autoinvite_domains(org_id, org_role_id, domain) VALUES ($1, $2, $3) RETURNING *`, opts.OrgID, opts.OrgRoleID, opts.Domain).StructScan(res)
 	if err != nil {
-		return nil, parseErr("org autoinvite domain", err)
+		return nil, parseErr("org whitelist domain", err)
 	}
 	return res, nil
 }
 
-func (c *connection) DeleteOrganizationAutoinviteDomain(ctx context.Context, id string) error {
+func (c *connection) DeleteOrganizationWhitelistedDomain(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM orgs_autoinvite_domains WHERE id=$1", id)
-	return checkDeleteRow("org autoinvite domain", res, err)
+	return checkDeleteRow("org whitelist domain", res, err)
 }
 
 func (c *connection) FindProjects(ctx context.Context, afterName string, limit int) ([]*database.Project, error) {
@@ -507,6 +507,15 @@ func (c *connection) UpdateUser(ctx context.Context, id string, opts *database.U
 		opts.GithubUsername).StructScan(res)
 	if err != nil {
 		return nil, parseErr("user", err)
+	}
+	return res, nil
+}
+
+func (c *connection) CheckUserIsAnOrganizationMember(ctx context.Context, userID, orgID string) (bool, error) {
+	var res bool
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT EXISTS (SELECT 1 FROM users_orgs_roles WHERE user_id=$1 AND org_id=$2)", userID, orgID).Scan(&res)
+	if err != nil {
+		return false, parseErr("check", err)
 	}
 	return res, nil
 }

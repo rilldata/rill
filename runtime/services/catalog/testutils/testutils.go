@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -193,6 +194,9 @@ func GetService(t *testing.T) (*catalog.Service, string) {
 	require.NoError(t, err)
 	repo, ok := fileStore.RepoStore()
 	require.True(t, ok)
+
+	err = repo.Put(context.Background(), "test", "rill.yaml", strings.NewReader(""))
+	require.NoError(t, err)
 
 	return catalog.NewService(catalogObject, repo, olap, registryStore(t), "test", nil, catalog.NewMigrationMeta()), dir
 }
