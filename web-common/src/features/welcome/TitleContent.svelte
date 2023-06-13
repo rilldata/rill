@@ -14,7 +14,7 @@
   let showAddSourceModal = false;
   const openShowAddSourceModal = () => {
     showAddSourceModal = true;
-    behaviourEvent.fireSplashEvent(
+    behaviourEvent?.fireSplashEvent(
       BehaviourEventAction.SourceModal,
       BehaviourEventMedium.Button,
       MetricsEventSpace.Workspace

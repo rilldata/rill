@@ -3,9 +3,11 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/dgraph-io/ristretto"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/singleflight"
 	"go.opentelemetry.io/otel"
@@ -40,6 +42,7 @@ type Query interface {
 	// Resolve should execute the query against the instance's infra.
 	// Error can be nil along with a nil result in general, i.e. when a model contains no rows aggregation results can be nil.
 	Resolve(ctx context.Context, rt *Runtime, instanceID string, priority int) error
+	Export(ctx context.Context, rt *Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error
 }
 
 func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, priority int) error {
