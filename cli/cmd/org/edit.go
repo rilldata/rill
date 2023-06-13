@@ -55,7 +55,14 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			req := &adminv1.UpdateOrganizationRequest{
 				Name: org.Name,
 			}
-			if cfg.Interactive {
+			
+			promptFlagValues := cfg.Interactive
+			if cmd.Flags().Changed("description") {
+				promptFlagValues = false
+				req.Description = &description
+			}
+
+			if promptFlagValues {
 				description, err = cmdutil.InputPrompt("Enter the description", org.Description)
 				if err != nil {
 					return err
