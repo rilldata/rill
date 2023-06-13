@@ -14,7 +14,7 @@
   import MetricsExploreMetricsButton from "./MetricsExploreMetricsButton.svelte";
 
   export let metricsDefName;
-  export let metricsInternalRep;
+  export let yaml;
 
   $: runtimeInstanceId = $runtime.instanceId;
   $: allNamesQuery = useAllNames(runtimeInstanceId);
@@ -61,12 +61,7 @@
 <WorkspaceHeader
   {...{ titleInput, onChangeCallback }}
   appRunning={$appQueryStatusStore}
-  showInspectorToggle={false}
 >
   <MetricsIcon slot="icon" />
-  <MetricsExploreMetricsButton
-    {metricsDefName}
-    {metricsInternalRep}
-    slot="cta"
-  />
+  <MetricsExploreMetricsButton {metricsDefName} {yaml} slot="cta" />
 </WorkspaceHeader>

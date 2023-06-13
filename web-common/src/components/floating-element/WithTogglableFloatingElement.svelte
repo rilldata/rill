@@ -12,6 +12,8 @@
   export let suppress = false;
   export let active = false;
 
+  export let inline = false;
+
   /** this passes down the dom element used for the "outside click" action.
    * Since this element is not strictly within the parent of the menu (which is in a Portal),
    * we will need to check to see if this element was also clicked before firing the outside click callback.
@@ -24,7 +26,7 @@
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div bind:this={parent}>
+<div class:inline bind:this={parent}>
   <slot
     {active}
     handleClose={() => {

@@ -66,6 +66,6 @@
   <title>Rill Developer | {metricViewName}</title>
 </svelte:head>
 
-{#if $fileQuery.data && yaml}
+{#if $fileQuery.data && yaml !== undefined}
   <MetricsWorkspace metricsDefName={metricViewName} {nonStandardError} {yaml} />
 {/if}

@@ -26,5 +26,10 @@
     "typescript": "^4.7.4",
     "vitest": "^0.31.0"
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@codemirror/basic-setup": "^0.20.0",
+    "@codemirror/legacy-modes": "^6.3.2",
+    "@codemirror/rangeset": "^0.19.9"
+  }
 }
