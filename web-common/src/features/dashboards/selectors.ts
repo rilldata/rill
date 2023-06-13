@@ -186,9 +186,16 @@ export const useMetaDimension = (
   metricViewName: string,
   dimensionName: string
 ) =>
-  useMetaQuery(instanceId, metricViewName, (meta) =>
-    meta?.dimensions?.find((dimension) => dimension.name === dimensionName)
-  );
+  useMetaQuery(instanceId, metricViewName, (meta) => {
+    const dim = meta?.dimensions?.find(
+      (dimension) => dimension.name === dimensionName
+    );
+    return {
+      ...dim,
+      // this is for backwards compatibility when we used `name` as `column`
+      column: dim.column ?? dim.name,
+    };
+  });
 
 /**
  * Returns a copy of the filter without the passed in dimension filters.

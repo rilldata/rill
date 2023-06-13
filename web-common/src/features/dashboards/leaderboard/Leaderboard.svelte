@@ -80,6 +80,7 @@
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
   $: displayName = dimension?.label || dimension?.name;
+  $: dimensionColumn = dimension?.column || dimension?.name;
 
   $: measureQuery = useMetaMeasure(
     $runtime.instanceId,
@@ -162,7 +163,7 @@
     values =
       $topListQuery?.data?.data.map((val) => ({
         value: val[measure?.name],
-        label: val[dimension?.column],
+        label: val[dimensionColumn],
       })) ?? [];
   }
 
@@ -217,7 +218,7 @@
       values
         ?.slice(0, slice)
         ?.concat(selectedValuesThatAreBelowTheFold)
-        ?.map((v) => v[dimension.column]) ?? [];
+        ?.map((v) => v[dimensionColumn]) ?? [];
 
     const updatedFilters = getFilterForComparsion(
       filterForDimension,
@@ -263,7 +264,7 @@
     comparisonValues =
       $comparisonTopListQuery?.data?.data?.map((val) => ({
         value: val[measure?.name],
-        label: val[dimension?.column],
+        label: val[dimensionColumn],
       })) ?? [];
   }
 
