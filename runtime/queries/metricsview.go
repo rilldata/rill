@@ -2,7 +2,10 @@ package queries
 
 import (
 	"context"
+	"encoding/csv"
+	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -279,4 +282,46 @@ func metricsViewDimensionToSafeColumn(mv *runtimev1.MetricsView, dimName string)
 		}
 	}
 	return "", fmt.Errorf("dimension %s not found", dimName)
+}
+
+func writeCSV(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writer io.Writer) error {
+	w := csv.NewWriter(writer)
+
+	record := make([]string, 0, len(meta))
+	for _, field := range meta {
+		record = append(record, field.Name)
+	}
+	if err := w.Write(record); err != nil {
+		return err
+	}
+	record = record[:0]
+
+	for _, structs := range data {
+		for _, field := range meta {
+			pbvalue := structs.Fields[field.Name]
+			switch pbvalue.GetKind().(type) {
+			case *structpb.Value_StructValue:
+				bts, err := json.Marshal(pbvalue)
+				if err != nil {
+					return err
+				}
+
+				record = append(record, string(bts))
+			case *structpb.Value_NullValue:
+				record = append(record, "")
+			default:
+				record = append(record, fmt.Sprintf("%v", pbvalue.AsInterface()))
+			}
+		}
+
+		if err := w.Write(record); err != nil {
+			return err
+		}
+
+		record = record[:0]
+	}
+
+	w.Flush()
+
+	return nil
 }

@@ -160,6 +160,13 @@ export type QueryServiceMetricsViewComparisonToplistBody = {
   priority?: number;
 };
 
+export type QueryServiceExportBody = {
+  limit?: number;
+  format?: V1ExportFormat;
+  metricsViewToplistRequest?: V1MetricsViewToplistRequest;
+  metricsViewRowsRequest?: V1MetricsViewRowsRequest;
+};
+
 export type QueryServiceColumnDescriptiveStatisticsParams = {
   columnName?: string;
   priority?: number;
@@ -428,16 +435,6 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
-export interface V1RenameFileAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
 export interface V1RenameFileAndReconcileRequest {
   instanceId?: string;
   fromPath?: string;
@@ -502,6 +499,16 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: ReconcileErrorCharLocation;
   endLocation?: ReconcileErrorCharLocation;
+}
+
+export interface V1RenameFileAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export interface V1ReconcileResponse {
@@ -632,9 +639,41 @@ export interface V1MetricsViewSort {
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  filter?: V1MetricsViewFilter;
+  priority?: number;
+}
+
+export interface V1MetricsViewRowsRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  timeStart?: string;
+  timeEnd?: string;
+  filter?: V1MetricsViewFilter;
+  sort?: V1MetricsViewSort[];
+  limit?: number;
+  offset?: string;
+  priority?: number;
 }
 
 export interface V1MetricsViewComparisonValue {
@@ -683,11 +722,6 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
-
 export interface V1MetricsView {
   name?: string;
   model?: string;
@@ -713,6 +747,12 @@ export interface V1ListInstancesResponse {
 
 export interface V1ListFilesResponse {
   paths?: string[];
+}
+
+export interface V1Example {
+  name?: string;
+  title?: string;
+  description?: string;
 }
 
 export interface V1ListExamplesResponse {
@@ -805,11 +845,18 @@ export interface V1GCSGetCredentialsInfoResponse {
   projectId?: string;
 }
 
-export interface V1Example {
-  name?: string;
-  title?: string;
-  description?: string;
+export interface V1ExportResponse {
+  downloadUrlPath?: string;
 }
+
+export type V1ExportFormat =
+  (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExportFormat = {
+  EXPORT_FORMAT_UNSPECIFIED: "EXPORT_FORMAT_UNSPECIFIED",
+  EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
+} as const;
 
 export interface V1EditInstanceResponse {
   instance?: V1Instance;

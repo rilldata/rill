@@ -9,6 +9,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
+var ErrExportNotSupported = fmt.Errorf("exporting is not supported")
+
 func quoteName(name string) string {
 	return fmt.Sprintf("\"%s\"", name)
 }

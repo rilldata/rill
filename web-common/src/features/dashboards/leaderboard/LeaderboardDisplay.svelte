@@ -7,17 +7,13 @@
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import {
-    MetricsViewDimension,
-    V1MetricsViewTotalsResponse,
     createQueryServiceMetricsViewTotals,
+    MetricsViewDimension,
   } from "@rilldata/web-common/runtime-client";
-  import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "../dashboard-stores";
+  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import { NicelyFormattedTypes } from "../humanize-numbers";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardMeasureSelector from "./LeaderboardMeasureSelector.svelte";
@@ -26,8 +22,7 @@
 
   const queryClient = useQueryClient();
 
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: dashboardStore = useDashboardStore(metricViewName);
 
   // query the `/meta` endpoint to get the metric's measures and dimensions
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
@@ -35,12 +30,12 @@
   $: dimensions = $metaQuery.data?.dimensions;
   $: measures = $metaQuery.data?.measures;
 
-  $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
+  $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
 
   $: activeMeasure =
     measures &&
     measures.find(
-      (measure) => measure.name === metricsExplorer?.leaderboardMeasureName
+      (measure) => measure.name === $dashboardStore?.leaderboardMeasureName
     );
 
   $: metricTimeSeries = useModelHasTimeSeries(
@@ -49,33 +44,29 @@
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
+  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
+  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
+  $: totalsQuery = createQueryServiceMetricsViewTotals(
+    $runtime.instanceId,
+    metricViewName,
+    {
+      measureNames: selectedMeasureNames,
+      timeStart: timeStart,
+      timeEnd: timeEnd,
+      filter: $dashboardStore?.filters,
+    },
+    {
+      query: {
+        enabled:
+          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
+          !!$dashboardStore?.filters,
+      },
+    }
+  );
+
   $: formatPreset =
     (activeMeasure?.format as NicelyFormattedTypes) ??
     NicelyFormattedTypes.HUMANIZE;
-
-  let totalsQuery: CreateQueryResult<V1MetricsViewTotalsResponse, Error>;
-  $: if (
-    metricsExplorer &&
-    metaQuery &&
-    $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching
-  ) {
-    let totalsQueryParams = { measureNames: selectedMeasureNames };
-    if (hasTimeSeries) {
-      totalsQueryParams = {
-        ...totalsQueryParams,
-        ...{
-          timeStart: metricsExplorer.selectedTimeRange?.start,
-          timeEnd: metricsExplorer.selectedTimeRange?.end,
-        },
-      };
-    }
-    totalsQuery = createQueryServiceMetricsViewTotals(
-      $runtime.instanceId,
-      metricViewName,
-      totalsQueryParams
-    );
-  }
 
   let referenceValue: number;
   $: if (activeMeasure?.name && $totalsQuery?.data?.data) {
@@ -140,7 +131,7 @@
   >
     <LeaderboardMeasureSelector {metricViewName} />
   </div>
-  {#if metricsExplorer}
+  {#if $dashboardStore}
     <VirtualizedGrid {columns} height="100%" items={dimensionsShown} let:item>
       <!-- the single virtual element -->
       <Leaderboard
