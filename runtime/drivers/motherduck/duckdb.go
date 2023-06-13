@@ -2,6 +2,7 @@ package motherduck
 
 import (
 	"context"
+	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"os"
@@ -111,16 +112,14 @@ func (d Driver) Drop(dsn string, logger *zap.Logger) error {
 		return err
 	}
 
-	if cfg.DBFilePath != "" {
-		err = os.Remove(cfg.DBFilePath)
-		if err != nil {
-			return err
-		}
-		// Hacky approach to remove the wal file
-		_ = os.Remove(cfg.DBFilePath + ".wal")
+	db, err := sql.Open("duckdb", "md:")
+	if err != nil {
+		return err
 	}
+	defer db.Close()
 
-	return nil
+	_, err = db.Exec(fmt.Sprintf("DROP DATABASE %q", cfg.DB))
+	return err
 }
 
 type connection struct {

@@ -14,8 +14,8 @@ type config struct {
 	DSN string
 	// PoolSize is the number of concurrent connections and queries allowed
 	PoolSize int
-	// DBFilePath is the path where database is stored
-	DBFilePath string
+	// Database name
+	DB string
 }
 
 func newConfig(dsn string) (*config, error) {
@@ -50,9 +50,9 @@ func newConfig(dsn string) (*config, error) {
 
 	// Return config
 	cfg := &config{
-		DSN:        dsn,
-		PoolSize:   poolSize,
-		DBFilePath: uri.Path,
+		DSN:      dsn,
+		PoolSize: poolSize,
+		DB:       uri.Opaque,
 	}
 	return cfg, nil
 }
