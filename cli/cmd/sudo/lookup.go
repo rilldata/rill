@@ -3,24 +3,22 @@ package sudo
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slices"
 )
 
 func lookupCmd(cfg *config.Config) *cobra.Command {
 	lookupCmd := &cobra.Command{
-		Use:       "lookup [user|org|project] <id>",
-		ValidArgs: []string{"user", "org", "project"},
-		Args:      cobra.MatchAll(cobra.ExactArgs(2), validateFirstArg),
-		Short:     "Lookup resource by id",
+		Use:   "lookup {user|org|project|deployment|instance} <id>",
+		Short: "Lookup resource by ID",
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			var err error
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -30,30 +28,24 @@ func lookupCmd(cfg *config.Config) *cobra.Command {
 
 			switch args[0] {
 			case "user":
-				err = getUser(ctx, client, args[1])
+				return getUser(ctx, client, args[1])
 			case "org":
-				err = getOrganization(ctx, client, args[1])
+				return getOrganization(ctx, client, args[1])
 			case "project":
-				err = getProject(ctx, client, args[1])
+				return getProject(ctx, client, args[1])
+			case "deployment":
+				// TODO
+				return nil
+			case "instance":
+				// TODO
+				return nil
+			default:
+				return fmt.Errorf("invalid resource type %q", args[0])
 			}
-			return err
 		},
 	}
 
 	return lookupCmd
-}
-
-func validateFirstArg(cmd *cobra.Command, args []string) error {
-	if len(args) == 0 {
-		return fmt.Errorf("first argument is required")
-	}
-
-	firstArg := args[0]
-	if !slices.Contains[string](cmd.ValidArgs, firstArg) {
-		return fmt.Errorf("invalid first argument: %s", firstArg)
-	}
-
-	return nil
 }
 
 func getOrganization(ctx context.Context, c *client.Client, orgID string) error {
@@ -64,8 +56,9 @@ func getOrganization(ctx context.Context, c *client.Client, orgID string) error 
 		return err
 	}
 
-	cmdutil.PrintlnSuccess("Organization info\n")
-	fmt.Printf("  Org: %s\n", res.GetOrg())
+	org := res.GetOrg()
+	fmt.Printf("Name: %s\n", org.Name)
+	fmt.Printf("Created on: %s\n", org.CreatedOn.AsTime().Format(time.RFC3339Nano))
 
 	return nil
 }
@@ -78,8 +71,10 @@ func getUser(ctx context.Context, c *client.Client, userID string) error {
 		return err
 	}
 
-	cmdutil.PrintlnSuccess("User info\n")
-	fmt.Printf("  User: %s\n", res.GetUser())
+	user := res.GetUser()
+	fmt.Printf("Email: %s\n", user.Email)
+	fmt.Printf("Name: %s\n", user.DisplayName)
+	fmt.Printf("Created on: %s\n", user.CreatedOn.AsTime().Format(time.RFC3339Nano))
 
 	return nil
 }
@@ -92,8 +87,19 @@ func getProject(ctx context.Context, c *client.Client, projectID string) error {
 		return err
 	}
 
-	cmdutil.PrintlnSuccess("Project info\n")
-	fmt.Printf("  Project: %s\n", res.GetProject())
+	project := res.GetProject()
+	fmt.Printf("Name: %s\n", project.Name)
+	fmt.Printf("Org: %s (ID: %s)\n", project.OrgName, project.OrgId)
+	fmt.Printf("Created on: %s\n", project.CreatedOn)
+	fmt.Printf("Public: %s", project.Public)
+	fmt.Printf("Region: %s", project.Region)
+	fmt.Printf("Github URL: %s", project.GithubUrl)
+	fmt.Printf("Subpath: %s", project.Subpath)
+	fmt.Printf("Prod branch: %s", project.ProdBranch)
+	fmt.Printf("Prod OLAP driver: %s", project.ProdOlapDriver)
+	fmt.Printf("Prod OLAP DSN: %s", project.ProdOlapDsn)
+	fmt.Printf("Prod slots: %s", project.ProdSlots)
+	fmt.Printf("Prod deployment ID: %s", project.ProdDeploymentId)
 
 	return nil
 }

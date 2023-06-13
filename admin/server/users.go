@@ -181,48 +181,32 @@ func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResour
 		return nil, status.Error(codes.PermissionDenied, "only superusers can lookup resource")
 	}
 
-	if req.GetOrgId() != "" {
-		org, err := s.admin.DB.FindOrganization(ctx, req.GetOrgId())
+	res := &adminv1.SudoGetResourceResponse{}
+	switch id := req.Id.(type) {
+	case *adminv1.SudoGetResourceRequest_UserId:
+		user, err := s.admin.DB.FindUser(ctx, id.UserId)
 		if err != nil {
 			return nil, err
 		}
-
-		return &adminv1.SudoGetResourceResponse{
-			Resource: &adminv1.SudoGetResourceResponse_Org{
-				Org: organizationToDTO(org),
-			},
-		}, nil
-	}
-
-	if req.GetUserId() != "" {
-		user, err := s.admin.DB.FindUser(ctx, req.GetUserId())
+		res.Resource = &adminv1.SudoGetResourceResponse_User{User: userToPB(user)}
+	case *adminv1.SudoGetResourceRequest_OrgId:
+		org, err := s.admin.DB.FindOrganization(ctx, id.OrgId)
 		if err != nil {
 			return nil, err
 		}
-
-		return &adminv1.SudoGetResourceResponse{
-			Resource: &adminv1.SudoGetResourceResponse_User{
-				User: userToPB(user),
-			},
-		}, nil
-	}
-
-	if req.GetProjectId() != "" {
-		proj, err := s.admin.DB.FindProject(ctx, req.GetProjectId())
+		res.Resource = &adminv1.SudoGetResourceResponse_Org{Org: organizationToDTO(org)}
+	case *adminv1.SudoGetResourceRequest_ProjectId:
+		proj, err := s.admin.DB.FindProject(ctx, id.ProjectId)
 		if err != nil {
 			return nil, err
 		}
-
 		org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 		if err != nil {
 			return nil, err
 		}
-
-		return &adminv1.SudoGetResourceResponse{
-			Resource: &adminv1.SudoGetResourceResponse_Project{
-				Project: s.projToDTO(proj, org.Name),
-			},
-		}, nil
+		res.Resource = &adminv1.SudoGetResourceResponse_Project{Project: s.projToDTO(proj, org.Name)}
+	default:
+		return nil, status.Errorf(codes.Internal, "unexpected resource type %T", id)
 	}
 
 	return nil, nil
