@@ -18,7 +18,6 @@ import {
   clearMetricsExplorerStore,
   createAdBidsInStore,
   createAdBidsMirrorInStore,
-  assertVisiblePartsOfMetricsView,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -158,35 +157,6 @@ describe("dashboard-stores", () => {
       undefined,
       ALL_TIME_PARSED_TEST_CONTROLS,
       AD_BIDS_BID_PRICE_MEASURE
-    );
-  });
-
-  it("Show/Hide Measures and Dimensions", () => {
-    createAdBidsInStore();
-    assertMetricsView(AD_BIDS_NAME);
-
-    // hide bid price measure
-    metricsExplorerStore.toggleMeasureVisibilityByKey(
-      AD_BIDS_NAME,
-      AD_BIDS_BID_PRICE_MEASURE
-    );
-    // hide domain dimension
-    metricsExplorerStore.toggleDimensionVisibilityByKey(
-      AD_BIDS_NAME,
-      AD_BIDS_DOMAIN_DIMENSION
-    );
-    assertVisiblePartsOfMetricsView(
-      AD_BIDS_NAME,
-      [AD_BIDS_IMPRESSIONS_MEASURE],
-      [AD_BIDS_PUBLISHER_DIMENSION]
-    );
-
-    // create a mirror using the proto and assert that the visible selections are persisted
-    createAdBidsMirrorInStore();
-    assertVisiblePartsOfMetricsView(
-      AD_BIDS_MIRROR_NAME,
-      [AD_BIDS_IMPRESSIONS_MEASURE],
-      [AD_BIDS_PUBLISHER_DIMENSION]
     );
   });
 

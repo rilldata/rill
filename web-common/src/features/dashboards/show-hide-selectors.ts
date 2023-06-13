@@ -1,7 +1,6 @@
 import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
 import {
   MetricsExplorerEntity,
-  metricsExplorerStore,
   updateMetricsExplorerByName,
   useDashboardStore,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores";

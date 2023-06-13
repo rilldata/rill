@@ -16,6 +16,25 @@ export const AD_BIDS_BID_PRICE_MEASURE = "bid_price";
 export const AD_BIDS_PUBLISHER_DIMENSION = "publisher";
 export const AD_BIDS_DOMAIN_DIMENSION = "domain";
 
+export const AD_BIDS_INIT_MEASURES = [
+  {
+    name: AD_BIDS_IMPRESSIONS_MEASURE,
+    expression: "count(*)",
+  },
+  {
+    name: AD_BIDS_BID_PRICE_MEASURE,
+    expression: "sum(bid_price)",
+  },
+];
+export const AD_BIDS_INIT_DIMENSIONS = [
+  {
+    name: AD_BIDS_PUBLISHER_DIMENSION,
+  },
+  {
+    name: AD_BIDS_DOMAIN_DIMENSION,
+  },
+];
+
 const Hour = 1000 * 60 * 60;
 export const TestTimeConstants = {
   NOW: new Date(),
@@ -25,18 +44,19 @@ export const TestTimeConstants = {
   LAST_DAY: new Date(Date.now() - Hour * 24),
 };
 
-export const AD_BIDS_WITH_DELETED_DIMENSION = {
+export const AD_BIDS_WITH_DELETED_MEASURE = {
   name: "AdBids",
   measures: [
     {
       name: AD_BIDS_IMPRESSIONS_MEASURE,
       expression: "count(*)",
     },
-    {
-      name: AD_BIDS_BID_PRICE_MEASURE,
-      expression: "sum(bid_price)",
-    },
   ],
+  dimensions: AD_BIDS_INIT_DIMENSIONS,
+};
+export const AD_BIDS_WITH_DELETED_DIMENSION = {
+  name: "AdBids",
+  measures: AD_BIDS_INIT_MEASURES,
   dimensions: [
     {
       name: AD_BIDS_PUBLISHER_DIMENSION,
@@ -52,24 +72,8 @@ export function clearMetricsExplorerStore() {
 export function createAdBidsInStore() {
   metricsExplorerStore.sync(AD_BIDS_NAME, {
     name: "AdBids",
-    measures: [
-      {
-        name: AD_BIDS_IMPRESSIONS_MEASURE,
-        expression: "count(*)",
-      },
-      {
-        name: AD_BIDS_BID_PRICE_MEASURE,
-        expression: "sum(bid_price)",
-      },
-    ],
-    dimensions: [
-      {
-        name: AD_BIDS_PUBLISHER_DIMENSION,
-      },
-      {
-        name: AD_BIDS_DOMAIN_DIMENSION,
-      },
-    ],
+    measures: AD_BIDS_INIT_MEASURES,
+    dimensions: AD_BIDS_INIT_DIMENSIONS,
   });
   // clear everything if already created
   metricsExplorerStore.clearFilters(AD_BIDS_NAME);
@@ -112,12 +116,16 @@ export function assertMetricsView(
 
 export function assertVisiblePartsOfMetricsView(
   name: string,
-  measures: Array<string>,
-  dimensions: Array<string>
+  measures: Array<string> | undefined,
+  dimensions: Array<string> | undefined
 ) {
   const metricsView = get(metricsExplorerStore).entities[name];
-  expect([...metricsView.visibleMeasureKeys]).toEqual(measures);
-  expect([...metricsView.visibleDimensionKeys]).toEqual(dimensions);
+  if (measures)
+    expect([...metricsView.visibleMeasureKeys].sort()).toEqual(measures.sort());
+  if (dimensions)
+    expect([...metricsView.visibleDimensionKeys].sort()).toEqual(
+      dimensions.sort()
+    );
 }
 
 export const AD_BIDS_BASE_FILTER = {

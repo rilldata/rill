@@ -240,56 +240,6 @@ const metricViewReducers = {
     });
   },
 
-  toggleMeasureVisibilityByKey(name: string, key: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      if (metricsExplorer.visibleMeasureKeys.has(key)) {
-        metricsExplorer.visibleMeasureKeys.delete(key);
-      } else {
-        metricsExplorer.visibleMeasureKeys.add(key);
-      }
-    });
-  },
-
-  hideAllMeasures(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.visibleMeasureKeys.clear();
-    });
-  },
-
-  setMultipleMeasuresVisible(name: string, keys: string[]) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.visibleMeasureKeys = new Set([
-        ...metricsExplorer.visibleMeasureKeys,
-        ...keys,
-      ]);
-    });
-  },
-
-  toggleDimensionVisibilityByKey(name: string, key: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      if (metricsExplorer.visibleDimensionKeys.has(key)) {
-        metricsExplorer.visibleDimensionKeys.delete(key);
-      } else {
-        metricsExplorer.visibleDimensionKeys.add(key);
-      }
-    });
-  },
-
-  hideAllDimensions(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.visibleDimensionKeys.clear();
-    });
-  },
-
-  setMultipleDimensionsVisible(name: string, keys: string[]) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.visibleDimensionKeys = new Set([
-        ...metricsExplorer.visibleDimensionKeys,
-        ...keys,
-      ]);
-    });
-  },
-
   clearLeaderboardMeasureName(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.leaderboardMeasureName = undefined;
