@@ -259,7 +259,6 @@ func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 			c.dbCond.L.Unlock()
 			return nil, nil, c.dbErr
 		}
-
 		if !c.dbReopen {
 			break
 		}
@@ -280,8 +279,13 @@ func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 		c.dbConnCount--
 		if c.dbConnCount == 0 && c.dbReopen {
 			c.dbReopen = false
-			c.dbErr = c.reopenDB()
-			err = c.dbErr
+			err = c.reopenDB()
+			if err == nil {
+				c.logger.Info("reopened DuckDB successfully")
+			} else {
+				c.logger.Error("reopen of DuckDB failed - the handle is now permanently locked", zap.Error(err))
+			}
+			c.dbErr = err
 			c.dbCond.Broadcast()
 		}
 		c.dbCond.L.Unlock()
@@ -299,6 +303,7 @@ func (c *connection) checkErr(err error) error {
 		if strings.HasPrefix(err.Error(), "INTERNAL Error:") || strings.HasPrefix(err.Error(), "FATAL Error") {
 			c.dbCond.L.Lock()
 			c.dbReopen = true
+			c.logger.Error("encountered internal DuckDB error - scheduling reopen of DuckDB", zap.Error(err))
 			c.dbCond.L.Unlock()
 		}
 	}
