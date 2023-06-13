@@ -135,7 +135,12 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		return nil, err
 	}
 
-	s.logger.Info("created user", zap.String("user_id", user.ID), zap.String("org", strings.Join(addedToOrgNames, ",")))
+	s.logger.Info("created user",
+		zap.String("user_id", user.ID),
+		zap.String("email", user.Email),
+		zap.String("name", user.DisplayName),
+		zap.String("org", strings.Join(addedToOrgNames, ",")),
+	)
 
 	return user, nil
 }
@@ -169,6 +174,9 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 	if err != nil {
 		return nil, err
 	}
+
+	s.logger.Info("created org", zap.String("name", orgName), zap.String("user_id", userID))
+
 	return org, nil
 }
 

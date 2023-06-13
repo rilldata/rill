@@ -161,6 +161,13 @@ export type QueryServiceMetricsViewComparisonToplistBody = {
   priority?: number;
 };
 
+export type QueryServiceExportBody = {
+  limit?: number;
+  format?: V1ExportFormat;
+  metricsViewToplistRequest?: V1MetricsViewToplistRequest;
+  metricsViewRowsRequest?: V1MetricsViewRowsRequest;
+};
+
 export type QueryServiceColumnDescriptiveStatisticsParams = {
   columnName?: string;
   priority?: number;
@@ -641,9 +648,41 @@ export interface V1MetricsViewSort {
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  filter?: V1MetricsViewFilter;
+  priority?: number;
+}
+
+export interface V1MetricsViewRowsRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  timeStart?: string;
+  timeEnd?: string;
+  filter?: V1MetricsViewFilter;
+  sort?: V1MetricsViewSort[];
+  limit?: number;
+  offset?: string;
+  priority?: number;
 }
 
 export interface V1MetricsViewComparisonValue {
@@ -690,11 +729,6 @@ export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
-}
-
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
 }
 
 export interface V1MetricsView {
@@ -813,6 +847,19 @@ export interface V1GCSGetCredentialsInfoResponse {
   exist?: boolean;
   projectId?: string;
 }
+
+export interface V1ExportResponse {
+  downloadUrlPath?: string;
+}
+
+export type V1ExportFormat =
+  (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExportFormat = {
+  EXPORT_FORMAT_UNSPECIFIED: "EXPORT_FORMAT_UNSPECIFIED",
+  EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
+} as const;
 
 export interface V1Example {
   name?: string;

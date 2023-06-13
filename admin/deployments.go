@@ -71,6 +71,15 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		ingestionLimit = alloc.StorageBytes
 
 		olapDSN = fmt.Sprintf("%s.db?rill_pool_size=%d&threads=%d&max_memory=%dGB", path.Join(alloc.DataDir, instanceID), alloc.CPU, alloc.CPU, alloc.MemoryGB)
+	} else if olapDriver == "motherduck" {
+		if opts.ProdSlots == 0 {
+			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb'")
+		}
+
+		embedCatalog = true
+		ingestionLimit = alloc.StorageBytes
+
+		olapDSN = fmt.Sprintf("md:%s?rill_pool_size=%d&threads=%d&max_memory=%dGB", instanceID, alloc.CPU, alloc.CPU, alloc.MemoryGB)
 	}
 
 	// Open a runtime client
@@ -109,7 +118,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	if err != nil {
 		_, err2 := rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 			InstanceId: instanceID,
-			DropDb:     olapDriver == "duckdb", // Only drop DB if it's DuckDB
+			DropDb:     olapDriver == "duckdb" || olapDriver == "motherduck", // Only drop DB if it's DuckDB/motherduck
 		})
 		return nil, multierr.Combine(err, err2)
 	}
@@ -199,7 +208,7 @@ func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project
 	// Delete the instance
 	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 		InstanceId: depl.RuntimeInstanceID,
-		DropDb:     proj.ProdOLAPDriver == "duckdb", // Only drop DB if it's DuckDB
+		DropDb:     proj.ProdOLAPDriver == "duckdb" || proj.ProdOLAPDriver == "motherduck", // Only drop DB if it's DuckDB/motherduck
 	})
 	if err != nil {
 		return err
