@@ -14,6 +14,8 @@ export type AdminServiceSudoGetResourceParams = {
   userId?: string;
   orgId?: string;
   projectId?: string;
+  deploymentId?: string;
+  instanceId?: string;
 };
 
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
@@ -165,6 +167,8 @@ export interface V1SudoGetResourceResponse {
   user?: V1User;
   org?: V1Organization;
   project?: V1Project;
+  deployment?: V1Deployment;
+  instance?: V1Deployment;
 }
 
 export interface V1SetSuperuserResponse {

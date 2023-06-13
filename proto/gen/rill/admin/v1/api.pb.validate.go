@@ -6033,6 +6033,30 @@ func (m *SudoGetResourceRequest) validate(all bool) error {
 			errors = append(errors, err)
 		}
 		// no validation rules for ProjectId
+	case *SudoGetResourceRequest_DeploymentId:
+		if v == nil {
+			err := SudoGetResourceRequestValidationError{
+				field:  "Id",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for DeploymentId
+	case *SudoGetResourceRequest_InstanceId:
+		if v == nil {
+			err := SudoGetResourceRequestValidationError{
+				field:  "Id",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for InstanceId
 	default:
 		_ = v // ensures v is used
 	}
@@ -6257,6 +6281,88 @@ func (m *SudoGetResourceResponse) validate(all bool) error {
 			if err := v.Validate(); err != nil {
 				return SudoGetResourceResponseValidationError{
 					field:  "Project",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *SudoGetResourceResponse_Deployment:
+		if v == nil {
+			err := SudoGetResourceResponseValidationError{
+				field:  "Resource",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetDeployment()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SudoGetResourceResponseValidationError{
+						field:  "Deployment",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SudoGetResourceResponseValidationError{
+						field:  "Deployment",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetDeployment()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SudoGetResourceResponseValidationError{
+					field:  "Deployment",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *SudoGetResourceResponse_Instance:
+		if v == nil {
+			err := SudoGetResourceResponseValidationError{
+				field:  "Resource",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetInstance()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SudoGetResourceResponseValidationError{
+						field:  "Instance",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SudoGetResourceResponseValidationError{
+						field:  "Instance",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetInstance()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SudoGetResourceResponseValidationError{
+					field:  "Instance",
 					reason: "embedded message failed validation",
 					cause:  err,
 				}

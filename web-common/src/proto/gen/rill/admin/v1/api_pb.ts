@@ -2087,6 +2087,18 @@ export class SudoGetResourceRequest extends Message<SudoGetResourceRequest> {
      */
     value: string;
     case: "projectId";
+  } | {
+    /**
+     * @generated from field: string deployment_id = 4;
+     */
+    value: string;
+    case: "deploymentId";
+  } | {
+    /**
+     * @generated from field: string instance_id = 5;
+     */
+    value: string;
+    case: "instanceId";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<SudoGetResourceRequest>) {
@@ -2100,6 +2112,8 @@ export class SudoGetResourceRequest extends Message<SudoGetResourceRequest> {
     { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "id" },
     { no: 2, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "id" },
     { no: 3, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "id" },
+    { no: 4, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "id" },
+    { no: 5, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "id" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoGetResourceRequest {
@@ -2146,6 +2160,18 @@ export class SudoGetResourceResponse extends Message<SudoGetResourceResponse> {
      */
     value: Project;
     case: "project";
+  } | {
+    /**
+     * @generated from field: rill.admin.v1.Deployment deployment = 4;
+     */
+    value: Deployment;
+    case: "deployment";
+  } | {
+    /**
+     * @generated from field: rill.admin.v1.Deployment instance = 5;
+     */
+    value: Deployment;
+    case: "instance";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<SudoGetResourceResponse>) {
@@ -2159,6 +2185,8 @@ export class SudoGetResourceResponse extends Message<SudoGetResourceResponse> {
     { no: 1, name: "user", kind: "message", T: User, oneof: "resource" },
     { no: 2, name: "org", kind: "message", T: Organization, oneof: "resource" },
     { no: 3, name: "project", kind: "message", T: Project, oneof: "resource" },
+    { no: 4, name: "deployment", kind: "message", T: Deployment, oneof: "resource" },
+    { no: 5, name: "instance", kind: "message", T: Deployment, oneof: "resource" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoGetResourceResponse {

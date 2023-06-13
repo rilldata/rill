@@ -205,6 +205,18 @@ func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResour
 			return nil, err
 		}
 		res.Resource = &adminv1.SudoGetResourceResponse_Project{Project: s.projToDTO(proj, org.Name)}
+	case *adminv1.SudoGetResourceRequest_DeploymentId:
+		depl, err := s.admin.DB.FindDeployment(ctx, id.DeploymentId)
+		if err != nil {
+			return nil, err
+		}
+		res.Resource = &adminv1.SudoGetResourceResponse_Deployment{Deployment: deploymentToDTO(depl)}
+	case *adminv1.SudoGetResourceRequest_InstanceId:
+		depl, err := s.admin.DB.FindDeploymentByInstanceID(ctx, id.InstanceId)
+		if err != nil {
+			return nil, err
+		}
+		res.Resource = &adminv1.SudoGetResourceResponse_Instance{Instance: deploymentToDTO(depl)}
 	default:
 		return nil, status.Errorf(codes.Internal, "unexpected resource type %T", id)
 	}

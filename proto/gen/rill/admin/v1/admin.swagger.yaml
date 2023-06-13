@@ -952,6 +952,14 @@ paths:
           in: query
           required: false
           type: string
+        - name: deploymentId
+          in: query
+          required: false
+          type: string
+        - name: instanceId
+          in: query
+          required: false
+          type: string
       tags:
         - AdminService
   /v1/tokens/current:
@@ -1430,6 +1438,10 @@ definitions:
         $ref: '#/definitions/v1Organization'
       project:
         $ref: '#/definitions/v1Project'
+      deployment:
+        $ref: '#/definitions/v1Deployment'
+      instance:
+        $ref: '#/definitions/v1Deployment'
     title: SudoGetResourceResponse
   v1TriggerReconcileResponse:
     type: object

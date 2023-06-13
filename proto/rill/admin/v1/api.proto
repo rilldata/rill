@@ -246,7 +246,7 @@ service AdminService {
 
    // SudoGetResource returns details about a resource by ID lookup
   rpc SudoGetResource(SudoGetResourceRequest) returns (SudoGetResourceResponse) {
-    option (google.api.http) = {get: "/v1/superuser/resource/{id}"};
+    option (google.api.http) = {get: "/v1/superuser/resource"};
   }
 
 }
@@ -478,6 +478,8 @@ message SudoGetResourceRequest {
     string user_id = 1;
     string org_id = 2;
     string project_id = 3;
+    string deployment_id = 4;
+    string instance_id = 5;
   }
 }
 
@@ -487,6 +489,8 @@ message SudoGetResourceResponse {
     User user = 1;
     Organization org = 2;
     Project project = 3;
+    Deployment deployment = 4;
+    Deployment instance = 5;
   }
 }
 

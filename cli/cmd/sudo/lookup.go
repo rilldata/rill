@@ -34,11 +34,9 @@ func lookupCmd(cfg *config.Config) *cobra.Command {
 			case "project":
 				return getProject(ctx, client, args[1])
 			case "deployment":
-				// TODO
-				return nil
+				return getDeployment(ctx, client, args[1])
 			case "instance":
-				// TODO
-				return nil
+				return getInstance(ctx, client, args[1])
 			default:
 				return fmt.Errorf("invalid resource type %q", args[0])
 			}
@@ -79,6 +77,40 @@ func getUser(ctx context.Context, c *client.Client, userID string) error {
 	return nil
 }
 
+func getDeployment(ctx context.Context, c *client.Client, deploymentID string) error {
+	res, err := c.SudoGetResource(ctx, &adminv1.SudoGetResourceRequest{
+		Id: &adminv1.SudoGetResourceRequest_DeploymentId{DeploymentId: deploymentID},
+	})
+	if err != nil {
+		return err
+	}
+
+	depl := res.GetDeployment()
+	fmt.Printf("Project: %s\n", depl.ProjectId)
+	fmt.Printf("Branch: %s\n", depl.Branch)
+	fmt.Printf("InstanceId: %s\n", depl.RuntimeInstanceId)
+	fmt.Printf("Created on: %s\n", depl.CreatedOn.AsTime().Format(time.RFC3339Nano))
+
+	return nil
+}
+
+func getInstance(ctx context.Context, c *client.Client, instanceID string) error {
+	res, err := c.SudoGetResource(ctx, &adminv1.SudoGetResourceRequest{
+		Id: &adminv1.SudoGetResourceRequest_InstanceId{InstanceId: instanceID},
+	})
+	if err != nil {
+		return err
+	}
+
+	inst := res.GetInstance()
+	fmt.Printf("Project: %s\n", inst.ProjectId)
+	fmt.Printf("Branch: %s\n", inst.Branch)
+	fmt.Printf("DeploymentId: %s\n", inst.Id)
+	fmt.Printf("Created on: %s\n", inst.CreatedOn.AsTime().Format(time.RFC3339Nano))
+
+	return nil
+}
+
 func getProject(ctx context.Context, c *client.Client, projectID string) error {
 	res, err := c.SudoGetResource(ctx, &adminv1.SudoGetResourceRequest{
 		Id: &adminv1.SudoGetResourceRequest_ProjectId{ProjectId: projectID},
@@ -91,14 +123,14 @@ func getProject(ctx context.Context, c *client.Client, projectID string) error {
 	fmt.Printf("Name: %s\n", project.Name)
 	fmt.Printf("Org: %s (ID: %s)\n", project.OrgName, project.OrgId)
 	fmt.Printf("Created on: %s\n", project.CreatedOn)
-	fmt.Printf("Public: %s", project.Public)
+	fmt.Printf("Public: %t", project.Public)
 	fmt.Printf("Region: %s", project.Region)
 	fmt.Printf("Github URL: %s", project.GithubUrl)
 	fmt.Printf("Subpath: %s", project.Subpath)
 	fmt.Printf("Prod branch: %s", project.ProdBranch)
 	fmt.Printf("Prod OLAP driver: %s", project.ProdOlapDriver)
 	fmt.Printf("Prod OLAP DSN: %s", project.ProdOlapDsn)
-	fmt.Printf("Prod slots: %s", project.ProdSlots)
+	fmt.Printf("Prod slots: %d", project.ProdSlots)
 	fmt.Printf("Prod deployment ID: %s", project.ProdDeploymentId)
 
 	return nil
