@@ -23,8 +23,6 @@ export default class Custompicker extends Litepicker {
       new DateTime(options.endDate),
     ];
 
-    this.instance = instance++;
-
     this.updateValues();
 
     this.options.startEl.addEventListener("blur", (e) => {
