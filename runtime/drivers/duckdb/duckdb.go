@@ -302,9 +302,9 @@ func (c *connection) checkErr(err error) error {
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "INTERNAL Error:") || strings.HasPrefix(err.Error(), "FATAL Error") {
 			c.dbCond.L.Lock()
+			defer c.dbCond.L.Unlock()
 			c.dbReopen = true
 			c.logger.Error("encountered internal DuckDB error - scheduling reopen of DuckDB", zap.Error(err))
-			c.dbCond.L.Unlock()
 		}
 	}
 	return err
