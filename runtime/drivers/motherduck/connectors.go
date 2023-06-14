@@ -1,4 +1,4 @@
-package duckdb
+package motherduck
 
 import (
 	"context"
@@ -100,7 +100,7 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 
 			query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from)
 			if err := c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1}); err != nil {
-				return nil, c.checkErr(err)
+				return nil, err
 			}
 		}
 
@@ -155,7 +155,7 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (SELECT * FROM %s)", source.Name, from)
 	err = c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
 	if err != nil {
-		return nil, c.checkErr(err)
+		return nil, err
 	}
 
 	bytesIngested := fileSize(localPaths)
@@ -165,23 +165,18 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 func (c *connection) scanSchemaFromQuery(ctx context.Context, qry string) (map[string]string, error) {
 	result, err := c.Execute(ctx, &drivers.Statement{Query: qry, Priority: 1})
 	if err != nil {
-		return nil, c.checkErr(err)
+		return nil, err
 	}
 	defer result.Close()
 
 	schema := make(map[string]string)
-	for result.Next() {
+	for i := 0; result.Next(); i++ {
 		var s duckDBTableSchemaResult
 		if err := result.StructScan(&s); err != nil {
-			return nil, c.checkErr(err)
+			return nil, err
 		}
 		schema[s.ColumnName] = s.ColumnType
 	}
-
-	if err := result.Err(); err != nil {
-		return nil, c.checkErr(err)
-	}
-
 	return schema, nil
 }
 
@@ -225,7 +220,7 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
 	err = a.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 	if err == nil || !containsAny(err.Error(), []string{"binder error", "conversion error"}) {
-		return a.connection.checkErr(err)
+		return err
 	}
 
 	// error is of type binder error (more or less columns than current table schema)
@@ -237,8 +232,7 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 
 	query = fmt.Sprintf("INSERT INTO %q BY NAME (SELECT * FROM %s);", a.source.Name, from)
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
-	err = a.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
-	return a.connection.checkErr(err)
+	return a.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }
 
 // updateSchema updates the schema of the table in case new file adds a new column or
@@ -300,7 +294,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 		a.tableSchema[colName] = colType
 		qry := fmt.Sprintf("ALTER TABLE %q ADD COLUMN %q %s", a.source.Name, colName, colType)
 		if err := a.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
-			return a.connection.checkErr(err)
+			return err
 		}
 	}
 
@@ -308,7 +302,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 		a.tableSchema[colName] = colType
 		qry := fmt.Sprintf("ALTER TABLE %q ALTER COLUMN %q SET DATA TYPE %s", a.source.Name, colName, colType)
 		if err := a.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
-			return a.connection.checkErr(err)
+			return err
 		}
 	}
 

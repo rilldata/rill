@@ -244,6 +244,11 @@ service AdminService {
     };
   }
 
+   // SudoGetResource returns details about a resource by ID lookup
+  rpc SudoGetResource(SudoGetResourceRequest) returns (SudoGetResourceResponse) {
+    option (google.api.http) = {get: "/v1/superuser/resource"};
+  }
+
 }
 
 message PingRequest {}
@@ -466,6 +471,28 @@ message SetSuperuserRequest {
 }
 
 message SetSuperuserResponse {}
+
+// SudoGetResourceRequest
+message SudoGetResourceRequest {
+  oneof id {
+    string user_id = 1;
+    string org_id = 2;
+    string project_id = 3;
+    string deployment_id = 4;
+    string instance_id = 5;
+  }
+}
+
+// SudoGetResourceResponse
+message SudoGetResourceResponse {
+  oneof resource {
+    User user = 1;
+    Organization org = 2;
+    Project project = 3;
+    Deployment deployment = 4;
+    Deployment instance = 5;
+  }
+}
 
 message ListProjectMembersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];

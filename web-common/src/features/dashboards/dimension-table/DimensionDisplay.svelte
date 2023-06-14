@@ -19,12 +19,14 @@
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
     MetricsViewFilterCond,
-    V1MetricsViewToplistResponse,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getTimeComparisonParametersForComponent } from "../../../lib/time/comparisons";
   import { DEFAULT_TIME_RANGES } from "../../../lib/time/config";
-  import type { TimeComparisonOption } from "../../../lib/time/types";
+  import type {
+    TimeComparisonOption,
+    TimeRange,
+  } from "../../../lib/time/types";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import {
@@ -97,26 +99,20 @@
   $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
 
-  let allTimeRangeQuery;
-  let topListQuery;
-
-  $: if (
-    sortByColumn &&
-    sortDirection &&
-    leaderboardMeasureName &&
-    metaQuery &&
-    $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching
-  ) {
-    let filterSet = updateFilterOnSearch(
-      filterForDimension,
-      searchText,
-      dimension?.name
-    );
-
-    let topListParams = {
+  $: filterSet = updateFilterOnSearch(
+    filterForDimension,
+    searchText,
+    dimension?.name
+  );
+  $: topListQuery = createQueryServiceMetricsViewToplist(
+    instanceId,
+    metricViewName,
+    {
       dimensionName: dimensionName,
       measureNames: selectedMeasureNames,
+      timeStart: timeStart,
+      timeEnd: timeEnd,
+      filter: filterSet,
       limit: "250",
       offset: "0",
       sort: [
@@ -125,79 +121,66 @@
           ascending: sortDirection === "asc" ? true : false,
         },
       ],
-      filter: filterSet,
-    };
-
-    if (hasTimeSeries) {
-      topListParams = {
-        ...topListParams,
-        ...{
-          timeStart: $dashboardStore.selectedTimeRange?.start,
-          timeEnd: $dashboardStore.selectedTimeRange?.end,
-        },
-      };
+    },
+    {
+      query: {
+        enabled:
+          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
+          !!filterSet &&
+          !!sortByColumn &&
+          !!sortDirection,
+      },
     }
+  );
 
-    topListQuery = createQueryServiceMetricsViewToplist(
-      instanceId,
-      metricViewName,
-      topListParams
-    );
-
-    allTimeRangeQuery = useModelAllTimeRange(
-      $runtime.instanceId,
-      $metaQuery.data.model,
-      $metaQuery.data.timeDimension,
-      {
-        query: {
-          enabled: !!$metaQuery.data.timeDimension,
-        },
-      }
-    );
-  }
+  $: allTimeRangeQuery = useModelAllTimeRange(
+    $runtime.instanceId,
+    $metaQuery.data.model,
+    $metaQuery.data.timeDimension,
+    {
+      query: {
+        enabled: !!$metaQuery.data.timeDimension,
+      },
+    }
+  );
 
   // the timeRangeName is the key to a selected time range's associated presets.
   $: timeRangeName = $dashboardStore?.selectedTimeRange?.name;
 
-  $: allTimeRange = $allTimeRangeQuery?.data;
-
-  let comparisonTopListQuery;
-  let isComparisonRangeAvailable = false;
-  let displayComparison = false;
-
-  // create the right compareTopListParams.
-  $: if (
-    !$topListQuery?.isFetching &&
-    hasTimeSeries &&
-    timeRangeName !== undefined
-  ) {
-    const values: V1MetricsViewToplistResponse = $topListQuery?.data?.data;
-
-    const comparisonTimeRange = getTimeComparisonParametersForComponent(
-      ($dashboardStore?.selectedComparisonTimeRange
-        ?.name as TimeComparisonOption) ||
-        (DEFAULT_TIME_RANGES[timeRangeName]
-          .defaultComparison as TimeComparisonOption),
-      allTimeRange?.start,
-      allTimeRange?.end,
-      $dashboardStore.selectedTimeRange.start,
-      $dashboardStore.selectedTimeRange.end
-    );
-
-    const { start, end } = comparisonTimeRange;
-    isComparisonRangeAvailable = comparisonTimeRange.isComparisonRangeAvailable;
-    displayComparison =
-      $dashboardStore?.showComparison && isComparisonRangeAvailable;
-
-    let comparisonFilterSet = getFilterForComparisonTable(
-      filterForDimension,
-      dimensionName,
-      values
-    );
-
-    let comparisonParams = {
+  // Compose the comparison /toplist query
+  $: displayComparison =
+    $dashboardStore?.showComparison &&
+    comparisonTimeRange.isComparisonRangeAvailable;
+  $: comparisonTimeRange = getTimeComparisonParametersForComponent(
+    ($dashboardStore?.selectedComparisonTimeRange
+      ?.name as TimeComparisonOption) ||
+      (DEFAULT_TIME_RANGES[timeRangeName]
+        .defaultComparison as TimeComparisonOption),
+    ($allTimeRangeQuery?.data as TimeRange)?.start,
+    ($allTimeRangeQuery?.data as TimeRange)?.end,
+    $dashboardStore.selectedTimeRange.start,
+    $dashboardStore.selectedTimeRange.end
+  );
+  $: comparisonTimeStart =
+    isFinite(comparisonTimeRange?.start?.getTime()) &&
+    comparisonTimeRange.start.toISOString();
+  $: comparisonTimeEnd =
+    isFinite(comparisonTimeRange?.end?.getTime()) &&
+    comparisonTimeRange.end.toISOString();
+  $: comparisonFilterSet = getFilterForComparisonTable(
+    filterForDimension,
+    dimensionName,
+    $topListQuery?.data?.data
+  );
+  $: comparisonTopListQuery = createQueryServiceMetricsViewToplist(
+    $runtime.instanceId,
+    metricViewName,
+    {
       dimensionName: dimensionName,
       measureNames: [sortByColumn],
+      timeStart: comparisonTimeStart,
+      timeEnd: comparisonTimeEnd,
+      filter: comparisonFilterSet,
       limit: "250",
       offset: "0",
       sort: [
@@ -206,28 +189,17 @@
           ascending: sortDirection === "asc" ? true : false,
         },
       ],
-      filter: comparisonFilterSet,
-    };
-
-    if (hasTimeSeries) {
-      comparisonParams = {
-        ...comparisonParams,
-
-        ...{
-          timeStart: displayComparison ? start : undefined,
-          timeEnd: displayComparison ? end : undefined,
-        },
-      };
+    },
+    {
+      query: {
+        enabled:
+          displayComparison &&
+          !!comparisonTimeStart &&
+          !!comparisonTimeEnd &&
+          !!comparisonFilterSet,
+      },
     }
-
-    comparisonTopListQuery = createQueryServiceMetricsViewToplist(
-      $runtime.instanceId,
-      metricViewName,
-      comparisonParams
-    );
-  } else if (!hasTimeSeries) {
-    displayComparison = false;
-  }
+  );
 
   $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
   $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();

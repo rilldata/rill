@@ -1,4 +1,4 @@
-package duckdb
+package motherduck
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 
 // Create instruments
 var (
-	meter                 = otel.Meter("github.com/rilldata/rill/runtime/drivers/duckdb")
+	meter                 = otel.Meter("github.com/rilldata/rill/runtime/drivers/motherduck")
 	queriesCounter        = observability.Must(meter.Int64Counter("queries"))
 	queueLatencyHistogram = observability.Must(meter.Int64Histogram("queue_latency", metric.WithUnit("ms")))
 	queryLatencyHistogram = observability.Must(meter.Int64Histogram("query_latency", metric.WithUnit("ms")))
@@ -56,8 +56,7 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	if stmt.DryRun {
 		return nil
 	}
-	err = res.Close()
-	return c.checkErr(err)
+	return res.Close()
 }
 
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
@@ -74,11 +73,11 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		name := uuid.NewString()
 		_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY VIEW %q AS %s", name, stmt.Query))
 		if err != nil {
-			return nil, c.checkErr(err)
+			return nil, err
 		}
 
 		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("DROP VIEW %q", name))
-		return nil, c.checkErr(err)
+		return nil, err
 	}
 
 	// Gather metrics only for actual queries
@@ -90,7 +89,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		queueLatency := acquiredTime.Sub(start).Milliseconds()
 
 		attrs := attribute.NewSet(
-			attribute.String("db", c.config.DBFilePath),
 			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
 			attribute.Bool("failed", outErr != nil),
 		)
@@ -126,8 +124,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 			cancelFunc()
 		}
 
-		// err must be checked before release
-		err = c.checkErr(err)
 		_ = release()
 		return nil, err
 	}
@@ -138,8 +134,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 			cancelFunc()
 		}
 
-		// err must be checked before release
-		err = c.checkErr(err)
 		_ = rows.Close()
 		_ = release()
 		return nil, err

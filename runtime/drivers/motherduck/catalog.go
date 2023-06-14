@@ -1,4 +1,4 @@
-package duckdb
+package motherduck
 
 import (
 	"context"
@@ -40,7 +40,7 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 	sql := fmt.Sprintf("SELECT name, type, object, path, bytes_ingested, embedded, created_on, updated_on, refreshed_on FROM rill.catalog %s ORDER BY lower(name)", whereClause)
 	rows, err := conn.QueryxContext(ctx, sql, args...)
 	if err != nil {
-		return nil, c.checkErr(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -51,7 +51,7 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 
 		err := rows.Scan(&e.Name, &e.Type, &objBlob, &e.Path, &e.BytesIngested, &e.Embedded, &e.CreatedOn, &e.UpdatedOn, &e.RefreshedOn)
 		if err != nil {
-			return nil, c.checkErr(err)
+			return nil, err
 		}
 
 		// Parse object protobuf
@@ -109,7 +109,7 @@ func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *driv
 		now,
 	)
 	if err != nil {
-		return c.checkErr(err)
+		return err
 	}
 
 	e.CreatedOn = now
@@ -144,7 +144,7 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 		e.Name,
 	)
 	if err != nil {
-		return c.checkErr(err)
+		return err
 	}
 
 	return nil
@@ -158,7 +158,7 @@ func (c *connection) DeleteEntry(ctx context.Context, instanceID, name string) e
 	defer func() { _ = release() }()
 
 	_, err = conn.ExecContext(ctx, "DELETE FROM rill.catalog WHERE LOWER(name) = LOWER(?)", name)
-	return c.checkErr(err)
+	return err
 }
 
 // DeleteEntries deletes the entire catalog table.
@@ -172,5 +172,5 @@ func (c *connection) DeleteEntries(ctx context.Context, instanceID string) error
 	defer func() { _ = release() }()
 
 	_, err = conn.ExecContext(ctx, "DELETE FROM rill.catalog")
-	return c.checkErr(err)
+	return err
 }

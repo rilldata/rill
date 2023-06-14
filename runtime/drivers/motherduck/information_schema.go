@@ -1,4 +1,4 @@
-package duckdb
+package motherduck
 
 import (
 	"context"
@@ -43,7 +43,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 
 	rows, err := conn.QueryxContext(ctx, q)
 	if err != nil {
-		return nil, i.c.checkErr(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -80,7 +80,7 @@ func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Ta
 
 	rows, err := conn.QueryxContext(ctx, q, name)
 	if err != nil {
-		return nil, i.c.checkErr(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -110,7 +110,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 
 		err := rows.Scan(&database, &schema, &name, &tableType, &columnNames, &columnTypes, &columnNullable)
 		if err != nil {
-			return nil, i.c.checkErr(err)
+			return nil, err
 		}
 
 		t := &drivers.Table{
@@ -143,7 +143,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, i.c.checkErr(err)
+		return nil, err
 	}
 
 	return res, nil
