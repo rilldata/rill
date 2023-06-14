@@ -228,6 +228,17 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	// Write a secret to vault
+	secretData := make(map[string]interface{}, len(req.Variables))
+	for k, v := range req.Variables {
+		secretData[k] = v
+	}
+
+	_, err = s.vaultClient.KVv2(s.opts.VaultAPIKeyMountPath).Put(ctx, proj.ID, secretData)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unable to write secret: %v", err))
+	}
+
 	return &adminv1.CreateProjectResponse{
 		Project: s.projToDTO(proj, org.Name),
 	}, nil
@@ -326,12 +337,25 @@ func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjec
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	// Read a secret
+	secretData, err := s.vaultClient.KVv2(s.opts.VaultAPIKeyMountPath).Get(ctx, proj.ID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unable to read secret: %v", err))
+	}
+
+	variables := make(map[string]string, len(secretData.Data))
+	for k, v := range secretData.Data {
+		variables[k] = v.(string)
+	}
+
+	fmt.Println("found these variables ", variables)
+
 	claims := auth.GetClaims(ctx)
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project variables")
 	}
 
-	return &adminv1.GetProjectVariablesResponse{Variables: proj.ProdVariables}, nil
+	return &adminv1.GetProjectVariablesResponse{Variables: variables}, nil
 }
 
 func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.UpdateProjectVariablesRequest) (*adminv1.UpdateProjectVariablesResponse, error) {
@@ -343,6 +367,17 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 	claims := auth.GetClaims(ctx)
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
+	}
+
+	// Write a secret to vault
+	secretData := make(map[string]interface{}, len(req.Variables))
+	for k, v := range req.Variables {
+		secretData[k] = v
+	}
+
+	_, err = s.vaultClient.KVv2(s.opts.VaultAPIKeyMountPath).Put(ctx, proj.ID, secretData)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unable to write secret: %v", err))
 	}
 
 	opts := &database.UpdateProjectOptions{

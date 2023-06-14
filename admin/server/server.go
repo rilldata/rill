@@ -14,6 +14,7 @@ import (
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/hashicorp/go-version"
+	vault "github.com/hashicorp/vault/api"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
@@ -51,6 +52,9 @@ type Options struct {
 	GithubAppWebhookSecret string
 	GithubClientID         string
 	GithubClientSecret     string
+	VaultToken             string
+	VaultAddress           string
+	VaultAPIKeyMountPath   string
 }
 
 type Server struct {
@@ -62,6 +66,7 @@ type Server struct {
 	authenticator *auth.Authenticator
 	issuer        *runtimeauth.Issuer
 	urls          *externalURLs
+	vaultClient   *vault.Client
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
@@ -92,6 +97,16 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, opt
 		return nil, err
 	}
 
+	config := vault.DefaultConfig()
+	config.Address = opts.VaultAddress
+
+	client, err := vault.NewClient(config)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize Vault client: %w", err)
+	}
+
+	client.SetToken(opts.VaultToken)
+
 	return &Server{
 		logger:        logger,
 		admin:         adm,
@@ -100,6 +115,7 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, opt
 		authenticator: authenticator,
 		issuer:        issuer,
 		urls:          newURLRegistry(opts),
+		vaultClient:   client,
 	}, nil
 }
 

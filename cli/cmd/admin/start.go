@@ -61,6 +61,9 @@ type Config struct {
 	EmailSenderEmail       string                 `split_words:"true"`
 	EmailSenderName        string                 `split_words:"true"`
 	EmailBCC               string                 `split_words:"true"`
+	VaultToken             string                 `default:"dev-only-token" split_words:"true"`
+	VaultAddress           string                 `default:"http://127.0.0.1:8200" split_words:"true"`
+	VaultAPIKeyMountPath   string                 `default:"kv-v2" split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -191,6 +194,9 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 					GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
 					GithubClientID:         conf.GithubClientID,
 					GithubClientSecret:     conf.GithubClientSecret,
+					VaultToken:             conf.VaultToken,
+					VaultAddress:           conf.VaultAddress,
+					VaultAPIKeyMountPath:   conf.VaultAPIKeyMountPath,
 				})
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))
