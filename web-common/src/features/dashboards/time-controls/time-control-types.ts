@@ -1,5 +1,5 @@
 /** NOTE: this file should be deprecated once we've
- * resolved https://github.com/rilldata/rill-developer/issues/1961.
+ * resolved https://github.com/rilldata/rill/issues/1961.
  */
 
 export enum TimeRangeName_DEPRECATE {

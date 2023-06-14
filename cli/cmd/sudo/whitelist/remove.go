@@ -34,7 +34,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter(fmt.Sprintf("Removed whitelist for org %q and domain %q", org, domain))
+			cmdutil.PrintlnSuccess(fmt.Sprintf("Removed whitelist for org %q and domain %q", org, domain))
 
 			return nil
 		},

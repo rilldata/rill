@@ -58,7 +58,7 @@ curl -s <https://cdn.rilldata.com/install.sh> | bash
 
 ## Manual install
 
-You can download platform-specific binaries from our [releases page on Github](https://github.com/rilldata/rill-developer/releases). A manual download will not make Rill Developer globally accessible, so you'll need to reference the full path of the binary when executing CLI commands.
+You can download platform-specific binaries from our [releases page on Github](https://github.com/rilldata/rill/releases). A manual download will not make Rill Developer globally accessible, so you'll need to reference the full path of the binary when executing CLI commands.
 
 ## Frequently Asked Questions 
 ### Rill cannot be opened because it is from an unidentified developer.

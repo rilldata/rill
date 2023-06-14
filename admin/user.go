@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/admin/database"
+	"go.uber.org/zap"
 )
 
 func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL string) (*database.User, error) {
@@ -66,8 +67,9 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		return nil, err
 	}
 
-	addedToOrgs := make(map[string]bool)
 	// handle org invites
+	addedToOrgIDs := make(map[string]bool)
+	addedToOrgNames := make([]string, 0)
 	for _, invite := range orgInvites {
 		org, err := s.DB.FindOrganization(ctx, invite.OrgID)
 		if err != nil {
@@ -85,7 +87,8 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		addedToOrgs[org.ID] = true
+		addedToOrgIDs[org.ID] = true
+		addedToOrgNames = append(addedToOrgNames, org.Name)
 	}
 
 	// check if users email domain is whitelisted
@@ -96,7 +99,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	}
 	for _, whitelist := range whitelists {
 		// if user is already a member of the org then skip, prefer explicit invite to whitelist
-		if _, ok := addedToOrgs[whitelist.OrgID]; ok {
+		if _, ok := addedToOrgIDs[whitelist.OrgID]; ok {
 			continue
 		}
 		org, err := s.DB.FindOrganization(ctx, whitelist.OrgID)
@@ -111,6 +114,8 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
+		addedToOrgIDs[org.ID] = true
+		addedToOrgNames = append(addedToOrgNames, org.Name)
 	}
 
 	// handle project invites
@@ -129,6 +134,13 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	if err != nil {
 		return nil, err
 	}
+
+	s.logger.Info("created user",
+		zap.String("user_id", user.ID),
+		zap.String("email", user.Email),
+		zap.String("name", user.DisplayName),
+		zap.String("org", strings.Join(addedToOrgNames, ",")),
+	)
 
 	return user, nil
 }
@@ -162,6 +174,9 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 	if err != nil {
 		return nil, err
 	}
+
+	s.logger.Info("created org", zap.String("name", orgName), zap.String("user_id", userID))
+
 	return org, nil
 }
 
