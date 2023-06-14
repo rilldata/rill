@@ -178,3 +178,8 @@ export enum TimeComparisonOption {
   QUARTER = "P3M",
   YEAR = "P1Y",
 }
+
+export enum TimeRoundingStrategy {
+  NEAREST = "NEAREST",
+  PREVIOUS = "PREVIOUS",
+}

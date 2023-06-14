@@ -6,21 +6,30 @@
  * - we need tests for this.
  */
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { DEFAULT_TIME_RANGES } from "../config";
+import { DEFAULT_TIME_RANGES, TIME_GRAIN } from "../config";
 import {
   durationToMillis,
   getAllowedTimeGrains,
   isGrainBigger,
 } from "../grains";
-import { getTimeWidth, relativePointInTimeToAbsolute } from "../transforms";
+import {
+  getDurationMultiple,
+  getEndOfPeriod,
+  getOffset,
+  getStartOfPeriod,
+  getTimeWidth,
+  relativePointInTimeToAbsolute,
+} from "../transforms";
 import {
   RangePresetType,
+  TimeOffsetType,
   TimeRange,
   TimeRangeMeta,
   TimeRangeOption,
   TimeRangePreset,
   TimeRangeType,
 } from "../types";
+import { removeTimezoneOffset } from "../../formatters";
 
 /**
  * Returns true if the range defined by start and end is completely
@@ -63,13 +72,6 @@ export function getChildTimeRanges(
         timeRange.end
       );
 
-      const timeRangeIsSmallerThanAllTime = isRangeInsideOther(
-        start,
-        end,
-        timeRangeDates.startDate,
-        timeRangeDates.endDate
-      );
-
       // check if time range is possible with given minTimeGrain
       const thisRangeAllowedGrains = getAllowedTimeGrains(
         timeRangeDates.startDate,
@@ -88,11 +90,7 @@ export function getChildTimeRanges(
         minTimeGrain,
         allowedMaxGrain.grain
       );
-      if (
-        timeRangeIsSmallerThanAllTime &&
-        isGrainPossible &&
-        hasSomeGrainMatches
-      ) {
+      if (isGrainPossible && hasSomeGrainMatches) {
         timeRanges.push({
           name: timePreset,
           label: timeRange.label,
@@ -172,10 +170,6 @@ export const prettyFormatTimeRange = (start: Date, end: Date): string => {
   if (!start && !end) {
     return "";
   }
-
-  // TODO: Do we still need to do this?
-  // timeRange.end is exclusive. We subtract one ms to render the last inclusive value.
-  end = new Date(end.getTime() - 1);
 
   const TIMEZONE = "UTC";
   // const TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone; // the user's local timezone
@@ -258,3 +252,70 @@ export const prettyFormatTimeRange = (start: Date, end: Date): string => {
     dateFormatOptions
   )} - ${end.toLocaleDateString(undefined, dateFormatOptions)}`;
 };
+
+/** Get extra data points for extrapolating the chart on both ends */
+export function getAdjustedFetchTime(
+  startTime: Date,
+  endTime: Date,
+  interval: V1TimeGrain
+) {
+  if (!startTime || !endTime) return undefined;
+  const offsetedStartTime = getOffset(
+    startTime,
+    TIME_GRAIN[interval].duration,
+    TimeOffsetType.SUBTRACT
+  );
+
+  // the data point previous to the first date inside the chart.
+  const trucatedOffsetedStartTime = getStartOfPeriod(
+    offsetedStartTime,
+    TIME_GRAIN[interval].duration
+  );
+
+  const offsetedEndTime = getOffset(
+    endTime,
+    TIME_GRAIN[interval].duration,
+    TimeOffsetType.ADD
+  );
+
+  // the data point after the last complete date.
+  const trucatedOffsetedEndTime = getStartOfPeriod(
+    offsetedEndTime,
+    TIME_GRAIN[interval].duration
+  );
+
+  return {
+    start: trucatedOffsetedStartTime.toISOString(),
+    end: trucatedOffsetedEndTime.toISOString(),
+  };
+}
+
+export function getAdjustedChartTime(
+  start: Date,
+  end: Date,
+  interval: V1TimeGrain,
+  boundEnd: Date
+) {
+  if (!start || !end)
+    return {
+      start,
+      end,
+    };
+
+  const grainDuration = TIME_GRAIN[interval].duration;
+
+  // Only plot the chart till the last period containing a datum
+  let adjustedEnd = new Date(boundEnd);
+  adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration);
+
+  // Remove half extra period with no data from chart
+  const halfPeriod = getDurationMultiple(grainDuration, 0.4);
+  adjustedEnd = getOffset(adjustedEnd, halfPeriod, TimeOffsetType.SUBTRACT);
+
+  adjustedEnd = removeTimezoneOffset(adjustedEnd);
+
+  return {
+    start: removeTimezoneOffset(new Date(start)),
+    end: adjustedEnd,
+  };
+}

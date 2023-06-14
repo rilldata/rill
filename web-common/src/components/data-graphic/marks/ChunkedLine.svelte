@@ -12,6 +12,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
 -->
 <script lang="ts">
   import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
+  import type { V1TimeGrain } from "../../../runtime-client";
   import {
     WithDelayedValue,
     WithTween,
@@ -28,9 +29,14 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   import { interpolatePath } from "d3-interpolate-path";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
+  import { TIME_GRAIN } from "../../../lib/time/config";
+  import { TimeOffsetType } from "../../../lib/time/types";
+  import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
   export let data;
   export let xAccessor: string;
   export let yAccessor: string;
+  export let timeGrain: V1TimeGrain;
+
   export let area = true;
   /** time in ms to trigger a delay when the underlying data changes */
   export let delay = 0;
@@ -49,9 +55,13 @@ Over time, we'll make this the default Line implementation, but it's not quite t
 
   let lineFunction;
   let areaFunction;
+
+  const curveType = "curveLinear";
+
   // FIXME:
   $: if ($xScale && $yScale) {
     lineFunction = lineFactory({
+      curve: curveType,
       xScale: $xScale,
       // the y should always plot a line segment so that we can
       // smoothly tween
@@ -64,6 +74,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     });
     if (area) {
       areaFunction = areaFactory({
+        curve: curveType,
         xScale: $xScale,
         yScale: (d) => $yScale(d || 0),
         xAccessor,
@@ -84,6 +95,37 @@ Over time, we'll make this the default Line implementation, but it's not quite t
    */
   let lineThickness = createAdaptiveLineThicknessStore(yAccessor);
   $: lineThickness.setData(data);
+
+  /** Get center aligned clips for segments */
+  function getClipPathParams(segment) {
+    let x;
+    let width;
+    if (segment.length === 1) {
+      // for singleton segments, we want to clip a vertical line
+      x = $xScale(segment[0][xAccessor]);
+      width = 0;
+    } else {
+      const offsetDuration = getDurationMultiple(
+        TIME_GRAIN[timeGrain].duration,
+        0.5
+      );
+      const label_position = getOffset(
+        segment[0][xAccessor],
+        offsetDuration,
+        TimeOffsetType.SUBTRACT
+      );
+      x = $xScale(label_position);
+
+      const end_position = getOffset(
+        segment.at(-1)[xAccessor],
+        TIME_GRAIN[timeGrain].duration,
+        TimeOffsetType.ADD
+      );
+      width = $xScale(end_position) - $xScale(segment[0][xAccessor]);
+    }
+
+    return { x, width };
+  }
 </script>
 
 <WithDelayedValue
@@ -154,9 +196,8 @@ Over time, we'll make this the default Line implementation, but it's not quite t
       </linearGradient>
       <clipPath id="path-segments-{id}">
         {#each delayedSegments as segment (segment[0][xAccessor])}
-          {@const x = $xScale(segment[0][xAccessor])}
-          {@const width =
-            $xScale(segment.at(-1)[xAccessor]) - $xScale(segment[0][xAccessor])}
+          {@const x = getClipPathParams(segment).x}
+          {@const width = getClipPathParams(segment).width}
           <WithTween
             initialValue={{
               x: x - width / 2,

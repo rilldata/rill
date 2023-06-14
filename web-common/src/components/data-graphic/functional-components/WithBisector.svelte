@@ -13,7 +13,7 @@ Useful for finding the nearest value to the current mouseover
   export let callback: (arg0: any) => number | Date;
   /** The value that will be used for the bisection */
   export let value: any;
-  const bisect = bisector(callback).center;
+  const bisect = bisector(callback).left;
 
   /** provide a bind site for the output */
   export let point = undefined;

@@ -110,7 +110,7 @@ describe("dashboards", () => {
     await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
 
     // Check that the total records are 275 and have comparisons
-    await playwrightExpect(page.getByText("275 -12 -4%")).toBeVisible();
+    await playwrightExpect(page.getByText("272 -23 -7%")).toBeVisible();
 
     // Turn off comparison
     await page
@@ -123,7 +123,7 @@ describe("dashboards", () => {
 
     // Check number
     await playwrightExpect(
-      page.getByText("275", { exact: true })
+      page.getByText("272", { exact: true })
     ).toBeVisible();
 
     // Add comparison back

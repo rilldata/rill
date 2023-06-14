@@ -17,6 +17,7 @@
   import { fly } from "svelte/transition";
   import MeasureValueMouseover from "./MeasureValueMouseover.svelte";
   import { niceMeasureExtents } from "./utils";
+  import { TimeRoundingStrategy } from "../../../lib/time/types";
 
   export let width: number = undefined;
   export let height: number = undefined;
@@ -30,6 +31,7 @@
   export let showComparison = false;
   export let data;
   export let xAccessor = "ts";
+  export let labelAccessor = "label";
   export let yAccessor = "value";
   export let mouseoverValue;
   export let hovered = false;
@@ -101,6 +103,10 @@
     return value;
   }
 
+  function inBounds(min, max, value) {
+    return value >= min && value <= max;
+  }
+
   $: if (scrubbing) {
     scrubEnd = alwaysBetween(internalXMin, internalXMax, mouseoverValue);
   }
@@ -121,7 +127,7 @@
   {width}
   {height}
   top={4}
-  left={12}
+  left={0}
   right={50}
   bind:mouseoverValue
   bind:hovered
@@ -154,6 +160,7 @@
             {data}
             {xAccessor}
             yAccessor="comparison.{yAccessor}"
+            {timeGrain}
           />
         </g>
       {/if}
@@ -163,6 +170,7 @@
         {data}
         {xAccessor}
         {yAccessor}
+        {timeGrain}
       />
     {/key}
     <line
@@ -174,47 +182,54 @@
     />
   </Body>
   {#if !scrubbing && mouseoverValue?.x}
-    <WithRoundToTimegrain value={mouseoverValue.x} {timeGrain} let:roundedValue>
+    <WithRoundToTimegrain
+      strategy={TimeRoundingStrategy.PREVIOUS}
+      value={mouseoverValue.x}
+      {timeGrain}
+      let:roundedValue
+    >
       <WithBisector
         {data}
         callback={(d) => d[xAccessor]}
         value={roundedValue}
         let:point
       >
-        <g transition:fly|local={{ duration: 100, x: -4 }}>
-          <text
-            class="fill-gray-600"
-            style:paint-order="stroke"
-            stroke="white"
-            stroke-width="3px"
-            x={config.plotLeft + config.bodyBuffer + 6}
-            y={config.plotTop + 10 + config.bodyBuffer}
-          >
-            {mouseoverTimeFormat(point[xAccessor])}
-          </text>
-          {#if showComparison}
+        {#if point && inBounds(internalXMin, internalXMax, point[xAccessor])}
+          <g transition:fly|local={{ duration: 100, x: -4 }}>
             <text
+              class="fill-gray-600"
               style:paint-order="stroke"
               stroke="white"
               stroke-width="3px"
-              class="fill-gray-400"
               x={config.plotLeft + config.bodyBuffer + 6}
-              y={config.plotTop + 24 + config.bodyBuffer}
+              y={config.plotTop + 10 + config.bodyBuffer}
             >
-              {mouseoverTimeFormat(point[`comparison.${xAccessor}`])} prev.
+              {mouseoverTimeFormat(point[labelAccessor])}
             </text>
-          {/if}
-        </g>
-        <g transition:fly|local={{ duration: 100, x: -4 }}>
-          <MeasureValueMouseover
-            {point}
-            {xAccessor}
-            {yAccessor}
-            {showComparison}
-            {mouseoverFormat}
-            {numberKind}
-          />
-        </g>
+            {#if showComparison}
+              <text
+                style:paint-order="stroke"
+                stroke="white"
+                stroke-width="3px"
+                class="fill-gray-400"
+                x={config.plotLeft + config.bodyBuffer + 6}
+                y={config.plotTop + 24 + config.bodyBuffer}
+              >
+                {mouseoverTimeFormat(point[`comparison.${labelAccessor}`])} prev.
+              </text>
+            {/if}
+          </g>
+          <g transition:fly|local={{ duration: 100, x: -4 }}>
+            <MeasureValueMouseover
+              {point}
+              {xAccessor}
+              {yAccessor}
+              {showComparison}
+              {mouseoverFormat}
+              {numberKind}
+            />
+          </g>
+        {/if}
       </WithBisector>
     </WithRoundToTimegrain>
   {/if}
