@@ -313,6 +313,7 @@ export default class Custompicker extends Litepicker {
     this.render();
   }
 
+  // Override Litepicker method
   hide() {
     if (!this.isShowning()) {
       return;

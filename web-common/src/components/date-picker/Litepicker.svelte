@@ -3,14 +3,14 @@
   import Custompicker from "./custom-picker";
   import { parseLocaleStringDate } from "./util";
 
-  export let startEl,
-    endEl,
-    defaultStart,
-    defaultEnd,
+  export let startEl: HTMLInputElement,
+    endEl: HTMLInputElement,
+    defaultStart: string,
+    defaultEnd: string,
     openOnMount = false,
-    editingDate = 0;
+    editingDate: 0 | 1 = 0;
 
-  let container, picker;
+  let container: HTMLElement, picker: Custompicker;
 
   const dispatch = createEventDispatcher();
 
@@ -77,6 +77,7 @@
   });
 </script>
 
+<!-- Position at top right corner of parent -->
 <div bind:this={container} class="w-0 h-0 absolute top-0 left-full" />
 
 <style>
