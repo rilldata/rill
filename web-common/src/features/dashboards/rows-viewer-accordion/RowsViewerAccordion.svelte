@@ -2,11 +2,89 @@
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import RowsViewer from "../rows-viewer/RowsViewer.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { formatInteger } from "@rilldata/web-common/lib/formatters";
+  import { useDashboardStore } from "../dashboard-stores";
+  import { useModelHasTimeSeries } from "../selectors";
   export let metricViewName: string;
   let isOpen = false;
   const toggle = () => {
     isOpen = !isOpen;
   };
+
+  $: totalsQuery = createQueryServiceMetricsViewTotals(
+    $runtime.instanceId,
+    metricViewName,
+    {
+      measureNames: ["count"],
+      inlineMeasures: [
+        {
+          name: "count",
+          expression: "count(*)",
+        },
+      ],
+    },
+    {
+      query: {
+        queryKey: ["dashboardAllRowsCt"],
+        enabled: true,
+      },
+    }
+  );
+
+  $: dashboardStore = useDashboardStore(metricViewName);
+
+  $: metricTimeSeries = useModelHasTimeSeries(
+    $runtime.instanceId,
+    metricViewName
+  );
+  $: hasTimeSeries = $metricTimeSeries.data;
+
+  $: timeStart = $dashboardStore.selectedTimeRange?.start?.toISOString();
+  $: timeEnd = $dashboardStore.selectedTimeRange?.end?.toISOString();
+
+  $: filteredTotalsQuery = createQueryServiceMetricsViewTotals(
+    $runtime.instanceId,
+    metricViewName,
+    {
+      measureNames: ["count"],
+      inlineMeasures: [
+        {
+          name: "count",
+          expression: "count(*)",
+        },
+      ],
+      timeStart: timeStart,
+      timeEnd: timeEnd,
+      filter: $dashboardStore?.filters,
+    },
+    {
+      query: {
+        queryKey: [
+          "dashboardFilteredRowsCt",
+          {
+            timeStart,
+            timeEnd,
+            filter: $dashboardStore?.filters,
+          },
+        ],
+        enabled:
+          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
+          !!$dashboardStore?.filters,
+      },
+    }
+  );
+
+  let label = "";
+
+  $: {
+    if ($totalsQuery.data && $filteredTotalsQuery.data) {
+      label = `${formatInteger(
+        $filteredTotalsQuery.data.data.count
+      )} of ${formatInteger($totalsQuery.data.data.count)} rows`;
+    }
+  }
 </script>
 
 <div>
@@ -14,7 +92,8 @@
     class="w-full bg-gray-100 h-7 text-left px-2 border-t border-t-gray-200 text-xs text-gray-800 flex items-center gap-1"
     on:click={toggle}
   >
-    <span class="font-bold">Source Data</span> x of X rows
+    <span class="font-bold">Source Data</span>
+    {label}
     {#if isOpen}
       <CaretUpIcon size="14px" />
     {:else}
