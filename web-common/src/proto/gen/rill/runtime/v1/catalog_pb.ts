@@ -92,9 +92,9 @@ export enum TimeGrain {
   MONTH = 7,
 
   /**
-   * @generated from enum value: TIME_GRAIN_QUARTERLY = 8;
+   * @generated from enum value: TIME_GRAIN_QUARTER = 8;
    */
-  QUARTERLY = 8,
+  QUARTER = 8,
 
   /**
    * @generated from enum value: TIME_GRAIN_YEAR = 9;
@@ -111,7 +111,7 @@ proto3.util.setEnumType(TimeGrain, "rill.runtime.v1.TimeGrain", [
   { no: 5, name: "TIME_GRAIN_DAY" },
   { no: 6, name: "TIME_GRAIN_WEEK" },
   { no: 7, name: "TIME_GRAIN_MONTH" },
-  { no: 8, name: "TIME_GRAIN_QUARTERLY" },
+  { no: 8, name: "TIME_GRAIN_QUARTER" },
   { no: 9, name: "TIME_GRAIN_YEAR" },
 ]);
 
