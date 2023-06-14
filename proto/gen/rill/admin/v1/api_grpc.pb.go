@@ -57,6 +57,7 @@ const (
 	AdminService_SearchUsers_FullMethodName                  = "/rill.admin.v1.AdminService/SearchUsers"
 	AdminService_ListSuperusers_FullMethodName               = "/rill.admin.v1.AdminService/ListSuperusers"
 	AdminService_SetSuperuser_FullMethodName                 = "/rill.admin.v1.AdminService/SetSuperuser"
+	AdminService_SudoGetResource_FullMethodName              = "/rill.admin.v1.AdminService/SudoGetResource"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -140,6 +141,8 @@ type AdminServiceClient interface {
 	ListSuperusers(ctx context.Context, in *ListSuperusersRequest, opts ...grpc.CallOption) (*ListSuperusersResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error)
+	// SudoGetResource returns details about a resource by ID lookup
+	SudoGetResource(ctx context.Context, in *SudoGetResourceRequest, opts ...grpc.CallOption) (*SudoGetResourceResponse, error)
 }
 
 type adminServiceClient struct {
@@ -492,6 +495,15 @@ func (c *adminServiceClient) SetSuperuser(ctx context.Context, in *SetSuperuserR
 	return out, nil
 }
 
+func (c *adminServiceClient) SudoGetResource(ctx context.Context, in *SudoGetResourceRequest, opts ...grpc.CallOption) (*SudoGetResourceResponse, error) {
+	out := new(SudoGetResourceResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoGetResource_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility
@@ -573,6 +585,8 @@ type AdminServiceServer interface {
 	ListSuperusers(context.Context, *ListSuperusersRequest) (*ListSuperusersResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error)
+	// SudoGetResource returns details about a resource by ID lookup
+	SudoGetResource(context.Context, *SudoGetResourceRequest) (*SudoGetResourceResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -693,6 +707,9 @@ func (UnimplementedAdminServiceServer) ListSuperusers(context.Context, *ListSupe
 }
 func (UnimplementedAdminServiceServer) SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetSuperuser not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoGetResource(context.Context, *SudoGetResourceRequest) (*SudoGetResourceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoGetResource not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -1391,6 +1408,24 @@ func _AdminService_SetSuperuser_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_SudoGetResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoGetResourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoGetResource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoGetResource_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoGetResource(ctx, req.(*SudoGetResourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1549,6 +1584,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetSuperuser",
 			Handler:    _AdminService_SetSuperuser_Handler,
+		},
+		{
+			MethodName: "SudoGetResource",
+			Handler:    _AdminService_SudoGetResource_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
