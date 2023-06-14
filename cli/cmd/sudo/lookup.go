@@ -46,21 +46,6 @@ func lookupCmd(cfg *config.Config) *cobra.Command {
 	return lookupCmd
 }
 
-func getOrganization(ctx context.Context, c *client.Client, orgID string) error {
-	res, err := c.SudoGetResource(ctx, &adminv1.SudoGetResourceRequest{
-		Id: &adminv1.SudoGetResourceRequest_OrgId{OrgId: orgID},
-	})
-	if err != nil {
-		return err
-	}
-
-	org := res.GetOrg()
-	fmt.Printf("Name: %s\n", org.Name)
-	fmt.Printf("Created on: %s\n", org.CreatedOn.AsTime().Format(time.RFC3339Nano))
-
-	return nil
-}
-
 func getUser(ctx context.Context, c *client.Client, userID string) error {
 	res, err := c.SudoGetResource(ctx, &adminv1.SudoGetResourceRequest{
 		Id: &adminv1.SudoGetResourceRequest_UserId{UserId: userID},
@@ -77,36 +62,17 @@ func getUser(ctx context.Context, c *client.Client, userID string) error {
 	return nil
 }
 
-func getDeployment(ctx context.Context, c *client.Client, deploymentID string) error {
+func getOrganization(ctx context.Context, c *client.Client, orgID string) error {
 	res, err := c.SudoGetResource(ctx, &adminv1.SudoGetResourceRequest{
-		Id: &adminv1.SudoGetResourceRequest_DeploymentId{DeploymentId: deploymentID},
+		Id: &adminv1.SudoGetResourceRequest_OrgId{OrgId: orgID},
 	})
 	if err != nil {
 		return err
 	}
 
-	depl := res.GetDeployment()
-	fmt.Printf("Project: %s\n", depl.ProjectId)
-	fmt.Printf("Branch: %s\n", depl.Branch)
-	fmt.Printf("InstanceId: %s\n", depl.RuntimeInstanceId)
-	fmt.Printf("Created on: %s\n", depl.CreatedOn.AsTime().Format(time.RFC3339Nano))
-
-	return nil
-}
-
-func getInstance(ctx context.Context, c *client.Client, instanceID string) error {
-	res, err := c.SudoGetResource(ctx, &adminv1.SudoGetResourceRequest{
-		Id: &adminv1.SudoGetResourceRequest_InstanceId{InstanceId: instanceID},
-	})
-	if err != nil {
-		return err
-	}
-
-	inst := res.GetInstance()
-	fmt.Printf("Project: %s\n", inst.ProjectId)
-	fmt.Printf("Branch: %s\n", inst.Branch)
-	fmt.Printf("DeploymentId: %s\n", inst.Id)
-	fmt.Printf("Created on: %s\n", inst.CreatedOn.AsTime().Format(time.RFC3339Nano))
+	org := res.GetOrg()
+	fmt.Printf("Name: %s\n", org.Name)
+	fmt.Printf("Created on: %s\n", org.CreatedOn.AsTime().Format(time.RFC3339Nano))
 
 	return nil
 }
@@ -120,18 +86,59 @@ func getProject(ctx context.Context, c *client.Client, projectID string) error {
 	}
 
 	project := res.GetProject()
-	fmt.Printf("Name: %s\n", project.Name)
+	fmt.Printf("Name: %s (ID: %s)\n", project.Name, project.Id)
 	fmt.Printf("Org: %s (ID: %s)\n", project.OrgName, project.OrgId)
-	fmt.Printf("Created on: %s\n", project.CreatedOn)
-	fmt.Printf("Public: %t", project.Public)
-	fmt.Printf("Region: %s", project.Region)
-	fmt.Printf("Github URL: %s", project.GithubUrl)
-	fmt.Printf("Subpath: %s", project.Subpath)
-	fmt.Printf("Prod branch: %s", project.ProdBranch)
-	fmt.Printf("Prod OLAP driver: %s", project.ProdOlapDriver)
-	fmt.Printf("Prod OLAP DSN: %s", project.ProdOlapDsn)
-	fmt.Printf("Prod slots: %d", project.ProdSlots)
-	fmt.Printf("Prod deployment ID: %s", project.ProdDeploymentId)
+	fmt.Printf("Created on: %s\n", project.CreatedOn.AsTime().Format(time.RFC3339Nano))
+	fmt.Printf("Public: %t\n", project.Public)
+	fmt.Printf("Region: %s\n", project.Region)
+	fmt.Printf("Github URL: %s\n", project.GithubUrl)
+	fmt.Printf("Subpath: %s\n", project.Subpath)
+	fmt.Printf("Prod branch: %s\n", project.ProdBranch)
+	fmt.Printf("Prod OLAP driver: %s\n", project.ProdOlapDriver)
+	fmt.Printf("Prod OLAP DSN: %s\n", project.ProdOlapDsn)
+	fmt.Printf("Prod slots: %d\n", project.ProdSlots)
+	fmt.Printf("Prod deployment ID: %s\n", project.ProdDeploymentId)
 
 	return nil
+}
+
+func getDeployment(ctx context.Context, c *client.Client, deploymentID string) error {
+	res, err := c.SudoGetResource(ctx, &adminv1.SudoGetResourceRequest{
+		Id: &adminv1.SudoGetResourceRequest_DeploymentId{DeploymentId: deploymentID},
+	})
+	if err != nil {
+		return err
+	}
+
+	depl := res.GetDeployment()
+	return printDeployment(ctx, c, depl)
+}
+
+func getInstance(ctx context.Context, c *client.Client, instanceID string) error {
+	res, err := c.SudoGetResource(ctx, &adminv1.SudoGetResourceRequest{
+		Id: &adminv1.SudoGetResourceRequest_InstanceId{InstanceId: instanceID},
+	})
+	if err != nil {
+		return err
+	}
+
+	depl := res.GetInstance()
+	return printDeployment(ctx, c, depl)
+}
+
+func printDeployment(ctx context.Context, c *client.Client, depl *adminv1.Deployment) error {
+	fmt.Println("DEPLOYMENT")
+	fmt.Println("----------")
+	fmt.Printf("Runtime host: %s\n", depl.RuntimeHost)
+	fmt.Printf("Instance ID: %s\n", depl.RuntimeInstanceId)
+	fmt.Printf("Branch: %s\n", depl.Branch)
+	fmt.Printf("Slots: %d\n", depl.Slots)
+	fmt.Printf("Created on: %s\n", depl.CreatedOn.AsTime().Format(time.RFC3339Nano))
+	fmt.Printf("Status: %s\n", depl.Status.String())
+	fmt.Printf("Logs: %s\n", depl.Logs)
+
+	fmt.Println("")
+	fmt.Println("PROJECT")
+	fmt.Println("-------")
+	return getProject(ctx, c, depl.ProjectId)
 }
