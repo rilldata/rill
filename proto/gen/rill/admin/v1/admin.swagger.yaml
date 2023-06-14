@@ -926,6 +926,42 @@ paths:
             $ref: '#/definitions/v1SetSuperuserRequest'
       tags:
         - AdminService
+  /v1/superuser/resource:
+    get:
+      summary: SudoGetResource returns details about a resource by ID lookup
+      operationId: AdminService_SudoGetResource
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoGetResourceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          type: string
+        - name: orgId
+          in: query
+          required: false
+          type: string
+        - name: projectId
+          in: query
+          required: false
+          type: string
+        - name: deploymentId
+          in: query
+          required: false
+          type: string
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/tokens/current:
     delete:
       summary: RevokeCurrentAuthToken revoke the current auth token
@@ -1393,6 +1429,20 @@ definitions:
         type: boolean
   v1SetSuperuserResponse:
     type: object
+  v1SudoGetResourceResponse:
+    type: object
+    properties:
+      user:
+        $ref: '#/definitions/v1User'
+      org:
+        $ref: '#/definitions/v1Organization'
+      project:
+        $ref: '#/definitions/v1Project'
+      deployment:
+        $ref: '#/definitions/v1Deployment'
+      instance:
+        $ref: '#/definitions/v1Deployment'
+    title: SudoGetResourceResponse
   v1TriggerReconcileResponse:
     type: object
   v1TriggerRedeployResponse:
