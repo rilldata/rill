@@ -24,14 +24,24 @@
     $runtime?.instanceId,
     metricViewName,
     {
-      limit: 150,
+      limit: 10000,
       filter: $dashboardStore.filters,
       timeStart: $dashboardStore?.selectedTimeRange?.start,
       timeEnd: $dashboardStore.selectedTimeRange?.end,
+    },
+    {
+      query: {
+        enabled: true, // TODO: add check for filters, etc first...
+      },
     }
   );
 
-  $: rows = $tableQuery?.data?.data;
+  let rows;
+  $: {
+    if ($tableQuery.isSuccess) {
+      rows = $tableQuery.data.data;
+    }
+  }
 
   $: profileColumnsQuery = createQueryServiceTableColumns(
     $runtime?.instanceId,
