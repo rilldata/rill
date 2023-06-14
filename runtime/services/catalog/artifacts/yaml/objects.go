@@ -388,6 +388,8 @@ func getTimeGrainEnum(timeGrain string) (runtimev1.TimeGrain, error) {
 		return runtimev1.TimeGrain_TIME_GRAIN_WEEK, nil
 	case "month":
 		return runtimev1.TimeGrain_TIME_GRAIN_MONTH, nil
+	case "quarter":
+		return runtimev1.TimeGrain_TIME_GRAIN_QUARTER, nil
 	case "year":
 		return runtimev1.TimeGrain_TIME_GRAIN_YEAR, nil
 	default:
@@ -412,6 +414,8 @@ func getTimeGrainString(timeGrain runtimev1.TimeGrain) string {
 		return "week"
 	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
 		return "month"
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return "quarter"
 	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
 		return "year"
 	default:
