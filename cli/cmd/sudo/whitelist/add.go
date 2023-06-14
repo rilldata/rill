@@ -1,4 +1,4 @@
-package autoinvite
+package whitelist
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 	addCmd := &cobra.Command{
 		Use:   "add <org> <domain> <role>",
 		Args:  cobra.ExactArgs(3),
-		Short: "Autoinvite users from a domain",
+		Short: "Whitelist users from a domain",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -27,13 +27,13 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 			domain := args[1]
 			role := args[2]
 
-			cmdutil.WarnPrinter(fmt.Sprintf("Warn: Auto inviting will give all users from domain %q access to the organization %q as %s", domain, org, role))
+			cmdutil.PrintlnWarn(fmt.Sprintf("Warn: Whitelisting will give all users from domain %q access to the organization %q as %s", domain, org, role))
 			if !cmdutil.ConfirmPrompt("Do you want to continue", "", false) {
-				cmdutil.WarnPrinter("Aborted")
+				cmdutil.PrintlnWarn("Aborted")
 				return nil
 			}
 
-			_, err = client.CreateAutoinviteDomain(ctx, &adminv1.CreateAutoinviteDomainRequest{
+			_, err = client.CreateWhitelistedDomain(ctx, &adminv1.CreateWhitelistedDomainRequest{
 				Organization: org,
 				Domain:       domain,
 				Role:         role,
@@ -42,7 +42,7 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Success")
+			cmdutil.PrintlnSuccess("Success")
 
 			return nil
 		},

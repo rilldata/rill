@@ -31,7 +31,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter(fmt.Sprintf("Removed superuser from %q", args[0]))
+			cmdutil.PrintlnSuccess(fmt.Sprintf("Removed superuser from %q", args[0]))
 
 			return nil
 		},

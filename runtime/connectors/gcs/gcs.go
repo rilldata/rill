@@ -22,8 +22,10 @@ import (
 	"google.golang.org/api/googleapi"
 )
 
+const defaultPageSize = 20
+
 func init() {
-	connectors.Register("gcs", connector{})
+	connectors.Register("gcs", Connector{})
 }
 
 var errNoCredentials = errors.New("empty credentials: set `google_application_credentials` env variable")
@@ -121,16 +123,16 @@ func ParseConfig(props map[string]any) (*Config, error) {
 	return conf, nil
 }
 
-type connector struct{}
+type Connector struct{}
 
-func (c connector) Spec() connectors.Spec {
+func (c Connector) Spec() connectors.Spec {
 	return spec
 }
 
 // ConsumeAsIterator returns a file iterator over objects stored in gcs.
 // The credential json is read from a env variable google_application_credentials.
 // Additionally in case `env.AllowHostCredentials` is true it looks for "Application Default Credentials" as well
-func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source, l *zap.Logger) (connectors.FileIterator, error) {
+func (c Connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source, l *zap.Logger) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -176,7 +178,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 	return iter, err
 }
 
-func (c connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {
+func (c Connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse config: %w", err)

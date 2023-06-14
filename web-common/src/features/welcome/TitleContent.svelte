@@ -4,10 +4,21 @@
   import RadixH1 from "@rilldata/web-common/components/typography/RadixH1.svelte";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
   import AddSourceModal from "@rilldata/web-common/features/sources/add-source/AddSourceModal.svelte";
+  import { behaviourEvent } from "../../metrics/initMetrics";
+  import {
+    BehaviourEventAction,
+    BehaviourEventMedium,
+  } from "../../metrics/service/BehaviourEventTypes";
+  import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
 
   let showAddSourceModal = false;
   const openShowAddSourceModal = () => {
     showAddSourceModal = true;
+    behaviourEvent?.fireSplashEvent(
+      BehaviourEventAction.SourceModal,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.Workspace
+    );
   };
 </script>
 

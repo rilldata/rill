@@ -224,60 +224,6 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/autoinvite:
-    post:
-      summary: CreateAutoinviteDomain adds a domain to the autoinvite list
-      operationId: AdminService_CreateAutoinviteDomain
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1CreateAutoinviteDomainResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              domain:
-                type: string
-              role:
-                type: string
-      tags:
-        - AdminService
-  /v1/organizations/{organization}/autoinvite/{domain}:
-    delete:
-      summary: RemoveAutoinviteDomain removes a domain from the autoinvite list
-      operationId: AdminService_RemoveAutoinviteDomain
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1RemoveAutoinviteDomainResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
-        - name: domain
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
   /v1/organizations/{organization}/invites:
     get:
       summary: ListOrganizationInvites lists all the org invites
@@ -444,6 +390,30 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/organizations/{organization}/projects/{project}/git-credentials:
+    get:
+      summary: GetGitCredentials returns credentials and other details for a project's Git repository.
+      operationId: AdminService_GetGitCredentials
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetGitCredentialsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/organizations/{organization}/projects/{project}/invites:
     get:
       summary: ListProjectInvites lists all the project invites
@@ -604,6 +574,79 @@ paths:
             properties:
               role:
                 type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/whitelisted:
+    get:
+      summary: ListWhitelistedDomains lists all the whitelisted domains for the organization
+      operationId: AdminService_ListWhitelistedDomains
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListWhitelistedDomainsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: CreateWhitelistedDomain adds a domain to the whitelist
+      operationId: AdminService_CreateWhitelistedDomain
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateWhitelistedDomainResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              domain:
+                type: string
+              role:
+                type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/whitelisted/{domain}:
+    delete:
+      summary: RemoveWhitelistedDomain removes a domain from the whitelist list
+      operationId: AdminService_RemoveWhitelistedDomain
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveWhitelistedDomainResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: domain
+          in: path
+          required: true
+          type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects:
@@ -883,6 +926,42 @@ paths:
             $ref: '#/definitions/v1SetSuperuserRequest'
       tags:
         - AdminService
+  /v1/superuser/resource:
+    get:
+      summary: SudoGetResource returns details about a resource by ID lookup
+      operationId: AdminService_SudoGetResource
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoGetResourceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          type: string
+        - name: orgId
+          in: query
+          required: false
+          type: string
+        - name: projectId
+          in: query
+          required: false
+          type: string
+        - name: deploymentId
+          in: query
+          required: false
+          type: string
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/tokens/current:
     delete:
       summary: RevokeCurrentAuthToken revoke the current auth token
@@ -993,8 +1072,6 @@ definitions:
     properties:
       pendingSignup:
         type: boolean
-  v1CreateAutoinviteDomainResponse:
-    type: object
   v1CreateOrganizationRequest:
     type: object
     properties:
@@ -1012,6 +1089,8 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
+  v1CreateWhitelistedDomainResponse:
+    type: object
   v1DeleteOrganizationResponse:
     type: object
   v1DeleteProjectResponse:
@@ -1056,6 +1135,19 @@ definitions:
     properties:
       user:
         $ref: '#/definitions/v1User'
+  v1GetGitCredentialsResponse:
+    type: object
+    properties:
+      repoUrl:
+        type: string
+      username:
+        type: string
+      password:
+        type: string
+      subpath:
+        type: string
+      prodBranch:
+        type: string
   v1GetGithubRepoStatusResponse:
     type: object
     properties:
@@ -1173,6 +1265,14 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1User'
+  v1ListWhitelistedDomainsResponse:
+    type: object
+    properties:
+      domains:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1WhitelistedDomain'
   v1Member:
     type: object
     properties:
@@ -1295,11 +1395,11 @@ definitions:
         type: boolean
       manageProjectMembers:
         type: boolean
-  v1RemoveAutoinviteDomainResponse:
-    type: object
   v1RemoveOrganizationMemberResponse:
     type: object
   v1RemoveProjectMemberResponse:
+    type: object
+  v1RemoveWhitelistedDomainResponse:
     type: object
   v1RevokeCurrentAuthTokenResponse:
     type: object
@@ -1329,6 +1429,20 @@ definitions:
         type: boolean
   v1SetSuperuserResponse:
     type: object
+  v1SudoGetResourceResponse:
+    type: object
+    properties:
+      user:
+        $ref: '#/definitions/v1User'
+      org:
+        $ref: '#/definitions/v1Organization'
+      project:
+        $ref: '#/definitions/v1Project'
+      deployment:
+        $ref: '#/definitions/v1Deployment'
+      instance:
+        $ref: '#/definitions/v1Deployment'
+    title: SudoGetResourceResponse
   v1TriggerReconcileResponse:
     type: object
   v1TriggerRedeployResponse:
@@ -1377,4 +1491,11 @@ definitions:
       role:
         type: string
       invitedBy:
+        type: string
+  v1WhitelistedDomain:
+    type: object
+    properties:
+      domain:
+        type: string
+      role:
         type: string

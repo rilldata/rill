@@ -91,6 +91,6 @@ func (p *StaticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 		DataDir:      target.DataDir,
 		CPU:          1 * opts.Slots,
 		MemoryGB:     2 * opts.Slots,
-		StorageBytes: int64(opts.Slots) * 5 * int64(datasize.GB),
+		StorageBytes: int64(opts.Slots) * 10 * int64(datasize.GB),
 	}, nil
 }

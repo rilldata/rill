@@ -8,6 +8,9 @@ import (
 )
 
 func SearchCmd(cfg *config.Config) *cobra.Command {
+	var pageSize uint32
+	var pageToken string
+
 	searchCmd := &cobra.Command{
 		Use:   "search <email-pattern>",
 		Args:  cobra.ExactArgs(1),
@@ -23,6 +26,8 @@ func SearchCmd(cfg *config.Config) *cobra.Command {
 
 			res, err := client.SearchUsers(ctx, &adminv1.SearchUsersRequest{
 				EmailPattern: args[0],
+				PageSize:     pageSize,
+				PageToken:    pageToken,
 			})
 			if err != nil {
 				return err
@@ -30,8 +35,17 @@ func SearchCmd(cfg *config.Config) *cobra.Command {
 
 			cmdutil.PrintUsers(res.Users)
 
+			if res.NextPageToken != "" {
+				cmd.Println()
+				cmd.Printf("Next page token: %s\n", res.NextPageToken)
+			}
+
 			return nil
 		},
 	}
+
+	searchCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of users to return per page")
+	searchCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
+
 	return searchCmd
 }

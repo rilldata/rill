@@ -6,7 +6,9 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -32,6 +34,10 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 
 // GetInstance implements RuntimeService.
 func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequest) (*runtimev1.GetInstanceResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+	)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadInstance) {
 		return nil, ErrForbidden
 	}
@@ -51,6 +57,12 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 
 // CreateInstance implements RuntimeService.
 func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstanceRequest) (*runtimev1.CreateInstanceResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.olap_driver", req.OlapDriver),
+		attribute.String("args.repo_driver", req.RepoDriver),
+	)
+
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
 	}
@@ -78,6 +90,12 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 
 // EditInstance implements RuntimeService.
 func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRequest) (*runtimev1.EditInstanceResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.olap_driver", req.OlapDriver),
+		attribute.String("args.repo_driver", req.RepoDriver),
+	)
+
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
 	}
@@ -105,6 +123,11 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 
 // DeleteInstance implements RuntimeService.
 func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstanceRequest) (*runtimev1.DeleteInstanceResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.Bool("args.drop_db", req.DropDb),
+	)
+
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
 	}

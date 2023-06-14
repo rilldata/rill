@@ -49,7 +49,7 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Updated project variables")
+			cmdutil.PrintlnSuccess("Updated project variables")
 			return nil
 		},
 	}

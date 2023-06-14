@@ -10,9 +10,18 @@
   import { useModelNames } from "../../models/selectors";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
-  import { compileCreateSourceYAML } from "../sourceUtils";
+  import {
+    compileCreateSourceYAML,
+    getSourceError,
+    emitSourceErrorTelemetry,
+    emitSourceSuccessTelemetry,
+  } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { uploadTableFiles } from "./file-upload";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
+  import { appScreen } from "../../../layout/app-store";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
 
   export let showDropOverlay: boolean;
 
@@ -25,6 +34,9 @@
 
   const createSourceMutation = createRuntimeServicePutFileAndReconcile();
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
+
+  $: createSourceMutationError = ($createSourceMutation?.error as any)?.response
+    ?.data;
 
   const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;
@@ -53,14 +65,32 @@
           },
           "local_file"
         );
-        // TODO: errors
-        await createSource(
+        const errors = await createSource(
           queryClient,
           runtimeInstanceId,
           tableName,
           yaml,
           $createSourceMutation
         );
+
+        const sourceError = getSourceError(errors, tableName);
+        if (createSourceMutationError.isError || sourceError) {
+          emitSourceErrorTelemetry(
+            MetricsEventSpace.Workspace,
+            $appScreen,
+            createSourceMutationError?.message ?? sourceError?.message,
+            SourceConnectionType.Local,
+            filePath
+          );
+        } else {
+          emitSourceSuccessTelemetry(
+            MetricsEventSpace.Workspace,
+            $appScreen,
+            BehaviourEventMedium.Drag,
+            SourceConnectionType.Local,
+            filePath
+          );
+        }
       } catch (err) {
         console.error(err);
       }

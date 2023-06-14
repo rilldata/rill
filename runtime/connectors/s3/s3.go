@@ -22,8 +22,10 @@ import (
 	"gocloud.dev/blob/s3blob"
 )
 
+const defaultPageSize = 20
+
 func init() {
-	connectors.Register("s3", connector{})
+	connectors.Register("s3", Connector{})
 }
 
 var spec = connectors.Spec{
@@ -104,9 +106,9 @@ func ParseConfig(props map[string]any) (*Config, error) {
 	return conf, nil
 }
 
-type connector struct{}
+type Connector struct{}
 
-func (c connector) Spec() connectors.Spec {
+func (c Connector) Spec() connectors.Spec {
 	return spec
 }
 
@@ -118,7 +120,7 @@ func (c connector) Spec() connectors.Spec {
 //   - AWS_SESSION_TOKEN
 //
 // Additionally in case env.AllowHostCredentials is true it looks for credentials stored on host machine as well
-func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source, logger *zap.Logger) (connectors.FileIterator, error) {
+func (c Connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source, logger *zap.Logger) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -129,7 +131,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		return nil, err
 	}
 
-	bucketObj, err := openBucket(ctx, conf, conf.url.Host, creds)
+	bucketObj, err := openBucket(ctx, conf, conf.url.Host, creds, env)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
 	}
@@ -158,7 +160,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		if (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) && creds != credentials.AnonymousCredentials {
 			logger.Info("s3 list objects failed, re-trying with anonymous credential", zap.Error(err), observability.ZapCtx(ctx))
 			creds = credentials.AnonymousCredentials
-			bucketObj, bucketErr := openBucket(ctx, conf, conf.url.Host, creds)
+			bucketObj, bucketErr := openBucket(ctx, conf, conf.url.Host, creds, env)
 			if bucketErr != nil {
 				return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, bucketErr)
 			}
@@ -175,7 +177,7 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 	return it, err
 }
 
-func (c connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {
+func (c Connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse config: %w", err)
@@ -186,16 +188,17 @@ func (c connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, 
 		return false, err
 	}
 
-	bucketObj, err := openBucket(ctx, conf, conf.url.Host, creds)
+	bucketObj, err := openBucket(ctx, conf, conf.url.Host, creds, env)
 	if err != nil {
 		return false, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
 	}
+	defer bucketObj.Close()
 
 	return bucketObj.IsAccessible(ctx)
 }
 
-func openBucket(ctx context.Context, conf *Config, bucket string, creds *credentials.Credentials) (*blob.Bucket, error) {
-	sess, err := getAwsSessionConfig(ctx, conf, bucket, creds)
+func openBucket(ctx context.Context, conf *Config, bucket string, creds *credentials.Credentials, env *connectors.Env) (*blob.Bucket, error) {
+	sess, err := getAwsSessionConfig(ctx, conf, bucket, creds, env)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start session: %w", err)
 	}
@@ -203,7 +206,7 @@ func openBucket(ctx context.Context, conf *Config, bucket string, creds *credent
 	return s3blob.OpenBucket(ctx, sess, bucket, nil)
 }
 
-func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string, creds *credentials.Credentials) (*session.Session, error) {
+func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string, creds *credentials.Credentials, env *connectors.Env) (*session.Session, error) {
 	// If S3Endpoint is set, we assume we're targeting an S3 compatible API (but not AWS)
 	if len(conf.S3Endpoint) > 0 {
 		region := conf.AWSRegion
@@ -230,9 +233,13 @@ func getAwsSessionConfig(ctx context.Context, conf *Config, bucket string, creds
 		})
 	}
 
+	sharedConfigState := session.SharedConfigDisable
+	if env.AllowHostAccess {
+		sharedConfigState = session.SharedConfigEnable // Tells to look for default region set with `aws configure`
+	}
 	// Create a session that tries to infer the region from the environment
 	sess, err := session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable, // Tells to look for default region set with `aws configure`
+		SharedConfigState: sharedConfigState,
 		Config: aws.Config{
 			Credentials: creds,
 		},
