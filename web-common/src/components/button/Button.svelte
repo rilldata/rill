@@ -34,7 +34,6 @@
     },
   };
 
-  // FIXME: string search showe that buttonClasses is only used only in this file
   export function buttonClasses({
     /** one of thwee: primary, secondary, text */
     type = "primary",
