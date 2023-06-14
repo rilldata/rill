@@ -234,7 +234,11 @@ export function getLocaleDateString(lang?: string) {
 // We use this function because the date picker UI uses the JS Date() object which operates on the locale settings,
 // but for API calls like filters we may want to interpret those dates against a different timezone than the user's system
 export function parseLocaleStringDate(str: string, timeZone?: string) {
-  const localDate = parse(str, `${getLocaleDateString()}`, new Date());
+  let localDate = parse(str, `${getLocaleDateString()}`, new Date());
+
+  // if date is invalid, try parsing with default Date string parsing.
+  // Hack: if the string looks like an ISO date, Date() tries to parse it as ISO instead of as a locale date string. Add a space to the end to prevent this.
+  if (isNaN(localDate.valueOf())) localDate = new Date(`${str} `);
   if (!timeZone) return localDate;
   return new Date(localDate.toLocaleDateString() + " " + timeZone);
 }
