@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount, createEventDispatcher } from "svelte";
   import Custompicker from "./custom-picker";
+  import { parseLocaleStringDate } from "./util";
 
   export let startEl,
     endEl,
@@ -9,7 +10,7 @@
     openOnMount = false,
     editingDate = 0;
 
-  let datepicker, picker;
+  let container, picker;
 
   const dispatch = createEventDispatcher();
 
@@ -29,15 +30,15 @@
 
   onMount(() => {
     picker = new Custompicker({
-      element: datepicker,
+      element: container,
       autoApply: false,
       autoRefresh: true,
       numberOfMonths: 2,
       numberOfColumns: 2,
       position: "bottom left",
       singleMode: false,
-      startDate: defaultStart,
-      endDate: defaultEnd,
+      startDate: parseLocaleStringDate(defaultStart),
+      endDate: parseLocaleStringDate(defaultEnd),
       startEl,
       endEl,
     });
@@ -76,7 +77,7 @@
   });
 </script>
 
-<div bind:this={datepicker} class="w-0 h-0 absolute top-0 left-full" />
+<div bind:this={container} class="w-0 h-0 absolute top-0 left-full" />
 
 <style>
   :global(.litepicker) {

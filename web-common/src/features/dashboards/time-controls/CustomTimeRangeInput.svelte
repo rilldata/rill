@@ -8,6 +8,7 @@
   import type { DashboardTimeControls } from "../../../lib/time/types";
   import type { V1TimeGrain } from "../../../runtime-client";
   import Litepicker from "@rilldata/web-common/components/date-picker/Litepicker.svelte";
+  import { parseLocaleStringDate } from "@rilldata/web-common/components/date-picker/util";
 
   export let minTimeGrain: V1TimeGrain;
   export let boundaryStart: Date;
@@ -27,11 +28,8 @@
   // functions for extracting the right kind of date string out of
   // a Date object. Used in the input elements.
   export function getDateFromObject(date: Date): string {
-    return date.toLocaleDateString([], {
+    return date.toLocaleDateString(window.navigator.language, {
       timeZone: "UTC",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
     });
   }
 
@@ -39,8 +37,11 @@
     return isoDate.split("T")[0];
   }
 
-  export function getISOStringFromDate(date: string): string {
-    return new Date(`${date} UTC`).toISOString();
+  export function getISOStringFromDate(
+    date: string,
+    timeZone?: string
+  ): string {
+    return parseLocaleStringDate(date, timeZone).toISOString();
   }
 
   function validateTimeRange(
@@ -63,15 +64,20 @@
   }
 
   // HAM, you left off here.
-  $: error = validateTimeRange(new Date(start), new Date(end), minTimeGrain);
+  $: error = validateTimeRange(
+    parseLocaleStringDate(start),
+    parseLocaleStringDate(end),
+    minTimeGrain
+  );
   $: disabled = !start || !end || !!error;
 
   $: max = getDateFromISOString(boundaryEnd.toISOString());
   $: min = getDateFromISOString(boundaryStart.toISOString());
 
   function applyCustomTimeRange() {
-    const startDate = getISOStringFromDate(start);
-    const endDate = getISOStringFromDate(end);
+    // Shift the selected dates to start in UTC instead of system timezone
+    const startDate = getISOStringFromDate(start, "UTC");
+    const endDate = getISOStringFromDate(end, "UTC");
     dispatch("apply", {
       startDate,
       endDate,
