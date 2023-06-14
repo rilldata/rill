@@ -1,6 +1,6 @@
 <script lang="ts">
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useMetaQuery } from "../selectors";
+  import { useMetaQuery, useModelHasTimeSeries } from "../selectors";
   import {
     createQueryServiceMetricsViewRows,
     createQueryServiceTableColumns,
@@ -20,18 +20,29 @@
 
   $: name = $modelName?.data as string | undefined;
 
+  $: metricTimeSeries = useModelHasTimeSeries(
+    $runtime.instanceId,
+    metricViewName
+  );
+  $: hasTimeSeries = $metricTimeSeries.data;
+
+  $: timeStart = $dashboardStore.selectedTimeRange?.start?.toISOString();
+  $: timeEnd = $dashboardStore.selectedTimeRange?.end?.toISOString();
+
   $: tableQuery = createQueryServiceMetricsViewRows(
     $runtime?.instanceId,
     metricViewName,
     {
       limit: 10000,
       filter: $dashboardStore.filters,
-      timeStart: $dashboardStore?.selectedTimeRange?.start,
-      timeEnd: $dashboardStore.selectedTimeRange?.end,
+      timeStart: timeStart,
+      timeEnd: timeEnd,
     },
     {
       query: {
-        enabled: true, // TODO: add check for filters, etc first...
+        enabled:
+          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
+          !!$dashboardStore?.filters,
       },
     }
   );
@@ -52,15 +63,21 @@
 
   let rowOverscanAmount = 0;
   let columnOverscanAmount = 0;
+
+  const configOverride = {
+    indexWidth: 72,
+    rowHeight: 32,
+  };
 </script>
 
-<div class="h-80 overflow-y-auto bg-gray-100 border-t border-gray-200">
+<div class="h-56 overflow-y-auto bg-gray-100 border-t border-gray-200">
   {#if rows}
     <PreviewTable
       {rows}
       columnNames={profileColumns}
       {rowOverscanAmount}
       {columnOverscanAmount}
+      {configOverride}
     />
   {/if}
 </div>

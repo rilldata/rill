@@ -49,7 +49,7 @@
       on:reset-column-size
       bgClass={props.isSelected || isHighlightedColumn(header?.key)
         ? `bg-gray-50`
-        : "surface"}
+        : ""}
       {...props}
       {header}
       {noPin}

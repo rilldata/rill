@@ -15,7 +15,7 @@
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import DashboardContainer from "./DashboardContainer.svelte";
   import DashboardHeader from "./DashboardHeader.svelte";
-  import RowsViewer from "../rows-viewer/RowsViewer.svelte";
+  import RowsViewerAccordion from "../rows-viewer-accordion/RowsViewerAccordion.svelte";
 
   export let metricViewName: string;
   export let hasTitle: boolean;
@@ -81,6 +81,6 @@
     {/if}
   </svelte:fragment>
   <svelte:fragment slot="rows">
-    <RowsViewer {metricViewName} />
+    <RowsViewerAccordion {metricViewName} />
   </svelte:fragment>
 </DashboardContainer>

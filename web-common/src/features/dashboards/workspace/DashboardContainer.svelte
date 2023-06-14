@@ -37,10 +37,10 @@
     class="explore-content flex flex-row gap-x-1"
     style:padding-left={leftSide}
   >
-    <div class="explore-metrics mb-8 flex-none">
+    <div class="explore-metrics pb-8 flex-none">
       <slot name="metrics" />
     </div>
-    <div class="explore-leaderboards px-4 mb-8 grow">
+    <div class="explore-leaderboards px-4 pb-8 grow">
       <slot name="leaderboards" />
     </div>
   </div>
