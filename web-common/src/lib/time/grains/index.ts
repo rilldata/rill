@@ -78,8 +78,7 @@ export function getDefaultTimeGrain(start: Date, end: Date): TimeGrain {
 export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
   const timeRangeDurationMs = getTimeWidth(start, end);
   if (
-    timeRangeDurationMs <
-    2 * durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration)
+    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration)
   ) {
     return [TIME_GRAIN.TIME_GRAIN_MINUTE];
   } else if (
@@ -88,12 +87,12 @@ export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
   ) {
     return [TIME_GRAIN.TIME_GRAIN_MINUTE, TIME_GRAIN.TIME_GRAIN_HOUR];
   } else if (
-    timeRangeDurationMs <= durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
+    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
   ) {
     return [TIME_GRAIN.TIME_GRAIN_HOUR];
   } else if (
-    timeRangeDurationMs <=
-    14 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
+    timeRangeDurationMs <
+    7 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
   ) {
     return [TIME_GRAIN.TIME_GRAIN_HOUR, TIME_GRAIN.TIME_GRAIN_DAY];
   } else if (
@@ -106,13 +105,7 @@ export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
       TIME_GRAIN.TIME_GRAIN_WEEK,
     ];
   } else if (
-    timeRangeDurationMs <
-    3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 30
-  ) {
-    return [TIME_GRAIN.TIME_GRAIN_DAY, TIME_GRAIN.TIME_GRAIN_WEEK];
-  } else if (
-    timeRangeDurationMs <
-    3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration)
+    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration)
   ) {
     return [
       TIME_GRAIN.TIME_GRAIN_DAY,
