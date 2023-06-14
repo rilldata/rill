@@ -11,11 +11,9 @@ import { Period, TimeGrain } from "../types";
 
 const allowedGrainTests = [
   {
-    test: "should return TIME_GRAIN_MINUTE for < 2 hours",
+    test: "should return TIME_GRAIN_MINUTE for < 1 hour",
     start: new Date(0),
-    end: new Date(
-      2 * durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration) - 1
-    ),
+    end: new Date(durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration) - 1),
     expected: [TIME_GRAIN.TIME_GRAIN_MINUTE],
   },
   {
@@ -32,18 +30,11 @@ const allowedGrainTests = [
     end: new Date(durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) - 1),
     expected: [TIME_GRAIN.TIME_GRAIN_HOUR],
   },
+
   {
-    test: "should return TIME_GRAIN_HOUR for 24 hours",
+    test: "should return TIME_GRAIN_HOUR and TIME_GRAIN_DAY if otherwise < 7 days",
     start: new Date(0),
-    end: new Date(durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)),
-    expected: [TIME_GRAIN.TIME_GRAIN_HOUR],
-  },
-  {
-    test: "should return TIME_GRAIN_HOUR and TIME_GRAIN_DAY if otherwise < 14 days",
-    start: new Date(0),
-    end: new Date(
-      durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 14 - 1
-    ),
+    end: new Date(durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 7 - 1),
     expected: [TIME_GRAIN.TIME_GRAIN_HOUR, TIME_GRAIN.TIME_GRAIN_DAY],
   },
   {
@@ -59,19 +50,9 @@ const allowedGrainTests = [
     ],
   },
   {
-    test: "should return TIME_GRAIN_DAY, TIME_GRAIN_WEEK, and TIME_GRAIN_MONTH if otherwise < 90 days",
+    test: "should return TIME_GRAIN_WEEK, TIME_GRAIN_MONTH, and TIME_GRAIN_YEAR if otherwise < 1 year",
     start: new Date(0),
-    end: new Date(
-      3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 30 - 1
-    ),
-    expected: [TIME_GRAIN.TIME_GRAIN_DAY, TIME_GRAIN.TIME_GRAIN_WEEK],
-  },
-  {
-    test: "should return TIME_GRAIN_WEEK, TIME_GRAIN_MONTH, and TIME_GRAIN_YEAR if otherwise < 3 years",
-    start: new Date(0),
-    end: new Date(
-      3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration) - 1
-    ),
+    end: new Date(durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration) - 1),
     expected: [
       TIME_GRAIN.TIME_GRAIN_DAY,
       TIME_GRAIN.TIME_GRAIN_WEEK,
@@ -79,7 +60,7 @@ const allowedGrainTests = [
     ],
   },
   {
-    test: "should return TIME_GRAIN_MONTH, TIME_GRAIN_YEAR, and TIME_GRAIN_QUARTER if otherwise < 10 years",
+    test: "should return TIME_GRAIN_WEEK, TIME_GRAIN_MONTH and TIME_GRAIN_YEAR if otherwise < 10 years",
     start: new Date(0),
     end: new Date(
       10 * durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration) - 1
