@@ -267,7 +267,7 @@ export function getAdjustedFetchTime(
   );
 
   // the data point previous to the first date inside the chart.
-  const trucatedOffsetedStartTime = getStartOfPeriod(
+  const fetchStartTime = getStartOfPeriod(
     offsetedStartTime,
     TIME_GRAIN[interval].duration
   );
@@ -279,14 +279,14 @@ export function getAdjustedFetchTime(
   );
 
   // the data point after the last complete date.
-  const trucatedOffsetedEndTime = getStartOfPeriod(
+  const fetchEndTime = getStartOfPeriod(
     offsetedEndTime,
     TIME_GRAIN[interval].duration
   );
 
   return {
-    start: trucatedOffsetedStartTime.toISOString(),
-    end: trucatedOffsetedEndTime.toISOString(),
+    start: fetchStartTime.toISOString(),
+    end: fetchEndTime.toISOString(),
   };
 }
 
