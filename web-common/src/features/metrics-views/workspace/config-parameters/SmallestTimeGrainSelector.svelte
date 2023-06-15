@@ -67,9 +67,9 @@
 
     const maxTimeGrainPossible =
       allowedTimeGrains[allowedTimeGrains.length - 1];
-    maxTimeGrainPossibleIndex = timeGrains
-      .map((grain) => grain.label)
-      .indexOf(maxTimeGrainPossible.label);
+    maxTimeGrainPossibleIndex = timeGrains.findIndex(
+      (grain) => grain.label === maxTimeGrainPossible.label
+    );
   }
 
   $: isValidTimeGrain =
