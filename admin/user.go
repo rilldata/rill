@@ -180,48 +180,6 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 	return org, nil
 }
 
-func (s *Service) InviteUserToOrganization(ctx context.Context, email, inviterID, orgID, roleID, orgName, roleName string) error {
-	// Create invite
-	err := s.DB.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
-		Email:     email,
-		InviterID: inviterID,
-		OrgID:     orgID,
-		RoleID:    roleID,
-	})
-	if err != nil {
-		return err
-	}
-
-	// Send invitation email
-	err = s.Email.SendOrganizationInvite(email, "", orgName, roleName)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *Service) InviteUserToProject(ctx context.Context, email, inviterID, projectID, roleID, projectName, roleName string) error {
-	// Create invite
-	err := s.DB.InsertProjectInvite(ctx, &database.InsertProjectInviteOptions{
-		Email:     email,
-		InviterID: inviterID,
-		ProjectID: projectID,
-		RoleID:    roleID,
-	})
-	if err != nil {
-		return err
-	}
-
-	// Send invitation email
-	err = s.Email.SendProjectInvite(email, "", projectName, roleName)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string) (*database.Organization, error) {
 	// create all user group for this org
 	userGroup, err := s.DB.InsertUsergroup(ctx, &database.InsertUsergroupOptions{
