@@ -1,4 +1,4 @@
-name: Build and Test docs
+name: Docsearch crawls the website
 on:
   push:
     tags:
