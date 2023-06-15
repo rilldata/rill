@@ -1,38 +1,9 @@
 <script lang="ts">
   import { Meta, Story } from "@storybook/addon-svelte-csf";
 
-  import { ButtonToggleGroup, GroupButton } from "../index.ts";
+  import { ButtonToggleGroup, SubButton } from "../index.ts";
   import Delta from "../../icons/Delta.svelte";
   import PieChart from "../../icons/PieChart.svelte";
-
-  type ButtonProps = {
-    selectionRequired: boolean;
-    defaultKey: number | string;
-    disabledKeys: (number | string)[];
-    bgDark: boolean;
-    active: boolean;
-  };
-
-  const buttonProps: ButtonProps[] = [];
-
-  for (const disabledKeys of [[], [1], [2], [1, 2]]) {
-    for (const selectionRequired of [true, false]) {
-      for (const defaultKey of [1, 2, undefined]) {
-        // for (const disabledKeys of [[1, 2
-        //   for (const bgDark of [true, false]) {
-        //     for (const active of [true, false]) {
-        buttonProps.push({
-          selectionRequired,
-          defaultKey,
-          disabledKeys,
-          // bgDark,
-          // active,
-        });
-      }
-      //   }
-      // }
-    }
-  }
 
   const pieTooltips = {
     selected: "Hide percent of total",
@@ -48,34 +19,6 @@
 </script>
 
 <Meta title="Button toggle group stories" />
-
-<Story name="Button toggle group, 2 sub-buttons, no selection required">
-  <ButtonToggleGroup>
-    <GroupButton key={1} tootips={deltaTooltips}>
-      <Delta />%
-    </GroupButton>
-    <GroupButton key={2} tootips={pieTooltips}>
-      <PieChart />%
-    </GroupButton>
-  </ButtonToggleGroup>
-</Story>
-
-<Story name="Button toggle group, 4 sub-buttons, selection required">
-  <ButtonToggleGroup selectionRequired>
-    <GroupButton key={1}>
-      <Delta />%
-    </GroupButton>
-    <GroupButton key={2}>
-      <PieChart />%
-    </GroupButton>
-    <GroupButton key={3}>
-      <PieChart />%
-    </GroupButton>
-    <GroupButton key={4}>
-      <PieChart />%
-    </GroupButton>
-  </ButtonToggleGroup>
-</Story>
 
 <Story name="Button toggle group variations (tables)">
   {#each [[], [1], [2], [1, 2]] as disabledKeys}
@@ -94,12 +37,12 @@
               <ButtonToggleGroup
                 {...{ disabledKeys, defaultKey, selectionRequired }}
               >
-                <GroupButton key={1} tootips={deltaTooltips}>
+                <SubButton key={1} tootips={deltaTooltips}>
                   <Delta />%
-                </GroupButton>
-                <GroupButton key={2} tootips={pieTooltips}>
+                </SubButton>
+                <SubButton key={2} tootips={pieTooltips}>
                   <PieChart />%
-                </GroupButton>
+                </SubButton>
               </ButtonToggleGroup>
             </td>
           {/each}
@@ -108,6 +51,34 @@
     </table>
     <br /> <br /> <br />
   {/each}
+</Story>
+
+<Story name="Button toggle group, 2 sub-buttons, no selection required">
+  <ButtonToggleGroup>
+    <SubButton key={1} tootips={deltaTooltips}>
+      <Delta />%
+    </SubButton>
+    <SubButton key={2} tootips={pieTooltips}>
+      <PieChart />%
+    </SubButton>
+  </ButtonToggleGroup>
+</Story>
+
+<Story name="Button toggle group, 4 sub-buttons, selection required">
+  <ButtonToggleGroup selectionRequired>
+    <SubButton key={1}>
+      <Delta />%
+    </SubButton>
+    <SubButton key={2}>
+      <PieChart />%
+    </SubButton>
+    <SubButton key={3}>
+      <PieChart />%
+    </SubButton>
+    <SubButton key={4}>
+      <PieChart />%
+    </SubButton>
+  </ButtonToggleGroup>
 </Story>
 
 <style>

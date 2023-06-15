@@ -1,15 +1,15 @@
-the `<ButtonToggleGroup>` components allows the creation of radio button style controls that are displayed as a button group. this component maintains a bit of internal state to manage the selection of buttons, and dispatches events when those selections change. The main `<ButtonToggleGroup>` component must have one or more `<GroupButton>` children, and no other elements are allowed. 
+the `<ButtonToggleGroup>` components allows the creation of radio button style controls that are displayed as a button group. this component maintains a bit of internal state to manage the selection of buttons, and dispatches events when those selections change. The main `<ButtonToggleGroup>` component must have one or more `<SubButton>` children, and no other elements are allowed. 
 
 Example:
 
 ```javascript
 <ButtonToggleGroup>
-  <GroupButton key={1}>
+  <SubButton key={1}>
     <Delta />%
-  </GroupButton>
-  <GroupButton key={2}>
+  </SubButton>
+  <SubButton key={2}>
     <PieChart />%
-  </GroupButton>
+  </SubButton>
 </ButtonToggleGroup>
 ```
 
@@ -41,9 +41,9 @@ It is the responsibility of the containing component to handle both of these eve
 
 ---
 
-Each `<GroupButton>` must have a unique `key` prop (`number | string`), Which will be used to determine which sub button is selected, as well as being used as the key that is returned by the events that the `<ButtonToggleGroup>` dispatches.
+Each `<SubButton>` must have a unique `key` prop (`number | string`), Which will be used to determine which sub button is selected, as well as being used as the key that is returned by the events that the `<ButtonToggleGroup>` dispatches.
 
-Additionally, `<GroupButton>` may have a `tooltips` prop, with type:
+Additionally, `<SubButton>` may have a `tooltips` prop, with type:
 
 ``` javascript
 tootips: {

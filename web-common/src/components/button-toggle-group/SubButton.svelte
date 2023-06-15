@@ -15,19 +15,16 @@
   const {
     registerSubButton,
     toggleSubButton,
-    selectedSubButton,
-    firstSubButtonKey,
-    lastSubButtonKey,
+    selectedKey,
+    firstKey,
+    lastKey,
     disabledKeys,
   } = getContext(buttonGroup);
 
   registerSubButton(key);
 
   $: isDisabled = disabledKeys.includes(key);
-  $: isSelected = $selectedSubButton === key;
-
-  $: isFirst = key === $firstSubButtonKey;
-  $: isLast = key === $lastSubButtonKey;
+  $: isSelected = $selectedKey === key;
 
   const baseStyles = `shrink flex flex-row items-center px-1 py-1
   transition-transform duration-100`;
@@ -44,6 +41,8 @@
 
   // This is needed to make sure that the left and right most child
   // elements don't break out of the border drawn by the parent element
+  $: isFirst = key === $firstKey;
+  $: isLast = key === $lastKey;
   $: roundings = `${isFirst ? "rounded-l" : ""} ${isLast ? "rounded-r" : ""} `;
 
   $: finalStyles = `${baseStyles} ${roundings} ${textStyle} ${bgStyle}`;
