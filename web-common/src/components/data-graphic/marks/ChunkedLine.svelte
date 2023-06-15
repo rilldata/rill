@@ -26,12 +26,16 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     pathIsDefined,
   } from "@rilldata/web-common/components/data-graphic/utils";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import { interpolatePath } from "d3-interpolate-path";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
-  import { TIME_GRAIN } from "../../../lib/time/config";
-  import { TimeOffsetType } from "../../../lib/time/types";
-  import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
+  import {
+    getDurationMultiple,
+    getOffset,
+  } from "@rilldata/web-common/lib/time/transforms";
+
   export let data;
   export let xAccessor: string;
   export let yAccessor: string;
