@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { setContext } from "svelte";
+  import { createEventDispatcher, setContext } from "svelte";
   import { writable } from "svelte/store";
   import Portal from "../Portal.svelte";
   import { FloatingElement } from "./index";
@@ -19,6 +19,11 @@
   const triggerElementStore = writable(undefined);
   $: triggerElementStore.set(parent?.children?.[0]);
   setContext("rill:menu:menuTrigger", triggerElementStore);
+
+  const dispatch = createEventDispatcher();
+  $: {
+    if (active) dispatch("open");
+  }
 
   let parent;
 </script>

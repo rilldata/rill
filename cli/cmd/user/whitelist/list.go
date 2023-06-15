@@ -28,12 +28,12 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if len(whitelistedDomains.Domains) > 0 {
-				cmdutil.SuccessPrinter(fmt.Sprintf("Whitelisted email domains for %q:", cfg.Org))
+				cmdutil.PrintlnSuccess(fmt.Sprintf("Whitelisted email domains for %q:", cfg.Org))
 				for _, d := range whitelistedDomains.Domains {
-					cmdutil.SuccessPrinter(fmt.Sprintf("%q (%q)", d.Domain, d.Role))
+					cmdutil.PrintlnSuccess(fmt.Sprintf("%q (%q)", d.Domain, d.Role))
 				}
 			} else {
-				cmdutil.SuccessPrinter(fmt.Sprintf("No whitelisted email domains for %q", cfg.Org))
+				cmdutil.PrintlnSuccess(fmt.Sprintf("No whitelisted email domains for %q", cfg.Org))
 			}
 			return nil
 		},

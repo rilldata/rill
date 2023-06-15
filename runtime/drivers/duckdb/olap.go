@@ -56,7 +56,8 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	if stmt.DryRun {
 		return nil
 	}
-	return res.Close()
+	err = res.Close()
+	return c.checkErr(err)
 }
 
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
@@ -73,11 +74,11 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		name := uuid.NewString()
 		_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY VIEW %q AS %s", name, stmt.Query))
 		if err != nil {
-			return nil, err
+			return nil, c.checkErr(err)
 		}
 
 		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("DROP VIEW %q", name))
-		return nil, err
+		return nil, c.checkErr(err)
 	}
 
 	// Gather metrics only for actual queries
@@ -125,6 +126,8 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 			cancelFunc()
 		}
 
+		// err must be checked before release
+		err = c.checkErr(err)
 		_ = release()
 		return nil, err
 	}
@@ -135,6 +138,8 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 			cancelFunc()
 		}
 
+		// err must be checked before release
+		err = c.checkErr(err)
 		_ = rows.Close()
 		_ = release()
 		return nil, err

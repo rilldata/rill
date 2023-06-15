@@ -307,7 +307,7 @@ export const DEFAULT_TIME_RANGES: Record<string, TimeRangeMeta> = {
 // This is a temporary fix for the default time range setting.
 // We need to deprecate this once we have moved the default_time_range setting to operate
 // on preset strings rather than ISO durations.
-// See https://github.com/rilldata/rill-developer/issues/1961
+// See https://github.com/rilldata/rill/issues/1961
 export const TEMPORARY_DEFAULT_RANGE_TO_DURATIONS = {
   LAST_SIX_HOURS: "PT6H",
   LAST_24_HOURS: "P1D",

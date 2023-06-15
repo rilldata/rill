@@ -113,6 +113,7 @@ func (t *Telemetry) emitBehaviourEvent(action, medium, space, screenName string)
 		InstallID:     t.InstallID,
 		BuildID:       t.Version.Commit,
 		Version:       t.Version.Number,
+		UserID:        t.UserID,
 		IsDev:         t.Version.IsDev(),
 		Mode:          "edit",
 		Action:        action,

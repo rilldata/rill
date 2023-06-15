@@ -1,20 +1,44 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
-import { defineConfig } from "vitest/config";
+import { defineConfig, UserConfig } from "vitest/config";
 
-export default defineConfig({
-  resolve: {
-    alias: {
-      src: "/src", // trick to get absolute imports to work
-      "@rilldata/web-local": "/src",
-      "@rilldata/web-common": "/../web-common/src",
-    },
+type Writeable<T> = { -readonly [P in keyof T]: T[P] };
+type Alias = Writeable<UserConfig["resolve"]["alias"]>;
+
+const alias: Alias = [
+  {
+    find: "src",
+    replacement: "/src",
   },
-  plugins: [svelte()],
-  test: {
-    coverage: {
-      provider: "c8",
-      src: ["./src"],
-      all: true,
-    },
+  {
+    find: "@rilldata/web-local",
+    replacement: "/src",
   },
+  {
+    find: "@rilldata/web-common",
+    replacement: "/../web-common/src",
+  },
+];
+
+export default defineConfig(({ mode }) => {
+  if (mode === "test") {
+    alias.push({
+      find: /^svelte$/,
+      replacement: "/../node_modules/svelte/index.mjs",
+    });
+  }
+
+  return {
+    resolve: {
+      alias,
+    },
+    plugins: [svelte()],
+    test: {
+      coverage: {
+        provider: "c8",
+        src: ["./src"],
+        all: true,
+      },
+      environment: "jsdom",
+    },
+  };
 });
