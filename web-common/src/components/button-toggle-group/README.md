@@ -43,5 +43,16 @@ It is the responsibility of the containing component to handle both of these eve
 
 Each `<GroupButton>` must have a unique `key` prop (`number | string`), Which will be used to determine which sub button is selected, as well as being used as the key that is returned by the events that the `<ButtonToggleGroup>` dispatches.
 
+Additionally, `<GroupButton>` may have a `tooltips` prop, with type:
+
+``` javascript
+tootips: {
+    selected?: string;
+    unselected?: string;
+    disabled?: string;
+  };
+```
+If the sub button is disabled, then that will override the other two tooltip options. If however the button is not disabled, the tool tip string corresponding to the buttons selection state will be shown.
+
 
 
