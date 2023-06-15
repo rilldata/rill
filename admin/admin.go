@@ -72,6 +72,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		Provisioner:    prov,
 		Email:          emailClient,
 		UsedFlusher:    usedFlusher,
+		opts:           opts,
 		logger:         logger,
 		closeCtx:       ctx,
 		closeCtxCancel: cancel,
