@@ -69,6 +69,8 @@ import type {
   V1ListSuperusersResponse,
   V1SetSuperuserResponse,
   V1SetSuperuserRequest,
+  V1SudoGetResourceResponse,
+  AdminServiceSudoGetResourceParams,
   V1RevokeCurrentAuthTokenResponse,
   V1IssueRepresentativeAuthTokenResponse,
   V1IssueRepresentativeAuthTokenRequest,
@@ -2113,6 +2115,66 @@ export const createAdminServiceSetSuperuser = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary SudoGetResource returns details about a resource by ID lookup
+ */
+export const adminServiceSudoGetResource = (
+  params?: AdminServiceSudoGetResourceParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1SudoGetResourceResponse>({
+    url: `/v1/superuser/resource`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceSudoGetResourceQueryKey = (
+  params?: AdminServiceSudoGetResourceParams
+) => [`/v1/superuser/resource`, ...(params ? [params] : [])] as const;
+
+export type AdminServiceSudoGetResourceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoGetResource>>
+>;
+export type AdminServiceSudoGetResourceQueryError = RpcStatus;
+
+export const createAdminServiceSudoGetResource = <
+  TData = Awaited<ReturnType<typeof adminServiceSudoGetResource>>,
+  TError = RpcStatus
+>(
+  params?: AdminServiceSudoGetResourceParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceSudoGetResource>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceSudoGetResourceQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceSudoGetResource>>
+  > = ({ signal }) => adminServiceSudoGetResource(params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceSudoGetResource>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary RevokeCurrentAuthToken revoke the current auth token
  */

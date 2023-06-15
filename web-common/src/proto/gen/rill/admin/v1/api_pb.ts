@@ -2147,6 +2147,152 @@ export class SetSuperuserResponse extends Message<SetSuperuserResponse> {
 }
 
 /**
+ * SudoGetResourceRequest
+ *
+ * @generated from message rill.admin.v1.SudoGetResourceRequest
+ */
+export class SudoGetResourceRequest extends Message<SudoGetResourceRequest> {
+  /**
+   * @generated from oneof rill.admin.v1.SudoGetResourceRequest.id
+   */
+  id: {
+    /**
+     * @generated from field: string user_id = 1;
+     */
+    value: string;
+    case: "userId";
+  } | {
+    /**
+     * @generated from field: string org_id = 2;
+     */
+    value: string;
+    case: "orgId";
+  } | {
+    /**
+     * @generated from field: string project_id = 3;
+     */
+    value: string;
+    case: "projectId";
+  } | {
+    /**
+     * @generated from field: string deployment_id = 4;
+     */
+    value: string;
+    case: "deploymentId";
+  } | {
+    /**
+     * @generated from field: string instance_id = 5;
+     */
+    value: string;
+    case: "instanceId";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<SudoGetResourceRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoGetResourceRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "id" },
+    { no: 2, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "id" },
+    { no: 3, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "id" },
+    { no: 4, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "id" },
+    { no: 5, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "id" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoGetResourceRequest {
+    return new SudoGetResourceRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoGetResourceRequest {
+    return new SudoGetResourceRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoGetResourceRequest {
+    return new SudoGetResourceRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoGetResourceRequest | PlainMessage<SudoGetResourceRequest> | undefined, b: SudoGetResourceRequest | PlainMessage<SudoGetResourceRequest> | undefined): boolean {
+    return proto3.util.equals(SudoGetResourceRequest, a, b);
+  }
+}
+
+/**
+ * SudoGetResourceResponse
+ *
+ * @generated from message rill.admin.v1.SudoGetResourceResponse
+ */
+export class SudoGetResourceResponse extends Message<SudoGetResourceResponse> {
+  /**
+   * @generated from oneof rill.admin.v1.SudoGetResourceResponse.resource
+   */
+  resource: {
+    /**
+     * @generated from field: rill.admin.v1.User user = 1;
+     */
+    value: User;
+    case: "user";
+  } | {
+    /**
+     * @generated from field: rill.admin.v1.Organization org = 2;
+     */
+    value: Organization;
+    case: "org";
+  } | {
+    /**
+     * @generated from field: rill.admin.v1.Project project = 3;
+     */
+    value: Project;
+    case: "project";
+  } | {
+    /**
+     * @generated from field: rill.admin.v1.Deployment deployment = 4;
+     */
+    value: Deployment;
+    case: "deployment";
+  } | {
+    /**
+     * @generated from field: rill.admin.v1.Deployment instance = 5;
+     */
+    value: Deployment;
+    case: "instance";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<SudoGetResourceResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoGetResourceResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "user", kind: "message", T: User, oneof: "resource" },
+    { no: 2, name: "org", kind: "message", T: Organization, oneof: "resource" },
+    { no: 3, name: "project", kind: "message", T: Project, oneof: "resource" },
+    { no: 4, name: "deployment", kind: "message", T: Deployment, oneof: "resource" },
+    { no: 5, name: "instance", kind: "message", T: Deployment, oneof: "resource" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoGetResourceResponse {
+    return new SudoGetResourceResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoGetResourceResponse {
+    return new SudoGetResourceResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoGetResourceResponse {
+    return new SudoGetResourceResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoGetResourceResponse | PlainMessage<SudoGetResourceResponse> | undefined, b: SudoGetResourceResponse | PlainMessage<SudoGetResourceResponse> | undefined): boolean {
+    return proto3.util.equals(SudoGetResourceResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListProjectMembersRequest
  */
 export class ListProjectMembersRequest extends Message<ListProjectMembersRequest> {
