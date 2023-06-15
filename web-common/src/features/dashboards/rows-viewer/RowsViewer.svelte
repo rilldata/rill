@@ -7,6 +7,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { useDashboardStore } from "../dashboard-stores";
   import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
+  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
 
   export let metricViewName = "";
 
@@ -59,7 +60,8 @@
     name,
     {}
   );
-  $: profileColumns = $profileColumnsQuery?.data?.profileColumns;
+  $: profileColumns = $profileColumnsQuery?.data
+    ?.profileColumns as VirtualizedTableColumns[];
 
   let rowOverscanAmount = 0;
   let columnOverscanAmount = 0;
