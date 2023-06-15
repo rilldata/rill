@@ -9,6 +9,7 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -487,6 +488,16 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	var invitedByUserID, invitedByName string
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		invitedByUserID = user.ID
+		invitedByName = user.DisplayName
+	}
+
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
@@ -494,14 +505,29 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		}
 
 		// Invite user to join the project
-		invitedBy := ""
-		if claims.OwnerType() == auth.OwnerTypeUser {
-			invitedBy = claims.OwnerID()
-		}
-		err = s.admin.InviteUserToProject(ctx, req.Email, invitedBy, proj.ID, role.ID, proj.Name, role.Name)
+		err := s.admin.DB.InsertProjectInvite(ctx, &database.InsertProjectInviteOptions{
+			Email:     req.Email,
+			InviterID: invitedByUserID,
+			ProjectID: proj.ID,
+			RoleID:    role.ID,
+		})
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+
+		// Send invitation email
+		err = s.admin.Email.SendProjectInvite(&email.ProjectInvite{
+			ToEmail:       req.Email,
+			ToName:        "",
+			OrgName:       org.Name,
+			ProjectName:   proj.Name,
+			RoleName:      role.Name,
+			InvitedByName: invitedByName,
+		})
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
 		return &adminv1.AddProjectMemberResponse{
 			PendingSignup: true,
 		}, nil
@@ -512,7 +538,14 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	err = s.admin.Email.SendProjectAdditionNotification(req.Email, "", proj.Name, role.Name)
+	err = s.admin.Email.SendProjectAddition(&email.ProjectAddition{
+		ToEmail:       req.Email,
+		ToName:        "",
+		OrgName:       org.Name,
+		ProjectName:   proj.Name,
+		RoleName:      role.Name,
+		InvitedByName: invitedByName,
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

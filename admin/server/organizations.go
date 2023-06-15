@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -301,21 +302,45 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	var invitedByUserID, invitedByName string
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		invitedByUserID = user.ID
+		invitedByName = user.DisplayName
+	}
+
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		// Invite user to join the organization
-		invitedBy := ""
-		if claims.OwnerType() == auth.OwnerTypeUser {
-			invitedBy = claims.OwnerID()
-		}
-		err = s.admin.InviteUserToOrganization(ctx, req.Email, invitedBy, org.ID, role.ID, org.Name, role.Name)
+		// Invite user to join org
+		err := s.admin.DB.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
+			Email:     req.Email,
+			InviterID: invitedByUserID,
+			OrgID:     org.ID,
+			RoleID:    role.ID,
+		})
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+
+		// Send invitation email
+		err = s.admin.Email.SendOrganizationInvite(&email.OrganizationInvite{
+			ToEmail:       req.Email,
+			ToName:        "",
+			OrgName:       org.Name,
+			RoleName:      role.Name,
+			InvitedByName: invitedByName,
+		})
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
 		return &adminv1.AddOrganizationMemberResponse{
 			PendingSignup: true,
 		}, nil
@@ -326,6 +351,7 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	defer func() { _ = tx.Rollback() }()
+
 	err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -344,7 +370,13 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	err = s.admin.Email.SendOrganizationAdditionNotification(req.Email, "", org.Name, role.Name)
+	err = s.admin.Email.SendOrganizationAddition(&email.OrganizationAddition{
+		ToEmail:       req.Email,
+		ToName:        "",
+		OrgName:       org.Name,
+		RoleName:      role.Name,
+		InvitedByName: invitedByName,
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
