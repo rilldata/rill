@@ -11,6 +11,7 @@ on:
       - "docs/**"
 jobs:
   build:
+    runs-on: ubuntu-latest
     steps:
       - name: Algolia crawler creation and crawl
         uses: algolia/algoliasearch-crawler-github-actions@v1.0.10
