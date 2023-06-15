@@ -37,6 +37,34 @@
 
 <Meta title="Button toggle group stories" />
 
+<Story name="Button toggle group, 2 sub-buttons, no selection required">
+  <ButtonToggleGroup>
+    <GroupButton key={1}>
+      <Delta />%
+    </GroupButton>
+    <GroupButton key={2}>
+      <PieChart />%
+    </GroupButton>
+  </ButtonToggleGroup>
+</Story>
+
+<Story name="Button toggle group, 4 sub-buttons, selection required">
+  <ButtonToggleGroup selectionRequired>
+    <GroupButton key={1}>
+      <Delta />%
+    </GroupButton>
+    <GroupButton key={2}>
+      <PieChart />%
+    </GroupButton>
+    <GroupButton key={3}>
+      <PieChart />%
+    </GroupButton>
+    <GroupButton key={4}>
+      <PieChart />%
+    </GroupButton>
+  </ButtonToggleGroup>
+</Story>
+
 <Template let:args>
   <table>
     <tr>
