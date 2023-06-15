@@ -1,3 +1,9 @@
+// For now, to try to match to Litepicker internal DateTime
+// Better: fork Litepicker and export DateTime class
+function isDateTime(d: any) {
+  return typeof d?.clone === "function";
+}
+
 export class DateTime {
   public static parseDateTime(
     date: Date | DateTime | string | number,
@@ -7,7 +13,7 @@ export class DateTime {
     if (!date) return new Date(NaN);
 
     if (date instanceof Date) return new Date(date);
-    if (date instanceof DateTime) return date.clone().toJSDate();
+    if (isDateTime(date)) return (date as DateTime).clone().toJSDate();
 
     if (/^-?\d{10,}$/.test(date as string))
       return DateTime.getDateZeroTime(new Date(Number(date)));
@@ -73,7 +79,7 @@ export class DateTime {
       }
     }
 
-    return DateTime.getDateZeroTime(new Date(date));
+    return DateTime.getDateZeroTime(new Date(date as string | number));
   }
 
   public static convertArray(
@@ -180,7 +186,7 @@ export class DateTime {
     if (typeof format === "object" && format !== null) {
       // tslint:disable-next-line: max-line-length
       this.dateInstance = (format as any).parse(
-        date instanceof DateTime ? date.clone().toJSDate() : date
+        isDateTime(date) ? (date as DateTime).clone().toJSDate() : date
       );
     } else if (typeof format === "string") {
       this.dateInstance = DateTime.parseDateTime(date, format, lang);
