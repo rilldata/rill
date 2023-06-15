@@ -54,13 +54,16 @@
     : tootips?.unselected;
 </script>
 
-<Tooltip distance={8} location={"bottom"} alignment={"center"}>
-  <button class={finalStyles} on:click={() => toggleSubButton(key)}>
-    <slot />
-  </button>
-  <div slot="tooltip-content">
-    {#if tooltipText}
-      <TooltipContent>{tooltipText}</TooltipContent>
-    {/if}
-  </div>
-</Tooltip>
+<!-- Note: this wrapper div is needed for the styles `divide-x divide-gray-400` in the parent container to work correctly-->
+<div>
+  <Tooltip distance={8} location={"bottom"} alignment={"center"}>
+    <button class={finalStyles} on:click={() => toggleSubButton(key)}>
+      <slot />
+    </button>
+    <div slot="tooltip-content">
+      {#if tooltipText}
+        <TooltipContent>{tooltipText}</TooltipContent>
+      {/if}
+    </div>
+  </Tooltip>
+</div>
