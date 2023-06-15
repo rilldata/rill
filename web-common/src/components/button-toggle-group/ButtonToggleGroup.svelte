@@ -2,19 +2,19 @@
   export type SubButtonKey = number | string;
 
   export type ButtonGroupContext = {
-    registerSubButton: (key: SubButtonKey) => void;
-    toggleSubButton: (key: SubButtonKey) => void;
-    selectedKey: SubButtonKey;
-    firstKey: SubButtonKey;
-    lastKey: SubButtonKey;
-    disabledKeys: SubButtonKey[];
+    registerSubButton?: (key: SubButtonKey) => void;
+    toggleSubButton?: (key: SubButtonKey) => void;
+    selectedKey?: Writable<SubButtonKey>;
+    firstKey?: Writable<SubButtonKey>;
+    lastKey?: Writable<SubButtonKey>;
+    disabledKeys?: SubButtonKey[];
   };
   export const buttonGroupContext: ButtonGroupContext = {};
 </script>
 
 <script lang="ts">
   import { setContext, onDestroy } from "svelte";
-  import { writable, get } from "svelte/store";
+  import { writable, get, Writable } from "svelte/store";
   import { createEventDispatcher } from "svelte";
 
   // If selectionRequired is true, then a sub button must be selected at all times.
