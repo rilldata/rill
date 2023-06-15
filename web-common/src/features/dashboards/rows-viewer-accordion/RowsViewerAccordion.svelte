@@ -4,7 +4,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { formatInteger } from "@rilldata/web-common/lib/formatters";
+  import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import { useDashboardStore } from "../dashboard-stores";
   import { useModelHasTimeSeries } from "../selectors";
   export let metricViewName: string;
@@ -42,7 +42,13 @@
   $: hasTimeSeries = $metricTimeSeries.data;
 
   $: timeStart = $dashboardStore.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore.selectedTimeRange?.end?.toISOString();
+  let timeEnd;
+  $: {
+    let maybeEnd = $dashboardStore.selectedTimeRange?.end;
+    if (maybeEnd) {
+      timeEnd = new Date(maybeEnd.valueOf() + 1).toISOString();
+    }
+  }
 
   $: filteredTotalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
@@ -80,9 +86,9 @@
 
   $: {
     if ($totalsQuery.data && $filteredTotalsQuery.data) {
-      label = `${formatInteger(
+      label = `${formatCompactInteger(
         $filteredTotalsQuery.data.data.count
-      )} of ${formatInteger($totalsQuery.data.data.count)} rows`;
+      )} of ${formatCompactInteger($totalsQuery.data.data.count)} rows`;
     }
   }
 </script>
