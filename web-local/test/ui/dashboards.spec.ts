@@ -101,6 +101,11 @@ describe("dashboards", () => {
       page.getByText("Total records 100.0k")
     ).toBeVisible();
 
+    // Check the row viewer accordion is visible
+    await playwrightExpect(
+      page.getByText("Source Data 100k of 100k rows")
+    ).toBeVisible();
+
     // Change the metric trend granularity
     await page.getByRole("button", { name: "Metric trends by day" }).click();
     await page.getByRole("menuitem", { name: "day" }).click();
@@ -111,6 +116,11 @@ describe("dashboards", () => {
 
     // Check that the total records are 275 and have comparisons
     await playwrightExpect(page.getByText("275 -12 -4%")).toBeVisible();
+
+    // Check the row viewer accordion is updated
+    await playwrightExpect(
+      page.getByText("Source Data 275 of 100k rows")
+    ).toBeVisible();
 
     // Turn off comparison
     await page

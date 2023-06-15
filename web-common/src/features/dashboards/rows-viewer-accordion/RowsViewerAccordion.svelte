@@ -97,6 +97,7 @@
   <button
     class="w-full bg-gray-100 h-7 text-left px-2 border-t border-t-gray-200 text-xs text-gray-800 flex items-center gap-1"
     on:click={toggle}
+    aria-label="Toggle rows viewer"
   >
     <span class="font-bold">Source Data</span>
     {label}
