@@ -34,7 +34,11 @@ export default class Custompicker extends Litepicker {
         // Only render if the blur event was not caused by clicking on a day-item
         if (
           !e.relatedTarget ||
-          !e.relatedTarget.classList.contains("day-item")
+          !(
+            e.relatedTarget.classList.contains("day-item") ||
+            e.relatedTarget.classList.contains(style.buttonPreviousMonth) ||
+            e.relatedTarget.classList.contains(style.buttonNextMonth)
+          )
         ) {
           this.scrollToSpecificDate(this.datePicked[0]);
           this.render();
@@ -51,7 +55,11 @@ export default class Custompicker extends Litepicker {
         // Only render if the blur event was not caused by clicking on a day-item
         if (
           !e.relatedTarget ||
-          !e.relatedTarget.classList.contains("day-item")
+          !(
+            e.relatedTarget.classList.contains("day-item") ||
+            e.relatedTarget.classList.contains(style.buttonPreviousMonth) ||
+            e.relatedTarget.classList.contains(style.buttonNextMonth)
+          )
         ) {
           this.scrollToSpecificDate(this.datePicked[1]);
           this.render();
@@ -307,6 +315,14 @@ export default class Custompicker extends Litepicker {
         }
       }
     }
+  }
+
+  // Override Litepicker method
+  gotoDate(date, idx = 0) {
+    const toDate = new DateTime(date);
+    toDate.setDate(1);
+    this.calendars[idx] = toDate.clone();
+    this.render();
   }
 
   onMouseLeave() {
