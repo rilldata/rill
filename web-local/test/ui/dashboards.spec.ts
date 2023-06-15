@@ -122,6 +122,23 @@ describe("dashboards", () => {
       page.getByText("Source Data 275 of 100k rows")
     ).toBeVisible();
 
+    // Check row viewer is collapsed
+    await playwrightExpect(
+      page.getByRole("button", { name: "7029" })
+    ).not.toBeVisible();
+
+    // Expand row viewer and check data is there
+    await page.getByRole("button", { name: "Toggle rows viewer" }).click();
+    await playwrightExpect(
+      page.getByRole("button", { name: "7029" })
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "Toggle rows viewer" }).click();
+    // Check row viewer is collapsed
+    await playwrightExpect(
+      page.getByRole("button", { name: "7029" })
+    ).not.toBeVisible();
+
     // Turn off comparison
     await page
       .getByRole("button", { name: "Comparing to last period" })
