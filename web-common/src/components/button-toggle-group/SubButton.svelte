@@ -9,13 +9,11 @@
   import TooltipContent from "../tooltip/TooltipContent.svelte";
 
   export let key: number | string;
-  export let tootips:
-    | {
-        selected?: string;
-        unselected?: string;
-        disabled?: string;
-      }
-    | undefined;
+  export let tootips: {
+    selected?: string;
+    unselected?: string;
+    disabled?: string;
+  } = undefined;
 
   const {
     registerSubButton,

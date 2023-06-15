@@ -23,7 +23,7 @@
   // If additionally, defaultKey is undefined, then no sub button is selected by default.
   export let selectionRequired = false;
 
-  export let defaultKey: number | string | undefined;
+  export let defaultKey: number | string = undefined;
   export let disabledKeys: (number | string)[] = [];
 
   const dispatch = createEventDispatcher();
