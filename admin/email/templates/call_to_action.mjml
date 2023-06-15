@@ -1,0 +1,54 @@
+<mjml>
+  <mj-head>
+    <mj-raw>
+      <meta name="color-scheme" content="light" />
+      <meta name="supported-color-schemes" content="light" />
+    </mj-raw>
+    <mj-attributes>
+      <mj-all font-family="Helvetica" font-size="16px" />
+      <mj-text color="#000" font-size="16px" line-height="1.25" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body>
+    <mj-section>
+      <mj-column>
+        <mj-image container-background-color="#FFF" width="62px" src="https://cdn.rilldata.com/email-transactional/rill-logo-white-padding.png" />
+        
+        <mj-spacer height="35px" />
+        
+        <mj-text font-size="20px" font-weight="bold">
+          {{ .Title }}
+        </mj-text>
+
+        <mj-text padding-bottom="0px">
+          {{ .Body }}
+        </mj-text>
+
+        <mj-spacer height="20px" />
+
+        <mj-button background-color="#F2F7FD" color="#2262DC" font-weight="bold" href="{{ .ButtonLink }}">
+          {{ .ButtonText }}
+        </mj-button>
+
+        <mj-spacer height="20px" />
+
+        <mj-divider border-color="#AAA" border-width="1px"></mj-divider>
+
+        <mj-spacer height="20px" />
+
+        <mj-text align="center" font-size="12px" line-height="1.5">
+          © 2023 Rill Data, Inc<br />
+          18 Bartol St. • San Francisco • CA<br />
+          <a href="https://www.rilldata.com/contact">Contact us</a> •
+          <a href="https://bit.ly/3unvA05">Community</a> •
+          <a href="https://www.rilldata.com/legal/privacy">Privacy Policy</a>
+        </mj-text>
+
+        <mj-spacer height="20px" />
+
+        <mj-image width="25px" src="https://cdn.rilldata.com/email-transactional/rill-icon-white-padding.png" />
+
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

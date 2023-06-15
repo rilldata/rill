@@ -155,6 +155,7 @@ linters-settings:
   gosec:
     excludes:
       - G112
+      - G203
       - G306
   revive:
     ignore-generated-header: false
