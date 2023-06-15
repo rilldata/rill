@@ -102,9 +102,6 @@ func addInterval(t time.Time, timeGrain runtimev1.TimeGrain) time.Time {
 	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
 		t = time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, t.Location())
 		return t.AddDate(0, 1, 0)
-	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
-		t = time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, t.Location())
-		return t.AddDate(0, 1, 0)
 	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
 		t = time.Date(t.Year(), time.January, 1, 0, 0, 0, 0, t.Location())
 		return t.AddDate(1, 0, 0)
