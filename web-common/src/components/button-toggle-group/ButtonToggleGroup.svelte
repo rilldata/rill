@@ -19,7 +19,16 @@
   const dispatch = createEventDispatcher();
 
   const subButtons = [];
-  const selectedSubButtonKey = writable(defaultKey);
+  const selectedSubButtonKey = writable(null);
+
+  // if a default key is provided, then select it if it is not disabled
+  // this Must be run reactively in case the default key changes or
+  //  the set of disabled keys changes
+  $: if (defaultKey !== undefined && !disabledKeys.includes(defaultKey)) {
+    selectedSubButtonKey.update(() => defaultKey);
+  } else {
+    selectedSubButtonKey.update(() => null);
+  }
 
   const firstSubButtonKey = writable(null);
   const lastSubButtonKey = writable(null);
@@ -46,10 +55,18 @@
       // always set lastSubButtonKey to the subButtonKey being registered
       lastSubButtonKey.update(() => subButtonKey);
 
-      // If no default is provided, and a selection is required, then when the first
-      // sub button is registered, it will be selected
-      if (selectionRequired && defaultKey === undefined) {
-        selectedSubButtonKey.update((current) => current || subButtonKey);
+      // if a selection is required,
+      // and either no default key is provided or the default key is disabled,
+      // and no sub button has yet been selected by the time this one is registered,
+      // then the first sub button that is not disabled will be selected.
+      // Note that if all sub buttons are disabled, then no sub button will be selected.
+      if (
+        selectionRequired &&
+        (defaultKey === undefined || disabledKeys.includes(defaultKey)) &&
+        get(selectedSubButtonKey) === null &&
+        !disabledKeys.includes(subButtonKey)
+      ) {
+        selectedSubButtonKey.update(() => subButtonKey);
       }
 
       onDestroy(() => {
@@ -72,7 +89,7 @@
       // so if the sub button being toggled is already selected, then do nothing
       if (selectionRequired && lastSelection === subButton) return;
 
-      // otherwise, toggle the sub button--if it is selected, then deselect it;
+      // toggle the sub button: if it is selected, then deselect it;
       // otherwise, select it
       if (lastSelection === subButton) {
         selectedSubButtonKey.set(null);

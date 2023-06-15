@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Meta, Story, Template } from "@storybook/addon-svelte-csf";
+  import { Meta, Story } from "@storybook/addon-svelte-csf";
 
   import { ButtonToggleGroup, GroupButton } from "../index.ts";
   import Delta from "../../icons/Delta.svelte";
@@ -15,9 +15,9 @@
 
   const buttonProps: ButtonProps[] = [];
 
-  for (const selectionRequired of [true, false]) {
-    for (const defaultKey of [1, 2, undefined]) {
-      for (const disabledKeys of [[1], [2], [1, 2], []]) {
+  for (const disabledKeys of [[], [1], [2], [1, 2]]) {
+    for (const selectionRequired of [true, false]) {
+      for (const defaultKey of [1, 2, undefined]) {
         // for (const disabledKeys of [[1, 2
         //   for (const bgDark of [true, false]) {
         //     for (const active of [true, false]) {
@@ -65,39 +65,38 @@
   </ButtonToggleGroup>
 </Story>
 
-<Template let:args>
-  <table>
-    <tr>
-      <td />
-      <td>selectionRequired</td>
-      <td>defaultKey</td>
-      <td>disabledKeys</td>
-      <td>bgDark</td>
-      <td>active</td>
-    </tr>
-    {#each buttonProps as props}
+<Story name="Button toggle group variations (tables)">
+  {#each [[], [1], [2], [1, 2]] as disabledKeys}
+    disabledKeys: {JSON.stringify(disabledKeys)}
+    <table>
       <tr>
-        <td>
-          <ButtonToggleGroup {...props}>
-            <GroupButton key={1}>
-              <Delta />%
-            </GroupButton>
-            <GroupButton key={2}>
-              <PieChart />%
-            </GroupButton>
-          </ButtonToggleGroup>
-        </td>
-        <td>{props.selectionRequired}</td>
-        <td>{props.defaultKey}</td>
-        <td>{props.disabledKeys}</td>
-        <td>{props.bgDark}</td>
-        <td>{props.active}</td>
+        <td />
+        <td>selectionRequired:<br />true</td>
+        <td>selectionRequired:<br />false</td>
       </tr>
-    {/each}
-  </table>
-</Template>
-
-<Story name="Button toggle group variations, two sub-buttons" />
+      {#each [1, 2, undefined] as defaultKey}
+        <tr>
+          <td>defaultKey: {defaultKey}</td>
+          {#each [true, false] as selectionRequired}
+            <td>
+              <ButtonToggleGroup
+                {...{ disabledKeys, defaultKey, selectionRequired }}
+              >
+                <GroupButton key={1}>
+                  <Delta />%
+                </GroupButton>
+                <GroupButton key={2}>
+                  <PieChart />%
+                </GroupButton>
+              </ButtonToggleGroup>
+            </td>
+          {/each}
+        </tr>
+      {/each}
+    </table>
+    <br /> <br /> <br />
+  {/each}
+</Story>
 
 <style>
   td {
