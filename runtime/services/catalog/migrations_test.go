@@ -2,6 +2,7 @@ package catalog_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -12,20 +13,18 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	_ "github.com/rilldata/rill/runtime/connectors/gcs"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/services/catalog"
-	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
-	"github.com/rilldata/rill/runtime/services/catalog/migrator/metricsviews"
-	"github.com/rilldata/rill/runtime/services/catalog/testutils"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
+	"github.com/rilldata/rill/runtime/services/catalog"
+	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/yaml"
+	"github.com/rilldata/rill/runtime/services/catalog/migrator/metricsviews"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/models"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
+	"github.com/rilldata/rill/runtime/services/catalog/testutils"
+	"github.com/stretchr/testify/require"
 )
 
 const TestDataPath = "../../../web-local/test/data"
@@ -260,39 +259,48 @@ func TestInterdependentModel(t *testing.T) {
 		}},
 	}
 
-	AdBidsSourceAffectedPaths := []string{AdBidsSourceModelRepoPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
+	var AdBidsYahooModelPath = "/models/AdBids_Yahoo.sql"
+	var AdBidsGoogleModelPath = "/models/AdBids_Google.sql"
+	var AdBidsYahooGoogleModelPath = "/models/AdBids_YahooGoogle.sql"
+	AdBidsSourceAffectedPaths := []string{AdBidsYahooModelPath, AdBidsGoogleModelPath, AdBidsYahooGoogleModelPath, AdBidsModelRepoPath, AdBidsDashboardRepoPath}
 	AdBidsAllAffectedPaths := append([]string{AdBidsRepoPath}, AdBidsSourceAffectedPaths...)
 
 	for _, tt := range configs {
 		t.Run(tt.title, func(t *testing.T) {
 			s, _ := initBasicService(t)
 
-			testutils.CreateModel(t, s, "AdBids_source_model",
-				"select id, timestamp, publisher, domain, bid_price from AdBids", AdBidsSourceModelRepoPath)
+			testutils.CreateModel(t, s, "AdBids_Yahoo",
+				"select id, timestamp, publisher, domain, bid_price from AdBids where publisher='Yahoo'", AdBidsYahooModelPath)
+			testutils.CreateModel(t, s, "AdBids_Google",
+				"select id, timestamp, publisher, domain, bid_price from AdBids where publisher='Google'", AdBidsGoogleModelPath)
+			testutils.CreateModel(t, s, "AdBids_YahooGoogle",
+				"select y.* from AdBids_Yahoo y join AdBids_Google g on y.id=g.id", AdBidsYahooGoogleModelPath)
 			testutils.CreateModel(t, s, "AdBids_model",
-				"select id, timestamp, publisher, domain, bid_price from AdBids_source_model", AdBidsModelRepoPath)
+				"select y.* from AdBids_Yahoo y join AdBids_YahooGoogle yg on y.id = yg.id", AdBidsModelRepoPath)
+
 			result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 0, 1, 2, 0, AdBidsSourceAffectedPaths)
-			testutils.AssertTable(t, s, "AdBids_source_model", AdBidsSourceModelRepoPath)
-			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+			testutils.AssertMigration(t, result, 0, 3, 2, 0, AdBidsSourceAffectedPaths)
+			testutils.AssertTable(t, s, "AdBids_Yahoo", AdBidsYahooModelPath)
+			testutils.AssertTable(t, s, "AdBids_Google", AdBidsGoogleModelPath)
 
 			// trigger error in source
 			testutils.CreateSource(t, s, "AdBids", AdImpressionsCsvPath, AdBidsRepoPath)
 			result, err = s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 3, 0, 1, 0, AdBidsAllAffectedPaths)
-			require.Equal(t, metricsviews.SourceNotFound, result.Errors[2].Message)
-			testutils.AssertTableAbsence(t, s, "AdBids_source_model")
-			testutils.AssertTableAbsence(t, s, "AdBids_model")
+			fmt.Println(result.AffectedPaths)
+			testutils.AssertMigration(t, result, 5, 0, 1, 0, AdBidsAllAffectedPaths)
+			require.Equal(t, metricsviews.SourceNotFound, result.Errors[4].Message)
+			testutils.AssertTableAbsence(t, s, "AdBids_Yahoo")
+			testutils.AssertTableAbsence(t, s, "AdBids_Google")
 
 			// reset the source
 			testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
 			result, err = s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
-			testutils.AssertMigration(t, result, 0, 3, 1, 0, AdBidsAllAffectedPaths)
-			testutils.AssertTable(t, s, "AdBids_source_model", AdBidsSourceModelRepoPath)
-			testutils.AssertTable(t, s, "AdBids_model", AdBidsModelRepoPath)
+			testutils.AssertMigration(t, result, 0, 5, 1, 0, AdBidsAllAffectedPaths)
+			testutils.AssertTable(t, s, "AdBids_Yahoo", AdBidsYahooModelPath)
+			testutils.AssertTable(t, s, "AdBids_Google", AdBidsGoogleModelPath)
 		})
 	}
 }
@@ -452,7 +460,7 @@ bid_price from AdBids;
 		"select id, timestamp, publisher, domain, bid_price AdBids", AdBidsSourceModelRepoPath)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
-	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsSourceModelRepoPath})
+	testutils.AssertMigration(t, result, 3, 0, 0, 0, []string{AdBidsModelRepoPath, AdBidsDashboardRepoPath, AdBidsSourceModelRepoPath})
 	testutils.AssertTableAbsence(t, s, "AdBids_source_model")
 }
 
@@ -591,6 +599,30 @@ measures:
 	require.NoError(t, err)
 	// no error if there are no dimensions
 	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsDashboardRepoPath})
+
+	time.Sleep(time.Millisecond * 10)
+	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+timeseries: timestamp
+smallest_time_grain: 
+dimensions:
+- label: Publisher
+  property: publisher
+  ignore: true
+- label: Domain
+  property: domain
+  ignore: true
+measures:
+- expression: count(*)
+  name: imp
+- expression: avg(bid_price)
+  name: imp
+`))
+	require.NoError(t, err)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	// duplicate measure names throws error
+	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsDashboardRepoPath})
+	require.Equal(t, "duplicate measure name", result.Errors[0].Message)
 }
 
 func TestInvalidFiles(t *testing.T) {
@@ -698,7 +730,7 @@ path: "data/AdBids.csv`))
 }
 
 func initBasicService(t *testing.T) (*catalog.Service, string) {
-	s, dir := getService(t)
+	s, dir := testutils.GetService(t)
 	testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
 	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
@@ -741,36 +773,4 @@ func initBasicService(t *testing.T) (*catalog.Service, string) {
 	testutils.AssertInCatalogStore(t, s, "AdBids_dashboard", AdBidsDashboardRepoPath)
 
 	return s, dir
-}
-
-func getService(t *testing.T) (*catalog.Service, string) {
-	dir := t.TempDir()
-
-	duckdbStore, err := drivers.Open("duckdb", filepath.Join(dir, "stage.db"), zap.NewNop())
-	require.NoError(t, err)
-	err = duckdbStore.Migrate(context.Background())
-	require.NoError(t, err)
-	olap, ok := duckdbStore.OLAPStore()
-	require.True(t, ok)
-	catalogObject, ok := duckdbStore.CatalogStore()
-	require.True(t, ok)
-
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
-	require.NoError(t, err)
-	repo, ok := fileStore.RepoStore()
-	require.True(t, ok)
-
-	return catalog.NewService(catalogObject, repo, olap, registryStore(t), "test", nil), dir
-}
-
-func registryStore(t *testing.T) drivers.RegistryStore {
-	store, err := drivers.Open("sqlite", ":memory:", zap.NewNop())
-	store.Migrate(context.Background())
-	require.NoError(t, err)
-	registry, _ := store.RegistryStore()
-
-	err = registry.CreateInstance(context.Background(), &drivers.Instance{ID: "test"})
-	require.NoError(t, err)
-
-	return registry
 }

@@ -29,7 +29,7 @@
 
 <div
   class="
-    text-right grid items-center 
+    text-right grid items-center
     {justify ? `justify-${justify}` : ''} 
     {justify ? `justify-items-${justify}` : ''} relative w-full
     {showHover ? 'hover:bg-gray-100 hover:dark:bg-gray-600' : undefined}
@@ -46,7 +46,7 @@
     class:pr-2={!compact}
     class:pr-1={compact}
     class:pl-1={compact}
-    class="text-right overflow-x-hidden "
+    class="text-right overflow-x-hidden"
     style="position: relative;"
   >
     <slot />

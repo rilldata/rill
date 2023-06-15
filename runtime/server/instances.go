@@ -6,7 +6,9 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -32,6 +34,10 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 
 // GetInstance implements RuntimeService.
 func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequest) (*runtimev1.GetInstanceResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+	)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadInstance) {
 		return nil, ErrForbidden
 	}
@@ -51,18 +57,25 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 
 // CreateInstance implements RuntimeService.
 func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstanceRequest) (*runtimev1.CreateInstanceResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.olap_driver", req.OlapDriver),
+		attribute.String("args.repo_driver", req.RepoDriver),
+	)
+
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
 	}
 
 	inst := &drivers.Instance{
-		ID:           req.InstanceId,
-		OLAPDriver:   req.OlapDriver,
-		OLAPDSN:      req.OlapDsn,
-		RepoDriver:   req.RepoDriver,
-		RepoDSN:      req.RepoDsn,
-		EmbedCatalog: req.EmbedCatalog,
-		Env:          req.Env,
+		ID:                  req.InstanceId,
+		OLAPDriver:          req.OlapDriver,
+		OLAPDSN:             req.OlapDsn,
+		RepoDriver:          req.RepoDriver,
+		RepoDSN:             req.RepoDsn,
+		EmbedCatalog:        req.EmbedCatalog,
+		Variables:           req.Variables,
+		IngestionLimitBytes: req.IngestionLimitBytes,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -75,13 +88,51 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 	}, nil
 }
 
-// DeleteInstance implements RuntimeService.
-func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstanceRequest) (*runtimev1.DeleteInstanceResponse, error) {
+// EditInstance implements RuntimeService.
+func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRequest) (*runtimev1.EditInstanceResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.olap_driver", req.OlapDriver),
+		attribute.String("args.repo_driver", req.RepoDriver),
+	)
+
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.DeleteInstance(ctx, req.InstanceId)
+	inst := &drivers.Instance{
+		ID:                  req.InstanceId,
+		OLAPDriver:          req.OlapDriver,
+		OLAPDSN:             req.OlapDsn,
+		RepoDriver:          req.RepoDriver,
+		RepoDSN:             req.RepoDsn,
+		EmbedCatalog:        req.EmbedCatalog,
+		Variables:           req.Variables,
+		IngestionLimitBytes: req.IngestionLimitBytes,
+	}
+
+	err := s.runtime.EditInstance(ctx, inst)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &runtimev1.EditInstanceResponse{
+		Instance: instanceToPB(inst),
+	}, nil
+}
+
+// DeleteInstance implements RuntimeService.
+func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstanceRequest) (*runtimev1.DeleteInstanceResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.Bool("args.drop_db", req.DropDb),
+	)
+
+	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+		return nil, ErrForbidden
+	}
+
+	err := s.runtime.DeleteInstance(ctx, req.InstanceId, req.DropDb)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -91,13 +142,14 @@ func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstan
 
 func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
 	return &runtimev1.Instance{
-		InstanceId:   inst.ID,
-		OlapDriver:   inst.OLAPDriver,
-		OlapDsn:      inst.OLAPDSN,
-		RepoDriver:   inst.RepoDriver,
-		RepoDsn:      inst.RepoDSN,
-		EmbedCatalog: inst.EmbedCatalog,
-		Env:          inst.Env,
-		ProjectEnv:   inst.ProjectEnv,
+		InstanceId:          inst.ID,
+		OlapDriver:          inst.OLAPDriver,
+		OlapDsn:             inst.OLAPDSN,
+		RepoDriver:          inst.RepoDriver,
+		RepoDsn:             inst.RepoDSN,
+		EmbedCatalog:        inst.EmbedCatalog,
+		Variables:           inst.Variables,
+		ProjectVariables:    inst.ProjectVariables,
+		IngestionLimitBytes: inst.IngestionLimitBytes,
 	}
 }

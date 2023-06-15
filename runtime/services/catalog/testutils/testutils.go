@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -119,18 +121,18 @@ func AssertTable(t *testing.T, s *catalog.Service, name, sourcePath string) *dri
 }
 
 func AssertInCatalogStore(t *testing.T, s *catalog.Service, name, sourcePath string) *drivers.CatalogEntry {
-	catalogEntry, ok := s.FindEntry(context.Background(), name)
-	require.True(t, ok)
+	catalogEntry, err := s.FindEntry(context.Background(), name)
+	require.NoError(t, err)
 	require.Equal(t, name, catalogEntry.Name)
 	require.Equal(t, sourcePath, catalogEntry.Path)
 	return catalogEntry
 }
 
 func AssertTableAbsence(t *testing.T, s *catalog.Service, name string) {
-	_, ok := s.FindEntry(context.Background(), name)
-	require.False(t, ok)
+	_, err := s.FindEntry(context.Background(), name)
+	require.ErrorIs(t, err, drivers.ErrNotFound)
 
-	_, err := s.Olap.InformationSchema().Lookup(context.Background(), name)
+	_, err = s.Olap.InformationSchema().Lookup(context.Background(), name)
 	require.ErrorIs(t, err, drivers.ErrNotFound)
 }
 
@@ -174,4 +176,40 @@ func CopyFileToData(t *testing.T, dir, source, name string) {
 
 	_, err = io.Copy(destFile, sourceFile)
 	require.NoError(t, err)
+}
+
+func GetService(t *testing.T) (*catalog.Service, string) {
+	dir := t.TempDir()
+
+	duckdbStore, err := drivers.Open("duckdb", filepath.Join(dir, "stage.db"), zap.NewNop())
+	require.NoError(t, err)
+	err = duckdbStore.Migrate(context.Background())
+	require.NoError(t, err)
+	olap, ok := duckdbStore.OLAPStore()
+	require.True(t, ok)
+	catalogObject, ok := duckdbStore.CatalogStore()
+	require.True(t, ok)
+
+	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	require.NoError(t, err)
+	repo, ok := fileStore.RepoStore()
+	require.True(t, ok)
+
+	err = repo.Put(context.Background(), "test", "rill.yaml", strings.NewReader(""))
+	require.NoError(t, err)
+
+	return catalog.NewService(catalogObject, repo, olap, registryStore(t), "test", nil, catalog.NewMigrationMeta()), dir
+}
+
+func registryStore(t *testing.T) drivers.RegistryStore {
+	store, err := drivers.Open("sqlite", ":memory:", zap.NewNop())
+	require.NoError(t, err)
+	err = store.Migrate(context.Background())
+	require.NoError(t, err)
+	registry, _ := store.RegistryStore()
+
+	err = registry.CreateInstance(context.Background(), &drivers.Instance{ID: "test", Variables: map[string]string{"allow_host_access": "true"}})
+	require.NoError(t, err)
+
+	return registry
 }

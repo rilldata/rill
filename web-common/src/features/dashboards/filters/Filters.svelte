@@ -10,20 +10,22 @@ The main feature-set component for dashboard filters
   import { defaultChipColors } from "@rilldata/web-common/components/chip/chip-types";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type {
     MetricsViewDimension,
     MetricsViewFilterCond,
     V1MetricsViewFilter,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryServiceMetricsViewToplist } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
+  import { createQueryServiceMetricsViewToplist } from "@rilldata/web-common/runtime-client";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -31,6 +33,13 @@ The main feature-set component for dashboard filters
   import { getDisplayName } from "./getDisplayName";
 
   export let metricViewName;
+
+  const queryClient = useQueryClient();
+
+  /** the height of a row of chips */
+  const ROW_HEIGHT = "26px";
+  /** the minimum container height */
+  const MIN_CONTAINER_HEIGHT = "34px";
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
@@ -40,11 +49,12 @@ The main feature-set component for dashboard filters
   let excludeValues: Array<MetricsViewFilterCond>;
   $: excludeValues = metricsExplorer?.filters.exclude;
 
-  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
   let dimensions: Array<MetricsViewDimension>;
   $: dimensions = $metaQuery.data?.dimensions;
 
   function clearFilterForDimension(dimensionId, include: boolean) {
+    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.clearFilterForDimension(
       metricViewName,
       dimensionId,
@@ -63,7 +73,7 @@ The main feature-set component for dashboard filters
   let activeDimensionName;
 
   $: metricTimeSeries = useModelHasTimeSeries(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     metricViewName
   );
   $: hasTimeSeries = $metricTimeSeries.data;
@@ -103,8 +113,8 @@ The main feature-set component for dashboard filters
 
       // Use topList API to fetch the dimension names
       // We prune the measure values and use the dimension labels for the filter
-      topListQuery = useQueryServiceMetricsViewToplist(
-        $runtimeStore.instanceId,
+      topListQuery = createQueryServiceMetricsViewToplist(
+        $runtime.instanceId,
         metricViewName,
         topListParams
       );
@@ -126,6 +136,7 @@ The main feature-set component for dashboard filters
 
   function clearAllFilters() {
     if (hasFilters) {
+      cancelDashboardQueries(queryClient, metricViewName);
       metricsExplorerStore.clearFilters(metricViewName);
     }
   }
@@ -162,10 +173,12 @@ The main feature-set component for dashboard filters
   }
 
   function toggleDimensionValue(event, item) {
+    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilter(metricViewName, item.name, event.detail);
   }
 
   function toggleFilterMode(dimensionName) {
+    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
   }
 
@@ -179,14 +192,14 @@ The main feature-set component for dashboard filters
 </script>
 
 <section
-  class="pl-2 pt-2 pb-3 grid gap-x-2"
+  class="pl-2 grid gap-x-2 items-start"
   style:grid-template-columns="max-content auto"
-  style:min-height="44px"
+  style:min-height={MIN_CONTAINER_HEIGHT}
 >
   <div
-    style:width="24px"
-    style:height="24px"
-    class="grid place-items-center"
+    style:height={ROW_HEIGHT}
+    style:width={ROW_HEIGHT}
+    class="grid items-center place-items-center"
     class:ui-copy-icon-inactive={!hasFilters}
     class:ui-copy-icon={hasFilters}
   >
@@ -209,6 +222,7 @@ The main feature-set component for dashboard filters
             name={isInclude ? label : `Exclude ${label}`}
             excludeMode={isInclude ? false : true}
             colors={isInclude ? defaultChipColors : excludeChipColors}
+            label="View filter"
             {selectedValues}
             {searchedValues}
           >
@@ -242,7 +256,7 @@ The main feature-set component for dashboard filters
     <div
       in:fly|local={{ duration: 200, x: 8 }}
       class="ui-copy-disabled grid items-center"
-      style:min-height="26px"
+      style:min-height={ROW_HEIGHT}
     >
       No filters selected
     </div>

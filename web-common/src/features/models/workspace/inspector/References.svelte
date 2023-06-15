@@ -7,15 +7,15 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import {
-    useRuntimeServiceGetFile,
-    useQueryServiceTableCardinality,
-    useRuntimeServiceListCatalogEntries,
+    createQueryServiceTableCardinality,
+    createRuntimeServiceGetFile,
+    createRuntimeServiceListCatalogEntries,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
   import { getContext } from "svelte";
   import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
+  import { runtime } from "../../../../runtime-client/runtime-store";
   import { getTableReferences } from "../../utils/get-table-references";
   import EmbeddedSourceReference from "./EmbeddedSourceReference.svelte";
   import { getMatchingReferencesAndEntries } from "./utils";
@@ -28,20 +28,24 @@
 
   const queryHighlight = getContext("rill:app:query-highlight");
 
-  $: getModelFile = useRuntimeServiceGetFile(
-    $runtimeStore?.instanceId,
+  $: getModelFile = createRuntimeServiceGetFile(
+    $runtime?.instanceId,
     getFilePathFromNameAndType(modelName, EntityType.Model)
   );
   $: references = getTableReferences($getModelFile?.data.blob ?? "");
 
-  $: getAllSources = useRuntimeServiceListCatalogEntries(
-    $runtimeStore?.instanceId,
-    { type: "OBJECT_TYPE_SOURCE" }
+  $: getAllSources = createRuntimeServiceListCatalogEntries(
+    $runtime?.instanceId,
+    {
+      type: "OBJECT_TYPE_SOURCE",
+    }
   );
 
-  $: getAllModels = useRuntimeServiceListCatalogEntries(
-    $runtimeStore?.instanceId,
-    { type: "OBJECT_TYPE_MODEL" }
+  $: getAllModels = createRuntimeServiceListCatalogEntries(
+    $runtime?.instanceId,
+    {
+      type: "OBJECT_TYPE_MODEL",
+    }
   );
 
   // for each reference, match to an existing model or source,
@@ -57,10 +61,7 @@
         [
           writable($thing),
           writable(ref),
-          useQueryServiceTableCardinality(
-            $runtimeStore?.instanceId,
-            $thing.name
-          ),
+          createQueryServiceTableCardinality($runtime?.instanceId, $thing.name),
         ],
         ([$thing, ref, $cardinality]) => ({
           entry: $thing,
@@ -98,7 +99,7 @@
     {#if showSourceTables}
       <div
         transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
-        class="mt-2 "
+        class="mt-2"
       >
         {#each $referencedWithMetadata as reference}
           {#if reference?.entry?.embedded}

@@ -5,15 +5,15 @@
   import { refreshSource } from "@rilldata/web-common/features/sources/refreshSource";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
+    createRuntimeServiceGetFile,
+    createRuntimeServiceListConnectors,
+    createRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceRefreshAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
-    useRuntimeServiceGetFile,
-    useRuntimeServiceListConnectors,
-    useRuntimeServicePutFileAndReconcile,
-    useRuntimeServiceRefreshAndReconcile,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { parseDocument } from "yaml";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
   import { fileArtifactsStore } from "../../entity-management/file-artifacts-store";
   import { EntityType } from "../../entity-management/types";
@@ -22,13 +22,10 @@
 
   let sourcePath: string;
   $: sourcePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
-  $: getSource = useRuntimeServiceGetFile(
-    $runtimeStore?.instanceId,
-    sourcePath
-  );
+  $: getSource = createRuntimeServiceGetFile($runtime?.instanceId, sourcePath);
   $: source = parseDocument($getSource?.data?.blob || "{}").toJS();
 
-  $: connectors = useRuntimeServiceListConnectors();
+  $: connectors = createRuntimeServiceListConnectors();
 
   // get the connector for this source type, if valid
   $: currentConnector = $connectors?.data?.connectors?.find(
@@ -42,21 +39,21 @@
   );
 
   const queryClient = useQueryClient();
-  const createSource = useRuntimeServicePutFileAndReconcile();
-  const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
+  const createSource = createRuntimeServicePutFileAndReconcile();
+  const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
 
   const onRefreshClick = async (tableName: string) => {
     try {
       await refreshSource(
         currentConnector?.name,
         tableName,
-        $runtimeStore?.instanceId,
+        $runtime?.instanceId,
         $refreshSourceMutation,
         $createSource,
         queryClient
       );
       const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
-        $runtimeStore?.instanceId,
+        $runtime?.instanceId,
         tableName
       );
       await queryClient.refetchQueries(queryKey);
@@ -89,7 +86,7 @@
     </div>
     <div>
       For more information,
-      <a href="https://docs.rilldata.com/using-rill/import-data"
+      <a href="https://docs.rilldata.com/develop/import-data"
         >view the documentation</a
       >.
     </div>
@@ -114,7 +111,7 @@
     </div>
     <div>
       For more information,
-      <a href="https://docs.rilldata.com/using-rill/import-data"
+      <a href="https://docs.rilldata.com/develop/import-data"
         >view the documentation</a
       >.
     </div>
@@ -126,7 +123,7 @@
     </div>
     <div>
       For more information,
-      <a href="https://docs.rilldata.com/using-rill/import-data"
+      <a href="https://docs.rilldata.com/develop/import-data"
         >view the documentation</a
       >.
     </div>
@@ -140,7 +137,7 @@
     </div>
     <div>
       For more information,
-      <a href="https://docs.rilldata.com/using-rill/import-data"
+      <a href="https://docs.rilldata.com/develop/import-data"
         >view the documentation</a
       >.
     </div>

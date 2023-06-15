@@ -2,7 +2,6 @@ package duckdb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -11,40 +10,37 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func (c *connection) FindEntries(ctx context.Context, instanceID string, typ drivers.ObjectType) []*drivers.CatalogEntry {
+func (c *connection) FindEntries(ctx context.Context, instanceID string, typ drivers.ObjectType) ([]*drivers.CatalogEntry, error) {
 	if typ == drivers.ObjectTypeUnspecified {
 		return c.findEntries(ctx, "")
 	}
 	return c.findEntries(ctx, "WHERE type = ?", typ)
 }
 
-func (c *connection) FindEntry(ctx context.Context, instanceID, name string) (*drivers.CatalogEntry, bool) {
+func (c *connection) FindEntry(ctx context.Context, instanceID, name string) (*drivers.CatalogEntry, error) {
 	// Names are stored with case everywhere, but the checks should be case-insensitive.
 	// Hence, the translation to lower case here.
-	es := c.findEntries(ctx, "WHERE LOWER(name) = LOWER(?)", name)
-	if len(es) == 0 {
-		return nil, false
+	es, err := c.findEntries(ctx, "WHERE LOWER(name) = LOWER(?)", name)
+	if err != nil {
+		return nil, err
 	}
-	return es[0], true
+	if len(es) == 0 {
+		return nil, drivers.ErrNotFound
+	}
+	return es[0], nil
 }
 
-func (c *connection) findEntries(ctx context.Context, whereClause string, args ...any) []*drivers.CatalogEntry {
+func (c *connection) findEntries(ctx context.Context, whereClause string, args ...any) ([]*drivers.CatalogEntry, error) {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return nil
-		}
-		panic(err)
+		return nil, err
 	}
 	defer func() { _ = release() }()
 
-	sql := fmt.Sprintf("SELECT name, type, object, path, embedded, created_on, updated_on, refreshed_on FROM rill.catalog %s ORDER BY lower(name)", whereClause)
+	sql := fmt.Sprintf("SELECT name, type, object, path, bytes_ingested, embedded, created_on, updated_on, refreshed_on FROM rill.catalog %s ORDER BY lower(name)", whereClause)
 	rows, err := conn.QueryxContext(ctx, sql, args...)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return nil
-		}
-		panic(err)
+		return nil, c.checkErr(err)
 	}
 	defer rows.Close()
 
@@ -53,12 +49,9 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 		var objBlob []byte
 		e := &drivers.CatalogEntry{}
 
-		err := rows.Scan(&e.Name, &e.Type, &objBlob, &e.Path, &e.Embedded, &e.CreatedOn, &e.UpdatedOn, &e.RefreshedOn)
+		err := rows.Scan(&e.Name, &e.Type, &objBlob, &e.Path, &e.BytesIngested, &e.Embedded, &e.CreatedOn, &e.UpdatedOn, &e.RefreshedOn)
 		if err != nil {
-			if errors.Is(err, context.Canceled) {
-				return nil
-			}
-			panic(err)
+			return nil, c.checkErr(err)
 		}
 
 		// Parse object protobuf
@@ -85,7 +78,7 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 		res = append(res, e)
 	}
 
-	return res
+	return res, nil
 }
 
 func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *drivers.CatalogEntry) error {
@@ -104,18 +97,19 @@ func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *driv
 	now := time.Now()
 	_, err = conn.ExecContext(
 		ctx,
-		"INSERT INTO rill.catalog(name, type, object, path, embedded, created_on, updated_on, refreshed_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO rill.catalog(name, type, object, path, bytes_ingested, embedded, created_on, updated_on, refreshed_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		e.Name,
 		e.Type,
 		obj,
 		e.Path,
+		e.BytesIngested,
 		e.Embedded,
 		now,
 		now,
 		now,
 	)
 	if err != nil {
-		return err
+		return c.checkErr(err)
 	}
 
 	e.CreatedOn = now
@@ -139,17 +133,18 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 
 	_, err = conn.ExecContext(
 		ctx,
-		"UPDATE rill.catalog SET type = ?, object = ?, path = ?, embedded = ?, updated_on = ?, refreshed_on = ? WHERE name = ?",
+		"UPDATE rill.catalog SET type = ?, object = ?, path = ?, bytes_ingested = ?, embedded = ?, updated_on = ?, refreshed_on = ? WHERE name = ?",
 		e.Type,
 		obj,
 		e.Path,
+		e.BytesIngested,
 		e.Embedded,
 		e.UpdatedOn, // TODO: Use time.Now()
 		e.RefreshedOn,
 		e.Name,
 	)
 	if err != nil {
-		return err
+		return c.checkErr(err)
 	}
 
 	return nil
@@ -163,5 +158,19 @@ func (c *connection) DeleteEntry(ctx context.Context, instanceID, name string) e
 	defer func() { _ = release() }()
 
 	_, err = conn.ExecContext(ctx, "DELETE FROM rill.catalog WHERE LOWER(name) = LOWER(?)", name)
-	return err
+	return c.checkErr(err)
+}
+
+// DeleteEntries deletes the entire catalog table.
+// This will be handled by dropping the entire rill db file when deleting instance.
+// But implementing this from completeness pov.
+func (c *connection) DeleteEntries(ctx context.Context, instanceID string) error {
+	conn, release, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = release() }()
+
+	_, err = conn.ExecContext(ctx, "DELETE FROM rill.catalog")
+	return c.checkErr(err)
 }

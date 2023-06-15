@@ -6,10 +6,13 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"go.uber.org/zap"
 )
 
 func init() {
@@ -32,7 +35,8 @@ var spec = connectors.Spec{
 }
 
 type Config struct {
-	Path string `mapstructure:"path"`
+	Path    string            `mapstructure:"path"`
+	Headers map[string]string `mapstructure:"headers"`
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -50,7 +54,7 @@ func (c connector) Spec() connectors.Spec {
 	return spec
 }
 
-func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
+func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source, logger *zap.Logger) (connectors.FileIterator, error) {
 	conf, err := ParseConfig(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -66,6 +70,12 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		return nil, fmt.Errorf("failed to fetch url %s:  %w", conf.Path, err)
 	}
 
+	for k, v := range conf.Headers {
+		req.Header.Set(k, v)
+	}
+
+	start := time.Now()
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch url %s:  %w", conf.Path, err)
@@ -75,11 +85,30 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		return nil, fmt.Errorf("failed to fetch url %s: %s", conf.Path, resp.Status)
 	}
 
-	file, err := fileutil.CopyToTempFile(resp.Body, source.Name, extension)
+	file, size, err := fileutil.CopyToTempFile(resp.Body, source.Name, extension)
 	if err != nil {
 		return nil, err
 	}
+
+	// Collect metrics of download size and time
+	connectors.RecordDownloadMetrics(ctx, &connectors.DownloadMetrics{
+		Connector: "https",
+		Ext:       extension,
+		Duration:  time.Since(start),
+		Size:      size,
+	})
+
+	if info, err := os.Stat(file); err == nil { // ignoring error since only possible error is path error
+		if info.Size() > env.StorageLimitInBytes {
+			return nil, connectors.ErrIngestionLimitExceeded
+		}
+	}
+
 	return &iterator{ctx: ctx, files: []string{file}}, nil
+}
+
+func (c connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {
+	return true, nil
 }
 
 // implements connector.FileIterator

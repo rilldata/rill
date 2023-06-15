@@ -12,49 +12,48 @@ import (
 )
 
 func (r *Runtime) ListCatalogEntries(ctx context.Context, instanceID string, t drivers.ObjectType) ([]*drivers.CatalogEntry, error) {
-	cat, err := r.Catalog(ctx, instanceID)
+	cat, err := r.NewCatalogService(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
 
-	return cat.FindEntries(ctx, t), nil
+	return cat.FindEntries(ctx, t)
 }
 
 func (r *Runtime) GetCatalogEntry(ctx context.Context, instanceID, name string) (*drivers.CatalogEntry, error) {
-	cat, err := r.Catalog(ctx, instanceID)
+	cat, err := r.NewCatalogService(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
 
-	e, ok := cat.FindEntry(ctx, name)
-	if !ok {
-		return nil, fmt.Errorf("entry not found")
+	e, err := cat.FindEntry(ctx, name)
+	if err != nil {
+		if errors.Is(err, drivers.ErrNotFound) {
+			return nil, fmt.Errorf("entry not found")
+		}
+		return nil, err
 	}
 
 	return e, nil
 }
 
 func (r *Runtime) Reconcile(ctx context.Context, instanceID string, changedPaths, forcedPaths []string, dry, strict bool) (*catalog.ReconcileResult, error) {
-	repo, err := r.Repo(ctx, instanceID)
+	cat, err := r.NewCatalogService(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
 
-	err = repo.Sync(ctx, instanceID)
-	if err != nil {
-		return nil, err
-	}
-
-	cat, err := r.Catalog(ctx, instanceID)
+	err = cat.Repo.Sync(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
 
 	resp, err := cat.Reconcile(ctx, catalog.ReconcileConfig{
-		DryRun:       dry,
-		Strict:       strict,
-		ChangedPaths: changedPaths,
-		ForcedPaths:  forcedPaths,
+		DryRun:            dry,
+		Strict:            strict,
+		ChangedPaths:      changedPaths,
+		ForcedPaths:       forcedPaths,
+		SafeSourceRefresh: r.opts.SafeSourceRefresh,
 	})
 	if err != nil {
 		return nil, err
@@ -64,30 +63,26 @@ func (r *Runtime) Reconcile(ctx context.Context, instanceID string, changedPaths
 }
 
 func (r *Runtime) RefreshSource(ctx context.Context, instanceID, name string) error {
-	repo, err := r.Repo(ctx, instanceID)
+	cat, err := r.NewCatalogService(ctx, instanceID)
 	if err != nil {
 		return err
 	}
 
-	err = repo.Sync(ctx, instanceID)
+	err = cat.Repo.Sync(ctx, instanceID)
 	if err != nil {
 		return err
 	}
 
-	cat, err := r.Catalog(ctx, instanceID)
-	if err != nil {
-		return err
-	}
-
-	path, ok := cat.NameToPath[name]
+	path, ok := cat.Meta.NameToPath[name]
 	if !ok {
 		return fmt.Errorf("artifact not found for source")
 	}
 
 	resp, err := cat.Reconcile(ctx, catalog.ReconcileConfig{
-		ChangedPaths: []string{path},
-		ForcedPaths:  []string{path},
-		Strict:       true,
+		ChangedPaths:      []string{path},
+		ForcedPaths:       []string{path},
+		Strict:            true,
+		SafeSourceRefresh: r.opts.SafeSourceRefresh,
 	})
 	if err != nil {
 		return err
@@ -109,13 +104,16 @@ func (r *Runtime) SyncExistingTables(ctx context.Context, instanceID string) err
 	}
 
 	// Get catalog
-	cat, err := r.Catalog(ctx, instanceID)
+	cat, err := r.NewCatalogService(ctx, instanceID)
 	if err != nil {
 		return err
 	}
 
 	// Get full catalog
-	objs := cat.FindEntries(ctx, drivers.ObjectTypeUnspecified)
+	objs, err := cat.FindEntries(ctx, drivers.ObjectTypeUnspecified)
+	if err != nil {
+		return err
+	}
 
 	// Get information schema
 	tables, err := olap.InformationSchema().All(ctx)

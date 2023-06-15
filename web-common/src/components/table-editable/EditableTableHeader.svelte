@@ -29,7 +29,7 @@
       <div
         class="w-full pr-5 flex flex-row gap-x-2 items-center cursor-pointer"
       >
-        <span class="text-ellipsis overflow-hidden whitespace-nowrap ">
+        <span class="text-ellipsis overflow-hidden whitespace-nowrap">
           {name}
         </span>
       </div>

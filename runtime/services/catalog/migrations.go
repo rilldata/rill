@@ -2,15 +2,21 @@ package catalog
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
+	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/dag"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
+	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 
 	// Load migrators
 	_ "github.com/rilldata/rill/runtime/services/catalog/artifacts/sql"
@@ -21,10 +27,11 @@ import (
 )
 
 type ReconcileConfig struct {
-	DryRun       bool
-	Strict       bool
-	ChangedPaths []string
-	ForcedPaths  []string
+	DryRun            bool
+	Strict            bool
+	ChangedPaths      []string
+	ForcedPaths       []string
+	SafeSourceRefresh bool
 }
 
 type ReconcileResult struct {
@@ -82,10 +89,24 @@ type ArtifactError struct {
 // TODO: support loading existing projects
 
 func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*ReconcileResult, error) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+	s.Meta.lock.Lock()
+	defer s.Meta.lock.Unlock()
 
 	result := NewReconcileResult()
+	s.logger.Info("reconcile started", zap.Any("config", conf))
+
+	if len(conf.ChangedPaths) == 0 || slices.Contains(conf.ChangedPaths, "rill.yaml") {
+		// check the project is initialized
+		c := rillv1beta.New(s.Repo, s.InstID)
+		if !c.IsInit(ctx) {
+			return nil, fmt.Errorf("not a valid project: rill.yaml not found")
+		}
+
+		// set project variables from rill.yaml in instance
+		if err := s.setProjectVariables(ctx); err != nil {
+			return nil, err
+		}
+	}
 
 	// collect repos and create migration items
 	migrationMap, reconcileErrors, err := s.getMigrationMap(ctx, conf)
@@ -105,10 +126,11 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 
 	if !conf.DryRun {
 		// TODO: changes to the file will not be picked up if done while running migration
-		s.LastMigration = time.Now()
-		s.hasMigrated = true
+		s.Meta.LastMigration = time.Now()
+		s.Meta.hasMigrated = true
 	}
 	result.collectAffectedPaths()
+	s.logger.Info("reconcile completed", zap.Any("result", result))
 	return result, nil
 }
 
@@ -137,7 +159,12 @@ func (s *Service) collectMigrationItems(
 		}
 	}
 
-	for name, item := range migrationMap {
+	for _, name := range tempDag.TopologicalSort() {
+		item, ok := migrationMap[name]
+		if !ok {
+			continue
+		}
+
 		if item.Type == MigrationNoChange {
 			if update[name] {
 				// items identified as to created/updated because a parent changed
@@ -147,7 +174,7 @@ func (s *Service) collectMigrationItems(
 				} else {
 					item.Type = MigrationUpdate
 				}
-			} else if _, ok := s.NameToPath[item.NormalizedName]; ok {
+			} else if _, ok := s.Meta.NameToPath[item.NormalizedName]; ok {
 				// this allows parents later in the order to re add children
 				visited[name] = -1
 				continue
@@ -171,15 +198,16 @@ func (s *Service) collectMigrationItems(
 
 		// get all the children and make sure they are not present before the parent in the order
 		children := arrayutil.Dedupe(append(
-			s.dag.GetDeepChildren(name),
+			s.Meta.dag.GetDeepChildren(name),
 			newChildren...,
 		))
 		if item.FromName != "" {
 			children = append(children, arrayutil.Dedupe(append(
-				s.dag.GetDeepChildren(strings.ToLower(item.FromNormalizedName)),
+				s.Meta.dag.GetDeepChildren(strings.ToLower(item.FromNormalizedName)),
 				tempDag.GetDeepChildren(strings.ToLower(item.FromNormalizedName))...,
 			))...)
 		}
+
 		for _, child := range children {
 			i, ok := visited[child]
 			if !ok {
@@ -192,6 +220,7 @@ func (s *Service) collectMigrationItems(
 
 			var childItem *MigrationItem
 			// if a child was already visited push to the end
+			// this can happen when there is a rename and the new DAG wont have the old order
 			visited[child] = len(migrationItems)
 			if i != -1 {
 				childItem = migrationItems[i]
@@ -301,8 +330,13 @@ func (s *Service) runMigrationItems(
 		}
 
 		if err != nil {
+			errCode := runtimev1.ReconcileError_CODE_OLAP
+			var connectorErr *connectors.PermissionDeniedError
+			if errors.As(err, &connectorErr) {
+				errCode = runtimev1.ReconcileError_CODE_SOURCE_PERMISSION_DENIED
+			}
 			result.Errors = append(result.Errors, &runtimev1.ReconcileError{
-				Code:     runtimev1.ReconcileError_CODE_OLAP,
+				Code:     errCode,
 				Message:  err.Error(),
 				FilePath: item.Path,
 			})
@@ -310,25 +344,29 @@ func (s *Service) runMigrationItems(
 		}
 
 		if failed && !conf.DryRun {
-			// remove entity from catalog and OLAP if it failed validation or during migration
-			err := s.Catalog.DeleteEntry(ctx, s.InstID, item.Name)
+			shouldDelete := !conf.SafeSourceRefresh || item.NewCatalog.Type != drivers.ObjectTypeSource
+			var err error
+			if shouldDelete {
+				// remove entity from catalog and OLAP if it failed validation or during migration
+				err = s.Catalog.DeleteEntry(ctx, s.InstID, item.Name)
+				if err != nil {
+					// shouldn't ideally happen
+					result.Errors = append(result.Errors, &runtimev1.ReconcileError{
+						Code:     runtimev1.ReconcileError_CODE_OLAP,
+						Message:  err.Error(),
+						FilePath: item.Path,
+					})
+				}
+			}
+			_, err = s.Meta.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 			if err != nil {
-				// shouldn't ideally happen
 				result.Errors = append(result.Errors, &runtimev1.ReconcileError{
 					Code:     runtimev1.ReconcileError_CODE_OLAP,
 					Message:  err.Error(),
 					FilePath: item.Path,
 				})
 			}
-			_, err = s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
-			if err != nil {
-				result.Errors = append(result.Errors, &runtimev1.ReconcileError{
-					Code:     runtimev1.ReconcileError_CODE_OLAP,
-					Message:  err.Error(),
-					FilePath: item.Path,
-				})
-			}
-			if item.CatalogInStore != nil {
+			if item.CatalogInStore != nil && shouldDelete {
 				err := migrator.Delete(ctx, s.Olap, item.CatalogInStore)
 				if err != nil {
 					// shouldn't ideally happen
@@ -349,9 +387,9 @@ func (s *Service) runMigrationItems(
 }
 
 func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error {
-	s.NameToPath[item.NormalizedName] = item.Path
+	s.Meta.NameToPath[item.NormalizedName] = item.Path
 	// add the item to dag
-	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	_, err := s.Meta.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 	if err != nil {
 		return err
 	}
@@ -361,9 +399,19 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 		return err
 	}
 
+	// NOTE :: IngestStorageLimitInBytes check will only work if sources are ingested in serial
+	ingestionLimit, err := s.getSourceIngestionLimit(ctx, inst)
+	if err != nil {
+		return err
+	}
+	opts := migrator.Options{
+		InstanceEnv:               inst.ResolveVariables(),
+		IngestStorageLimitInBytes: ingestionLimit,
+	}
+
 	// create in olap
 	err = s.wrapMigrator(item.CatalogInFile, func() error {
-		return migrator.Create(ctx, s.Olap, s.Repo, inst.EnvironmentVariables(), item.CatalogInFile)
+		return migrator.Create(ctx, s.Olap, s.Repo, opts, item.CatalogInFile)
 	})
 	if err != nil {
 		return err
@@ -374,22 +422,25 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 	if err != nil {
 		return err
 	}
-	_, found := s.Catalog.FindEntry(ctx, s.InstID, item.Name)
+	_, err = s.Catalog.FindEntry(ctx, s.InstID, item.Name)
 	// create or updated
-	if found {
-		return s.Catalog.UpdateEntry(ctx, s.InstID, catalog)
+	if err != nil {
+		if !errors.Is(err, drivers.ErrNotFound) {
+			return err
+		}
+		return s.Catalog.CreateEntry(ctx, s.InstID, catalog)
 	}
-	return s.Catalog.CreateEntry(ctx, s.InstID, catalog)
+	return s.Catalog.UpdateEntry(ctx, s.InstID, catalog)
 }
 
 func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error {
 	fromLowerName := strings.ToLower(item.FromName)
-	delete(s.NameToPath, fromLowerName)
-	s.NameToPath[item.NormalizedName] = item.Path
+	delete(s.Meta.NameToPath, fromLowerName)
+	s.Meta.NameToPath[item.NormalizedName] = item.Path
 
 	// delete old item and add new item to dag
-	s.dag.Delete(fromLowerName)
-	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	s.Meta.dag.Delete(fromLowerName)
+	_, err := s.Meta.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 	if err != nil {
 		return err
 	}
@@ -415,9 +466,9 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error 
 }
 
 func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error {
-	s.NameToPath[item.NormalizedName] = item.Path
+	s.Meta.NameToPath[item.NormalizedName] = item.Path
 	// add the item to dag with new dependencies
-	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	_, err := s.Meta.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 	if err != nil {
 		return err
 	}
@@ -429,8 +480,16 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 
 	// update in olap
 	if item.Type == MigrationUpdate {
+		ingestionLimit, err := s.getSourceIngestionLimit(ctx, inst)
+		if err != nil {
+			return err
+		}
 		err = s.wrapMigrator(item.CatalogInFile, func() error {
-			return migrator.Update(ctx, s.Olap, s.Repo, inst.EnvironmentVariables(), item.CatalogInStore, item.CatalogInFile)
+			opts := migrator.Options{
+				InstanceEnv:               inst.ResolveVariables(),
+				IngestStorageLimitInBytes: ingestionLimit,
+			}
+			return migrator.Update(ctx, s.Olap, s.Repo, opts, item.CatalogInStore, item.CatalogInFile)
 		})
 		if err != nil {
 			return err
@@ -445,10 +504,10 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 }
 
 func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error {
-	delete(s.NameToPath, item.NormalizedName)
+	delete(s.Meta.NameToPath, item.NormalizedName)
 
 	// delete item from dag
-	s.dag.Delete(item.NormalizedName)
+	s.Meta.dag.Delete(item.NormalizedName)
 	// delete item from olap
 	err := migrator.Delete(ctx, s.Olap, item.CatalogInStore)
 	if err != nil {
@@ -485,8 +544,9 @@ func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) 
 
 // wrapMigrator is a temporary solution to log source related messages.
 func (s *Service) wrapMigrator(catalogEntry *drivers.CatalogEntry, run func() error) error {
+	st := time.Now()
 	if catalogEntry.Type == drivers.ObjectTypeSource {
-		s.logger.Info(fmt.Sprintf(
+		s.logger.Named("console").Info(fmt.Sprintf(
 			"Ingesting source %q from %q",
 			catalogEntry.Name, catalogEntry.GetSource().Properties.Fields["path"].GetStringValue(),
 		))
@@ -496,19 +556,19 @@ func (s *Service) wrapMigrator(catalogEntry *drivers.CatalogEntry, run func() er
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("Ingestion failed for %q : %s", catalogEntry.Name, err.Error()))
 		} else {
-			s.logger.Info(fmt.Sprintf("Finished ingesting %q", catalogEntry.Name))
+			s.logger.Named("console").Info(fmt.Sprintf("Finished ingesting %q, took %v seconds", catalogEntry.Name, time.Since(st).Seconds()))
 		}
 	}
 	return err
 }
 
 func (s *Service) addToDag(item *MigrationItem) *runtimev1.ReconcileError {
-	if _, ok := s.NameToPath[item.NormalizedName]; ok {
+	if _, ok := s.Meta.NameToPath[item.NormalizedName]; ok {
 		return nil
 	}
 	// this is perhaps an init. so populate cache data
-	s.NameToPath[item.NormalizedName] = item.Path
-	_, err := s.dag.Add(item.NormalizedName, item.NormalizedDependencies)
+	s.Meta.NameToPath[item.NormalizedName] = item.Path
+	_, err := s.Meta.dag.Add(item.NormalizedName, item.NormalizedDependencies)
 	if err != nil {
 		return &runtimev1.ReconcileError{
 			Code:     runtimev1.ReconcileError_CODE_SOURCE,
@@ -517,4 +577,42 @@ func (s *Service) addToDag(item *MigrationItem) *runtimev1.ReconcileError {
 		}
 	}
 	return nil
+}
+
+func (s *Service) getSourceIngestionLimit(ctx context.Context, inst *drivers.Instance) (int64, error) {
+	if inst.IngestionLimitBytes == 0 {
+		return math.MaxInt64, nil
+	}
+
+	var sizeSoFar int64
+	entries, err := s.Catalog.FindEntries(ctx, s.InstID, drivers.ObjectTypeSource)
+	if err != nil {
+		return 0, err
+	}
+	for _, entry := range entries {
+		sizeSoFar += entry.BytesIngested
+	}
+
+	limitInBytes := inst.IngestionLimitBytes
+	limitInBytes -= sizeSoFar
+	if limitInBytes < 0 {
+		return 0, nil
+	}
+	return limitInBytes, nil
+}
+
+func (s *Service) setProjectVariables(ctx context.Context) error {
+	c := rillv1beta.New(s.Repo, s.InstID)
+	proj, err := c.ProjectConfig(ctx)
+	if err != nil {
+		return err
+	}
+
+	inst, err := s.RegistryStore.FindInstance(ctx, s.InstID)
+	if err != nil {
+		return err
+	}
+
+	inst.ProjectVariables = proj.Variables
+	return s.RegistryStore.EditInstance(ctx, inst)
 }

@@ -9,8 +9,10 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
@@ -20,6 +22,8 @@
   export let dimensionName: string;
   export let isFetching: boolean;
   export let excludeMode = false;
+
+  const queryClient = useQueryClient();
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
@@ -43,13 +47,13 @@
     metricsExplorerStore.setMetricDimensionName(metricViewName, null);
   };
   function toggleFilterMode() {
+    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
   }
 </script>
 
 <div
   class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3"
-  style:height="50px"
 >
   <button
     class="flex flex-row items-center"
@@ -57,7 +61,7 @@
     style:grid-column-gap=".4rem"
   >
     {#if isFetching}
-      <div transition:slideRight|local={{ leftOffset: 8 }}>
+      <div>
         <Spinner size="16px" status={EntityStatus.Running} />
       </div>
     {:else}
@@ -93,7 +97,7 @@
     </Tooltip>
 
     {#if !searchToggle}
-      <div
+      <button
         class="flex items-center ui-copy-icon"
         in:fly={{ x: 10, duration: 300 }}
         style:grid-column-gap=".2rem"
@@ -101,20 +105,20 @@
       >
         <SearchIcon size="16px" />
         <span> Search </span>
-      </div>
+      </button>
     {:else}
       <div
         transition:slideRight|local={{ leftOffset: 8 }}
         class="flex items-center"
       >
         <Search bind:value={searchText} on:input={onSearch} />
-        <span
+        <button
           class="ui-copy-icon"
           style:cursor="pointer"
           on:click={() => closeSearchBar()}
         >
           <Close />
-        </span>
+        </button>
       </div>
     {/if}
   </div>

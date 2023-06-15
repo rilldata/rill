@@ -33,6 +33,10 @@ type Source struct {
 	Timeout               int32          `yaml:"timeout,omitempty"`
 	ExtractPolicy         *ExtractPolicy `yaml:"extract,omitempty"`
 	Format                string         `yaml:"format,omitempty" mapstructure:"format,omitempty"`
+	DuckDBProps           map[string]any `yaml:"duckdb,omitempty" mapstructure:"duckdb,omitempty"`
+	Headers               map[string]any `yaml:"headers,omitempty" mapstructure:"headers,omitempty"`
+	AllowFieldRelaxation  *bool          `yaml:"ingest.allow_field_relaxation,omitempty" mapstructure:"allow_field_relaxation,omitempty"`
+	AllowFieldAddition    *bool          `yaml:"ingest.allow_field_addition,omitempty" mapstructure:"allow_field_addition,omitempty"`
 }
 
 type ExtractPolicy struct {
@@ -46,7 +50,8 @@ type ExtractConfig struct {
 }
 
 type MetricsView struct {
-	Label             string `yaml:"display_name"`
+	Label             string `yaml:"title"`
+	DisplayName       string `yaml:"display_name,omitempty"` // for backwards compatibility
 	Description       string
 	Model             string
 	TimeDimension     string `yaml:"timeseries"`
@@ -58,6 +63,7 @@ type MetricsView struct {
 
 type Measure struct {
 	Label       string
+	Name        string
 	Expression  string
 	Description string
 	Format      string `yaml:"format_preset"`
@@ -143,9 +149,27 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	if source.Region != "" {
 		props["region"] = source.Region
 	}
-	if source.CsvDelimiter != "" {
-		props["csv.delimiter"] = source.CsvDelimiter
+
+	if source.DuckDBProps != nil {
+		props["duckdb"] = source.DuckDBProps
 	}
+
+	if source.CsvDelimiter != "" {
+		// backward compatibility
+		if _, defined := props["duckdb"]; !defined {
+			props["duckdb"] = map[string]any{}
+		}
+		props["duckdb"].(map[string]any)["delim"] = fmt.Sprintf("'%v'", source.CsvDelimiter)
+	}
+
+	if source.HivePartition != nil {
+		// backward compatibility
+		if _, defined := props["duckdb"]; !defined {
+			props["duckdb"] = map[string]any{}
+		}
+		props["duckdb"].(map[string]any)["hive_partitioning"] = *source.HivePartition
+	}
+
 	if source.GlobMaxTotalSize != 0 {
 		props["glob.max_total_size"] = source.GlobMaxTotalSize
 	}
@@ -166,12 +190,20 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		props["endpoint"] = source.S3Endpoint
 	}
 
-	if source.HivePartition != nil {
-		props["hive_partitioning"] = *source.HivePartition
-	}
-
 	if source.Format != "" {
 		props["format"] = source.Format
+	}
+
+	if source.Headers != nil {
+		props["headers"] = source.Headers
+	}
+
+	if source.AllowFieldAddition != nil {
+		props["allow_field_addition"] = *source.AllowFieldAddition
+	}
+
+	if source.AllowFieldRelaxation != nil {
+		props["allow_field_relaxation"] = *source.AllowFieldRelaxation
 	}
 
 	propsPB, err := structpb.NewStruct(props)
@@ -274,6 +306,11 @@ func getBytes(size string) (uint64, error) {
 }
 
 func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.CatalogEntry, error) {
+	if metrics.DisplayName != "" && metrics.Label == "" {
+		// backwards compatibility
+		metrics.Label = metrics.DisplayName
+	}
+
 	// remove ignored measures and dimensions
 	var measures []*Measure
 	for _, measure := range metrics.Measures {
@@ -311,7 +348,9 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 
 	// this is needed since measure names are not given by the user
 	for i, measure := range apiMetrics.Measures {
-		measure.Name = fmt.Sprintf("measure_%d", i)
+		if measure.Name == "" {
+			measure.Name = fmt.Sprintf("measure_%d", i)
+		}
 	}
 
 	timeGrainEnum, err := getTimeGrainEnum(metrics.SmallestTimeGrain)

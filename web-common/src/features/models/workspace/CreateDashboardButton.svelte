@@ -11,20 +11,20 @@
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndReconcile,
-    V1ReconcileResponse,
-  } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import {
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServicePutFileAndReconcile,
+    V1ReconcileResponse,
+  } from "@rilldata/web-common/runtime-client";
+  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { getName } from "../../entity-management/name-utils";
   import {
     addQuickMetricsToDashboardYAML,
@@ -35,15 +35,15 @@
   export let hasError = false;
   export let collapse = false;
 
-  $: getModel = useRuntimeServiceGetCatalogEntry(
-    $runtimeStore.instanceId,
+  $: getModel = createRuntimeServiceGetCatalogEntry(
+    $runtime.instanceId,
     modelName
   );
   $: model = $getModel.data?.entry?.model;
-  $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
+  $: dashboardNames = useDashboardNames($runtime.instanceId);
 
   const queryClient = useQueryClient();
-  const createFileMutation = useRuntimeServicePutFileAndReconcile();
+  const createFileMutation = createRuntimeServicePutFileAndReconcile();
 
   async function handleCreateDashboard() {
     overlay.set({
@@ -62,7 +62,7 @@
     $createFileMutation.mutate(
       {
         data: {
-          instanceId: $runtimeStore.instanceId,
+          instanceId: $runtime.instanceId,
           path: getFilePathFromNameAndType(
             newDashboardName,
             EntityType.MetricsDefinition
@@ -86,7 +86,7 @@
           );
           return invalidateAfterReconcile(
             queryClient,
-            $runtimeStore.instanceId,
+            $runtime.instanceId,
             resp
           );
         },

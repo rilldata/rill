@@ -16,27 +16,28 @@
   } from "@rilldata/web-common/features/models/utils/get-table-references";
   import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import {
+    createQueryServiceTableRows,
+    createRuntimeServiceGetFile,
+    createRuntimeServicePutFileAndReconcile,
     getRuntimeServiceGetFileQueryKey,
-    useRuntimeServiceGetFile,
-    useRuntimeServicePutFileAndReconcile,
     V1CatalogEntry,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import {
     invalidateAfterReconcile,
-    invalidationForProfileQueries,
-  } from "@rilldata/web-local/lib/svelte-query/invalidation";
+    isProfilingQuery,
+  } from "@rilldata/web-common/runtime-client/invalidation";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
-  import { getMapFromArray } from "@rilldata/web-local/lib/util/arrayUtils";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { SIDE_PAD } from "../../../layout/config";
   import { drag } from "../../../layout/drag";
+  import { httpRequestQueue } from "../../../runtime-client/http-client";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { useModelFileIsEmpty } from "../selectors";
   import { sanitizeQuery } from "../utils/sanitize-query";
   import Editor from "./Editor.svelte";
@@ -50,8 +51,16 @@
     "rill:app:query-highlight"
   );
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
-  const updateModel = useRuntimeServicePutFileAndReconcile();
+  $: runtimeInstanceId = $runtime.instanceId;
+  const updateModel = createRuntimeServicePutFileAndReconcile();
+
+  const limit = 150;
+
+  $: tableQuery = createQueryServiceTableRows(runtimeInstanceId, modelName, {
+    limit,
+  });
+
+  $: runtimeError = ($tableQuery.error as any)?.response.data;
 
   // track innerHeight to calculate the size of the editor element.
   let innerHeight: number;
@@ -60,7 +69,7 @@
   let modelPath: string;
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
-  $: modelSqlQuery = useRuntimeServiceGetFile(runtimeInstanceId, modelPath);
+  $: modelSqlQuery = createRuntimeServiceGetFile(runtimeInstanceId, modelPath);
 
   $: modelEmpty = useModelFileIsEmpty(runtimeInstanceId, modelName);
 
@@ -70,7 +79,7 @@
   let sanitizedQuery: string;
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
 
-  $: sourceCatalogsQuery = useEmbeddedSources($runtimeStore?.instanceId);
+  $: sourceCatalogsQuery = useEmbeddedSources($runtime?.instanceId);
   let embeddedSourceCatalogs: Map<string, V1CatalogEntry>;
   $: embeddedSourceCatalogs = getMapFromArray(
     $sourceCatalogsQuery?.data ?? [],
@@ -129,7 +138,7 @@
         await queryClient.cancelQueries({
           fetching: true,
           predicate: (query) => {
-            return invalidationForProfileQueries(query.queryHash, modelName);
+            return isProfilingQuery(query.queryHash, modelName);
           },
         });
       }
@@ -148,15 +157,11 @@
       if (!resp.errors.length && hasChanged) {
         sanitizedQuery = sanitizeQuery(content);
       }
-      await invalidateAfterReconcile(
-        queryClient,
-        $runtimeStore.instanceId,
-        resp
-      );
+      await invalidateAfterReconcile(queryClient, $runtime.instanceId, resp);
       if (resp.affectedPaths.length === 0) {
         // when backend detects no change, we need to invalidate the file
         await queryClient.refetchQueries(
-          getRuntimeServiceGetFileQueryKey($runtimeStore.instanceId, modelPath)
+          getRuntimeServiceGetFileQueryKey($runtime.instanceId, modelPath)
         );
       }
     } catch (err) {
@@ -171,6 +176,14 @@
     from: selection?.referenceIndex,
     to: selection?.referenceIndex + selection?.reference?.length,
   })) as SelectionRange[];
+
+  let errors = [];
+  $: {
+    errors = [];
+    if (embeddedSourceErrors?.length) errors.push(...embeddedSourceErrors);
+    if (modelError) errors.push(modelError);
+    if (runtimeError) errors.push(runtimeError.message);
+  }
 </script>
 
 <svelte:window bind:innerHeight />
@@ -181,7 +194,7 @@
       $outputVisibilityTween}px - var(--header-height))"
   >
     {#if hasModelSql}
-      <div class="h-full  p-5  grid overflow-auto">
+      <div class="h-full p-5 grid overflow-auto">
         {#key modelName}
           <Editor
             {modelName}
@@ -229,13 +242,13 @@
           'hidden'}"
       >
         <div
-          style="{modelError ? 'filter: brightness(.9);' : ''}
+          style="{modelError || runtimeError ? 'filter: brightness(.9);' : ''}
             transition: filter 200ms;
           "
           class="relative h-full"
         >
           {#if !$modelEmpty?.data}
-            <ConnectedPreviewTable objectName={modelName} />
+            <ConnectedPreviewTable objectName={modelName} {limit} />
           {/if}
         </div>
         <!--TODO {:else}-->
@@ -246,18 +259,14 @@
         <!--  </div>-->
         <!--{/if}-->
       </div>
-      {#if embeddedSourceErrors?.length || modelError}
+      {#if errors.length > 0}
         <div
-          transition:slide={{ duration: 200 }}
-          class="error break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100"
+          transition:slide|local={{ duration: 200 }}
+          class="error break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100 flex flex-col gap-2"
         >
-          {#if embeddedSourceErrors?.length}
-            {#each embeddedSourceErrors as embeddedSourceError}
-              {embeddedSourceError}<br />
-            {/each}
-          {:else}
-            {modelError}
-          {/if}
+          {#each errors as error}
+            <div>{error}</div>
+          {/each}
         </div>
       {/if}
     </div>

@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -32,6 +31,11 @@
     @apply text-gray-700 dark:text-white;
   }
 
+  .ui-copy-dashboard-header {
+    @apply ui-copy;
+    font-size: 16px;
+  }
+
   .ui-copy-muted {
     @apply text-gray-600 dark:text-gray-200;
   }
@@ -45,10 +49,13 @@
   }
 
   .ui-copy-number {
-    font-feature-settings: "case" 0, "cpsp" 0, "dlig" 0, "frac" 0, "dnom" 0, "numr" 0, "salt" 0, "subs" 0, "sups" 0, "tnum", "zero" 0, "ss01", "ss02" 0, "ss03" 0, "ss04" 0, "cv01" 0, "cv02" 0, "cv03" 0, "cv04" 0, "cv05" 0, "cv06" 0, "cv07" 0, "cv08" 0, "cv09" 0, "cv10" 0, "cv11" 0, "calt", "ccmp", "kern";
+    font-feature-settings: "case" 0, "cpsp" 0, "dlig" 0, "frac" 0, "dnom" 0,
+      "numr" 0, "salt" 0, "subs" 0, "sups" 0, "tnum", "zero" 0, "ss01", "ss02" 0,
+      "ss03" 0, "ss04" 0, "cv01" 0, "cv02" 0, "cv03" 0, "cv04" 0, "cv05" 0,
+      "cv06" 0, "cv07" 0, "cv08" 0, "cv09" 0, "cv10" 0, "cv11" 0, "calt", "ccmp",
+      "kern";
   }
 
- 
   .ui-copy-icon-inactive {
     @apply text-gray-500 dark:text-gray-500;
   }
@@ -67,7 +74,7 @@
   }
 
   .ui-copy-code {
-    font-family: "MD IO";
+    font-family: var(--monospace);
     font-size: 11px;
     @apply text-gray-600;
   }
@@ -110,7 +117,8 @@ html {
   @apply ui-copy;
 }
 
-a, button {
+a,
+button {
   @apply ui-copy;
 }
 
@@ -121,6 +129,8 @@ body {
   /* Use this for a few keyboard characters in tooltips, etc. */
   --system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+
+  --monospace: 'Source Code Variable';
   margin: 0;
   padding: 0;
   --header-height: 52px;
@@ -144,51 +154,4 @@ body {
 a {
   @apply text-blue-500;
 }
-.stack-list > * + * {
-  margin-top: var(--gap, 1rem);
-}
 
-.stack + .stack {
-  margin-top: var(--gap, 1rem);
-}
-
-.hljs-punctuation {
-  color: #bbb;
-}
-
-.hljs-attr {
-  font-weight: 500;
-}
-
-.hljs-string,
-.hljs-number {
-  color: hsl(217, 1%, 50%);
-}
-
-.gutter-indicator {
-  width: 18px;
-  display: grid;
-  place-items: center;
-  height: 18px;
-}
-
-.draggable:active {
-  cursor: dragging;
-}
-
-.ͼ1 .cm-scroller {
-  font-family: "MD IO";
-  font-size: 13px;
-}
-
-.ͼ2 .cm-gutters {
-  background-color: transparent;
-  border-right: none;
-}
-
-.line-clamp-2 {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}

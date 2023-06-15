@@ -5,58 +5,101 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
-	metrics "github.com/grpc-ecosystem/go-grpc-middleware/providers/openmetrics/v2"
-	"github.com/grpc-ecosystem/go-grpc-middleware/providers/opentracing/v2"
-	grpczaplog "github.com/grpc-ecosystem/go-grpc-middleware/providers/zap/v2"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/tracing"
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/hashicorp/go-version"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/pkg/urlutil"
+	"github.com/rilldata/rill/admin/server/auth"
+	"github.com/rilldata/rill/admin/server/cookies"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/middleware"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
+	"github.com/rs/cors"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+var minCliVersion = version.Must(version.NewVersion("0.20.0"))
+
+type Options struct {
+	HTTPPort               int
+	GRPCPort               int
+	ExternalURL            string
+	FrontendURL            string
+	SessionKeyPairs        [][]byte
+	AllowedOrigins         []string
+	ServePrometheus        bool
+	AuthDomain             string
+	AuthClientID           string
+	AuthClientSecret       string
+	GithubAppName          string
+	GithubAppWebhookSecret string
+	GithubClientID         string
+	GithubClientSecret     string
+}
 
 type Server struct {
 	adminv1.UnsafeAdminServiceServer
-	logger *zap.Logger
-	admin  *admin.Service
-	conf   Config
-	auth   *Authenticator
+	logger        *zap.Logger
+	admin         *admin.Service
+	opts          *Options
+	cookies       *cookies.Store
+	authenticator *auth.Authenticator
+	issuer        *runtimeauth.Issuer
+	urls          *externalURLs
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
-type Config struct {
-	HTTPPort         int
-	GRPCPort         int
-	AuthDomain       string
-	AuthClientID     string
-	AuthClientSecret string
-	AuthCallbackURL  string
-	SessionSecret    string
-}
+func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, opts *Options) (*Server, error) {
+	externalURL, err := url.Parse(opts.ExternalURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse external URL: %w", err)
+	}
 
-func New(logger *zap.Logger, adm *admin.Service, conf Config) (*Server, error) {
-	auth, err := newAuthenticator(context.Background(), conf)
+	if len(opts.SessionKeyPairs) == 0 {
+		return nil, fmt.Errorf("provided SessionKeyPairs is empty")
+	}
+
+	cookieStore := cookies.New(logger, opts.SessionKeyPairs...)
+	cookieStore.MaxAge(60 * 60 * 24 * 365 * 10) // 10 years
+	cookieStore.Options.Secure = externalURL.Scheme == "https"
+	cookieStore.Options.HttpOnly = true
+
+	authenticator, err := auth.NewAuthenticator(logger, adm, cookieStore, &auth.AuthenticatorOptions{
+		AuthDomain:       opts.AuthDomain,
+		AuthClientID:     opts.AuthClientID,
+		AuthClientSecret: opts.AuthClientSecret,
+		ExternalURL:      opts.ExternalURL,
+		FrontendURL:      opts.FrontendURL,
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &Server{
-		logger: logger,
-		admin:  adm,
-		conf:   conf,
-		auth:   auth,
+		logger:        logger,
+		admin:         adm,
+		opts:          opts,
+		cookies:       cookieStore,
+		authenticator: authenticator,
+		issuer:        issuer,
+		urls:          newURLRegistry(opts),
 	}, nil
 }
 
@@ -64,24 +107,28 @@ func New(logger *zap.Logger, adm *admin.Service, conf Config) (*Server, error) {
 func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
-			tracing.StreamServerInterceptor(opentracing.InterceptorTracer()),
-			metrics.StreamServerInterceptor(metrics.NewServerMetrics()),
-			logging.StreamServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
-			recovery.StreamServerInterceptor(),
+			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
+			observability.TracingStreamServerInterceptor(),
+			observability.LoggingStreamServerInterceptor(s.logger),
+			errorMappingStreamServerInterceptor(),
+			grpc_auth.StreamServerInterceptor(checkUserAgent),
 			grpc_validator.StreamServerInterceptor(),
+			s.authenticator.StreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
-			tracing.UnaryServerInterceptor(opentracing.InterceptorTracer()),
-			metrics.UnaryServerInterceptor(metrics.NewServerMetrics()),
-			logging.UnaryServerInterceptor(grpczaplog.InterceptorLogger(s.logger), logging.WithCodes(ErrorToCode), logging.WithLevels(GRPCCodeToLevel)),
-			recovery.UnaryServerInterceptor(),
+			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
+			observability.TracingUnaryServerInterceptor(),
+			observability.LoggingUnaryServerInterceptor(s.logger),
+			errorMappingUnaryServerInterceptor(),
+			grpc_auth.UnaryServerInterceptor(checkUserAgent),
 			grpc_validator.UnaryServerInterceptor(),
+			s.authenticator.UnaryServerInterceptor(),
 		),
 	)
 
 	adminv1.RegisterAdminServiceServer(server, s)
-	s.logger.Sugar().Infof("serving admin gRPC on port:%v", s.conf.GRPCPort)
-	return graceful.ServeGRPC(ctx, server, s.conf.GRPCPort)
+	s.logger.Sugar().Infof("serving admin gRPC on port:%v", s.opts.GRPCPort)
+	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
 // Starts the HTTP server.
@@ -92,76 +139,80 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 	}
 
 	server := &http.Server{Handler: handler}
-	s.logger.Sugar().Infof("serving admin HTTP on port:%v", s.conf.HTTPPort)
-	return graceful.ServeHTTP(ctx, server, s.conf.HTTPPort)
-}
-
-// ErrorToCode maps an error to a gRPC code for logging. It wraps the default behavior and adds handling of context errors.
-func ErrorToCode(err error) codes.Code {
-	if errors.Is(err, context.DeadlineExceeded) {
-		return codes.DeadlineExceeded
-	}
-	if errors.Is(err, context.Canceled) {
-		return codes.Canceled
-	}
-	return logging.DefaultErrorToCode(err)
-}
-
-// GRPCCodeToLevel overrides the log level of various gRPC codes.
-// We're currently not doing very granular error handling, so we get quite a lot of codes.Unknown errors, which we do not want to emit as error logs.
-func GRPCCodeToLevel(code codes.Code) logging.Level {
-	switch code {
-	case codes.OK, codes.NotFound, codes.Canceled, codes.AlreadyExists, codes.InvalidArgument, codes.Unauthenticated,
-		codes.Unknown, codes.PermissionDenied, codes.ResourceExhausted, codes.FailedPrecondition, codes.OutOfRange:
-		return logging.INFO
-	case codes.Unimplemented, codes.DeadlineExceeded, codes.Aborted, codes.Unavailable:
-		return logging.WARNING
-	case codes.Internal, codes.DataLoss:
-		return logging.ERROR
-	default:
-		return logging.ERROR
-	}
+	s.logger.Sugar().Infof("serving admin HTTP on port:%v", s.opts.HTTPPort)
+	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 
 // HTTPHandler HTTP handler serving REST gateway.
 func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Create REST gateway
-	mux := gateway.NewServeMux(gateway.WithErrorHandler(HTTPErrorHandler))
+	gwMux := gateway.NewServeMux(
+		gateway.WithErrorHandler(HTTPErrorHandler),
+		gateway.WithMetadata(s.authenticator.Annotator),
+	)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	grpcAddress := fmt.Sprintf(":%d", s.conf.GRPCPort)
-	err := adminv1.RegisterAdminServiceHandlerFromEndpoint(ctx, mux, grpcAddress, opts)
+	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
+	err := adminv1.RegisterAdminServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	// One-off REST-only path for multipart file upload
-	err = mux.HandlePath("GET", "/auth/login", s.authLogin)
-	if err != nil {
-		panic(err)
+	// Create regular http mux and mount gwMux on it
+	mux := http.NewServeMux()
+	mux.Handle("/v1/", gwMux)
+
+	// Add Prometheus
+	if s.opts.ServePrometheus {
+		mux.Handle("/metrics", promhttp.Handler())
 	}
 
-	err = mux.HandlePath("GET", "/auth/callback", s.callback)
-	if err != nil {
-		panic(err)
+	// Server public JWKS for runtime JWT verification
+	mux.Handle("/.well-known/jwks.json", s.issuer.WellKnownHandler())
+
+	// Add auth endpoints (not gRPC handlers, just regular endpoints on /auth/*)
+	s.authenticator.RegisterEndpoints(mux)
+
+	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
+	s.registerGithubEndpoints(mux)
+
+	// Add temporary internal endpoint for refreshing sources
+	mux.Handle("/internal/projects/trigger-refresh", otelhttp.WithRouteTag("/internal/projects/trigger-refresh", http.HandlerFunc(s.triggerRefreshSourcesInternal)))
+
+	// Build CORS options for admin server
+
+	// If the AllowedOrigins contains a "*" we want to return the requester's origin instead of "*" in the "Access-Control-Allow-Origin" header.
+	// This is useful in development. In production, we set AllowedOrigins to non-wildcard values, so this does not have security implications.
+	// Details: https://github.com/rs/cors#allow--with-credentials-security-protection
+	var allowedOriginFunc func(string) bool
+	allowedOrigins := s.opts.AllowedOrigins
+	for _, origin := range s.opts.AllowedOrigins {
+		if origin == "*" {
+			allowedOriginFunc = func(origin string) bool { return true }
+			allowedOrigins = nil
+			break
+		}
 	}
 
-	err = mux.HandlePath("GET", "/auth/user", s.user)
-	if err != nil {
-		panic(err)
+	corsOpts := cors.Options{
+		AllowedOrigins:  allowedOrigins,
+		AllowOriginFunc: allowedOriginFunc,
+		AllowedMethods: []string{
+			http.MethodHead,
+			http.MethodGet,
+			http.MethodPost,
+			http.MethodPut,
+			http.MethodPatch,
+			http.MethodDelete,
+		},
+		AllowedHeaders: []string{"*"},
+		// We use cookies for browser sessions, so this is required to allow ui.rilldata.com to make authenticated requests to admin.rilldata.com
+		AllowCredentials: true,
+		// Set max age to 1 hour (default if not set is 5 seconds)
+		MaxAge: 60 * 60,
 	}
 
-	err = mux.HandlePath("GET", "/auth/logout", s.logout)
-	if err != nil {
-		panic(err)
-	}
-
-	err = mux.HandlePath("GET", "/auth/logout/callback", s.logoutCallback)
-	if err != nil {
-		panic(err)
-	}
-
-	// Register CORS
-	handler := cors(mux)
+	// Wrap mux with CORS middleware
+	handler := cors.New(corsOpts).Handler(mux)
 
 	return handler, nil
 }
@@ -185,17 +236,91 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 	return resp, nil
 }
 
-func cors(h http.Handler) http.Handler {
-	// TODO: Hack for local - not production-ready
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if origin := r.Header.Get("Origin"); origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-			if r.Method == "OPTIONS" && r.Header.Get("Access-Control-Request-Method") != "" {
-				w.Header().Set("Access-Control-Allow-Headers", "*")
-				w.Header().Set("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, PATCH, DELETE")
-				return
-			}
+func timeoutSelector(service, method string) time.Duration {
+	return time.Minute
+}
+
+// errorMappingUnaryServerInterceptor is an interceptor that applies mapGRPCError.
+func errorMappingUnaryServerInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		resp, err := handler(ctx, req)
+		return resp, mapGRPCError(err)
+	}
+}
+
+// errorMappingUnaryServerInterceptor is an interceptor that applies mapGRPCError.
+func errorMappingStreamServerInterceptor() grpc.StreamServerInterceptor {
+	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		err := handler(srv, ss)
+		return mapGRPCError(err)
+	}
+}
+
+// mapGRPCError rewrites errors returned from gRPC handlers before they are returned to the client.
+func mapGRPCError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return status.Error(codes.DeadlineExceeded, err.Error())
+	}
+	if errors.Is(err, context.Canceled) {
+		return status.Error(codes.Canceled, err.Error())
+	}
+	return err
+}
+
+// checkUserAgent is an interceptor that checks rejects from requests from old versions of the Rill CLI.
+func checkUserAgent(ctx context.Context) (context.Context, error) {
+	userAgent := strings.Split(metautils.ExtractIncoming(ctx).Get("user-agent"), " ")
+	var ver string
+	for _, s := range userAgent {
+		if strings.HasPrefix(s, "rill-cli/") {
+			ver = strings.TrimPrefix(s, "rill-cli/")
 		}
-		h.ServeHTTP(w, r)
-	})
+	}
+
+	// Check if build from source
+	if ver == "unknown" || ver == "" {
+		return ctx, nil
+	}
+
+	v, err := version.NewVersion(ver)
+	if err != nil {
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("could not parse rill-cli version: %s", err.Error()))
+	}
+
+	if v.LessThan(minCliVersion) {
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported, please upgrade to the latest version", v))
+	}
+
+	return ctx, nil
+}
+
+type externalURLs struct {
+	githubConnectUI       string
+	githubConnect         string
+	githubConnectRetry    string
+	githubConnectRequest  string
+	githubConnectSuccess  string
+	githubAppInstallation string
+	githubAuth            string
+	githubAuthCallback    string
+	githubAuthRetry       string
+	authLogin             string
+}
+
+func newURLRegistry(opts *Options) *externalURLs {
+	return &externalURLs{
+		githubConnectUI:       urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect"),
+		githubConnect:         urlutil.MustJoinURL(opts.ExternalURL, "/github/connect"),
+		githubConnectRetry:    urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect/retry-install"),
+		githubConnectRequest:  urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect/request"),
+		githubConnectSuccess:  urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect/success"),
+		githubAppInstallation: fmt.Sprintf("https://github.com/apps/%s/installations/new", opts.GithubAppName),
+		githubAuth:            urlutil.MustJoinURL(opts.ExternalURL, "/github/auth/login"),
+		githubAuthCallback:    urlutil.MustJoinURL(opts.ExternalURL, "/github/auth/callback"),
+		githubAuthRetry:       urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect/retry-auth"),
+		authLogin:             urlutil.MustJoinURL(opts.ExternalURL, "/auth/login"),
+	}
 }

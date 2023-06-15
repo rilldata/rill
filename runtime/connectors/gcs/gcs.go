@@ -4,26 +4,36 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
+	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/connectors"
 	rillblob "github.com/rilldata/rill/runtime/connectors/blob"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
+	"go.uber.org/zap"
 	"gocloud.dev/blob/gcsblob"
 	"gocloud.dev/gcp"
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/api/googleapi"
 )
 
+const defaultPageSize = 20
+
 func init() {
-	connectors.Register("gcs", connector{})
+	connectors.Register("gcs", Connector{})
 }
 
-var errNoCredentials = errors.New("empty credentials: set gcs_credentials env variable")
+var errNoCredentials = errors.New("empty credentials: set `google_application_credentials` env variable")
 
 var spec = connectors.Spec{
-	DisplayName: "Google Cloud Storage",
-	Description: "Connect to Google Cloud Storage.",
+	DisplayName:        "Google Cloud Storage",
+	Description:        "Connect to Google Cloud Storage.",
+	ServiceAccountDocs: "https://docs.rilldata.com/deploy/credentials/gcs",
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "path",
@@ -40,7 +50,42 @@ var spec = connectors.Spec{
 			Description: "GCP credentials inferred from your local environment.",
 			Type:        connectors.InformationalPropertyType,
 			Hint:        "Set your local credentials: <code>gcloud auth application-default login</code> Click to learn more.",
-			Href:        "https://docs.rilldata.com/using-rill/import-data#setting-google-gcs-credentials",
+			Href:        "https://docs.rilldata.com/develop/import-data#configure-credentials-for-gcs",
+		},
+	},
+	ConnectorVariables: []connectors.VariableSchema{
+		{
+			Key:  "google_application_credentials",
+			Help: "Enter path of file to load from.",
+			ValidateFunc: func(any interface{}) error {
+				val := any.(string)
+				if val == "" {
+					// user can chhose to leave empty for public sources
+					return nil
+				}
+
+				path, err := fileutil.ExpandHome(strings.TrimSpace(val))
+				if err != nil {
+					return err
+				}
+
+				_, err = os.Stat(path)
+				return err
+			},
+			TransformFunc: func(any interface{}) interface{} {
+				val := any.(string)
+				if val == "" {
+					return ""
+				}
+
+				path, err := fileutil.ExpandHome(strings.TrimSpace(val))
+				if err != nil {
+					return err
+				}
+				// ignoring error since PathError is already validated
+				content, _ := os.ReadFile(path)
+				return string(content)
+			},
 		},
 	},
 }
@@ -51,6 +96,7 @@ type Config struct {
 	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
 	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
 	GlobPageSize          int    `mapstructure:"glob.page_size"`
+	url                   *globutil.URL
 }
 
 func ParseConfig(props map[string]any) (*Config, error) {
@@ -64,24 +110,6 @@ func ParseConfig(props map[string]any) (*Config, error) {
 		// keeping it here to have gcs specific validations
 		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
 	}
-	return conf, nil
-}
-
-type connector struct{}
-
-func (c connector) Spec() connectors.Spec {
-	return spec
-}
-
-// ConsumeAsIterator returns a file iterator over objects stored in gcs.
-// The credential json is read from a env variable GCS_CREDENTIALS.
-// Additionally in case `env.AllowHostCredentials` is true it looks for "Application Default Credentials" as well
-func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source) (connectors.FileIterator, error) {
-	conf, err := ParseConfig(source.Properties)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse config: %w", err)
-	}
-
 	url, err := globutil.ParseBucketURL(conf.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %q, %w", conf.Path, err)
@@ -91,14 +119,33 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		return nil, fmt.Errorf("invalid gcs path %q, should start with gs://", conf.Path)
 	}
 
+	conf.url = url
+	return conf, nil
+}
+
+type Connector struct{}
+
+func (c Connector) Spec() connectors.Spec {
+	return spec
+}
+
+// ConsumeAsIterator returns a file iterator over objects stored in gcs.
+// The credential json is read from a env variable google_application_credentials.
+// Additionally in case `env.AllowHostCredentials` is true it looks for "Application Default Credentials" as well
+func (c Connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, source *connectors.Source, l *zap.Logger) (connectors.FileIterator, error) {
+	conf, err := ParseConfig(source.Properties)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse config: %w", err)
+	}
+
 	client, err := createClient(ctx, env)
 	if err != nil {
 		return nil, err
 	}
 
-	bucketObj, err := gcsblob.OpenBucket(ctx, client, url.Host, nil)
+	bucketObj, err := gcsblob.OpenBucket(ctx, client, conf.url.Host, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open bucket %q, %w", url.Host, err)
+		return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
 	}
 
 	// prepare fetch configs
@@ -107,10 +154,43 @@ func (c connector) ConsumeAsIterator(ctx context.Context, env *connectors.Env, s
 		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
 		GlobPageSize:          conf.GlobPageSize,
-		GlobPattern:           url.Path,
+		GlobPattern:           conf.url.Path,
 		ExtractPolicy:         source.ExtractPolicy,
+		StorageLimitInBytes:   env.StorageLimitInBytes,
 	}
-	return rillblob.NewIterator(ctx, bucketObj, opts)
+
+	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, l)
+	if err != nil {
+		apiError := &googleapi.Error{}
+		// in cases when no creds are passed
+		if errors.As(err, &apiError) && apiError.Code == http.StatusUnauthorized {
+			return nil, connectors.NewPermissionDeniedError(fmt.Sprintf("can't access remote source %q err: %v", source.Name, apiError))
+		}
+
+		// StatusUnauthorized when incorrect key is passsed
+		// StatusBadRequest when key doesn't have a valid credentials file
+		retrieveError := &oauth2.RetrieveError{}
+		if errors.As(err, &retrieveError) && (retrieveError.Response.StatusCode == http.StatusUnauthorized || retrieveError.Response.StatusCode == http.StatusBadRequest) {
+			return nil, connectors.NewPermissionDeniedError(fmt.Sprintf("can't access remote source %q err: %v", source.Name, retrieveError))
+		}
+	}
+
+	return iter, err
+}
+
+func (c Connector) HasAnonymousAccess(ctx context.Context, env *connectors.Env, source *connectors.Source) (bool, error) {
+	conf, err := ParseConfig(source.Properties)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	client := gcp.NewAnonymousHTTPClient(gcp.DefaultTransport())
+	bucketObj, err := gcsblob.OpenBucket(ctx, client, conf.url.Host, nil)
+	if err != nil {
+		return false, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
+	}
+
+	return bucketObj.IsAccessible(ctx)
 }
 
 func createClient(ctx context.Context, env *connectors.Env) (*gcp.HTTPClient, error) {
@@ -128,14 +208,22 @@ func createClient(ctx context.Context, env *connectors.Env) (*gcp.HTTPClient, er
 }
 
 func resolvedCredentials(ctx context.Context, env *connectors.Env) (*google.Credentials, error) {
-	if secretJSON := env.Variables["GCS_CREDENTIALS"]; secretJSON != "" {
-		// gcs_credentials is set, use credentials from json string provided by user
+	if secretJSON := env.Variables["GOOGLE_APPLICATION_CREDENTIALS"]; secretJSON != "" {
+		// GOOGLE_APPLICATION_CREDENTIALS is set, use credentials from json string provided by user
 		return google.CredentialsFromJSON(ctx, []byte(secretJSON), "https://www.googleapis.com/auth/cloud-platform")
 	}
-	// gcs_credentials is not set
-	if env.AllowHostCredentials {
+	// GOOGLE_APPLICATION_CREDENTIALS is not set
+	if env.AllowHostAccess {
 		// use host credentials
-		return gcp.DefaultCredentials(ctx)
+		creds, err := gcp.DefaultCredentials(ctx)
+		if err != nil {
+			if strings.Contains(err.Error(), "google: could not find default credentials") {
+				return nil, errNoCredentials
+			}
+
+			return nil, err
+		}
+		return creds, nil
 	}
 	return nil, errNoCredentials
 }

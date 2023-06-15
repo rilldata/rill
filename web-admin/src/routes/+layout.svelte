@@ -1,47 +1,54 @@
 <script lang="ts">
-  import { QueryClient, QueryClientProvider } from "@sveltestack/svelte-query";
-  import "../app.css";
+  import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
+  import {
+    QueryCache,
+    QueryClient,
+    QueryClientProvider,
+  } from "@tanstack/svelte-query";
+  import { globalErrorCallback } from "../components/errors/error-utils";
+  import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
+  import TopNavigationBar from "../components/navigation/TopNavigationBar.svelte";
 
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    queryCache: new QueryCache({
+      // Motivation:
+      // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
+      // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks
+      onError: globalErrorCallback,
+    }),
+    defaultOptions: {
+      queries: {
+        refetchOnMount: false,
+        refetchOnReconnect: false,
+        refetchOnWindowFocus: false,
+        retry: false,
+      },
+    },
+  });
+
+  featureFlags.set({
+    // Set read-only mode so that the user can't edit the dashboard
+    readOnly: true,
+  });
 </script>
 
 <svelte:head>
-  <meta name="description" content="Rill Cloud" />
+  <meta content="Rill Cloud" name="description" />
 </svelte:head>
 
-<main>
+<RillTheme>
   <QueryClientProvider client={queryClient}>
-    <slot />
+    <main class="flex flex-col h-screen">
+      <TopNavigationBar />
+      <div class="flex-grow overflow-hidden">
+        <ErrorBoundary>
+          <slot />
+        </ErrorBoundary>
+      </div>
+    </main>
   </QueryClientProvider>
-</main>
 
-<footer>
-  <p>Rill Data</p>
-</footer>
-
-<style>
-  main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 1rem;
-    width: 100%;
-    max-width: 1024px;
-    margin: 0 auto;
-    box-sizing: border-box;
-  }
-
-  footer {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 40px;
-  }
-
-  @media (min-width: 480px) {
-    footer {
-      padding: 40px 0;
-    }
-  }
-</style>
+  <NotificationCenter />
+</RillTheme>

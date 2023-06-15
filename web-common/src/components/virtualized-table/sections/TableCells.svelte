@@ -7,24 +7,28 @@
   export let virtualRowItems;
   export let rows;
   export let selectedIndex = [];
+  export let selectedColumn = undefined;
   export let columns: VirtualizedTableColumns[];
   export let scrolling = false;
   export let activeIndex: number;
   export let excludeMode = false;
+  export let cellLabel = undefined;
 
   $: atLeastOneSelected = !!selectedIndex?.length;
 
   const getCellProps = (row, column) => {
-    const value = rows[row.index][columns[column.index]?.name];
+    const columnName = columns[column.index]?.name;
+    const value = rows[row.index][columnName];
     return {
       value,
-      formattedValue:
-        rows[row.index]["__formatted_" + columns[column.index]?.name],
+      formattedValue: rows[row.index]["__formatted_" + columnName],
       type: columns[column.index]?.type,
       barValue: columns[column.index]?.total
         ? value / columns[column.index]?.total
         : 0,
       rowSelected: selectedIndex.findIndex((tgt) => row?.index === tgt) >= 0,
+      colSelected:
+        columnName === selectedColumn || columnName.includes("_delta"),
     };
   };
 </script>
@@ -43,6 +47,7 @@
         {...getCellProps(row, column)}
         on:inspect
         on:select-item
+        label={cellLabel}
       />
     {/each}
   </Row>

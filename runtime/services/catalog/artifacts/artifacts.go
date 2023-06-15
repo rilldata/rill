@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"text/template"
 	"unicode"
@@ -30,7 +31,7 @@ func Register(name string, artifact Artifact) {
 }
 
 type Artifact interface {
-	DeSerialise(ctx context.Context, filePath string, blob string) (*drivers.CatalogEntry, error)
+	DeSerialise(ctx context.Context, filePath string, blob string, materializeDefault bool) (*drivers.CatalogEntry, error)
 	Serialise(ctx context.Context, catalogObject *drivers.CatalogEntry) (string, error)
 }
 
@@ -51,8 +52,11 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, registryStore driver
 		return nil, err
 	}
 
+	// Hacky way to set a materialization default
+	materializeDefault, _ := strconv.ParseBool(instance.Variables["__materialize_default"])
+
 	// this is required in order to be able to use .env.KEY and not .KEY in template placeholders
-	env := map[string]map[string]string{"env": instance.EnvironmentVariables()}
+	env := map[string]map[string]string{"env": instance.ResolveVariables()}
 
 	// Add Sprig template functions (removing functions that leak host info)
 	// Derived from Helm: https://github.com/helm/helm/blob/main/pkg/engine/funcs.go
@@ -71,7 +75,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, registryStore driver
 		return nil, err
 	}
 
-	catalog, err := artifact.DeSerialise(ctx, filePath, bw.String())
+	catalog, err := artifact.DeSerialise(ctx, filePath, bw.String(), materializeDefault)
 	if err != nil {
 		return nil, err
 	}

@@ -7,6 +7,7 @@
   export let compact = false;
   export let submitForm = false;
   export let form = "";
+  export let label: string | undefined = undefined;
 
   const dispatch = createEventDispatcher();
 
@@ -19,7 +20,7 @@
   const disabledClasses = `disabled:cursor-not-allowed disabled:text-gray-700 disabled:bg-gray-200 disabled:border disabled:border-gray-400 disabled:opacity-50`;
   export const levels = {
     info: {
-      primary: `bg-gray-800 border border-gray-800 hover:bg-gray-900 hover:border-gray-900 text-gray-100 hover:text-white focus:ring-gray-100`,
+      primary: `bg-gray-800 border border-gray-800 hover:bg-gray-900 hover:border-gray-900 text-gray-100 hover:text-white focus:ring-blue-300`,
       secondary:
         "text-gray-500 border border-gray-400 hover:bg-gray-200 hover:text-gray-600 hover:border-gray-500 focus:ring-blue-300",
       text: "text-gray-900 hover:bg-gray-300 focus:ring-blue-300",
@@ -59,6 +60,7 @@
   on:click={handleClick}
   type={submitForm && "submit"}
   form={submitForm && form}
+  aria-label={label}
 >
   <slot />
 </button>

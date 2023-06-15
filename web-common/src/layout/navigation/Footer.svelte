@@ -34,7 +34,7 @@
     {
       icon: Github,
       label: "Report an issue",
-      href: "https://github.com/rilldata/rill-developer/issues/new?assignees=&labels=bug&template=bug_report.md&title=",
+      href: "https://github.com/rilldata/rill/issues/new?assignees=&labels=bug&template=bug_report.md&title=",
       className: "fill-gray-500",
       shrinkIcon: true,
     },
@@ -42,10 +42,10 @@
 </script>
 
 <div
-  class="flex flex-col  pt-3 pb-3 gap-y-1 bg-gray-50 border-t border-gray-200 sticky bottom-0"
+  class="flex flex-col pt-3 pb-3 gap-y-1 bg-gray-50 border-t border-gray-200 sticky bottom-0"
 >
   {#each lineItems as lineItem}
-    <a href={lineItem.href} target="_blank"
+    <a href={lineItem.href} target="_blank" rel="noreferrer"
       ><div
         class="flex flex-row items-center px-4 py-1 gap-x-2 text-gray-700 font-normal hover:bg-gray-200"
       >
@@ -66,7 +66,7 @@
     >
   {/each}
   <div
-    class="px-4 py-1 text-gray-600 flex flex-row  gap-x-2"
+    class="px-4 py-1 text-gray-600 flex flex-row gap-x-2"
     style:font-size="10px"
   >
     <span class="text-gray-400">
@@ -74,6 +74,7 @@
         <a
           href="https://docs.rilldata.com"
           target="_blank"
+          rel="noreferrer"
           class="text-gray-400"
         >
           <InfoCircle size="16px" />

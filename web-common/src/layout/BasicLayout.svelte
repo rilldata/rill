@@ -3,7 +3,8 @@ Combines a Navigation element with a slot for a WorkspaceContainer.
 BasicLayout is the backbone of the Rill application.
 -->
 <script lang="ts">
-  import { localStorageStore } from "@rilldata/web-local/lib/store-utils";
+  import { page } from "$app/stores";
+  import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
   import { setContext } from "svelte";
   import { tweened } from "svelte/motion";
   import {
@@ -39,9 +40,13 @@ BasicLayout is the backbone of the Rill application.
   setContext("rill:app:navigation-layout", navigationLayout);
   setContext("rill:app:navigation-width-tween", navigationWidth);
   setContext("rill:app:navigation-visibility-tween", navVisibilityTween);
+
+  $: showNavigation = $page.url.pathname !== "/welcome";
 </script>
 
 <main>
-  <Navigation />
+  {#if showNavigation}
+    <Navigation />
+  {/if}
   <slot />
 </main>

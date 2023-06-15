@@ -1,0 +1,48 @@
+name: Build and Deploy Cloud Admin to Netlify
+on:
+  push:
+    tags:
+      - "*"
+    branches:
+      - "main"
+    paths:
+      - ".github/workflows/cloud-admin.yml"
+      - "web-admin/**"
+      - "web-common/**"
+  workflow_dispatch:
+env:
+  NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+  NETLIFY_SITE_ID: ${{ fromJSON('["e73ac785-882e-425a-8fc8-5432528bb374","afb26917-7a60-47d9-81dc-c0babbb0d9a9"]')[ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch') ] }}
+  DOMAIN: ${{ fromJSON('["rilldata.io","rilldata.com"]')[ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch') ] }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Build Cloud Admin
+        run: |-
+          npm install
+          npm run build -w web-admin
+        env:
+          VITE_RILL_ADMIN_URL: https://admin.${{ env.DOMAIN }}
+
+      - name: Deploy cloud-admin to Netlify
+        uses: nwtgck/actions-netlify@v1.2
+        with:
+          publish-dir: ./web-admin/build
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Cloud-admin ${{ github.ref_name }} deployed to ui.${{ env.DOMAIN }}"
+          production-deploy: true
+          enable-pull-request-comment: false
+          enable-commit-comment: true
+          overwrites-pull-request-comment: true
+          netlify-config-path: ./netlify.toml
+        timeout-minutes: 1

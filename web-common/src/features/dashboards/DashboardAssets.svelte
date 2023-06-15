@@ -16,39 +16,45 @@
   } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { SourceModelValidationStatus } from "@rilldata/web-common/features/metrics-views/errors.js";
   import { initBlankDashboardYAML } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
-  import {
-    runtimeServiceGetFile,
-    useRuntimeServiceDeleteFileAndReconcile,
-    useRuntimeServicePutFileAndReconcile,
-  } from "@rilldata/web-common/runtime-client";
-  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
+  import { appStore } from "@rilldata/web-common/layout/app-store";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import {
+    createRuntimeServiceDeleteFileAndReconcile,
+    createRuntimeServicePutFileAndReconcile,
+    runtimeServiceGetFile,
+  } from "@rilldata/web-common/runtime-client";
+  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages.js";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { slide } from "svelte/transition";
-  import { behaviourEvent } from "../../../../web-local/src/lib/metrics/initMetrics";
   import { LIST_SLIDE_DURATION } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../layout/navigation/NavigationHeader.svelte";
+  import { behaviourEvent } from "../../metrics/initMetrics";
+  import { runtime } from "../../runtime-client/runtime-store";
+  import AddAssetButton from "../entity-management/AddAssetButton.svelte";
   import RenameAssetModal from "../entity-management/RenameAssetModal.svelte";
+  import { useModelNames } from "../models/selectors";
+  import { useSourceNames } from "../sources/selectors";
 
-  $: instanceId = $runtimeStore.instanceId;
+  $: instanceId = $runtime.instanceId;
 
+  $: sourceNames = useSourceNames(instanceId);
+  $: modelNames = useModelNames(instanceId);
   $: dashboardNames = useDashboardNames(instanceId);
 
   const queryClient = useQueryClient();
 
-  const createDashboard = useRuntimeServicePutFileAndReconcile();
-  const deleteDashboard = useRuntimeServiceDeleteFileAndReconcile();
+  const createDashboard = createRuntimeServicePutFileAndReconcile();
+  const deleteDashboard = createRuntimeServiceDeleteFileAndReconcile();
 
   let showMetricsDefs = true;
 
@@ -179,18 +185,17 @@
     return entities[dashboardPath];
   };
 
-  $: canAddDashboard = $runtimeStore.readOnly === false;
+  $: canAddDashboard = $featureFlags.readOnly === false;
+
+  $: hasSourceAndModelButNoDashboards =
+    $sourceNames?.data?.length > 0 &&
+    $modelNames?.data?.length > 0 &&
+    $dashboardNames?.data?.length === 0;
 </script>
 
-<NavigationHeader
-  bind:show={showMetricsDefs}
-  on:add={dispatchAddEmptyMetricsDef}
-  tooltipText="Create a new dashboard"
-  toggleText="dashboards"
-  canAddAsset={canAddDashboard}
+<NavigationHeader bind:show={showMetricsDefs} toggleText="dashboards"
+  >Dashboards</NavigationHeader
 >
-  Dashboards
-</NavigationHeader>
 
 {#if showMetricsDefs && $dashboardNames.data}
   <div
@@ -204,7 +209,7 @@
         dashboardName
       )}
       <NavigationEntry
-        showContextMenu={!$runtimeStore.readOnly}
+        showContextMenu={!$featureFlags.readOnly}
         expandable={false}
         name={dashboardName}
         href={`/dashboard/${dashboardName}`}
@@ -254,6 +259,14 @@
         </svelte:fragment>
       </NavigationEntry>
     {/each}
+    {#if canAddDashboard}
+      <AddAssetButton
+        id="add-dashboard"
+        label="Add dashboard"
+        bold={hasSourceAndModelButNoDashboards}
+        on:click={() => dispatchAddEmptyMetricsDef()}
+      />
+    {/if}
   </div>
   {#if showRenameMetricsDefinitionModal}
     <RenameAssetModal

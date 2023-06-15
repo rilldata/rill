@@ -4,40 +4,64 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
 func CreateCmd(cfg *config.Config) *cobra.Command {
-	var displayName string
+	var name, description string
 
 	createCmd := &cobra.Command{
-		Use:   "create",
-		Short: "Create",
-		Args:  cobra.ExactArgs(1),
+		Use:   "create [<org-name>]",
+		Short: "Create organization",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := client.New(cfg.AdminURL, cfg.AdminToken)
+			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
 			}
 			defer client.Close()
 
-			org, err := client.CreateOrganization(context.Background(), &adminv1.CreateOrganizationRequest{
-				Name:        args[0],
-				Description: displayName,
+			if len(args) > 0 {
+				name = args[0]
+			}
+
+			if len(args) == 0 && cfg.Interactive {
+				err = cmdutil.SetFlagsByInputPrompts(*cmd, "name")
+				if err != nil {
+					return err
+				}
+			}
+
+			res, err := client.CreateOrganization(context.Background(), &adminv1.CreateOrganizationRequest{
+				Name:        name,
+				Description: description,
 			})
+			if err != nil {
+				if !cmdutil.IsNameExistsErr(err) {
+					return err
+				}
+
+				fmt.Printf("Org name %q already exists\n", name)
+				return nil
+			}
+
+			// Switching to the created org
+			err = dotrill.SetDefaultOrg(res.Organization.Name)
 			if err != nil {
 				return err
 			}
 
-			fmt.Printf("Created organization: %v\n", org)
+			cmdutil.PrintlnSuccess("Created organization")
+			cmdutil.TablePrinter(toRow(res.Organization))
 			return nil
 		},
 	}
 	createCmd.Flags().SortFlags = false
-	createCmd.Flags().StringVar(&displayName, "display-name", "", "Display name")
-
+	createCmd.Flags().StringVar(&name, "name", "", "Organization Name")
+	createCmd.Flags().StringVar(&description, "description", "", "Description")
 	return createCmd
 }

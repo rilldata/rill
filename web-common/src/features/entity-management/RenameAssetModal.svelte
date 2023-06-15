@@ -4,14 +4,14 @@
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
   import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceRenameFileAndReconcile,
-  } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
-  import { runtimeStore } from "../../../../web-local/src/lib/application-state-stores/application-store";
+  import {
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceRenameFileAndReconcile,
+  } from "../../runtime-client";
+  import { runtime } from "../../runtime-client/runtime-store";
   import { renameFileArtifact } from "./actions";
   import { getLabel, getRouteFromName } from "./entity-mappers";
   import { isDuplicateName } from "./name-utils";
@@ -25,14 +25,14 @@
 
   let error: string;
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
-  $: getCatalog = useRuntimeServiceGetCatalogEntry(
+  $: runtimeInstanceId = $runtime.instanceId;
+  $: getCatalog = createRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     currentAssetName
   );
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
-  const renameAsset = useRuntimeServiceRenameFileAndReconcile();
+  const renameAsset = createRuntimeServiceRenameFileAndReconcile();
 
   const { form, errors, handleSubmit } = createForm({
     initialValues: {

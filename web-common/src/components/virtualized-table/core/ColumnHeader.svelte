@@ -12,18 +12,21 @@
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { createEventDispatcher, getContext } from "svelte";
   import { fly } from "svelte/transition";
+  import TooltipDescription from "../../tooltip/TooltipDescription.svelte";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
 
   export let pinned = false;
   export let noPin = false;
   export let showDataIcon = false;
-  export let name: string;
+  export let name;
   export let type: string;
+  export let description: string;
   export let header;
   export let position: HeaderPosition = "top";
   export let enableResize = true;
   export let isSelected = false;
+  export let bgClass = "surface";
 
   const config: VirtualizedTableConfig = getContext("config");
   const dispatch = createEventDispatcher();
@@ -35,6 +38,7 @@
 
   $: isDimensionTable = config.table === "DimensionTable";
   $: isDimensionColumn = isDimensionTable && type === "VARCHAR";
+  $: isDeltaColumn = isDimensionTable && typeof name !== "string";
 
   $: textAlignment = isDimensionColumn ? "text-left pl-1" : "text-right pr-1";
 
@@ -45,6 +49,7 @@
 
 <StickyHeader
   {enableResize}
+  {bgClass}
   on:reset-column-width={() => {
     dispatch("reset-column-size", { name });
   }}
@@ -76,7 +81,7 @@
         message: `copied column name "${name}" to clipboard`,
       });
     }}
-    class="
+    class=" 
            flex
            justify-stretch
            select-none
@@ -106,19 +111,36 @@
             : 'overflow-hidden whitespace-nowrap'}
           "
         >
-          {name}
+          {#if typeof name !== "string"}
+            <div class="flex justify-end">
+              <svelte:component this={name} />
+            </div>
+          {:else}
+            {name}
+          {/if}
         </span>
       </div>
-      <TooltipContent slot="tooltip-content">
-        <TooltipTitle>
-          <svelte:fragment slot="name">
-            {name}
-          </svelte:fragment>
-          <svelte:fragment slot="description">
-            {isDimensionTable || showDataIcon ? "" : type}
-          </svelte:fragment>
-        </TooltipTitle>
+      <TooltipContent slot="tooltip-content" maxWidth="280px">
+        {#if !isDimensionTable}
+          <TooltipTitle>
+            <svelte:fragment slot="name">
+              {name}
+            </svelte:fragment>
+            <svelte:fragment slot="description">
+              {showDataIcon ? type : ""}
+            </svelte:fragment>
+          </TooltipTitle>
+        {/if}
+        {#if isDimensionTable && description?.length}
+          <TooltipDescription>
+            {description}
+          </TooltipDescription>
+        {/if}
         <TooltipShortcutContainer>
+          {#if !isDeltaColumn && isDimensionTable}
+            <div>Sort column</div>
+            <Shortcut>Click</Shortcut>
+          {/if}
           <div>
             <StackingWord key="shift">Copy</StackingWord>
             column name to clipboard
@@ -137,14 +159,14 @@
             in:fly={{ duration: 200, y: -8 }}
             style:opacity={isSelected ? 1 : 0}
           >
-            <ArrowDown size="16px" />
+            <ArrowDown size="12px" />
           </div>
         {:else}
           <div
             in:fly={{ duration: 200, y: 8 }}
             style:opacity={isSelected ? 1 : 0}
           >
-            <ArrowDown transform="scale(1 -1)" size="16px" />
+            <ArrowDown transform="scale(1 -1)" size="12px" />
           </div>
         {/if}
       </div>
@@ -172,3 +194,12 @@
     {/if}
   </div>
 </StickyHeader>
+
+<style>
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+</style>

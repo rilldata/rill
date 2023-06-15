@@ -4,6 +4,7 @@ on:
     paths:
       - ".github/workflows/web-test.yml"
       - "web-admin/**"
+      - "web-auth/**"
       - "web-common/**"
       - "web-local/**"
 jobs:
@@ -13,28 +14,91 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Filter modified codepaths
+        uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            admin:
+              - ".github/workflows/web-test.yml"
+              - "web-admin/**"
+            auth:
+              - ".github/workflows/web-test.yml"
+              - "web-auth/**"
+            local:
+              - ".github/workflows/web-test.yml"
+              - "web-local/**"
+            common:
+              - ".github/workflows/web-test.yml"
+              - "web-common/**"
+
       - name: Set up NodeJS
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
+      - name: Set up go for E2E
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20.3
+      - name: go build cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: NPM Install
         run: npm install
 
-      - name: Prettier checks for web
-        run: |-
-          npx prettier --check "web-admin/**/*"
-          npx prettier --check "web-common/**/*"
-          npx prettier --check "web-local/**/*"
+      - name: Build and embed static UI
+        run: make cli
 
       - name: Install browser for UI tests
         run: npx playwright install
 
-      - name: Build the application
-        run: npm run build
+      - name: Prettier checks and lint for web common
+        if: steps.filter.outputs.common == 'true'
+        run: |-
+          npx prettier --check "web-common/**/*"
+          npx eslint web-common --quiet
+          npx svelte-check --workspace web-common --no-tsconfig --ignore "src/components/(data-graphic|table-editable|notifications|column-profile|virtualized-table|menu|modal|chip|overlay|floating-element|data-types|BarAndLabel.svelte|button|preview-table/ConnectedPreviewTable.svelte),src/features/models/workspace/inspector,src/**/workspace,src/features/dashboards/(time-series|leaderboard|time-controls),src/layout/navigation/NavigationEntry.svelte"
 
-      - name: Verify lint of the repo
-        run: npm run lint -w web-local -- --quiet
+      - name: Prettier checks and lint for web local
+        if: steps.filter.outputs.local == 'true'
+        run: |-
+          npx prettier --check "web-local/**/*"
+          npx eslint web-local --quiet
+          npx svelte-check --workspace web-local --no-tsconfig --ignore "src/routes/dev,src/routes/\(application\)/(dashboard|model|source)/[name]"
 
-      - name: Run all tests
-        run: npm run test
+      - name: Prettier checks and lint for web admin
+        if: steps.filter.outputs.admin == 'true'
+        run: |-
+          npx prettier --check "web-admin/**/*"
+          npx eslint web-admin --quiet
+          npx svelte-check --workspace web-admin --no-tsconfig
+
+      - name: Prettier checks and lint for web auth
+        if: steps.filter.outputs.auth == 'true'
+        run: |-
+          npx prettier --check "web-auth/**/*"
+          npx eslint web-auth --quiet
+          npx svelte-check --workspace web-auth --no-tsconfig
+
+      - name: Test web common
+        if: steps.filter.outputs.common == 'true'
+        run: npm run test -w web-common
+
+      - name: Build & Test the web local
+        if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}
+        run: |-
+          SKIP_UI_BUILD=true npm run test
+
+      - name: Build & Test the web admin
+        if: ${{ steps.filter.outputs.admin == 'true' || steps.filter.outputs.common == 'true' }}
+        run: |-
+          npm run build -w web-admin
+          npm run test -w web-admin

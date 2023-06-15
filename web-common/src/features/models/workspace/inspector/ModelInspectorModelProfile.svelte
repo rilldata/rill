@@ -2,51 +2,55 @@
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
+  // import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceGetFile,
-    useQueryServiceTableCardinality,
-    useRuntimeServiceListCatalogEntries,
+    createQueryServiceTableCardinality,
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceGetFile,
+    createRuntimeServiceListCatalogEntries,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { getContext } from "svelte";
-  import { derived, Writable, writable } from "svelte/store";
+  //import { getContext } from "svelte";
+  import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
+  import { runtime } from "../../../../runtime-client/runtime-store";
   import { getTableReferences } from "../../utils/get-table-references";
   import References from "./References.svelte";
   import { combineEntryWithReference } from "./utils";
 
   export let modelName: string;
 
-  const queryHighlight: Writable<QueryHighlightState> = getContext(
-    "rill:app:query-highlight"
-  );
+  //  const queryHighlight: Writable<QueryHighlightState> = getContext(
+  //    "rill:app:query-highlight"
+  //  );
 
-  $: getModel = useRuntimeServiceGetCatalogEntry(
-    $runtimeStore?.instanceId,
+  $: getModel = createRuntimeServiceGetCatalogEntry(
+    $runtime?.instanceId,
     modelName
   );
   let entry;
   // refresh entry value only if the data has changed
   $: entry = $getModel?.data?.entry || entry;
 
-  $: getModelFile = useRuntimeServiceGetFile(
-    $runtimeStore?.instanceId,
+  $: getModelFile = createRuntimeServiceGetFile(
+    $runtime?.instanceId,
     getFilePathFromNameAndType(modelName, EntityType.Model)
   );
 
   $: references = getTableReferences($getModelFile?.data.blob ?? "");
-  $: getAllSources = useRuntimeServiceListCatalogEntries(
-    $runtimeStore?.instanceId,
-    { type: "OBJECT_TYPE_SOURCE" }
+  $: getAllSources = createRuntimeServiceListCatalogEntries(
+    $runtime?.instanceId,
+    {
+      type: "OBJECT_TYPE_SOURCE",
+    }
   );
 
-  $: getAllModels = useRuntimeServiceListCatalogEntries(
-    $runtimeStore?.instanceId,
-    { type: "OBJECT_TYPE_MODEL" }
+  $: getAllModels = createRuntimeServiceListCatalogEntries(
+    $runtime?.instanceId,
+    {
+      type: "OBJECT_TYPE_MODEL",
+    }
   );
 
   // for each reference, match to an existing model or source,
@@ -80,10 +84,7 @@
         [
           writable($thing),
           writable(ref),
-          useQueryServiceTableCardinality(
-            $runtimeStore?.instanceId,
-            $thing.name
-          ),
+          createQueryServiceTableCardinality($runtime?.instanceId, $thing.name),
         ],
         ([$thing, ref, $cardinality]) => ({
           entry: $thing,
@@ -98,22 +99,22 @@
   let showColumns = true;
 
   // toggle state for inspector sections
-  let showSourceTables = true;
+  // let showSourceTables = true;
 
-  function focus(reference) {
-    return () => {
-      // FIXME
-      if (references.length) {
-        queryHighlight.set([reference]);
-      }
-    };
-  }
-  function blur() {
-    queryHighlight.set(undefined);
-  }
+  //  function focus(reference) {
+  //    return () => {
+  //      // FIXME
+  //      if (references.length) {
+  //        queryHighlight.set([reference]);
+  //      }
+  //    };
+  //  }
+  //  function blur() {
+  //    queryHighlight.set(undefined);
+  //  }
 
   // FIXME
-  let modelHasError = false;
+  // let modelHasError = false;
 </script>
 
 <div class="model-profile">

@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
+	"io"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -24,8 +25,11 @@ func (q *RollupInterval) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *RollupInterval) MarshalResult() any {
-	return q.Result
+func (q *RollupInterval) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *RollupInterval) UnmarshalResult(v any) error {
@@ -47,6 +51,7 @@ func (q *RollupInterval) Resolve(ctx context.Context, rt *runtime.Runtime, insta
 		return err
 	}
 	if ctr.Result.Interval == nil {
+		q.Result = &runtimev1.ColumnRollupIntervalResponse{}
 		return nil
 	}
 	r := ctr.Result.Interval
@@ -81,4 +86,8 @@ func (q *RollupInterval) Resolve(ctx context.Context, rt *runtime.Runtime, insta
 		End:      ctr.Result.Max,
 	}
 	return nil
+}
+
+func (q *RollupInterval) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error {
+	return ErrExportNotSupported
 }

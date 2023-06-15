@@ -2,22 +2,22 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { MenuItem } from "@rilldata/web-common/components/menu";
+  import { appStore } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import {
-    getRuntimeServiceGetCatalogEntryQueryKey,
-    useRuntimeServicePutFileAndReconcile,
-    useRuntimeServiceRefreshAndReconcile,
-  } from "@rilldata/web-common/runtime-client";
-  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import {
+    createRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceRefreshAndReconcile,
+    getRuntimeServiceGetCatalogEntryQueryKey,
+  } from "@rilldata/web-common/runtime-client";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { useModelNames } from "../../models/selectors";
   import { createModelFromSource } from "../createModel";
   import { refreshAndReconcile } from "../refreshSource";
@@ -28,11 +28,11 @@
 
   const queryClient = useQueryClient();
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
-  $: modelNames = useModelNames($runtimeStore.instanceId);
+  $: runtimeInstanceId = $runtime.instanceId;
+  $: modelNames = useModelNames($runtime.instanceId);
 
-  const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
-  const createFileMutation = useRuntimeServicePutFileAndReconcile();
+  const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
+  const createFileMutation = createRuntimeServicePutFileAndReconcile();
 
   const handleCreateModel = async () => {
     try {

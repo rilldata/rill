@@ -15,7 +15,7 @@
 
   export let metricsInternalRep: Readable<MetricsInternalRepresentation>;
 
-  $: displayName = $metricsInternalRep.getMetricKey("display_name");
+  $: displayName = $metricsInternalRep.getMetricKey("title");
 
   $: innerDisplayName = displayName;
 
@@ -26,7 +26,7 @@
     onSubmit: async (values) => {
       try {
         $metricsInternalRep.updateMetricsParams({
-          display_name: values.newDisplayName,
+          title: values.newDisplayName,
         });
       } catch (err) {
         console.error(err);
@@ -63,14 +63,15 @@
     </TooltipContent>
   </Tooltip>
   <div class={SELECTOR_CONTAINER.classes} style={SELECTOR_CONTAINER.style}>
-    <form id="display-name-form" autocomplete="off">
+    <form autocomplete="off" id="display-name-form">
       <input
-        type="text"
+        aria-label="Display name"
         bind:value={$form["newDisplayName"]}
-        on:keydown={handleKeydown}
+        class="{SELECTOR_BUTTON_TEXT_CLASSES} placeholder:font-normal placeholder:text-gray-600 font-semibold bg-white w-full hover:bg-gray-200 rounded border border-6 border-gray-200 hover:border-gray-300 hover:text-gray-900 px-2 py-1 h-[34px] {CONFIG_SELECTOR.focus}"
         on:blur={handleSubmit}
+        on:keydown={handleKeydown}
         placeholder={"Inferred from model"}
-        class="{SELECTOR_BUTTON_TEXT_CLASSES} placeholder:font-normal placeholder:text-gray-600 font-semibold bg-white w-full hover:bg-gray-200 rounded border border-6 border-gray-200 hover:border-gray-300  hover:text-gray-900 px-2 py-1 h-[34px] {CONFIG_SELECTOR.focus}"
+        type="text"
       />
     </form>
   </div>

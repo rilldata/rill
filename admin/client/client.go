@@ -2,9 +2,11 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -18,18 +20,26 @@ type Client struct {
 }
 
 // New creates a new Client and opens a connection. You must call Close() when done with the client.
-func New(adminHost, bearerToken string) (*Client, error) {
+func New(adminHost, bearerToken, userAgent string) (*Client, error) {
 	uri, err := url.Parse(adminHost)
 	if err != nil {
 		return nil, err
 	}
 
-	var opts []grpc.DialOption
+	opts := []grpc.DialOption{
+		grpc.WithUserAgent(userAgent),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+	}
 
 	if uri.Scheme == "http" {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	} else {
 		opts = append(opts, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, ""))) // NOTE: Defaults to host's root certs
+		// There must be a port. Default to TLS port.
+		if uri.Port() == "" {
+			uri.Host = fmt.Sprintf("%s:443", uri.Host)
+		}
 	}
 
 	if bearerToken != "" {

@@ -20,6 +20,19 @@ var migrationLockNumber = int64(5103805673824918) // random number
 // Name of the table that tracks migrations.
 var migrationVersionTable = "admin_migration_version"
 
+// FindMigrationVersion returns the current migration version
+func (c *connection) FindMigrationVersion(ctx context.Context) (int, error) {
+	var version int
+	err := c.db.QueryRowxContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&version)
+	if err != nil {
+		if strings.Contains(err.Error(), "does not exist") {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return version, nil
+}
+
 // Migrate runs migrations. It's safe for concurrent invocations.
 // Adapted from: https://github.com/jackc/tern
 func (c *connection) Migrate(ctx context.Context) (err error) {

@@ -12,11 +12,12 @@ import {
   runtimeServiceReconcile,
 } from "@rilldata/web-common/runtime-client";
 import type { Page } from "@sveltejs/kit";
-import type { QueryClient } from "@sveltestack/svelte-query";
-import { get, Readable, Writable } from "svelte/store";
-import type { RuntimeState } from "../../../../web-local/src/lib/application-state-stores/application-store";
-import { invalidateAfterReconcile } from "../../../../web-local/src/lib/svelte-query/invalidation";
+import type { QueryClient } from "@tanstack/svelte-query";
+import { Readable, Writable, get } from "svelte/store";
 import { overlay } from "../../layout/overlay-store";
+import { invalidateAfterReconcile } from "../../runtime-client/invalidation";
+import type { Runtime } from "../../runtime-client/runtime-store";
+import type { FeatureFlags } from "../feature-flags";
 import { getFilePathFromPagePath } from "./entity-mappers";
 import {
   FileArtifactsStore,
@@ -28,18 +29,18 @@ const RECONCILE_OVERLAY_DELAY_MILLISECONDS = 1000;
 
 export async function syncFileSystemPeriodically(
   queryClient: QueryClient,
-  runtimeStore: Writable<RuntimeState>,
+  runtimeStore: Writable<Runtime>,
+  featureFlags: Writable<FeatureFlags>,
   page: Readable<Page<Record<string, string>, string>>,
   fileArtifactsStore: FileArtifactsStore
 ) {
   let syncFileSystemInterval: NodeJS.Timer;
-  let syncFileSystemOnVisibleDocument: () => void;
+  // let syncFileSystemOnVisibleDocument: () => void;
   let afterNavigateRanOnce: boolean;
 
   afterNavigate(async () => {
-    // on first page load, afterNavigate races against the async onMount, which sets the runtimeInstanceId
-    const runtimeInstanceId = await waitForRuntimeInstanceId(runtimeStore);
-    if (get(runtimeStore).readOnly) return;
+    const runtimeInstanceId = get(runtimeStore).instanceId;
+    if (get(featureFlags).readOnly) return;
 
     // on first page load, afterNavigate runs twice, but we only want to run the below code once
     if (afterNavigateRanOnce) return;
@@ -117,17 +118,8 @@ function isPathToAsset(path: string) {
   );
 }
 
-async function waitForRuntimeInstanceId(runtimeStore: Writable<RuntimeState>) {
-  let runtimeInstanceId;
-  while (!runtimeInstanceId) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    runtimeInstanceId = get(runtimeStore).instanceId;
-  }
-  return runtimeInstanceId;
-}
-
 export function addReconcilingOverlay(pagePath: string) {
-  if (pagePath === "/") return;
+  if (!isPathToAsset(pagePath)) return;
 
   const filePath = getFilePathFromPagePath(pagePath);
   const isFileReconcilingStore = getIsFileReconcilingStore(filePath);

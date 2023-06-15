@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
+	"io"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -24,8 +25,16 @@ func (q *TableColumns) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *TableColumns) MarshalResult() any {
-	return q.Result
+func (q *TableColumns) MarshalResult() *runtime.QueryResult {
+	var size int64
+	if len(q.Result) > 0 {
+		// approx
+		size = sizeProtoMessage(q.Result[0]) * int64(len(q.Result))
+	}
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: size,
+	}
 }
 
 func (q *TableColumns) UnmarshalResult(v any) error {
@@ -51,8 +60,9 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 		// views return duplicate column names, so we need to create a temporary table
 		temporaryTableName := tempName("profile_columns_")
 		err = olap.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM "%s" LIMIT 1)`, temporaryTableName, q.TableName),
-			Priority: priority,
+			Query:            fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM "%s" LIMIT 1)`, temporaryTableName, q.TableName),
+			Priority:         priority,
+			ExecutionTimeout: defaultExecutionTimeout,
 		})
 		if err != nil {
 			return err
@@ -60,8 +70,9 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 		defer func() {
 			// NOTE: Using ensuredCtx
 			_ = olap.Exec(ensuredCtx, &drivers.Statement{
-				Query:    `DROP TABLE "` + temporaryTableName + `"`,
-				Priority: priority,
+				Query:            `DROP TABLE "` + temporaryTableName + `"`,
+				Priority:         priority,
+				ExecutionTimeout: defaultExecutionTimeout,
 			})
 		}()
 
@@ -70,7 +81,8 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 				SELECT column_name AS name, data_type AS type
 				FROM information_schema.columns
 				WHERE table_catalog = 'temp' AND table_name = '%s'`, temporaryTableName),
-			Priority: priority,
+			Priority:         priority,
+			ExecutionTimeout: defaultExecutionTimeout,
 		})
 		if err != nil {
 			return err
@@ -91,4 +103,8 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 		q.Result = pcs[0:i]
 		return nil
 	})
+}
+
+func (q *TableColumns) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error {
+	return ErrExportNotSupported
 }

@@ -2,27 +2,30 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"math"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
 )
 
 type Options struct {
-	ConnectionCacheSize  int
-	MetastoreDriver      string
-	MetastoreDSN         string
-	QueryCacheSize       int
-	AllowHostCredentials bool
+	ConnectionCacheSize int
+	MetastoreDriver     string
+	MetastoreDSN        string
+	QueryCacheSizeBytes int64
+	AllowHostAccess     bool
+	SafeSourceRefresh   bool
 }
 
 type Runtime struct {
-	opts         *Options
-	metastore    drivers.Connection
-	logger       *zap.Logger
-	connCache    *connectionCache
-	catalogCache *catalogCache
-	queryCache   *queryCache
+	opts               *Options
+	metastore          drivers.Connection
+	logger             *zap.Logger
+	connCache          *connectionCache
+	migrationMetaCache *migrationMetaCache
+	queryCache         *queryCache
 }
 
 func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
@@ -43,20 +46,23 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 	}
 
 	return &Runtime{
-		opts:         opts,
-		metastore:    metastore,
-		logger:       logger,
-		connCache:    newConnectionCache(opts.ConnectionCacheSize, logger),
-		catalogCache: newCatalogCache(),
-		queryCache:   newQueryCache(opts.QueryCacheSize),
+		opts:               opts,
+		metastore:          metastore,
+		logger:             logger,
+		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger),
+		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
+		queryCache:         newQueryCache(opts.QueryCacheSizeBytes),
 	}, nil
 }
 
+func (r *Runtime) AllowHostAccess() bool {
+	return r.opts.AllowHostAccess
+}
+
 func (r *Runtime) Close() error {
-	err1 := r.metastore.Close()
-	err2 := r.connCache.Close()
-	if err1 != nil {
-		return err1
-	}
-	return err2
+	return errors.Join(
+		r.metastore.Close(),
+		r.connCache.Close(),
+		r.queryCache.close(),
+	)
 }

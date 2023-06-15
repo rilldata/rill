@@ -300,7 +300,7 @@ func (m *Instance) validate(all bool) error {
 	if _, ok := _Instance_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
 		err := InstanceValidationError{
 			field:  "OlapDriver",
-			reason: "value must be in list [duckdb druid]",
+			reason: "value must be in list [duckdb druid motherduck]",
 		}
 		if !all {
 			return err
@@ -313,7 +313,7 @@ func (m *Instance) validate(all bool) error {
 	if _, ok := _Instance_RepoDriver_InLookup[m.GetRepoDriver()]; !ok {
 		err := InstanceValidationError{
 			field:  "RepoDriver",
-			reason: "value must be in list [file metastore]",
+			reason: "value must be in list [file metastore github]",
 		}
 		if !all {
 			return err
@@ -325,9 +325,11 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for EmbedCatalog
 
-	// no validation rules for Env
+	// no validation rules for Variables
 
-	// no validation rules for ProjectEnv
+	// no validation rules for ProjectVariables
+
+	// no validation rules for IngestionLimitBytes
 
 	if len(errors) > 0 {
 		return InstanceMultiError(errors)
@@ -409,13 +411,15 @@ var _ interface {
 var _Instance_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 var _Instance_OlapDriver_InLookup = map[string]struct{}{
-	"duckdb": {},
-	"druid":  {},
+	"duckdb":     {},
+	"druid":      {},
+	"motherduck": {},
 }
 
 var _Instance_RepoDriver_InLookup = map[string]struct{}{
 	"file":      {},
 	"metastore": {},
+	"github":    {},
 }
 
 // Validate checks the field values on ListInstancesRequest with the rules
@@ -948,7 +952,7 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 	if _, ok := _CreateInstanceRequest_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
 		err := CreateInstanceRequestValidationError{
 			field:  "OlapDriver",
-			reason: "value must be in list [duckdb druid]",
+			reason: "value must be in list [duckdb druid motherduck]",
 		}
 		if !all {
 			return err
@@ -961,7 +965,7 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 	if _, ok := _CreateInstanceRequest_RepoDriver_InLookup[m.GetRepoDriver()]; !ok {
 		err := CreateInstanceRequestValidationError{
 			field:  "RepoDriver",
-			reason: "value must be in list [file metastore]",
+			reason: "value must be in list [file metastore github]",
 		}
 		if !all {
 			return err
@@ -973,7 +977,9 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	// no validation rules for EmbedCatalog
 
-	// no validation rules for Env
+	// no validation rules for Variables
+
+	// no validation rules for IngestionLimitBytes
 
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)
@@ -1058,13 +1064,15 @@ var _ interface {
 var _CreateInstanceRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 var _CreateInstanceRequest_OlapDriver_InLookup = map[string]struct{}{
-	"duckdb": {},
-	"druid":  {},
+	"duckdb":     {},
+	"druid":      {},
+	"motherduck": {},
 }
 
 var _CreateInstanceRequest_RepoDriver_InLookup = map[string]struct{}{
 	"file":      {},
 	"metastore": {},
+	"github":    {},
 }
 
 // Validate checks the field values on CreateInstanceResponse with the rules
@@ -1230,6 +1238,8 @@ func (m *DeleteInstanceRequest) validate(all bool) error {
 		}
 		errors = append(errors, err)
 	}
+
+	// no validation rules for DropDb
 
 	if len(errors) > 0 {
 		return DeleteInstanceRequestMultiError(errors)
@@ -1414,6 +1424,296 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = DeleteInstanceResponseValidationError{}
+
+// Validate checks the field values on EditInstanceRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *EditInstanceRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on EditInstanceRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// EditInstanceRequestMultiError, or nil if none found.
+func (m *EditInstanceRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *EditInstanceRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_EditInstanceRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := EditInstanceRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if _, ok := _EditInstanceRequest_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
+		err := EditInstanceRequestValidationError{
+			field:  "OlapDriver",
+			reason: "value must be in list [duckdb druid motherduck]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for OlapDsn
+
+	if _, ok := _EditInstanceRequest_RepoDriver_InLookup[m.GetRepoDriver()]; !ok {
+		err := EditInstanceRequestValidationError{
+			field:  "RepoDriver",
+			reason: "value must be in list [file metastore github]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for RepoDsn
+
+	// no validation rules for EmbedCatalog
+
+	// no validation rules for Variables
+
+	// no validation rules for IngestionLimitBytes
+
+	if len(errors) > 0 {
+		return EditInstanceRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// EditInstanceRequestMultiError is an error wrapping multiple validation
+// errors returned by EditInstanceRequest.ValidateAll() if the designated
+// constraints aren't met.
+type EditInstanceRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m EditInstanceRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m EditInstanceRequestMultiError) AllErrors() []error { return m }
+
+// EditInstanceRequestValidationError is the validation error returned by
+// EditInstanceRequest.Validate if the designated constraints aren't met.
+type EditInstanceRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e EditInstanceRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e EditInstanceRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e EditInstanceRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e EditInstanceRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e EditInstanceRequestValidationError) ErrorName() string {
+	return "EditInstanceRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e EditInstanceRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sEditInstanceRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = EditInstanceRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = EditInstanceRequestValidationError{}
+
+var _EditInstanceRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+var _EditInstanceRequest_OlapDriver_InLookup = map[string]struct{}{
+	"duckdb":     {},
+	"druid":      {},
+	"motherduck": {},
+}
+
+var _EditInstanceRequest_RepoDriver_InLookup = map[string]struct{}{
+	"file":      {},
+	"metastore": {},
+	"github":    {},
+}
+
+// Validate checks the field values on EditInstanceResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *EditInstanceResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on EditInstanceResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// EditInstanceResponseMultiError, or nil if none found.
+func (m *EditInstanceResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *EditInstanceResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetInstance()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, EditInstanceResponseValidationError{
+					field:  "Instance",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, EditInstanceResponseValidationError{
+					field:  "Instance",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetInstance()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return EditInstanceResponseValidationError{
+				field:  "Instance",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return EditInstanceResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// EditInstanceResponseMultiError is an error wrapping multiple validation
+// errors returned by EditInstanceResponse.ValidateAll() if the designated
+// constraints aren't met.
+type EditInstanceResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m EditInstanceResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m EditInstanceResponseMultiError) AllErrors() []error { return m }
+
+// EditInstanceResponseValidationError is the validation error returned by
+// EditInstanceResponse.Validate if the designated constraints aren't met.
+type EditInstanceResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e EditInstanceResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e EditInstanceResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e EditInstanceResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e EditInstanceResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e EditInstanceResponseValidationError) ErrorName() string {
+	return "EditInstanceResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e EditInstanceResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sEditInstanceResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = EditInstanceResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = EditInstanceResponseValidationError{}
 
 // Validate checks the field values on ListFilesRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -2585,6 +2885,799 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = RenameFileResponseValidationError{}
+
+// Validate checks the field values on Example with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Example) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Example with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in ExampleMultiError, or nil if none found.
+func (m *Example) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Example) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for Title
+
+	// no validation rules for Description
+
+	if len(errors) > 0 {
+		return ExampleMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExampleMultiError is an error wrapping multiple validation errors returned
+// by Example.ValidateAll() if the designated constraints aren't met.
+type ExampleMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExampleMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExampleMultiError) AllErrors() []error { return m }
+
+// ExampleValidationError is the validation error returned by Example.Validate
+// if the designated constraints aren't met.
+type ExampleValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExampleValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExampleValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExampleValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExampleValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExampleValidationError) ErrorName() string { return "ExampleValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExampleValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExample.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExampleValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExampleValidationError{}
+
+// Validate checks the field values on ListExamplesRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListExamplesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListExamplesRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListExamplesRequestMultiError, or nil if none found.
+func (m *ListExamplesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListExamplesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ListExamplesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListExamplesRequestMultiError is an error wrapping multiple validation
+// errors returned by ListExamplesRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ListExamplesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListExamplesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListExamplesRequestMultiError) AllErrors() []error { return m }
+
+// ListExamplesRequestValidationError is the validation error returned by
+// ListExamplesRequest.Validate if the designated constraints aren't met.
+type ListExamplesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListExamplesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListExamplesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListExamplesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListExamplesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListExamplesRequestValidationError) ErrorName() string {
+	return "ListExamplesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListExamplesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListExamplesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListExamplesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListExamplesRequestValidationError{}
+
+// Validate checks the field values on ListExamplesResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListExamplesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListExamplesResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListExamplesResponseMultiError, or nil if none found.
+func (m *ListExamplesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListExamplesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetExamples() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListExamplesResponseValidationError{
+						field:  fmt.Sprintf("Examples[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListExamplesResponseValidationError{
+						field:  fmt.Sprintf("Examples[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListExamplesResponseValidationError{
+					field:  fmt.Sprintf("Examples[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListExamplesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListExamplesResponseMultiError is an error wrapping multiple validation
+// errors returned by ListExamplesResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ListExamplesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListExamplesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListExamplesResponseMultiError) AllErrors() []error { return m }
+
+// ListExamplesResponseValidationError is the validation error returned by
+// ListExamplesResponse.Validate if the designated constraints aren't met.
+type ListExamplesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListExamplesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListExamplesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListExamplesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListExamplesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListExamplesResponseValidationError) ErrorName() string {
+	return "ListExamplesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListExamplesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListExamplesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListExamplesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListExamplesResponseValidationError{}
+
+// Validate checks the field values on UnpackExampleRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UnpackExampleRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UnpackExampleRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UnpackExampleRequestMultiError, or nil if none found.
+func (m *UnpackExampleRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UnpackExampleRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_UnpackExampleRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := UnpackExampleRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := UnpackExampleRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Force
+
+	if len(errors) > 0 {
+		return UnpackExampleRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// UnpackExampleRequestMultiError is an error wrapping multiple validation
+// errors returned by UnpackExampleRequest.ValidateAll() if the designated
+// constraints aren't met.
+type UnpackExampleRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UnpackExampleRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UnpackExampleRequestMultiError) AllErrors() []error { return m }
+
+// UnpackExampleRequestValidationError is the validation error returned by
+// UnpackExampleRequest.Validate if the designated constraints aren't met.
+type UnpackExampleRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UnpackExampleRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UnpackExampleRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UnpackExampleRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UnpackExampleRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UnpackExampleRequestValidationError) ErrorName() string {
+	return "UnpackExampleRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UnpackExampleRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUnpackExampleRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UnpackExampleRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UnpackExampleRequestValidationError{}
+
+var _UnpackExampleRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on UnpackExampleResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UnpackExampleResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UnpackExampleResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UnpackExampleResponseMultiError, or nil if none found.
+func (m *UnpackExampleResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UnpackExampleResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return UnpackExampleResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// UnpackExampleResponseMultiError is an error wrapping multiple validation
+// errors returned by UnpackExampleResponse.ValidateAll() if the designated
+// constraints aren't met.
+type UnpackExampleResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UnpackExampleResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UnpackExampleResponseMultiError) AllErrors() []error { return m }
+
+// UnpackExampleResponseValidationError is the validation error returned by
+// UnpackExampleResponse.Validate if the designated constraints aren't met.
+type UnpackExampleResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UnpackExampleResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UnpackExampleResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UnpackExampleResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UnpackExampleResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UnpackExampleResponseValidationError) ErrorName() string {
+	return "UnpackExampleResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UnpackExampleResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUnpackExampleResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UnpackExampleResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UnpackExampleResponseValidationError{}
+
+// Validate checks the field values on UnpackEmptyRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UnpackEmptyRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UnpackEmptyRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UnpackEmptyRequestMultiError, or nil if none found.
+func (m *UnpackEmptyRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UnpackEmptyRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_UnpackEmptyRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := UnpackEmptyRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Title
+
+	// no validation rules for Force
+
+	if len(errors) > 0 {
+		return UnpackEmptyRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// UnpackEmptyRequestMultiError is an error wrapping multiple validation errors
+// returned by UnpackEmptyRequest.ValidateAll() if the designated constraints
+// aren't met.
+type UnpackEmptyRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UnpackEmptyRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UnpackEmptyRequestMultiError) AllErrors() []error { return m }
+
+// UnpackEmptyRequestValidationError is the validation error returned by
+// UnpackEmptyRequest.Validate if the designated constraints aren't met.
+type UnpackEmptyRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UnpackEmptyRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UnpackEmptyRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UnpackEmptyRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UnpackEmptyRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UnpackEmptyRequestValidationError) ErrorName() string {
+	return "UnpackEmptyRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UnpackEmptyRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUnpackEmptyRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UnpackEmptyRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UnpackEmptyRequestValidationError{}
+
+var _UnpackEmptyRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on UnpackEmptyResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UnpackEmptyResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UnpackEmptyResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UnpackEmptyResponseMultiError, or nil if none found.
+func (m *UnpackEmptyResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UnpackEmptyResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return UnpackEmptyResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// UnpackEmptyResponseMultiError is an error wrapping multiple validation
+// errors returned by UnpackEmptyResponse.ValidateAll() if the designated
+// constraints aren't met.
+type UnpackEmptyResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UnpackEmptyResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UnpackEmptyResponseMultiError) AllErrors() []error { return m }
+
+// UnpackEmptyResponseValidationError is the validation error returned by
+// UnpackEmptyResponse.Validate if the designated constraints aren't met.
+type UnpackEmptyResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UnpackEmptyResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UnpackEmptyResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UnpackEmptyResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UnpackEmptyResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UnpackEmptyResponseValidationError) ErrorName() string {
+	return "UnpackEmptyResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UnpackEmptyResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUnpackEmptyResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UnpackEmptyResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UnpackEmptyResponseValidationError{}
 
 // Validate checks the field values on CatalogEntry with the rules defined in
 // the proto definition for this message. If any rules are violated, the first

@@ -1,3 +1,8 @@
+import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
+import {
+  fetchWrapper,
+  FetchWrapperOptions,
+} from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { RequestQueueEntry } from "@rilldata/web-common/runtime-client/http-request-queue/HttpRequestQueueTypes";
 import {
   getHeapByName,
@@ -11,11 +16,6 @@ import {
   getPriority,
   InactivePriority,
 } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
-import {
-  fetchWrapper,
-  FetchWrapperOptions,
-} from "@rilldata/web-local/lib/util/fetchWrapper";
-import { appQueryStatusStore } from "../../../../web-local/src/lib/application-state-stores/application-store";
 
 // Examples:
 // v1/instances/id/queries/columns-profile/tables/table-name
@@ -44,11 +44,9 @@ export class HttpRequestQueue {
   private readonly nameHeap = getHeapByName();
   private activeCount = 0;
 
-  public constructor(private readonly urlBase: string) {}
-
   public add(requestOptions: FetchWrapperOptions) {
     // prepend after parsing to make parsing faster
-    requestOptions.url = `${this.urlBase}${requestOptions.url}`;
+    requestOptions.url = `${requestOptions?.baseUrl}${requestOptions.url}`;
 
     const urlMatch = UrlExtractorRegex.exec(requestOptions.url);
 

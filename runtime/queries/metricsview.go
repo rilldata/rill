@@ -2,7 +2,10 @@ package queries
 
 import (
 	"context"
+	"encoding/csv"
+	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -27,11 +30,48 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 	return obj.GetMetricsView(), nil
 }
 
+// resolveMeasures returns the selected measures
+func resolveMeasures(mv *runtimev1.MetricsView, inlines []*runtimev1.InlineMeasure, selectedNames []string) ([]*runtimev1.MetricsView_Measure, error) {
+	// Build combined measures
+	ms := make([]*runtimev1.MetricsView_Measure, len(selectedNames))
+	for i, n := range selectedNames {
+		found := false
+		// Search in the inlines (take precedence)
+		for _, m := range inlines {
+			if m.Name == n {
+				ms[i] = &runtimev1.MetricsView_Measure{
+					Name:       m.Name,
+					Expression: m.Expression,
+				}
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+		// Search in the metrics view
+		for _, m := range mv.Measures {
+			if m.Name == n {
+				ms[i] = m
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("measure does not exist: '%s'", n)
+		}
+	}
+
+	return ms, nil
+}
+
 func metricsQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql string, args []any) ([]*runtimev1.MetricsViewColumn, []*structpb.Struct, error) {
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    sql,
-		Args:     args,
-		Priority: priority,
+		Query:            sql,
+		Args:             args,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
@@ -86,12 +126,12 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 // buildFilterClauseForMetricsViewFilter builds a SQL string of conditions joined with AND.
 // Unless the result is empty, it is prefixed with "AND".
 // I.e. it has the format "AND (...) AND (...) ...".
-func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter) (string, []any, error) {
+func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter, dialect drivers.Dialect) (string, []any, error) {
 	var clauses []string
 	var args []any
 
 	if filter != nil && filter.Include != nil {
-		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Include, false)
+		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Include, false, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -100,7 +140,7 @@ func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter) 
 	}
 
 	if filter != nil && filter.Exclude != nil {
-		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Exclude, true)
+		clause, clauseArgs, err := buildFilterClauseForConditions(filter.Exclude, true, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -112,12 +152,12 @@ func buildFilterClauseForMetricsViewFilter(filter *runtimev1.MetricsViewFilter) 
 }
 
 // buildFilterClauseForConditions returns a string with the format "AND (...) AND (...) ..."
-func buildFilterClauseForConditions(conds []*runtimev1.MetricsViewFilter_Cond, exclude bool) (string, []any, error) {
+func buildFilterClauseForConditions(conds []*runtimev1.MetricsViewFilter_Cond, exclude bool, dialect drivers.Dialect) (string, []any, error) {
 	var clauses []string
 	var args []any
 
 	for _, cond := range conds {
-		condClause, condArgs, err := buildFilterClauseForCondition(cond, exclude)
+		condClause, condArgs, err := buildFilterClauseForCondition(cond, exclude, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -132,7 +172,7 @@ func buildFilterClauseForConditions(conds []*runtimev1.MetricsViewFilter_Cond, e
 }
 
 // buildFilterClauseForCondition returns a string with the format "AND (...)"
-func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclude bool) (string, []any, error) {
+func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclude bool, dialect drivers.Dialect) (string, []any, error) {
 	var clauses []string
 	var args []any
 
@@ -171,11 +211,15 @@ func buildFilterClauseForCondition(cond *runtimev1.MetricsViewFilter_Cond, exclu
 	// Build "dim [NOT] ILIKE ?"
 	if len(cond.Like) > 0 {
 		for _, val := range cond.Like {
-			// Add arg
-			args = append(args, val)
+			var clause string
+			if dialect == drivers.DialectDruid {
+				// Druid does not support ILIKE
+				clause = fmt.Sprintf("LOWER(%s) %s LIKE LOWER(?)", name, notKeyword)
+			} else {
+				clause = fmt.Sprintf("%s %s ILIKE ?", name, notKeyword)
+			}
 
-			// Add clause
-			clause := fmt.Sprintf("%s %s ILIKE ?", name, notKeyword)
+			args = append(args, val)
 			clauses = append(clauses, clause)
 		}
 	}
@@ -217,4 +261,46 @@ func repeatString(val string, n int) []string {
 		res[i] = val
 	}
 	return res
+}
+
+func writeCSV(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writer io.Writer) error {
+	w := csv.NewWriter(writer)
+
+	record := make([]string, 0, len(meta))
+	for _, field := range meta {
+		record = append(record, field.Name)
+	}
+	if err := w.Write(record); err != nil {
+		return err
+	}
+	record = record[:0]
+
+	for _, structs := range data {
+		for _, field := range meta {
+			pbvalue := structs.Fields[field.Name]
+			switch pbvalue.GetKind().(type) {
+			case *structpb.Value_StructValue:
+				bts, err := json.Marshal(pbvalue)
+				if err != nil {
+					return err
+				}
+
+				record = append(record, string(bts))
+			case *structpb.Value_NullValue:
+				record = append(record, "")
+			default:
+				record = append(record, fmt.Sprintf("%v", pbvalue.AsInterface()))
+			}
+		}
+
+		if err := w.Write(record); err != nil {
+			return err
+		}
+
+		record = record[:0]
+	}
+
+	w.Flush()
+
+	return nil
 }

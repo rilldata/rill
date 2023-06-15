@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -29,8 +31,11 @@ func (q *ColumnTimeRange) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnTimeRange) MarshalResult() any {
-	return q.Result
+func (q *ColumnTimeRange) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *ColumnTimeRange) UnmarshalResult(v any) error {
@@ -43,24 +48,32 @@ func (q *ColumnTimeRange) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	rangeSQL := fmt.Sprintf(
-		"SELECT min(%[1]s) as min, max(%[1]s) as max, max(%[1]s) - min(%[1]s) as interval FROM %[2]s",
-		safeName(q.ColumnName),
-		safeName(q.TableName),
-	)
-
 	olap, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
 
-	if olap.Dialect() != drivers.DialectDuckDB {
+	switch olap.Dialect() {
+	case drivers.DialectDuckDB:
+		return q.resolveDuckDB(ctx, olap, priority)
+	case drivers.DialectDruid:
+		return q.resolveDruid(ctx, olap, priority)
+	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
+}
+
+func (q *ColumnTimeRange) resolveDuckDB(ctx context.Context, olap drivers.OLAPStore, priority int) error {
+	rangeSQL := fmt.Sprintf(
+		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", max(%[1]s) - min(%[1]s) as \"interval\" FROM %[2]s",
+		safeName(q.ColumnName),
+		safeName(q.TableName),
+	)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    rangeSQL,
-		Priority: priority,
+		Query:            rangeSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err
@@ -81,7 +94,7 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 			}
 			summary.Min = timestamppb.New(minTime)
 			summary.Max = timestamppb.New(rowMap["max"].(time.Time))
-			summary.Interval, err = handleInterval(rowMap["interval"])
+			summary.Interval, err = handleDuckDBInterval(rowMap["interval"])
 			if err != nil {
 				return err
 			}
@@ -98,7 +111,7 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	return errors.New("no rows returned")
 }
 
-func handleInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, error) {
+func handleDuckDBInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, error) {
 	switch i := interval.(type) {
 	case duckdb.Interval:
 		result := new(runtimev1.TimeRangeSummary_Interval)
@@ -113,4 +126,94 @@ func handleInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, error) 
 		return result, nil
 	}
 	return nil, fmt.Errorf("cannot handle interval type %T", interval)
+}
+
+func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPStore, priority int) error {
+	var minTime, maxTime time.Time
+	group, ctx := errgroup.WithContext(ctx)
+
+	group.Go(func() error {
+		minSQL := fmt.Sprintf(
+			"SELECT min(%[1]s) as \"min\" FROM %[2]s",
+			safeName(q.ColumnName),
+			safeName(q.TableName),
+		)
+
+		rows, err := olap.Execute(ctx, &drivers.Statement{
+			Query:            minSQL,
+			Priority:         priority,
+			ExecutionTimeout: defaultExecutionTimeout,
+		})
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		if rows.Next() {
+			err = rows.Scan(&minTime)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = rows.Err()
+			if err != nil {
+				return err
+			}
+			return errors.New("no rows returned for min time")
+		}
+
+		return nil
+	})
+
+	group.Go(func() error {
+		maxSQL := fmt.Sprintf(
+			"SELECT max(%[1]s) as \"max\" FROM %[2]s",
+			safeName(q.ColumnName),
+			safeName(q.TableName),
+		)
+
+		rows, err := olap.Execute(ctx, &drivers.Statement{
+			Query:            maxSQL,
+			Priority:         priority,
+			ExecutionTimeout: defaultExecutionTimeout,
+		})
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		if rows.Next() {
+			err = rows.Scan(&maxTime)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = rows.Err()
+			if err != nil {
+				return err
+			}
+			return errors.New("no rows returned for max time")
+		}
+
+		return nil
+	})
+
+	err := group.Wait()
+	if err != nil {
+		return err
+	}
+
+	summary := &runtimev1.TimeRangeSummary{}
+	summary.Min = timestamppb.New(minTime)
+	summary.Max = timestamppb.New(maxTime)
+	summary.Interval = &runtimev1.TimeRangeSummary_Interval{
+		Micros: maxTime.Sub(minTime).Microseconds(),
+	}
+	q.Result = summary
+
+	return nil
+}
+
+func (q *ColumnTimeRange) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error {
+	return ErrExportNotSupported
 }

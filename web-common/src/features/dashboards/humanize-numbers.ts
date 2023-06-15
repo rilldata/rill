@@ -2,10 +2,15 @@
 // Current dash persion has `prefix` key in JSON to add currecny etc.
 // We can provide a dropdown option in the table?? or regex??
 
-import type { LeaderboardValue } from "./dashboard-stores";
+import { humanizedFormatterFactory } from "@rilldata/web-common/lib/number-formatting/humanizer";
+import {
+  FormatterFactoryOptions,
+  NumberKind,
+} from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+import { PerRangeFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/per-range";
 
 const shortHandSymbols = ["Q", "T", "B", "M", "k", "none"] as const;
-export type ShortHandSymbols = typeof shortHandSymbols[number];
+export type ShortHandSymbols = (typeof shortHandSymbols)[number];
 
 interface HumanizeOptions {
   scale?: ShortHandSymbols;
@@ -15,21 +20,11 @@ interface HumanizeOptions {
 
 type formatterOptions = Intl.NumberFormatOptions & HumanizeOptions;
 
-const shortHandMap = {
-  Q: 1.0e15,
-  T: 1.0e12,
-  B: 1.0e9,
-  M: 1.0e6,
-  k: 1.0e3,
-  none: 1,
-};
-
 export enum NicelyFormattedTypes {
   HUMANIZE = "humanize",
   NONE = "none",
   CURRENCY = "currency_usd",
   PERCENTAGE = "percentage",
-  DECIMAL = "comma_separators",
 }
 
 interface ColFormatSpec {
@@ -51,194 +46,7 @@ export const nicelyFormattedTypesSelectorOptions = [
     value: NicelyFormattedTypes.PERCENTAGE,
     label: "Percentage",
   },
-  { value: NicelyFormattedTypes.DECIMAL, label: "Decimal" },
 ];
-
-const DEFAULT_OPTIONS = {
-  locale: "en-US",
-  style: "decimal",
-  currency: "USD",
-  maximumFractionDigits: 2,
-  currencyDisplay: "narrowSymbol",
-  currencySign: "standard",
-};
-
-function getNumberFormatter(
-  type: NicelyFormattedTypes,
-  options?: formatterOptions
-): Intl.NumberFormat {
-  const o = { ...DEFAULT_OPTIONS, ...(options || {}) };
-
-  if (type == NicelyFormattedTypes.CURRENCY) {
-    o.style = "currency";
-  } else if (type == NicelyFormattedTypes.PERCENTAGE) {
-    o.style = "percent";
-    o.maximumFractionDigits = 4;
-  }
-  const { locale, ...opts } = o;
-  return new Intl.NumberFormat(locale, opts);
-}
-
-function formatNicely(
-  value: number,
-  type: NicelyFormattedTypes,
-  options?: formatterOptions
-): string {
-  const formatterOptions = Object.assign({}, options);
-  if (options?.excludeDecimalZeros) {
-    delete formatterOptions["excludeDecimalZeros"];
-  }
-
-  const formatter = getNumberFormatter(type, formatterOptions);
-  return formatter.format(value);
-}
-
-function convertToShorthand(value: number): string | number {
-  if (Math.abs(value) < 1000)
-    return formatNicely(value, NicelyFormattedTypes.DECIMAL);
-
-  // Fifteen Zeros for Quadrillion
-  return Math.abs(value) >= 1.0e15
-    ? (value / 1.0e15).toFixed(1) + "Q"
-    : // Twelve Zeros for Trillions
-    Math.abs(value) >= 1.0e12
-    ? (value / 1.0e12).toFixed(1) + "T"
-    : // Nine Zeroes for Billions
-    Math.abs(value) >= 1.0e9
-    ? (value / 1.0e9).toFixed(1) + "B"
-    : // Six Zeroes for Millions
-    Math.abs(value) >= 1.0e6
-    ? (value / 1.0e6).toFixed(1) + "M"
-    : // Three Zeroes for Thousands
-    Math.abs(value) >= 1.0e3
-    ? (value / 1.0e3).toFixed(1) + "k"
-    : value;
-}
-
-function getScaleForValue(value: number): ShortHandSymbols {
-  return Math.abs(value) >= 1.0e15
-    ? "Q"
-    : Math.abs(value) >= 1.0e12
-    ? "T"
-    : Math.abs(value) >= 1.0e9
-    ? "B"
-    : Math.abs(value) >= 1.0e6
-    ? "M"
-    : Math.abs(value) >= 1.0e3
-    ? "k"
-    : "none";
-}
-
-/*
-  Format a single value using the given type and options
-*/
-export function humanizeDataType(
-  value: unknown,
-  type: NicelyFormattedTypes,
-  options?: formatterOptions
-) {
-  let formattedValue;
-  if (typeof value != "number" || type == NicelyFormattedTypes.NONE)
-    return value;
-  else if (type == NicelyFormattedTypes.HUMANIZE) {
-    formattedValue = convertToShorthand(value);
-  } else if (type == NicelyFormattedTypes.CURRENCY) {
-    formattedValue = "$" + convertToShorthand(value);
-  } else {
-    return formatNicely(value, type, options);
-  }
-
-  if (formattedValue && options?.excludeDecimalZeros) {
-    return formattedValue.replace(".0", "");
-  } else {
-    return formattedValue;
-  }
-}
-
-function determineScaleForValues(values: number[]): ShortHandSymbols {
-  let numberValues = values;
-  const nullIndex = values.indexOf(null);
-  if (nullIndex !== -1) {
-    numberValues = values.slice(0, nullIndex);
-  }
-
-  // Convert negative numbers to absolute
-  numberValues = numberValues.map((v) => Math.abs(v)).sort((a, b) => b - a);
-
-  const half = Math.floor(numberValues.length / 2);
-  let median: number;
-  if (numberValues.length % 2) median = numberValues[half];
-  else median = (numberValues[half - 1] + numberValues[half]) / 2.0;
-
-  let scaleForMax = getScaleForValue(numberValues[0]);
-  while (scaleForMax != shortHandSymbols[shortHandSymbols.length - 1]) {
-    const medianShorthand = (
-      Math.abs(median) / shortHandMap[scaleForMax]
-    ).toFixed(1);
-
-    const numDigitsInMedian = medianShorthand.toString().split(".")[0].length;
-    if (numDigitsInMedian >= 1) {
-      return scaleForMax;
-    } else {
-      scaleForMax = shortHandSymbols[shortHandSymbols.indexOf(scaleForMax) + 1];
-    }
-  }
-  return scaleForMax;
-}
-
-function applyScaleOnValues(values: number[], scale: ShortHandSymbols) {
-  if (scale == shortHandSymbols[shortHandSymbols.length - 1]) {
-    const formatter = getNumberFormatter(NicelyFormattedTypes.DECIMAL);
-    return values.map((v) => {
-      if (v === null) return "∅";
-      else return formatter.format(v);
-    });
-  }
-  return values.map((v) => {
-    if (v === null) return "∅";
-    const shortHandNumber = v / shortHandMap[scale];
-    let shortHandValue: string;
-    if (Math.abs(shortHandNumber) < 0.1) {
-      shortHandValue = "<0.1";
-    } else {
-      shortHandValue = shortHandNumber.toFixed(1);
-    }
-
-    return shortHandValue + scale;
-  });
-}
-
-function humanizeGroupValuesUtil(
-  values: number[],
-  type: NicelyFormattedTypes,
-  options?: formatterOptions
-) {
-  if (!values.length) return values;
-  if (type == NicelyFormattedTypes.NONE) return values;
-  else if (type == NicelyFormattedTypes.HUMANIZE) {
-    let scale;
-    if (options?.scale) {
-      scale = options.scale;
-    } else scale = determineScaleForValues(values);
-    return applyScaleOnValues(values, scale);
-  } else if (type == NicelyFormattedTypes.CURRENCY) {
-    let scale;
-    if (options?.scale) {
-      scale = options.scale;
-    } else scale = determineScaleForValues(values);
-    return applyScaleOnValues(values, scale).map((v) => "$" + v);
-  } else {
-    let formatterOptions = {};
-    formatterOptions = Object.assign({}, options);
-    delete formatterOptions["scale"];
-    delete formatterOptions["columnName"];
-    const formatter = getNumberFormatter(type, formatterOptions);
-    return values.map((v) => {
-      if (v === null) return "∅";
-      else return formatter.format(v);
-    });
-  }
-}
 
 export function humanizeGroupValues(
   values: Array<Record<string, number | string>>,
@@ -252,11 +60,7 @@ export function humanizeGroupValues(
   if (!areAllNumbers) return values;
 
   numValues = (numValues as number[]).sort((a, b) => b - a);
-  const formattedValues = humanizeGroupValuesUtil(
-    numValues as number[],
-    type,
-    options
-  );
+  const formattedValues = humanizeGroupValuesUtil2(numValues as number[], type);
 
   const formattedValueKey = "__formatted_" + valueKey;
   const humanizedValues = values.map((v) => {
@@ -282,23 +86,113 @@ export function humanizeGroupByColumns(
   }, values);
 }
 
-export function getScaleForLeaderboard(
-  leaderboard: Map<string, Array<LeaderboardValue>>
+// NOTE: the following are adapters that I think fit the API
+// used by the existing humanizer, but I'm not sure of the
+// exact details, nor am I totally confident about the options
+// passed in at all the relevant call sites, so I've added
+// thes adapters rather than just pave over the existing functions.
+// This really needs to be reviewed by Dhiraj, at which point we
+// can deprecate any left over code that is no longer needed.
+
+export const nicelyFormattedTypesToNumberKind = (
+  type: NicelyFormattedTypes | string
+) => {
+  switch (type) {
+    case NicelyFormattedTypes.CURRENCY:
+      return NumberKind.DOLLAR;
+
+    case NicelyFormattedTypes.PERCENTAGE:
+      return NumberKind.PERCENT;
+
+    default:
+      // captures:
+      // NicelyFormattedTypes.NONE
+      // NicelyFormattedTypes.HUMANIZE
+      return NumberKind.ANY;
+  }
+};
+
+export function humanizeDataType(
+  value: unknown,
+  type: NicelyFormattedTypes,
+  options?: FormatterFactoryOptions
+): string {
+  if (value === undefined || value === null) return "";
+  if (typeof value != "number") return value.toString();
+
+  const numberKind = nicelyFormattedTypesToNumberKind(type);
+
+  let innerOptions: FormatterFactoryOptions = options;
+  if (type === NicelyFormattedTypes.NONE) {
+    innerOptions = {
+      strategy: "none",
+      numberKind,
+      padWithInsignificantZeros: false,
+    };
+  } else if (options === undefined) {
+    innerOptions = {
+      strategy: "default",
+      numberKind,
+    };
+  } else {
+    innerOptions = {
+      strategy: "default",
+      ...options,
+      numberKind,
+    };
+  }
+  return humanizedFormatterFactory([value], innerOptions).stringFormat(value);
+}
+
+/** This function is used primarily in the leaderboard and the detail tables. */
+function humanizeGroupValuesUtil2(
+  values: number[],
+  type: NicelyFormattedTypes
 ) {
-  if (!leaderboard) return "none";
+  if (!values.length) return values;
+  if (type == NicelyFormattedTypes.NONE) return values;
 
-  const numValues = [...leaderboard.values()]
-    // use the first five dimensions as the sample
-    .slice(0, 5)
-    // Take only first 7 values which are shown as input
-    .map((values) => values.slice(0, 7))
-    .flat()
-    .map((values) => values.value);
+  const numberKind = nicelyFormattedTypesToNumberKind(type);
 
-  const areAllNumbers = numValues.every((e) => typeof e === "number");
-  if (!areAllNumbers) return "none";
+  const innerOptions: FormatterFactoryOptions = {
+    strategy: "default",
+    numberKind,
+  };
 
-  const sortedValues = numValues.sort((a, b) => b - a);
+  const formatter = humanizedFormatterFactory(values, innerOptions);
 
-  return determineScaleForValues(sortedValues);
+  return values.map((v) => {
+    if (v === null) return "∅";
+    else return formatter.stringFormat(v);
+  });
+}
+
+/** formatter for the comparison percentage differences */
+export function formatMeasurePercentageDifference(
+  value,
+  method = "partsFormat"
+) {
+  if (Math.abs(value * 100) < 1 && value !== 0) {
+    return method === "partsFormat"
+      ? { percent: "%", neg: "", int: "<1" }
+      : "<1%";
+  } else if (value === 0) {
+    return method === "partsFormat" ? { percent: "%", neg: "", int: 0 } : "0%";
+  }
+  const factory = new PerRangeFormatter([], {
+    strategy: "perRange",
+    rangeSpecs: [
+      {
+        minMag: -2,
+        supMag: 3,
+        maxDigitsRight: 1,
+        baseMagnitude: 0,
+        padWithInsignificantZeros: false,
+      },
+    ],
+    defaultMaxDigitsRight: 0,
+    numberKind: NumberKind.PERCENT,
+  });
+
+  return factory[method](value);
 }

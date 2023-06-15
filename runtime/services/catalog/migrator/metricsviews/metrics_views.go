@@ -27,11 +27,11 @@ const (
 
 type metricsViewMigrator struct{}
 
-func (m *metricsViewMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, env map[string]string, catalogObj *drivers.CatalogEntry) error {
+func (m *metricsViewMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options, catalogObj *drivers.CatalogEntry) error {
 	return nil
 }
 
-func (m *metricsViewMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, env map[string]string, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
+func (m *metricsViewMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options, oldCatalogObj, newCatalogObj *drivers.CatalogEntry) error {
 	return nil
 }
 
@@ -85,7 +85,19 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 		}
 	}
 
+	measureNames := make(map[string]bool)
 	for i, measure := range mv.Measures {
+		if _, ok := measureNames[measure.Name]; ok {
+			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
+				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
+				FilePath:     catalog.Path,
+				Message:      "duplicate measure name",
+				PropertyPath: []string{"Measures", strconv.Itoa(i)},
+			})
+			continue
+		}
+		measureNames[measure.Name] = true
+
 		err := validateMeasure(ctx, olap, model, measure)
 		if err != nil {
 			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
@@ -119,7 +131,7 @@ func (m *metricsViewMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLA
 
 func validateMeasure(ctx context.Context, olap drivers.OLAPStore, model *drivers.Table, measure *runtimev1.MetricsView_Measure) error {
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT %s from %s", measure.Expression, model.Name),
+		Query:  fmt.Sprintf("SELECT %s from \"%s\"", measure.Expression, model.Name),
 		DryRun: true,
 	})
 	return err

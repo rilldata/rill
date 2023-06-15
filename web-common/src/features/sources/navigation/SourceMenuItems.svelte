@@ -14,28 +14,28 @@
     useSourceFromYaml,
     useSourceNames,
   } from "@rilldata/web-common/features/sources/selectors";
+  import { appStore } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import {
-    getRuntimeServiceGetCatalogEntryQueryKey,
-    useRuntimeServiceDeleteFileAndReconcile,
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndReconcile,
-    useRuntimeServiceRefreshAndReconcile,
-    V1ReconcileResponse,
-    V1Source,
-  } from "@rilldata/web-common/runtime-client";
-  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
-  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import {
+    createRuntimeServiceDeleteFileAndReconcile,
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceRefreshAndReconcile,
+    getRuntimeServiceGetCatalogEntryQueryKey,
+    V1ReconcileResponse,
+    V1Source,
+  } from "@rilldata/web-common/runtime-client";
+  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { getName } from "../../entity-management/name-utils";
   import { EntityType } from "../../entity-management/types";
@@ -50,11 +50,11 @@
 
   const queryClient = useQueryClient();
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
+  $: runtimeInstanceId = $runtime.instanceId;
 
   const dispatch = createEventDispatcher();
 
-  $: getSource = useRuntimeServiceGetCatalogEntry(
+  $: getSource = createRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     sourceName
   );
@@ -62,21 +62,22 @@
   $: source = $getSource?.data?.entry?.source;
   $: embedded = $getSource?.data?.entry?.embedded;
   $: path = source?.properties?.path;
+  $: hasNoSourceCatalog = !source;
 
   $: sourceFromYaml = useSourceFromYaml(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     getFilePathFromNameAndType(sourceName, EntityType.Table)
   );
 
-  $: sourceNames = useSourceNames($runtimeStore.instanceId);
-  $: modelNames = useModelNames($runtimeStore.instanceId);
-  $: dashboardNames = useDashboardNames($runtimeStore.instanceId);
+  $: sourceNames = useSourceNames($runtime.instanceId);
+  $: modelNames = useModelNames($runtime.instanceId);
+  $: dashboardNames = useDashboardNames($runtime.instanceId);
 
-  const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
-  const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
-  const createEntityMutation = useRuntimeServicePutFileAndReconcile();
+  const deleteSource = createRuntimeServiceDeleteFileAndReconcile();
+  const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
+  const createEntityMutation = createRuntimeServicePutFileAndReconcile();
   const createDashboardFromSourceMutation = useCreateDashboardFromSource();
-  const createFileMutation = useRuntimeServicePutFileAndReconcile();
+  const createFileMutation = createRuntimeServicePutFileAndReconcile();
 
   const handleDeleteSource = async (tableName: string) => {
     await deleteFileArtifact(
@@ -127,7 +128,7 @@
     $createDashboardFromSourceMutation.mutate(
       {
         data: {
-          instanceId: $runtimeStore.instanceId,
+          instanceId: $runtime.instanceId,
           sourceName,
           newModelName,
           newDashboardName,
@@ -199,12 +200,18 @@
 </MenuItem>
 
 <MenuItem
+  disabled={hasNoSourceCatalog}
   icon
   on:select={() => handleCreateDashboardFromSource(sourceName)}
   propogateSelect={false}
 >
   <Explore slot="icon" />
   Autogenerate dashboard
+  <svelte:fragment slot="description">
+    {#if hasNoSourceCatalog}
+      Source has errors
+    {/if}
+  </svelte:fragment>
 </MenuItem>
 
 {#if $getSource?.data?.entry?.source?.connector === "local_file"}

@@ -1,24 +1,54 @@
 <script lang="ts">
-  import { useAdminServiceFindOrganizations } from "../client";
+  import HomeShareCTA from "@rilldata/web-admin/components/home/HomeShareCTA.svelte";
+  import {
+    createAdminServiceGetCurrentUser,
+    createAdminServiceListOrganizations,
+  } from "../client";
+  import AuthRedirect from "../components/authentication/AuthRedirect.svelte";
+  import OrganizationList from "../components/home/OrganizationList.svelte";
+  import WelcomeMessage from "../components/home/WelcomeMessage.svelte";
 
-  const orgs = useAdminServiceFindOrganizations();
+  import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
+
+  const user = createAdminServiceGetCurrentUser();
+  const orgs = createAdminServiceListOrganizations();
+
+  $: hasAnOrganization = $orgs.data?.organizations?.length > 0;
+
+  function getFirstNameFromDisplayName(displayName: string) {
+    return displayName.split(" ")[0];
+  }
 </script>
 
 <svelte:head>
-  <title>Organizations</title>
+  <title>Home - Rill</title>
 </svelte:head>
 
-<section>
-  <h1>Organizations</h1>
-  {#if $orgs.isLoading}
-    <span>Loading...</span>
-  {:else if $orgs.isError}
-    <span>Error: {$orgs.error}</span>
-  {:else if $orgs.data && $orgs.data.organization}
-    <ul>
-      {#each $orgs.data.organization as org}
-        <li><a href="/{org.name}">{org.name}</a></li>
-      {/each}
-    </ul>
-  {/if}
-</section>
+<AuthRedirect>
+  <VerticalScrollContainer>
+    <section
+      class="flex flex-col mx-8 my-8 sm:my-16 sm:mx-16 lg:mx-32 lg:my-24 2xl:mx-64 mx-auto"
+    >
+      <h1 class="text-4xl leading-10 font-light mb-2">
+        Hi {getFirstNameFromDisplayName($user.data.user.displayName)}!
+      </h1>
+      <div class="flex flex-row gap-x-7 flex-wrap">
+        <div class="md:w-1/2">
+          {#if $orgs.isSuccess}
+            {#if !hasAnOrganization}
+              <WelcomeMessage />
+            {:else}
+              <h3 class="text-base leading-6 font-normal text-gray-500 mb-3">
+                Check out your dashboards below.
+              </h3>
+              <OrganizationList />
+            {/if}
+          {/if}
+        </div>
+        {#if hasAnOrganization}
+          <HomeShareCTA />
+        {/if}
+      </div>
+    </section>
+  </VerticalScrollContainer>
+</AuthRedirect>

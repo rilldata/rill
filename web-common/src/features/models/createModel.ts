@@ -2,15 +2,18 @@ import { goto } from "$app/navigation";
 import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import type { V1PutFileAndReconcileResponse } from "@rilldata/web-common/runtime-client";
-import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-import type { QueryClient, UseMutationResult } from "@sveltestack/svelte-query";
+import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
+import type {
+  CreateBaseMutationResult,
+  QueryClient,
+} from "@tanstack/svelte-query";
 import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
 
 export async function createModel(
   queryClient: QueryClient,
   instanceId: string,
   newModelName: string,
-  createModelMutation: UseMutationResult<V1PutFileAndReconcileResponse>, // TODO: type
+  createModelMutation: CreateBaseMutationResult<V1PutFileAndReconcileResponse>, // TODO: type
   sql = "",
   setAsActive = true
 ) {
@@ -19,7 +22,7 @@ export async function createModel(
       instanceId,
       path: getFilePathFromNameAndType(newModelName, EntityType.Model),
       blob: sql,
-      create: true,
+      syncFromUrl: true,
       createOnly: true,
       strict: true,
     },

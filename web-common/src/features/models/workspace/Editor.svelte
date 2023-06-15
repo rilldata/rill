@@ -51,12 +51,12 @@
   import { Debounce } from "@rilldata/web-common/features/models/utils/Debounce";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServiceListCatalogEntries,
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceListCatalogEntries,
     V1Model,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { createEventDispatcher, onMount } from "svelte";
+  import { runtime } from "../../../runtime-client/runtime-store";
 
   export let modelName: string;
   export let content: string;
@@ -69,8 +69,8 @@
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
   // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
 
-  $: getModel = useRuntimeServiceGetCatalogEntry(
-    $runtimeStore.instanceId,
+  $: getModel = createRuntimeServiceGetCatalogEntry(
+    $runtime.instanceId,
     modelName
   );
   let model: V1Model;
@@ -98,10 +98,14 @@
     "&.cm-editor": {
       overflowX: "hidden",
       width: "100%",
+      fontSize: "13px",
       height: "100%",
       "&.cm-focused": {
         outline: "none",
       },
+    },
+    ".cm-scroller": {
+      fontFamily: "var(--monospace)",
     },
     "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
       { backgroundColor: "rgb(65 99 255 / 25%)" },
@@ -110,6 +114,10 @@
 
     ".cm-activeLineGutter": {
       backgroundColor: highlightBackground,
+    },
+    ".cm-gutters": {
+      backgroundColor: "white",
+      borderRight: "none",
     },
     ".cm-lineNumbers .cm-gutterElement": {
       paddingLeft: "5px",
@@ -139,7 +147,7 @@
     },
     ".cm-completionLabel": {
       fontSize: "13px",
-      fontFamily: "MD IO",
+      fontFamily: "var(--monospace)",
     },
     ".cm-completionMatchedText": {
       textDecoration: "none",
@@ -148,14 +156,22 @@
     ".cm-underline": {
       backgroundColor: "rgb(254 240 138)",
     },
+    ".ͼb": {
+      fontWeight: "700",
+    },
+    ".ͼe": {
+      fontStyle: "italic",
+      fontWeight: "600",
+      color: "hsl(200, 70%, 50%)",
+    },
   });
 
   // AUTOCOMPLETE
 
   let autocompleteCompartment = new Compartment();
 
-  $: sourceCatalogsQuery = useRuntimeServiceListCatalogEntries(
-    $runtimeStore.instanceId,
+  $: sourceCatalogsQuery = createRuntimeServiceListCatalogEntries(
+    $runtime.instanceId,
     {
       type: "OBJECT_TYPE_SOURCE",
     }
@@ -180,12 +196,12 @@
 
   const DuckDBSQL: SQLDialect = SQLDialect.define({
     keywords:
-      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then end in cast left join on not desc asc sum union",
+      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then else end in cast left join on not desc asc sum union",
   });
 
   function makeAutocompleteConfig(
     schema: { [table: string]: string[] },
-    embeddedSources: string[]
+    _embeddedSources: string[]
   ) {
     return autocompletion({
       override: [
@@ -352,7 +368,7 @@
 <div class="h-full w-full overflow-x-auto" use:listenToNodeResize>
   <div
     bind:this={editorContainer}
-    class="editor-container  h-full w-full overflow-x-auto"
+    class="editor-container h-full w-full overflow-x-auto"
   >
     <div
       class="w-full overflow-x-auto h-full"
@@ -360,6 +376,9 @@
       on:click={() => {
         /** give the editor focus no matter where we click */
         if (!editor.hasFocus) editor.focus();
+      }}
+      on:keydown={() => {
+        /** no op for now */
       }}
     />
   </div>

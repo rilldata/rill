@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
-	"github.com/go-yaml/yaml"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"gopkg.in/yaml.v2"
 )
 
 const Version = "rill-beta"
@@ -29,8 +30,8 @@ func (c *Codec) IsInit(ctx context.Context) bool {
 	return err == nil
 }
 
-func (c *Codec) InitEmpty(ctx context.Context, name, rillVersion string) error {
-	err := c.Repo.Put(ctx, c.InstanceID, "rill.yaml", strings.NewReader(fmt.Sprintf("compiler: %s\nrill_version: %s\n\nname: %s\n", Version, rillVersion, name)))
+func (c *Codec) InitEmpty(ctx context.Context, title string) error {
+	err := c.Repo.Put(ctx, c.InstanceID, "rill.yaml", strings.NewReader(fmt.Sprintf("compiler: %s\n\ntitle: %q\n", Version, title)))
 	if err != nil {
 		return err
 	}
@@ -39,7 +40,7 @@ func (c *Codec) InitEmpty(ctx context.Context, name, rillVersion string) error {
 	if gitignore != "" {
 		gitignore += "\n"
 	}
-	gitignore += "# Rill\n*.db\n*.db.wal\ndata/\n"
+	gitignore += "# Rill\n*.db\n*.db.tmp\n*.db.wal\n"
 
 	err = c.Repo.Put(ctx, c.InstanceID, ".gitignore", strings.NewReader(gitignore))
 	if err != nil {
@@ -83,10 +84,6 @@ func (c *Codec) PutSource(ctx context.Context, repo drivers.RepoStore, instanceI
 		out.Region = val
 	}
 
-	if val, ok := props["csv.delimiter"].(string); ok {
-		out.CSVDelimiter = val
-	}
-
 	blob, err := yaml.Marshal(out)
 	if err != nil {
 		return "", err
@@ -95,7 +92,7 @@ func (c *Codec) PutSource(ctx context.Context, repo drivers.RepoStore, instanceI
 	p := path.Join("sources", source.Name+".yaml")
 
 	// TODO: Use create and createOnly when they're added to repo.Put
-	if _, err := os.Stat(path.Join(repo.DSN(), p)); err == nil {
+	if _, err := os.Stat(path.Join(repo.Root(), p)); err == nil {
 		if !force {
 			return "", os.ErrExist
 		}
@@ -122,17 +119,31 @@ func (c *Codec) ProjectConfig(ctx context.Context) (*ProjectConfig, error) {
 	content, err := c.Repo.Get(ctx, c.InstanceID, "rill.yaml")
 	// rill.yaml is not guaranteed to exist in case of older projects
 	if os.IsNotExist(err) {
-		return &ProjectConfig{Env: make(map[string]string)}, nil
+		return &ProjectConfig{Variables: make(map[string]string)}, nil
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	r := &ProjectConfig{Env: make(map[string]string)}
+	r := &ProjectConfig{Variables: make(map[string]string)}
 	if err := yaml.Unmarshal([]byte(content), r); err != nil {
 		return nil, err
 	}
 
 	return r, nil
+}
+
+func HasRillProject(dir string) bool {
+	_, err := os.Open(filepath.Join(dir, "rill.yaml"))
+	return err == nil
+}
+
+func ParseProjectConfig(content []byte) (*ProjectConfig, error) {
+	c := &ProjectConfig{Variables: make(map[string]string)}
+	if err := yaml.Unmarshal(content, c); err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }

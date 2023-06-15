@@ -2,7 +2,6 @@ package sqlite
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -11,31 +10,34 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func (c *connection) FindEntries(ctx context.Context, instanceID string, typ drivers.ObjectType) []*drivers.CatalogEntry {
+func (c *connection) FindEntries(ctx context.Context, instanceID string, typ drivers.ObjectType) ([]*drivers.CatalogEntry, error) {
 	if typ == drivers.ObjectTypeUnspecified {
 		return c.findEntries(ctx, "WHERE instance_id = ?", instanceID)
 	}
 	return c.findEntries(ctx, "WHERE instance_id = ? AND type = ?", instanceID, typ)
 }
 
-func (c *connection) FindEntry(ctx context.Context, instanceID, name string) (*drivers.CatalogEntry, bool) {
+func (c *connection) FindEntry(ctx context.Context, instanceID, name string) (*drivers.CatalogEntry, error) {
 	// Names are stored with case everywhere, but the checks should be case-insensitive. Hence, the translation to lower case here.
-	es := c.findEntries(ctx, "WHERE instance_id = ? AND LOWER(name) = LOWER(?)", instanceID, name)
-	if len(es) == 0 {
-		return nil, false
+	es, err := c.findEntries(ctx, "WHERE instance_id = ? AND LOWER(name) = LOWER(?)", instanceID, name)
+	if err != nil {
+		return nil, err
 	}
-	return es[0], true
+	if len(es) == 0 {
+		return nil, drivers.ErrNotFound
+	}
+	return es[0], nil
 }
 
-func (c *connection) findEntries(ctx context.Context, whereClause string, args ...any) []*drivers.CatalogEntry {
-	sql := fmt.Sprintf("SELECT name, type, object, path, created_on, updated_on, refreshed_on FROM catalog %s ORDER BY lower(name)", whereClause)
+func (c *connection) findEntries(_ context.Context, whereClause string, args ...any) ([]*drivers.CatalogEntry, error) {
+	// Override ctx because sqlite sometimes segfaults on context cancellation
+	ctx := context.Background()
+
+	sql := fmt.Sprintf("SELECT name, type, object, path, bytes_ingested, created_on, updated_on, refreshed_on FROM catalog %s ORDER BY lower(name)", whereClause)
 
 	rows, err := c.db.QueryxContext(ctx, sql, args...)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			return nil
-		}
-		panic(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -44,12 +46,9 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 		var objBlob []byte
 		e := &drivers.CatalogEntry{}
 
-		err := rows.Scan(&e.Name, &e.Type, &objBlob, &e.Path, &e.CreatedOn, &e.UpdatedOn, &e.RefreshedOn)
+		err := rows.Scan(&e.Name, &e.Type, &objBlob, &e.Path, &e.BytesIngested, &e.CreatedOn, &e.UpdatedOn, &e.RefreshedOn)
 		if err != nil {
-			if errors.Is(err, context.Canceled) {
-				return nil
-			}
-			panic(err)
+			return nil, err
 		}
 
 		// Parse object protobuf
@@ -76,10 +75,13 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 		res = append(res, e)
 	}
 
-	return res
+	return res, nil
 }
 
-func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *drivers.CatalogEntry) error {
+func (c *connection) CreateEntry(_ context.Context, instanceID string, e *drivers.CatalogEntry) error {
+	// Override ctx because sqlite sometimes segfaults on context cancellation
+	ctx := context.Background()
+
 	// Serialize object
 	obj, err := proto.Marshal(e.Object)
 	if err != nil {
@@ -89,12 +91,13 @@ func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *driv
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"INSERT INTO catalog(instance_id, name, type, object, path, created_on, updated_on, refreshed_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO catalog(instance_id, name, type, object, path, bytes_ingested, created_on, updated_on, refreshed_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		instanceID,
 		e.Name,
 		e.Type,
 		obj,
 		e.Path,
+		e.BytesIngested,
 		now,
 		now,
 		now,
@@ -109,7 +112,10 @@ func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *driv
 	return nil
 }
 
-func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *drivers.CatalogEntry) error {
+func (c *connection) UpdateEntry(_ context.Context, instanceID string, e *drivers.CatalogEntry) error {
+	// Override ctx because sqlite sometimes segfaults on context cancellation
+	ctx := context.Background()
+
 	// Serialize object
 	obj, err := proto.Marshal(e.Object)
 	if err != nil {
@@ -119,10 +125,11 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"UPDATE catalog SET type = ?, object = ?, path = ?, updated_on = ?, refreshed_on = ? WHERE instance_id = ? AND name = ?",
+		"UPDATE catalog SET type = ?, object = ?, path = ?, bytes_ingested = ?, updated_on = ?, refreshed_on = ? WHERE instance_id = ? AND name = ?",
 		e.Type,
 		obj,
 		e.Path,
+		e.BytesIngested,
 		now,
 		e.RefreshedOn,
 		instanceID,
@@ -136,7 +143,18 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 	return nil
 }
 
-func (c *connection) DeleteEntry(ctx context.Context, instanceID, name string) error {
+func (c *connection) DeleteEntry(_ context.Context, instanceID, name string) error {
+	// Override ctx because sqlite sometimes segfaults on context cancellation
+	ctx := context.Background()
+
 	_, err := c.db.ExecContext(ctx, "DELETE FROM catalog WHERE instance_id = ? AND LOWER(name) = LOWER(?)", instanceID, name)
+	return err
+}
+
+func (c *connection) DeleteEntries(_ context.Context, instanceID string) error {
+	// Override ctx because sqlite sometimes segfaults on context cancellation
+	ctx := context.Background()
+
+	_, err := c.db.ExecContext(ctx, "DELETE FROM catalog WHERE instance_id = ?", instanceID)
 	return err
 }

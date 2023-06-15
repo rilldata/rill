@@ -7,29 +7,26 @@
    */
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     getFilterForDimension,
     useMetaDimension,
     useMetaMeasure,
     useMetaQuery,
+    useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import {
+    createQueryServiceMetricsViewToplist,
     MetricsViewDimension,
     MetricsViewMeasure,
-    useQueryServiceMetricsViewToplist,
   } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { createEventDispatcher } from "svelte";
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "../dashboard-stores";
-  import {
-    humanizeGroupValues,
-    NicelyFormattedTypes,
-    ShortHandSymbols,
-  } from "../humanize-numbers";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { isRangeInsideOther } from "../../../lib/time/ranges";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
+  import type { NicelyFormattedTypes } from "../humanize-numbers";
   import DimensionLeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardList from "./LeaderboardList.svelte";
@@ -44,28 +41,34 @@
   export let referenceValue: number;
 
   export let formatPreset: NicelyFormattedTypes;
-  export let leaderboardFormatScale: ShortHandSymbols;
   export let isSummableMeasure = false;
 
-  export let slice = 7;
-  export let seeMoreSlice = 50;
-  let seeMore = false;
+  let slice = 7;
 
-  const dispatch = createEventDispatcher();
+  const queryClient = useQueryClient();
 
-  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: dashboardStore = useDashboardStore(metricViewName);
+  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: allTimeRangeQuery = useModelAllTimeRange(
+    $runtime.instanceId,
+    $metaQuery.data.model,
+    $metaQuery.data.timeDimension,
+    {
+      query: {
+        enabled: !!$metaQuery.data.timeDimension,
+      },
+    }
+  );
 
   let filterExcludeMode: boolean;
   $: filterExcludeMode =
-    metricsExplorer?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
+    $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
   let filterKey: "exclude" | "include";
   $: filterKey = filterExcludeMode ? "exclude" : "include";
 
   $: dimensionQuery = useMetaDimension(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     metricViewName,
     dimensionName
   );
@@ -74,38 +77,32 @@
   $: displayName = dimension?.label || dimension?.name;
 
   $: measureQuery = useMetaMeasure(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     metricViewName,
-    metricsExplorer?.leaderboardMeasureName
+    $dashboardStore?.leaderboardMeasureName
   );
   let measure: MetricsViewMeasure;
   $: measure = $measureQuery?.data;
 
   $: filterForDimension = getFilterForDimension(
-    metricsExplorer?.filters,
+    $dashboardStore?.filters,
     dimensionName
   );
 
   let activeValues: Array<unknown>;
   $: activeValues =
-    metricsExplorer?.filters[filterKey]?.find((d) => d.name === dimension?.name)
+    $dashboardStore?.filters[filterKey]?.find((d) => d.name === dimension?.name)
       ?.in ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
   $: metricTimeSeries = useModelHasTimeSeries(
-    $runtimeStore.instanceId,
+    $runtime.instanceId,
     metricViewName
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
-  function setLeaderboardValues(values) {
-    dispatch("leaderboard-value", {
-      dimensionName,
-      values,
-    });
-  }
-
   function toggleFilterMode() {
+    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
   }
 
@@ -113,17 +110,17 @@
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
   }
 
-  let topListQuery;
-
-  $: if (
-    measure?.name &&
-    metricsExplorer &&
-    $metaQuery?.isSuccess &&
-    !$metaQuery?.isRefetching
-  ) {
-    let topListParams = {
+  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
+  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
+  $: topListQuery = createQueryServiceMetricsViewToplist(
+    $runtime.instanceId,
+    metricViewName,
+    {
       dimensionName: dimensionName,
       measureNames: [measure.name],
+      timeStart: timeStart,
+      timeEnd: timeEnd,
+      filter: filterForDimension,
       limit: "250",
       offset: "0",
       sort: [
@@ -132,27 +129,18 @@
           ascending: false,
         },
       ],
-      filter: filterForDimension,
-    };
-
-    if (hasTimeSeries) {
-      topListParams = {
-        ...topListParams,
-        ...{
-          timeStart: metricsExplorer.selectedTimeRange?.start,
-          timeEnd: metricsExplorer.selectedTimeRange?.end,
-        },
-      };
+    },
+    {
+      query: {
+        enabled:
+          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
+          !!filterForDimension,
+      },
     }
-
-    topListQuery = useQueryServiceMetricsViewToplist(
-      $runtimeStore.instanceId,
-      metricViewName,
-      topListParams
-    );
-  }
+  );
 
   let values = [];
+  let comparisonValues = [];
 
   /** replace data after fetched. */
   $: if (!$topListQuery?.isFetching) {
@@ -161,21 +149,6 @@
         value: val[measure?.name],
         label: val[dimension?.name],
       })) ?? [];
-    setLeaderboardValues(values);
-  }
-  /** figure out how many selected values are currently hidden */
-  // $: hiddenSelectedValues = values.filter((di, i) => {
-  //   return activeValues.includes(di.label) && i > slice - 1 && !seeMore;
-  // });
-
-  $: if (values) {
-    values = formatPreset
-      ? humanizeGroupValues(values, formatPreset, {
-          scale: leaderboardFormatScale,
-        })
-      : humanizeGroupValues(values, NicelyFormattedTypes.HUMANIZE, {
-          scale: leaderboardFormatScale,
-        });
   }
 
   // get all values that are selected but not visible.
@@ -184,7 +157,7 @@
     ?.filter((label) => {
       return (
         // the value is visible within the fold.
-        !values.slice(0, !seeMore ? slice : seeMoreSlice).some((value) => {
+        !values.slice(0, slice).some((value) => {
           return value.label === label;
         })
       );
@@ -198,6 +171,68 @@
     .sort((a, b) => {
       return b.value - a.value;
     });
+
+  // Compose the comparison /toplist query
+  $: displayComparison =
+    $dashboardStore?.showComparison && isComparisonRangeAvailable;
+  $: isComparisonRangeAvailable = isRangeInsideOther(
+    $allTimeRangeQuery?.data?.start,
+    $allTimeRangeQuery?.data?.end,
+    $dashboardStore?.selectedComparisonTimeRange?.start,
+    $dashboardStore?.selectedComparisonTimeRange?.end
+  );
+  // add all sliced and active values to the include filter.
+  $: currentVisibleValues =
+    $topListQuery?.data?.data
+      ?.slice(0, slice)
+      ?.concat(selectedValuesThatAreBelowTheFold)
+      ?.map((v) => v[dimensionName]) ?? [];
+  $: updatedFilters = getFilterForComparsion(
+    filterForDimension,
+    dimensionName,
+    currentVisibleValues
+  );
+  $: comparisonTimeStart =
+    $dashboardStore?.selectedComparisonTimeRange?.start?.toISOString();
+  $: comparisonTimeEnd =
+    $dashboardStore?.selectedComparisonTimeRange?.end?.toISOString();
+  $: comparisonTopListQuery = createQueryServiceMetricsViewToplist(
+    $runtime.instanceId,
+    metricViewName,
+    {
+      dimensionName: dimensionName,
+      measureNames: [measure.name],
+      timeStart: comparisonTimeStart,
+      timeEnd: comparisonTimeEnd,
+      filter: updatedFilters,
+      limit: currentVisibleValues.length.toString(),
+      offset: "0",
+      sort: [
+        {
+          name: measure.name,
+          ascending: false,
+        },
+      ],
+    },
+    {
+      query: {
+        enabled: Boolean(
+          displayComparison &&
+            !!comparisonTimeStart &&
+            !!comparisonTimeEnd &&
+            !!updatedFilters
+        ),
+      },
+    }
+  );
+
+  $: if (!$comparisonTopListQuery?.isFetching) {
+    comparisonValues =
+      $comparisonTopListQuery?.data?.data?.map((val) => ({
+        value: val[measure?.name],
+        label: val[dimension?.name],
+      })) ?? [];
+  }
 
   let hovered: boolean;
 </script>
@@ -217,13 +252,15 @@
       dimensionDescription={dimension?.description}
       on:click={() => selectDimension(dimensionName)}
     />
-
     {#if values}
       <LeaderboardList>
         <!-- place the leaderboard entries that are above the fold here -->
         <DimensionLeaderboardEntrySet
+          {formatPreset}
           loading={$topListQuery?.isFetching}
-          values={values.slice(0, !seeMore ? slice : seeMoreSlice)}
+          values={values.slice(0, slice)}
+          {comparisonValues}
+          showComparison={displayComparison}
           {activeValues}
           {filterExcludeMode}
           {atLeastOneActive}
@@ -235,8 +272,11 @@
         {#if selectedValuesThatAreBelowTheFold?.length}
           <hr />
           <DimensionLeaderboardEntrySet
+            {formatPreset}
             loading={$topListQuery?.isFetching}
             values={selectedValuesThatAreBelowTheFold}
+            {comparisonValues}
+            showComparison={displayComparison}
             {activeValues}
             {filterExcludeMode}
             {atLeastOneActive}
@@ -251,7 +291,9 @@
             {$topListQuery?.error}
           </div>
         {:else if values.length === 0}
-          <div class="p-1 ui-copy-disabled">no available values</div>
+          <div style:padding-left="30px" class="p-1 ui-copy-disabled">
+            no available values
+          </div>
         {/if}
 
         {#if values.length > slice}

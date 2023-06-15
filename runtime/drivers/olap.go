@@ -3,6 +3,7 @@ package drivers
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -23,16 +24,17 @@ type OLAPStore interface {
 	WithConnection(ctx context.Context, priority int, fn WithConnectionFunc) error
 	Exec(ctx context.Context, stmt *Statement) error
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
-	Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) error
+	Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) (*IngestionSummary, error)
 	InformationSchema() InformationSchema
 }
 
 // Statement wraps a query to execute against an OLAP driver.
 type Statement struct {
-	Query    string
-	Args     []any
-	DryRun   bool
-	Priority int
+	Query            string
+	Args             []any
+	DryRun           bool
+	Priority         int
+	ExecutionTimeout time.Duration
 }
 
 // Result wraps the results of query.
@@ -101,4 +103,9 @@ func (d Dialect) String() string {
 	default:
 		panic("not implemented")
 	}
+}
+
+// IngestionSummary is details about ingestion
+type IngestionSummary struct {
+	BytesIngested int64
 }

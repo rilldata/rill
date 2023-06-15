@@ -4,13 +4,23 @@ import (
 	"context"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKRequest) (*runtimev1.ColumnTopKResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.String("args.column", req.ColumnName),
+		attribute.Int("args.k", int(req.K)),
+		attribute.Int("args.priority", int(req.Priority)),
+	)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -47,6 +57,13 @@ func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKReques
 }
 
 func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullCountRequest) (*runtimev1.ColumnNullCountResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.String("args.column", req.ColumnName),
+		attribute.Int("args.priority", int(req.Priority)),
+	)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -67,6 +84,13 @@ func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullC
 }
 
 func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1.ColumnDescriptiveStatisticsRequest) (*runtimev1.ColumnDescriptiveStatisticsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.String("args.column", req.ColumnName),
+		attribute.Int("args.priority", int(req.Priority)),
+	)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -80,13 +104,17 @@ func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	resp := &runtimev1.NumericSummary{
-		Case: &runtimev1.NumericSummary_NumericStatistics{
-			NumericStatistics: q.Result,
-		},
+	// ColumnDescriptiveStatistics may return an empty result
+	if q.Result == nil {
+		return &runtimev1.ColumnDescriptiveStatisticsResponse{}, nil
 	}
+
 	return &runtimev1.ColumnDescriptiveStatisticsResponse{
-		NumericSummary: resp,
+		NumericSummary: &runtimev1.NumericSummary{
+			Case: &runtimev1.NumericSummary_NumericStatistics{
+				NumericStatistics: q.Result,
+			},
+		},
 	}, nil
 }
 
@@ -117,6 +145,13 @@ func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1
  */
 
 func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeGrainRequest) (*runtimev1.ColumnTimeGrainResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.String("args.column", req.ColumnName),
+		attribute.Int("args.priority", int(req.Priority)),
+	)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -135,6 +170,14 @@ func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeG
 }
 
 func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.ColumnNumericHistogramRequest) (*runtimev1.ColumnNumericHistogramResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.String("args.column", req.ColumnName),
+		attribute.String("args.histogram", req.HistogramMethod.String()),
+		attribute.Int("args.priority", int(req.Priority)),
+	)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -148,6 +191,9 @@ func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.Colu
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
+
+	// NOTE: q.Result may be nil if there were no bins. The below will output it as an empty histogram.
+
 	return &runtimev1.ColumnNumericHistogramResponse{
 		NumericSummary: &runtimev1.NumericSummary{
 			Case: &runtimev1.NumericSummary_NumericHistogramBins{
@@ -160,6 +206,13 @@ func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.Colu
 }
 
 func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRugHistogramRequest) (*runtimev1.ColumnRugHistogramResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.String("args.column", req.ColumnName),
+		attribute.Int("args.priority", int(req.Priority)),
+	)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -184,6 +237,13 @@ func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRu
 }
 
 func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeRangeRequest) (*runtimev1.ColumnTimeRangeResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.String("args.column", req.ColumnName),
+		attribute.Int("args.priority", int(req.Priority)),
+	)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -202,6 +262,13 @@ func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeR
 }
 
 func (s *Server) ColumnCardinality(ctx context.Context, req *runtimev1.ColumnCardinalityRequest) (*runtimev1.ColumnCardinalityResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.table", req.TableName),
+		attribute.String("args.column", req.ColumnName),
+		attribute.Int("args.priority", int(req.Priority)),
+	)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}

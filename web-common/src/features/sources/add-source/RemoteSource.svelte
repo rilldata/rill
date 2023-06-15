@@ -6,24 +6,34 @@
   import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
+  import { appScreen, appStore } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     ConnectorProperty,
     ConnectorPropertyType,
-    useRuntimeServiceDeleteFileAndReconcile,
-    useRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceDeleteFileAndReconcile,
+    createRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceUnpackEmpty,
     V1Connector,
     V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
-  import { appStore } from "@rilldata/web-local/lib/application-state-stores/app-store";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
   import type * as yup from "yup";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
-  import { compileCreateSourceYAML, inferSourceName } from "../sourceUtils";
+  import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
+  import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
+  import {
+    compileCreateSourceYAML,
+    getSourceError,
+    inferSourceName,
+    emitSourceErrorTelemetry,
+    emitSourceSuccessTelemetry,
+  } from "../sourceUtils";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { createSource } from "./createSource";
   import { humanReadableErrorMessage } from "./errors";
   import {
@@ -31,20 +41,28 @@
     getYupSchema,
     toYupFriendlyKey,
   } from "./yupSchemas";
+  import { connectorToSourceConnectionType } from "../../../metrics/service/SourceEventTypes";
+  import {
+    BehaviourEventAction,
+    BehaviourEventMedium,
+  } from "../../../metrics/service/BehaviourEventTypes";
+  import { behaviourEvent } from "../../../metrics/initMetrics";
 
   export let connector: V1Connector;
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
+  $: runtimeInstanceId = $runtime.instanceId;
   $: sourceNames = useSourceNames(runtimeInstanceId);
+  $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
 
-  const createSourceMutation = useRuntimeServicePutFileAndReconcile();
+  const createSourceMutation = createRuntimeServicePutFileAndReconcile();
   let createSourceMutationError: {
     code: number;
     message: string;
   };
   $: createSourceMutationError = ($createSourceMutation?.error as any)?.response
     ?.data;
-  const deleteSource = useRuntimeServiceDeleteFileAndReconcile();
+  const deleteSource = createRuntimeServiceDeleteFileAndReconcile();
+  const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
 
   const dispatch = createEventDispatcher();
 
@@ -73,7 +91,25 @@
       },
       validationSchema: yupSchema,
       onSubmit: async (values) => {
+        behaviourEvent?.fireSourceTriggerEvent(
+          BehaviourEventAction.SourceAdd,
+          BehaviourEventMedium.Button,
+          $appScreen,
+          MetricsEventSpace.Modal
+        );
+
         overlay.set({ title: `Importing ${values.sourceName}` });
+
+        // If project is uninitialized, initialize an empty project
+        if (!$isProjectInitialized.data) {
+          $unpackEmptyProject.mutate({
+            instanceId: $runtime.instanceId,
+            data: {
+              title: EMPTY_PROJECT_TITLE,
+            },
+          });
+        }
+
         const formValues = Object.fromEntries(
           Object.entries(values).map(([key, value]) => [
             fromYupFriendlyKey(key),
@@ -92,6 +128,7 @@
             yaml,
             $createSourceMutation
           );
+
           error = errors[0];
           if (!error) {
             dispatch("close");
@@ -105,6 +142,25 @@
               $appStore.activeEntity,
               $sourceNames.data,
               false
+            );
+          }
+
+          const sourceError = getSourceError(errors, values.sourceName);
+          if ($createSourceMutation.isError || sourceError) {
+            emitSourceErrorTelemetry(
+              MetricsEventSpace.Modal,
+              $appScreen,
+              createSourceMutationError?.message ?? sourceError?.message,
+              connectorToSourceConnectionType[connector.name],
+              formValues?.uri
+            );
+          } else {
+            emitSourceSuccessTelemetry(
+              MetricsEventSpace.Modal,
+              $appScreen,
+              BehaviourEventMedium.Button,
+              connectorToSourceConnectionType[connector.name],
+              formValues?.uri
             );
           }
         } catch (err) {
@@ -152,8 +208,10 @@
   >
     <div class="pt-4 pb-2">
       Need help? Refer to our
-      <a href="https://docs.rilldata.com/using-rill/import-data" target="_blank"
-        >docs</a
+      <a
+        href="https://docs.rilldata.com/develop/import-data"
+        target="_blank"
+        rel="noreferrer">docs</a
       > for more information.
     </div>
     {#if $createSourceMutation.isError || error}

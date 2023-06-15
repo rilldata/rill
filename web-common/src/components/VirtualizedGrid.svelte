@@ -45,7 +45,7 @@
         await tick(); // render the newly visible row
         row = rows[i - start];
       }
-      const row_height = (height_map[i] = itemHeight || row.offsetHeight) + 28;
+      const row_height = (height_map[i] = itemHeight || row?.offsetHeight) + 28;
       // add this row height
       content_height += row_height;
       i += columns;

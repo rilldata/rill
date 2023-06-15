@@ -1,9 +1,9 @@
 import { V1QueryBatchType } from "@rilldata/web-common/runtime-client";
 import { batchRequest } from "@rilldata/web-common/runtime-client/batcher/batchRequest";
 import type { QueryEntry } from "@rilldata/web-common/runtime-client/batcher/batchRequest";
+import { fetchWrapper } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type { FetchWrapperOptions } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { getPriority } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
-import { fetchWrapper } from "@rilldata/web-local/lib/util/fetchWrapper";
-import type { FetchWrapperOptions } from "@rilldata/web-local/lib/util/fetchWrapper";
 
 // Examples:
 // v1/instances/id/queries/columns-profile/tables/table-name
@@ -32,8 +32,7 @@ export class Batcher {
   private queries = new Array<QueryEntry>();
   private instanceId: string;
   private timer: number;
-
-  public constructor(private readonly urlBase: string) {}
+  private baseUrl: string;
 
   public setInstanceId(instanceId: string) {
     this.instanceId = instanceId;
@@ -41,7 +40,9 @@ export class Batcher {
 
   public add(requestOptions: FetchWrapperOptions) {
     // prepend after parsing to make parsing faster
-    requestOptions.url = `${this.urlBase}${requestOptions.url}`;
+    requestOptions.url = `${requestOptions.baseUrl}${requestOptions.url}`;
+    // TODO: support multiple runtimes for cloud
+    this.baseUrl = requestOptions.baseUrl;
 
     const urlMatch = BatcherUrlExtractorRegex.exec(requestOptions.url);
     if (!urlMatch) return fetchWrapper(requestOptions);
@@ -82,7 +83,7 @@ export class Batcher {
       this.timer = setTimeout(() => {
         this.timer = 0;
         batchRequest(
-          `${this.urlBase}/v1/instances/${this.instanceId}/query/batch`,
+          `${this.baseUrl}/v1/instances/${this.instanceId}/query/batch`,
           this.queries
         );
         this.queries = [];

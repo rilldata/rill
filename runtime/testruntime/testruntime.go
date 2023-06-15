@@ -7,9 +7,11 @@ import (
 	goruntime "runtime"
 	"strings"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	// Load database drivers for testing.
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
@@ -23,6 +25,7 @@ type TestingT interface {
 	TempDir() string
 	FailNow()
 	Errorf(format string, args ...interface{})
+	Cleanup(f func())
 }
 
 // New returns a runtime configured for use in tests.
@@ -32,12 +35,15 @@ func New(t TestingT) *runtime.Runtime {
 		MetastoreDriver:     "sqlite",
 		// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 		// "cache=shared" is needed to prevent threading problems.
-		MetastoreDSN:   fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
-		QueryCacheSize: 10000,
+		MetastoreDSN:        fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
+		QueryCacheSizeBytes: int64(datasize.MB * 100),
+		AllowHostAccess:     true,
 	}
-	rt, err := runtime.New(opts, nil)
+	rt, err := runtime.New(opts, zap.NewNop())
 	require.NoError(t, err)
-
+	t.Cleanup(func() {
+		rt.Close()
+	})
 	return rt
 }
 
@@ -57,6 +63,9 @@ func NewInstance(t TestingT) (*runtime.Runtime, string) {
 	err := rt.CreateInstance(context.Background(), inst)
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
+
+	err = rt.PutFile(context.Background(), inst.ID, "rill.yaml", strings.NewReader(""), true, false)
+	require.NoError(t, err)
 
 	return rt, inst.ID
 }

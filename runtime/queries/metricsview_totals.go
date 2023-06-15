@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -15,6 +16,7 @@ import (
 type MetricsViewTotals struct {
 	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
 	MeasureNames    []string                     `json:"measure_names,omitempty"`
+	InlineMeasures  []*runtimev1.InlineMeasure   `json:"inline_measures,omitempty"`
 	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
 	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
 	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
@@ -36,8 +38,11 @@ func (q *MetricsViewTotals) Deps() []string {
 	return []string{q.MetricsViewName}
 }
 
-func (q *MetricsViewTotals) MarshalResult() any {
-	return q.Result
+func (q *MetricsViewTotals) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *MetricsViewTotals) UnmarshalResult(v any) error {
@@ -55,7 +60,7 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return err
 	}
 
-	if olap.Dialect() != drivers.DialectDuckDB {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -68,7 +73,7 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	ql, args, err := q.buildMetricsTotalsSQL(mv)
+	ql, args, err := q.buildMetricsTotalsSQL(mv, olap.Dialect())
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -90,21 +95,20 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	return nil
 }
 
-func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsView) (string, []any, error) {
+func (q *MetricsViewTotals) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error {
+	return ErrExportNotSupported
+}
+
+func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
+	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
+	if err != nil {
+		return "", nil, err
+	}
+
 	selectCols := []string{}
-	for _, n := range q.MeasureNames {
-		found := false
-		for _, m := range mv.Measures {
-			if m.Name == n {
-				expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
-				selectCols = append(selectCols, expr)
-				found = true
-				break
-			}
-		}
-		if !found {
-			return "", nil, fmt.Errorf("measure does not exist: '%s'", n)
-		}
+	for _, m := range ms {
+		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+		selectCols = append(selectCols, expr)
 	}
 
 	whereClause := "1=1"
@@ -121,7 +125,7 @@ func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsView) (st
 	}
 
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, dialect)
 		if err != nil {
 			return "", nil, err
 		}

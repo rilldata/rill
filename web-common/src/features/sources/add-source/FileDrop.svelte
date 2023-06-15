@@ -1,23 +1,42 @@
 <script lang="ts">
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import { useRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import {
+    createRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceUnpackEmpty,
+  } from "@rilldata/web-common/runtime-client";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { useModelNames } from "../../models/selectors";
-  import { compileCreateSourceYAML } from "../sourceUtils";
+  import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
+  import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
+  import {
+    compileCreateSourceYAML,
+    getSourceError,
+    emitSourceErrorTelemetry,
+    emitSourceSuccessTelemetry,
+  } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { uploadTableFiles } from "./file-upload";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
+  import { appScreen } from "../../../layout/app-store";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
 
   export let showDropOverlay: boolean;
 
   const queryClient = useQueryClient();
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
-  const createSourceMutation = useRuntimeServicePutFileAndReconcile();
-
+  $: runtimeInstanceId = $runtime.instanceId;
   $: sourceNames = useSourceNames(runtimeInstanceId);
   $: modelNames = useModelNames(runtimeInstanceId);
+  $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
+
+  const createSourceMutation = createRuntimeServicePutFileAndReconcile();
+  const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
+
+  $: createSourceMutationError = ($createSourceMutation?.error as any)?.response
+    ?.data;
 
   const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;
@@ -25,10 +44,20 @@
     const uploadedFiles = uploadTableFiles(
       Array.from(e?.dataTransfer?.files),
       [$sourceNames?.data, $modelNames?.data],
-      $runtimeStore.instanceId
+      $runtime.instanceId
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
+        // If project is uninitialized, initialize an empty project
+        if (!$isProjectInitialized.data) {
+          $unpackEmptyProject.mutate({
+            instanceId: $runtime.instanceId,
+            data: {
+              title: EMPTY_PROJECT_TITLE,
+            },
+          });
+        }
+
         const yaml = compileCreateSourceYAML(
           {
             sourceName: tableName,
@@ -36,14 +65,32 @@
           },
           "local_file"
         );
-        // TODO: errors
-        await createSource(
+        const errors = await createSource(
           queryClient,
           runtimeInstanceId,
           tableName,
           yaml,
           $createSourceMutation
         );
+
+        const sourceError = getSourceError(errors, tableName);
+        if (createSourceMutationError.isError || sourceError) {
+          emitSourceErrorTelemetry(
+            MetricsEventSpace.Workspace,
+            $appScreen,
+            createSourceMutationError?.message ?? sourceError?.message,
+            SourceConnectionType.Local,
+            filePath
+          );
+        } else {
+          emitSourceSuccessTelemetry(
+            MetricsEventSpace.Workspace,
+            $appScreen,
+            BehaviourEventMedium.Drag,
+            SourceConnectionType.Local,
+            filePath
+          );
+        }
       } catch (err) {
         console.error(err);
       }

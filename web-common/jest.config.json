@@ -1,11 +1,13 @@
 {
   "transform": {
     "^.+\\.svelte$": "svelte-jester",
-    "^.+\\.[tj]s?$": "ts-jest"
+    "^.+\\.[tj]s?$": "ts-jest",
+    "@tanstack\\/svelte-query\\/.*$": "ts-jest"
   },
   "moduleNameMapper": {
     "^\\@rilldata\\/web-common(.*)$": "<rootDir>/src/$1",
     "^\\@rilldata\\/web-local(.*)$": "<rootDir>/../web-local/src/$1",
+    "(.*).js$": "$1",
     "^\\$app(.*)$": [
       "<rootDir>/.svelte-kit/dev/runtime/app$1",
       "<rootDir>/.svelte-kit/build/runtime/app$1"

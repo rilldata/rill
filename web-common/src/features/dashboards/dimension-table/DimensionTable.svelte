@@ -107,6 +107,7 @@ TableCells – the cell contents.
     });
 
     estimateColumnSize = columns.map((column, i) => {
+      if (column.name.includes("delta")) return config.comparisonColumnWidth;
       if (i != 0) return config.defaultColumnWidth;
 
       const largestStringLength =
@@ -215,7 +216,9 @@ TableCells – the cell contents.
 
 <div
   bind:clientWidth={containerWidth}
-  style:height="calc(100vh - var(--header, 130px) - 8rem)"
+  style="height: 100%;"
+  role="table"
+  aria-label="Dimension table"
 >
   <div
     bind:this={container}
@@ -281,6 +284,7 @@ TableCells – the cell contents.
             virtualColumnItems={virtualColumns}
             virtualRowItems={virtualRows}
             columns={measureColumns}
+            selectedColumn={sortByColumn}
             {rows}
             {activeIndex}
             {selectedIndex}
@@ -288,6 +292,7 @@ TableCells – the cell contents.
             {excludeMode}
             on:select-item={(event) => onSelectItem(event)}
             on:inspect={setActiveIndex}
+            cellLabel="Filter dimension value"
           />
         {:else}
           <div class="flex text-gray-500 justify-center mt-[30vh]">

@@ -3,9 +3,25 @@ package connectors
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"go.uber.org/zap"
 )
+
+var ErrIngestionLimitExceeded = fmt.Errorf("connectors: source ingestion exceeds limit")
+
+type PermissionDeniedError struct {
+	msg string
+}
+
+func NewPermissionDeniedError(msg string) error {
+	return &PermissionDeniedError{msg: msg}
+}
+
+func (e *PermissionDeniedError) Error() string {
+	return e.msg
+}
 
 // Connectors tracks all registered connector drivers.
 var Connectors = make(map[string]Connector)
@@ -27,14 +43,20 @@ type Connector interface {
 	// how to communicate splits and long-running/streaming data (e.g. for Kafka).
 	// Consume(ctx context.Context, source Source) error
 
-	ConsumeAsIterator(ctx context.Context, env *Env, source *Source) (FileIterator, error)
+	ConsumeAsIterator(ctx context.Context, env *Env, source *Source, logger *zap.Logger) (FileIterator, error)
+
+	// HasAnonymousAccess returns true if external system can be accessed without credentials
+	HasAnonymousAccess(ctx context.Context, env *Env, source *Source) (bool, error)
 }
 
 // Spec provides metadata about a connector and the properties it supports.
 type Spec struct {
-	DisplayName string
-	Description string
-	Properties  []PropertySchema
+	DisplayName        string
+	Description        string
+	ServiceAccountDocs string
+	Properties         []PropertySchema
+	ConnectorVariables []VariableSchema
+	Help               string
 }
 
 // PropertySchema provides the schema for a property supported by a connector.
@@ -47,6 +69,15 @@ type PropertySchema struct {
 	Placeholder string
 	Hint        string
 	Href        string
+}
+
+type VariableSchema struct {
+	Key           string
+	Default       string
+	Help          string
+	Secret        bool
+	ValidateFunc  func(any interface{}) error
+	TransformFunc func(any interface{}) interface{}
 }
 
 // PropertySchemaType is an enum of types supported for connector properties.
@@ -78,10 +109,11 @@ func (ps PropertySchema) ValidateType(val any) bool {
 // and (in the future) secrets configured by the user.
 type Env struct {
 	RepoDriver string
-	RepoDSN    string
+	RepoRoot   string
 	// user provided env variables kept with keys converted to uppercase
-	Variables            map[string]string
-	AllowHostCredentials bool
+	Variables           map[string]string
+	AllowHostAccess     bool
+	StorageLimitInBytes int64
 }
 
 // Source represents a dataset to ingest using a specific connector (like a connector instance).
@@ -137,25 +169,14 @@ func (s *Source) Validate() error {
 	return nil
 }
 
-func ConsumeAsIterator(ctx context.Context, env *Env, source *Source) (FileIterator, error) {
+func ConsumeAsIterator(ctx context.Context, env *Env, source *Source, logger *zap.Logger) (FileIterator, error) {
 	connector, ok := Connectors[source.Connector]
 	if !ok {
 		return nil, fmt.Errorf("connector: not found")
 	}
-	return connector.ConsumeAsIterator(ctx, env, source)
+	return connector.ConsumeAsIterator(ctx, env, source, logger)
 }
 
 func (s *Source) PropertiesEquals(o *Source) bool {
-	if len(s.Properties) != len(o.Properties) {
-		return false
-	}
-
-	for k1, v1 := range s.Properties {
-		v2, ok := o.Properties[k1]
-		if !ok || v1 != v2 {
-			return false
-		}
-	}
-
-	return true
+	return reflect.DeepEqual(s.Properties, o.Properties)
 }

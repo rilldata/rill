@@ -20,11 +20,11 @@ on:
 
 env:
   PUBLISH_NIGHTLY: ${{ contains(fromJSON('["schedule", "workflow_dispatch"]'), github.event_name) }}
-  PUBLISH_RELEASE: ${{ contains('refs/tags', github.ref) }}
+  PUBLISH_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
 jobs:
   release:
-    name: Release rill-developer
+    name: Release rill
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -42,7 +42,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.2
+          go-version: 1.20.3
 
       - name: Set up NodeJS
         uses: actions/setup-node@v3
@@ -73,11 +73,11 @@ jobs:
               -e CGO_ENABLED=1 \
               --env-file .release-env \
               -v /var/run/docker.sock:/var/run/docker.sock \
-              -v `pwd`:/go/src/rilldata/rill-developer \
+              -v `pwd`:/go/src/rilldata/rill \
               -v `pwd`/sysroot:/sysroot \
               -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
-              -w /go/src/rilldata/rill-developer \
-              goreleaser/goreleaser-cross:v1.19.2 \
+              -w /go/src/rilldata/rill \
+              goreleaser/goreleaser-cross:v1.20.3 \
               release ${NIGHTLY}
 
       - name: Authenticate GCS

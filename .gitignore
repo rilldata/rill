@@ -17,15 +17,17 @@ export/
 /tmp
 /runtime/sql/deps
 /runtime/release
+/runtime/pkg/examples/embed/dist
 /cli/pkg/web/embed/dist
 /rill
 /cli/pkg/examples/embed/dist
-/dev-project
+/dev-project*
 
 # data files
 *.duckdb
 *.duckdb.wal
 *.db
+*.db.tmp
 *.wal
 *.parquet
 *.tsv
@@ -48,9 +50,9 @@ profile.log
 saved-state.json
 last-query-output.json
 staging-databases
-projects/
 /rilldata
 docs/dist/
+coverage
 
 # Maven
 target/
@@ -72,3 +74,5 @@ rill-binary-sa.json
 !runtime/testdata/**
 sysroot/
 latest.txt
+/web-common/coverage
+/web-local/.jest/rill-e2e-test

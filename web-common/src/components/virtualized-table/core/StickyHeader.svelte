@@ -12,6 +12,8 @@
   export let enableResize = true;
   export let borderRight = false;
 
+  export let bgClass = "surface";
+
   let positionClasses;
   let offsetTop = false;
   $: {
@@ -49,7 +51,7 @@
   }
 </script>
 
-<div
+<button
   on:mouseover={focus}
   on:mouseleave={blur}
   on:focus={focus}
@@ -60,8 +62,8 @@
   style:height="{position === "left"
     ? config.rowHeight
     : config.columnHeaderHeight}px"
-  class="{positionClasses}
-   surface text-left {borderClassesOuterDiv}"
+  class="block {positionClasses}
+   {bgClass} text-left {borderClassesOuterDiv}"
 >
   <div
     class="
@@ -98,4 +100,4 @@
       </div>
     {/if}
   </div>
-</div>
+</button>

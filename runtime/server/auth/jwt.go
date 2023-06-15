@@ -139,11 +139,13 @@ func (i *Issuer) NewToken(opts TokenOptions) (string, error) {
 	return res, nil
 }
 
-// WellKnownHandleFunc serves the public keys of the Issuer's JWKS.
+// WellKnownHandler serves the public keys of the Issuer's JWKS.
 // The Audience expects it to be mounted on {issuerURL}/.well-known/jwks.json.
-func (i *Issuer) WellKnownHandleFunc(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write(i.publicJWKS)
+func (i *Issuer) WellKnownHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(i.publicJWKS)
+	})
 }
 
 // Audience represents a receiver of tokens from Issuer.
@@ -160,7 +162,7 @@ type Audience struct {
 // The issuerURL should be the external URL of the issuing admin server.
 // The issuerURL is expected to serve a JWKS on /.well-known/jwks.json.
 // The audienceURL should be the external URL of the receiving runtime server.
-func OpenAudience(logger *zap.Logger, issuerURL, audienceURL string) (*Audience, error) {
+func OpenAudience(ctx context.Context, logger *zap.Logger, issuerURL, audienceURL string) (*Audience, error) {
 	// To be safe, require issuer and audience is provided
 	if issuerURL == "" {
 		return nil, fmt.Errorf("issuerURL is not set")
@@ -175,17 +177,29 @@ func OpenAudience(logger *zap.Logger, issuerURL, audienceURL string) (*Audience,
 		return nil, err
 	}
 
-	// Setup keyfunc that refreshes the JWKS in the background
-	jwks, err := keyfunc.Get(jwksURL, keyfunc.Options{
-		Ctx: context.Background(),
-		RefreshErrorHandler: func(err error) {
-			logger.Error("JWK refresh failed", zap.Error(err))
-		},
-		RefreshInterval:   time.Hour,
-		RefreshRateLimit:  time.Minute * 5,
-		RefreshTimeout:    time.Second * 10,
-		RefreshUnknownKID: true,
-	})
+	// Setup keyfunc that refreshes the JWKS in the background.
+	// It returns an error if the initial fetch fails. So we wrap it with a retry in case the admin server is not ready.
+	var jwks *keyfunc.JWKS
+	for i := 0; i < 5; i++ {
+		jwks, err = keyfunc.Get(jwksURL, keyfunc.Options{
+			Ctx: ctx,
+			RefreshErrorHandler: func(err error) {
+				logger.Error("JWK refresh failed", zap.Error(err))
+			},
+			RefreshInterval:   time.Hour,
+			RefreshRateLimit:  time.Minute * 5,
+			RefreshTimeout:    time.Second * 10,
+			RefreshUnknownKID: true,
+		})
+		if err != nil {
+			logger.Info("JWKS fetch failed, retrying in 5s", zap.Error(err))
+			select {
+			case <-time.After(time.Second * 5):
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+		}
+	}
 	if err != nil {
 		return nil, err
 	}

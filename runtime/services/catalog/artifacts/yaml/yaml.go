@@ -6,9 +6,9 @@ import (
 	"errors"
 	"path/filepath"
 
-	"github.com/go-yaml/yaml"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
+	"gopkg.in/yaml.v3"
 )
 
 type artifact struct{}
@@ -19,7 +19,7 @@ func init() {
 	artifacts.Register(".yaml", &artifact{})
 }
 
-func (r *artifact) DeSerialise(ctx context.Context, filePath, blob string) (*drivers.CatalogEntry, error) {
+func (r *artifact) DeSerialise(ctx context.Context, filePath, blob string, materializeDefault bool) (*drivers.CatalogEntry, error) {
 	dir := filepath.Base(filepath.Dir(filePath))
 	switch dir {
 	case "sources":

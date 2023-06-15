@@ -27,7 +27,7 @@
     return {
       value,
       formattedValue: value,
-      type: column.type,
+      type: column?.type,
       suppressTooltip: scrolling,
       barValue: 0,
       rowSelected: selectedIndex.findIndex((tgt) => row?.index === tgt) >= 0,
@@ -46,7 +46,7 @@
     position="top-left"
     borderRight={horizontalScrolling}
   >
-    <span class="px-1">{column.label || column.name}</span>
+    <span class="px-1">{column?.label || column?.name}</span>
   </StickyHeader>
   {#each virtualRowItems as row (`row-${row.key}`)}
     {@const rowActive = activeIndex === row?.index}
@@ -66,6 +66,7 @@
         {...getCellProps(row)}
         on:inspect
         on:select-item
+        label="Filter dimension value"
       />
     </StickyHeader>
   {/each}

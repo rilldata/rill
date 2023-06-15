@@ -2,8 +2,8 @@
   import { SelectMenu } from "@rilldata/web-common/components/menu";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { MetricsViewMeasure } from "@rilldata/web-common/runtime-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
   import { crossfade, fly } from "svelte/transition";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import {
     MetricsExplorerEntity,
@@ -13,7 +13,7 @@
 
   export let metricViewName;
 
-  $: metaQuery = useMetaQuery($runtimeStore.instanceId, metricViewName);
+  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
   $: measures = $metaQuery.data?.measures;
 
@@ -64,17 +64,53 @@
 
   /** set the selection only if measures is not undefined */
   $: selection = measures ? activeLeaderboardMeasure : [];
+
+  // FIXME: this is pending the remaining state work for show/hide measures and dimensions
+  // $: availableDimensionLabels = selectBestDimensionStrings($metaQuery);
+  // $: availableDimensionKeys = selectDimensionKeys($metaQuery);
+  // $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
+  // $: visibleDimensionsBitmask = availableDimensionKeys.map((k) =>
+  //   visibleDimensionKeys.has(k)
+  // );
+
+  // const toggleDimensionVisibility = (e) => {
+  //   metricsExplorerStore.toggleDimensionVisibilityByKey(
+  //     metricViewName,
+  //     availableDimensionKeys[e.detail.index]
+  //   );
+  // };
+  // const setAllDimensionsNotVisible = () => {
+  //   metricsExplorerStore.hideAllDimensions(metricViewName);
+  // };
+  // const setAllDimensionsVisible = () => {
+  //   metricsExplorerStore.setMultipleDimensionsVisible(
+  //     metricViewName,
+  //     availableDimensionKeys
+  //   );
+  // };
 </script>
 
 <div>
   {#if measures && options.length && selection}
     <div
       class="flex flex-row items-center ui-copy-muted"
+      style:padding-left="22px"
       style:grid-column-gap=".4rem"
       in:send={{ key: "leaderboard-metric" }}
-      style:max-width="355px"
+      style:max-width="450px"
     >
-      <div class="whitespace-nowrap">Dimension Leaders by</div>
+      <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
+      <!-- <SeachableFilterButton
+        selectableItems={availableDimensionLabels}
+        selectedItems={visibleDimensionsBitmask}
+        on:item-clicked={toggleDimensionVisibility}
+        on:deselect-all={setAllDimensionsNotVisible}
+        on:select-all={setAllDimensionsVisible}
+        label="Dimensions"
+        tooltipText="Choose dimensions to display"
+      /> -->
+
+      <div class="whitespace-nowrap">showing top values by</div>
 
       <SelectMenu
         paddingTop={2}

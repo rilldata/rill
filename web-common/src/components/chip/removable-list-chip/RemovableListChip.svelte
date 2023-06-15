@@ -22,6 +22,7 @@ are details left to the consumer of the component; this component should remain 
   import { Chip } from "../index";
   import RemovableListBody from "./RemovableListBody.svelte";
   import RemovableListMenu from "./RemovableListMenu.svelte";
+  import { writable, Writable } from "svelte/store";
 
   export let name: string;
   export let selectedValues: string[];
@@ -29,17 +30,20 @@ are details left to the consumer of the component; this component should remain 
 
   /** an optional type label that will appear in the tooltip */
   export let typeLabel: string;
-  export let excludeMode = false;
+  export let excludeMode;
   export let colors: ChipColors = defaultChipColors;
+  export let label = undefined;
 
   const dispatch = createEventDispatcher();
 
   let active = false;
+
+  const excludeStore: Writable<boolean> = writable(excludeMode);
+  $: excludeStore.set(excludeMode);
 </script>
 
 <WithTogglableFloatingElement
   let:toggleFloatingElement
-  bind:active
   distance={8}
   alignment="start"
 >
@@ -56,6 +60,7 @@ are details left to the consumer of the component; this component should remain 
       on:remove={() => dispatch("remove")}
       {active}
       {...colors}
+      {label}
     >
       <!-- remove button tooltip -->
       <svelte:fragment slot="remove-tooltip">
@@ -86,7 +91,7 @@ are details left to the consumer of the component; this component should remain 
     </div>
   </Tooltip>
   <RemovableListMenu
-    {excludeMode}
+    {excludeStore}
     slot="floating-element"
     on:escape={toggleFloatingElement}
     on:click-outside={toggleFloatingElement}

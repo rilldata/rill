@@ -88,12 +88,16 @@
 <td
   class="py-2 px-4 border border-gray-200 hover:bg-gray-200"
   on:click={startEditing}
+  on:keydown={() => {
+    /* prevent default behavior */
+  }}
   style={editing
     ? "cursor:text; background:white; outline:1px solid #aaa;"
     : ""}
 >
   <div class="flex flex-row">
     <input
+      aria-label={columnConfig.ariaLabel}
       autocomplete="off"
       bind:this={inputElt}
       class={"table-input w-full text-ellipsis bg-inherit " +

@@ -4,8 +4,8 @@
   import WithParentClientRect from "@rilldata/web-common/components/data-graphic/functional-components/WithParentClientRect.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { TIMESTAMP_TOKENS } from "@rilldata/web-common/lib/duckdb-data-types";
-  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
-  import { runtimeStore } from "@rilldata/web-local/lib/application-state-stores/application-store";
+  import { httpRequestQueue } from "../../../runtime-client/http-client";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
   import {
@@ -31,13 +31,13 @@
 
   /** queries used to power the different plots */
   $: nullPercentage = getNullPercentage(
-    $runtimeStore?.instanceId,
+    $runtime?.instanceId,
     objectName,
     columnName
   );
 
   $: timeSeries = getTimeSeriesAndSpark(
-    $runtimeStore?.instanceId,
+    $runtime?.instanceId,
     objectName,
     columnName,
     active
@@ -84,7 +84,6 @@
     </WithParentClientRect>
   </div>
   <NullPercentageSpark
-    isFetching={fetchingSummaries}
     nullCount={$nullPercentage?.nullCount}
     slot="nullity"
     totalRows={$nullPercentage?.totalRows}

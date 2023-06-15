@@ -1,34 +1,35 @@
 import { afterAll, afterEach, beforeAll, beforeEach } from "@jest/globals";
 import { isPortOpen } from "@rilldata/web-local/lib/util/isPortOpen";
 import { asyncWaitUntil } from "@rilldata/web-local/lib/util/waitUtils";
-import { rmSync } from "fs";
+import axios from "axios";
+import { rmSync, writeFileSync } from "fs";
 import type { ChildProcess } from "node:child_process";
 import { spawn } from "node:child_process";
 import path from "node:path";
-import { Browser, chromium, Page } from "playwright";
+import { Browser, Page, chromium } from "playwright";
 import treeKill from "tree-kill";
 
 export function useTestServer(port: number, dir: string) {
   let childProcess: ChildProcess;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     rmSync(dir, {
       force: true,
       recursive: true,
     });
 
     childProcess = spawn(
-      "go",
+      path.join(__dirname, "../../rill-e2e-test"),
       [
-        "run",
-        path.join(__dirname, "../../../..", "cli/main.go"),
         "start",
         "--no-open",
-        "--port",
-        port + "",
-        "--port-grpc",
-        port + 1000 + "",
-        "--project",
+        `--port`,
+        port.toString(),
+        `--port-grpc`,
+        (port + 1000).toString(),
+        // Temporary workaround for test hangs until runtime fix. With pool size 1, sometimes network requests hang
+        "--db",
+        path.join(dir, "stage.db?rill_pool_size=4"),
         dir,
       ],
       {
@@ -37,11 +38,27 @@ export function useTestServer(port: number, dir: string) {
       }
     );
     childProcess.on("error", console.log);
-    await asyncWaitUntil(() => isPortOpen(port));
+
+    // Ping runtime until it's ready
+    await asyncWaitUntil(async () => {
+      try {
+        const response = await axios.get(`http://localhost:${port}/v1/ping`);
+        return response.status === 200;
+      } catch (err) {
+        return false;
+      }
+    });
+
+    // Add `rill.yaml` file to the project repo
+    writeFileSync(
+      `${dir}/rill.yaml`,
+      'compiler: rill-beta\ntitle: "Test Project"'
+    );
   });
 
-  afterAll(() => {
+  afterEach(async () => {
     if (childProcess.pid) treeKill(childProcess.pid);
+    await asyncWaitUntil(async () => !(await isPortOpen(port)));
   });
 }
 
@@ -55,8 +72,9 @@ export function useTestBrowser(port: number) {
 
   beforeAll(async () => {
     browser = await chromium.launch({
-      headless: false,
-      devtools: true,
+      // headless: false,
+      // slowMo: 500,
+      // devtools: true,
     });
   });
 

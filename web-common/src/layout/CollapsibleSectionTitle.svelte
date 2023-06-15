@@ -24,15 +24,15 @@
     <button
       class="
         text-left
-            w-full 
-            bg-transparent 
-            grid 
-            grid-flow-col 
+            w-full
+            bg-transparent
+            grid
+            grid-flow-col
             gap-2
             items-center
-            p-0 
-            pr-1 
-            border-transparent 
+            p-0
+            pr-1
+            border-transparent
             hover:border-slate-200"
       style="
                 max-width: 100%;

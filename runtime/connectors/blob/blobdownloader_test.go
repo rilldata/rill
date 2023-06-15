@@ -8,6 +8,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	_ "gocloud.dev/blob/memblob"
 )
@@ -18,6 +19,8 @@ var filesData = map[string][]byte{
 	"2020/02/03/cata.txt": []byte("writing"),
 	"2020/02/04/data.txt": []byte("test"),
 }
+
+const TenGB = 10 * 1024 * 1024
 
 func TestFetchFileNames(t *testing.T) {
 	type args struct {
@@ -33,49 +36,49 @@ func TestFetchFileNames(t *testing.T) {
 	}{
 		{
 			name:    "single file found",
-			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/01/01/aata.txt"}},
+			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/01/01/aata.txt", StorageLimitInBytes: TenGB}},
 			want:    map[string]struct{}{"hello": {}},
 			wantErr: false,
 		},
 		{
-			name:    "single file absent",
-			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/01/01/eata.txt"}},
-			want:    nil,
-			wantErr: true,
-		},
-		{
 			name:    "recursive glob",
-			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/**/*.txt"}},
+			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/**/*.txt", StorageLimitInBytes: TenGB}},
 			want:    map[string]struct{}{"hello": {}, "world": {}, "writing": {}, "test": {}},
 			wantErr: false,
 		},
 		{
 			name:    "non recursive glob",
-			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/0?/0[1-3]/{a,b}ata.txt"}},
+			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/0?/0[1-3]/{a,b}ata.txt", StorageLimitInBytes: TenGB}},
 			want:    map[string]struct{}{"hello": {}, "world": {}},
 			wantErr: false,
 		},
 		{
 			name:    "glob absent",
-			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/**/*.csv"}},
+			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/**/*.csv", StorageLimitInBytes: TenGB}},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "total size limit",
-			args:    args{context.Background(), prepareBucket(t), Options{GlobMaxTotalSize: 1, GlobPattern: "2020/**"}},
+			args:    args{context.Background(), prepareBucket(t), Options{GlobMaxTotalSize: 1, GlobPattern: "2020/**", StorageLimitInBytes: TenGB}},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "max match limit",
-			args:    args{context.Background(), prepareBucket(t), Options{GlobMaxObjectsMatched: 1, GlobPattern: "2020/**"}},
+			args:    args{context.Background(), prepareBucket(t), Options{GlobMaxObjectsMatched: 1, GlobPattern: "2020/**", StorageLimitInBytes: TenGB}},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "max list limit",
-			args:    args{context.Background(), prepareBucket(t), Options{GlobMaxObjectsListed: 1, GlobPattern: "2020/**"}},
+			args:    args{context.Background(), prepareBucket(t), Options{GlobMaxObjectsListed: 1, GlobPattern: "2020/**", StorageLimitInBytes: TenGB}},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "storage limit exceeded",
+			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/**", StorageLimitInBytes: 10}},
 			want:    nil,
 			wantErr: true,
 		},
@@ -83,7 +86,7 @@ func TestFetchFileNames(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			it, err := NewIterator(tt.args.ctx, tt.args.bucket, tt.args.opt)
+			it, err := NewIterator(tt.args.ctx, tt.args.bucket, tt.args.opt, zap.NewNop())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FetchFileNames() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -130,7 +133,7 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 			name: "listing head limits",
 			args: args{context.Background(),
 				prepareBucket(t),
-				Options{ExtractPolicy: &runtimev1.Source_ExtractPolicy{FilesStrategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, FilesLimit: 2}, GlobPattern: "2020/**"},
+				Options{ExtractPolicy: &runtimev1.Source_ExtractPolicy{FilesStrategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, FilesLimit: 2}, GlobPattern: "2020/**", StorageLimitInBytes: TenGB},
 			},
 			want:    map[string]struct{}{"hello": {}, "world": {}},
 			wantErr: false,
@@ -140,7 +143,7 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 			args: args{
 				context.Background(),
 				prepareBucket(t),
-				Options{ExtractPolicy: &runtimev1.Source_ExtractPolicy{FilesStrategy: runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, FilesLimit: 2}, GlobPattern: "2020/**"},
+				Options{ExtractPolicy: &runtimev1.Source_ExtractPolicy{FilesStrategy: runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, FilesLimit: 2}, GlobPattern: "2020/**", StorageLimitInBytes: TenGB},
 			},
 			want:    map[string]struct{}{"test": {}, "writing": {}},
 			wantErr: false,
@@ -149,7 +152,7 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			it, err := NewIterator(tt.args.ctx, tt.args.bucket, tt.args.opts)
+			it, err := NewIterator(tt.args.ctx, tt.args.bucket, tt.args.opts, zap.NewNop())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FetchFileNames() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -37,7 +37,6 @@ linters:
     - bodyclose
     - bidichk
     - depguard
-    - dupword
     - errchkjson
     - errcheck
     - errname
@@ -47,7 +46,6 @@ linters:
     - gofmt
     - gofumpt
     - goheader
-    - goimports
     - goprintffuncname
     - gosec
     - gosimple
@@ -68,6 +66,14 @@ linters:
     - whitespace
 
 linters-settings:
+  depguard:
+    rules:
+      main:
+        files:
+          - "!proto/**/*.go"
+        deny:
+          - pkg: "github.com/pkg/errors"
+            desc: Should be replaced by standard lib errors package
   goconst:
     min-len: 2
     min-occurrences: 3
@@ -88,16 +94,11 @@ linters-settings:
       - filepathJoin
       - hugeParam
       - octalLiteral
-  goimports:
-    # ensure placement of imports with this prefix after all other imports
-    # corresponds to `goimports -local`
-    local-prefixes: github.com/rilldata/rill-developer
   gomnd:
     settings:
       mnd:
         # don't include the "operation" and "assign" checks
         checks: argument,case,condition,return
-  linters-settings:
   gci:
     # Section configuration to compare against.
     # Section names are case-insensitive and may contain parameters in ().

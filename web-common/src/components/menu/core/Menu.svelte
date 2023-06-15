@@ -27,6 +27,7 @@
   export let role = "menu";
   /** used for selector-style menus */
   export let multiselectable = false;
+  export let label: string | undefined = undefined;
 
   if (dark) {
     setContext("rill:menu:dark", dark);
@@ -97,12 +98,13 @@
     getContext("rill:menu:menuTrigger") || writable(undefined);
 
   let mounted = false;
-  // once open, we should select the first menu item.
   onMount(() => {
     $globalActiveMenu = menuID;
+    mounted = true;
   });
 
-  $: if (focusOnMount && !mounted) {
+  // once open, we should select the first menu item.
+  $: if (focusOnMount && mounted) {
     $currentItem = $menuItems.find((item) => !item.disabled)?.id;
   }
 
@@ -145,15 +147,15 @@
         pt-{paddingTop} 
         pb-{paddingBottom}
         w-max
-        flex 
+        flex
         flex-col
         outline-none
         {dark
     ? 'bg-gray-800 dark:bg-gray-700 border-none dark:border-none shadow'
-    : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-none shadow-md dark:shadow-xl'}
+    : 'bg-white dark:bg-gray-700 border-[.5px] border-gray-300 dark:border-none shadow-lg dark:shadow-xl'}
         "
   style:outline="none"
-  tabindex="0"
+  aria-label={label}
   {...ariaProperties}
 >
   <slot />

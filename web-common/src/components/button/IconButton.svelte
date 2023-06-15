@@ -12,6 +12,7 @@
   export let tooltipLocation = "bottom";
   export let tooltipAlignment = "center";
   export let marginClasses = "";
+  export let ariaLabel = "";
 </script>
 
 <Tooltip
@@ -21,9 +22,10 @@
 >
   <button
     on:click
+    aria-label={ariaLabel}
     class:cursor-auto={disabled}
     class:rounded
-    class="{marginClasses} grid place-items-center 
+    class="{marginClasses} grid place-items-center
 {active ? 'bg-gray-200 dark:bg-gray-800' : ''}
 {disabled ? 'text-gray-400' : 'text-gray-800'}
 {disabled ? '' : bgDark ? 'hover:bg-gray-600' : 'hover:bg-gray-200'}"

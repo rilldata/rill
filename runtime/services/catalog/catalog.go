@@ -16,18 +16,9 @@ type Service struct {
 	Olap          drivers.OLAPStore
 	RegistryStore drivers.RegistryStore
 	InstID        string
+	logger        *zap.Logger
 
-	// temporary information. should this be persisted into olap?
-	// LastMigration stores the last time migrate was run. Used to filter out repos that didnt change since this time
-	LastMigration time.Time
-	dag           *dag.DAG
-	// used to get path when we only have name. happens when we get name from DAG
-	// TODO: should we add path to the DAG instead
-	NameToPath map[string]string
-
-	logger      *zap.Logger
-	hasMigrated bool
-	lock        sync.Mutex
+	Meta *MigrationMeta
 }
 
 func NewService(
@@ -37,9 +28,13 @@ func NewService(
 	registry drivers.RegistryStore,
 	instID string,
 	logger *zap.Logger,
+	m *MigrationMeta,
 ) *Service {
 	if logger == nil {
 		logger = zap.NewNop()
+	}
+	if instID != "default" {
+		logger = logger.With(zap.String("instance_id", instID))
 	}
 	return &Service{
 		Catalog:       catalog,
@@ -47,31 +42,56 @@ func NewService(
 		Olap:          olap,
 		RegistryStore: registry,
 		InstID:        instID,
+		logger:        logger,
+		Meta:          m,
+	}
+}
 
+func (s *Service) FindEntries(ctx context.Context, typ drivers.ObjectType) ([]*drivers.CatalogEntry, error) {
+	entries, err := s.Catalog.FindEntries(ctx, s.InstID, typ)
+	if err != nil {
+		return nil, err
+	}
+	s.Meta.lock.RLock()
+	defer s.Meta.lock.RUnlock()
+	for _, entry := range entries {
+		s.Meta.fillDAGInEntry(entry)
+	}
+	return entries, nil
+}
+
+func (s *Service) FindEntry(ctx context.Context, name string) (*drivers.CatalogEntry, error) {
+	entry, err := s.Catalog.FindEntry(ctx, s.InstID, name)
+	if err != nil {
+		return nil, err
+	}
+	s.Meta.lock.RLock()
+	defer s.Meta.lock.RUnlock()
+	s.Meta.fillDAGInEntry(entry)
+	return entry, nil
+}
+
+type MigrationMeta struct {
+	// temporary information. should this be persisted into olap?
+	// LastMigration stores the last time migrate was run. Used to filter out repos that didnt change since this time
+	LastMigration time.Time
+	dag           *dag.DAG
+	// used to get path when we only have name. happens when we get name from DAG
+	// TODO: should we add path to the DAG instead
+	NameToPath map[string]string
+
+	hasMigrated bool
+	lock        sync.RWMutex
+}
+
+func NewMigrationMeta() *MigrationMeta {
+	return &MigrationMeta{
 		dag:        dag.NewDAG(),
 		NameToPath: make(map[string]string),
-
-		logger: logger,
 	}
 }
 
-func (s *Service) FindEntries(ctx context.Context, typ drivers.ObjectType) []*drivers.CatalogEntry {
-	entries := s.Catalog.FindEntries(ctx, s.InstID, typ)
-	for _, entry := range entries {
-		s.fillDAGInEntry(entry)
-	}
-	return entries
-}
-
-func (s *Service) FindEntry(ctx context.Context, name string) (*drivers.CatalogEntry, bool) {
-	entry, ok := s.Catalog.FindEntry(ctx, s.InstID, name)
-	if ok {
-		s.fillDAGInEntry(entry)
-	}
-	return entry, ok
-}
-
-func (s *Service) fillDAGInEntry(entry *drivers.CatalogEntry) {
-	entry.Children = s.dag.GetChildren(normalizeName(entry.Name))
-	entry.Parents = s.dag.GetParents(normalizeName(entry.Name))
+func (m *MigrationMeta) fillDAGInEntry(entry *drivers.CatalogEntry) {
+	entry.Children = m.dag.GetChildren(normalizeName(entry.Name))
+	entry.Parents = m.dag.GetParents(normalizeName(entry.Name))
 }

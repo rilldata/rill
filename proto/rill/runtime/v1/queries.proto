@@ -17,13 +17,28 @@ service QueryService {
     };
   }
 
+  // Export builds a URL to download the results of a query as a file.
+  rpc Export(ExportRequest) returns (ExportResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/export",
+      body: "*"
+    };
+  }
+
   // Explore APIs
 
   // MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
   // It's a convenience API for querying a metrics view.
   rpc MetricsViewToplist(MetricsViewToplistRequest) returns (MetricsViewToplistResponse) {
     option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/queries/metric-views/{metrics_view_name}/toplist",
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/toplist",
+      body: "*"
+    };
+  }
+
+  rpc MetricsViewComparisonToplist(MetricsViewComparisonToplistRequest) returns (MetricsViewComparisonToplistResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/compare-toplist",
       body: "*"
     };
   }
@@ -42,6 +57,14 @@ service QueryService {
   rpc MetricsViewTotals(MetricsViewTotalsRequest) returns (MetricsViewTotalsResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/totals",
+      body: "*"
+    };
+  }
+
+  // MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+  rpc MetricsViewRows(MetricsViewRowsRequest) returns (MetricsViewRowsResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/rows",
       body: "*"
     };
   }
@@ -156,6 +179,28 @@ message QueryResponse {
   repeated google.protobuf.Struct data = 2;
 }
 
+// Request message for QueryService.Export
+message ExportRequest {
+  string instance_id = 1;
+  int32 limit = 2 [(validate.rules).int32.lte = 10000];
+  ExportFormat format = 3;
+  oneof request {
+    MetricsViewToplistRequest metrics_view_toplist_request = 4;
+    MetricsViewRowsRequest metrics_view_rows_request = 5;
+  }
+}
+
+// Response message for QueryService.Export
+message ExportResponse {
+  string download_url_path = 1;
+}
+
+// ExportFormat is a file format for a data export
+enum ExportFormat {
+  EXPORT_FORMAT_UNSPECIFIED = 0;
+  EXPORT_FORMAT_CSV = 1;
+}
+
 // **********
 // Explore APIs
 // **********
@@ -166,6 +211,7 @@ message MetricsViewToplistRequest {
   string metrics_view_name = 2;
   string dimension_name = 3;
   repeated string measure_names = 4;
+  repeated InlineMeasure inline_measures = 12;
   google.protobuf.Timestamp time_start = 5;
   google.protobuf.Timestamp time_end = 6;
   int64 limit = 7;
@@ -181,11 +227,65 @@ message MetricsViewToplistResponse {
   repeated google.protobuf.Struct data = 2;
 }
 
+// Request message for QueryService.MetricsViewComparisonToplist
+message MetricsViewComparisonToplistRequest {
+  string instance_id = 1;
+  string metrics_view_name = 2;
+  string dimension_name = 3;
+  repeated string measure_names = 4;
+  repeated InlineMeasure inline_measures = 5;
+  TimeRange base_time_range = 6;
+  TimeRange comparison_time_range = 7;
+  repeated MetricsViewComparisonSort sort = 8;
+  MetricsViewFilter filter = 9;
+  int64 limit = 10;
+  int64 offset = 11;
+  int32 priority = 12;
+}
+
+// Response message for QueryService.MetricsViewComparisonToplist
+message MetricsViewComparisonToplistResponse {
+  repeated MetricsViewComparisonRow rows = 1;
+}
+
+message TimeRange {
+  google.protobuf.Timestamp start = 1;
+  google.protobuf.Timestamp end = 2;
+}
+
+enum MetricsViewComparisonSortType {
+  METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED = 0;
+  METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE = 1;
+  METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE = 2;
+  METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA = 3;
+  METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA = 4;
+}
+
+message MetricsViewComparisonSort {
+  string measure_name = 1;
+  bool ascending = 2;
+  MetricsViewComparisonSortType type = 3;
+}
+
+message MetricsViewComparisonRow {
+  google.protobuf.Value dimension_value = 1;
+  repeated MetricsViewComparisonValue measure_values = 2;
+}
+
+message MetricsViewComparisonValue {
+  string measure_name = 1;
+  google.protobuf.Value base_value = 2;
+  google.protobuf.Value comparison_value = 3;
+  google.protobuf.Value delta_abs = 4;
+  google.protobuf.Value delta_rel = 5;
+}
+
 // Request message for QueryService.MetricsViewTimeSeries
 message MetricsViewTimeSeriesRequest {
   string instance_id = 1;
   string metrics_view_name = 2;
   repeated string measure_names = 3;
+  repeated InlineMeasure inline_measures = 9;
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
   TimeGrain time_granularity = 6;
@@ -204,6 +304,7 @@ message MetricsViewTotalsRequest {
   string instance_id = 1;
   string metrics_view_name = 2;
   repeated string measure_names = 3;
+  repeated InlineMeasure inline_measures = 9;
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
   MetricsViewFilter filter = 7;
@@ -214,6 +315,25 @@ message MetricsViewTotalsRequest {
 message MetricsViewTotalsResponse {
   repeated MetricsViewColumn meta = 1;
   google.protobuf.Struct data = 2;
+}
+
+// Request message for QueryService.MetricsViewRows
+message MetricsViewRowsRequest {
+  string instance_id = 1;
+  string metrics_view_name = 2;
+  google.protobuf.Timestamp time_start = 3;
+  google.protobuf.Timestamp time_end = 4;
+  MetricsViewFilter filter = 5;
+  repeated MetricsViewSort sort = 6;
+  int32 limit = 7;
+  int64 offset = 8;
+  int32 priority = 9;
+}
+
+// Response message for QueryService.MetricsViewRows
+message MetricsViewRowsResponse {
+  repeated MetricsViewColumn meta = 1;
+  repeated google.protobuf.Struct data = 2;
 }
 
 // Sort clause for metrics view requests
@@ -238,6 +358,12 @@ message MetricsViewColumn {
   string name = 1;
   string type = 2;
   bool nullable = 3;
+}
+
+// InlineMeasure is a measure to inject in a metrics view query that is not defined in the underlying MetricsView
+message InlineMeasure {
+  string name = 1;
+  string expression = 2;
 }
 
 // **********
@@ -467,7 +593,6 @@ message TimeSeriesTimeRange {
 message TimeSeriesResponse {
   repeated TimeSeriesValue results = 1;
   repeated TimeSeriesValue spark = 2;
-  TimeSeriesTimeRange time_range = 3;
   int32 sample_size = 4;
 }
 

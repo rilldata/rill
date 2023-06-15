@@ -3,18 +3,19 @@ package runtime
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"go.uber.org/zap"
 )
 
 var errConnectionCacheClosed = errors.New("connectionCache: closed")
 
+// cache for instance specific connections only
+// all instance specific connections should be opened via connection cache only
 type connectionCache struct {
 	cache  *simplelru.LRU
 	lock   sync.Mutex
@@ -23,7 +24,12 @@ type connectionCache struct {
 }
 
 func newConnectionCache(size int, logger *zap.Logger) *connectionCache {
-	cache, err := simplelru.NewLRU(size, nil)
+	cache, err := simplelru.NewLRU(size, func(key interface{}, value interface{}) {
+		// close the evicted connection
+		if err := value.(drivers.Connection).Close(); err != nil {
+			logger.Error("failed closing cached connection for ", zap.String("key", key.(string)), zap.Error(err))
+		}
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -68,7 +74,11 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn strin
 	key := instanceID + driver + dsn
 	val, ok := c.cache.Get(key)
 	if !ok {
-		conn, err := drivers.Open(driver, dsn, c.logger)
+		logger := c.logger
+		if instanceID != "default" {
+			logger = c.logger.With(zap.String("instance_id", instanceID), zap.String("driver", driver))
+		}
+		conn, err := drivers.Open(driver, dsn, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -85,92 +95,55 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn strin
 	return val.(drivers.Connection), nil
 }
 
-type catalogCache struct {
-	cache map[string]*catalog.Service
-	lock  sync.Mutex
-}
-
-func newCatalogCache() *catalogCache {
-	return &catalogCache{
-		cache: make(map[string]*catalog.Service),
-	}
-}
-
-func (c *catalogCache) get(ctx context.Context, rt *Runtime, instID string) (*catalog.Service, error) {
-	// TODO 1: opening a driver shouldn't take too long but we should still have an instance specific lock
-	// TODO 2: This is a cache on a cache, which may lead to undefined behavior
-	// TODO 3: Use LRU and not a map
-
+// evict removes the connection from cache and closes the connection
+func (c *connectionCache) evict(ctx context.Context, instanceID, driver, dsn string) bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	key := instID
+	if c.closed {
+		return false
+	}
 
-	service, ok := c.cache[key]
+	key := instanceID + driver + dsn
+	conn, ok := c.cache.Get(key)
 	if ok {
-		return service, nil
-	}
-
-	registry, _ := rt.metastore.RegistryStore()
-	inst, err := registry.FindInstance(ctx, instID)
-	if err != nil {
-		return nil, err
-	}
-
-	olapConn, err := rt.connCache.get(ctx, instID, inst.OLAPDriver, inst.OLAPDSN)
-	if err != nil {
-		return nil, err
-	}
-	olap, _ := olapConn.OLAPStore()
-
-	var catalogStore drivers.CatalogStore
-	if inst.EmbedCatalog {
-		conn, err := rt.connCache.get(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
+		err := conn.(drivers.Connection).Close()
 		if err != nil {
-			return nil, err
+			c.logger.Error("connection cache: failed to close cached connection", zap.Error(err), zap.String("instance", instanceID), observability.ZapCtx(ctx))
 		}
-
-		store, ok := conn.CatalogStore()
-		if !ok {
-			return nil, fmt.Errorf("instance cannot embed catalog")
-		}
-
-		catalogStore = store
-	} else {
-		store, ok := rt.metastore.CatalogStore()
-		if !ok {
-			return nil, fmt.Errorf("metastore cannot serve as catalog")
-		}
-		catalogStore = store
+		c.cache.Remove(key)
 	}
-
-	repoConn, err := rt.connCache.get(ctx, instID, inst.RepoDriver, inst.RepoDSN)
-	if err != nil {
-		return nil, err
-	}
-	repoStore, _ := repoConn.RepoStore()
-
-	service = catalog.NewService(catalogStore, repoStore, olap, registry, instID, rt.logger)
-	c.cache[key] = service
-	return service, nil
+	return ok
 }
 
-type queryCache struct {
-	cache *lru.Cache
+type migrationMetaCache struct {
+	cache *simplelru.LRU
+	lock  sync.Mutex
 }
 
-func newQueryCache(size int) *queryCache {
-	cache, err := lru.New(size)
+func newMigrationMetaCache(size int) *migrationMetaCache {
+	cache, err := simplelru.NewLRU(size, nil)
 	if err != nil {
 		panic(err)
 	}
-	return &queryCache{cache: cache}
+
+	return &migrationMetaCache{cache: cache}
 }
 
-func (c *queryCache) get(key queryCacheKey) (any, bool) {
-	return c.cache.Get(key)
+func (c *migrationMetaCache) get(instID string) *catalog.MigrationMeta {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if val, ok := c.cache.Get(instID); ok {
+		return val.(*catalog.MigrationMeta)
+	}
+
+	meta := catalog.NewMigrationMeta()
+	c.cache.Add(instID, meta)
+	return meta
 }
 
-func (c *queryCache) add(key queryCacheKey, value any) bool {
-	return c.cache.Add(key, value)
+func (c *migrationMetaCache) evict(ctx context.Context, instID string) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.cache.Remove(instID)
 }

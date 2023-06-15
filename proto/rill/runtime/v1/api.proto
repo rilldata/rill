@@ -34,9 +34,20 @@ service RuntimeService {
     };
   }
 
+  // EditInstance edits an existing instance
+  rpc EditInstance(EditInstanceRequest) returns (EditInstanceResponse) {
+    option (google.api.http) = {
+      put: "/v1/instances/{instance_id}",
+      body: "*"
+    };
+  }
+
   // DeleteInstance deletes an instance
   rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse) {
-    option (google.api.http) = {delete: "/v1/instances/{instance_id}"};
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}",
+      body: "*"
+    };
   }
 
   // Repos
@@ -69,6 +80,27 @@ service RuntimeService {
   rpc RenameFile(RenameFileRequest) returns (RenameFileResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/files/rename",
+      body: "*"
+    };
+  }
+
+  // ListExamples lists all the examples embedded into binary
+  rpc ListExamples(ListExamplesRequest) returns (ListExamplesResponse) {
+    option (google.api.http) = {get: "/v1/examples"};
+  }
+  
+  // UnpackExample unpacks an example project
+  rpc UnpackExample(UnpackExampleRequest) returns (UnpackExampleResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/files/unpack-example",
+      body: "*"
+    };
+  }
+
+  // UnpackEmpty unpacks an empty project
+  rpc UnpackEmpty(UnpackEmptyRequest) returns (UnpackEmptyResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/files/unpack-empty",
       body: "*"
     };
   }
@@ -181,17 +213,19 @@ message Instance {
   string olap_driver = 2 [(validate.rules).string = {
     in: [
       "duckdb",
-      "druid"
+      "druid",
+      "motherduck"
     ]
   }];
   // DSN for connection to OLAP
   string olap_dsn = 3;
-  // Driver for reading/editing code artifacts (options: file, metastore).
+  // Driver for reading/editing code artifacts (options: file, metastore, github).
   // This enables virtualizing a file system in a cloud setting.
   string repo_driver = 4 [(validate.rules).string = {
     in: [
       "file",
-      "metastore"
+      "metastore",
+      "github"
     ]
   }];
   // DSN for connecting to repo
@@ -199,10 +233,12 @@ message Instance {
   // If true, the runtime will store the instance's catalog in its OLAP store instead
   // of in the runtime's metadata store. Currently only supported for the duckdb driver.
   bool embed_catalog = 6;
-  // instance specific environment variables
-  map<string, string> env = 7;
+  // instance specific variables
+  map<string, string> variables = 7;
   // project defaults
-  map<string, string> project_env = 8;
+  map<string, string> project_variables = 8;
+  // ingestion limit across all sources, 0 means no limit
+  int64 ingestion_limit_bytes = 9;
 }
 
 // Request message for RuntimeService.ListInstances
@@ -237,19 +273,22 @@ message CreateInstanceRequest {
   string olap_driver = 2 [(validate.rules).string = {
     in: [
       "duckdb",
-      "druid"
+      "druid",
+      "motherduck"
     ]
   }];
   string olap_dsn = 3;
   string repo_driver = 4 [(validate.rules).string = {
     in: [
       "file",
-      "metastore"
+      "metastore",
+      "github"
     ]
   }];
   string repo_dsn = 5;
   bool embed_catalog = 6;
-  map<string, string> env = 7;
+  map<string, string> variables = 7;
+  int64 ingestion_limit_bytes = 8;
 }
 
 // Response message for RuntimeService.CreateInstance
@@ -260,10 +299,29 @@ message CreateInstanceResponse {
 // Request message for RuntimeService.DeleteInstance
 message DeleteInstanceRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  bool drop_db = 2;
 }
 
 // Response message for RuntimeService.DeleteInstance
 message DeleteInstanceResponse {}
+
+// Request message for RuntimeService.EditInstance.
+// See message Instance for field descriptions.
+message EditInstanceRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string olap_driver = 2 [(validate.rules).string = {in: ["duckdb", "druid", "motherduck"]}];
+  string olap_dsn = 3; 
+  string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore", "github"]}];
+  string repo_dsn = 5; 
+  bool embed_catalog = 6;
+  map<string, string> variables = 7;
+  int64 ingestion_limit_bytes = 8; 
+}
+
+// Response message for RuntimeService.EditInstance
+message EditInstanceResponse {
+  Instance instance = 1;
+}
 
 // **********
 // Repos
@@ -327,6 +385,41 @@ message RenameFileRequest {
 
 // Response message for RuntimeService.RenameFile
 message RenameFileResponse {}
+
+message Example {
+  string name = 1;
+  string title = 2;
+  string description = 3;
+}
+
+// Request message for RuntimeService.ListExamples
+message ListExamplesRequest {
+}
+
+// Response message for RuntimeService.ListExamples
+message ListExamplesResponse {
+  repeated Example examples = 1;
+}
+
+// Request message for RuntimeService.UnpackExample
+message UnpackExampleRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string name = 2 [(validate.rules).string.min_len = 1];
+  bool force = 3;
+}
+
+// Response message for RuntimeService.UnpackExample
+message UnpackExampleResponse {}
+
+// Request message for RuntimeService.UnpackEmpty
+message UnpackEmptyRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string title = 2;
+  bool force = 3;
+}
+
+// Response message for RuntimeService.UnpackEmpty
+message UnpackEmptyResponse {}
 
 // **********
 // Catalog
@@ -446,6 +539,8 @@ message ReconcileError {
     CODE_OLAP = 4;
     // Error encountered during source inspection or ingestion
     CODE_SOURCE = 5;
+    // Error returned when unauthorised to access remote sources
+    CODE_SOURCE_PERMISSION_DENIED = 6;
   }
   // CharLocation is a line and column in a code artifact
   message CharLocation {

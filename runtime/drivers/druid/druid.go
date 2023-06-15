@@ -25,8 +25,14 @@ func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 		return nil, err
 	}
 
+	db.SetMaxOpenConns(40)
+
 	conn := &connection{db: db}
 	return conn, nil
+}
+
+func (d driver) Drop(dsn string, logger *zap.Logger) error {
+	return drivers.ErrDropNotSupported
 }
 
 type connection struct {

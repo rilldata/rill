@@ -1,16 +1,15 @@
 <script lang="ts">
-  import { setContext } from "svelte";
+  import { createEventDispatcher, setContext } from "svelte";
   import { writable } from "svelte/store";
-
-  import { FloatingElement } from "./index";
   import Portal from "../Portal.svelte";
+  import { FloatingElement } from "./index";
+
   export let location = "bottom";
   export let alignment = "middle";
   export let relationship = "parent";
   export let distance = 0;
   export let pad = 8;
   export let suppress = false;
-
   export let active = false;
 
   /** this passes down the dom element used for the "outside click" action.
@@ -21,11 +20,16 @@
   $: triggerElementStore.set(parent?.children?.[0]);
   setContext("rill:menu:menuTrigger", triggerElementStore);
 
+  const dispatch = createEventDispatcher();
+  $: {
+    if (active) dispatch("open");
+  }
+
   let parent;
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div class="contents" bind:this={parent}>
+<div bind:this={parent}>
   <slot
     {active}
     handleClose={() => {

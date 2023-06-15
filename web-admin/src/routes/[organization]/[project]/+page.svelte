@@ -1,24 +1,35 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { useAdminServiceFindProject } from "../../../client";
+  import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
+  import ProjectDashboards from "../../../components/projects/ProjectDashboards.svelte";
+  import ProjectDeploymentLogs from "../../../components/projects/ProjectDeploymentLogs.svelte";
+  import ProjectDeploymentStatus from "../../../components/projects/ProjectDeploymentStatus.svelte";
+  import ProjectGithubConnection from "../../../components/projects/ProjectGithubConnection.svelte";
+  import ShareProjectCta from "../../../components/projects/ShareProjectCTA.svelte";
 
-  const proj = useAdminServiceFindProject(
-    $page.params.organization,
-    $page.params.project
-  );
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
 </script>
 
 <svelte:head>
-  <title>Projects</title>
+  <title>{project} overview - Rill</title>
 </svelte:head>
-
-<section>
-  {#if $proj.isLoading}
-    <span>Loading...</span>
-  {:else if $proj.isError}
-    <span>Error: {$proj.error}</span>
-  {:else if $proj.data && $proj.data.project}
-    <h1>Proj: {$proj.data.project.name}</h1>
-    <p><emph>{$proj.data.project.description}</emph></p>
-  {/if}
-</section>
+<VerticalScrollContainer>
+  <div class="flex flex-col items-center">
+    <div
+      class="flex flex-row border-b border-gray-200 w-full px-12 py-5 gap-x-10"
+    >
+      <div class="flex flex-col space-y-4 w-[340px]">
+        <ProjectDeploymentStatus {organization} {project} />
+        <ProjectGithubConnection {organization} {project} />
+      </div>
+      <div class="w-[340px]">
+        <ProjectDashboards {organization} {project} />
+      </div>
+      <div class="flex">
+        <ShareProjectCta {organization} {project} />
+      </div>
+    </div>
+    <ProjectDeploymentLogs {organization} {project} />
+  </div>
+</VerticalScrollContainer>

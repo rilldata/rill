@@ -19,30 +19,28 @@
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import {
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServicePutFileAndReconcile,
+    createRuntimeServiceRefreshAndReconcile,
+    createRuntimeServiceRenameFileAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
-    useRuntimeServiceGetCatalogEntry,
-    useRuntimeServicePutFileAndReconcile,
-    useRuntimeServiceRefreshAndReconcile,
-    useRuntimeServiceRenameFileAndReconcile,
     V1CatalogEntry,
     V1ReconcileResponse,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
-  import {
-    appQueryStatusStore,
-    runtimeStore,
-  } from "@rilldata/web-local/lib/application-state-stores/application-store";
-  import { behaviourEvent } from "@rilldata/web-local/lib/metrics/initMetrics";
-  import { BehaviourEventMedium } from "@rilldata/web-local/lib/metrics/service/BehaviourEventTypes";
-  import {
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-local/lib/metrics/service/MetricsTypes";
-  import { invalidateAfterReconcile } from "@rilldata/web-local/lib/svelte-query/invalidation";
-  import { useQueryClient } from "@sveltestack/svelte-query";
+  import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
+  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
   import { WorkspaceHeader } from "../../../layout/workspace";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { renameFileArtifact } from "../../entity-management/actions";
   import { getRouteFromName } from "../../entity-management/entity-mappers";
   import { getName, isDuplicateName } from "../../entity-management/name-utils";
@@ -58,13 +56,13 @@
 
   const queryClient = useQueryClient();
 
-  const renameSource = useRuntimeServiceRenameFileAndReconcile();
+  const renameSource = createRuntimeServiceRenameFileAndReconcile();
 
-  $: runtimeInstanceId = $runtimeStore.instanceId;
-  const refreshSourceMutation = useRuntimeServiceRefreshAndReconcile();
-  const createSource = useRuntimeServicePutFileAndReconcile();
+  $: runtimeInstanceId = $runtime.instanceId;
+  const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
+  const createSource = createRuntimeServicePutFileAndReconcile();
 
-  $: getSource = useRuntimeServiceGetCatalogEntry(
+  $: getSource = createRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     sourceName
   );
@@ -79,7 +77,7 @@
 
   $: modelNames = useModelNames(runtimeInstanceId);
   $: dashboardNames = useDashboardNames(runtimeInstanceId);
-  const createModelMutation = useRuntimeServicePutFileAndReconcile();
+  const createModelMutation = createRuntimeServicePutFileAndReconcile();
   const createDashboardFromSourceMutation = useCreateDashboardFromSource();
 
   let connector: string;
@@ -117,7 +115,7 @@
     $createDashboardFromSourceMutation.mutate(
       {
         data: {
-          instanceId: $runtimeStore.instanceId,
+          instanceId: $runtime.instanceId,
           sourceName,
           newModelName,
           newDashboardName,
