@@ -33,16 +33,28 @@
       // }
     }
   }
+
+  const pieTooltips = {
+    selected: "Hide percent of total",
+    unselected: "Show percent of total",
+    disabled: "To show percent of total, show top values by a summable metric",
+  };
+
+  const deltaTooltips = {
+    selected: "Hide percent change",
+    unselected: "Show percent change",
+    disabled: "To show percent change, select a comparison period abovec",
+  };
 </script>
 
 <Meta title="Button toggle group stories" />
 
 <Story name="Button toggle group, 2 sub-buttons, no selection required">
   <ButtonToggleGroup>
-    <GroupButton key={1}>
+    <GroupButton key={1} tootips={deltaTooltips}>
       <Delta />%
     </GroupButton>
-    <GroupButton key={2}>
+    <GroupButton key={2} tootips={pieTooltips}>
       <PieChart />%
     </GroupButton>
   </ButtonToggleGroup>
@@ -82,10 +94,10 @@
               <ButtonToggleGroup
                 {...{ disabledKeys, defaultKey, selectionRequired }}
               >
-                <GroupButton key={1}>
+                <GroupButton key={1} tootips={deltaTooltips}>
                   <Delta />%
                 </GroupButton>
-                <GroupButton key={2}>
+                <GroupButton key={2} tootips={pieTooltips}>
                   <PieChart />%
                 </GroupButton>
               </ButtonToggleGroup>

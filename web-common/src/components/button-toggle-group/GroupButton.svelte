@@ -2,7 +2,16 @@
   import { getContext } from "svelte";
   import { buttonGroup } from "./ButtonToggleGroup.svelte";
 
+  import Tooltip from "../tooltip/Tooltip.svelte";
+  import TooltipContent from "../tooltip/TooltipContent.svelte";
+
   export let key: number | string;
+  export let tootips: {
+    selected?: string;
+    unselected?: string;
+    disabled?: string;
+  };
+
   const {
     registerSubButton,
     toggleSubButton,
@@ -38,8 +47,21 @@
   $: roundings = `${isFirst ? "rounded-l" : ""} ${isLast ? "rounded-r" : ""} `;
 
   $: finalStyles = `${baseStyles} ${roundings} ${textStyle} ${bgStyle}`;
+
+  $: tooltipText = isDisabled
+    ? tootips?.disabled
+    : isSelected
+    ? tootips?.selected
+    : tootips?.unselected;
 </script>
 
-<button class={finalStyles} on:click={() => toggleSubButton(key)}>
-  <slot />
-</button>
+<Tooltip distance={8} location={"bottom"} alignment={"center"}>
+  <button class={finalStyles} on:click={() => toggleSubButton(key)}>
+    <slot />
+  </button>
+  <div slot="tooltip-content">
+    {#if tooltipText}
+      <TooltipContent>{tooltipText}</TooltipContent>
+    {/if}
+  </div>
+</Tooltip>
