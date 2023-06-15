@@ -160,7 +160,6 @@
             {data}
             {xAccessor}
             yAccessor="comparison.{yAccessor}"
-            {timeGrain}
           />
         </g>
       {/if}
@@ -170,7 +169,6 @@
         {data}
         {xAccessor}
         {yAccessor}
-        {timeGrain}
       />
     {/key}
     <line
