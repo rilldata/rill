@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Meta, Story } from "@storybook/addon-svelte-csf";
 
-  import { ButtonToggleGroup, SubButton } from "../index.ts";
+  import { ButtonToggleGroup, SubButton } from "../index";
   import Delta from "../../icons/Delta.svelte";
   import PieChart from "../../icons/PieChart.svelte";
 

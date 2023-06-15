@@ -1,5 +1,15 @@
 <script lang="ts" context="module">
-  export const buttonGroup = {};
+  export type SubButtonKey = number | string;
+
+  export type ButtonGroupContext = {
+    registerSubButton: (key: SubButtonKey) => void;
+    toggleSubButton: (key: SubButtonKey) => void;
+    selectedKey: SubButtonKey;
+    firstKey: SubButtonKey;
+    lastKey: SubButtonKey;
+    disabledKeys: SubButtonKey[];
+  };
+  export const buttonGroupContext: ButtonGroupContext = {};
 </script>
 
 <script lang="ts">
@@ -33,7 +43,7 @@
   const firstKey = writable(null);
   const lastKey = writable(null);
 
-  setContext(buttonGroup, {
+  setContext(buttonGroupContext, {
     registerSubButton: (subButtonKey) => {
       if (
         typeof subButtonKey !== "number" &&

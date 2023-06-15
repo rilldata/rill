@@ -1,6 +1,9 @@
 <script lang="ts">
   import { getContext } from "svelte";
-  import { buttonGroup } from "./ButtonToggleGroup.svelte";
+  import {
+    ButtonGroupContext,
+    buttonGroupContext,
+  } from "./ButtonToggleGroup.svelte";
 
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
@@ -19,7 +22,7 @@
     firstKey,
     lastKey,
     disabledKeys,
-  } = getContext(buttonGroup);
+  }: ButtonGroupContext = getContext(buttonGroupContext);
 
   registerSubButton(key);
 
