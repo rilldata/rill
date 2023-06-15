@@ -12,7 +12,6 @@ Over time, we'll make this the default Line implementation, but it's not quite t
 -->
 <script lang="ts">
   import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
-  import type { V1TimeGrain } from "../../../runtime-client";
   import {
     WithDelayedValue,
     WithTween,
