@@ -12,10 +12,10 @@
   <mj-body>
     <mj-section>
       <mj-column>
-        <mj-image width="175px" src="https://cdn.rilldata.com/BrandingAssets/Logo_Dark_HasMargin_WhiteBG.png" />
-
-        <mj-spacer height="40px" />
-
+        <mj-image container-background-color="#FFF" width="62px" src="https://cdn.rilldata.com/email-transactional/rill-logo-white-padding.png" />
+        
+        <mj-spacer height="35px" />
+        
         <mj-text font-size="20px" font-weight="bold">
           {{ .Title }}
         </mj-text>
@@ -44,11 +44,9 @@
           <a href="https://www.rilldata.com/legal/privacy">Privacy Policy</a>
         </mj-text>
 
-        <mj-text align="center" font-size="12px">
+        <mj-spacer height="20px" />
 
-        </mj-text>
-
-        <mj-image width="25px" src="https://cdn.rilldata.com/BrandingAssets/Icon_Color_NoMargin_TransparentBG.png" />
+        <mj-image width="25px" src="https://cdn.rilldata.com/email-transactional/rill-icon-white-padding.png" />
 
       </mj-column>
     </mj-section>
