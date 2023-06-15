@@ -20,8 +20,10 @@ const alias: Alias = [
 ];
 
 if (process.env["STORYBOOK_MODE"] === "true") {
-  alias["$app/environment"] =
-    "/../web-common/.storybook/app-environment.mock.ts";
+  alias.push({
+    find: "$app/environment",
+    replacement: "/../web-common/.storybook/app-environment.mock.ts",
+  });
 }
 
 export default defineConfig(({ mode }) => {
