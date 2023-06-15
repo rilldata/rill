@@ -8,7 +8,7 @@
   import { useDashboardStore } from "../dashboard-stores";
   import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
 
-  export let metricViewName: string = "";
+  export let metricViewName = "";
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
