@@ -90,7 +90,7 @@
   };
 </script>
 
-<div class="h-56 overflow-y-auto bg-gray-100 border-t border-gray-200">
+<div class="h-72 overflow-y-auto bg-gray-100 border-t border-gray-200">
   {#if rows}
     <PreviewTable
       {rows}
