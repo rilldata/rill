@@ -7,6 +7,7 @@
   import {
     getAvailableComparisonsForTimeRange,
     getComparisonRange,
+    getTimeComparisonParametersForComponent,
   } from "@rilldata/web-common/lib/time/comparisons";
   import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
   import {
@@ -18,7 +19,6 @@
   import {
     ISODurationToTimePreset,
     convertTimeRangePreset,
-    isRangeInsideOther,
   } from "@rilldata/web-common/lib/time/ranges";
   import {
     DashboardTimeControls,
@@ -120,8 +120,6 @@
       {}
     );
 
-    /** enable comparisons by default */
-    metricsExplorerStore.toggleComparison(metricViewName, true);
     metricsExplorerStore.allDefaultsSelected(metricViewName);
   }
 
@@ -199,7 +197,7 @@
       start,
       end,
     });
-    metricsExplorerStore.toggleComparison(metricViewName, true);
+    metricsExplorerStore.displayComparison(metricViewName, true);
   }
 
   function makeTimeSeriesTimeRangeAndUpdateAppState(
@@ -251,12 +249,25 @@
       if (!comparisonTimeRange?.name) {
         const comparisonOption = DEFAULT_TIME_RANGES[name]
           ?.defaultComparison as TimeComparisonOption;
-        const range = getComparisonRange(start, end, comparisonOption);
+        const range = getTimeComparisonParametersForComponent(
+          comparisonOption,
+          allTimeRange.start,
+          allTimeRange.end,
+          start,
+          end
+        );
 
-        selectedComparisonTimeRange = {
-          ...range,
-          name: comparisonOption,
-        };
+        if (range.isComparisonRangeAvailable) {
+          selectedComparisonTimeRange = {
+            start: range.start,
+            end: range.end,
+            name: comparisonOption,
+          };
+          metricsExplorerStore.displayComparison(metricViewName, true);
+        } else {
+          // Default to no comparison if the default comparison range is not available.
+          metricsExplorerStore.displayComparison(metricViewName, false);
+        }
       } else if (comparisonTimeRange.name === TimeComparisonOption.CUSTOM) {
         selectedComparisonTimeRange = comparisonTimeRange;
       } else {
@@ -278,7 +289,6 @@
     }
   }
 
-  let isComparisonRangeAvailable;
   let availableComparisons;
 
   $: if (
@@ -286,13 +296,6 @@
     $dashboardStore?.selectedTimeRange?.start &&
     hasTimeSeries
   ) {
-    isComparisonRangeAvailable = isRangeInsideOther(
-      allTimeRange.start,
-      allTimeRange.end,
-      $dashboardStore?.selectedComparisonTimeRange?.start,
-      $dashboardStore?.selectedComparisonTimeRange?.end
-    );
-
     availableComparisons = getAvailableComparisonsForTimeRange(
       allTimeRange.start,
       allTimeRange.end,
@@ -328,13 +331,12 @@
         onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
       }}
       on:disable-comparison={() =>
-        metricsExplorerStore.toggleComparison(metricViewName, false)}
+        metricsExplorerStore.displayComparison(metricViewName, false)}
       {minTimeGrain}
       currentStart={$dashboardStore?.selectedTimeRange?.start}
       currentEnd={$dashboardStore?.selectedTimeRange?.end}
       boundaryStart={allTimeRange.start}
       boundaryEnd={allTimeRange.end}
-      {isComparisonRangeAvailable}
       showComparison={$dashboardStore?.showComparison}
       selectedComparison={$dashboardStore?.selectedComparisonTimeRange}
       comparisonOptions={availableComparisons}

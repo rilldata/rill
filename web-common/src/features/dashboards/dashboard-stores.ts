@@ -315,7 +315,7 @@ const metricViewReducers = {
     });
   },
 
-  toggleComparison(name: string, showComparison: boolean) {
+  displayComparison(name: string, showComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.showComparison = showComparison;
     });

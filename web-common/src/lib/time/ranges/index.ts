@@ -31,19 +31,6 @@ import {
 } from "../types";
 import { removeTimezoneOffset } from "../../formatters";
 
-/**
- * Returns true if the range defined by start and end is completely
- * inside the range defined by otherStart and otherEnd.
- */
-export function isRangeInsideOther(
-  start: Date,
-  end: Date,
-  otherStart: Date,
-  otherEnd: Date
-) {
-  return otherStart >= start && otherEnd <= end;
-}
-
 // Loop through all presets to check if they can be a part of subset of given start and end date
 export function getChildTimeRanges(
   start: Date,

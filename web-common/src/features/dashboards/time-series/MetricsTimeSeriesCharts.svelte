@@ -23,8 +23,7 @@
   import {
     getAdjustedChartTime,
     getAdjustedFetchTime,
-    isRangeInsideOther,
-  } from "../../../lib/time/ranges";
+  } from "@rilldata/web-common/lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -83,13 +82,7 @@
   );
 
   /** Generate the big number comparison query */
-  $: isComparisonRangeAvailable = isRangeInsideOther(
-    allTimeRange?.start,
-    allTimeRange?.end,
-    $dashboardStore?.selectedComparisonTimeRange?.start,
-    $dashboardStore?.selectedComparisonTimeRange?.end
-  );
-  $: displayComparison = showComparison && isComparisonRangeAvailable;
+  $: displayComparison = showComparison;
 
   $: comparisonTimeStart =
     $dashboardStore?.selectedComparisonTimeRange?.start?.toISOString();

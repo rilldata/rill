@@ -22,7 +22,6 @@
     MetricsViewMeasure,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { isRangeInsideOther } from "../../../lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
@@ -173,14 +172,8 @@
     });
 
   // Compose the comparison /toplist query
-  $: displayComparison =
-    $dashboardStore?.showComparison && isComparisonRangeAvailable;
-  $: isComparisonRangeAvailable = isRangeInsideOther(
-    $allTimeRangeQuery?.data?.start,
-    $allTimeRangeQuery?.data?.end,
-    $dashboardStore?.selectedComparisonTimeRange?.start,
-    $dashboardStore?.selectedComparisonTimeRange?.end
-  );
+  $: displayComparison = $dashboardStore?.showComparison;
+
   // add all sliced and active values to the include filter.
   $: currentVisibleValues =
     $topListQuery?.data?.data

@@ -21,12 +21,9 @@
     MetricsViewFilterCond,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { getTimeComparisonParametersForComponent } from "../../../lib/time/comparisons";
-  import { DEFAULT_TIME_RANGES } from "../../../lib/time/config";
-  import type {
-    TimeComparisonOption,
-    TimeRange,
-  } from "../../../lib/time/types";
+  import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
+  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
+  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import {
@@ -148,18 +145,15 @@
   $: timeRangeName = $dashboardStore?.selectedTimeRange?.name;
 
   // Compose the comparison /toplist query
-  $: displayComparison =
-    $dashboardStore?.showComparison &&
-    comparisonTimeRange.isComparisonRangeAvailable;
-  $: comparisonTimeRange = getTimeComparisonParametersForComponent(
+  $: displayComparison = $dashboardStore?.showComparison;
+
+  $: comparisonTimeRange = getComparisonRange(
+    $dashboardStore.selectedTimeRange.start,
+    $dashboardStore.selectedTimeRange.end,
     ($dashboardStore?.selectedComparisonTimeRange
       ?.name as TimeComparisonOption) ||
       (DEFAULT_TIME_RANGES[timeRangeName]
-        .defaultComparison as TimeComparisonOption),
-    ($allTimeRangeQuery?.data as TimeRange)?.start,
-    ($allTimeRangeQuery?.data as TimeRange)?.end,
-    $dashboardStore.selectedTimeRange.start,
-    $dashboardStore.selectedTimeRange.end
+        .defaultComparison as TimeComparisonOption)
   );
   $: comparisonTimeStart =
     isFinite(comparisonTimeRange?.start?.getTime()) &&

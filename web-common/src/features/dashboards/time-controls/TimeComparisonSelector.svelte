@@ -36,7 +36,6 @@ This component needs to do the following:
   export let minTimeGrain: V1TimeGrain;
 
   export let showComparison = true;
-  export let isComparisonRangeAvailable = true;
   export let selectedComparison;
   export let comparisonOptions: TimeComparisonOption[];
 
@@ -120,27 +119,17 @@ This component needs to do the following:
   <Tooltip distance={8} suppress={active}>
     <SelectorButton
       {active}
-      disabled={!isComparisonRangeAvailable}
       on:click={() => {
-        if (isComparisonRangeAvailable) toggleFloatingElement();
+        toggleFloatingElement();
       }}
     >
       <span class="font-normal">
-        {#if !isComparisonRangeAvailable}
-          <span class="italic text-gray-500">Time comparison not available</span
-          >
-        {:else}
-          {showComparison ? "Comparing to" : ""}
-          <span class="font-bold">{label}</span>
-        {/if}
+        {showComparison ? "Comparing to" : ""}
+        <span class="font-bold">{label}</span>
       </span>
     </SelectorButton>
     <TooltipContent slot="tooltip-content" maxWidth="220px">
-      {#if isComparisonRangeAvailable}
-        Select a time range to compare to the selected time range
-      {:else}
-        Select a shorter or more recent time range to enable comparisons.
-      {/if}
+      Select a time range to compare to the selected time range
     </TooltipContent>
   </Tooltip>
   <Menu
