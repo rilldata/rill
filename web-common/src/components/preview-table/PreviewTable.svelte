@@ -18,9 +18,11 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
   import PinnedColumns from "../virtualized-table/sections/PinnedColumns.svelte";
   import RowHeaders from "../virtualized-table/sections/RowHeaders.svelte";
   import TableCells from "../virtualized-table/sections/TableCells.svelte";
-  import { config } from "./config";
+  import { config as defaultConfig } from "./config";
+  import type { VirtualizedTableConfig } from "../virtualized-table/types";
 
   export let rows;
+  export let configOverride: Partial<VirtualizedTableConfig> = {};
   export let columnNames: VirtualizedTableColumns[];
 
   /** the overscan values tell us how much to render off-screen. These may be set by the consumer
@@ -46,6 +48,11 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
   let virtualColumns;
   let virtualWidth;
   let virtualHeight;
+
+  const config = {
+    ...defaultConfig,
+    ...configOverride,
+  };
 
   /* set context for child components */
   setContext("config", config);
