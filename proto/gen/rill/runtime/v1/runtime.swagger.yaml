@@ -2133,6 +2133,7 @@ definitions:
     enum:
       - EXPORT_FORMAT_UNSPECIFIED
       - EXPORT_FORMAT_CSV
+      - EXPORT_FORMAT_XSLX
     default: EXPORT_FORMAT_UNSPECIFIED
     title: ExportFormat is a file format for a data export
   v1ExportResponse:

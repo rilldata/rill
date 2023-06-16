@@ -857,6 +857,7 @@ export type V1ExportFormat =
 export const V1ExportFormat = {
   EXPORT_FORMAT_UNSPECIFIED: "EXPORT_FORMAT_UNSPECIFIED",
   EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
+  EXPORT_FORMAT_XSLX: "EXPORT_FORMAT_XSLX",
 } as const;
 
 export interface V1EditInstanceResponse {
