@@ -294,6 +294,7 @@ export function getAdjustedChartTime(
   start: Date,
   end: Date,
   interval: V1TimeGrain,
+  comparsionEnd: Date,
   boundEnd: Date
 ) {
   if (!start || !end)
@@ -305,7 +306,7 @@ export function getAdjustedChartTime(
   const grainDuration = TIME_GRAIN[interval].duration;
 
   // Only plot the chart till the last period containing a datum
-  let adjustedEnd = new Date(boundEnd);
+  let adjustedEnd = new Date(end);
   adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration);
 
   // Remove half extra period with no data from chart

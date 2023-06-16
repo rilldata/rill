@@ -211,8 +211,8 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
   },
-  WEEK_TO_DATE: {
-    label: "Week to Date",
+  THIS_WEEK: {
+    label: "This Week",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.WEEK,
     start: {
@@ -234,8 +234,8 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
   },
-  MONTH_TO_DATE: {
-    label: "Month to Date",
+  THIS_MONTH: {
+    label: "This Month",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.MONTH,
     start: {
@@ -257,8 +257,8 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
   },
-  YEAR_TO_DATE: {
-    label: "Year to Date",
+  THIS_YEAR: {
+    label: "This Year",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.YEAR,
     start: {
