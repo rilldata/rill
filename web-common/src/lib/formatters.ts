@@ -73,7 +73,7 @@ export function removeTimezoneOffset(dt: Date) {
 }
 
 export const standardTimestampFormat = (v, type = "TIMESTAMP") => {
-  let fmt = timeFormat("%Y-%m-%d %I:%M:%S");
+  let fmt = timeFormat("%Y-%m-%d %H:%M:%S");
   if (type === "DATE") {
     fmt = timeFormat("%Y-%m-%d");
   }
@@ -81,12 +81,12 @@ export const standardTimestampFormat = (v, type = "TIMESTAMP") => {
 };
 
 export const fullTimestampFormat = (v) => {
-  const fmt = timeFormat("%Y-%m-%d %I:%M:%S.%L");
+  const fmt = timeFormat("%Y-%m-%d %H:%M:%S.%L");
   return fmt(removeTimezoneOffset(new Date(v)));
 };
 
 export const datePortion = timeFormat("%Y-%m-%d");
-export const timePortion = timeFormat("%I:%M:%S");
+export const timePortion = timeFormat("%H:%M:%S");
 
 export function microsToTimestring(microseconds: number) {
   // to format micros, we need to translate this to hh:mm:ss.
