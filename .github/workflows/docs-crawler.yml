@@ -1,0 +1,24 @@
+name: Docsearch crawls the website
+on:
+  push:
+    tags:
+      - "*"
+    branches:
+      - "main"
+    paths:
+      - ".github/workflows/docs-crawler.yml"
+      - "docs/**"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Algolia crawler creation and crawl
+        uses: algolia/algoliasearch-crawler-github-actions@v1.0.10
+        id: algolia_crawler
+        with:
+          crawler-name: rilldata
+          crawler-user-id: ${{ secrets.CRAWLER_USER_ID }}
+          crawler-api-key: ${{ secrets.CRAWLER_API_KEY }}
+          algolia-app-id: ${{ secrets.ALGOLIA_APP_ID }}
+          algolia-api-key: ${{ secrets.ALGOLIA_API_KEY }}
+          site-url: 'https://docs.rilldata.com'

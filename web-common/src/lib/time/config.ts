@@ -50,7 +50,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
         { duration: "PT1H", operationType: TimeOffsetType.ADD },
         {
           period: Period.HOUR,
-          truncationType: TimeTruncationType.START_OF_PERIOD,
+          truncationType: TimeTruncationType.END_OF_PERIOD,
         },
       ],
     },
@@ -76,7 +76,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
         { duration: "PT1H", operationType: TimeOffsetType.ADD },
         {
           period: Period.HOUR,
-          truncationType: TimeTruncationType.START_OF_PERIOD,
+          truncationType: TimeTruncationType.END_OF_PERIOD,
         },
       ],
     },
@@ -261,8 +261,8 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       transformation: [
         { duration: "P1D", operationType: TimeOffsetType.ADD },
         {
-          period: Period.DAY,
-          truncationType: TimeTruncationType.START_OF_PERIOD,
+          period: Period.MONTH,
+          truncationType: TimeTruncationType.END_OF_PERIOD,
         },
       ],
     },
@@ -285,8 +285,8 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       transformation: [
         { duration: "P1D", operationType: TimeOffsetType.ADD },
         {
-          period: Period.DAY,
-          truncationType: TimeTruncationType.START_OF_PERIOD,
+          period: Period.YEAR,
+          truncationType: TimeTruncationType.END_OF_PERIOD,
         },
       ],
     },
