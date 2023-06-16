@@ -150,6 +150,7 @@ func (c *connection) reopenDB() error {
 		"INSTALL 'httpfs'",
 		"LOAD 'httpfs'",
 		"SET max_expression_depth TO 250",
+		"SET timezone='UTC'",
 	}
 
 	// DuckDB extensions need to be loaded separately on each connection, but the built-in connection pool in database/sql doesn't enable that.
