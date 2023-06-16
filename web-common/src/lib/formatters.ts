@@ -73,7 +73,7 @@ export function removeTimezoneOffset(dt: Date) {
 }
 
 export const standardTimestampFormat = (v, type = "TIMESTAMP") => {
-  let fmt = timeFormat("%Y-%m-%d %H:%M:%S");
+  let fmt = timeFormat("%Y-%m-%d %H:%M:%S Z");
   if (type === "DATE") {
     fmt = timeFormat("%Y-%m-%d");
   }
