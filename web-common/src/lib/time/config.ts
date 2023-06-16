@@ -50,7 +50,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
         { duration: "PT1H", operationType: TimeOffsetType.ADD },
         {
           period: Period.HOUR,
-          truncationType: TimeTruncationType.END_OF_PERIOD,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
     },
@@ -76,7 +76,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
         { duration: "PT1H", operationType: TimeOffsetType.ADD },
         {
           period: Period.HOUR,
-          truncationType: TimeTruncationType.END_OF_PERIOD,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
     },
