@@ -34,7 +34,7 @@
       "stringFormat"
     );
 
-  let lastAvailableCurrentY;
+  let lastAvailableCurrentY = 0;
   let lastAvailableComparisonY;
   $: if (y !== undefined && y !== null) {
     lastAvailableCurrentY = y;
