@@ -1,47 +1,48 @@
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
+  AD_BIDS_COUNTRY_DIMENSION,
   AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_INIT_DIMENSIONS,
   AD_BIDS_INIT_MEASURES,
   AD_BIDS_MIRROR_NAME,
   AD_BIDS_NAME,
+  AD_BIDS_PUBLISHER_COUNT_MEASURE,
   AD_BIDS_PUBLISHER_DIMENSION,
+  AD_BIDS_THREE_DIMENSIONS,
+  AD_BIDS_THREE_MEASURES,
   AD_BIDS_WITH_DELETED_DIMENSION,
   AD_BIDS_WITH_DELETED_MEASURE,
+  AD_BIDS_WITH_THREE_DIMENSIONS,
+  AD_BIDS_WITH_THREE_MEASURES,
   assertVisiblePartsOfMetricsView,
   createAdBidsInStore,
   createAdBidsMirrorInStore,
+  createMetricsMetaQueryMock,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
 import {
   createShowHideDimensionsStore,
   createShowHideMeasuresStore,
 } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
-import type {
-  MetricsViewDimension,
-  MetricsViewMeasure,
-  RpcStatus,
-  V1MetricsView,
-} from "@rilldata/web-common/runtime-client";
-import type { QueryObserverResult } from "@tanstack/query-core";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { get, writable } from "svelte/store";
-import { describe, it, expect } from "vitest";
+import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
+import { get } from "svelte/store";
+import { describe, expect, it } from "vitest";
 
 describe("Show/Hide Selectors", () => {
   describe("Show/Hide measures", () => {
     it("Toggle individual visibility", () => {
-      const mock = createMetricsMetaQueryMock();
+      const mock = createMetricsMetaQueryMock(false);
       const showHideMeasure = createShowHideMeasuresStore(AD_BIDS_NAME, mock);
       expect(get(showHideMeasure).selectedItems).toEqual([]);
 
       createAdBidsInStore();
+      mock.setMeasures(AD_BIDS_INIT_MEASURES);
       assertVisiblePartsWithMirroring(
+        get(mock).data,
         [AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE],
         undefined
       );
-      mock.setMeasures(AD_BIDS_INIT_MEASURES);
       expect(get(showHideMeasure).availableKeys).toEqual([
         AD_BIDS_IMPRESSIONS_MEASURE,
         AD_BIDS_BID_PRICE_MEASURE,
@@ -51,13 +52,17 @@ describe("Show/Hide Selectors", () => {
       // toggle visibility
       showHideMeasure.toggleVisibility(AD_BIDS_BID_PRICE_MEASURE);
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
-      assertVisiblePartsWithMirroring([AD_BIDS_IMPRESSIONS_MEASURE], undefined);
+      assertVisiblePartsWithMirroring(
+        get(mock).data,
+        [AD_BIDS_IMPRESSIONS_MEASURE],
+        undefined
+      );
       expect(get(showHideMeasure).selectedItems).toEqual([true, false]);
 
       // toggle visibility
       showHideMeasure.toggleVisibility(AD_BIDS_IMPRESSIONS_MEASURE);
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
-      assertVisiblePartsWithMirroring([], undefined);
+      assertVisiblePartsWithMirroring(get(mock).data, [], undefined);
       expect(get(showHideMeasure).selectedItems).toEqual([false, false]);
 
       // toggle back visibility
@@ -65,6 +70,7 @@ describe("Show/Hide Selectors", () => {
       showHideMeasure.toggleVisibility(AD_BIDS_IMPRESSIONS_MEASURE);
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
       assertVisiblePartsWithMirroring(
+        get(mock).data,
         [AD_BIDS_BID_PRICE_MEASURE, AD_BIDS_IMPRESSIONS_MEASURE],
         undefined
       );
@@ -72,7 +78,7 @@ describe("Show/Hide Selectors", () => {
     });
 
     it("Toggle all visibility", () => {
-      const mock = createMetricsMetaQueryMock();
+      const mock = createMetricsMetaQueryMock(false);
       const showHideMeasure = createShowHideMeasuresStore(AD_BIDS_NAME, mock);
       createAdBidsInStore();
       mock.setMeasures(AD_BIDS_INIT_MEASURES);
@@ -81,13 +87,14 @@ describe("Show/Hide Selectors", () => {
       // toggle all to not visible
       showHideMeasure.setAllToNotVisible();
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
-      assertVisiblePartsWithMirroring([], undefined);
+      assertVisiblePartsWithMirroring(get(mock).data, [], undefined);
       expect(get(showHideMeasure).selectedItems).toEqual([false, false]);
 
       // toggle all back to visible
       showHideMeasure.setAllToVisible();
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
       assertVisiblePartsWithMirroring(
+        get(mock).data,
         [AD_BIDS_BID_PRICE_MEASURE, AD_BIDS_IMPRESSIONS_MEASURE],
         undefined
       );
@@ -95,7 +102,7 @@ describe("Show/Hide Selectors", () => {
     });
 
     it("Meta query updates", () => {
-      const mock = createMetricsMetaQueryMock();
+      const mock = createMetricsMetaQueryMock(false);
       const showHideMeasure = createShowHideMeasuresStore(AD_BIDS_NAME, mock);
       createAdBidsInStore();
       mock.setMeasures(AD_BIDS_INIT_MEASURES);
@@ -114,13 +121,72 @@ describe("Show/Hide Selectors", () => {
       ]);
       expect(get(showHideMeasure).selectedItems).toEqual([true]);
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
-      assertVisiblePartsWithMirroring([AD_BIDS_IMPRESSIONS_MEASURE], undefined);
+      assertVisiblePartsWithMirroring(
+        get(mock).data,
+        [AD_BIDS_IMPRESSIONS_MEASURE],
+        undefined
+      );
+    });
+
+    it("Meta query updates with new measure and some measures selected", () => {
+      const mock = createMetricsMetaQueryMock(false);
+      const showHideMeasure = createShowHideMeasuresStore(AD_BIDS_NAME, mock);
+      createAdBidsInStore();
+      mock.setMeasures(AD_BIDS_INIT_MEASURES);
+      expect(get(showHideMeasure).selectedItems).toEqual([true, true]);
+
+      // toggle visibility of one measure
+      showHideMeasure.toggleVisibility(AD_BIDS_BID_PRICE_MEASURE);
+
+      mock.setMeasures(AD_BIDS_THREE_MEASURES);
+      // we have to manually call sync since in the app it is handled by a reactive statement
+      metricsExplorerStore.sync(AD_BIDS_NAME, AD_BIDS_WITH_THREE_MEASURES);
+      expect(get(showHideMeasure).availableKeys).toEqual([
+        AD_BIDS_IMPRESSIONS_MEASURE,
+        AD_BIDS_BID_PRICE_MEASURE,
+        AD_BIDS_PUBLISHER_COUNT_MEASURE,
+      ]);
+      // assert that the new measure is not visible since not all measures were selected
+      assertVisiblePartsWithMirroring(
+        get(mock).data,
+        [AD_BIDS_IMPRESSIONS_MEASURE],
+        undefined
+      );
+      expect(get(showHideMeasure).selectedItems).toEqual([true, false, false]);
+    });
+
+    it("Meta query updates with new measure and all measures selected", () => {
+      const mock = createMetricsMetaQueryMock(false);
+      const showHideMeasure = createShowHideMeasuresStore(AD_BIDS_NAME, mock);
+      createAdBidsInStore();
+      mock.setMeasures(AD_BIDS_INIT_MEASURES);
+      expect(get(showHideMeasure).selectedItems).toEqual([true, true]);
+
+      mock.setMeasures(AD_BIDS_THREE_MEASURES);
+      // we have to manually call sync since in the app it is handled by a reactive statement
+      metricsExplorerStore.sync(AD_BIDS_NAME, AD_BIDS_WITH_THREE_MEASURES);
+      expect(get(showHideMeasure).availableKeys).toEqual([
+        AD_BIDS_IMPRESSIONS_MEASURE,
+        AD_BIDS_BID_PRICE_MEASURE,
+        AD_BIDS_PUBLISHER_COUNT_MEASURE,
+      ]);
+      // assert that the new measure is visible since all measures were selected
+      assertVisiblePartsWithMirroring(
+        get(mock).data,
+        [
+          AD_BIDS_IMPRESSIONS_MEASURE,
+          AD_BIDS_BID_PRICE_MEASURE,
+          AD_BIDS_PUBLISHER_COUNT_MEASURE,
+        ],
+        undefined
+      );
+      expect(get(showHideMeasure).selectedItems).toEqual([true, true, true]);
     });
   });
 
   describe("Show/Hide dimensions", () => {
     it("Toggle individual visibility", () => {
-      const mock = createMetricsMetaQueryMock();
+      const mock = createMetricsMetaQueryMock(false);
       const showHideDimensions = createShowHideDimensionsStore(
         AD_BIDS_NAME,
         mock
@@ -128,11 +194,11 @@ describe("Show/Hide Selectors", () => {
       expect(get(showHideDimensions).selectedItems).toEqual([]);
 
       createAdBidsInStore();
-      assertVisiblePartsWithMirroring(undefined, [
+      mock.setDimensions(AD_BIDS_INIT_DIMENSIONS);
+      assertVisiblePartsWithMirroring(get(mock).data, undefined, [
         AD_BIDS_PUBLISHER_DIMENSION,
         AD_BIDS_DOMAIN_DIMENSION,
       ]);
-      mock.setDimensions(AD_BIDS_INIT_DIMENSIONS);
       expect(get(showHideDimensions).selectedItems).toEqual([true, true]);
       expect(get(showHideDimensions).availableKeys).toEqual([
         AD_BIDS_PUBLISHER_DIMENSION,
@@ -142,20 +208,22 @@ describe("Show/Hide Selectors", () => {
       // toggle visibility
       showHideDimensions.toggleVisibility(AD_BIDS_PUBLISHER_DIMENSION);
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
-      assertVisiblePartsWithMirroring(undefined, [AD_BIDS_DOMAIN_DIMENSION]);
+      assertVisiblePartsWithMirroring(get(mock).data, undefined, [
+        AD_BIDS_DOMAIN_DIMENSION,
+      ]);
       expect(get(showHideDimensions).selectedItems).toEqual([false, true]);
 
       // toggle visibility
       showHideDimensions.toggleVisibility(AD_BIDS_DOMAIN_DIMENSION);
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
-      assertVisiblePartsWithMirroring(undefined, []);
+      assertVisiblePartsWithMirroring(get(mock).data, undefined, []);
       expect(get(showHideDimensions).selectedItems).toEqual([false, false]);
 
       // toggle back visibility
       showHideDimensions.toggleVisibility(AD_BIDS_PUBLISHER_DIMENSION);
       showHideDimensions.toggleVisibility(AD_BIDS_DOMAIN_DIMENSION);
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
-      assertVisiblePartsWithMirroring(undefined, [
+      assertVisiblePartsWithMirroring(get(mock).data, undefined, [
         AD_BIDS_PUBLISHER_DIMENSION,
         AD_BIDS_DOMAIN_DIMENSION,
       ]);
@@ -163,7 +231,7 @@ describe("Show/Hide Selectors", () => {
     });
 
     it("Toggle all visibility", () => {
-      const mock = createMetricsMetaQueryMock();
+      const mock = createMetricsMetaQueryMock(false);
       const showHideDimensions = createShowHideDimensionsStore(
         AD_BIDS_NAME,
         mock
@@ -175,13 +243,13 @@ describe("Show/Hide Selectors", () => {
       // toggle all to not visible
       showHideDimensions.setAllToNotVisible();
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
-      assertVisiblePartsWithMirroring(undefined, []);
+      assertVisiblePartsWithMirroring(get(mock).data, undefined, []);
       expect(get(showHideDimensions).selectedItems).toEqual([false, false]);
 
       // toggle all back to visible
       showHideDimensions.setAllToVisible();
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
-      assertVisiblePartsWithMirroring(undefined, [
+      assertVisiblePartsWithMirroring(get(mock).data, undefined, [
         AD_BIDS_PUBLISHER_DIMENSION,
         AD_BIDS_DOMAIN_DIMENSION,
       ]);
@@ -189,7 +257,7 @@ describe("Show/Hide Selectors", () => {
     });
 
     it("Meta query updates", () => {
-      const mock = createMetricsMetaQueryMock();
+      const mock = createMetricsMetaQueryMock(false);
       const showHideDimensions = createShowHideDimensionsStore(
         AD_BIDS_NAME,
         mock
@@ -210,57 +278,79 @@ describe("Show/Hide Selectors", () => {
       ]);
       expect(get(showHideDimensions).selectedItems).toEqual([true]);
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
-      assertVisiblePartsWithMirroring(undefined, [AD_BIDS_PUBLISHER_DIMENSION]);
+      assertVisiblePartsWithMirroring(get(mock).data, undefined, [
+        AD_BIDS_PUBLISHER_DIMENSION,
+      ]);
+    });
+
+    it("Meta query updates with new dimension and some dimensions selected", () => {
+      const mock = createMetricsMetaQueryMock(false);
+      const showHideDimensions = createShowHideDimensionsStore(
+        AD_BIDS_NAME,
+        mock
+      );
+      createAdBidsInStore();
+      mock.setDimensions(AD_BIDS_INIT_DIMENSIONS);
+      expect(get(showHideDimensions).selectedItems).toEqual([true, true]);
+
+      // toggle visibility of one dimension
+      showHideDimensions.toggleVisibility(AD_BIDS_PUBLISHER_DIMENSION);
+
+      mock.setDimensions(AD_BIDS_THREE_DIMENSIONS);
+      // we have to manually call sync since in the app it is handled by a reactive statement
+      metricsExplorerStore.sync(AD_BIDS_NAME, AD_BIDS_WITH_THREE_DIMENSIONS);
+      expect(get(showHideDimensions).availableKeys).toEqual([
+        AD_BIDS_PUBLISHER_DIMENSION,
+        AD_BIDS_DOMAIN_DIMENSION,
+        AD_BIDS_COUNTRY_DIMENSION,
+      ]);
+      // assert that the new dimension is not visible since not all dimensions were selected
+      assertVisiblePartsWithMirroring(get(mock).data, undefined, [
+        AD_BIDS_DOMAIN_DIMENSION,
+      ]);
+      expect(get(showHideDimensions).selectedItems).toEqual([
+        false,
+        true,
+        false,
+      ]);
+    });
+
+    it("Meta query updates with new dimension and all dimensions selected", () => {
+      const mock = createMetricsMetaQueryMock(false);
+      const showHideDimensions = createShowHideDimensionsStore(
+        AD_BIDS_NAME,
+        mock
+      );
+      createAdBidsInStore();
+      mock.setDimensions(AD_BIDS_INIT_DIMENSIONS);
+      expect(get(showHideDimensions).selectedItems).toEqual([true, true]);
+
+      mock.setDimensions(AD_BIDS_THREE_DIMENSIONS);
+      // we have to manually call sync since in the app it is handled by a reactive statement
+      metricsExplorerStore.sync(AD_BIDS_NAME, AD_BIDS_WITH_THREE_DIMENSIONS);
+      expect(get(showHideDimensions).availableKeys).toEqual([
+        AD_BIDS_PUBLISHER_DIMENSION,
+        AD_BIDS_DOMAIN_DIMENSION,
+        AD_BIDS_COUNTRY_DIMENSION,
+      ]);
+      // assert that the new dimension is visible since all dimensions were selected
+      assertVisiblePartsWithMirroring(get(mock).data, undefined, [
+        AD_BIDS_PUBLISHER_DIMENSION,
+        AD_BIDS_DOMAIN_DIMENSION,
+        AD_BIDS_COUNTRY_DIMENSION,
+      ]);
+      expect(get(showHideDimensions).selectedItems).toEqual([true, true, true]);
     });
   });
 });
 
-function createMetricsMetaQueryMock(): CreateQueryResult<
-  V1MetricsView,
-  RpcStatus
-> & {
-  setMeasures: (measures: Array<MetricsViewMeasure>) => void;
-  setDimensions: (dimensions: Array<MetricsViewDimension>) => void;
-} {
-  const { update, subscribe } = writable<
-    QueryObserverResult<V1MetricsView, RpcStatus>
-  >({
-    data: undefined,
-    isSuccess: false,
-    isRefetching: false,
-  } as any);
-
-  return {
-    subscribe,
-    setMeasures: (measures) =>
-      update((value) => {
-        value.isSuccess = true;
-        value.data ??= {
-          measures: [],
-          dimensions: [],
-        };
-        value.data.measures = measures;
-        return value;
-      }),
-    setDimensions: (dimensions: Array<MetricsViewDimension>) =>
-      update((value) => {
-        value.isSuccess = true;
-        value.data ??= {
-          measures: [],
-          dimensions: [],
-        };
-        value.data.dimensions = dimensions;
-        return value;
-      }),
-  };
-}
-
 function assertVisiblePartsWithMirroring(
+  metrics: V1MetricsView,
   measures: Array<string> | undefined,
   dimensions: Array<string> | undefined
 ) {
   assertVisiblePartsOfMetricsView(AD_BIDS_NAME, measures, dimensions);
   // create a mirror using the proto and assert that the visible selections are persisted
-  createAdBidsMirrorInStore();
+  createAdBidsMirrorInStore(metrics);
   assertVisiblePartsOfMetricsView(AD_BIDS_MIRROR_NAME, measures, dimensions);
 }

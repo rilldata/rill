@@ -7,18 +7,26 @@ import {
   DashboardState,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  V1MetricsView,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
 
 export function getDashboardStateFromUrl(
-  url: URL
+  url: URL,
+  metricsView: V1MetricsView
 ): Partial<MetricsExplorerEntity> {
   const state = url.searchParams.get("state");
   if (!state) return undefined;
-  return getDashboardStateFromProto(base64ToProto(decodeURIComponent(state)));
+  return getDashboardStateFromProto(
+    base64ToProto(decodeURIComponent(state)),
+    metricsView
+  );
 }
 
 export function getDashboardStateFromProto(
-  binary: Uint8Array
+  binary: Uint8Array,
+  metricsView: V1MetricsView
 ): Partial<MetricsExplorerEntity> {
   const dashboard = DashboardState.fromBinary(binary);
   const entity: Partial<MetricsExplorerEntity> = {
@@ -53,10 +61,23 @@ export function getDashboardStateFromProto(
     entity.selectedDimensionName = dashboard.selectedDimension;
   }
 
-  if (dashboard.visibleMeasures) {
+  if (dashboard.allMeasuresVisible) {
+    entity.allMeasuresVisible = true;
+    entity.visibleMeasureKeys = new Set(
+      metricsView.measures.map((measure) => measure.name)
+    );
+  } else if (dashboard.visibleMeasures) {
+    entity.allMeasuresVisible = false;
     entity.visibleMeasureKeys = new Set(dashboard.visibleMeasures);
   }
-  if (dashboard.visibleDimensions) {
+
+  if (dashboard.allDimensionsVisible) {
+    entity.allDimensionsVisible = true;
+    entity.visibleDimensionKeys = new Set(
+      metricsView.dimensions.map((measure) => measure.name)
+    );
+  } else if (dashboard.visibleDimensions) {
+    entity.allDimensionsVisible = false;
     entity.visibleDimensionKeys = new Set(dashboard.visibleDimensions);
   }
 

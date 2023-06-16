@@ -34,6 +34,10 @@ function createShowHideStore<Item>(
     MetricsExplorerEntity,
     "visibleMeasureKeys" | "visibleDimensionKeys"
   >,
+  allVisibleFieldInStore: keyof Pick<
+    MetricsExplorerEntity,
+    "allMeasuresVisible" | "allDimensionsVisible"
+  >,
   labelSelector: (i: Item) => string
 ) {
   const derivedStore = derived(
@@ -70,12 +74,14 @@ function createShowHideStore<Item>(
       metricsExplorer[visibleFieldInStore] = new Set(
         get(derivedStore).availableKeys
       );
+      metricsExplorer[allVisibleFieldInStore] = true;
     });
   };
 
   derivedStore.setAllToNotVisible = () => {
     updateMetricsExplorerByName(metricsViewName, (metricsExplorer) => {
       metricsExplorer[visibleFieldInStore].clear();
+      metricsExplorer[allVisibleFieldInStore] = false;
     });
   };
 
@@ -86,6 +92,9 @@ function createShowHideStore<Item>(
       } else {
         metricsExplorer[visibleFieldInStore].add(key);
       }
+      metricsExplorer[allVisibleFieldInStore] =
+        metricsExplorer[visibleFieldInStore].size ===
+        get(derivedStore).availableKeys.length;
     });
   };
 
@@ -101,6 +110,7 @@ export function createShowHideMeasuresStore(
     metaQuery,
     "measures",
     "visibleMeasureKeys",
+    "allMeasuresVisible",
     /*
      * This selector returns the best available string for each measure,
      * using the "label" if available but falling back to the expression
@@ -119,6 +129,7 @@ export function createShowHideDimensionsStore(
     metaQuery,
     "dimensions",
     "visibleDimensionKeys",
+    "allDimensionsVisible",
     /*
      * This selector returns the best available string for each dimension,
      * using the "label" if available but falling back to the name of

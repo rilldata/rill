@@ -1,20 +1,28 @@
-import { expect } from "vitest";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
+  MetricsViewDimension,
+  MetricsViewMeasure,
+  RpcStatus,
+  V1MetricsView,
   V1MetricsViewFilter,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import { get } from "svelte/store";
+import type { QueryObserverResult } from "@tanstack/query-core";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
+import { get, writable } from "svelte/store";
+import { expect } from "vitest";
 
 export const AD_BIDS_NAME = "AdBids";
 export const AD_BIDS_MIRROR_NAME = "AdBids_mirror";
 
 export const AD_BIDS_IMPRESSIONS_MEASURE = "impressions";
 export const AD_BIDS_BID_PRICE_MEASURE = "bid_price";
+export const AD_BIDS_PUBLISHER_COUNT_MEASURE = "publisher_count";
 export const AD_BIDS_PUBLISHER_DIMENSION = "publisher";
 export const AD_BIDS_DOMAIN_DIMENSION = "domain";
+export const AD_BIDS_COUNTRY_DIMENSION = "country";
 
 export const AD_BIDS_INIT_MEASURES = [
   {
@@ -23,7 +31,21 @@ export const AD_BIDS_INIT_MEASURES = [
   },
   {
     name: AD_BIDS_BID_PRICE_MEASURE,
-    expression: "sum(bid_price)",
+    expression: "avg(bid_price)",
+  },
+];
+export const AD_BIDS_THREE_MEASURES = [
+  {
+    name: AD_BIDS_IMPRESSIONS_MEASURE,
+    expression: "count(*)",
+  },
+  {
+    name: AD_BIDS_BID_PRICE_MEASURE,
+    expression: "avg(bid_price)",
+  },
+  {
+    name: AD_BIDS_PUBLISHER_COUNT_MEASURE,
+    expression: "count_distinct(publisher)",
   },
 ];
 export const AD_BIDS_INIT_DIMENSIONS = [
@@ -32,6 +54,17 @@ export const AD_BIDS_INIT_DIMENSIONS = [
   },
   {
     name: AD_BIDS_DOMAIN_DIMENSION,
+  },
+];
+export const AD_BIDS_THREE_DIMENSIONS = [
+  {
+    name: AD_BIDS_PUBLISHER_DIMENSION,
+  },
+  {
+    name: AD_BIDS_DOMAIN_DIMENSION,
+  },
+  {
+    name: AD_BIDS_COUNTRY_DIMENSION,
   },
 ];
 
@@ -54,6 +87,11 @@ export const AD_BIDS_WITH_DELETED_MEASURE = {
   ],
   dimensions: AD_BIDS_INIT_DIMENSIONS,
 };
+export const AD_BIDS_WITH_THREE_MEASURES = {
+  name: "AdBids",
+  measures: AD_BIDS_THREE_MEASURES,
+  dimensions: AD_BIDS_INIT_DIMENSIONS,
+};
 export const AD_BIDS_WITH_DELETED_DIMENSION = {
   name: "AdBids",
   measures: AD_BIDS_INIT_MEASURES,
@@ -62,6 +100,11 @@ export const AD_BIDS_WITH_DELETED_DIMENSION = {
       name: AD_BIDS_PUBLISHER_DIMENSION,
     },
   ],
+};
+export const AD_BIDS_WITH_THREE_DIMENSIONS = {
+  name: "AdBids",
+  measures: AD_BIDS_INIT_MEASURES,
+  dimensions: AD_BIDS_THREE_DIMENSIONS,
 };
 
 export function clearMetricsExplorerStore() {
@@ -85,13 +128,60 @@ export function createAdBidsInStore() {
   });
 }
 
-export function createAdBidsMirrorInStore() {
+export function createAdBidsMirrorInStore(metrics: V1MetricsView) {
   const proto = get(metricsExplorerStore).entities[AD_BIDS_NAME].proto;
   // actual url is not relevant here
   metricsExplorerStore.syncFromUrl(
     AD_BIDS_MIRROR_NAME,
-    new URL(`http://localhost/dashboard?state=${proto}`)
+    new URL(`http://localhost/dashboard?state=${proto}`),
+    metrics ?? { measures: [], dimensions: [] }
   );
+}
+
+export function createMetricsMetaQueryMock(
+  shouldInit = true
+): CreateQueryResult<V1MetricsView, RpcStatus> & {
+  setMeasures: (measures: Array<MetricsViewMeasure>) => void;
+  setDimensions: (dimensions: Array<MetricsViewDimension>) => void;
+} {
+  const { update, subscribe } = writable<
+    QueryObserverResult<V1MetricsView, RpcStatus>
+  >({
+    data: undefined,
+    isSuccess: false,
+    isRefetching: false,
+  } as any);
+
+  const mock = {
+    subscribe,
+    setMeasures: (measures) =>
+      update((value) => {
+        value.isSuccess = true;
+        value.data ??= {
+          measures: [],
+          dimensions: [],
+        };
+        value.data.measures = measures;
+        return value;
+      }),
+    setDimensions: (dimensions: Array<MetricsViewDimension>) =>
+      update((value) => {
+        value.isSuccess = true;
+        value.data ??= {
+          measures: [],
+          dimensions: [],
+        };
+        value.data.dimensions = dimensions;
+        return value;
+      }),
+  };
+
+  if (shouldInit) {
+    mock.setMeasures(AD_BIDS_INIT_MEASURES);
+    mock.setDimensions(AD_BIDS_INIT_DIMENSIONS);
+  }
+
+  return mock;
 }
 
 export function assertMetricsView(

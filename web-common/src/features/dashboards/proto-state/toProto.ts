@@ -57,10 +57,15 @@ export function getProtoFromDashboardState(
     state.selectedDimension = metrics.selectedDimensionName;
   }
 
-  if (metrics.visibleMeasureKeys) {
+  if (metrics.allMeasuresVisible) {
+    state.allMeasuresVisible = true;
+  } else if (metrics.visibleMeasureKeys) {
     state.visibleMeasures = [...metrics.visibleMeasureKeys];
   }
-  if (metrics.visibleDimensionKeys) {
+
+  if (metrics.allDimensionsVisible) {
+    state.allDimensionsVisible = true;
+  } else if (metrics.visibleDimensionKeys) {
     state.visibleDimensions = [...metrics.visibleDimensionKeys];
   }
 

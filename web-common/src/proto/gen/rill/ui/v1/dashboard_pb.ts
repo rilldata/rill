@@ -67,9 +67,19 @@ export class DashboardState extends Message<DashboardState> {
   visibleMeasures: string[] = [];
 
   /**
-   * @generated from field: repeated string visible_dimensions = 9;
+   * @generated from field: optional bool all_measures_visible = 9;
+   */
+  allMeasuresVisible?: boolean;
+
+  /**
+   * @generated from field: repeated string visible_dimensions = 10;
    */
   visibleDimensions: string[] = [];
+
+  /**
+   * @generated from field: optional bool all_dimensions_visible = 11;
+   */
+  allDimensionsVisible?: boolean;
 
   constructor(data?: PartialMessage<DashboardState>) {
     super();
@@ -87,7 +97,9 @@ export class DashboardState extends Message<DashboardState> {
     { no: 6, name: "selected_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "show_comparison", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 8, name: "visible_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 9, name: "visible_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 9, name: "all_measures_visible", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 10, name: "visible_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 11, name: "all_dimensions_visible", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {

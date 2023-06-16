@@ -33,12 +33,21 @@ export interface MetricsExplorerEntity {
   // updated to include all measure keys upon initialization
   // or else all measure will be hidden
   visibleMeasureKeys: Set<string>;
+  // While the `visibleMeasureKeys` has the list of visible measures,
+  // this is explicitly needed to fill the state.
+  // TODO: clean this up when we refactor how url state is synced
+  allMeasuresVisible: boolean;
+
   // This array controls which dimensions are visible in
   // explorer on the client.Note that if this is null, all
   // dimensions will be visible (this is needed to default to all visible
   // when there are not existing keys in the URL or saved on the
   // server)
   visibleDimensionKeys: Set<string>;
+  // While the `visibleDimensionKeys` has the list of all visible dimensions,
+  // this is explicitly needed to fill the state.
+  // TODO: clean this up when we refactor how url state is synced
+  allDimensionsVisible: boolean;
 
   // this is used to show leaderboard values
   leaderboardMeasureName: string;
@@ -105,7 +114,7 @@ function includeExcludeModeFromFilters(filters: V1MetricsViewFilter) {
   return map;
 }
 
-function removeNonExistentMeasures(
+function syncMeasures(
   metricsView: V1MetricsView,
   metricsExplorer: MetricsExplorerEntity
 ) {
@@ -129,15 +138,22 @@ function removeNonExistentMeasures(
     (measure) => measure.name
   );
 
-  // remove any keys from visible measure if it doesn't exist anymore
-  for (const measureKey of metricsExplorer.visibleMeasureKeys) {
-    if (!measuresMap.has(measureKey)) {
-      metricsExplorer.visibleMeasureKeys.delete(measureKey);
+  if (metricsExplorer.allMeasuresVisible) {
+    // this makes sure that the visible keys is in sync with list of measures
+    metricsExplorer.visibleMeasureKeys = new Set(
+      metricsView.measures.map((measure) => measure.name)
+    );
+  } else {
+    // remove any keys from visible measure if it doesn't exist anymore
+    for (const measureKey of metricsExplorer.visibleMeasureKeys) {
+      if (!measuresMap.has(measureKey)) {
+        metricsExplorer.visibleMeasureKeys.delete(measureKey);
+      }
     }
   }
 }
 
-function removeNonExistentDimensions(
+function syncDimensions(
   metricsView: V1MetricsView,
   metricsExplorer: MetricsExplorerEntity
 ) {
@@ -160,19 +176,26 @@ function removeNonExistentDimensions(
     metricsExplorer.selectedDimensionName = undefined;
   }
 
-  // remove any keys from visible dimension if it doesn't exist anymore
-  for (const dimensionKey of metricsExplorer.visibleDimensionKeys) {
-    if (!dimensionsMap.has(dimensionKey)) {
-      metricsExplorer.visibleDimensionKeys.delete(dimensionKey);
+  if (metricsExplorer.allDimensionsVisible) {
+    // this makes sure that the visible keys is in sync with list of dimensions
+    metricsExplorer.visibleDimensionKeys = new Set(
+      metricsView.dimensions.map((dimension) => dimension.name)
+    );
+  } else {
+    // remove any keys from visible dimension if it doesn't exist anymore
+    for (const dimensionKey of metricsExplorer.visibleDimensionKeys) {
+      if (!dimensionsMap.has(dimensionKey)) {
+        metricsExplorer.visibleDimensionKeys.delete(dimensionKey);
+      }
     }
   }
 }
 
 const metricViewReducers = {
-  syncFromUrl(name: string, url: URL) {
+  syncFromUrl(name: string, url: URL, metricsView: V1MetricsView) {
     // not all data for MetricsExplorerEntity will be filled out here.
     // Hence, it is a Partial<MetricsExplorerEntity>
-    const partial = getDashboardStateFromUrl(url);
+    const partial = getDashboardStateFromUrl(url, metricsView);
     if (!partial) return;
 
     updateMetricsExplorerByName(
@@ -189,7 +212,9 @@ const metricViewReducers = {
         name,
         selectedMeasureNames: [],
         visibleMeasureKeys: new Set(),
+        allMeasuresVisible: false,
         visibleDimensionKeys: new Set(),
+        allDimensionsVisible: false,
         leaderboardMeasureName: "",
         filters: {},
         dimensionFilterExcludeMode: includeExcludeModeFromFilters(
@@ -207,10 +232,10 @@ const metricViewReducers = {
       name,
       (metricsExplorer) => {
         // remove references to non existent measures
-        removeNonExistentMeasures(metricsView, metricsExplorer);
+        syncMeasures(metricsView, metricsExplorer);
 
         // remove references to non existent dimensions
-        removeNonExistentDimensions(metricsView, metricsExplorer);
+        syncDimensions(metricsView, metricsExplorer);
       },
       () => ({
         name,
@@ -221,9 +246,11 @@ const metricViewReducers = {
         visibleMeasureKeys: new Set(
           metricsView.measures.map((measure) => measure.name)
         ),
+        allMeasuresVisible: true,
         visibleDimensionKeys: new Set(
           metricsView.dimensions.map((dim) => dim.name)
         ),
+        allDimensionsVisible: true,
         leaderboardMeasureName: metricsView.measures[0]?.name,
         filters: {
           include: [],
