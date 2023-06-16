@@ -161,7 +161,11 @@ export function convertTimeRangePreset(
  * NOTE: this is primarily used for the time range picker. We might want to
  * colocate the code w/ the component.
  */
-export const prettyFormatTimeRange = (start: Date, end: Date): string => {
+export const prettyFormatTimeRange = (
+  start: Date,
+  end: Date,
+  isAllTime = false
+): string => {
   if (!start && end) {
     return `- ${end}`;
   }
@@ -180,11 +184,10 @@ export const prettyFormatTimeRange = (start: Date, end: Date): string => {
   const startDate = start.getUTCDate(); // use start.getDate() for local timezone
   const startMonth = start.getUTCMonth();
   const startYear = start.getUTCFullYear();
-  const endDate = end.getUTCDate();
-  const endMonth = end.getUTCMonth();
-  const endYear = end.getUTCFullYear();
+  let endDate = end.getUTCDate();
+  let endMonth = end.getUTCMonth();
+  let endYear = end.getUTCFullYear();
 
-  // day is the same
   if (
     startDate === endDate &&
     startMonth === endMonth &&
@@ -210,8 +213,10 @@ export const prettyFormatTimeRange = (start: Date, end: Date): string => {
       .replace(/\s/g, "")})`;
   }
 
-  // month is the same
-  if (startMonth === endMonth && startYear === endYear) {
+  const timeRangeDurationMs = getTimeWidth(start, end);
+  if (
+    timeRangeDurationMs <= durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
+  ) {
     return `${start.toLocaleDateString(undefined, {
       month: "long",
       timeZone: TIMEZONE,
@@ -231,13 +236,37 @@ export const prettyFormatTimeRange = (start: Date, end: Date): string => {
       })
       .replace(/\s/g, "")})`;
   }
+
+  let inclusiveEndDate;
+
+  if (isAllTime) {
+    inclusiveEndDate = new Date(end);
+  } else {
+    // beyond this point, we're dealing with time ranges that are full day periods
+    // since time range is exclusive at the end, we need to subtract a day
+    inclusiveEndDate = new Date(
+      end.getTime() - durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
+    );
+    endDate = inclusiveEndDate.getUTCDate();
+    endMonth = inclusiveEndDate.getUTCMonth();
+    endYear = inclusiveEndDate.getUTCFullYear();
+  }
+
+  // month is the same
+  if (startMonth === endMonth && startYear === endYear) {
+    return `${start.toLocaleDateString(undefined, {
+      month: "long",
+      timeZone: TIMEZONE,
+    })} ${startDate}-${endDate}, ${startYear}`;
+  }
+
   // year is the same
   if (startYear === endYear) {
     return `${start.toLocaleDateString(undefined, {
       month: "long",
       day: "numeric",
       timeZone: TIMEZONE,
-    })} - ${end.toLocaleDateString(undefined, {
+    })} - ${inclusiveEndDate.toLocaleDateString(undefined, {
       month: "long",
       day: "numeric",
       timeZone: TIMEZONE,
@@ -253,7 +282,7 @@ export const prettyFormatTimeRange = (start: Date, end: Date): string => {
   return `${start.toLocaleDateString(
     undefined,
     dateFormatOptions
-  )} - ${end.toLocaleDateString(undefined, dateFormatOptions)}`;
+  )} - ${inclusiveEndDate.toLocaleDateString(undefined, dateFormatOptions)}`;
 };
 
 /** Get extra data points for extrapolating the chart on both ends */
