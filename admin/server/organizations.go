@@ -739,7 +739,7 @@ func (s *Server) ListWhitelistedDomains(ctx context.Context, req *adminv1.ListWh
 func (s *Server) SudoGetOrganizationQuota(ctx context.Context, req *adminv1.SudoGetOrganizationQuotaRequest) (*adminv1.SudoGetOrganizationQuotaResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can lookup resource")
+		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
 	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
@@ -761,7 +761,7 @@ func (s *Server) SudoGetOrganizationQuota(ctx context.Context, req *adminv1.Sudo
 func (s *Server) SudoSetOrganizationQuota(ctx context.Context, req *adminv1.SudoSetOrganizationQuotaRequest) (*adminv1.SudoSetOrganizationQuotaResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can lookup resource")
+		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
 	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)

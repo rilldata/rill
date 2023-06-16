@@ -227,7 +227,7 @@ func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResour
 func (s *Server) SudoGetUserQuota(ctx context.Context, req *adminv1.SudoGetUserQuotaRequest) (*adminv1.SudoGetUserQuotaResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can lookup resource")
+		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
@@ -243,7 +243,7 @@ func (s *Server) SudoGetUserQuota(ctx context.Context, req *adminv1.SudoGetUserQ
 func (s *Server) SudoSetUserQuota(ctx context.Context, req *adminv1.SudoSetUserQuotaRequest) (*adminv1.SudoSetUserQuotaResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can lookup resource")
+		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
