@@ -47,9 +47,10 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     end: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
+        { duration: "PT1H", operationType: TimeOffsetType.ADD },
         {
           period: Period.HOUR,
-          truncationType: TimeTruncationType.END_OF_PERIOD,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
     },
@@ -72,9 +73,10 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     end: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
+        { duration: "PT1H", operationType: TimeOffsetType.ADD },
         {
           period: Period.HOUR,
-          truncationType: TimeTruncationType.END_OF_PERIOD,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
     },
@@ -97,9 +99,10 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     end: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
+        { duration: "P1D", operationType: TimeOffsetType.ADD },
         {
           period: Period.DAY,
-          truncationType: TimeTruncationType.END_OF_PERIOD,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
     },
@@ -121,9 +124,10 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     end: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
+        { duration: "P1D", operationType: TimeOffsetType.ADD },
         {
           period: Period.DAY,
-          truncationType: TimeTruncationType.END_OF_PERIOD,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
     },
@@ -145,9 +149,10 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     end: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
+        { duration: "P1W", operationType: TimeOffsetType.ADD },
         {
           period: Period.WEEK,
-          truncationType: TimeTruncationType.END_OF_PERIOD,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
     },
@@ -168,9 +173,10 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     end: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
+        { duration: "P1Y", operationType: TimeOffsetType.ADD },
         {
           period: Period.YEAR,
-          truncationType: TimeTruncationType.END_OF_PERIOD,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
     },
@@ -204,15 +210,16 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
     end: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
+        { duration: "P1D", operationType: TimeOffsetType.ADD },
         {
           period: Period.DAY,
-          truncationType: TimeTruncationType.END_OF_PERIOD,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
     },
   },
-  THIS_WEEK: {
-    label: "This Week",
+  WEEK_TO_DATE: {
+    label: "Week to Date",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.WEEK,
     start: {
@@ -227,15 +234,16 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
     end: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
+        { duration: "P1D", operationType: TimeOffsetType.ADD },
         {
-          period: Period.WEEK,
-          truncationType: TimeTruncationType.END_OF_PERIOD,
+          period: Period.DAY,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
     },
   },
-  THIS_MONTH: {
-    label: "This Month",
+  MONTH_TO_DATE: {
+    label: "Month to Date",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.MONTH,
     start: {
@@ -250,15 +258,16 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
     end: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
+        { duration: "P1D", operationType: TimeOffsetType.ADD },
         {
-          period: Period.MONTH,
-          truncationType: TimeTruncationType.END_OF_PERIOD,
+          period: Period.DAY,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
     },
   },
-  THIS_YEAR: {
-    label: "This Year",
+  YEAR_TO_DATE: {
+    label: "Year to Date",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.YEAR,
     start: {
@@ -273,9 +282,10 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
     end: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
+        { duration: "P1D", operationType: TimeOffsetType.ADD },
         {
-          period: Period.YEAR,
-          truncationType: TimeTruncationType.END_OF_PERIOD,
+          period: Period.DAY,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
     },
