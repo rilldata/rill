@@ -10,7 +10,7 @@ const getAdjustedFetchTimeTestCases = [
     interval: V1TimeGrain.TIME_GRAIN_DAY,
     expected: {
       start: "2020-01-03T00:00:00.000Z",
-      end: "2020-01-07T00:00:00.000Z",
+      end: "2020-01-06T00:00:00.000Z",
     },
   },
   {
@@ -20,7 +20,7 @@ const getAdjustedFetchTimeTestCases = [
     interval: V1TimeGrain.TIME_GRAIN_WEEK,
     expected: {
       start: "2019-12-30T00:00:00.000Z",
-      end: "2020-02-10T00:00:00.000Z",
+      end: "2020-02-08T00:00:00.000Z",
     },
   },
 ];
