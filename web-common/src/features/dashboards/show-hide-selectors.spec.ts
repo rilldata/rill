@@ -158,6 +158,7 @@ describe("Show/Hide Selectors", () => {
     it("Meta query updates with new measure and all measures selected", () => {
       const mock = createMetricsMetaQueryMock(false);
       const showHideMeasure = createShowHideMeasuresStore(AD_BIDS_NAME, mock);
+      showHideMeasure.setAllToVisible();
       createAdBidsInStore();
       mock.setMeasures(AD_BIDS_INIT_MEASURES);
       expect(get(showHideMeasure).selectedItems).toEqual([true, true]);
@@ -321,6 +322,7 @@ describe("Show/Hide Selectors", () => {
         AD_BIDS_NAME,
         mock
       );
+      showHideDimensions.setAllToVisible();
       createAdBidsInStore();
       mock.setDimensions(AD_BIDS_INIT_DIMENSIONS);
       expect(get(showHideDimensions).selectedItems).toEqual([true, true]);
