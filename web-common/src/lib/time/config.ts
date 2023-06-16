@@ -261,8 +261,8 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       transformation: [
         { duration: "P1D", operationType: TimeOffsetType.ADD },
         {
-          period: Period.MONTH,
-          truncationType: TimeTruncationType.END_OF_PERIOD,
+          period: Period.DAY,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
     },
@@ -285,8 +285,8 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       transformation: [
         { duration: "P1D", operationType: TimeOffsetType.ADD },
         {
-          period: Period.YEAR,
-          truncationType: TimeTruncationType.END_OF_PERIOD,
+          period: Period.DAY,
+          truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
     },
