@@ -285,7 +285,7 @@ export const prettyFormatTimeRange = (
   )} - ${inclusiveEndDate.toLocaleDateString(undefined, dateFormatOptions)}`;
 };
 
-/** Get extra data points for extrapolating the chart on both ends */
+/** Get extra data points for extrapolating the chart on the start */
 export function getAdjustedFetchTime(
   startTime: Date,
   endTime: Date,
@@ -304,21 +304,9 @@ export function getAdjustedFetchTime(
     TIME_GRAIN[interval].duration
   );
 
-  const offsetedEndTime = getOffset(
-    endTime,
-    TIME_GRAIN[interval].duration,
-    TimeOffsetType.ADD
-  );
-
-  // the data point after the last complete date.
-  const fetchEndTime = getStartOfPeriod(
-    offsetedEndTime,
-    TIME_GRAIN[interval].duration
-  );
-
   return {
     start: fetchStartTime.toISOString(),
-    end: fetchEndTime.toISOString(),
+    end: endTime.toISOString(),
   };
 }
 
@@ -338,7 +326,7 @@ export function getAdjustedChartTime(
   const grainDuration = TIME_GRAIN[interval].duration;
 
   // Only plot the chart till the last period containing a datum
-  let adjustedEnd = new Date(end);
+  let adjustedEnd = new Date(boundEnd);
   adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration);
 
   // Remove half extra period with no data from chart
