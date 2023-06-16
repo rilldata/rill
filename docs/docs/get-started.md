@@ -50,4 +50,4 @@ rill user add
 
 ## We want to hear from you
 
-You can file an issue [on GitHub](https://github.com/rilldata/rill-developer/issues/new/choose) or reach us in our [Discord channel](https://bit.ly/3unvA05).
+You can file an issue [on GitHub](https://github.com/rilldata/rill/issues/new/choose) or reach us in our [Discord channel](https://bit.ly/3unvA05).

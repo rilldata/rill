@@ -55,7 +55,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 					logs = fmt.Sprintf("  Logs: %s\n\n", depl.Logs)
 				}
 
-				cmdutil.SuccessPrinter("Deployment info\n")
+				cmdutil.PrintlnSuccess("Deployment info\n")
 				fmt.Printf("  Web: %s\n", proj.Project.FrontendUrl)
 				fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
 				fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)

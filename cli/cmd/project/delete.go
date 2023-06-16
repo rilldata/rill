@@ -62,7 +62,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter(fmt.Sprintf("Deleted project: %v", name))
+			cmdutil.PrintlnSuccess(fmt.Sprintf("Deleted project: %v", name))
 			return nil
 		},
 	}

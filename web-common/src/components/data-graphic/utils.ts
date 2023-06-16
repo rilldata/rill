@@ -3,6 +3,7 @@ import { area, curveLinear, curveStep, line } from "d3-shape";
 import { getContext } from "svelte";
 import { derived, writable } from "svelte/store";
 import { contexts } from "./constants";
+import { curveStepExtended } from "./marks/curveStepExtended";
 import type {
   GraphicScale,
   ScaleStore,
@@ -26,6 +27,7 @@ export function circlePath(cx: number, cy: number, r: number): string {
 const curves = {
   curveLinear,
   curveStep,
+  curveStepExtended,
 };
 
 export function pathIsDefined(yAccessor: string) {

@@ -1,0 +1,37 @@
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/go-cover.yml"
+      - "**.go"
+      - "go.mod"
+name: Test Go code with coverage
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/setup-go@v3
+      with:
+        go-version: 1.20.3
+    - uses: actions/checkout@v3
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/go/pkg/mod
+          ~/.cache/go-build
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    - name: Go test with coverage
+      run: |-
+        # Build list of packages to include in coverage, excluding generated code in 'proto/gen'
+        PACKAGES=$(go list ./... | grep -v 'proto/gen/' | tr '\n' ',' | sed -e 's/,$//' | sed -e 's/github.com\/rilldata\/rill/./g')
+        # Run tests with coverage output
+        go test ./... -short -v -race -covermode=atomic -coverprofile=coverage.out -coverpkg=$PACKAGES
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: coverage.out
+        flags: go

@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	addr            = "https://api.github.com/repos/rilldata/rill-developer/releases/latest"
+	addr            = "https://api.github.com/repos/rilldata/rill/releases/latest"
 	versionCheckTTL = 24 * time.Hour
 )
 

@@ -64,6 +64,9 @@ func NewInstance(t TestingT) (*runtime.Runtime, string) {
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
+	err = rt.PutFile(context.Background(), inst.ID, "rill.yaml", strings.NewReader(""), true, false)
+	require.NoError(t, err)
+
 	return rt, inst.ID
 }
 

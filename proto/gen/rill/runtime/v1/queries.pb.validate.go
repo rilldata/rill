@@ -350,6 +350,310 @@ var _ interface {
 	ErrorName() string
 } = QueryResponseValidationError{}
 
+// Validate checks the field values on ExportRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ExportRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExportRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ExportRequestMultiError, or
+// nil if none found.
+func (m *ExportRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExportRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	if m.GetLimit() > 10000 {
+		err := ExportRequestValidationError{
+			field:  "Limit",
+			reason: "value must be less than or equal to 10000",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Format
+
+	switch v := m.Request.(type) {
+	case *ExportRequest_MetricsViewToplistRequest:
+		if v == nil {
+			err := ExportRequestValidationError{
+				field:  "Request",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewToplistRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExportRequestValidationError{
+						field:  "MetricsViewToplistRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExportRequestValidationError{
+						field:  "MetricsViewToplistRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewToplistRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExportRequestValidationError{
+					field:  "MetricsViewToplistRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *ExportRequest_MetricsViewRowsRequest:
+		if v == nil {
+			err := ExportRequestValidationError{
+				field:  "Request",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewRowsRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExportRequestValidationError{
+						field:  "MetricsViewRowsRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExportRequestValidationError{
+						field:  "MetricsViewRowsRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewRowsRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExportRequestValidationError{
+					field:  "MetricsViewRowsRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return ExportRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExportRequestMultiError is an error wrapping multiple validation errors
+// returned by ExportRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ExportRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExportRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExportRequestMultiError) AllErrors() []error { return m }
+
+// ExportRequestValidationError is the validation error returned by
+// ExportRequest.Validate if the designated constraints aren't met.
+type ExportRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExportRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExportRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExportRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExportRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExportRequestValidationError) ErrorName() string { return "ExportRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExportRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExportRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExportRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExportRequestValidationError{}
+
+// Validate checks the field values on ExportResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ExportResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExportResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ExportResponseMultiError,
+// or nil if none found.
+func (m *ExportResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExportResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for DownloadUrlPath
+
+	if len(errors) > 0 {
+		return ExportResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExportResponseMultiError is an error wrapping multiple validation errors
+// returned by ExportResponse.ValidateAll() if the designated constraints
+// aren't met.
+type ExportResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExportResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExportResponseMultiError) AllErrors() []error { return m }
+
+// ExportResponseValidationError is the validation error returned by
+// ExportResponse.Validate if the designated constraints aren't met.
+type ExportResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExportResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExportResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExportResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExportResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExportResponseValidationError) ErrorName() string { return "ExportResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExportResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExportResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExportResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExportResponseValidationError{}
+
 // Validate checks the field values on MetricsViewToplistRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

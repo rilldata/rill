@@ -87,14 +87,14 @@ func Test_staticProvisioner_Provision(t *testing.T) {
 			name:    "all applicable ",
 			spec:    spec,
 			opts:    &ProvisionOptions{OLAPDriver: "duckdb", Slots: 1, Region: "us-east-1"},
-			want:    &Allocation{CPU: 1, MemoryGB: 2, StorageBytes: int64(1) * 5 * int64(datasize.GB)},
+			want:    &Allocation{CPU: 1, MemoryGB: 2, StorageBytes: int64(10) * int64(datasize.GB)},
 			wantErr: false,
 		},
 		{
 			name:    "one applicable ",
 			spec:    spec,
 			opts:    &ProvisionOptions{OLAPDriver: "duckdb", Slots: 4, Region: "us-east-1"},
-			want:    &Allocation{CPU: 4, MemoryGB: 8, StorageBytes: int64(4) * 5 * int64(datasize.GB), Host: "host_1"},
+			want:    &Allocation{CPU: 4, MemoryGB: 8, StorageBytes: int64(40) * int64(datasize.GB), Host: "host_1"},
 			wantErr: false,
 		},
 		{
@@ -120,7 +120,7 @@ func Test_staticProvisioner_Provision(t *testing.T) {
 				},
 			},
 			opts:    &ProvisionOptions{OLAPDriver: "duckdb", Slots: 1, Region: "us-east-2"},
-			want:    &Allocation{CPU: 1, MemoryGB: 2, StorageBytes: int64(1) * 5 * int64(datasize.GB), Host: "host_2"},
+			want:    &Allocation{CPU: 1, MemoryGB: 2, StorageBytes: int64(10) * int64(datasize.GB), Host: "host_2"},
 			wantErr: false,
 		},
 	}

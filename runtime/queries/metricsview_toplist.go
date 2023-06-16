@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -91,6 +92,22 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	q.Result = &runtimev1.MetricsViewToplistResponse{
 		Meta: meta,
 		Data: data,
+	}
+
+	return nil
+}
+
+func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, writer io.Writer) error {
+	err := q.Resolve(ctx, rt, instanceID, priority)
+	if err != nil {
+		return err
+	}
+
+	switch format {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
+		return fmt.Errorf("unspecified format")
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		return writeCSV(q.Result.Meta, q.Result.Data, writer)
 	}
 
 	return nil

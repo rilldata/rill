@@ -27,11 +27,11 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if len(res.Organizations) == 0 {
-				cmdutil.WarnPrinter("No orgs found")
+				cmdutil.PrintlnWarn("No orgs found")
 				return nil
 			}
 
-			cmdutil.SuccessPrinter("Organizations list")
+			cmdutil.PrintlnSuccess("Organizations list")
 			cmdutil.TablePrinter(toTable(res.Organizations, cfg.Org))
 			return nil
 		},

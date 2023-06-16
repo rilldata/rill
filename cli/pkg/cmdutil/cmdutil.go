@@ -82,7 +82,7 @@ func TablePrinter(v interface{}) {
 	fmt.Fprint(os.Stdout, b.String())
 }
 
-func SuccessPrinter(str string) {
+func PrintlnSuccess(str string) {
 	boldGreen := color.New(color.FgGreen).Add(color.Bold)
 	boldGreen.Fprintln(color.Output, str)
 }
@@ -201,14 +201,14 @@ func OrgExists(ctx context.Context, c *client.Client, name string) (bool, error)
 	return true, nil
 }
 
-func WarnPrinter(str string) {
+func PrintlnWarn(str string) {
 	boldYellow := color.New(color.FgYellow).Add(color.Bold)
 	boldYellow.Fprintln(color.Output, str)
 }
 
 func PrintUsers(users []*adminv1.User) {
 	if len(users) == 0 {
-		WarnPrinter("No users found")
+		PrintlnWarn("No users found")
 		return
 	}
 
@@ -217,7 +217,7 @@ func PrintUsers(users []*adminv1.User) {
 
 func PrintMembers(members []*adminv1.Member) {
 	if len(members) == 0 {
-		WarnPrinter("No members found")
+		PrintlnWarn("No members found")
 		return
 	}
 
@@ -229,7 +229,7 @@ func PrintInvites(invites []*adminv1.UserInvite) {
 		return
 	}
 
-	SuccessPrinter("Pending user invites")
+	PrintlnSuccess("Pending user invites")
 	TablePrinter(toInvitesTable(invites))
 }
 

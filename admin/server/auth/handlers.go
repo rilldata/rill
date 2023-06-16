@@ -205,9 +205,9 @@ func (a *Authenticator) authWithToken(w http.ResponseWriter, r *http.Request) {
 	// Get auth cookie
 	sess := a.cookies.Get(r, cookieName)
 
-	// If there's already a token in the cookie, revoke it (since we're now setting a new one)
+	// If there's already a token in the cookie, and it's not the same one, revoke it (since we're now setting a new one).
 	oldAuthToken, ok := sess.Values[cookieFieldAccessToken].(string)
-	if ok && oldAuthToken != "" {
+	if ok && oldAuthToken != "" && oldAuthToken != newToken {
 		err := a.admin.RevokeAuthToken(r.Context(), oldAuthToken)
 		if err != nil {
 			a.logger.Error("failed to revoke old user auth token during new auth", zap.Error(err), observability.ZapCtx(r.Context()))

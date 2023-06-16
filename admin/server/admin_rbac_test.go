@@ -110,6 +110,7 @@ func TestAdmin_RBAC(t *testing.T) {
 	server := Server{
 		admin:         service,
 		authenticator: authenticator,
+		logger:        logger,
 	}
 
 	// create a mock bufconn listener

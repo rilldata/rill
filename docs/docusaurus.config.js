@@ -40,7 +40,7 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            "https://github.com/rilldata/rill-developer/blob/main/docs/",
+            "https://github.com/rilldata/rill/blob/main/docs/",
         },
         blog: {
           routeBasePath: 'notes',
@@ -99,7 +99,7 @@ const config = {
             position: "left",
           },
           {
-            href: "https://github.com/rilldata/rill-developer",
+            href: "https://github.com/rilldata/rill",
             label: "GitHub",
             position: "left",
           },
@@ -135,7 +135,7 @@ const config = {
               {
                 html: `
                  <div style="display: flex; align-items: center; -webkit-box-align: center;">
-                 <a class="social-link" href="https://github.com/rilldata/rill-developer" target="_blank"><img src="https://uploads-ssl.webflow.com/624f2a9ba37f4233dbe55d72/625af1b8081e31a5e696066b_github-octocat.svg" loading="lazy" alt="github logo"></a>
+                 <a class="social-link" href="https://github.com/rilldata/rill" target="_blank"><img src="https://uploads-ssl.webflow.com/624f2a9ba37f4233dbe55d72/625af1b8081e31a5e696066b_github-octocat.svg" loading="lazy" alt="github logo"></a>
                  <a class="social-link" href="https://twitter.com/RillData" target="_blank"><img src="https://uploads-ssl.webflow.com/624f2a9ba37f4233dbe55d72/624f2a9ba37f429995e55f34_social-twitter.svg" loading="lazy" alt="twitter logo"></a>
                  <a class="social-link" href="https://discord.gg/eEvSYHdfWK" target="_blank"><img src="https://uploads-ssl.webflow.com/624f2a9ba37f4233dbe55d72/625af1dc6a667e2367b552ae_Discord-Logo.svg" loading="lazy" alt="Discord logo"></a>
                  </div>

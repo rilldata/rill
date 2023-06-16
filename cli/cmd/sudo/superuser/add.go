@@ -31,7 +31,7 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter(fmt.Sprintf("Granted superuser to %q", args[0]))
+			cmdutil.PrintlnSuccess(fmt.Sprintf("Granted superuser to %q", args[0]))
 
 			return nil
 		},

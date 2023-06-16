@@ -34,7 +34,7 @@
     {
       icon: Github,
       label: "Report an issue",
-      href: "https://github.com/rilldata/rill-developer/issues/new?assignees=&labels=bug&template=bug_report.md&title=",
+      href: "https://github.com/rilldata/rill/issues/new?assignees=&labels=bug&template=bug_report.md&title=",
       className: "fill-gray-500",
       shrinkIcon: true,
     },

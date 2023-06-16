@@ -79,7 +79,7 @@
   });
 
   function startWithExampleProject(example: (typeof EXAMPLES)[number]) {
-    behaviourEvent.fireSplashEvent(
+    behaviourEvent?.fireSplashEvent(
       BehaviourEventAction.ExampleAdd,
       BehaviourEventMedium.Card,
       MetricsEventSpace.Workspace,

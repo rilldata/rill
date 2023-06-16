@@ -52,7 +52,7 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 
 			cfg.AdminURL = url
 
-			cmdutil.SuccessPrinter(fmt.Sprintf("Set default env to %q, url is %q", env, url))
+			cmdutil.PrintlnSuccess(fmt.Sprintf("Set default env to %q, url is %q", env, url))
 
 			return nil
 		},

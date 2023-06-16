@@ -28,11 +28,11 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if len(res.Projects) == 0 {
-				cmdutil.WarnPrinter("No projects found")
+				cmdutil.PrintlnWarn("No projects found")
 				return nil
 			}
 
-			cmdutil.SuccessPrinter("Projects list")
+			cmdutil.PrintlnSuccess("Projects list")
 			cmdutil.TablePrinter(toTable(res.Projects))
 
 			return nil

@@ -33,7 +33,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.WarnPrinter(fmt.Sprintf("New users with email addresses ending in %q will no longer automatically be added to %q. "+
+			cmdutil.PrintlnWarn(fmt.Sprintf("New users with email addresses ending in %q will no longer automatically be added to %q. "+
 				"Existing users previously added through this policy will keep their access. (To remove users, use `rill user remove`.)", domain, cfg.Org))
 
 			return nil

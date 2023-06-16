@@ -74,7 +74,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Renamed organization")
+			cmdutil.PrintlnSuccess("Renamed organization")
 			cmdutil.TablePrinter(toRow(updatedOrg.Organization))
 			return nil
 		},

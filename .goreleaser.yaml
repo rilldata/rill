@@ -76,7 +76,7 @@ blobs:
       - glob: ./dist/**/*
 
 brews:
-  - homepage: https://github.com/rilldata/rill-developer
+  - homepage: https://github.com/rilldata/rill
     description: The Rill CLI
     name: rill
     license: Apache 2.0

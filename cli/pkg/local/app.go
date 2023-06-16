@@ -252,7 +252,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		AllowedOrigins:  []string{"*"},
 		ServePrometheus: true,
 	}
-	runtimeServer, err := runtimeserver.NewServer(opts, a.Runtime, serverLogger)
+	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, serverLogger)
 	if err != nil {
 		return err
 	}

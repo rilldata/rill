@@ -90,7 +90,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			cmdutil.SuccessPrinter(fmt.Sprintf("Deleted organization: %v", name))
+			cmdutil.PrintlnSuccess(fmt.Sprintf("Deleted organization: %v", name))
 			return nil
 		},
 	}
