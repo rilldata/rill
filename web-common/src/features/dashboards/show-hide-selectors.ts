@@ -101,6 +101,11 @@ export function createShowHideMeasuresStore(
     metaQuery,
     "measures",
     "visibleMeasureKeys",
+    /*
+     * This selector returns the best available string for each measure,
+     * using the "label" if available but falling back to the expression
+     * if needed.
+     */
     (m) => m.label || m.expression
   );
 }
@@ -114,6 +119,11 @@ export function createShowHideDimensionsStore(
     metaQuery,
     "dimensions",
     "visibleDimensionKeys",
+    /*
+     * This selector returns the best available string for each dimension,
+     * using the "label" if available but falling back to the name of
+     * the categorical column (which must be present) if needed
+     */
     (d) => d.label || d.name
   );
 }

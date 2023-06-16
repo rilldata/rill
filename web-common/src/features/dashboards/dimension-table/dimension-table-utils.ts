@@ -7,8 +7,8 @@ import type {
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
 import {
-  formatMeasurePercentageDifference,
   NicelyFormattedTypes,
+  formatMeasurePercentageDifference,
 } from "../humanize-numbers";
 
 /** Returns an updated filter set for a given dimension on search */
