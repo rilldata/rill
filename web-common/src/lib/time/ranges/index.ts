@@ -272,7 +272,7 @@ export const prettyFormatTimeRange = (
   )} - ${inclusiveEndDate.toLocaleDateString(undefined, dateFormatOptions)}`;
 };
 
-/** Get extra data points for extrapolating the chart on the start */
+/** Get extra data points for extrapolating the chart on both ends */
 export function getAdjustedFetchTime(
   startTime: Date,
   endTime: Date,
@@ -291,9 +291,21 @@ export function getAdjustedFetchTime(
     TIME_GRAIN[interval].duration
   );
 
+  const offsetedEndTime = getOffset(
+    endTime,
+    TIME_GRAIN[interval].duration,
+    TimeOffsetType.ADD
+  );
+
+  // the data point after the last complete date.
+  const fetchEndTime = getStartOfPeriod(
+    offsetedEndTime,
+    TIME_GRAIN[interval].duration
+  );
+
   return {
     start: fetchStartTime.toISOString(),
-    end: endTime.toISOString(),
+    end: fetchEndTime.toISOString(),
   };
 }
 
