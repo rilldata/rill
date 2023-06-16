@@ -8,8 +8,12 @@
   import { useDashboardStore } from "../dashboard-stores";
   import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
+  import { writable } from "svelte/store";
 
   export let metricViewName = "";
+
+  const SAMPLE_SIZE = 10000;
+  const FALLBACK_SAMPLE_SIZE = 1000;
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
@@ -30,11 +34,13 @@
   $: timeStart = $dashboardStore.selectedTimeRange?.start?.toISOString();
   $: timeEnd = $dashboardStore.selectedTimeRange?.end?.toISOString();
 
+  let limit = writable(SAMPLE_SIZE);
+
   $: tableQuery = createQueryServiceMetricsViewRows(
     $runtime?.instanceId,
     metricViewName,
     {
-      limit: 10000,
+      limit: $limit,
       filter: $dashboardStore.filters,
       timeStart: timeStart,
       timeEnd: timeEnd,
@@ -47,6 +53,18 @@
       },
     }
   );
+
+  // If too much date is requested, limit the query to 1000 rows
+  $: if (
+    // @ts-ignore
+    $tableQuery?.error?.response?.data?.code === 8 &&
+    $limit > FALLBACK_SAMPLE_SIZE
+  ) {
+    // SK: Have to set the limit on the next tick or the tableQuery does not update. Not sure why, seems like a svelte-query issue.
+    setTimeout(() => {
+      limit.set(FALLBACK_SAMPLE_SIZE);
+    });
+  }
 
   let rows;
   $: {
