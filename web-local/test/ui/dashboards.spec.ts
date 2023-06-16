@@ -114,12 +114,12 @@ describe("dashboards", () => {
     await page.getByLabel("Select time range").click();
     await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
 
-    // Check that the total records are 275 and have comparisons
+    // Check that the total records are 272 and have comparisons
     await playwrightExpect(page.getByText("272 -23 -7%")).toBeVisible();
 
     // Check the row viewer accordion is updated
     await playwrightExpect(
-      page.getByText("Source Data 275 of 100k rows")
+      page.getByText("Source Data 272 of 100k rows")
     ).toBeVisible();
 
     // Check row viewer is collapsed by looking for the cell value "7029", which should be in the table
