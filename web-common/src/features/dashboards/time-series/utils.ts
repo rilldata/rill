@@ -1,4 +1,6 @@
 import { convertTimestampPreviewFcn } from "@rilldata/web-common/lib/convertTimestampPreview";
+import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
+import { TimeOffsetType } from "../../../lib/time/types";
 
 /** sets extents to 0 if it makes sense; otherwise, inflates each extent component */
 export function niceMeasureExtents(
@@ -14,7 +16,7 @@ export function niceMeasureExtents(
   ];
 }
 
-export function toComparisonKeys(d) {
+export function toComparisonKeys(d, offsetDuration: string) {
   return Object.keys(d).reduce((acc, key) => {
     if (key === "records") {
       Object.entries(d.records).forEach(([key, value]) => {
@@ -22,6 +24,11 @@ export function toComparisonKeys(d) {
       });
     } else if (`comparison.${key}` === "comparison.ts") {
       acc[`comparison.${key}`] = convertTimestampPreviewFcn(d[key], true);
+      acc["comparison.ts_position"] = getOffset(
+        acc["comparison.ts"],
+        offsetDuration,
+        TimeOffsetType.ADD
+      );
     } else {
       acc[`comparison.${key}`] = d[key];
     }
@@ -29,14 +36,23 @@ export function toComparisonKeys(d) {
   }, {});
 }
 
-export function prepareTimeSeries(original, comparison) {
+export function prepareTimeSeries(
+  original,
+  comparison,
+  timeGrainDuration: string
+) {
   return original.map((originalPt, i) => {
     const comparisonPt = comparison?.[i];
+
+    const ts = convertTimestampPreviewFcn(originalPt.ts, true);
+    const offsetDuration = getDurationMultiple(timeGrainDuration, 0.5);
+    const ts_position = getOffset(ts, offsetDuration, TimeOffsetType.ADD);
     return {
-      ts: convertTimestampPreviewFcn(originalPt.ts, true),
+      ts,
+      ts_position,
       bin: originalPt.bin,
       ...originalPt.records,
-      ...toComparisonKeys(comparisonPt || {}),
+      ...toComparisonKeys(comparisonPt || {}, offsetDuration),
     };
   });
 }
