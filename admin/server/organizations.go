@@ -736,6 +736,79 @@ func (s *Server) ListWhitelistedDomains(ctx context.Context, req *adminv1.ListWh
 	}, nil
 }
 
+func (s *Server) SudoGetOrganizationQuota(ctx context.Context, req *adminv1.SudoGetOrganizationQuotaRequest) (*adminv1.SudoGetOrganizationQuotaResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can lookup resource")
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.SudoGetOrganizationQuotaResponse{
+		OrganizationQuota: &adminv1.OrganizationQuota{
+			QuotaProjects:           uint32(org.QuotaProjects),
+			QuotaDeployments:        uint32(org.QuotaDeployments),
+			QuotaSlotsTotal:         uint32(org.QuotaSlotsTotal),
+			QuotaSlotsPerDeployment: uint32(org.QuotaSlotsPerDeployment),
+			QuotaOutstandingInvites: uint32(org.QuotaOutstandingInvites),
+		},
+	}, nil
+}
+
+func (s *Server) SudoSetOrganizationQuota(ctx context.Context, req *adminv1.SudoSetOrganizationQuotaRequest) (*adminv1.SudoSetOrganizationQuotaResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can lookup resource")
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
+	if err != nil {
+		return nil, err
+	}
+
+	opts := &database.UpdateOrganizationQuotaOptions{
+		QuotaProjects:           org.QuotaProjects,
+		QuotaDeployments:        org.QuotaDeployments,
+		QuotaSlotsTotal:         org.QuotaSlotsTotal,
+		QuotaSlotsPerDeployment: org.QuotaSlotsPerDeployment,
+		QuotaOutstandingInvites: org.QuotaOutstandingInvites,
+	}
+
+	// Update user quota here
+	switch id := req.Quota.(type) {
+	case *adminv1.SudoSetOrganizationQuotaRequest_QuotaProjects:
+		opts.QuotaProjects = int(id.QuotaProjects)
+	case *adminv1.SudoSetOrganizationQuotaRequest_QuotaDeployments:
+		opts.QuotaDeployments = int(id.QuotaDeployments)
+	case *adminv1.SudoSetOrganizationQuotaRequest_QuotaSlotsTotal:
+		opts.QuotaSlotsTotal = int(id.QuotaSlotsTotal)
+	case *adminv1.SudoSetOrganizationQuotaRequest_QuotaSlotsPerDeployment:
+		opts.QuotaSlotsPerDeployment = int(id.QuotaSlotsPerDeployment)
+	case *adminv1.SudoSetOrganizationQuotaRequest_QuotaOutstandingInvites:
+		opts.QuotaOutstandingInvites = int(id.QuotaOutstandingInvites)
+	default:
+		return nil, status.Errorf(codes.Internal, "unexpected quota type %T", id)
+	}
+
+	updatedOrg, err := s.admin.DB.UpdateOrganizationQuota(ctx, org.ID, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.SudoSetOrganizationQuotaResponse{
+		OrganizationQuota: &adminv1.OrganizationQuota{
+			QuotaProjects:           uint32(updatedOrg.QuotaProjects),
+			QuotaDeployments:        uint32(updatedOrg.QuotaDeployments),
+			QuotaSlotsTotal:         uint32(updatedOrg.QuotaSlotsTotal),
+			QuotaSlotsPerDeployment: uint32(updatedOrg.QuotaSlotsPerDeployment),
+			QuotaOutstandingInvites: uint32(updatedOrg.QuotaOutstandingInvites),
+		},
+	}, nil
+}
+
 func organizationToDTO(o *database.Organization) *adminv1.Organization {
 	return &adminv1.Organization{
 		Id:          o.ID,

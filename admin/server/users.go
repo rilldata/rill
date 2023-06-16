@@ -224,6 +224,46 @@ func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResour
 	return res, nil
 }
 
+func (s *Server) SudoGetUserQuota(ctx context.Context, req *adminv1.SudoGetUserQuotaRequest) (*adminv1.SudoGetUserQuotaResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can lookup resource")
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.SudoGetUserQuotaResponse{UserQuota: &adminv1.UserQuota{
+		QuotaSingleuserOrgs: uint32(user.QuotaSingleuserOrgs),
+	}}, nil
+}
+
+func (s *Server) SudoSetUserQuota(ctx context.Context, req *adminv1.SudoSetUserQuotaRequest) (*adminv1.SudoSetUserQuotaResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can lookup resource")
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update user quota here
+	updatedUser, err := s.admin.DB.UpdateUserQuota(ctx, user.ID, &database.UpdateUserQuotaOptions{
+		QuotaSingleuserOrgs: int(req.QuotaSingleuserOrgs),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.SudoSetUserQuotaResponse{UserQuota: &adminv1.UserQuota{
+		QuotaSingleuserOrgs: uint32(updatedUser.QuotaSingleuserOrgs),
+	}}, nil
+}
+
 func userToPB(u *database.User) *adminv1.User {
 	return &adminv1.User{
 		Id:          u.ID,

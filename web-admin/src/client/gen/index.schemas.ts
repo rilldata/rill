@@ -18,6 +18,14 @@ export type AdminServiceSudoGetResourceParams = {
   instanceId?: string;
 };
 
+export type AdminServiceSudoGetUserQuotaParams = {
+  email?: string;
+};
+
+export type AdminServiceSudoGetOrganizationQuotaParams = {
+  orgName?: string;
+};
+
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
   [key: string]: string;
 };
@@ -120,6 +128,10 @@ export interface V1WhitelistedDomain {
   role?: string;
 }
 
+export interface V1UserQuota {
+  quotaSingleuserOrgs?: number;
+}
+
 export interface V1UserInvite {
   email?: string;
   role?: string;
@@ -163,12 +175,42 @@ export interface V1TriggerReconcileResponse {
   [key: string]: any;
 }
 
+export interface V1SudoSetUserQuotaResponse {
+  userQuota?: V1UserQuota;
+}
+
+export interface V1SudoSetUserQuotaRequest {
+  email?: string;
+  quotaSingleuserOrgs?: number;
+}
+
+export interface V1SudoSetOrganizationQuotaResponse {
+  organizationQuota?: V1OrganizationQuota;
+}
+
+export interface V1SudoSetOrganizationQuotaRequest {
+  orgName?: string;
+  quotaProjects?: number;
+  quotaDeployments?: number;
+  quotaSlotsTotal?: number;
+  quotaSlotsPerDeployment?: number;
+  quotaOutstandingInvites?: number;
+}
+
+export interface V1SudoGetUserQuotaResponse {
+  userQuota?: V1UserQuota;
+}
+
 export interface V1SudoGetResourceResponse {
   user?: V1User;
   org?: V1Organization;
   project?: V1Project;
   deployment?: V1Deployment;
   instance?: V1Deployment;
+}
+
+export interface V1SudoGetOrganizationQuotaResponse {
+  organizationQuota?: V1OrganizationQuota;
 }
 
 export interface V1SetSuperuserResponse {
@@ -245,6 +287,14 @@ export interface V1Project {
 export interface V1PingResponse {
   version?: string;
   time?: string;
+}
+
+export interface V1OrganizationQuota {
+  quotaProjects?: number;
+  quotaDeployments?: number;
+  quotaSlotsTotal?: number;
+  quotaSlotsPerDeployment?: number;
+  quotaOutstandingInvites?: number;
 }
 
 export interface V1OrganizationPermissions {

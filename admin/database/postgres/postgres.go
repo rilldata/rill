@@ -147,6 +147,19 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 	return res, nil
 }
 
+func (c *connection) UpdateOrganizationQuota(ctx context.Context, id string, opts *database.UpdateOrganizationQuotaOptions) (*database.Organization, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.Organization{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET quota_projects=$1, quota_deployments=$2, quota_slots_total=$3, quota_slots_per_deployment=$4, quota_outstanding_invites=$5, updated_on=now() WHERE id=$6 RETURNING *", opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("org", err)
+	}
+	return res, nil
+}
+
 func (c *connection) UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*database.Organization, error) {
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `UPDATE orgs SET all_usergroup_id = $1 WHERE id = $2 RETURNING *`, groupID, orgID).StructScan(res)
@@ -514,6 +527,19 @@ func (c *connection) UpdateUser(ctx context.Context, id string, opts *database.U
 		opts.DisplayName,
 		opts.PhotoURL,
 		opts.GithubUsername).StructScan(res)
+	if err != nil {
+		return nil, parseErr("user", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateUserQuota(ctx context.Context, id string, opts *database.UpdateUserQuotaOptions) (*database.User, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.User{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET quota_singleuser_orgs=$1, updated_on=now() WHERE id=$2 RETURNING *", opts.QuotaSingleuserOrgs, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("user", err)
 	}

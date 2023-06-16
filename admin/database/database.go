@@ -56,6 +56,7 @@ type DB interface {
 	InsertOrganization(ctx context.Context, opts *InsertOrganizationOptions) (*Organization, error)
 	DeleteOrganization(ctx context.Context, name string) error
 	UpdateOrganization(ctx context.Context, id string, opts *UpdateOrganizationOptions) (*Organization, error)
+	UpdateOrganizationQuota(ctx context.Context, id string, opts *UpdateOrganizationQuotaOptions) (*Organization, error)
 	UpdateOrganizationAllUsergroup(ctx context.Context, orgID, groupID string) (*Organization, error)
 
 	FindOrganizationWhitelistedDomain(ctx context.Context, orgID string, domain string) (*OrganizationWhitelistedDomain, error)
@@ -97,6 +98,7 @@ type DB interface {
 	InsertUser(ctx context.Context, opts *InsertUserOptions) (*User, error)
 	DeleteUser(ctx context.Context, id string) error
 	UpdateUser(ctx context.Context, id string, opts *UpdateUserOptions) (*User, error)
+	UpdateUserQuota(ctx context.Context, id string, opts *UpdateUserQuotaOptions) (*User, error)
 	CheckUsersEmpty(ctx context.Context) (bool, error)
 	FindSuperusers(ctx context.Context) ([]*User, error)
 	UpdateSuperuser(ctx context.Context, userID string, superuser bool) error
@@ -201,6 +203,15 @@ type InsertOrganizationOptions struct {
 type UpdateOrganizationOptions struct {
 	Name        string `validate:"slug"`
 	Description string
+}
+
+// UpdateOrganizationQuotaOptions defines options for updating an existing org's quota
+type UpdateOrganizationQuotaOptions struct {
+	QuotaProjects           int
+	QuotaDeployments        int
+	QuotaSlotsTotal         int
+	QuotaSlotsPerDeployment int
+	QuotaOutstandingInvites int
 }
 
 // Project represents one Git connection.
@@ -340,6 +351,11 @@ type UpdateUserOptions struct {
 	DisplayName    string
 	PhotoURL       string
 	GithubUsername string
+}
+
+// UpdateUserQuotaOptions defines options for updating an existing user's quota
+type UpdateUserQuotaOptions struct {
+	QuotaSingleuserOrgs int
 }
 
 // Usergroup represents a group of org members

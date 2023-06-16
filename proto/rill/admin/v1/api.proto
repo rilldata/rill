@@ -249,6 +249,32 @@ service AdminService {
     option (google.api.http) = {get: "/v1/superuser/resource"};
   }
 
+  // SudoGetUserQuota returns quotas available for users
+  rpc SudoGetUserQuota(SudoGetUserQuotaRequest) returns (SudoGetUserQuotaResponse) {
+    option (google.api.http) = {get: "/v1/superuser/quotas/user"};
+  }
+
+  // SudoSetUserQuota update the quotas for users
+  rpc SudoSetUserQuota(SudoSetUserQuotaRequest) returns (SudoSetUserQuotaResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/quotas/user",
+      body: "*"
+    };
+  }
+
+  // SudoGetOrganizationQuota returns quotas available for orgs
+  rpc SudoGetOrganizationQuota(SudoGetOrganizationQuotaRequest) returns (SudoGetOrganizationQuotaResponse) {
+    option (google.api.http) = {get: "/v1/superuser/quotas/organization"};
+  }
+
+  // SudoSetOrganizationQuota update the quotas available for orgs
+  rpc SudoSetOrganizationQuota(SudoSetOrganizationQuotaRequest) returns (SudoSetOrganizationQuotaResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/quotas/organization",
+      body: "*"
+    };
+  }
+
 }
 
 message PingRequest {}
@@ -494,6 +520,54 @@ message SudoGetResourceResponse {
   }
 }
 
+// SudoGetOrganizationQuotaRequest
+message SudoGetOrganizationQuotaRequest {
+  string org_name = 1;
+}
+
+// SudoGetOrganizationQuotaResponse
+message SudoGetOrganizationQuotaResponse {
+  OrganizationQuota organization_quota = 1;
+}
+
+// SudoGetUserQuotaRequest
+message SudoGetUserQuotaRequest {
+  string email = 1;
+}
+
+// SudoGetUserQuotaResponse
+message SudoGetUserQuotaResponse {
+  UserQuota user_quota = 1;
+}
+
+// SudoSetOrganizationQuotaRequest
+message SudoSetOrganizationQuotaRequest {
+  string org_name = 1;
+  oneof quota {
+    uint32 quota_projects = 2;
+    uint32 quota_deployments = 3;
+    uint32 quota_slots_total = 4;
+    uint32 quota_slots_per_deployment = 5;
+    uint32 quota_outstanding_invites = 6;
+  }
+}
+
+// SudoSetOrganizationQuotaResponse
+message SudoSetOrganizationQuotaResponse {
+  OrganizationQuota organization_quota = 1;
+}
+
+// SudoSetUserQuotaRequest
+message SudoSetUserQuotaRequest {
+  string email = 1;
+  uint32 quota_singleuser_orgs = 2;
+}
+
+// SudoSetUserQuotaResponse
+message SudoSetUserQuotaResponse {
+  UserQuota user_quota = 1;
+}
+
 message ListProjectMembersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
@@ -640,6 +714,18 @@ message Organization {
   string description = 3;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
+}
+
+message UserQuota {
+  uint32 quota_singleuser_orgs = 1;
+}
+
+message OrganizationQuota {
+  uint32 quota_projects = 1;
+  uint32 quota_deployments = 2;
+  uint32 quota_slots_total = 3;
+  uint32 quota_slots_per_deployment = 4;
+  uint32 quota_outstanding_invites = 5;
 }
 
 message Project {
