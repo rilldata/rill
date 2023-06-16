@@ -313,7 +313,6 @@ export function getAdjustedChartTime(
   start: Date,
   end: Date,
   interval: V1TimeGrain,
-  comparsionEnd: Date,
   boundEnd: Date
 ) {
   if (!start || !end)

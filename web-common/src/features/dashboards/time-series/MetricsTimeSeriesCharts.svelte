@@ -204,7 +204,6 @@
       $dashboardStore.selectedTimeRange?.start,
       $dashboardStore.selectedTimeRange?.end,
       interval,
-      $dashboardStore.selectedComparisonTimeRange?.end,
       allTimeRange?.end
     );
 
