@@ -116,8 +116,6 @@
 
   $: dimensionsShown =
     dimensions?.filter((_, i) => $showHideDimensions.selectedItems[i]) ?? [];
-
-  $: dimensionsShown = dimensions ?? [];
 </script>
 
 <svelte:window on:resize={onResize} />
