@@ -157,25 +157,26 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
   },
-  LAST_YEAR: {
-    label: "Last Year",
+  LAST_12_MONTHS: {
+    label: "Last 12 Months",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.YEAR,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
         {
-          period: Period.YEAR,
+          period: Period.MONTH,
           truncationType: TimeTruncationType.START_OF_PERIOD,
         },
+        { duration: "P11M", operationType: TimeOffsetType.SUBTRACT },
       ],
     },
     end: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [
-        { duration: "P1Y", operationType: TimeOffsetType.ADD },
+        { duration: "P1M", operationType: TimeOffsetType.ADD },
         {
-          period: Period.YEAR,
+          period: Period.MONTH,
           truncationType: TimeTruncationType.START_OF_PERIOD,
         },
       ],
@@ -321,7 +322,7 @@ export const TEMPORARY_DEFAULT_RANGE_TO_DURATIONS = {
   LAST_24_HOURS: "P1D",
   LAST_7_DAYS: "P7D",
   LAST_4_WEEKS: "P4W",
-  LAST_YEAR: "P1Y",
+  LAST_12_MONTHS: "P12M",
   TODAY: "P1D",
 };
 
