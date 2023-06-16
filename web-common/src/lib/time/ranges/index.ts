@@ -58,12 +58,15 @@ export function getChildTimeRanges(
   for (const timePreset in ranges) {
     const timeRange = ranges[timePreset];
     if (timeRange.rangePreset == RangePresetType.ALL_TIME) {
+      // End date is exclusive, so we need to add 1 millisecond to it
+      const exclusiveEndDate = new Date(end.getTime() + 1);
+
       // All time is always an option
       timeRanges.push({
         name: timePreset,
         label: timeRange.label,
         start,
-        end,
+        end: exclusiveEndDate,
       });
     } else {
       const timeRangeDates = relativePointInTimeToAbsolute(
