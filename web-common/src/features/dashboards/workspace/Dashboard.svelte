@@ -15,7 +15,7 @@
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import DashboardContainer from "./DashboardContainer.svelte";
   import DashboardHeader from "./DashboardHeader.svelte";
-  import RowsViewerAccordion from "../rows-viewer-accordion/RowsViewerAccordion.svelte";
+  import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
 
   export let metricViewName: string;
   export let hasTitle: boolean;

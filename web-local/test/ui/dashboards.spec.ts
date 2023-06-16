@@ -122,7 +122,7 @@ describe("dashboards", () => {
       page.getByText("Source Data 275 of 100k rows")
     ).toBeVisible();
 
-    // Check row viewer is collapsed
+    // Check row viewer is collapsed by looking for the cell value "7029", which should be in the table
     await playwrightExpect(
       page.getByRole("button", { name: "7029" })
     ).not.toBeVisible();
