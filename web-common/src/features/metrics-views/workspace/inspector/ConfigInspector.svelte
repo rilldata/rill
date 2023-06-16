@@ -13,7 +13,7 @@
   export let metricsDefName: string;
 
   // get file.
-  $: modelName = getModelOutOfPossiblyMalformedYAML(yaml).replace(/"/g, "");
+  $: modelName = getModelOutOfPossiblyMalformedYAML(yaml)?.replace(/"/g, "");
 
   // check to see if this model name exists.
   //$: modelExists = $fileArtifactsStore.has(modelName);

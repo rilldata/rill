@@ -3,16 +3,49 @@
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import {
+    runtimeServiceGetCatalogEntry,
+    runtimeServicePutFileAndReconcile,
+  } from "@rilldata/web-common/runtime-client";
+  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { createEventDispatcher } from "svelte";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
+  import { EntityType } from "../../entity-management/types";
   import { useModelNames } from "../../models/selectors";
+  import { addQuickMetricsToDashboardYAML } from "../metrics-internal-store";
+
+  export let metricsName: string;
 
   $: models = useModelNames($runtime.instanceId);
 
-  const dispatch = createEventDispatcher();
+  const queryClient = useQueryClient();
 
   const buttonClasses =
     "inline hover:font-semibold underline underline-offset-2";
+
+  async function onAutogenerateConfigFromModel(modelName: string) {
+    const model = await runtimeServiceGetCatalogEntry(
+      $runtime?.instanceId,
+      modelName
+    );
+    console.log("!!!", metricsName, metricsName?.length);
+    const yaml = addQuickMetricsToDashboardYAML("", model?.entry?.model);
+    const response = await runtimeServicePutFileAndReconcile({
+      instanceId: $runtime.instanceId,
+      path: getFilePathFromNameAndType(
+        metricsName,
+        EntityType.MetricsDefinition
+      ),
+      blob: yaml,
+      create: true,
+      createOnly: true,
+      strict: false,
+    });
+
+    /** invalidate and show */
+    invalidateAfterReconcile(queryClient, $runtime.instanceId, response);
+  }
 </script>
 
 <!-- completely empty case -->
@@ -39,7 +72,12 @@
       on:escape={toggleFloatingElement}
     >
       {#each $models?.data as model}
-        <MenuItem on:click={() => dispatch("select-model", { model })}>
+        <MenuItem
+          on:select={() => {
+            onAutogenerateConfigFromModel(model);
+            toggleFloatingElement();
+          }}
+        >
           {model}
         </MenuItem>
       {/each}

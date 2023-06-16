@@ -66,19 +66,19 @@ export function rillEditorPlaceholder(
   );
 }
 
-export function createPlaceholderElement(content) {
+export function createPlaceholderElement(metricsName: string) {
   const DOMElement = document.createElement("span");
   // create placeholder text and attach it to the DOM element.
   const component = new EditorPlaceholderText({
     target: DOMElement,
     props: {
-      content,
+      metricsName,
     },
   });
   return {
     DOMElement,
-    set(content) {
-      component.$set({ content });
+    set(metricsName) {
+      component.$set({ metricsName });
     },
     on(event, callback) {
       component.$on(event, callback);

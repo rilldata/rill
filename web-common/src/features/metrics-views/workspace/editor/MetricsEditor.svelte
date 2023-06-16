@@ -13,16 +13,11 @@
     rillEditorPlaceholder,
   } from "../rill-editor-placeholder";
 
-  export let yaml;
-  export let metricsDefName;
+  export let yaml: string;
+  export let metricsDefName: string;
 
-  const placeholderSet = createPlaceholderElement(yaml);
+  const placeholderSet = createPlaceholderElement(metricsDefName);
   const placeholder = rillEditorPlaceholder(placeholderSet.DOMElement);
-  $: placeholderSet.set(yaml);
-  //placeholderSet.
-  placeholderSet.on("test", (event) => {
-    console.log(event.detail);
-  });
 
   /** a temporary set of enums that shoul be emitted by orval's codegen */
   enum ConfigErrors {
