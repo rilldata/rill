@@ -191,6 +191,7 @@ message ExportResponse {
 enum ExportFormat {
   EXPORT_FORMAT_UNSPECIFIED = 0;
   EXPORT_FORMAT_CSV = 1;
+  EXPORT_FORMAT_XSLX = 2;
 }
 
 // **********

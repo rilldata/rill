@@ -103,6 +103,8 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 		return fmt.Errorf("unspecified format")
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
 		return writeCSV(q.Result.Meta, q.Result.Data, writer)
+	case runtimev1.ExportFormat_EXPORT_FORMAT_XSLX:
+		return writeXLSX(q.Result.Meta, q.Result.Data, writer)
 	}
 
 	return nil

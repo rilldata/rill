@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"github.com/xuri/excelize/v2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -303,4 +304,49 @@ func writeCSV(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writ
 	w.Flush()
 
 	return nil
+}
+
+func writeXLSX(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writer io.Writer) error {
+	f := excelize.NewFile()
+	defer func() {
+		_ = f.Close()
+	}()
+
+	sw, err := f.NewStreamWriter("Sheet1")
+	if err != nil {
+		return err
+	}
+
+	headers := make([]interface{}, 0, len(meta))
+	for _, v := range meta {
+		headers = append(headers, v.Name)
+	}
+
+	if err := sw.SetRow("A1", headers, excelize.RowOpts{Height: 45, Hidden: false}); err != nil {
+		return err
+	}
+
+	row := make([]interface{}, 0, len(meta))
+	for i, s := range data {
+		for _, f := range s.Fields {
+			row = append(row, f.AsInterface())
+		}
+
+		cell, err := excelize.CoordinatesToCellName(1, i+2) // 1-based, and +1 for headers
+		if err != nil {
+			return err
+		}
+
+		if err := sw.SetRow(cell, row); err != nil {
+			return err
+		}
+	}
+
+	if err := sw.Flush(); err != nil {
+		return err
+	}
+
+	err = f.Write(writer)
+
+	return err
 }
