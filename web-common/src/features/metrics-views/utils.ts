@@ -8,13 +8,4 @@ export function getModelOutOfPossiblyMalformedYAML(yaml: string): string {
 
   // If matches were found, return the value of the model field, otherwise return null
   return matches && matches[1] ? matches[1] : null;
-  // if (yaml.startsWith("model: ")) {
-  //   yaml.split
-  // }
-  // const modelRegex = /\nmodel: (.*)\n/g;
-  // const modelMatch = modelRegex.exec(yaml);
-  // if (modelMatch) {
-  //   return modelMatch[1];
-  // }
-  // return yaml;
 }
