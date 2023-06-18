@@ -46,7 +46,7 @@
 
 <div>
   {#if modelName && !$modelQuery?.isError && isValidModel}
-    <div class="p-6 ui-copy-disabled">
+    <div class="py-6 px-4 ui-copy-disabled">
       For available fields, see the <br /><a
         target="_blank"
         href="https://docs.rilldata.com/reference/project-files/dashboards"
