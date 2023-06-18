@@ -46,13 +46,6 @@
 
 <div>
   {#if modelName && !$modelQuery?.isError && isValidModel}
-    <div class="py-6 px-4 text-center ui-copy-disabled">
-      For available fields, see the <br /><a
-        target="_blank"
-        href="https://docs.rilldata.com/reference/project-files/dashboards"
-        >Dashboard documentation</a
-      >.
-    </div>
     <div class="model-profile pb-4 pt-2">
       {#if entry && entry?.model?.sql?.trim()?.length}
         <div class="pl-4 pr-4">
