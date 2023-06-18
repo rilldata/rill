@@ -13,7 +13,10 @@
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
   import { EntityType } from "../../entity-management/types";
   import { useModelNames } from "../../models/selectors";
-  import { addQuickMetricsToDashboardYAML } from "../metrics-internal-store";
+  import {
+    addQuickMetricsToDashboardYAML,
+    initBlankDashboardYAML,
+  } from "../metrics-internal-store";
 
   export let metricsName: string;
 
@@ -24,13 +27,37 @@
   const buttonClasses =
     "inline hover:font-semibold underline underline-offset-2";
 
-  async function onAutogenerateConfigFromModel(modelName: string) {
-    const model = await runtimeServiceGetCatalogEntry(
-      $runtime?.instanceId,
-      modelName
-    );
-    console.log("!!!", metricsName, metricsName?.length);
-    const yaml = addQuickMetricsToDashboardYAML("", model?.entry?.model);
+  async function onAutogenerateConfigFromModel(
+    modelName: string,
+    str = undefined
+  ) {
+    if (str === undefined) {
+      const model = await runtimeServiceGetCatalogEntry(
+        $runtime?.instanceId,
+        modelName
+      );
+      str = addQuickMetricsToDashboardYAML("", model?.entry?.model);
+    }
+
+    const response = await runtimeServicePutFileAndReconcile({
+      instanceId: $runtime.instanceId,
+      path: getFilePathFromNameAndType(
+        metricsName,
+        EntityType.MetricsDefinition
+      ),
+      blob: str,
+      create: true,
+      createOnly: true,
+      strict: false,
+    });
+
+    /** invalidate and show */
+    invalidateAfterReconcile(queryClient, $runtime.instanceId, response);
+  }
+
+  async function onCreateSkeletonMetricsConfig() {
+    const yaml = initBlankDashboardYAML(metricsName);
+
     const response = await runtimeServicePutFileAndReconcile({
       instanceId: $runtime.instanceId,
       path: getFilePathFromNameAndType(
@@ -83,5 +110,10 @@
       {/each}
     </Menu>
   </WithTogglableFloatingElement>or
-  <button class={buttonClasses}>start with a skeleton</button>.
+  <button
+    on:click={async () => {
+      onCreateSkeletonMetricsConfig();
+    }}
+    class={buttonClasses}>start with a skeleton</button
+  >.
 </div>

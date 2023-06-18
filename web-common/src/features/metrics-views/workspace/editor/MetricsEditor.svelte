@@ -23,6 +23,7 @@
   enum ConfigErrors {
     SourceNotSelected = "metrics view source not selected",
     SourceNotFound = "metrics view source not found",
+    SouceNotSelected = "metrics view source not selected",
     TimestampNotSelected = "metrics view timestamp not selected",
     TimestampNotFound = "metrics view selected timestamp not found",
     MissingDimension = "at least one dimension should be present",
@@ -32,9 +33,9 @@
 
   function runtimeErrorToLine(message: string, yaml: string) {
     const lines = yaml.split("\n");
-    if (message === ConfigErrors.SourceNotFound) {
+    if (message === ConfigErrors.SouceNotSelected) {
       /** if this is undefined, then the field isn't here either. */
-      const line = lines.findIndex((line) => line.startsWith("model:"));
+      const line = lines.findIndex((line) => line.startsWith("model: "));
       return { line: line + 1, end: line, message, level: "error" };
     }
     if (message === ConfigErrors.TimestampNotFound) {

@@ -48,7 +48,7 @@
     <div />
   </div>
 
-  <TooltipContent maxWidth="200px" slot="tooltip-content"
+  <TooltipContent maxWidth="240px" slot="tooltip-content"
     >{message}</TooltipContent
   >
 </Tooltip>

@@ -87,7 +87,6 @@
       newDashboardName,
       EntityType.MetricsDefinition
     );
-    // const yaml = initBlankDashboardYAML(newDashboardName);
     const resp = await $createDashboard.mutateAsync({
       data: {
         instanceId,
