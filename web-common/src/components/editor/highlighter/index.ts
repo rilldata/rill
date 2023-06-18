@@ -16,9 +16,14 @@ const lineBackground = (level) =>
   });
 
 function errorLinesDecoration(view) {
-  const lineStatuses = view.state.field(lineStatusesStateField);
-
   const builder = new RangeSetBuilder<Decoration>();
+
+  // return early if the doc is empty.
+  if (view.state.doc.toString().length === 0) {
+    return builder.finish();
+  }
+
+  const lineStatuses = view.state.field(lineStatusesStateField);
 
   for (const { line, level } of lineStatuses) {
     if (line !== null && line > 0 && line <= view.state.doc.lines) {
@@ -40,6 +45,7 @@ export function createLineStatusHighlighter() {
 
       update(update: ViewUpdate) {
         if (
+          // transaction was a line status update
           update.transactions.some((tr) => {
             return tr.effects.some((effect) => effect.is(updateLineStatuses));
           })

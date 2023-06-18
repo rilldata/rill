@@ -16,6 +16,10 @@
   export let yaml: string;
   export let metricsDefName: string;
 
+  /** note: this codemirror plugin does actually utilize tanstack query, and the
+   * instantiation of the underlying svelte component that defines the placeholder
+   * must be instantiated in the component.
+   */
   const placeholderElement = createPlaceholderElement(metricsDefName);
   const placeholder = createPlaceholder(placeholderElement.DOMElement);
 
@@ -41,7 +45,7 @@
     if (message === ConfigErrors.TimestampNotFound) {
       const line =
         lines.findIndex((line) => line.startsWith("timeseries:")) + 1;
-      return { line: line + 1, end: line, message, level: "error" };
+      return { line: line, end: line, message, level: "error" };
     }
     if (message === ConfigErrors.MissingMeasure) {
       const line = lines.findIndex((line) => line.startsWith("measures:"));
@@ -90,8 +94,8 @@
 
   /** We display the mainError even if there are multiple errors elsewhere. */
   $: mainError = [
-    ...mappedSyntaxErrors,
     ...(mappedErrors || []),
+    ...mappedSyntaxErrors,
     ...(errors || []),
   ]?.at(0);
 
@@ -104,16 +108,14 @@
 </script>
 
 <div
-  class="editor pane flex flex-col p-4 w-full h-full content-stretch outline-black"
+  class="editor pane flex flex-col w-full h-full content-stretch"
   style:height="calc(100vh - var(--header-height))"
 >
-  <div
-    class="grow flex bg-white rounded-t border overflow-y-auto"
-    class:rounded-b={!mappedErrors?.length && yaml?.length}
-  >
+  <div class="grow flex bg-white overflow-y-auto">
     <div
-      class="rounded border w-full overflow-y-auto"
-      class:border-b-transparent={mainError && yaml?.length}
+      class="border-white w-full overflow-y-auto"
+      class:border-b-hidden={mainError && yaml?.length}
+      class:border-red-500={mainError && yaml?.length}
     >
       <YAMLEditor
         content={yaml}

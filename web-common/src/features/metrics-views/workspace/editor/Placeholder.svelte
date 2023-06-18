@@ -87,8 +87,8 @@
         disabled={!$models?.data?.length}
         class={buttonClasses}
         on:click={toggleFloatingElement}
-        >metrics configuration off of a model</button
-      >
+        >metrics configuration from an existing model</button
+      >,
       <TooltipContent slot="tooltip-content"
         >Select a data model and auto-generate the config</TooltipContent
       ></Tooltip
@@ -109,11 +109,11 @@
         </MenuItem>
       {/each}
     </Menu>
-  </WithTogglableFloatingElement>or
+  </WithTogglableFloatingElement>
   <button
     on:click={async () => {
       onCreateSkeletonMetricsConfig();
     }}
     class={buttonClasses}>start with a skeleton</button
-  >.
+  >, or just start typing.
 </div>
