@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/alicebob/miniredis"
 	"os"
 	"time"
 
@@ -61,6 +62,7 @@ type Config struct {
 	EmailSenderEmail       string                 `split_words:"true"`
 	EmailSenderName        string                 `split_words:"true"`
 	EmailBCC               string                 `split_words:"true"`
+	RedisAddr              string                 `default:"" split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -176,6 +178,16 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 
 			// Init and run server
 			if runServer {
+				redisAddr := conf.RedisAddr
+				if redisAddr == "" {
+					// Start a miniredis (in-memory) server (is used for API rate limiting).
+					mr, err := miniredis.Run()
+					if err != nil {
+						panic(err)
+					}
+					redisAddr = mr.Addr()
+					defer mr.Close()
+				}
 				srv, err := server.New(logger, adm, issuer, &server.Options{
 					HTTPPort:               conf.HTTPPort,
 					GRPCPort:               conf.GRPCPort,
@@ -191,6 +203,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 					GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
 					GithubClientID:         conf.GithubClientID,
 					GithubClientSecret:     conf.GithubClientSecret,
+					RedisAddr:              redisAddr,
 				})
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))

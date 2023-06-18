@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"net/http"
 	"net/url"
 	"strings"
@@ -51,6 +52,7 @@ type Options struct {
 	GithubAppWebhookSecret string
 	GithubClientID         string
 	GithubClientSecret     string
+	RedisAddr              string
 }
 
 type Server struct {
@@ -62,6 +64,7 @@ type Server struct {
 	authenticator *auth.Authenticator
 	issuer        *runtimeauth.Issuer
 	urls          *externalURLs
+	limiter       *ratelimit.RequestRateLimiter
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
@@ -100,11 +103,13 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, opt
 		authenticator: authenticator,
 		issuer:        issuer,
 		urls:          newURLRegistry(opts),
+		limiter:       ratelimit.NewRequestRateLimiter(opts.RedisAddr),
 	}, nil
 }
 
 // ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
+	grpcReqRateLimiter := s.limiter.Middleware().WithAnonLimit(ratelimit.Forbidden).WithAuthLimit(ratelimit.Default)
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
@@ -114,6 +119,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			grpc_auth.StreamServerInterceptor(checkUserAgent),
 			grpc_validator.StreamServerInterceptor(),
 			s.authenticator.StreamServerInterceptor(),
+			grpcReqRateLimiter.StreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
@@ -123,6 +129,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			grpc_auth.UnaryServerInterceptor(checkUserAgent),
 			grpc_validator.UnaryServerInterceptor(),
 			s.authenticator.UnaryServerInterceptor(),
+			grpcReqRateLimiter.UnaryServerInterceptor(),
 		),
 	)
 
@@ -170,7 +177,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	mux.Handle("/.well-known/jwks.json", s.issuer.WellKnownHandler())
 
 	// Add auth endpoints (not gRPC handlers, just regular endpoints on /auth/*)
-	s.authenticator.RegisterEndpoints(mux)
+	s.authenticator.RegisterEndpoints(mux, s.limiter)
 
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
 	s.registerGithubEndpoints(mux)

@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"github.com/alicebob/miniredis"
 	"os"
 	"time"
 
@@ -52,6 +53,8 @@ type Config struct {
 	// AllowHostAccess controls whether instance can use host credentials and
 	// local_file sources can access directory outside repo
 	AllowHostAccess bool `default:"false" split_words:"true"`
+	// Redis server address host:port
+	RedisAddr string `default:"" split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -119,6 +122,17 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			// Create ctx that cancels on termination signals
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 
+			redisAddr := conf.RedisAddr
+			if redisAddr == "" {
+				// Start a miniredis (in-memory) server (is used for API rate limiting).
+				mr, err := miniredis.Run()
+				if err != nil {
+					panic(err)
+				}
+				redisAddr = mr.Addr()
+				defer mr.Close()
+			}
+
 			// Init server
 			srvOpts := &server.Options{
 				HTTPPort:        conf.HTTPPort,
@@ -128,6 +142,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				AuthEnable:      conf.AuthEnable,
 				AuthIssuerURL:   conf.AuthIssuerURL,
 				AuthAudienceURL: conf.AuthAudienceURL,
+				RedisAddr:       redisAddr,
 			}
 			s, err := server.NewServer(ctx, srvOpts, rt, logger)
 			if err != nil {

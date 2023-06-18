@@ -137,3 +137,8 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 func WithOpen(ctx context.Context) context.Context {
 	return context.WithValue(ctx, claimsContextKey{}, openClaims{})
 }
+
+// WithClaims wraps a context with given claims. It's used for testing only.
+func WithClaims(ctx context.Context, claims Claims) context.Context {
+	return context.WithValue(ctx, claimsContextKey{}, claims)
+}

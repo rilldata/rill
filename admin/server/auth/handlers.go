@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"net/http"
 	"net/url"
 
@@ -24,7 +25,7 @@ const (
 // RegisterEndpoints adds HTTP endpoints for auth.
 // The mux must be served on the ExternalURL of the Authenticator since the logic in these handlers relies on knowing the full external URIs.
 // Note that these are not gRPC handlers, just regular HTTP endpoints that we mount on the gRPC-gateway mux.
-func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux) {
+func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, rrl *ratelimit.RequestRateLimiter) {
 	// TODO: Add helper utils to clean this up
 	inner := http.NewServeMux()
 	inner.Handle("/auth/login", otelhttp.WithRouteTag("/auth/login", http.HandlerFunc(a.authLogin)))
@@ -35,7 +36,7 @@ func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux) {
 	inner.Handle("/auth/oauth/device_authorization", otelhttp.WithRouteTag("/auth/oauth/device_authorization", http.HandlerFunc(a.handleDeviceCodeRequest)))
 	inner.Handle("/auth/oauth/device", otelhttp.WithRouteTag("/auth/oauth/device", a.HTTPMiddleware(http.HandlerFunc(a.handleUserCodeConfirmation)))) // NOTE: Uses auth middleware
 	inner.Handle("/auth/oauth/token", otelhttp.WithRouteTag("/auth/oauth/token", http.HandlerFunc(a.getAccessToken)))
-	mux.Handle("/auth/", observability.Middleware("admin", a.logger, inner))
+	mux.Handle("/auth/", observability.Middleware("admin", a.logger, rrl.Middleware().WithAnonLimit(ratelimit.Sensitive).HTTPHandler(inner)))
 }
 
 // authLogin starts an OAuth and OIDC flow that redirects the user for authentication with the auth provider.

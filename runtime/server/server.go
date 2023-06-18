@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"net/http"
 	"strings"
 	"time"
@@ -36,6 +37,7 @@ type Options struct {
 	AuthEnable      bool
 	AuthIssuerURL   string
 	AuthAudienceURL string
+	RedisAddr       string
 }
 
 type Server struct {
@@ -46,6 +48,7 @@ type Server struct {
 	opts    *Options
 	logger  *zap.Logger
 	aud     *auth.Audience
+	limiter *ratelimit.RequestRateLimiter
 }
 
 var (
@@ -61,6 +64,7 @@ func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *
 		opts:    opts,
 		runtime: rt,
 		logger:  logger,
+		limiter: ratelimit.NewRequestRateLimiter(opts.RedisAddr),
 	}
 
 	if opts.AuthEnable {
@@ -96,6 +100,7 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 
 // ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
+	grpcReqRateLimiter := s.limiter.Middleware().WithAnonLimit(ratelimit.Public)
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
@@ -104,6 +109,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingStreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
+			grpcReqRateLimiter.StreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
@@ -112,6 +118,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingUnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
+			grpcReqRateLimiter.UnaryServerInterceptor(),
 		),
 	)
 
