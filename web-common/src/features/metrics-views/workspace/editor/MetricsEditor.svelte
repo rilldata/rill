@@ -103,13 +103,16 @@
   let hasFocus;
 </script>
 
-<div class="grid w-full" style:grid-template-rows="auto max-content">
+<div
+  class="editor pane flex flex-col p-4 w-full h-full content-stretch outline-black"
+  style:height="calc(100vh - var(--header-height))"
+>
   <div
-    class="flex overflow-y-auto bg-white rounded-t border"
+    class="grow flex bg-white rounded-t border overflow-y-auto"
     class:rounded-b={!mappedErrors?.length && yaml?.length}
   >
     <div
-      class="rounded border w-full"
+      class="rounded border w-full overflow-y-auto"
       class:border-b-transparent={mainError && yaml?.length}
     >
       <YAMLEditor

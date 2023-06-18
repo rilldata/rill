@@ -75,13 +75,6 @@
 
 <WorkspaceContainer inspector={true} assetID={`${metricsDefName}-config`}>
   <MetricsWorkspaceHeader slot="header" {metricsDefName} {yaml} />
-  <div slot="body" use:listenToNodeResize>
-    <div
-      class="editor-pane bg-gray-100 p-6 grid content-stretch"
-      style:height="calc(100vh - var(--header-height))"
-    >
-      <MetricsEditor on:update={updateYAML} {yaml} {metricsDefName} />
-    </div>
-  </div>
+  <MetricsEditor slot="body" on:update={updateYAML} {yaml} {metricsDefName} />
   <MetricsInspector slot="inspector" {metricsDefName} yaml={intermediateYAML} />
 </WorkspaceContainer>
