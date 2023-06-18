@@ -25,6 +25,7 @@
   const buttonClasses =
     "inline hover:font-semibold underline underline-offset-2";
 
+  // FIXME: shouldn't these be generalized and used everywhere?
   async function onAutogenerateConfigFromModel(
     modelName: string,
     str = undefined
@@ -49,10 +50,11 @@
       strict: false,
     });
 
-    /** invalidate and show */
+    /** invalidate and show results */
     invalidateAfterReconcile(queryClient, $runtime.instanceId, response);
   }
 
+  // FIXME: shouldn't these be generalized and used everywhere?
   async function onCreateSkeletonMetricsConfig() {
     const yaml = initBlankDashboardYAML(metricsName);
 
@@ -68,12 +70,11 @@
       strict: false,
     });
 
-    /** invalidate and show */
+    /** invalidate and show results */
     invalidateAfterReconcile(queryClient, $runtime.instanceId, response);
   }
 </script>
 
-<!-- completely empty case -->
 <div class="whitespace-normal">
   Auto-generate a <WithTogglableFloatingElement
     inline
