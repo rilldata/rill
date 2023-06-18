@@ -3,7 +3,6 @@
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appStore } from "@rilldata/web-common/layout/app-store";
-  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
     V1PutFileAndReconcileResponse,
     createRuntimeServicePutFileAndReconcile,
@@ -34,7 +33,6 @@
   setContext("rill:metrics-config:errors", configurationErrorStore);
 
   const queryClient = useQueryClient();
-  const { listenToNodeResize } = createResizeListenerActionFactory();
 
   $: instanceId = $runtime.instanceId;
 
