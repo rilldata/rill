@@ -16,7 +16,7 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import MetricsWorkspaceHeader from "./MetricsWorkspaceHeader.svelte";
   import MetricsEditor from "./editor/MetricsEditor.svelte";
-  import ConfigInspector from "./inspector/ConfigInspector.svelte";
+  import MetricsInspector from "./inspector/MetricsInspector.svelte";
   // the runtime yaml string
   export let yaml: string;
   export let metricsDefName: string;
@@ -83,5 +83,5 @@
       <MetricsEditor on:update={updateYAML} {yaml} {metricsDefName} />
     </div>
   </div>
-  <ConfigInspector slot="inspector" {metricsDefName} yaml={intermediateYAML} />
+  <MetricsInspector slot="inspector" {metricsDefName} yaml={intermediateYAML} />
 </WorkspaceContainer>

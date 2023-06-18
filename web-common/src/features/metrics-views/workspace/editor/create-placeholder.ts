@@ -1,4 +1,4 @@
-import { Extension } from "@codemirror/state";
+import type { Extension } from "@codemirror/state";
 import {
   Decoration,
   DecorationSet,
@@ -6,9 +6,9 @@ import {
   ViewPlugin,
   WidgetType,
 } from "@codemirror/view";
-import EditorPlaceholderText from "./EditorPlaceholderText.svelte";
+import Placeholder from "./Placeholder.svelte";
 
-class Placeholder extends WidgetType {
+class PlaceholderWidget extends WidgetType {
   constructor(readonly content: string | HTMLElement) {
     super();
   }
@@ -35,7 +35,7 @@ class Placeholder extends WidgetType {
 
 /// Extension that enables a placeholder—a piece of example content
 /// to show when the editor is empty.
-export function rillEditorPlaceholder(
+export function createPlaceholder(
   content: string | HTMLElement,
   showOnEmpty = true
 ): Extension {
@@ -46,7 +46,7 @@ export function rillEditorPlaceholder(
       constructor(readonly view: EditorView) {
         this.placeholder = Decoration.set([
           Decoration.widget({
-            widget: new Placeholder(content),
+            widget: new PlaceholderWidget(content),
             side: 1,
           }).range(0),
         ]);
@@ -69,7 +69,7 @@ export function rillEditorPlaceholder(
 export function createPlaceholderElement(metricsName: string) {
   const DOMElement = document.createElement("span");
   // create placeholder text and attach it to the DOM element.
-  const component = new EditorPlaceholderText({
+  const component = new Placeholder({
     target: DOMElement,
     props: {
       metricsName,

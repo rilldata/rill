@@ -9,15 +9,15 @@
   import { slide } from "svelte/transition";
   import { parseDocument } from "yaml";
   import {
+    createPlaceholder,
     createPlaceholderElement,
-    rillEditorPlaceholder,
-  } from "../rill-editor-placeholder";
+  } from "./create-placeholder";
 
   export let yaml: string;
   export let metricsDefName: string;
 
-  const placeholderSet = createPlaceholderElement(metricsDefName);
-  const placeholder = rillEditorPlaceholder(placeholderSet.DOMElement);
+  const placeholderElement = createPlaceholderElement(metricsDefName);
+  const placeholder = createPlaceholder(placeholderElement.DOMElement);
 
   /** a temporary set of enums that shoul be emitted by orval's codegen */
   enum ConfigErrors {

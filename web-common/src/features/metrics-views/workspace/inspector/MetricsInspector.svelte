@@ -1,6 +1,7 @@
 <script lang="ts">
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
+  import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import {
     createRuntimeServiceGetCatalogEntry,
     createRuntimeServiceListCatalogEntries,
@@ -10,7 +11,6 @@
   import { getModelOutOfPossiblyMalformedYAML } from "../../utils";
 
   export let yaml: string;
-  export let metricsDefName: string;
 
   // get file.
   $: modelName = getModelOutOfPossiblyMalformedYAML(yaml)?.replace(/"/g, "");
@@ -45,7 +45,7 @@
 
 <div>
   {#if modelName && !$modelQuery?.isError && isValidModel}
-    <div class="model-profile pb-4 pt-4">
+    <div class="model-profile pb-4 pt-2">
       {#if entry && entry?.model?.sql?.trim()?.length}
         <div class="pl-4 pr-4">
           <CollapsibleSectionTitle
@@ -77,7 +77,6 @@
     >
       {#if !yaml?.length}
         <p>Let's get started.</p>
-        <p>add <code>model: MODEL_NAME</code> to connect a Model.</p>
       {:else if modelName !== undefined}
         <div>
           <p>Model not defined.</p>

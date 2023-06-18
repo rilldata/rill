@@ -3,6 +3,13 @@
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import {
+    addQuickMetricsToDashboardYAML,
+    initBlankDashboardYAML,
+  } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
+  import { useModelNames } from "@rilldata/web-common/features/models/selectors";
   import {
     runtimeServiceGetCatalogEntry,
     runtimeServicePutFileAndReconcile,
@@ -10,13 +17,6 @@
   import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
-  import { EntityType } from "../../entity-management/types";
-  import { useModelNames } from "../../models/selectors";
-  import {
-    addQuickMetricsToDashboardYAML,
-    initBlankDashboardYAML,
-  } from "../metrics-internal-store";
 
   export let metricsName: string;
 
