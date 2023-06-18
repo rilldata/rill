@@ -1,8 +1,6 @@
 <script lang="ts">
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
@@ -80,19 +78,13 @@
   Auto-generate a <WithTogglableFloatingElement
     inline
     let:toggleFloatingElement
-    let:active
   >
-    <Tooltip distance={8} suppress={active}>
-      <button
-        disabled={!$models?.data?.length}
-        class={buttonClasses}
-        on:click={toggleFloatingElement}
-        >metrics configuration from an existing model</button
-      >,
-      <TooltipContent slot="tooltip-content"
-        >Select a data model and auto-generate the config</TooltipContent
-      ></Tooltip
-    >
+    <button
+      disabled={!$models?.data?.length}
+      class={buttonClasses}
+      on:click={toggleFloatingElement}
+      >metrics configuration from an existing model</button
+    >,
     <Menu
       slot="floating-element"
       on:click-outside={toggleFloatingElement}
