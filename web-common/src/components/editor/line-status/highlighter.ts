@@ -5,7 +5,7 @@ import {
   ViewPlugin,
   ViewUpdate,
 } from "@codemirror/view";
-import { lineStatusesStateField, updateLineStatuses } from "../line-status";
+import { lineStatusesStateField, updateLineStatuses } from "./state";
 
 const lineBackground = (level) =>
   Decoration.line({

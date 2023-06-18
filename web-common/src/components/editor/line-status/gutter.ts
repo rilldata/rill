@@ -1,6 +1,6 @@
 import { gutter, GutterMarker } from "@codemirror/view";
 import type { SvelteComponent } from "svelte";
-import { lineStatusesStateField, updateLineStatuses } from "../line-status";
+import { lineStatusesStateField, updateLineStatuses } from "./state";
 import StatusGutterMarkerComponent from "./StatusGutterMarker.svelte";
 
 class StatusGutterMarker extends GutterMarker {

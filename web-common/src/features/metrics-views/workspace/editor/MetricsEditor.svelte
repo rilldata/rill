@@ -1,7 +1,7 @@
 <script lang="ts">
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import { indentGuide } from "@rilldata/web-common/components/editor/indent-guide";
-  import { createLineStatusSystem } from "@rilldata/web-common/components/editor/plugins/line-status-decoration";
+  import { createLineStatusSystem } from "@rilldata/web-common/components/editor/line-status";
   import { editorTheme } from "@rilldata/web-common/components/editor/theme";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
