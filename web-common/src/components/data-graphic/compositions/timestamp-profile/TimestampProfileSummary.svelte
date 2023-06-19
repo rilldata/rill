@@ -22,8 +22,8 @@
     TIME_GRAIN_HOUR = "hourly",
     TIME_GRAIN_DAY = "daily",
     TIME_GRAIN_WEEK = "weekly",
-    TIME_GRAIN_QUARTER = "quarterly"
     TIME_GRAIN_MONTH = "monthly",
+    TIME_GRAIN_QUARTER = "quarterly",
     TIME_GRAIN_YEAR = "yearly",
   }
 
