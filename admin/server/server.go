@@ -307,15 +307,6 @@ func checkUserAgent(ctx context.Context) (context.Context, error) {
 	return ctx, nil
 }
 
-func parseFullMethod(fullMethod string) (string, string, error) {
-	name := strings.TrimLeft(fullMethod, "/")
-	parts := strings.SplitN(name, "/", 2)
-	if len(parts) != 2 {
-		return "", "", fmt.Errorf("Invalid format, %s does not follow `/package.service/method`", name)
-	}
-	return parts[0], parts[1], nil
-}
-
 type externalURLs struct {
 	githubConnectUI       string
 	githubConnect         string
