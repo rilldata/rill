@@ -2,7 +2,7 @@
 title: Glob Patterns
 description: Support for importing data sources using glob patterns
 sidebar_label: Glob patterns
-sidebar_position: 10
+sidebar_position: 100
 ---
 
 Rill supports ingesting data from a group of files using glob patterns in the URI of source files. This allows you to specify a pattern that matches multiple files, making it easier to ingest data from a group of related files. Let's explore how glob patterns work in Rill.
@@ -46,7 +46,7 @@ You can apply these policies individually or in combination to control the extra
 
 Each policy can be configured by specifying two parameters:
 1. **`size`**: The size of data in bytes (for rows) or number or files (for files) to fetch..
-2. **`strategy`**: The strategy to fetch data. Currently, only **Head** (first n up to size) or **Tail** (last n up to size) is supported.
+2. **`strategy`**: The strategy to fetch data. Currently, only `head` (first n up to size) or `tail` (last n up to size) is supported.
 
 ### Example 1: Extract first 100MB
 To extract first 100MB data from a source use the following extract policy in the .yaml file for source:
