@@ -140,6 +140,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	if err != nil {
 		return err
 	}
+
 	if bucketSize == 0 {
 		return nil
 	}
@@ -212,6 +213,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	if err != nil {
 		return err
 	}
+
 	defer histogramRows.Close()
 
 	histogramBins := make([]*runtimev1.NumericHistogramBins_Bin, 0)
@@ -267,7 +269,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		return err
 	}
 
-	var min, max, rng float64
+	var min, max, rng sql.NullFloat64
 	if minMaxRow.Next() {
 		err = minMaxRow.Scan(&min, &max, &rng)
 		if err != nil {
@@ -277,12 +279,16 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 	}
 
 	minMaxRow.Close()
+	if !min.Valid || !max.Valid || !rng.Valid {
+		return nil
+	}
 
 	ticks := 40.0
-	if rng < ticks {
-		ticks = rng
+	if rng.Float64 < ticks {
+		ticks = rng.Float64
 	}
-	startTick, endTick, gap := NiceAndStep(min, max, ticks)
+
+	startTick, endTick, gap := NiceAndStep(min.Float64, max.Float64, ticks)
 	bucketCount := int(math.Ceil((endTick - startTick) / gap))
 	if gap == 1 {
 		bucketCount++
