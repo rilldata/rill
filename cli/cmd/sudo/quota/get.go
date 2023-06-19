@@ -25,32 +25,32 @@ func GetCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			if org != "" {
-				res, err := client.SudoGetOrganizationQuota(ctx, &adminv1.SudoGetOrganizationQuotaRequest{
+				res, err := client.SudoGetOrganizationQuotas(ctx, &adminv1.SudoGetOrganizationQuotasRequest{
 					OrgName: org,
 				})
 				if err != nil {
 					return err
 				}
 
-				orgQuota := res.OrganizationQuota
+				orgQuotas := res.OrganizationQuotas
 
 				fmt.Printf("Organization Name: %s\n", org)
-				fmt.Printf("QuotaProjects: %d\n", orgQuota.QuotaProjects)
-				fmt.Printf("QuotaDeployments: %d\n", orgQuota.QuotaDeployments)
-				fmt.Printf("QuotaSlotsTotal: %d\n", orgQuota.QuotaSlotsTotal)
-				fmt.Printf("QuotaSlotsPerDeployment: %d\n", orgQuota.QuotaSlotsPerDeployment)
-				fmt.Printf("QuotaOutstandingInvites: %d\n", orgQuota.QuotaOutstandingInvites)
+				fmt.Printf("QuotaProjects: %d\n", orgQuotas.QuotaProjects)
+				fmt.Printf("QuotaDeployments: %d\n", orgQuotas.QuotaDeployments)
+				fmt.Printf("QuotaSlotsTotal: %d\n", orgQuotas.QuotaSlotsTotal)
+				fmt.Printf("QuotaSlotsPerDeployment: %d\n", orgQuotas.QuotaSlotsPerDeployment)
+				fmt.Printf("QuotaOutstandingInvites: %d\n", orgQuotas.QuotaOutstandingInvites)
 			} else if email != "" {
-				res, err := client.SudoGetUserQuota(ctx, &adminv1.SudoGetUserQuotaRequest{
+				res, err := client.SudoGetUserQuotas(ctx, &adminv1.SudoGetUserQuotasRequest{
 					Email: email,
 				})
 				if err != nil {
 					return err
 				}
 
-				userQuota := res.UserQuota
+				userQuotas := res.UserQuotas
 				fmt.Printf("User: %s\n", email)
-				fmt.Printf("QuotaProjects: %d\n", userQuota.QuotaSingleuserOrgs)
+				fmt.Printf("QuotaProjects: %d\n", userQuotas.QuotaSingleuserOrgs)
 			} else {
 				return fmt.Errorf("Pleasr provide org|user")
 			}

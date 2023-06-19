@@ -250,9 +250,10 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err = s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
-		DisplayName:    user.DisplayName,
-		PhotoURL:       user.PhotoURL,
-		GithubUsername: githubUser.GetLogin(),
+		DisplayName:         user.DisplayName,
+		PhotoURL:            user.PhotoURL,
+		GithubUsername:      githubUser.GetLogin(),
+		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
 	})
 	if err != nil {
 		s.logger.Error("failed to update user's github username")
@@ -427,9 +428,10 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
-		DisplayName:    user.DisplayName,
-		PhotoURL:       user.PhotoURL,
-		GithubUsername: gitUser.GetLogin(),
+		DisplayName:         user.DisplayName,
+		PhotoURL:            user.PhotoURL,
+		GithubUsername:      gitUser.GetLogin(),
+		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
 	})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to save user information %s", err.Error()), http.StatusInternalServerError)

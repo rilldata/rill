@@ -31,50 +31,50 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			if org != "" {
-				req := &adminv1.SudoSetOrganizationQuotaRequest{
+				req := &adminv1.SudoUpdateOrganizationQuotasRequest{
 					OrgName: org,
 				}
 
 				switch key {
 				case "quota_projects":
-					req.Quota = &adminv1.SudoSetOrganizationQuotaRequest_QuotaProjects{
+					req.Quota = &adminv1.SudoUpdateOrganizationQuotasRequest_QuotaProjects{
 						QuotaProjects: uint32(value),
 					}
 				case "quota_deployments":
-					req.Quota = &adminv1.SudoSetOrganizationQuotaRequest_QuotaDeployments{
+					req.Quota = &adminv1.SudoUpdateOrganizationQuotasRequest_QuotaDeployments{
 						QuotaDeployments: uint32(value),
 					}
 				case "quota_slots_total":
-					req.Quota = &adminv1.SudoSetOrganizationQuotaRequest_QuotaSlotsTotal{
+					req.Quota = &adminv1.SudoUpdateOrganizationQuotasRequest_QuotaSlotsTotal{
 						QuotaSlotsTotal: uint32(value),
 					}
 				case "quota_slots_per_deployment":
-					req.Quota = &adminv1.SudoSetOrganizationQuotaRequest_QuotaSlotsPerDeployment{
+					req.Quota = &adminv1.SudoUpdateOrganizationQuotasRequest_QuotaSlotsPerDeployment{
 						QuotaSlotsPerDeployment: uint32(value),
 					}
 				case "quota_outstanding_invites":
-					req.Quota = &adminv1.SudoSetOrganizationQuotaRequest_QuotaOutstandingInvites{
+					req.Quota = &adminv1.SudoUpdateOrganizationQuotasRequest_QuotaOutstandingInvites{
 						QuotaOutstandingInvites: uint32(value),
 					}
 				default:
 					return fmt.Errorf("invalid quota key %q", args[0])
 				}
 
-				res, err := client.SudoSetOrganizationQuota(ctx, req)
+				res, err := client.SudoUpdateOrganizationQuotas(ctx, req)
 				if err != nil {
 					return err
 				}
 
-				orgQuota := res.OrganizationQuota
+				orgQuotas := res.OrganizationQuotas
 				cmdutil.PrintlnSuccess("Updated organizations quota")
 				fmt.Printf("Organization Name: %s\n", org)
-				fmt.Printf("QuotaProjects: %d\n", orgQuota.QuotaProjects)
-				fmt.Printf("QuotaDeployments: %d\n", orgQuota.QuotaDeployments)
-				fmt.Printf("QuotaSlotsTotal: %d\n", orgQuota.QuotaSlotsTotal)
-				fmt.Printf("QuotaSlotsPerDeployment: %d\n", orgQuota.QuotaSlotsPerDeployment)
-				fmt.Printf("QuotaOutstandingInvites: %d\n", orgQuota.QuotaOutstandingInvites)
+				fmt.Printf("QuotaProjects: %d\n", orgQuotas.QuotaProjects)
+				fmt.Printf("QuotaDeployments: %d\n", orgQuotas.QuotaDeployments)
+				fmt.Printf("QuotaSlotsTotal: %d\n", orgQuotas.QuotaSlotsTotal)
+				fmt.Printf("QuotaSlotsPerDeployment: %d\n", orgQuotas.QuotaSlotsPerDeployment)
+				fmt.Printf("QuotaOutstandingInvites: %d\n", orgQuotas.QuotaOutstandingInvites)
 			} else if email != "" {
-				res, err := client.SudoSetUserQuota(ctx, &adminv1.SudoSetUserQuotaRequest{
+				res, err := client.SudoUpdateUserQuotas(ctx, &adminv1.SudoUpdateUserQuotasRequest{
 					Email:               email,
 					QuotaSingleuserOrgs: uint32(value),
 				})
@@ -82,12 +82,12 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				userQuota := res.UserQuota
+				userQuotas := res.UserQuotas
 				cmdutil.PrintlnSuccess("Updated users quota")
 				fmt.Printf("User: %s\n", email)
-				fmt.Printf("QuotaProjects: %d\n", userQuota.QuotaSingleuserOrgs)
+				fmt.Printf("QuotaProjects: %d\n", userQuotas.QuotaSingleuserOrgs)
 			} else {
-				return fmt.Errorf("Pleasr provide org|user")
+				return fmt.Errorf("Please set --org or --user")
 			}
 
 			return nil

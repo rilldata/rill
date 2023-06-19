@@ -68,14 +68,14 @@ import type {
   V1ListSuperusersResponse,
   V1SetSuperuserResponse,
   V1SetSuperuserRequest,
-  V1SudoGetOrganizationQuotaResponse,
-  AdminServiceSudoGetOrganizationQuotaParams,
-  V1SudoSetOrganizationQuotaResponse,
-  V1SudoSetOrganizationQuotaRequest,
-  V1SudoGetUserQuotaResponse,
-  AdminServiceSudoGetUserQuotaParams,
-  V1SudoSetUserQuotaResponse,
-  V1SudoSetUserQuotaRequest,
+  V1SudoGetOrganizationQuotasResponse,
+  AdminServiceSudoGetOrganizationQuotasParams,
+  V1SudoUpdateOrganizationQuotasResponse,
+  V1SudoUpdateOrganizationQuotasRequest,
+  V1SudoGetUserQuotasResponse,
+  AdminServiceSudoGetUserQuotasParams,
+  V1SudoUpdateUserQuotasResponse,
+  V1SudoUpdateUserQuotasRequest,
   V1SudoGetResourceResponse,
   AdminServiceSudoGetResourceParams,
   V1RevokeCurrentAuthTokenResponse,
@@ -2072,13 +2072,13 @@ export const createAdminServiceSetSuperuser = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary SudoGetOrganizationQuota returns quotas available for orgs
+ * @summary SudoGetOrganizationQuotas returns quotas available for orgs
  */
-export const adminServiceSudoGetOrganizationQuota = (
-  params?: AdminServiceSudoGetOrganizationQuotaParams,
+export const adminServiceSudoGetOrganizationQuotas = (
+  params?: AdminServiceSudoGetOrganizationQuotasParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1SudoGetOrganizationQuotaResponse>({
+  return httpClient<V1SudoGetOrganizationQuotasResponse>({
     url: `/v1/superuser/quotas/organization`,
     method: "get",
     params,
@@ -2086,24 +2086,24 @@ export const adminServiceSudoGetOrganizationQuota = (
   });
 };
 
-export const getAdminServiceSudoGetOrganizationQuotaQueryKey = (
-  params?: AdminServiceSudoGetOrganizationQuotaParams
+export const getAdminServiceSudoGetOrganizationQuotasQueryKey = (
+  params?: AdminServiceSudoGetOrganizationQuotasParams
 ) =>
   [`/v1/superuser/quotas/organization`, ...(params ? [params] : [])] as const;
 
-export type AdminServiceSudoGetOrganizationQuotaQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceSudoGetOrganizationQuota>>
+export type AdminServiceSudoGetOrganizationQuotasQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoGetOrganizationQuotas>>
 >;
-export type AdminServiceSudoGetOrganizationQuotaQueryError = RpcStatus;
+export type AdminServiceSudoGetOrganizationQuotasQueryError = RpcStatus;
 
-export const createAdminServiceSudoGetOrganizationQuota = <
-  TData = Awaited<ReturnType<typeof adminServiceSudoGetOrganizationQuota>>,
+export const createAdminServiceSudoGetOrganizationQuotas = <
+  TData = Awaited<ReturnType<typeof adminServiceSudoGetOrganizationQuotas>>,
   TError = RpcStatus
 >(
-  params?: AdminServiceSudoGetOrganizationQuotaParams,
+  params?: AdminServiceSudoGetOrganizationQuotasParams,
   options?: {
     query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceSudoGetOrganizationQuota>>,
+      Awaited<ReturnType<typeof adminServiceSudoGetOrganizationQuotas>>,
       TError,
       TData
     >;
@@ -2113,14 +2113,14 @@ export const createAdminServiceSudoGetOrganizationQuota = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceSudoGetOrganizationQuotaQueryKey(params);
+    getAdminServiceSudoGetOrganizationQuotasQueryKey(params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceSudoGetOrganizationQuota>>
-  > = ({ signal }) => adminServiceSudoGetOrganizationQuota(params, signal);
+    Awaited<ReturnType<typeof adminServiceSudoGetOrganizationQuotas>>
+  > = ({ signal }) => adminServiceSudoGetOrganizationQuotas(params, signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceSudoGetOrganizationQuota>>,
+    Awaited<ReturnType<typeof adminServiceSudoGetOrganizationQuotas>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
@@ -2134,63 +2134,64 @@ export const createAdminServiceSudoGetOrganizationQuota = <
 };
 
 /**
- * @summary SudoSetOrganizationQuota update the quotas available for orgs
+ * @summary SudoUpdateOrganizationQuotas update the quotas available for orgs
  */
-export const adminServiceSudoSetOrganizationQuota = (
-  v1SudoSetOrganizationQuotaRequest: V1SudoSetOrganizationQuotaRequest
+export const adminServiceSudoUpdateOrganizationQuotas = (
+  v1SudoUpdateOrganizationQuotasRequest: V1SudoUpdateOrganizationQuotasRequest
 ) => {
-  return httpClient<V1SudoSetOrganizationQuotaResponse>({
+  return httpClient<V1SudoUpdateOrganizationQuotasResponse>({
     url: `/v1/superuser/quotas/organization`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: v1SudoSetOrganizationQuotaRequest,
+    data: v1SudoUpdateOrganizationQuotasRequest,
   });
 };
 
-export type AdminServiceSudoSetOrganizationQuotaMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceSudoSetOrganizationQuota>>
->;
-export type AdminServiceSudoSetOrganizationQuotaMutationBody =
-  V1SudoSetOrganizationQuotaRequest;
-export type AdminServiceSudoSetOrganizationQuotaMutationError = RpcStatus;
+export type AdminServiceSudoUpdateOrganizationQuotasMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationQuotas>>
+  >;
+export type AdminServiceSudoUpdateOrganizationQuotasMutationBody =
+  V1SudoUpdateOrganizationQuotasRequest;
+export type AdminServiceSudoUpdateOrganizationQuotasMutationError = RpcStatus;
 
-export const createAdminServiceSudoSetOrganizationQuota = <
+export const createAdminServiceSudoUpdateOrganizationQuotas = <
   TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSudoSetOrganizationQuota>>,
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationQuotas>>,
     TError,
-    { data: V1SudoSetOrganizationQuotaRequest },
+    { data: V1SudoUpdateOrganizationQuotasRequest },
     TContext
   >;
 }) => {
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceSudoSetOrganizationQuota>>,
-    { data: V1SudoSetOrganizationQuotaRequest }
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationQuotas>>,
+    { data: V1SudoUpdateOrganizationQuotasRequest }
   > = (props) => {
     const { data } = props ?? {};
 
-    return adminServiceSudoSetOrganizationQuota(data);
+    return adminServiceSudoUpdateOrganizationQuotas(data);
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof adminServiceSudoSetOrganizationQuota>>,
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationQuotas>>,
     TError,
-    { data: V1SudoSetOrganizationQuotaRequest },
+    { data: V1SudoUpdateOrganizationQuotasRequest },
     TContext
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary SudoGetUserQuota returns quotas available for users
+ * @summary SudoGetUserQuotas returns quotas available for users
  */
-export const adminServiceSudoGetUserQuota = (
-  params?: AdminServiceSudoGetUserQuotaParams,
+export const adminServiceSudoGetUserQuotas = (
+  params?: AdminServiceSudoGetUserQuotasParams,
   signal?: AbortSignal
 ) => {
-  return httpClient<V1SudoGetUserQuotaResponse>({
+  return httpClient<V1SudoGetUserQuotasResponse>({
     url: `/v1/superuser/quotas/user`,
     method: "get",
     params,
@@ -2198,23 +2199,23 @@ export const adminServiceSudoGetUserQuota = (
   });
 };
 
-export const getAdminServiceSudoGetUserQuotaQueryKey = (
-  params?: AdminServiceSudoGetUserQuotaParams
+export const getAdminServiceSudoGetUserQuotasQueryKey = (
+  params?: AdminServiceSudoGetUserQuotasParams
 ) => [`/v1/superuser/quotas/user`, ...(params ? [params] : [])] as const;
 
-export type AdminServiceSudoGetUserQuotaQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceSudoGetUserQuota>>
+export type AdminServiceSudoGetUserQuotasQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoGetUserQuotas>>
 >;
-export type AdminServiceSudoGetUserQuotaQueryError = RpcStatus;
+export type AdminServiceSudoGetUserQuotasQueryError = RpcStatus;
 
-export const createAdminServiceSudoGetUserQuota = <
-  TData = Awaited<ReturnType<typeof adminServiceSudoGetUserQuota>>,
+export const createAdminServiceSudoGetUserQuotas = <
+  TData = Awaited<ReturnType<typeof adminServiceSudoGetUserQuotas>>,
   TError = RpcStatus
 >(
-  params?: AdminServiceSudoGetUserQuotaParams,
+  params?: AdminServiceSudoGetUserQuotasParams,
   options?: {
     query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceSudoGetUserQuota>>,
+      Awaited<ReturnType<typeof adminServiceSudoGetUserQuotas>>,
       TError,
       TData
     >;
@@ -2223,14 +2224,14 @@ export const createAdminServiceSudoGetUserQuota = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getAdminServiceSudoGetUserQuotaQueryKey(params);
+    queryOptions?.queryKey ?? getAdminServiceSudoGetUserQuotasQueryKey(params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceSudoGetUserQuota>>
-  > = ({ signal }) => adminServiceSudoGetUserQuota(params, signal);
+    Awaited<ReturnType<typeof adminServiceSudoGetUserQuotas>>
+  > = ({ signal }) => adminServiceSudoGetUserQuotas(params, signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceSudoGetUserQuota>>,
+    Awaited<ReturnType<typeof adminServiceSudoGetUserQuotas>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
@@ -2244,52 +2245,52 @@ export const createAdminServiceSudoGetUserQuota = <
 };
 
 /**
- * @summary SudoSetUserQuota update the quotas for users
+ * @summary SudoUpdateUserQuotas update the quotas for users
  */
-export const adminServiceSudoSetUserQuota = (
-  v1SudoSetUserQuotaRequest: V1SudoSetUserQuotaRequest
+export const adminServiceSudoUpdateUserQuotas = (
+  v1SudoUpdateUserQuotasRequest: V1SudoUpdateUserQuotasRequest
 ) => {
-  return httpClient<V1SudoSetUserQuotaResponse>({
+  return httpClient<V1SudoUpdateUserQuotasResponse>({
     url: `/v1/superuser/quotas/user`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: v1SudoSetUserQuotaRequest,
+    data: v1SudoUpdateUserQuotasRequest,
   });
 };
 
-export type AdminServiceSudoSetUserQuotaMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceSudoSetUserQuota>>
+export type AdminServiceSudoUpdateUserQuotasMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoUpdateUserQuotas>>
 >;
-export type AdminServiceSudoSetUserQuotaMutationBody =
-  V1SudoSetUserQuotaRequest;
-export type AdminServiceSudoSetUserQuotaMutationError = RpcStatus;
+export type AdminServiceSudoUpdateUserQuotasMutationBody =
+  V1SudoUpdateUserQuotasRequest;
+export type AdminServiceSudoUpdateUserQuotasMutationError = RpcStatus;
 
-export const createAdminServiceSudoSetUserQuota = <
+export const createAdminServiceSudoUpdateUserQuotas = <
   TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSudoSetUserQuota>>,
+    Awaited<ReturnType<typeof adminServiceSudoUpdateUserQuotas>>,
     TError,
-    { data: V1SudoSetUserQuotaRequest },
+    { data: V1SudoUpdateUserQuotasRequest },
     TContext
   >;
 }) => {
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceSudoSetUserQuota>>,
-    { data: V1SudoSetUserQuotaRequest }
+    Awaited<ReturnType<typeof adminServiceSudoUpdateUserQuotas>>,
+    { data: V1SudoUpdateUserQuotasRequest }
   > = (props) => {
     const { data } = props ?? {};
 
-    return adminServiceSudoSetUserQuota(data);
+    return adminServiceSudoUpdateUserQuotas(data);
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof adminServiceSudoSetUserQuota>>,
+    Awaited<ReturnType<typeof adminServiceSudoUpdateUserQuotas>>,
     TError,
-    { data: V1SudoSetUserQuotaRequest },
+    { data: V1SudoUpdateUserQuotasRequest },
     TContext
   >(mutationFn, mutationOptions);
 };

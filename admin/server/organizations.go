@@ -175,8 +175,13 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	}
 
 	org, err = s.admin.DB.UpdateOrganization(ctx, req.Id, &database.UpdateOrganizationOptions{
-		Name:        req.Name,
-		Description: req.Description,
+		Name:                    req.Name,
+		Description:             req.Description,
+		QuotaProjects:           org.QuotaProjects,
+		QuotaDeployments:        org.QuotaDeployments,
+		QuotaSlotsTotal:         org.QuotaSlotsTotal,
+		QuotaSlotsPerDeployment: org.QuotaSlotsPerDeployment,
+		QuotaOutstandingInvites: org.QuotaOutstandingInvites,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -736,7 +741,7 @@ func (s *Server) ListWhitelistedDomains(ctx context.Context, req *adminv1.ListWh
 	}, nil
 }
 
-func (s *Server) SudoGetOrganizationQuota(ctx context.Context, req *adminv1.SudoGetOrganizationQuotaRequest) (*adminv1.SudoGetOrganizationQuotaResponse, error) {
+func (s *Server) SudoGetOrganizationQuotas(ctx context.Context, req *adminv1.SudoGetOrganizationQuotasRequest) (*adminv1.SudoGetOrganizationQuotasResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
@@ -747,8 +752,8 @@ func (s *Server) SudoGetOrganizationQuota(ctx context.Context, req *adminv1.Sudo
 		return nil, err
 	}
 
-	return &adminv1.SudoGetOrganizationQuotaResponse{
-		OrganizationQuota: &adminv1.OrganizationQuota{
+	return &adminv1.SudoGetOrganizationQuotasResponse{
+		OrganizationQuotas: &adminv1.OrganizationQuotas{
 			QuotaProjects:           uint32(org.QuotaProjects),
 			QuotaDeployments:        uint32(org.QuotaDeployments),
 			QuotaSlotsTotal:         uint32(org.QuotaSlotsTotal),
@@ -758,7 +763,7 @@ func (s *Server) SudoGetOrganizationQuota(ctx context.Context, req *adminv1.Sudo
 	}, nil
 }
 
-func (s *Server) SudoSetOrganizationQuota(ctx context.Context, req *adminv1.SudoSetOrganizationQuotaRequest) (*adminv1.SudoSetOrganizationQuotaResponse, error) {
+func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.SudoUpdateOrganizationQuotasRequest) (*adminv1.SudoUpdateOrganizationQuotasResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
@@ -769,7 +774,9 @@ func (s *Server) SudoSetOrganizationQuota(ctx context.Context, req *adminv1.Sudo
 		return nil, err
 	}
 
-	opts := &database.UpdateOrganizationQuotaOptions{
+	opts := &database.UpdateOrganizationOptions{
+		Name:                    req.OrgName,
+		Description:             org.Description,
 		QuotaProjects:           org.QuotaProjects,
 		QuotaDeployments:        org.QuotaDeployments,
 		QuotaSlotsTotal:         org.QuotaSlotsTotal,
@@ -779,27 +786,27 @@ func (s *Server) SudoSetOrganizationQuota(ctx context.Context, req *adminv1.Sudo
 
 	// Update user quota here
 	switch id := req.Quota.(type) {
-	case *adminv1.SudoSetOrganizationQuotaRequest_QuotaProjects:
+	case *adminv1.SudoUpdateOrganizationQuotasRequest_QuotaProjects:
 		opts.QuotaProjects = int(id.QuotaProjects)
-	case *adminv1.SudoSetOrganizationQuotaRequest_QuotaDeployments:
+	case *adminv1.SudoUpdateOrganizationQuotasRequest_QuotaDeployments:
 		opts.QuotaDeployments = int(id.QuotaDeployments)
-	case *adminv1.SudoSetOrganizationQuotaRequest_QuotaSlotsTotal:
+	case *adminv1.SudoUpdateOrganizationQuotasRequest_QuotaSlotsTotal:
 		opts.QuotaSlotsTotal = int(id.QuotaSlotsTotal)
-	case *adminv1.SudoSetOrganizationQuotaRequest_QuotaSlotsPerDeployment:
+	case *adminv1.SudoUpdateOrganizationQuotasRequest_QuotaSlotsPerDeployment:
 		opts.QuotaSlotsPerDeployment = int(id.QuotaSlotsPerDeployment)
-	case *adminv1.SudoSetOrganizationQuotaRequest_QuotaOutstandingInvites:
+	case *adminv1.SudoUpdateOrganizationQuotasRequest_QuotaOutstandingInvites:
 		opts.QuotaOutstandingInvites = int(id.QuotaOutstandingInvites)
 	default:
 		return nil, status.Errorf(codes.Internal, "unexpected quota type %T", id)
 	}
 
-	updatedOrg, err := s.admin.DB.UpdateOrganizationQuota(ctx, org.ID, opts)
+	updatedOrg, err := s.admin.DB.UpdateOrganization(ctx, org.ID, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	return &adminv1.SudoSetOrganizationQuotaResponse{
-		OrganizationQuota: &adminv1.OrganizationQuota{
+	return &adminv1.SudoUpdateOrganizationQuotasResponse{
+		OrganizationQuotas: &adminv1.OrganizationQuotas{
 			QuotaProjects:           uint32(updatedOrg.QuotaProjects),
 			QuotaDeployments:        uint32(updatedOrg.QuotaDeployments),
 			QuotaSlotsTotal:         uint32(updatedOrg.QuotaSlotsTotal),

@@ -224,7 +224,7 @@ func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResour
 	return res, nil
 }
 
-func (s *Server) SudoGetUserQuota(ctx context.Context, req *adminv1.SudoGetUserQuotaRequest) (*adminv1.SudoGetUserQuotaResponse, error) {
+func (s *Server) SudoGetUserQuotas(ctx context.Context, req *adminv1.SudoGetUserQuotasRequest) (*adminv1.SudoGetUserQuotasResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
@@ -235,12 +235,12 @@ func (s *Server) SudoGetUserQuota(ctx context.Context, req *adminv1.SudoGetUserQ
 		return nil, err
 	}
 
-	return &adminv1.SudoGetUserQuotaResponse{UserQuota: &adminv1.UserQuota{
+	return &adminv1.SudoGetUserQuotasResponse{UserQuotas: &adminv1.UserQuotas{
 		QuotaSingleuserOrgs: uint32(user.QuotaSingleuserOrgs),
 	}}, nil
 }
 
-func (s *Server) SudoSetUserQuota(ctx context.Context, req *adminv1.SudoSetUserQuotaRequest) (*adminv1.SudoSetUserQuotaResponse, error) {
+func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpdateUserQuotasRequest) (*adminv1.SudoUpdateUserQuotasResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
@@ -252,14 +252,17 @@ func (s *Server) SudoSetUserQuota(ctx context.Context, req *adminv1.SudoSetUserQ
 	}
 
 	// Update user quota here
-	updatedUser, err := s.admin.DB.UpdateUserQuota(ctx, user.ID, &database.UpdateUserQuotaOptions{
+	updatedUser, err := s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
+		DisplayName:         user.DisplayName,
+		PhotoURL:            user.PhotoURL,
+		GithubUsername:      user.GithubUsername,
 		QuotaSingleuserOrgs: int(req.QuotaSingleuserOrgs),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &adminv1.SudoSetUserQuotaResponse{UserQuota: &adminv1.UserQuota{
+	return &adminv1.SudoUpdateUserQuotasResponse{UserQuotas: &adminv1.UserQuotas{
 		QuotaSingleuserOrgs: uint32(updatedUser.QuotaSingleuserOrgs),
 	}}, nil
 }

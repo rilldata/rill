@@ -249,26 +249,26 @@ service AdminService {
     option (google.api.http) = {get: "/v1/superuser/resource"};
   }
 
-  // SudoGetUserQuota returns quotas available for users
-  rpc SudoGetUserQuota(SudoGetUserQuotaRequest) returns (SudoGetUserQuotaResponse) {
+  // SudoGetUserQuotas returns quotas available for users
+  rpc SudoGetUserQuotas(SudoGetUserQuotasRequest) returns (SudoGetUserQuotasResponse) {
     option (google.api.http) = {get: "/v1/superuser/quotas/user"};
   }
 
-  // SudoSetUserQuota update the quotas for users
-  rpc SudoSetUserQuota(SudoSetUserQuotaRequest) returns (SudoSetUserQuotaResponse) {
+  // SudoUpdateUserQuotas update the quotas for users
+  rpc SudoUpdateUserQuotas(SudoUpdateUserQuotasRequest) returns (SudoUpdateUserQuotasResponse) {
     option (google.api.http) = {
       post: "/v1/superuser/quotas/user",
       body: "*"
     };
   }
 
-  // SudoGetOrganizationQuota returns quotas available for orgs
-  rpc SudoGetOrganizationQuota(SudoGetOrganizationQuotaRequest) returns (SudoGetOrganizationQuotaResponse) {
+  // SudoGetOrganizationQuotas returns quotas available for orgs
+  rpc SudoGetOrganizationQuotas(SudoGetOrganizationQuotasRequest) returns (SudoGetOrganizationQuotasResponse) {
     option (google.api.http) = {get: "/v1/superuser/quotas/organization"};
   }
 
-  // SudoSetOrganizationQuota update the quotas available for orgs
-  rpc SudoSetOrganizationQuota(SudoSetOrganizationQuotaRequest) returns (SudoSetOrganizationQuotaResponse) {
+  // SudoUpdateOrganizationQuotas update the quotas available for orgs
+  rpc SudoUpdateOrganizationQuotas(SudoUpdateOrganizationQuotasRequest) returns (SudoUpdateOrganizationQuotasResponse) {
     option (google.api.http) = {
       post: "/v1/superuser/quotas/organization",
       body: "*"
@@ -520,28 +520,28 @@ message SudoGetResourceResponse {
   }
 }
 
-// SudoGetOrganizationQuotaRequest
-message SudoGetOrganizationQuotaRequest {
+// SudoGetOrganizationQuotasRequest
+message SudoGetOrganizationQuotasRequest {
   string org_name = 1;
 }
 
-// SudoGetOrganizationQuotaResponse
-message SudoGetOrganizationQuotaResponse {
-  OrganizationQuota organization_quota = 1;
+// SudoGetOrganizationQuotasResponse
+message SudoGetOrganizationQuotasResponse {
+  OrganizationQuotas organization_quotas = 1;
 }
 
-// SudoGetUserQuotaRequest
-message SudoGetUserQuotaRequest {
+// SudoGetUserQuotasRequest
+message SudoGetUserQuotasRequest {
   string email = 1;
 }
 
-// SudoGetUserQuotaResponse
-message SudoGetUserQuotaResponse {
-  UserQuota user_quota = 1;
+// SudoGetUserQuotasResponse
+message SudoGetUserQuotasResponse {
+  UserQuotas user_quotas = 1;
 }
 
-// SudoSetOrganizationQuotaRequest
-message SudoSetOrganizationQuotaRequest {
+// SudoUpdateOrganizationQuotasRequest
+message SudoUpdateOrganizationQuotasRequest {
   string org_name = 1;
   oneof quota {
     uint32 quota_projects = 2;
@@ -552,20 +552,20 @@ message SudoSetOrganizationQuotaRequest {
   }
 }
 
-// SudoSetOrganizationQuotaResponse
-message SudoSetOrganizationQuotaResponse {
-  OrganizationQuota organization_quota = 1;
+// SudoUpdateOrganizationQuotasResponse
+message SudoUpdateOrganizationQuotasResponse {
+  OrganizationQuotas organization_quotas = 1;
 }
 
-// SudoSetUserQuotaRequest
-message SudoSetUserQuotaRequest {
+// SudoUpdateUserQuotasRequest
+message SudoUpdateUserQuotasRequest {
   string email = 1;
   uint32 quota_singleuser_orgs = 2;
 }
 
-// SudoSetUserQuotaResponse
-message SudoSetUserQuotaResponse {
-  UserQuota user_quota = 1;
+// SudoUpdateUserQuotasResponse
+message SudoUpdateUserQuotasResponse {
+  UserQuotas user_quotas = 1;
 }
 
 message ListProjectMembersRequest {
@@ -716,11 +716,11 @@ message Organization {
   google.protobuf.Timestamp updated_on = 5;
 }
 
-message UserQuota {
+message UserQuotas {
   uint32 quota_singleuser_orgs = 1;
 }
 
-message OrganizationQuota {
+message OrganizationQuotas {
   uint32 quota_projects = 1;
   uint32 quota_deployments = 2;
   uint32 quota_slots_total = 3;

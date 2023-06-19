@@ -18,11 +18,11 @@ export type AdminServiceSudoGetResourceParams = {
   instanceId?: string;
 };
 
-export type AdminServiceSudoGetUserQuotaParams = {
+export type AdminServiceSudoGetUserQuotasParams = {
   email?: string;
 };
 
-export type AdminServiceSudoGetOrganizationQuotaParams = {
+export type AdminServiceSudoGetOrganizationQuotasParams = {
   orgName?: string;
 };
 
@@ -128,7 +128,7 @@ export interface V1WhitelistedDomain {
   role?: string;
 }
 
-export interface V1UserQuota {
+export interface V1UserQuotas {
   quotaSingleuserOrgs?: number;
 }
 
@@ -175,20 +175,20 @@ export interface V1TriggerReconcileResponse {
   [key: string]: any;
 }
 
-export interface V1SudoSetUserQuotaResponse {
-  userQuota?: V1UserQuota;
+export interface V1SudoUpdateUserQuotasResponse {
+  userQuotas?: V1UserQuotas;
 }
 
-export interface V1SudoSetUserQuotaRequest {
+export interface V1SudoUpdateUserQuotasRequest {
   email?: string;
   quotaSingleuserOrgs?: number;
 }
 
-export interface V1SudoSetOrganizationQuotaResponse {
-  organizationQuota?: V1OrganizationQuota;
+export interface V1SudoUpdateOrganizationQuotasResponse {
+  organizationQuotas?: V1OrganizationQuotas;
 }
 
-export interface V1SudoSetOrganizationQuotaRequest {
+export interface V1SudoUpdateOrganizationQuotasRequest {
   orgName?: string;
   quotaProjects?: number;
   quotaDeployments?: number;
@@ -197,8 +197,8 @@ export interface V1SudoSetOrganizationQuotaRequest {
   quotaOutstandingInvites?: number;
 }
 
-export interface V1SudoGetUserQuotaResponse {
-  userQuota?: V1UserQuota;
+export interface V1SudoGetUserQuotasResponse {
+  userQuotas?: V1UserQuotas;
 }
 
 export interface V1SudoGetResourceResponse {
@@ -209,8 +209,8 @@ export interface V1SudoGetResourceResponse {
   instance?: V1Deployment;
 }
 
-export interface V1SudoGetOrganizationQuotaResponse {
-  organizationQuota?: V1OrganizationQuota;
+export interface V1SudoGetOrganizationQuotasResponse {
+  organizationQuotas?: V1OrganizationQuotas;
 }
 
 export interface V1SetSuperuserResponse {
@@ -289,7 +289,7 @@ export interface V1PingResponse {
   time?: string;
 }
 
-export interface V1OrganizationQuota {
+export interface V1OrganizationQuotas {
   quotaProjects?: number;
   quotaDeployments?: number;
   quotaSlotsTotal?: number;

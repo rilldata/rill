@@ -6453,22 +6453,23 @@ var _ interface {
 	ErrorName() string
 } = SudoGetResourceResponseValidationError{}
 
-// Validate checks the field values on SudoGetOrganizationQuotaRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *SudoGetOrganizationQuotaRequest) Validate() error {
+// Validate checks the field values on SudoGetOrganizationQuotasRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *SudoGetOrganizationQuotasRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on SudoGetOrganizationQuotaRequest with
+// ValidateAll checks the field values on SudoGetOrganizationQuotasRequest with
 // the rules defined in the proto definition for this message. If any rules
 // are violated, the result is a list of violation errors wrapped in
-// SudoGetOrganizationQuotaRequestMultiError, or nil if none found.
-func (m *SudoGetOrganizationQuotaRequest) ValidateAll() error {
+// SudoGetOrganizationQuotasRequestMultiError, or nil if none found.
+func (m *SudoGetOrganizationQuotasRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *SudoGetOrganizationQuotaRequest) validate(all bool) error {
+func (m *SudoGetOrganizationQuotasRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -6478,19 +6479,20 @@ func (m *SudoGetOrganizationQuotaRequest) validate(all bool) error {
 	// no validation rules for OrgName
 
 	if len(errors) > 0 {
-		return SudoGetOrganizationQuotaRequestMultiError(errors)
+		return SudoGetOrganizationQuotasRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// SudoGetOrganizationQuotaRequestMultiError is an error wrapping multiple
-// validation errors returned by SudoGetOrganizationQuotaRequest.ValidateAll()
-// if the designated constraints aren't met.
-type SudoGetOrganizationQuotaRequestMultiError []error
+// SudoGetOrganizationQuotasRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// SudoGetOrganizationQuotasRequest.ValidateAll() if the designated
+// constraints aren't met.
+type SudoGetOrganizationQuotasRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m SudoGetOrganizationQuotaRequestMultiError) Error() string {
+func (m SudoGetOrganizationQuotasRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -6499,12 +6501,12 @@ func (m SudoGetOrganizationQuotaRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m SudoGetOrganizationQuotaRequestMultiError) AllErrors() []error { return m }
+func (m SudoGetOrganizationQuotasRequestMultiError) AllErrors() []error { return m }
 
-// SudoGetOrganizationQuotaRequestValidationError is the validation error
-// returned by SudoGetOrganizationQuotaRequest.Validate if the designated
+// SudoGetOrganizationQuotasRequestValidationError is the validation error
+// returned by SudoGetOrganizationQuotasRequest.Validate if the designated
 // constraints aren't met.
-type SudoGetOrganizationQuotaRequestValidationError struct {
+type SudoGetOrganizationQuotasRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -6512,24 +6514,24 @@ type SudoGetOrganizationQuotaRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e SudoGetOrganizationQuotaRequestValidationError) Field() string { return e.field }
+func (e SudoGetOrganizationQuotasRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e SudoGetOrganizationQuotaRequestValidationError) Reason() string { return e.reason }
+func (e SudoGetOrganizationQuotasRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e SudoGetOrganizationQuotaRequestValidationError) Cause() error { return e.cause }
+func (e SudoGetOrganizationQuotasRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e SudoGetOrganizationQuotaRequestValidationError) Key() bool { return e.key }
+func (e SudoGetOrganizationQuotasRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e SudoGetOrganizationQuotaRequestValidationError) ErrorName() string {
-	return "SudoGetOrganizationQuotaRequestValidationError"
+func (e SudoGetOrganizationQuotasRequestValidationError) ErrorName() string {
+	return "SudoGetOrganizationQuotasRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e SudoGetOrganizationQuotaRequestValidationError) Error() string {
+func (e SudoGetOrganizationQuotasRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -6541,14 +6543,14 @@ func (e SudoGetOrganizationQuotaRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sSudoGetOrganizationQuotaRequest.%s: %s%s",
+		"invalid %sSudoGetOrganizationQuotasRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = SudoGetOrganizationQuotaRequestValidationError{}
+var _ error = SudoGetOrganizationQuotasRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -6556,25 +6558,25 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = SudoGetOrganizationQuotaRequestValidationError{}
+} = SudoGetOrganizationQuotasRequestValidationError{}
 
-// Validate checks the field values on SudoGetOrganizationQuotaResponse with
+// Validate checks the field values on SudoGetOrganizationQuotasResponse with
 // the rules defined in the proto definition for this message. If any rules
 // are violated, the first error encountered is returned, or nil if there are
 // no violations.
-func (m *SudoGetOrganizationQuotaResponse) Validate() error {
+func (m *SudoGetOrganizationQuotasResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on SudoGetOrganizationQuotaResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// SudoGetOrganizationQuotaResponseMultiError, or nil if none found.
-func (m *SudoGetOrganizationQuotaResponse) ValidateAll() error {
+// ValidateAll checks the field values on SudoGetOrganizationQuotasResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// SudoGetOrganizationQuotasResponseMultiError, or nil if none found.
+func (m *SudoGetOrganizationQuotasResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *SudoGetOrganizationQuotaResponse) validate(all bool) error {
+func (m *SudoGetOrganizationQuotasResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -6582,28 +6584,28 @@ func (m *SudoGetOrganizationQuotaResponse) validate(all bool) error {
 	var errors []error
 
 	if all {
-		switch v := interface{}(m.GetOrganizationQuota()).(type) {
+		switch v := interface{}(m.GetOrganizationQuotas()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, SudoGetOrganizationQuotaResponseValidationError{
-					field:  "OrganizationQuota",
+				errors = append(errors, SudoGetOrganizationQuotasResponseValidationError{
+					field:  "OrganizationQuotas",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, SudoGetOrganizationQuotaResponseValidationError{
-					field:  "OrganizationQuota",
+				errors = append(errors, SudoGetOrganizationQuotasResponseValidationError{
+					field:  "OrganizationQuotas",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetOrganizationQuota()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetOrganizationQuotas()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return SudoGetOrganizationQuotaResponseValidationError{
-				field:  "OrganizationQuota",
+			return SudoGetOrganizationQuotasResponseValidationError{
+				field:  "OrganizationQuotas",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -6611,20 +6613,20 @@ func (m *SudoGetOrganizationQuotaResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return SudoGetOrganizationQuotaResponseMultiError(errors)
+		return SudoGetOrganizationQuotasResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// SudoGetOrganizationQuotaResponseMultiError is an error wrapping multiple
+// SudoGetOrganizationQuotasResponseMultiError is an error wrapping multiple
 // validation errors returned by
-// SudoGetOrganizationQuotaResponse.ValidateAll() if the designated
+// SudoGetOrganizationQuotasResponse.ValidateAll() if the designated
 // constraints aren't met.
-type SudoGetOrganizationQuotaResponseMultiError []error
+type SudoGetOrganizationQuotasResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m SudoGetOrganizationQuotaResponseMultiError) Error() string {
+func (m SudoGetOrganizationQuotasResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -6633,12 +6635,12 @@ func (m SudoGetOrganizationQuotaResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m SudoGetOrganizationQuotaResponseMultiError) AllErrors() []error { return m }
+func (m SudoGetOrganizationQuotasResponseMultiError) AllErrors() []error { return m }
 
-// SudoGetOrganizationQuotaResponseValidationError is the validation error
-// returned by SudoGetOrganizationQuotaResponse.Validate if the designated
+// SudoGetOrganizationQuotasResponseValidationError is the validation error
+// returned by SudoGetOrganizationQuotasResponse.Validate if the designated
 // constraints aren't met.
-type SudoGetOrganizationQuotaResponseValidationError struct {
+type SudoGetOrganizationQuotasResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -6646,24 +6648,24 @@ type SudoGetOrganizationQuotaResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e SudoGetOrganizationQuotaResponseValidationError) Field() string { return e.field }
+func (e SudoGetOrganizationQuotasResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e SudoGetOrganizationQuotaResponseValidationError) Reason() string { return e.reason }
+func (e SudoGetOrganizationQuotasResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e SudoGetOrganizationQuotaResponseValidationError) Cause() error { return e.cause }
+func (e SudoGetOrganizationQuotasResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e SudoGetOrganizationQuotaResponseValidationError) Key() bool { return e.key }
+func (e SudoGetOrganizationQuotasResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e SudoGetOrganizationQuotaResponseValidationError) ErrorName() string {
-	return "SudoGetOrganizationQuotaResponseValidationError"
+func (e SudoGetOrganizationQuotasResponseValidationError) ErrorName() string {
+	return "SudoGetOrganizationQuotasResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e SudoGetOrganizationQuotaResponseValidationError) Error() string {
+func (e SudoGetOrganizationQuotasResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -6675,14 +6677,14 @@ func (e SudoGetOrganizationQuotaResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sSudoGetOrganizationQuotaResponse.%s: %s%s",
+		"invalid %sSudoGetOrganizationQuotasResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = SudoGetOrganizationQuotaResponseValidationError{}
+var _ error = SudoGetOrganizationQuotasResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -6690,24 +6692,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = SudoGetOrganizationQuotaResponseValidationError{}
+} = SudoGetOrganizationQuotasResponseValidationError{}
 
-// Validate checks the field values on SudoGetUserQuotaRequest with the rules
+// Validate checks the field values on SudoGetUserQuotasRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *SudoGetUserQuotaRequest) Validate() error {
+func (m *SudoGetUserQuotasRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on SudoGetUserQuotaRequest with the
+// ValidateAll checks the field values on SudoGetUserQuotasRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// SudoGetUserQuotaRequestMultiError, or nil if none found.
-func (m *SudoGetUserQuotaRequest) ValidateAll() error {
+// SudoGetUserQuotasRequestMultiError, or nil if none found.
+func (m *SudoGetUserQuotasRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *SudoGetUserQuotaRequest) validate(all bool) error {
+func (m *SudoGetUserQuotasRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -6717,19 +6719,19 @@ func (m *SudoGetUserQuotaRequest) validate(all bool) error {
 	// no validation rules for Email
 
 	if len(errors) > 0 {
-		return SudoGetUserQuotaRequestMultiError(errors)
+		return SudoGetUserQuotasRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// SudoGetUserQuotaRequestMultiError is an error wrapping multiple validation
-// errors returned by SudoGetUserQuotaRequest.ValidateAll() if the designated
+// SudoGetUserQuotasRequestMultiError is an error wrapping multiple validation
+// errors returned by SudoGetUserQuotasRequest.ValidateAll() if the designated
 // constraints aren't met.
-type SudoGetUserQuotaRequestMultiError []error
+type SudoGetUserQuotasRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m SudoGetUserQuotaRequestMultiError) Error() string {
+func (m SudoGetUserQuotasRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -6738,11 +6740,11 @@ func (m SudoGetUserQuotaRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m SudoGetUserQuotaRequestMultiError) AllErrors() []error { return m }
+func (m SudoGetUserQuotasRequestMultiError) AllErrors() []error { return m }
 
-// SudoGetUserQuotaRequestValidationError is the validation error returned by
-// SudoGetUserQuotaRequest.Validate if the designated constraints aren't met.
-type SudoGetUserQuotaRequestValidationError struct {
+// SudoGetUserQuotasRequestValidationError is the validation error returned by
+// SudoGetUserQuotasRequest.Validate if the designated constraints aren't met.
+type SudoGetUserQuotasRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -6750,24 +6752,24 @@ type SudoGetUserQuotaRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e SudoGetUserQuotaRequestValidationError) Field() string { return e.field }
+func (e SudoGetUserQuotasRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e SudoGetUserQuotaRequestValidationError) Reason() string { return e.reason }
+func (e SudoGetUserQuotasRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e SudoGetUserQuotaRequestValidationError) Cause() error { return e.cause }
+func (e SudoGetUserQuotasRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e SudoGetUserQuotaRequestValidationError) Key() bool { return e.key }
+func (e SudoGetUserQuotasRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e SudoGetUserQuotaRequestValidationError) ErrorName() string {
-	return "SudoGetUserQuotaRequestValidationError"
+func (e SudoGetUserQuotasRequestValidationError) ErrorName() string {
+	return "SudoGetUserQuotasRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e SudoGetUserQuotaRequestValidationError) Error() string {
+func (e SudoGetUserQuotasRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -6779,14 +6781,14 @@ func (e SudoGetUserQuotaRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sSudoGetUserQuotaRequest.%s: %s%s",
+		"invalid %sSudoGetUserQuotasRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = SudoGetUserQuotaRequestValidationError{}
+var _ error = SudoGetUserQuotasRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -6794,24 +6796,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = SudoGetUserQuotaRequestValidationError{}
+} = SudoGetUserQuotasRequestValidationError{}
 
-// Validate checks the field values on SudoGetUserQuotaResponse with the rules
+// Validate checks the field values on SudoGetUserQuotasResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *SudoGetUserQuotaResponse) Validate() error {
+func (m *SudoGetUserQuotasResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on SudoGetUserQuotaResponse with the
+// ValidateAll checks the field values on SudoGetUserQuotasResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// SudoGetUserQuotaResponseMultiError, or nil if none found.
-func (m *SudoGetUserQuotaResponse) ValidateAll() error {
+// SudoGetUserQuotasResponseMultiError, or nil if none found.
+func (m *SudoGetUserQuotasResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *SudoGetUserQuotaResponse) validate(all bool) error {
+func (m *SudoGetUserQuotasResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -6819,28 +6821,28 @@ func (m *SudoGetUserQuotaResponse) validate(all bool) error {
 	var errors []error
 
 	if all {
-		switch v := interface{}(m.GetUserQuota()).(type) {
+		switch v := interface{}(m.GetUserQuotas()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, SudoGetUserQuotaResponseValidationError{
-					field:  "UserQuota",
+				errors = append(errors, SudoGetUserQuotasResponseValidationError{
+					field:  "UserQuotas",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, SudoGetUserQuotaResponseValidationError{
-					field:  "UserQuota",
+				errors = append(errors, SudoGetUserQuotasResponseValidationError{
+					field:  "UserQuotas",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetUserQuota()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetUserQuotas()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return SudoGetUserQuotaResponseValidationError{
-				field:  "UserQuota",
+			return SudoGetUserQuotasResponseValidationError{
+				field:  "UserQuotas",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -6848,19 +6850,19 @@ func (m *SudoGetUserQuotaResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return SudoGetUserQuotaResponseMultiError(errors)
+		return SudoGetUserQuotasResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// SudoGetUserQuotaResponseMultiError is an error wrapping multiple validation
-// errors returned by SudoGetUserQuotaResponse.ValidateAll() if the designated
-// constraints aren't met.
-type SudoGetUserQuotaResponseMultiError []error
+// SudoGetUserQuotasResponseMultiError is an error wrapping multiple validation
+// errors returned by SudoGetUserQuotasResponse.ValidateAll() if the
+// designated constraints aren't met.
+type SudoGetUserQuotasResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m SudoGetUserQuotaResponseMultiError) Error() string {
+func (m SudoGetUserQuotasResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -6869,11 +6871,11 @@ func (m SudoGetUserQuotaResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m SudoGetUserQuotaResponseMultiError) AllErrors() []error { return m }
+func (m SudoGetUserQuotasResponseMultiError) AllErrors() []error { return m }
 
-// SudoGetUserQuotaResponseValidationError is the validation error returned by
-// SudoGetUserQuotaResponse.Validate if the designated constraints aren't met.
-type SudoGetUserQuotaResponseValidationError struct {
+// SudoGetUserQuotasResponseValidationError is the validation error returned by
+// SudoGetUserQuotasResponse.Validate if the designated constraints aren't met.
+type SudoGetUserQuotasResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -6881,24 +6883,24 @@ type SudoGetUserQuotaResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e SudoGetUserQuotaResponseValidationError) Field() string { return e.field }
+func (e SudoGetUserQuotasResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e SudoGetUserQuotaResponseValidationError) Reason() string { return e.reason }
+func (e SudoGetUserQuotasResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e SudoGetUserQuotaResponseValidationError) Cause() error { return e.cause }
+func (e SudoGetUserQuotasResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e SudoGetUserQuotaResponseValidationError) Key() bool { return e.key }
+func (e SudoGetUserQuotasResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e SudoGetUserQuotaResponseValidationError) ErrorName() string {
-	return "SudoGetUserQuotaResponseValidationError"
+func (e SudoGetUserQuotasResponseValidationError) ErrorName() string {
+	return "SudoGetUserQuotasResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e SudoGetUserQuotaResponseValidationError) Error() string {
+func (e SudoGetUserQuotasResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -6910,14 +6912,14 @@ func (e SudoGetUserQuotaResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sSudoGetUserQuotaResponse.%s: %s%s",
+		"invalid %sSudoGetUserQuotasResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = SudoGetUserQuotaResponseValidationError{}
+var _ error = SudoGetUserQuotasResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -6925,24 +6927,25 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = SudoGetUserQuotaResponseValidationError{}
+} = SudoGetUserQuotasResponseValidationError{}
 
-// Validate checks the field values on SudoSetOrganizationQuotaRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *SudoSetOrganizationQuotaRequest) Validate() error {
+// Validate checks the field values on SudoUpdateOrganizationQuotasRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *SudoUpdateOrganizationQuotasRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on SudoSetOrganizationQuotaRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// SudoSetOrganizationQuotaRequestMultiError, or nil if none found.
-func (m *SudoSetOrganizationQuotaRequest) ValidateAll() error {
+// ValidateAll checks the field values on SudoUpdateOrganizationQuotasRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// SudoUpdateOrganizationQuotasRequestMultiError, or nil if none found.
+func (m *SudoUpdateOrganizationQuotasRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *SudoSetOrganizationQuotaRequest) validate(all bool) error {
+func (m *SudoUpdateOrganizationQuotasRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -6952,9 +6955,9 @@ func (m *SudoSetOrganizationQuotaRequest) validate(all bool) error {
 	// no validation rules for OrgName
 
 	switch v := m.Quota.(type) {
-	case *SudoSetOrganizationQuotaRequest_QuotaProjects:
+	case *SudoUpdateOrganizationQuotasRequest_QuotaProjects:
 		if v == nil {
-			err := SudoSetOrganizationQuotaRequestValidationError{
+			err := SudoUpdateOrganizationQuotasRequestValidationError{
 				field:  "Quota",
 				reason: "oneof value cannot be a typed-nil",
 			}
@@ -6964,9 +6967,9 @@ func (m *SudoSetOrganizationQuotaRequest) validate(all bool) error {
 			errors = append(errors, err)
 		}
 		// no validation rules for QuotaProjects
-	case *SudoSetOrganizationQuotaRequest_QuotaDeployments:
+	case *SudoUpdateOrganizationQuotasRequest_QuotaDeployments:
 		if v == nil {
-			err := SudoSetOrganizationQuotaRequestValidationError{
+			err := SudoUpdateOrganizationQuotasRequestValidationError{
 				field:  "Quota",
 				reason: "oneof value cannot be a typed-nil",
 			}
@@ -6976,9 +6979,9 @@ func (m *SudoSetOrganizationQuotaRequest) validate(all bool) error {
 			errors = append(errors, err)
 		}
 		// no validation rules for QuotaDeployments
-	case *SudoSetOrganizationQuotaRequest_QuotaSlotsTotal:
+	case *SudoUpdateOrganizationQuotasRequest_QuotaSlotsTotal:
 		if v == nil {
-			err := SudoSetOrganizationQuotaRequestValidationError{
+			err := SudoUpdateOrganizationQuotasRequestValidationError{
 				field:  "Quota",
 				reason: "oneof value cannot be a typed-nil",
 			}
@@ -6988,9 +6991,9 @@ func (m *SudoSetOrganizationQuotaRequest) validate(all bool) error {
 			errors = append(errors, err)
 		}
 		// no validation rules for QuotaSlotsTotal
-	case *SudoSetOrganizationQuotaRequest_QuotaSlotsPerDeployment:
+	case *SudoUpdateOrganizationQuotasRequest_QuotaSlotsPerDeployment:
 		if v == nil {
-			err := SudoSetOrganizationQuotaRequestValidationError{
+			err := SudoUpdateOrganizationQuotasRequestValidationError{
 				field:  "Quota",
 				reason: "oneof value cannot be a typed-nil",
 			}
@@ -7000,9 +7003,9 @@ func (m *SudoSetOrganizationQuotaRequest) validate(all bool) error {
 			errors = append(errors, err)
 		}
 		// no validation rules for QuotaSlotsPerDeployment
-	case *SudoSetOrganizationQuotaRequest_QuotaOutstandingInvites:
+	case *SudoUpdateOrganizationQuotasRequest_QuotaOutstandingInvites:
 		if v == nil {
-			err := SudoSetOrganizationQuotaRequestValidationError{
+			err := SudoUpdateOrganizationQuotasRequestValidationError{
 				field:  "Quota",
 				reason: "oneof value cannot be a typed-nil",
 			}
@@ -7017,19 +7020,20 @@ func (m *SudoSetOrganizationQuotaRequest) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return SudoSetOrganizationQuotaRequestMultiError(errors)
+		return SudoUpdateOrganizationQuotasRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// SudoSetOrganizationQuotaRequestMultiError is an error wrapping multiple
-// validation errors returned by SudoSetOrganizationQuotaRequest.ValidateAll()
-// if the designated constraints aren't met.
-type SudoSetOrganizationQuotaRequestMultiError []error
+// SudoUpdateOrganizationQuotasRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// SudoUpdateOrganizationQuotasRequest.ValidateAll() if the designated
+// constraints aren't met.
+type SudoUpdateOrganizationQuotasRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m SudoSetOrganizationQuotaRequestMultiError) Error() string {
+func (m SudoUpdateOrganizationQuotasRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -7038,12 +7042,12 @@ func (m SudoSetOrganizationQuotaRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m SudoSetOrganizationQuotaRequestMultiError) AllErrors() []error { return m }
+func (m SudoUpdateOrganizationQuotasRequestMultiError) AllErrors() []error { return m }
 
-// SudoSetOrganizationQuotaRequestValidationError is the validation error
-// returned by SudoSetOrganizationQuotaRequest.Validate if the designated
+// SudoUpdateOrganizationQuotasRequestValidationError is the validation error
+// returned by SudoUpdateOrganizationQuotasRequest.Validate if the designated
 // constraints aren't met.
-type SudoSetOrganizationQuotaRequestValidationError struct {
+type SudoUpdateOrganizationQuotasRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -7051,24 +7055,24 @@ type SudoSetOrganizationQuotaRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e SudoSetOrganizationQuotaRequestValidationError) Field() string { return e.field }
+func (e SudoUpdateOrganizationQuotasRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e SudoSetOrganizationQuotaRequestValidationError) Reason() string { return e.reason }
+func (e SudoUpdateOrganizationQuotasRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e SudoSetOrganizationQuotaRequestValidationError) Cause() error { return e.cause }
+func (e SudoUpdateOrganizationQuotasRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e SudoSetOrganizationQuotaRequestValidationError) Key() bool { return e.key }
+func (e SudoUpdateOrganizationQuotasRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e SudoSetOrganizationQuotaRequestValidationError) ErrorName() string {
-	return "SudoSetOrganizationQuotaRequestValidationError"
+func (e SudoUpdateOrganizationQuotasRequestValidationError) ErrorName() string {
+	return "SudoUpdateOrganizationQuotasRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e SudoSetOrganizationQuotaRequestValidationError) Error() string {
+func (e SudoUpdateOrganizationQuotasRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -7080,14 +7084,14 @@ func (e SudoSetOrganizationQuotaRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sSudoSetOrganizationQuotaRequest.%s: %s%s",
+		"invalid %sSudoUpdateOrganizationQuotasRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = SudoSetOrganizationQuotaRequestValidationError{}
+var _ error = SudoUpdateOrganizationQuotasRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -7095,25 +7099,25 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = SudoSetOrganizationQuotaRequestValidationError{}
+} = SudoUpdateOrganizationQuotasRequestValidationError{}
 
-// Validate checks the field values on SudoSetOrganizationQuotaResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *SudoSetOrganizationQuotaResponse) Validate() error {
+// Validate checks the field values on SudoUpdateOrganizationQuotasResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *SudoUpdateOrganizationQuotasResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on SudoSetOrganizationQuotaResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// SudoSetOrganizationQuotaResponseMultiError, or nil if none found.
-func (m *SudoSetOrganizationQuotaResponse) ValidateAll() error {
+// ValidateAll checks the field values on SudoUpdateOrganizationQuotasResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// SudoUpdateOrganizationQuotasResponseMultiError, or nil if none found.
+func (m *SudoUpdateOrganizationQuotasResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *SudoSetOrganizationQuotaResponse) validate(all bool) error {
+func (m *SudoUpdateOrganizationQuotasResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -7121,28 +7125,28 @@ func (m *SudoSetOrganizationQuotaResponse) validate(all bool) error {
 	var errors []error
 
 	if all {
-		switch v := interface{}(m.GetOrganizationQuota()).(type) {
+		switch v := interface{}(m.GetOrganizationQuotas()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, SudoSetOrganizationQuotaResponseValidationError{
-					field:  "OrganizationQuota",
+				errors = append(errors, SudoUpdateOrganizationQuotasResponseValidationError{
+					field:  "OrganizationQuotas",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, SudoSetOrganizationQuotaResponseValidationError{
-					field:  "OrganizationQuota",
+				errors = append(errors, SudoUpdateOrganizationQuotasResponseValidationError{
+					field:  "OrganizationQuotas",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetOrganizationQuota()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetOrganizationQuotas()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return SudoSetOrganizationQuotaResponseValidationError{
-				field:  "OrganizationQuota",
+			return SudoUpdateOrganizationQuotasResponseValidationError{
+				field:  "OrganizationQuotas",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -7150,20 +7154,20 @@ func (m *SudoSetOrganizationQuotaResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return SudoSetOrganizationQuotaResponseMultiError(errors)
+		return SudoUpdateOrganizationQuotasResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// SudoSetOrganizationQuotaResponseMultiError is an error wrapping multiple
+// SudoUpdateOrganizationQuotasResponseMultiError is an error wrapping multiple
 // validation errors returned by
-// SudoSetOrganizationQuotaResponse.ValidateAll() if the designated
+// SudoUpdateOrganizationQuotasResponse.ValidateAll() if the designated
 // constraints aren't met.
-type SudoSetOrganizationQuotaResponseMultiError []error
+type SudoUpdateOrganizationQuotasResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m SudoSetOrganizationQuotaResponseMultiError) Error() string {
+func (m SudoUpdateOrganizationQuotasResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -7172,12 +7176,12 @@ func (m SudoSetOrganizationQuotaResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m SudoSetOrganizationQuotaResponseMultiError) AllErrors() []error { return m }
+func (m SudoUpdateOrganizationQuotasResponseMultiError) AllErrors() []error { return m }
 
-// SudoSetOrganizationQuotaResponseValidationError is the validation error
-// returned by SudoSetOrganizationQuotaResponse.Validate if the designated
+// SudoUpdateOrganizationQuotasResponseValidationError is the validation error
+// returned by SudoUpdateOrganizationQuotasResponse.Validate if the designated
 // constraints aren't met.
-type SudoSetOrganizationQuotaResponseValidationError struct {
+type SudoUpdateOrganizationQuotasResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -7185,24 +7189,24 @@ type SudoSetOrganizationQuotaResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e SudoSetOrganizationQuotaResponseValidationError) Field() string { return e.field }
+func (e SudoUpdateOrganizationQuotasResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e SudoSetOrganizationQuotaResponseValidationError) Reason() string { return e.reason }
+func (e SudoUpdateOrganizationQuotasResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e SudoSetOrganizationQuotaResponseValidationError) Cause() error { return e.cause }
+func (e SudoUpdateOrganizationQuotasResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e SudoSetOrganizationQuotaResponseValidationError) Key() bool { return e.key }
+func (e SudoUpdateOrganizationQuotasResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e SudoSetOrganizationQuotaResponseValidationError) ErrorName() string {
-	return "SudoSetOrganizationQuotaResponseValidationError"
+func (e SudoUpdateOrganizationQuotasResponseValidationError) ErrorName() string {
+	return "SudoUpdateOrganizationQuotasResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e SudoSetOrganizationQuotaResponseValidationError) Error() string {
+func (e SudoUpdateOrganizationQuotasResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -7214,14 +7218,14 @@ func (e SudoSetOrganizationQuotaResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sSudoSetOrganizationQuotaResponse.%s: %s%s",
+		"invalid %sSudoUpdateOrganizationQuotasResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = SudoSetOrganizationQuotaResponseValidationError{}
+var _ error = SudoUpdateOrganizationQuotasResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -7229,24 +7233,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = SudoSetOrganizationQuotaResponseValidationError{}
+} = SudoUpdateOrganizationQuotasResponseValidationError{}
 
-// Validate checks the field values on SudoSetUserQuotaRequest with the rules
-// defined in the proto definition for this message. If any rules are
+// Validate checks the field values on SudoUpdateUserQuotasRequest with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *SudoSetUserQuotaRequest) Validate() error {
+func (m *SudoUpdateUserQuotasRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on SudoSetUserQuotaRequest with the
+// ValidateAll checks the field values on SudoUpdateUserQuotasRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// SudoSetUserQuotaRequestMultiError, or nil if none found.
-func (m *SudoSetUserQuotaRequest) ValidateAll() error {
+// SudoUpdateUserQuotasRequestMultiError, or nil if none found.
+func (m *SudoUpdateUserQuotasRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *SudoSetUserQuotaRequest) validate(all bool) error {
+func (m *SudoUpdateUserQuotasRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -7258,19 +7262,19 @@ func (m *SudoSetUserQuotaRequest) validate(all bool) error {
 	// no validation rules for QuotaSingleuserOrgs
 
 	if len(errors) > 0 {
-		return SudoSetUserQuotaRequestMultiError(errors)
+		return SudoUpdateUserQuotasRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// SudoSetUserQuotaRequestMultiError is an error wrapping multiple validation
-// errors returned by SudoSetUserQuotaRequest.ValidateAll() if the designated
-// constraints aren't met.
-type SudoSetUserQuotaRequestMultiError []error
+// SudoUpdateUserQuotasRequestMultiError is an error wrapping multiple
+// validation errors returned by SudoUpdateUserQuotasRequest.ValidateAll() if
+// the designated constraints aren't met.
+type SudoUpdateUserQuotasRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m SudoSetUserQuotaRequestMultiError) Error() string {
+func (m SudoUpdateUserQuotasRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -7279,11 +7283,12 @@ func (m SudoSetUserQuotaRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m SudoSetUserQuotaRequestMultiError) AllErrors() []error { return m }
+func (m SudoUpdateUserQuotasRequestMultiError) AllErrors() []error { return m }
 
-// SudoSetUserQuotaRequestValidationError is the validation error returned by
-// SudoSetUserQuotaRequest.Validate if the designated constraints aren't met.
-type SudoSetUserQuotaRequestValidationError struct {
+// SudoUpdateUserQuotasRequestValidationError is the validation error returned
+// by SudoUpdateUserQuotasRequest.Validate if the designated constraints
+// aren't met.
+type SudoUpdateUserQuotasRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -7291,24 +7296,24 @@ type SudoSetUserQuotaRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e SudoSetUserQuotaRequestValidationError) Field() string { return e.field }
+func (e SudoUpdateUserQuotasRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e SudoSetUserQuotaRequestValidationError) Reason() string { return e.reason }
+func (e SudoUpdateUserQuotasRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e SudoSetUserQuotaRequestValidationError) Cause() error { return e.cause }
+func (e SudoUpdateUserQuotasRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e SudoSetUserQuotaRequestValidationError) Key() bool { return e.key }
+func (e SudoUpdateUserQuotasRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e SudoSetUserQuotaRequestValidationError) ErrorName() string {
-	return "SudoSetUserQuotaRequestValidationError"
+func (e SudoUpdateUserQuotasRequestValidationError) ErrorName() string {
+	return "SudoUpdateUserQuotasRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e SudoSetUserQuotaRequestValidationError) Error() string {
+func (e SudoUpdateUserQuotasRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -7320,14 +7325,14 @@ func (e SudoSetUserQuotaRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sSudoSetUserQuotaRequest.%s: %s%s",
+		"invalid %sSudoUpdateUserQuotasRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = SudoSetUserQuotaRequestValidationError{}
+var _ error = SudoUpdateUserQuotasRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -7335,24 +7340,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = SudoSetUserQuotaRequestValidationError{}
+} = SudoUpdateUserQuotasRequestValidationError{}
 
-// Validate checks the field values on SudoSetUserQuotaResponse with the rules
-// defined in the proto definition for this message. If any rules are
+// Validate checks the field values on SudoUpdateUserQuotasResponse with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *SudoSetUserQuotaResponse) Validate() error {
+func (m *SudoUpdateUserQuotasResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on SudoSetUserQuotaResponse with the
+// ValidateAll checks the field values on SudoUpdateUserQuotasResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// SudoSetUserQuotaResponseMultiError, or nil if none found.
-func (m *SudoSetUserQuotaResponse) ValidateAll() error {
+// SudoUpdateUserQuotasResponseMultiError, or nil if none found.
+func (m *SudoUpdateUserQuotasResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *SudoSetUserQuotaResponse) validate(all bool) error {
+func (m *SudoUpdateUserQuotasResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -7360,28 +7365,28 @@ func (m *SudoSetUserQuotaResponse) validate(all bool) error {
 	var errors []error
 
 	if all {
-		switch v := interface{}(m.GetUserQuota()).(type) {
+		switch v := interface{}(m.GetUserQuotas()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, SudoSetUserQuotaResponseValidationError{
-					field:  "UserQuota",
+				errors = append(errors, SudoUpdateUserQuotasResponseValidationError{
+					field:  "UserQuotas",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, SudoSetUserQuotaResponseValidationError{
-					field:  "UserQuota",
+				errors = append(errors, SudoUpdateUserQuotasResponseValidationError{
+					field:  "UserQuotas",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetUserQuota()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetUserQuotas()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return SudoSetUserQuotaResponseValidationError{
-				field:  "UserQuota",
+			return SudoUpdateUserQuotasResponseValidationError{
+				field:  "UserQuotas",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -7389,19 +7394,19 @@ func (m *SudoSetUserQuotaResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return SudoSetUserQuotaResponseMultiError(errors)
+		return SudoUpdateUserQuotasResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// SudoSetUserQuotaResponseMultiError is an error wrapping multiple validation
-// errors returned by SudoSetUserQuotaResponse.ValidateAll() if the designated
-// constraints aren't met.
-type SudoSetUserQuotaResponseMultiError []error
+// SudoUpdateUserQuotasResponseMultiError is an error wrapping multiple
+// validation errors returned by SudoUpdateUserQuotasResponse.ValidateAll() if
+// the designated constraints aren't met.
+type SudoUpdateUserQuotasResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m SudoSetUserQuotaResponseMultiError) Error() string {
+func (m SudoUpdateUserQuotasResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -7410,11 +7415,12 @@ func (m SudoSetUserQuotaResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m SudoSetUserQuotaResponseMultiError) AllErrors() []error { return m }
+func (m SudoUpdateUserQuotasResponseMultiError) AllErrors() []error { return m }
 
-// SudoSetUserQuotaResponseValidationError is the validation error returned by
-// SudoSetUserQuotaResponse.Validate if the designated constraints aren't met.
-type SudoSetUserQuotaResponseValidationError struct {
+// SudoUpdateUserQuotasResponseValidationError is the validation error returned
+// by SudoUpdateUserQuotasResponse.Validate if the designated constraints
+// aren't met.
+type SudoUpdateUserQuotasResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -7422,24 +7428,24 @@ type SudoSetUserQuotaResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e SudoSetUserQuotaResponseValidationError) Field() string { return e.field }
+func (e SudoUpdateUserQuotasResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e SudoSetUserQuotaResponseValidationError) Reason() string { return e.reason }
+func (e SudoUpdateUserQuotasResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e SudoSetUserQuotaResponseValidationError) Cause() error { return e.cause }
+func (e SudoUpdateUserQuotasResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e SudoSetUserQuotaResponseValidationError) Key() bool { return e.key }
+func (e SudoUpdateUserQuotasResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e SudoSetUserQuotaResponseValidationError) ErrorName() string {
-	return "SudoSetUserQuotaResponseValidationError"
+func (e SudoUpdateUserQuotasResponseValidationError) ErrorName() string {
+	return "SudoUpdateUserQuotasResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e SudoSetUserQuotaResponseValidationError) Error() string {
+func (e SudoUpdateUserQuotasResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -7451,14 +7457,14 @@ func (e SudoSetUserQuotaResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sSudoSetUserQuotaResponse.%s: %s%s",
+		"invalid %sSudoUpdateUserQuotasResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = SudoSetUserQuotaResponseValidationError{}
+var _ error = SudoUpdateUserQuotasResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -7466,7 +7472,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = SudoSetUserQuotaResponseValidationError{}
+} = SudoUpdateUserQuotasResponseValidationError{}
 
 // Validate checks the field values on ListProjectMembersRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -11396,22 +11402,22 @@ var _ interface {
 	ErrorName() string
 } = OrganizationValidationError{}
 
-// Validate checks the field values on UserQuota with the rules defined in the
+// Validate checks the field values on UserQuotas with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
-func (m *UserQuota) Validate() error {
+func (m *UserQuotas) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on UserQuota with the rules defined in
+// ValidateAll checks the field values on UserQuotas with the rules defined in
 // the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in UserQuotaMultiError, or nil
-// if none found.
-func (m *UserQuota) ValidateAll() error {
+// result is a list of violation errors wrapped in UserQuotasMultiError, or
+// nil if none found.
+func (m *UserQuotas) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *UserQuota) validate(all bool) error {
+func (m *UserQuotas) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -11421,18 +11427,18 @@ func (m *UserQuota) validate(all bool) error {
 	// no validation rules for QuotaSingleuserOrgs
 
 	if len(errors) > 0 {
-		return UserQuotaMultiError(errors)
+		return UserQuotasMultiError(errors)
 	}
 
 	return nil
 }
 
-// UserQuotaMultiError is an error wrapping multiple validation errors returned
-// by UserQuota.ValidateAll() if the designated constraints aren't met.
-type UserQuotaMultiError []error
+// UserQuotasMultiError is an error wrapping multiple validation errors
+// returned by UserQuotas.ValidateAll() if the designated constraints aren't met.
+type UserQuotasMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m UserQuotaMultiError) Error() string {
+func (m UserQuotasMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -11441,11 +11447,11 @@ func (m UserQuotaMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m UserQuotaMultiError) AllErrors() []error { return m }
+func (m UserQuotasMultiError) AllErrors() []error { return m }
 
-// UserQuotaValidationError is the validation error returned by
-// UserQuota.Validate if the designated constraints aren't met.
-type UserQuotaValidationError struct {
+// UserQuotasValidationError is the validation error returned by
+// UserQuotas.Validate if the designated constraints aren't met.
+type UserQuotasValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -11453,22 +11459,22 @@ type UserQuotaValidationError struct {
 }
 
 // Field function returns field value.
-func (e UserQuotaValidationError) Field() string { return e.field }
+func (e UserQuotasValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e UserQuotaValidationError) Reason() string { return e.reason }
+func (e UserQuotasValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e UserQuotaValidationError) Cause() error { return e.cause }
+func (e UserQuotasValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e UserQuotaValidationError) Key() bool { return e.key }
+func (e UserQuotasValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e UserQuotaValidationError) ErrorName() string { return "UserQuotaValidationError" }
+func (e UserQuotasValidationError) ErrorName() string { return "UserQuotasValidationError" }
 
 // Error satisfies the builtin error interface
-func (e UserQuotaValidationError) Error() string {
+func (e UserQuotasValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -11480,14 +11486,14 @@ func (e UserQuotaValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sUserQuota.%s: %s%s",
+		"invalid %sUserQuotas.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = UserQuotaValidationError{}
+var _ error = UserQuotasValidationError{}
 
 var _ interface {
 	Field() string
@@ -11495,24 +11501,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = UserQuotaValidationError{}
+} = UserQuotasValidationError{}
 
-// Validate checks the field values on OrganizationQuota with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *OrganizationQuota) Validate() error {
+// Validate checks the field values on OrganizationQuotas with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *OrganizationQuotas) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on OrganizationQuota with the rules
+// ValidateAll checks the field values on OrganizationQuotas with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// OrganizationQuotaMultiError, or nil if none found.
-func (m *OrganizationQuota) ValidateAll() error {
+// OrganizationQuotasMultiError, or nil if none found.
+func (m *OrganizationQuotas) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *OrganizationQuota) validate(all bool) error {
+func (m *OrganizationQuotas) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -11530,19 +11536,19 @@ func (m *OrganizationQuota) validate(all bool) error {
 	// no validation rules for QuotaOutstandingInvites
 
 	if len(errors) > 0 {
-		return OrganizationQuotaMultiError(errors)
+		return OrganizationQuotasMultiError(errors)
 	}
 
 	return nil
 }
 
-// OrganizationQuotaMultiError is an error wrapping multiple validation errors
-// returned by OrganizationQuota.ValidateAll() if the designated constraints
+// OrganizationQuotasMultiError is an error wrapping multiple validation errors
+// returned by OrganizationQuotas.ValidateAll() if the designated constraints
 // aren't met.
-type OrganizationQuotaMultiError []error
+type OrganizationQuotasMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m OrganizationQuotaMultiError) Error() string {
+func (m OrganizationQuotasMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -11551,11 +11557,11 @@ func (m OrganizationQuotaMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m OrganizationQuotaMultiError) AllErrors() []error { return m }
+func (m OrganizationQuotasMultiError) AllErrors() []error { return m }
 
-// OrganizationQuotaValidationError is the validation error returned by
-// OrganizationQuota.Validate if the designated constraints aren't met.
-type OrganizationQuotaValidationError struct {
+// OrganizationQuotasValidationError is the validation error returned by
+// OrganizationQuotas.Validate if the designated constraints aren't met.
+type OrganizationQuotasValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -11563,24 +11569,24 @@ type OrganizationQuotaValidationError struct {
 }
 
 // Field function returns field value.
-func (e OrganizationQuotaValidationError) Field() string { return e.field }
+func (e OrganizationQuotasValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e OrganizationQuotaValidationError) Reason() string { return e.reason }
+func (e OrganizationQuotasValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e OrganizationQuotaValidationError) Cause() error { return e.cause }
+func (e OrganizationQuotasValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e OrganizationQuotaValidationError) Key() bool { return e.key }
+func (e OrganizationQuotasValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e OrganizationQuotaValidationError) ErrorName() string {
-	return "OrganizationQuotaValidationError"
+func (e OrganizationQuotasValidationError) ErrorName() string {
+	return "OrganizationQuotasValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e OrganizationQuotaValidationError) Error() string {
+func (e OrganizationQuotasValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -11592,14 +11598,14 @@ func (e OrganizationQuotaValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sOrganizationQuota.%s: %s%s",
+		"invalid %sOrganizationQuotas.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = OrganizationQuotaValidationError{}
+var _ error = OrganizationQuotasValidationError{}
 
 var _ interface {
 	Field() string
@@ -11607,7 +11613,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = OrganizationQuotaValidationError{}
+} = OrganizationQuotasValidationError{}
 
 // Validate checks the field values on Project with the rules defined in the
 // proto definition for this message. If any rules are violated, the first

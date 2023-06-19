@@ -140,20 +140,7 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, description=$2, updated_on=now() WHERE id=$3 RETURNING *", opts.Name, opts.Description, id).StructScan(res)
-	if err != nil {
-		return nil, parseErr("org", err)
-	}
-	return res, nil
-}
-
-func (c *connection) UpdateOrganizationQuota(ctx context.Context, id string, opts *database.UpdateOrganizationQuotaOptions) (*database.Organization, error) {
-	if err := database.Validate(opts); err != nil {
-		return nil, err
-	}
-
-	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET quota_projects=$1, quota_deployments=$2, quota_slots_total=$3, quota_slots_per_deployment=$4, quota_outstanding_invites=$5, updated_on=now() WHERE id=$6 RETURNING *", opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, description=$2, quota_projects=$3, quota_deployments=$4, quota_slots_total=$5, quota_slots_per_deployment=$6, quota_outstanding_invites=$7, updated_on=now() WHERE id=$8 RETURNING *", opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -522,24 +509,12 @@ func (c *connection) UpdateUser(ctx context.Context, id string, opts *database.U
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, updated_on=now() WHERE id=$1 RETURNING *",
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, quota_singleuser_orgs=$5, updated_on=now() WHERE id=$1 RETURNING *",
 		id,
 		opts.DisplayName,
 		opts.PhotoURL,
-		opts.GithubUsername).StructScan(res)
-	if err != nil {
-		return nil, parseErr("user", err)
-	}
-	return res, nil
-}
-
-func (c *connection) UpdateUserQuota(ctx context.Context, id string, opts *database.UpdateUserQuotaOptions) (*database.User, error) {
-	if err := database.Validate(opts); err != nil {
-		return nil, err
-	}
-
-	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET quota_singleuser_orgs=$1, updated_on=now() WHERE id=$2 RETURNING *", opts.QuotaSingleuserOrgs, id).StructScan(res)
+		opts.GithubUsername,
+		opts.QuotaSingleuserOrgs).StructScan(res)
 	if err != nil {
 		return nil, parseErr("user", err)
 	}

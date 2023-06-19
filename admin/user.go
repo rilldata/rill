@@ -22,9 +22,10 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	user, err := s.DB.FindUserByEmail(ctx, email)
 	if err == nil {
 		return s.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
-			DisplayName:    name,
-			PhotoURL:       photoURL,
-			GithubUsername: user.GithubUsername,
+			DisplayName:         name,
+			PhotoURL:            photoURL,
+			GithubUsername:      user.GithubUsername,
+			QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
 		})
 	} else if !errors.Is(err, database.ErrNotFound) {
 		return nil, err

@@ -928,13 +928,13 @@ paths:
         - AdminService
   /v1/superuser/quotas/organization:
     get:
-      summary: SudoGetOrganizationQuota returns quotas available for orgs
-      operationId: AdminService_SudoGetOrganizationQuota
+      summary: SudoGetOrganizationQuotas returns quotas available for orgs
+      operationId: AdminService_SudoGetOrganizationQuotas
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1SudoGetOrganizationQuotaResponse'
+            $ref: '#/definitions/v1SudoGetOrganizationQuotasResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -947,13 +947,13 @@ paths:
       tags:
         - AdminService
     post:
-      summary: SudoSetOrganizationQuota update the quotas available for orgs
-      operationId: AdminService_SudoSetOrganizationQuota
+      summary: SudoUpdateOrganizationQuotas update the quotas available for orgs
+      operationId: AdminService_SudoUpdateOrganizationQuotas
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1SudoSetOrganizationQuotaResponse'
+            $ref: '#/definitions/v1SudoUpdateOrganizationQuotasResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -963,18 +963,18 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/v1SudoSetOrganizationQuotaRequest'
+            $ref: '#/definitions/v1SudoUpdateOrganizationQuotasRequest'
       tags:
         - AdminService
   /v1/superuser/quotas/user:
     get:
-      summary: SudoGetUserQuota returns quotas available for users
-      operationId: AdminService_SudoGetUserQuota
+      summary: SudoGetUserQuotas returns quotas available for users
+      operationId: AdminService_SudoGetUserQuotas
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1SudoGetUserQuotaResponse'
+            $ref: '#/definitions/v1SudoGetUserQuotasResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -987,13 +987,13 @@ paths:
       tags:
         - AdminService
     post:
-      summary: SudoSetUserQuota update the quotas for users
-      operationId: AdminService_SudoSetUserQuota
+      summary: SudoUpdateUserQuotas update the quotas for users
+      operationId: AdminService_SudoUpdateUserQuotas
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1SudoSetUserQuotaResponse'
+            $ref: '#/definitions/v1SudoUpdateUserQuotasResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1003,7 +1003,7 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/v1SudoSetUserQuotaRequest'
+            $ref: '#/definitions/v1SudoUpdateUserQuotasRequest'
       tags:
         - AdminService
   /v1/superuser/resource:
@@ -1403,7 +1403,7 @@ definitions:
         type: boolean
       manageOrgMembers:
         type: boolean
-  v1OrganizationQuota:
+  v1OrganizationQuotas:
     type: object
     properties:
       quotaProjects:
@@ -1527,12 +1527,12 @@ definitions:
         type: boolean
   v1SetSuperuserResponse:
     type: object
-  v1SudoGetOrganizationQuotaResponse:
+  v1SudoGetOrganizationQuotasResponse:
     type: object
     properties:
-      organizationQuota:
-        $ref: '#/definitions/v1OrganizationQuota'
-    title: SudoGetOrganizationQuotaResponse
+      organizationQuotas:
+        $ref: '#/definitions/v1OrganizationQuotas'
+    title: SudoGetOrganizationQuotasResponse
   v1SudoGetResourceResponse:
     type: object
     properties:
@@ -1547,13 +1547,13 @@ definitions:
       instance:
         $ref: '#/definitions/v1Deployment'
     title: SudoGetResourceResponse
-  v1SudoGetUserQuotaResponse:
+  v1SudoGetUserQuotasResponse:
     type: object
     properties:
-      userQuota:
-        $ref: '#/definitions/v1UserQuota'
-    title: SudoGetUserQuotaResponse
-  v1SudoSetOrganizationQuotaRequest:
+      userQuotas:
+        $ref: '#/definitions/v1UserQuotas'
+    title: SudoGetUserQuotasResponse
+  v1SudoUpdateOrganizationQuotasRequest:
     type: object
     properties:
       orgName:
@@ -1573,14 +1573,14 @@ definitions:
       quotaOutstandingInvites:
         type: integer
         format: int64
-    title: SudoSetOrganizationQuotaRequest
-  v1SudoSetOrganizationQuotaResponse:
+    title: SudoUpdateOrganizationQuotasRequest
+  v1SudoUpdateOrganizationQuotasResponse:
     type: object
     properties:
-      organizationQuota:
-        $ref: '#/definitions/v1OrganizationQuota'
-    title: SudoSetOrganizationQuotaResponse
-  v1SudoSetUserQuotaRequest:
+      organizationQuotas:
+        $ref: '#/definitions/v1OrganizationQuotas'
+    title: SudoUpdateOrganizationQuotasResponse
+  v1SudoUpdateUserQuotasRequest:
     type: object
     properties:
       email:
@@ -1588,13 +1588,13 @@ definitions:
       quotaSingleuserOrgs:
         type: integer
         format: int64
-    title: SudoSetUserQuotaRequest
-  v1SudoSetUserQuotaResponse:
+    title: SudoUpdateUserQuotasRequest
+  v1SudoUpdateUserQuotasResponse:
     type: object
     properties:
-      userQuota:
-        $ref: '#/definitions/v1UserQuota'
-    title: SudoSetUserQuotaResponse
+      userQuotas:
+        $ref: '#/definitions/v1UserQuotas'
+    title: SudoUpdateUserQuotasResponse
   v1TriggerReconcileResponse:
     type: object
   v1TriggerRedeployResponse:
@@ -1644,7 +1644,7 @@ definitions:
         type: string
       invitedBy:
         type: string
-  v1UserQuota:
+  v1UserQuotas:
     type: object
     properties:
       quotaSingleuserOrgs:

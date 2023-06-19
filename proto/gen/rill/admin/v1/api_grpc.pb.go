@@ -58,10 +58,10 @@ const (
 	AdminService_ListSuperusers_FullMethodName               = "/rill.admin.v1.AdminService/ListSuperusers"
 	AdminService_SetSuperuser_FullMethodName                 = "/rill.admin.v1.AdminService/SetSuperuser"
 	AdminService_SudoGetResource_FullMethodName              = "/rill.admin.v1.AdminService/SudoGetResource"
-	AdminService_SudoGetUserQuota_FullMethodName             = "/rill.admin.v1.AdminService/SudoGetUserQuota"
-	AdminService_SudoSetUserQuota_FullMethodName             = "/rill.admin.v1.AdminService/SudoSetUserQuota"
-	AdminService_SudoGetOrganizationQuota_FullMethodName     = "/rill.admin.v1.AdminService/SudoGetOrganizationQuota"
-	AdminService_SudoSetOrganizationQuota_FullMethodName     = "/rill.admin.v1.AdminService/SudoSetOrganizationQuota"
+	AdminService_SudoGetUserQuotas_FullMethodName            = "/rill.admin.v1.AdminService/SudoGetUserQuotas"
+	AdminService_SudoUpdateUserQuotas_FullMethodName         = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
+	AdminService_SudoGetOrganizationQuotas_FullMethodName    = "/rill.admin.v1.AdminService/SudoGetOrganizationQuotas"
+	AdminService_SudoUpdateOrganizationQuotas_FullMethodName = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -147,14 +147,14 @@ type AdminServiceClient interface {
 	SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
 	SudoGetResource(ctx context.Context, in *SudoGetResourceRequest, opts ...grpc.CallOption) (*SudoGetResourceResponse, error)
-	// SudoGetUserQuota returns quotas available for users
-	SudoGetUserQuota(ctx context.Context, in *SudoGetUserQuotaRequest, opts ...grpc.CallOption) (*SudoGetUserQuotaResponse, error)
-	// SudoSetUserQuota update the quotas for users
-	SudoSetUserQuota(ctx context.Context, in *SudoSetUserQuotaRequest, opts ...grpc.CallOption) (*SudoSetUserQuotaResponse, error)
-	// SudoGetOrganizationQuota returns quotas available for orgs
-	SudoGetOrganizationQuota(ctx context.Context, in *SudoGetOrganizationQuotaRequest, opts ...grpc.CallOption) (*SudoGetOrganizationQuotaResponse, error)
-	// SudoSetOrganizationQuota update the quotas available for orgs
-	SudoSetOrganizationQuota(ctx context.Context, in *SudoSetOrganizationQuotaRequest, opts ...grpc.CallOption) (*SudoSetOrganizationQuotaResponse, error)
+	// SudoGetUserQuotas returns quotas available for users
+	SudoGetUserQuotas(ctx context.Context, in *SudoGetUserQuotasRequest, opts ...grpc.CallOption) (*SudoGetUserQuotasResponse, error)
+	// SudoUpdateUserQuotas update the quotas for users
+	SudoUpdateUserQuotas(ctx context.Context, in *SudoUpdateUserQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateUserQuotasResponse, error)
+	// SudoGetOrganizationQuotas returns quotas available for orgs
+	SudoGetOrganizationQuotas(ctx context.Context, in *SudoGetOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoGetOrganizationQuotasResponse, error)
+	// SudoUpdateOrganizationQuotas update the quotas available for orgs
+	SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error)
 }
 
 type adminServiceClient struct {
@@ -516,36 +516,36 @@ func (c *adminServiceClient) SudoGetResource(ctx context.Context, in *SudoGetRes
 	return out, nil
 }
 
-func (c *adminServiceClient) SudoGetUserQuota(ctx context.Context, in *SudoGetUserQuotaRequest, opts ...grpc.CallOption) (*SudoGetUserQuotaResponse, error) {
-	out := new(SudoGetUserQuotaResponse)
-	err := c.cc.Invoke(ctx, AdminService_SudoGetUserQuota_FullMethodName, in, out, opts...)
+func (c *adminServiceClient) SudoGetUserQuotas(ctx context.Context, in *SudoGetUserQuotasRequest, opts ...grpc.CallOption) (*SudoGetUserQuotasResponse, error) {
+	out := new(SudoGetUserQuotasResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoGetUserQuotas_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *adminServiceClient) SudoSetUserQuota(ctx context.Context, in *SudoSetUserQuotaRequest, opts ...grpc.CallOption) (*SudoSetUserQuotaResponse, error) {
-	out := new(SudoSetUserQuotaResponse)
-	err := c.cc.Invoke(ctx, AdminService_SudoSetUserQuota_FullMethodName, in, out, opts...)
+func (c *adminServiceClient) SudoUpdateUserQuotas(ctx context.Context, in *SudoUpdateUserQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateUserQuotasResponse, error) {
+	out := new(SudoUpdateUserQuotasResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoUpdateUserQuotas_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *adminServiceClient) SudoGetOrganizationQuota(ctx context.Context, in *SudoGetOrganizationQuotaRequest, opts ...grpc.CallOption) (*SudoGetOrganizationQuotaResponse, error) {
-	out := new(SudoGetOrganizationQuotaResponse)
-	err := c.cc.Invoke(ctx, AdminService_SudoGetOrganizationQuota_FullMethodName, in, out, opts...)
+func (c *adminServiceClient) SudoGetOrganizationQuotas(ctx context.Context, in *SudoGetOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoGetOrganizationQuotasResponse, error) {
+	out := new(SudoGetOrganizationQuotasResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoGetOrganizationQuotas_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *adminServiceClient) SudoSetOrganizationQuota(ctx context.Context, in *SudoSetOrganizationQuotaRequest, opts ...grpc.CallOption) (*SudoSetOrganizationQuotaResponse, error) {
-	out := new(SudoSetOrganizationQuotaResponse)
-	err := c.cc.Invoke(ctx, AdminService_SudoSetOrganizationQuota_FullMethodName, in, out, opts...)
+func (c *adminServiceClient) SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error) {
+	out := new(SudoUpdateOrganizationQuotasResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoUpdateOrganizationQuotas_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -635,14 +635,14 @@ type AdminServiceServer interface {
 	SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
 	SudoGetResource(context.Context, *SudoGetResourceRequest) (*SudoGetResourceResponse, error)
-	// SudoGetUserQuota returns quotas available for users
-	SudoGetUserQuota(context.Context, *SudoGetUserQuotaRequest) (*SudoGetUserQuotaResponse, error)
-	// SudoSetUserQuota update the quotas for users
-	SudoSetUserQuota(context.Context, *SudoSetUserQuotaRequest) (*SudoSetUserQuotaResponse, error)
-	// SudoGetOrganizationQuota returns quotas available for orgs
-	SudoGetOrganizationQuota(context.Context, *SudoGetOrganizationQuotaRequest) (*SudoGetOrganizationQuotaResponse, error)
-	// SudoSetOrganizationQuota update the quotas available for orgs
-	SudoSetOrganizationQuota(context.Context, *SudoSetOrganizationQuotaRequest) (*SudoSetOrganizationQuotaResponse, error)
+	// SudoGetUserQuotas returns quotas available for users
+	SudoGetUserQuotas(context.Context, *SudoGetUserQuotasRequest) (*SudoGetUserQuotasResponse, error)
+	// SudoUpdateUserQuotas update the quotas for users
+	SudoUpdateUserQuotas(context.Context, *SudoUpdateUserQuotasRequest) (*SudoUpdateUserQuotasResponse, error)
+	// SudoGetOrganizationQuotas returns quotas available for orgs
+	SudoGetOrganizationQuotas(context.Context, *SudoGetOrganizationQuotasRequest) (*SudoGetOrganizationQuotasResponse, error)
+	// SudoUpdateOrganizationQuotas update the quotas available for orgs
+	SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -767,17 +767,17 @@ func (UnimplementedAdminServiceServer) SetSuperuser(context.Context, *SetSuperus
 func (UnimplementedAdminServiceServer) SudoGetResource(context.Context, *SudoGetResourceRequest) (*SudoGetResourceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoGetResource not implemented")
 }
-func (UnimplementedAdminServiceServer) SudoGetUserQuota(context.Context, *SudoGetUserQuotaRequest) (*SudoGetUserQuotaResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SudoGetUserQuota not implemented")
+func (UnimplementedAdminServiceServer) SudoGetUserQuotas(context.Context, *SudoGetUserQuotasRequest) (*SudoGetUserQuotasResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoGetUserQuotas not implemented")
 }
-func (UnimplementedAdminServiceServer) SudoSetUserQuota(context.Context, *SudoSetUserQuotaRequest) (*SudoSetUserQuotaResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SudoSetUserQuota not implemented")
+func (UnimplementedAdminServiceServer) SudoUpdateUserQuotas(context.Context, *SudoUpdateUserQuotasRequest) (*SudoUpdateUserQuotasResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateUserQuotas not implemented")
 }
-func (UnimplementedAdminServiceServer) SudoGetOrganizationQuota(context.Context, *SudoGetOrganizationQuotaRequest) (*SudoGetOrganizationQuotaResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SudoGetOrganizationQuota not implemented")
+func (UnimplementedAdminServiceServer) SudoGetOrganizationQuotas(context.Context, *SudoGetOrganizationQuotasRequest) (*SudoGetOrganizationQuotasResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoGetOrganizationQuotas not implemented")
 }
-func (UnimplementedAdminServiceServer) SudoSetOrganizationQuota(context.Context, *SudoSetOrganizationQuotaRequest) (*SudoSetOrganizationQuotaResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SudoSetOrganizationQuota not implemented")
+func (UnimplementedAdminServiceServer) SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationQuotas not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -1494,74 +1494,74 @@ func _AdminService_SudoGetResource_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_SudoGetUserQuota_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SudoGetUserQuotaRequest)
+func _AdminService_SudoGetUserQuotas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoGetUserQuotasRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).SudoGetUserQuota(ctx, in)
+		return srv.(AdminServiceServer).SudoGetUserQuotas(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_SudoGetUserQuota_FullMethodName,
+		FullMethod: AdminService_SudoGetUserQuotas_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).SudoGetUserQuota(ctx, req.(*SudoGetUserQuotaRequest))
+		return srv.(AdminServiceServer).SudoGetUserQuotas(ctx, req.(*SudoGetUserQuotasRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_SudoSetUserQuota_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SudoSetUserQuotaRequest)
+func _AdminService_SudoUpdateUserQuotas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoUpdateUserQuotasRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).SudoSetUserQuota(ctx, in)
+		return srv.(AdminServiceServer).SudoUpdateUserQuotas(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_SudoSetUserQuota_FullMethodName,
+		FullMethod: AdminService_SudoUpdateUserQuotas_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).SudoSetUserQuota(ctx, req.(*SudoSetUserQuotaRequest))
+		return srv.(AdminServiceServer).SudoUpdateUserQuotas(ctx, req.(*SudoUpdateUserQuotasRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_SudoGetOrganizationQuota_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SudoGetOrganizationQuotaRequest)
+func _AdminService_SudoGetOrganizationQuotas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoGetOrganizationQuotasRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).SudoGetOrganizationQuota(ctx, in)
+		return srv.(AdminServiceServer).SudoGetOrganizationQuotas(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_SudoGetOrganizationQuota_FullMethodName,
+		FullMethod: AdminService_SudoGetOrganizationQuotas_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).SudoGetOrganizationQuota(ctx, req.(*SudoGetOrganizationQuotaRequest))
+		return srv.(AdminServiceServer).SudoGetOrganizationQuotas(ctx, req.(*SudoGetOrganizationQuotasRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_SudoSetOrganizationQuota_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SudoSetOrganizationQuotaRequest)
+func _AdminService_SudoUpdateOrganizationQuotas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoUpdateOrganizationQuotasRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).SudoSetOrganizationQuota(ctx, in)
+		return srv.(AdminServiceServer).SudoUpdateOrganizationQuotas(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_SudoSetOrganizationQuota_FullMethodName,
+		FullMethod: AdminService_SudoUpdateOrganizationQuotas_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).SudoSetOrganizationQuota(ctx, req.(*SudoSetOrganizationQuotaRequest))
+		return srv.(AdminServiceServer).SudoUpdateOrganizationQuotas(ctx, req.(*SudoUpdateOrganizationQuotasRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1730,20 +1730,20 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_SudoGetResource_Handler,
 		},
 		{
-			MethodName: "SudoGetUserQuota",
-			Handler:    _AdminService_SudoGetUserQuota_Handler,
+			MethodName: "SudoGetUserQuotas",
+			Handler:    _AdminService_SudoGetUserQuotas_Handler,
 		},
 		{
-			MethodName: "SudoSetUserQuota",
-			Handler:    _AdminService_SudoSetUserQuota_Handler,
+			MethodName: "SudoUpdateUserQuotas",
+			Handler:    _AdminService_SudoUpdateUserQuotas_Handler,
 		},
 		{
-			MethodName: "SudoGetOrganizationQuota",
-			Handler:    _AdminService_SudoGetOrganizationQuota_Handler,
+			MethodName: "SudoGetOrganizationQuotas",
+			Handler:    _AdminService_SudoGetOrganizationQuotas_Handler,
 		},
 		{
-			MethodName: "SudoSetOrganizationQuota",
-			Handler:    _AdminService_SudoSetOrganizationQuota_Handler,
+			MethodName: "SudoUpdateOrganizationQuotas",
+			Handler:    _AdminService_SudoUpdateOrganizationQuotas_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
