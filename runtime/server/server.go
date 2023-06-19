@@ -37,7 +37,6 @@ type Options struct {
 	AuthEnable      bool
 	AuthIssuerURL   string
 	AuthAudienceURL string
-	RedisAddr       string
 }
 
 type Server struct {
@@ -59,12 +58,12 @@ var (
 
 // NewServer creates a new runtime server.
 // The provided ctx is used for the lifetime of the server for background refresh of the JWKS that is used to validate auth tokens.
-func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server, error) {
+func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter *ratelimit.RequestRateLimiter) (*Server, error) {
 	srv := &Server{
 		opts:    opts,
 		runtime: rt,
 		logger:  logger,
-		limiter: ratelimit.NewRequestRateLimiter(opts.RedisAddr),
+		limiter: limiter,
 	}
 
 	if opts.AuthEnable {
@@ -100,7 +99,6 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 
 // ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
-	grpcReqRateLimiter := s.limiter.Middleware().WithAnonLimit(ratelimit.Public)
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
@@ -109,7 +107,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingStreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
-			grpcReqRateLimiter.StreamServerInterceptor(),
+			limiterStreamServerInterceptor(*s.limiter, ratelimit.Public, ratelimit.Unlimited),
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
@@ -118,7 +116,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingUnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
-			grpcReqRateLimiter.UnaryServerInterceptor(),
+			limiterUnaryServerInterceptor(*s.limiter, ratelimit.Public, ratelimit.Unlimited),
 		),
 	)
 

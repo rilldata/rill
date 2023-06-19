@@ -4,7 +4,8 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/alicebob/miniredis"
+	"github.com/redis/go-redis/v9"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"os"
 	"time"
 
@@ -62,7 +63,7 @@ type Config struct {
 	EmailSenderEmail       string                 `split_words:"true"`
 	EmailSenderName        string                 `split_words:"true"`
 	EmailBCC               string                 `split_words:"true"`
-	RedisAddr              string                 `default:"" split_words:"true"`
+	RedisURL               string                 `default:"" split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -178,17 +179,17 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 
 			// Init and run server
 			if runServer {
-				redisAddr := conf.RedisAddr
-				if redisAddr == "" {
-					// Start a miniredis (in-memory) server (is used for API rate limiting).
-					mr, err := miniredis.Run()
+				var limiter *ratelimit.RequestRateLimiter
+				if conf.RedisURL == "" {
+					limiter = ratelimit.NewNoop()
+				} else {
+					opts, err := redis.ParseURL(conf.RedisURL)
 					if err != nil {
-						panic(err)
+						logger.Fatal("failed to parse redis url")
 					}
-					redisAddr = mr.Addr()
-					defer mr.Close()
+					limiter = ratelimit.NewLimiter(redis.NewClient(opts))
 				}
-				srv, err := server.New(logger, adm, issuer, &server.Options{
+				srv, err := server.New(logger, adm, issuer, limiter, &server.Options{
 					HTTPPort:               conf.HTTPPort,
 					GRPCPort:               conf.GRPCPort,
 					ExternalURL:            conf.ExternalURL,
@@ -203,7 +204,6 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 					GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
 					GithubClientID:         conf.GithubClientID,
 					GithubClientSecret:     conf.GithubClientSecret,
-					RedisAddr:              redisAddr,
 				})
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))

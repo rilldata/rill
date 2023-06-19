@@ -139,16 +139,21 @@ func (s *Server) GetGitCredentials(ctx context.Context, req *adminv1.GetGitCrede
 }
 
 // registerGithubEndpoints registers the non-gRPC endpoints for the Github integration.
-func (s *Server) registerGithubEndpoints(mux *http.ServeMux) {
+func (s *Server) registerGithubEndpoints(mux *http.ServeMux, limiter ratelimit.RequestRateLimiter) {
 	// TODO: Add helper utils to clean this up
 	inner := http.NewServeMux()
 	inner.Handle("/github/webhook", otelhttp.WithRouteTag("/github/webhook", http.HandlerFunc(s.githubWebhook)))
-	inner.Handle("/github/connect", otelhttp.WithRouteTag("/github/connect", s.authenticator.HTTPMiddleware(http.HandlerFunc(s.githubConnect))))
-	inner.Handle("/github/connect/callback", otelhttp.WithRouteTag("/github/connect/callback", s.authenticator.HTTPMiddleware(http.HandlerFunc(s.githubConnectCallback))))
-	inner.Handle("/github/auth/login", otelhttp.WithRouteTag("github/auth/login", s.authenticator.HTTPMiddleware(http.HandlerFunc(s.githubAuthLogin))))
-	inner.Handle("/github/auth/callback", otelhttp.WithRouteTag("github/auth/callback", s.authenticator.HTTPMiddleware(http.HandlerFunc(s.githubAuthCallback))))
-	inner.Handle("/github/post-auth-redirect", otelhttp.WithRouteTag("github/post-auth-redirect", s.authenticator.HTTPMiddleware(http.HandlerFunc(s.githubRepoStatus))))
-	mux.Handle("/github/", observability.Middleware("admin", s.logger, s.limiter.Middleware().WithAnonLimit(ratelimit.Sensitive).HTTPHandler(inner)))
+	inner.Handle("/github/connect", otelhttp.WithRouteTag("/github/connect", s.authenticator.HTTPMiddleware(
+		LimiterHTTPHandler("/github/connect", limiter, ratelimit.Sensitive, http.HandlerFunc(s.githubConnect)))))
+	inner.Handle("/github/connect/callback", otelhttp.WithRouteTag("/github/connect/callback", s.authenticator.HTTPMiddleware(
+		LimiterHTTPHandler("/github/connect/callback", limiter, ratelimit.Sensitive, http.HandlerFunc(s.githubConnectCallback)))))
+	inner.Handle("/github/auth/login", otelhttp.WithRouteTag("github/auth/login", s.authenticator.HTTPMiddleware(
+		LimiterHTTPHandler("github/auth/login", limiter, ratelimit.Sensitive, http.HandlerFunc(s.githubAuthLogin)))))
+	inner.Handle("/github/auth/callback", otelhttp.WithRouteTag("github/auth/callback", s.authenticator.HTTPMiddleware(
+		LimiterHTTPHandler("github/auth/callback", limiter, ratelimit.Sensitive, http.HandlerFunc(s.githubAuthCallback)))))
+	inner.Handle("/github/post-auth-redirect", otelhttp.WithRouteTag("github/post-auth-redirect", s.authenticator.HTTPMiddleware(
+		LimiterHTTPHandler("github/post-auth-redirect", limiter, ratelimit.Sensitive, http.HandlerFunc(s.githubRepoStatus)))))
+	mux.Handle("/github/", observability.Middleware("admin", s.logger, inner))
 }
 
 // githubConnect starts an installation flow of the Github App.

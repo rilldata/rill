@@ -52,7 +52,6 @@ type Options struct {
 	GithubAppWebhookSecret string
 	GithubClientID         string
 	GithubClientSecret     string
-	RedisAddr              string
 }
 
 type Server struct {
@@ -69,7 +68,7 @@ type Server struct {
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
-func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, opts *Options) (*Server, error) {
+func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter *ratelimit.RequestRateLimiter, opts *Options) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)
@@ -103,13 +102,12 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, opt
 		authenticator: authenticator,
 		issuer:        issuer,
 		urls:          newURLRegistry(opts),
-		limiter:       ratelimit.NewRequestRateLimiter(opts.RedisAddr),
+		limiter:       limiter,
 	}, nil
 }
 
 // ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
-	grpcReqRateLimiter := s.limiter.Middleware().WithAnonLimit(ratelimit.Default).WithAuthLimit(ratelimit.Default)
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
@@ -119,7 +117,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			grpc_auth.StreamServerInterceptor(checkUserAgent),
 			grpc_validator.StreamServerInterceptor(),
 			s.authenticator.StreamServerInterceptor(),
-			grpcReqRateLimiter.StreamServerInterceptor(),
+			limiterStreamServerInterceptor(*s.limiter, ratelimit.Default, ratelimit.Default),
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
@@ -129,7 +127,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			grpc_auth.UnaryServerInterceptor(checkUserAgent),
 			grpc_validator.UnaryServerInterceptor(),
 			s.authenticator.UnaryServerInterceptor(),
-			grpcReqRateLimiter.UnaryServerInterceptor(),
+			limiterUnaryServerInterceptor(*s.limiter, ratelimit.Default, ratelimit.Default),
 		),
 	)
 
@@ -177,10 +175,10 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	mux.Handle("/.well-known/jwks.json", s.issuer.WellKnownHandler())
 
 	// Add auth endpoints (not gRPC handlers, just regular endpoints on /auth/*)
-	s.authenticator.RegisterEndpoints(mux, s.limiter)
+	s.authenticator.RegisterEndpoints(mux, *s.limiter)
 
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
-	s.registerGithubEndpoints(mux)
+	s.registerGithubEndpoints(mux, *s.limiter)
 
 	// Add temporary internal endpoint for refreshing sources
 	mux.Handle("/internal/projects/trigger-refresh", otelhttp.WithRouteTag("/internal/projects/trigger-refresh", http.HandlerFunc(s.triggerRefreshSourcesInternal)))

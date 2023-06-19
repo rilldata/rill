@@ -3,7 +3,8 @@ package runtime
 import (
 	"context"
 	"fmt"
-	"github.com/alicebob/miniredis"
+	"github.com/redis/go-redis/v9"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"os"
 	"time"
 
@@ -54,7 +55,7 @@ type Config struct {
 	// local_file sources can access directory outside repo
 	AllowHostAccess bool `default:"false" split_words:"true"`
 	// Redis server address host:port
-	RedisAddr string `default:"" split_words:"true"`
+	RedisURL string `default:"" split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -122,15 +123,15 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			// Create ctx that cancels on termination signals
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 
-			redisAddr := conf.RedisAddr
-			if redisAddr == "" {
-				// Start a miniredis (in-memory) server (is used for API rate limiting).
-				mr, err := miniredis.Run()
+			var limiter *ratelimit.RequestRateLimiter
+			if conf.RedisURL == "" {
+				limiter = ratelimit.NewNoop()
+			} else {
+				opts, err := redis.ParseURL(conf.RedisURL)
 				if err != nil {
-					panic(err)
+					logger.Fatal("failed to parse redis url")
 				}
-				redisAddr = mr.Addr()
-				defer mr.Close()
+				limiter = ratelimit.NewLimiter(redis.NewClient(opts))
 			}
 
 			// Init server
@@ -142,9 +143,8 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				AuthEnable:      conf.AuthEnable,
 				AuthIssuerURL:   conf.AuthIssuerURL,
 				AuthAudienceURL: conf.AuthAudienceURL,
-				RedisAddr:       redisAddr,
 			}
-			s, err := server.NewServer(ctx, srvOpts, rt, logger)
+			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter)
 			if err != nil {
 				logger.Fatal("error: could not create server", zap.Error(err))
 			}

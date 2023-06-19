@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"net/http"
 	"net/url"
@@ -25,18 +26,26 @@ const (
 // RegisterEndpoints adds HTTP endpoints for auth.
 // The mux must be served on the ExternalURL of the Authenticator since the logic in these handlers relies on knowing the full external URIs.
 // Note that these are not gRPC handlers, just regular HTTP endpoints that we mount on the gRPC-gateway mux.
-func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, rrl *ratelimit.RequestRateLimiter) {
+func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, rrl ratelimit.RequestRateLimiter) {
 	// TODO: Add helper utils to clean this up
 	inner := http.NewServeMux()
-	inner.Handle("/auth/login", otelhttp.WithRouteTag("/auth/login", http.HandlerFunc(a.authLogin)))
-	inner.Handle("/auth/callback", otelhttp.WithRouteTag("/auth/callback", http.HandlerFunc(a.authLoginCallback)))
-	inner.Handle("/auth/with-token", otelhttp.WithRouteTag("/auth/with-token", http.HandlerFunc(a.authWithToken)))
-	inner.Handle("/auth/logout", otelhttp.WithRouteTag("/auth/logout", http.HandlerFunc(a.authLogout)))
-	inner.Handle("/auth/logout/callback", otelhttp.WithRouteTag("/auth/logout/callback", http.HandlerFunc(a.authLogoutCallback)))
-	inner.Handle("/auth/oauth/device_authorization", otelhttp.WithRouteTag("/auth/oauth/device_authorization", http.HandlerFunc(a.handleDeviceCodeRequest)))
-	inner.Handle("/auth/oauth/device", otelhttp.WithRouteTag("/auth/oauth/device", a.HTTPMiddleware(http.HandlerFunc(a.handleUserCodeConfirmation)))) // NOTE: Uses auth middleware
-	inner.Handle("/auth/oauth/token", otelhttp.WithRouteTag("/auth/oauth/token", http.HandlerFunc(a.getAccessToken)))
-	mux.Handle("/auth/", observability.Middleware("admin", a.logger, rrl.Middleware().WithAnonLimit(ratelimit.Sensitive).HTTPHandler(inner)))
+	inner.Handle("/auth/login", otelhttp.WithRouteTag("/auth/login",
+		server.LimiterHTTPHandler("/auth/login", rrl, ratelimit.Sensitive, http.HandlerFunc(a.authLogin))))
+	inner.Handle("/auth/callback", otelhttp.WithRouteTag("/auth/callback",
+		server.LimiterHTTPHandler("/auth/callback", rrl, ratelimit.Sensitive, http.HandlerFunc(a.authLoginCallback))))
+	inner.Handle("/auth/with-token", otelhttp.WithRouteTag("/auth/with-token",
+		server.LimiterHTTPHandler("/auth/with-token", rrl, ratelimit.Sensitive, http.HandlerFunc(a.authWithToken))))
+	inner.Handle("/auth/logout", otelhttp.WithRouteTag("/auth/logout",
+		server.LimiterHTTPHandler("/auth/logout", rrl, ratelimit.Sensitive, http.HandlerFunc(a.authLogout))))
+	inner.Handle("/auth/logout/callback", otelhttp.WithRouteTag("/auth/logout/callback",
+		server.LimiterHTTPHandler("/auth/logout/callback", rrl, ratelimit.Sensitive, http.HandlerFunc(a.authLogoutCallback))))
+	inner.Handle("/auth/oauth/device_authorization", otelhttp.WithRouteTag("/auth/oauth/device_authorization",
+		server.LimiterHTTPHandler("/auth/oauth/device_authorization", rrl, ratelimit.Sensitive, http.HandlerFunc(a.handleDeviceCodeRequest))))
+	inner.Handle("/auth/oauth/device", otelhttp.WithRouteTag("/auth/oauth/device",
+		server.LimiterHTTPHandler("/auth/oauth/device", rrl, ratelimit.Sensitive, a.HTTPMiddleware(http.HandlerFunc(a.handleUserCodeConfirmation))))) // NOTE: Uses auth middleware
+	inner.Handle("/auth/oauth/token", otelhttp.WithRouteTag("/auth/oauth/token",
+		server.LimiterHTTPHandler("/auth/oauth/token", rrl, ratelimit.Sensitive, http.HandlerFunc(a.getAccessToken))))
+	mux.Handle("/auth/", observability.Middleware("admin", a.logger, inner))
 }
 
 // authLogin starts an OAuth and OIDC flow that redirects the user for authentication with the auth provider.

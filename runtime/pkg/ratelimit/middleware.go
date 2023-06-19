@@ -3,52 +3,44 @@ package ratelimit
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/go-redis/redis_rate/v10"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"net/http"
+	"reflect"
 )
 
-// RequestRateLimiterInterceptor is a struct that embeds the RequestRateLimiter and contains
-// limits for authenticated and anonymous requests.
-//
-// This interceptor provides mechanisms to handle rate limiting for three types of requests:
-// unary RPC, streaming RPC and HTTP. It does so by providing methods that return the respective
-// unary server interceptor, stream server interceptor, and HTTP handler functions.
-type RequestRateLimiterInterceptor struct {
+// LimiterInterceptor embeds the RequestRateLimiter and contains limits for authenticated and anonymous requests.
+// It uses AuthContextInspector to classify a request as authenticated/anonymous.
+// The interceptor provides mechanisms to handle rate limiting for three types of requests:
+// unary RPC, streaming RPC and HTTP.
+type LimiterInterceptor struct {
 	RequestRateLimiter
-	authLimit redis_rate.Limit
-	anonLimit redis_rate.Limit
+	ctxInspector AuthContextInspector
+	anonLimit    redis_rate.Limit
+	authLimit    redis_rate.Limit
 }
 
-func (l *RequestRateLimiter) Middleware() *RequestRateLimiterInterceptor {
-	return &RequestRateLimiterInterceptor{
-		RequestRateLimiter: *l,
-		authLimit:          Unlimited,
-		anonLimit:          Unlimited,
+type AuthContextInspector interface {
+	IsAuthenticated(ctx context.Context) bool
+	GetAuthID(ctx context.Context) string
+}
+
+func NewInterceptor(l RequestRateLimiter, i AuthContextInspector, anonLimit, authLimit redis_rate.Limit) *LimiterInterceptor {
+	return &LimiterInterceptor{
+		RequestRateLimiter: l,
+		ctxInspector:       i,
+		authLimit:          authLimit,
+		anonLimit:          anonLimit,
 	}
 }
 
-func (l *RequestRateLimiterInterceptor) WithAuthLimit(limit redis_rate.Limit) *RequestRateLimiterInterceptor {
-	return &RequestRateLimiterInterceptor{
-		RequestRateLimiter: l.RequestRateLimiter,
-		authLimit:          limit,
-		anonLimit:          l.anonLimit,
-	}
-}
-
-func (l *RequestRateLimiterInterceptor) WithAnonLimit(limit redis_rate.Limit) *RequestRateLimiterInterceptor {
-	return &RequestRateLimiterInterceptor{
-		RequestRateLimiter: l.RequestRateLimiter,
-		authLimit:          l.authLimit,
-		anonLimit:          limit,
-	}
-}
-
-func (l *RequestRateLimiterInterceptor) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
+func (i *LimiterInterceptor) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		if err := l.LimitRequest(ctx, req, l.authLimit, l.anonLimit); err != nil {
+		if err := i.Limit(ctx, i.gRPCRequestLimitKeyByCtx(ctx, req), i.limitByCtx(ctx)); err != nil {
 			if errors.As(err, &QuotaExceededError{}) {
 				return nil, status.Errorf(codes.ResourceExhausted, err.Error())
 			}
@@ -59,28 +51,16 @@ func (l *RequestRateLimiterInterceptor) UnaryServerInterceptor() grpc.UnaryServe
 	}
 }
 
-func (l *RequestRateLimiterInterceptor) StreamServerInterceptor() grpc.StreamServerInterceptor {
+func (i *LimiterInterceptor) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		w := &wrappedRequestLimitingStream{ss, nil}
-
-		recvMsg := func(m interface{}) error {
-			if err := l.LimitRequest(w.Context(), m, l.authLimit, l.anonLimit); err != nil {
-				if errors.As(err, &QuotaExceededError{}) {
-					return status.Errorf(codes.ResourceExhausted, err.Error())
-				}
-				return err
-			}
-
-			return w.ServerStream.RecvMsg(m)
-		}
-		w.recvMsg = recvMsg
-		return handler(srv, w)
+		return handler(srv, &wrappedServerStream{ss, i})
 	}
 }
 
-func (l *RequestRateLimiterInterceptor) HTTPHandler(next http.Handler) http.Handler {
+func (i *LimiterInterceptor) HTTPHandler(route string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := l.LimitRequest(r.Context(), r, l.authLimit, l.anonLimit); err != nil {
+		ctx := r.Context()
+		if err := i.Limit(ctx, i.httpRequestLimitKeyByCtx(ctx, r, route), i.limitByCtx(ctx)); err != nil {
 			if errors.As(err, &QuotaExceededError{}) {
 				http.Error(w, err.Error(), http.StatusTooManyRequests)
 				return
@@ -94,11 +74,62 @@ func (l *RequestRateLimiterInterceptor) HTTPHandler(next http.Handler) http.Hand
 	})
 }
 
-type wrappedRequestLimitingStream struct {
-	grpc.ServerStream
-	recvMsg func(m interface{}) error
+func (i *LimiterInterceptor) limitByCtx(ctx context.Context) redis_rate.Limit {
+	var limit redis_rate.Limit
+	if i.ctxInspector.IsAuthenticated(ctx) {
+		limit = i.authLimit
+	} else {
+		limit = i.anonLimit
+	}
+	return limit
 }
 
-func (w *wrappedRequestLimitingStream) RecvMsg(m interface{}) error {
-	return w.recvMsg(m)
+func (i *LimiterInterceptor) httpRequestLimitKeyByCtx(ctx context.Context, req *http.Request, route string) string {
+	if i.ctxInspector.IsAuthenticated(ctx) {
+		return AuthReqLimitKey(route, i.ctxInspector.GetAuthID(ctx))
+	}
+	return AnonReqLimitKey(route, observability.HTTPPeer(req))
+}
+
+func (i *LimiterInterceptor) gRPCRequestLimitKeyByCtx(ctx context.Context, req interface{}) string {
+	if i.ctxInspector.IsAuthenticated(ctx) {
+		return AuthReqLimitKey(GRPCRequestName(req), i.ctxInspector.GetAuthID(ctx))
+	}
+	return AnonReqLimitKey(GRPCRequestName(req), observability.GrpcPeer(ctx))
+}
+
+func AuthReqLimitKey(reqName string, authID string) string {
+	return fmt.Sprintf("auth:%s:%s", reqName, authID)
+}
+
+func AnonReqLimitKey(reqName string, ipAddr string) string {
+	return fmt.Sprintf("anon:%s:%s", reqName, ipAddr)
+}
+
+func GRPCRequestName(req interface{}) string {
+	if req == nil {
+		return "unnamed"
+	}
+	t := reflect.TypeOf(req)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return t.Name()
+}
+
+type wrappedServerStream struct {
+	grpc.ServerStream
+	i *LimiterInterceptor
+}
+
+func (wss *wrappedServerStream) RecvMsg(req interface{}) error {
+	ctx := wss.Context()
+	if err := wss.i.Limit(ctx, wss.i.gRPCRequestLimitKeyByCtx(ctx, req), wss.i.limitByCtx(ctx)); err != nil {
+		if errors.As(err, &QuotaExceededError{}) {
+			return status.Errorf(codes.ResourceExhausted, err.Error())
+		}
+		return err
+	}
+
+	return wss.ServerStream.RecvMsg(req)
 }

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -73,4 +74,8 @@ func (c anonClaims) Can(p Permission) bool {
 
 func (c anonClaims) CanInstance(instanceID string, p Permission) bool {
 	return false
+}
+
+func IsAnonymous(ctx context.Context) bool {
+	return GetClaims(ctx) == anonClaims{}
 }
