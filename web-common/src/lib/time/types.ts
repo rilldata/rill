@@ -162,11 +162,6 @@ export interface TimeGrain {
   formatDate: Intl.DateTimeFormatOptions;
 }
 
-// FIXME: is this needed?
-export interface TimeGrainOption extends TimeGrain {
-  enabled: boolean;
-}
-
 // limit the set of available time grains to those supported
 // by th dashboard.
 export type AvailableTimeGrain = Exclude<
