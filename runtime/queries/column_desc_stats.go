@@ -55,13 +55,13 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 
 	sanitizedColumnName := safeName(q.ColumnName)
 	descriptiveStatisticsSQL := fmt.Sprintf("SELECT "+
-		"min(%s) as min, "+
-		"approx_quantile(%s, 0.25) as q25, "+
-		"approx_quantile(%s, 0.5)  as q50, "+
-		"approx_quantile(%s, 0.75) as q75, "+
-		"max(%s) as max, "+
-		"avg(%s)::FLOAT as mean, "+
-		"stddev_pop(%s) as sd "+
+		"min(%s)::DOUBLE as min, "+
+		"approx_quantile(%s, 0.25)::DOUBLE as q25, "+
+		"approx_quantile(%s, 0.5)::DOUBLE as q50, "+
+		"approx_quantile(%s, 0.75)::DOUBLE as q75, "+
+		"max(%s)::DOUBLE as max, "+
+		"avg(%s)::DOUBLE as mean, "+
+		"stddev_pop(%s)::DOUBLE as sd "+
 		"FROM %s",
 		sanitizedColumnName,
 		sanitizedColumnName,
