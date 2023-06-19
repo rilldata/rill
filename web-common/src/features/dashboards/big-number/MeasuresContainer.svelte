@@ -141,6 +141,7 @@
     {
       query: {
         enabled:
+          selectedMeasureNames.length > 0 &&
           (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
           !!$dashboardStore?.filters,
       },
