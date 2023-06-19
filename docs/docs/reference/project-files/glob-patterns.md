@@ -11,7 +11,7 @@ Rill supports ingesting data from a group of files using glob patterns in the UR
 
 To ingest data using glob patterns, you include the pattern in the URI of the source files. Here's an example URI that will ingest all Parquet files in the `my-bucket` bucket that were created in January 2023:
 `
-gs://my-bucket/v=1/y=2023/m=1/*.parquet
+gs://my-bucket/y=2023/m=01/*.parquet
 `
 
 By default, Rill applies certain limits when using glob patterns to ingest data. The default limits are as follows:
@@ -19,10 +19,12 @@ By default, Rill applies certain limits when using glob patterns to ingest data.
 - **Total file matches**: 1000
 - **Total files listed**: 1 million
 
-These limits can be configured in the `source.yaml` file. To modify the default limits, you can update the source.yaml file with following fields:
- - `glob.max_total_size` : The maximum total size (in bytes) of all objects. 
- - `glob.max_objects_matched`: The total file matches allowed.
- - `glob.max_objects_listed`: The total files listed to match against the glob pattern. 
+These limits can be configured in the `.yaml` file for the source. To modify the default limits, you can update the source.yaml file with following fields:
+```yaml
+ - glob.max_total_size: The maximum total size (in bytes) of all objects. 
+ - glob.max_objects_matched: The total file matches allowed.
+ - glob.max_objects_listed: The total files listed to match against the glob pattern. 
+ ```
 
 For example, to increase the limit on the total bytes downloaded to 100GB, you would add the following line to the `source.yaml` file:
 `
@@ -32,21 +34,31 @@ glob.max_total_size: 1073741824000
 ## Extract policies
 
 Rill also supports extracting a subset of data matching a glob pattern. There are two types of extract policies:
-1. **File based limits** : These limits restrict the number of files that are ingested.
-2. **Row based limits** : These limits restrict the amount of data that is ingested from each file.
+1. **Row based limits** : These limits restrict the amount of data that is ingested from each file.
+2. **File based limits** : These limits restrict the number of files that are ingested.
+
 
 You can apply these policies individually or in combination to control the extraction process.
   - Here are the possible combination and their semantics.
-    - If both `rows` and `files` are specified, each file matching the `files` clause will be extracted according to the `rows` clause.
     - If only `rows` is specified, no limit on the number of files is applied. For example, getting a 1 GB `head` extract will download as many files as necessary.
     - If only `files` is specified, each file upto limit will be fully ingested.
+    - If both `rows` and `files` are specified, each file matching the `files` clause will be extracted according to the `rows` clause.
 
 Each policy can be configured by specifying two parameters:
-1. **Size** : The number of files/size of data to be fetched.
-2. **Strategy** : The strategy to fetch data. Currently, only **Head** (first n up to size) or **Tail** (last n up to size) is supported.
+```yaml
+size: The size of data in bytes (for rows) or number or files (for files) to fetch.
+strategy: The strategy to fetch data. Currently, only `Head` (first n up to size) or `Tail` (last n up to size) is supported.
+```
 
-For example, you could extract the first 100MB of data from the first 10 files matching a glob pattern by using the following extract policy in the source.yaml file:
+#### Example 1: To extract first 100MB data from a source use the following extract policy in the .yaml file for source:
+```
+extract:
+  rows:
+    strategy: head
+    size: 100MB
+```
 
+#### Example 2: To extract the first 100MB of data from each of the first 10 files from a source use the following extract policy in the .yaml file for source:
 ```
 extract:
   files:
@@ -72,21 +84,17 @@ When ingesting data that matches a glob pattern, Rill processes the data in batc
 
 1. **Adding new columns**: If the previously ingested data has fewer columns than the new files, Rill adds the new columns to the schema.
 2. **Automatic datatype conversion**: Rill automatically converts the datatype of a column to match the datatype in all files. This ensures consistency across the ingested data.
+
+    NOTE: The datatype is only relaxed to wider types like Int32 ==> Int64 or double ==> varchar and would never be a breaking change (eg: varchar to int or double to int)
 3. **Handling missing columns**: If columns were present in the previously ingested data but are not present in the new data, Rill adds null values for those columns.
 
-By default, these schema relaxation features are enabled in Rill. However, if you prefer to disable them, you can set the following properties to false in the source.yaml file:
+Schema relaxation is enabled by default. Set `ingest.allow_schema_relaxation: false` in your source's YAML file to disable it.
 
- - **ingest.allow_field_addition**: Disables the addition of new columns when ingesting data.
- - **ingest.allow_field_relaxation**: Disables the automatic datatype conversion and addition of null values for missing columns.
-
-Here's an example **source.yaml** configuration:
+For example:
 ```
 type: "gcs"
-uri: "gs://my-bucket/v=1/y=2023/m=*/d=0[1-7]/H=01/*.parquet" 
+uri: "gs://my-bucket/y=2023/m=*/d=0[1-7]/H=01/*.parquet" 
 
-ingest.allow_field_addition: true
-ingest.allow_field_relaxation: false
+ingest.allow_schema_relaxation: false
 
 ```
-
-That covers the usage of glob patterns in Rill, including how to ingest data, apply extract policies, and handle schema relaxation. Enjoy working with your data using Rill's powerful features!
