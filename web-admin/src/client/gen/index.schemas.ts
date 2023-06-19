@@ -121,7 +121,7 @@ export interface V1WhitelistedDomain {
 }
 
 export interface V1UserQuotas {
-  quotaSingleuserOrgs?: number;
+  singleuserOrgs?: number;
 }
 
 export interface V1UserInvite {
@@ -169,25 +169,25 @@ export interface V1TriggerReconcileResponse {
 }
 
 export interface V1SudoUpdateUserQuotasResponse {
-  userQuotas?: V1UserQuotas;
+  user?: V1User;
 }
 
 export interface V1SudoUpdateUserQuotasRequest {
   email?: string;
-  quotaSingleuserOrgs?: number;
+  singleuserOrgs?: number;
 }
 
 export interface V1SudoUpdateOrganizationQuotasResponse {
-  organizationQuotas?: V1OrganizationQuotas;
+  organization?: V1Organization;
 }
 
 export interface V1SudoUpdateOrganizationQuotasRequest {
   orgName?: string;
-  quotaProjects?: number;
-  quotaDeployments?: number;
-  quotaSlotsTotal?: number;
-  quotaSlotsPerDeployment?: number;
-  quotaOutstandingInvites?: number;
+  projects?: number;
+  deployments?: number;
+  slotsTotal?: number;
+  slotsPerDeployment?: number;
+  outstandingInvites?: number;
 }
 
 export interface V1SudoGetResourceResponse {
@@ -275,11 +275,11 @@ export interface V1PingResponse {
 }
 
 export interface V1OrganizationQuotas {
-  quotaProjects?: number;
-  quotaDeployments?: number;
-  quotaSlotsTotal?: number;
-  quotaSlotsPerDeployment?: number;
-  quotaOutstandingInvites?: number;
+  projects?: number;
+  deployments?: number;
+  slotsTotal?: number;
+  slotsPerDeployment?: number;
+  outstandingInvites?: number;
 }
 
 export interface V1OrganizationPermissions {

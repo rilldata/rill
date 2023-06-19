@@ -138,7 +138,7 @@ type AdminServiceClient interface {
 	RemoveWhitelistedDomain(ctx context.Context, in *RemoveWhitelistedDomainRequest, opts ...grpc.CallOption) (*RemoveWhitelistedDomainResponse, error)
 	// ListWhitelistedDomains lists all the whitelisted domains for the organization
 	ListWhitelistedDomains(ctx context.Context, in *ListWhitelistedDomainsRequest, opts ...grpc.CallOption) (*ListWhitelistedDomainsResponse, error)
-	// GetUsers returns user by email
+	// GetUser returns user by email
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
 	// GetUsersByEmail returns users by email
 	SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error)
@@ -615,7 +615,7 @@ type AdminServiceServer interface {
 	RemoveWhitelistedDomain(context.Context, *RemoveWhitelistedDomainRequest) (*RemoveWhitelistedDomainResponse, error)
 	// ListWhitelistedDomains lists all the whitelisted domains for the organization
 	ListWhitelistedDomains(context.Context, *ListWhitelistedDomainsRequest) (*ListWhitelistedDomainsResponse, error)
-	// GetUsers returns user by email
+	// GetUser returns user by email
 	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
 	// GetUsersByEmail returns users by email
 	SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error)

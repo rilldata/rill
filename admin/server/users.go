@@ -227,7 +227,7 @@ func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResour
 func (s *Server) GetUser(ctx context.Context, req *adminv1.GetUserRequest) (*adminv1.GetUserResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
+		return nil, status.Error(codes.PermissionDenied, "only superusers can get user")
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
@@ -239,14 +239,14 @@ func (s *Server) GetUser(ctx context.Context, req *adminv1.GetUserRequest) (*adm
 }
 
 func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpdateUserQuotasRequest) (*adminv1.SudoUpdateUserQuotasResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
+	if req.SingleuserOrgs != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int("args.singleuser-orgs", int(*req.SingleuserOrgs)))
+	}
+
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
-	}
-
-	observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
-	if req.QuotaSingleuserOrgs != nil {
-		observability.AddRequestAttributes(ctx, attribute.Int("args.quota_singleuser_orgs", int(*req.QuotaSingleuserOrgs)))
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
@@ -259,15 +259,13 @@ func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpda
 		DisplayName:         user.DisplayName,
 		PhotoURL:            user.PhotoURL,
 		GithubUsername:      user.GithubUsername,
-		QuotaSingleuserOrgs: int(valOrDefault(req.QuotaSingleuserOrgs, uint32(user.QuotaSingleuserOrgs))),
+		QuotaSingleuserOrgs: int(valOrDefault(req.SingleuserOrgs, uint32(user.QuotaSingleuserOrgs))),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &adminv1.SudoUpdateUserQuotasResponse{UserQuotas: &adminv1.UserQuotas{
-		QuotaSingleuserOrgs: uint32(updatedUser.QuotaSingleuserOrgs),
-	}}, nil
+	return &adminv1.SudoUpdateUserQuotasResponse{User: userToPB(updatedUser)}, nil
 }
 
 func userToPB(u *database.User) *adminv1.User {
@@ -277,7 +275,7 @@ func userToPB(u *database.User) *adminv1.User {
 		DisplayName: u.DisplayName,
 		PhotoUrl:    u.PhotoURL,
 		Quotas: &adminv1.UserQuotas{
-			QuotaSingleuserOrgs: uint32(u.QuotaSingleuserOrgs),
+			SingleuserOrgs: uint32(u.QuotaSingleuserOrgs),
 		},
 		CreatedOn: timestamppb.New(u.CreatedOn),
 		UpdatedOn: timestamppb.New(u.UpdatedOn),

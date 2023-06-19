@@ -32,14 +32,14 @@ func GetCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				orgQuotas := res.Organization
+				orgQuotas := res.Organization.Quotas
 
 				fmt.Printf("Organization Name: %s\n", org)
-				fmt.Printf("QuotaProjects: %d\n", orgQuotas.Quotas.QuotaProjects)
-				fmt.Printf("QuotaDeployments: %d\n", orgQuotas.Quotas.QuotaDeployments)
-				fmt.Printf("QuotaSlotsTotal: %d\n", orgQuotas.Quotas.QuotaSlotsTotal)
-				fmt.Printf("QuotaSlotsPerDeployment: %d\n", orgQuotas.Quotas.QuotaSlotsPerDeployment)
-				fmt.Printf("QuotaOutstandingInvites: %d\n", orgQuotas.Quotas.QuotaOutstandingInvites)
+				fmt.Printf("Projects: %d\n", orgQuotas.Projects)
+				fmt.Printf("Deployments: %d\n", orgQuotas.Deployments)
+				fmt.Printf("Slots total: %d\n", orgQuotas.SlotsTotal)
+				fmt.Printf("Slots per deployment: %d\n", orgQuotas.SlotsPerDeployment)
+				fmt.Printf("Outstanding invites: %d\n", orgQuotas.OutstandingInvites)
 			} else if email != "" {
 				res, err := client.GetUser(ctx, &adminv1.GetUserRequest{
 					Email: email,
@@ -48,11 +48,11 @@ func GetCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				userQuotas := res.User
+				userQuotas := res.User.Quotas
 				fmt.Printf("User: %s\n", email)
-				fmt.Printf("QuotaProjects: %d\n", userQuotas.Quotas.QuotaSingleuserOrgs)
+				fmt.Printf("Projects: %d\n", userQuotas.SingleuserOrgs)
 			} else {
-				return fmt.Errorf("Pleasr provide org|user")
+				return fmt.Errorf("Please set --org or --user")
 			}
 
 			return nil

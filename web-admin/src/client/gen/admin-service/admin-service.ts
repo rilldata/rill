@@ -2076,7 +2076,7 @@ export const adminServiceSudoUpdateOrganizationQuotas = (
 ) => {
   return httpClient<V1SudoUpdateOrganizationQuotasResponse>({
     url: `/v1/superuser/quotas/organization`,
-    method: "post",
+    method: "patch",
     headers: { "Content-Type": "application/json" },
     data: v1SudoUpdateOrganizationQuotasRequest,
   });
@@ -2127,7 +2127,7 @@ export const adminServiceSudoUpdateUserQuotas = (
 ) => {
   return httpClient<V1SudoUpdateUserQuotasResponse>({
     url: `/v1/superuser/quotas/user`,
-    method: "post",
+    method: "patch",
     headers: { "Content-Type": "application/json" },
     data: v1SudoUpdateUserQuotasRequest,
   });
@@ -2325,7 +2325,7 @@ export const createAdminServiceIssueRepresentativeAuthToken = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary GetUsers returns user by email
+ * @summary GetUser returns user by email
  */
 export const adminServiceGetUser = (email: string, signal?: AbortSignal) => {
   return httpClient<V1GetUserResponse>({

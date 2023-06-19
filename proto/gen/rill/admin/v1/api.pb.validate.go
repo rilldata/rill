@@ -6478,24 +6478,24 @@ func (m *SudoUpdateOrganizationQuotasRequest) validate(all bool) error {
 
 	// no validation rules for OrgName
 
-	if m.QuotaProjects != nil {
-		// no validation rules for QuotaProjects
+	if m.Projects != nil {
+		// no validation rules for Projects
 	}
 
-	if m.QuotaDeployments != nil {
-		// no validation rules for QuotaDeployments
+	if m.Deployments != nil {
+		// no validation rules for Deployments
 	}
 
-	if m.QuotaSlotsTotal != nil {
-		// no validation rules for QuotaSlotsTotal
+	if m.SlotsTotal != nil {
+		// no validation rules for SlotsTotal
 	}
 
-	if m.QuotaSlotsPerDeployment != nil {
-		// no validation rules for QuotaSlotsPerDeployment
+	if m.SlotsPerDeployment != nil {
+		// no validation rules for SlotsPerDeployment
 	}
 
-	if m.QuotaOutstandingInvites != nil {
-		// no validation rules for QuotaOutstandingInvites
+	if m.OutstandingInvites != nil {
+		// no validation rules for OutstandingInvites
 	}
 
 	if len(errors) > 0 {
@@ -6604,11 +6604,11 @@ func (m *SudoUpdateOrganizationQuotasResponse) validate(all bool) error {
 	var errors []error
 
 	if all {
-		switch v := interface{}(m.GetOrganizationQuotas()).(type) {
+		switch v := interface{}(m.GetOrganization()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, SudoUpdateOrganizationQuotasResponseValidationError{
-					field:  "OrganizationQuotas",
+					field:  "Organization",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -6616,16 +6616,16 @@ func (m *SudoUpdateOrganizationQuotasResponse) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, SudoUpdateOrganizationQuotasResponseValidationError{
-					field:  "OrganizationQuotas",
+					field:  "Organization",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetOrganizationQuotas()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetOrganization()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return SudoUpdateOrganizationQuotasResponseValidationError{
-				field:  "OrganizationQuotas",
+				field:  "Organization",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -6738,8 +6738,8 @@ func (m *SudoUpdateUserQuotasRequest) validate(all bool) error {
 
 	// no validation rules for Email
 
-	if m.QuotaSingleuserOrgs != nil {
-		// no validation rules for QuotaSingleuserOrgs
+	if m.SingleuserOrgs != nil {
+		// no validation rules for SingleuserOrgs
 	}
 
 	if len(errors) > 0 {
@@ -6846,11 +6846,11 @@ func (m *SudoUpdateUserQuotasResponse) validate(all bool) error {
 	var errors []error
 
 	if all {
-		switch v := interface{}(m.GetUserQuotas()).(type) {
+		switch v := interface{}(m.GetUser()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, SudoUpdateUserQuotasResponseValidationError{
-					field:  "UserQuotas",
+					field:  "User",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -6858,16 +6858,16 @@ func (m *SudoUpdateUserQuotasResponse) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, SudoUpdateUserQuotasResponseValidationError{
-					field:  "UserQuotas",
+					field:  "User",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetUserQuotas()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetUser()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return SudoUpdateUserQuotasResponseValidationError{
-				field:  "UserQuotas",
+				field:  "User",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -11254,7 +11254,7 @@ func (m *UserQuotas) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for QuotaSingleuserOrgs
+	// no validation rules for SingleuserOrgs
 
 	if len(errors) > 0 {
 		return UserQuotasMultiError(errors)
@@ -11355,15 +11355,15 @@ func (m *OrganizationQuotas) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for QuotaProjects
+	// no validation rules for Projects
 
-	// no validation rules for QuotaDeployments
+	// no validation rules for Deployments
 
-	// no validation rules for QuotaSlotsTotal
+	// no validation rules for SlotsTotal
 
-	// no validation rules for QuotaSlotsPerDeployment
+	// no validation rules for SlotsPerDeployment
 
-	// no validation rules for QuotaOutstandingInvites
+	// no validation rules for OutstandingInvites
 
 	if len(errors) > 0 {
 		return OrganizationQuotasMultiError(errors)

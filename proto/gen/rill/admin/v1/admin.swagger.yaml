@@ -927,7 +927,7 @@ paths:
       tags:
         - AdminService
   /v1/superuser/quotas/organization:
-    post:
+    patch:
       summary: SudoUpdateOrganizationQuotas update the quotas available for orgs
       operationId: AdminService_SudoUpdateOrganizationQuotas
       responses:
@@ -948,7 +948,7 @@ paths:
       tags:
         - AdminService
   /v1/superuser/quotas/user:
-    post:
+    patch:
       summary: SudoUpdateUserQuotas update the quotas for users
       operationId: AdminService_SudoUpdateUserQuotas
       responses:
@@ -1042,7 +1042,7 @@ paths:
         - AdminService
   /v1/users/{email}:
     get:
-      summary: GetUsers returns user by email
+      summary: GetUser returns user by email
       operationId: AdminService_GetUser
       responses:
         "200":
@@ -1395,19 +1395,19 @@ definitions:
   v1OrganizationQuotas:
     type: object
     properties:
-      quotaProjects:
+      projects:
         type: integer
         format: int64
-      quotaDeployments:
+      deployments:
         type: integer
         format: int64
-      quotaSlotsTotal:
+      slotsTotal:
         type: integer
         format: int64
-      quotaSlotsPerDeployment:
+      slotsPerDeployment:
         type: integer
         format: int64
-      quotaOutstandingInvites:
+      outstandingInvites:
         type: integer
         format: int64
   v1PingResponse:
@@ -1535,42 +1535,42 @@ definitions:
     properties:
       orgName:
         type: string
-      quotaProjects:
+      projects:
         type: integer
         format: int64
-      quotaDeployments:
+      deployments:
         type: integer
         format: int64
-      quotaSlotsTotal:
+      slotsTotal:
         type: integer
         format: int64
-      quotaSlotsPerDeployment:
+      slotsPerDeployment:
         type: integer
         format: int64
-      quotaOutstandingInvites:
+      outstandingInvites:
         type: integer
         format: int64
     title: SudoUpdateOrganizationQuotasRequest
   v1SudoUpdateOrganizationQuotasResponse:
     type: object
     properties:
-      organizationQuotas:
-        $ref: '#/definitions/v1OrganizationQuotas'
+      organization:
+        $ref: '#/definitions/v1Organization'
     title: SudoUpdateOrganizationQuotasResponse
   v1SudoUpdateUserQuotasRequest:
     type: object
     properties:
       email:
         type: string
-      quotaSingleuserOrgs:
+      singleuserOrgs:
         type: integer
         format: int64
     title: SudoUpdateUserQuotasRequest
   v1SudoUpdateUserQuotasResponse:
     type: object
     properties:
-      userQuotas:
-        $ref: '#/definitions/v1UserQuotas'
+      user:
+        $ref: '#/definitions/v1User'
     title: SudoUpdateUserQuotasResponse
   v1TriggerReconcileResponse:
     type: object
@@ -1626,7 +1626,7 @@ definitions:
   v1UserQuotas:
     type: object
     properties:
-      quotaSingleuserOrgs:
+      singleuserOrgs:
         type: integer
         format: int64
   v1WhitelistedDomain:

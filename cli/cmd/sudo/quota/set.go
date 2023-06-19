@@ -11,7 +11,7 @@ import (
 
 func SetCmd(cfg *config.Config) *cobra.Command {
 	var org, email string
-	var quotaSingleUser, quotaProjects, quotaDeployments, quotaSlotsTotal, quotaSlotsPerDeployment, quotaOutstandingInvites uint32
+	var singleUser, projects, deployments, slotsTotal, slotsPerDeployment, outstandingInvites uint32
 	setCmd := &cobra.Command{
 		Use:   "set [org|user]",
 		Args:  cobra.NoArgs,
@@ -29,20 +29,20 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 					OrgName: org,
 				}
 
-				if cmd.Flags().Changed("quota_projects") {
-					req.QuotaProjects = &quotaProjects
+				if cmd.Flags().Changed("quota-projects") {
+					req.Projects = &projects
 				}
-				if cmd.Flags().Changed("quota_deployments") {
-					req.QuotaDeployments = &quotaDeployments
+				if cmd.Flags().Changed("deployments") {
+					req.Deployments = &deployments
 				}
-				if cmd.Flags().Changed("quota_slots_total") {
-					req.QuotaSlotsTotal = &quotaSlotsTotal
+				if cmd.Flags().Changed("slots-total") {
+					req.SlotsTotal = &slotsTotal
 				}
-				if cmd.Flags().Changed("quota_slots_per_deployment") {
-					req.QuotaSlotsPerDeployment = &quotaSlotsPerDeployment
+				if cmd.Flags().Changed("slots-per-deployment") {
+					req.SlotsPerDeployment = &slotsPerDeployment
 				}
-				if cmd.Flags().Changed("quota_outstanding_invites") {
-					req.QuotaOutstandingInvites = &quotaOutstandingInvites
+				if cmd.Flags().Changed("outstanding-invites") {
+					req.OutstandingInvites = &outstandingInvites
 				}
 
 				res, err := client.SudoUpdateOrganizationQuotas(ctx, req)
@@ -50,21 +50,21 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				orgQuotas := res.OrganizationQuotas
+				orgQuotas := res.Organization.Quotas
 				cmdutil.PrintlnSuccess("Updated organizations quota")
 				fmt.Printf("Organization Name: %s\n", org)
-				fmt.Printf("QuotaProjects: %d\n", orgQuotas.QuotaProjects)
-				fmt.Printf("QuotaDeployments: %d\n", orgQuotas.QuotaDeployments)
-				fmt.Printf("QuotaSlotsTotal: %d\n", orgQuotas.QuotaSlotsTotal)
-				fmt.Printf("QuotaSlotsPerDeployment: %d\n", orgQuotas.QuotaSlotsPerDeployment)
-				fmt.Printf("QuotaOutstandingInvites: %d\n", orgQuotas.QuotaOutstandingInvites)
+				fmt.Printf("Projects: %d\n", orgQuotas.Projects)
+				fmt.Printf("Deployments: %d\n", orgQuotas.Deployments)
+				fmt.Printf("Slots total: %d\n", orgQuotas.SlotsTotal)
+				fmt.Printf("Slots per deployment: %d\n", orgQuotas.SlotsPerDeployment)
+				fmt.Printf("Outstanding invites: %d\n", orgQuotas.OutstandingInvites)
 			} else if email != "" {
 				req := &adminv1.SudoUpdateUserQuotasRequest{
 					Email: email,
 				}
 
-				if cmd.Flags().Changed("quota_singleuser_orgs") {
-					req.QuotaSingleuserOrgs = &quotaSingleUser
+				if cmd.Flags().Changed("singleuser-orgs") {
+					req.SingleuserOrgs = &singleUser
 				}
 
 				res, err := client.SudoUpdateUserQuotas(ctx, req)
@@ -72,10 +72,10 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				userQuotas := res.UserQuotas
-				cmdutil.PrintlnSuccess("Updated users quota")
+				userQuotas := res.User.Quotas
+				cmdutil.PrintlnSuccess("Updated user's quota")
 				fmt.Printf("User: %s\n", email)
-				fmt.Printf("QuotaProjects: %d\n", userQuotas.QuotaSingleuserOrgs)
+				fmt.Printf("Single user orgs: %d\n", userQuotas.SingleuserOrgs)
 			} else {
 				return fmt.Errorf("Please set --org or --user")
 			}
@@ -87,11 +87,11 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 	setCmd.Flags().SortFlags = false
 	setCmd.Flags().StringVar(&org, "org", "", "Organization Name")
 	setCmd.Flags().StringVar(&email, "user", "", "User Email")
-	setCmd.Flags().Uint32Var(&quotaSingleUser, "quota_singleuser_orgs", 0, "Quota single user org")
-	setCmd.Flags().Uint32Var(&quotaProjects, "quota_projects", 0, "Quota projects")
-	setCmd.Flags().Uint32Var(&quotaDeployments, "quota_deployments", 0, "Quota deployments")
-	setCmd.Flags().Uint32Var(&quotaSlotsTotal, "quota_slots_total", 0, "Quota slots total")
-	setCmd.Flags().Uint32Var(&quotaSlotsPerDeployment, "quota_slots_per_deployment", 0, "Quota slots per deployment")
-	setCmd.Flags().Uint32Var(&quotaOutstandingInvites, "quota_outstanding_invites", 0, "Quota outstanding invites")
+	setCmd.Flags().Uint32Var(&singleUser, "singleuser-orgs", 0, "Quota single user org")
+	setCmd.Flags().Uint32Var(&projects, "projects", 0, "Quota projects")
+	setCmd.Flags().Uint32Var(&deployments, "deployments", 0, "Quota deployments")
+	setCmd.Flags().Uint32Var(&slotsTotal, "slots-total", 0, "Quota slots total")
+	setCmd.Flags().Uint32Var(&slotsPerDeployment, "slots-per-deployment", 0, "Quota slots per deployment")
+	setCmd.Flags().Uint32Var(&outstandingInvites, "outstanding-invites", 0, "Quota outstanding invites")
 	return setCmd
 }

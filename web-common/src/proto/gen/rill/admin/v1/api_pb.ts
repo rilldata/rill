@@ -2218,29 +2218,29 @@ export class SudoUpdateOrganizationQuotasRequest extends Message<SudoUpdateOrgan
   orgName = "";
 
   /**
-   * @generated from field: optional uint32 quota_projects = 2;
+   * @generated from field: optional uint32 projects = 2;
    */
-  quotaProjects?: number;
+  projects?: number;
 
   /**
-   * @generated from field: optional uint32 quota_deployments = 3;
+   * @generated from field: optional uint32 deployments = 3;
    */
-  quotaDeployments?: number;
+  deployments?: number;
 
   /**
-   * @generated from field: optional uint32 quota_slots_total = 4;
+   * @generated from field: optional uint32 slots_total = 4;
    */
-  quotaSlotsTotal?: number;
+  slotsTotal?: number;
 
   /**
-   * @generated from field: optional uint32 quota_slots_per_deployment = 5;
+   * @generated from field: optional uint32 slots_per_deployment = 5;
    */
-  quotaSlotsPerDeployment?: number;
+  slotsPerDeployment?: number;
 
   /**
-   * @generated from field: optional uint32 quota_outstanding_invites = 6;
+   * @generated from field: optional uint32 outstanding_invites = 6;
    */
-  quotaOutstandingInvites?: number;
+  outstandingInvites?: number;
 
   constructor(data?: PartialMessage<SudoUpdateOrganizationQuotasRequest>) {
     super();
@@ -2251,11 +2251,11 @@ export class SudoUpdateOrganizationQuotasRequest extends Message<SudoUpdateOrgan
   static readonly typeName = "rill.admin.v1.SudoUpdateOrganizationQuotasRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "quota_projects", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
-    { no: 3, name: "quota_deployments", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
-    { no: 4, name: "quota_slots_total", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
-    { no: 5, name: "quota_slots_per_deployment", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
-    { no: 6, name: "quota_outstanding_invites", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 2, name: "projects", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 3, name: "deployments", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 4, name: "slots_total", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 5, name: "slots_per_deployment", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 6, name: "outstanding_invites", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationQuotasRequest {
@@ -2282,9 +2282,9 @@ export class SudoUpdateOrganizationQuotasRequest extends Message<SudoUpdateOrgan
  */
 export class SudoUpdateOrganizationQuotasResponse extends Message<SudoUpdateOrganizationQuotasResponse> {
   /**
-   * @generated from field: rill.admin.v1.OrganizationQuotas organization_quotas = 1;
+   * @generated from field: rill.admin.v1.Organization organization = 1;
    */
-  organizationQuotas?: OrganizationQuotas;
+  organization?: Organization;
 
   constructor(data?: PartialMessage<SudoUpdateOrganizationQuotasResponse>) {
     super();
@@ -2294,7 +2294,7 @@ export class SudoUpdateOrganizationQuotasResponse extends Message<SudoUpdateOrga
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.SudoUpdateOrganizationQuotasResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "organization_quotas", kind: "message", T: OrganizationQuotas },
+    { no: 1, name: "organization", kind: "message", T: Organization },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationQuotasResponse {
@@ -2326,9 +2326,9 @@ export class SudoUpdateUserQuotasRequest extends Message<SudoUpdateUserQuotasReq
   email = "";
 
   /**
-   * @generated from field: optional uint32 quota_singleuser_orgs = 2;
+   * @generated from field: optional uint32 singleuser_orgs = 2;
    */
-  quotaSingleuserOrgs?: number;
+  singleuserOrgs?: number;
 
   constructor(data?: PartialMessage<SudoUpdateUserQuotasRequest>) {
     super();
@@ -2339,7 +2339,7 @@ export class SudoUpdateUserQuotasRequest extends Message<SudoUpdateUserQuotasReq
   static readonly typeName = "rill.admin.v1.SudoUpdateUserQuotasRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "quota_singleuser_orgs", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
+    { no: 2, name: "singleuser_orgs", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateUserQuotasRequest {
@@ -2366,9 +2366,9 @@ export class SudoUpdateUserQuotasRequest extends Message<SudoUpdateUserQuotasReq
  */
 export class SudoUpdateUserQuotasResponse extends Message<SudoUpdateUserQuotasResponse> {
   /**
-   * @generated from field: rill.admin.v1.UserQuotas user_quotas = 1;
+   * @generated from field: rill.admin.v1.User user = 1;
    */
-  userQuotas?: UserQuotas;
+  user?: User;
 
   constructor(data?: PartialMessage<SudoUpdateUserQuotasResponse>) {
     super();
@@ -2378,7 +2378,7 @@ export class SudoUpdateUserQuotasResponse extends Message<SudoUpdateUserQuotasRe
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.SudoUpdateUserQuotasResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "user_quotas", kind: "message", T: UserQuotas },
+    { no: 1, name: "user", kind: "message", T: User },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateUserQuotasResponse {
@@ -3801,9 +3801,9 @@ export class Organization extends Message<Organization> {
  */
 export class UserQuotas extends Message<UserQuotas> {
   /**
-   * @generated from field: uint32 quota_singleuser_orgs = 1;
+   * @generated from field: uint32 singleuser_orgs = 1;
    */
-  quotaSingleuserOrgs = 0;
+  singleuserOrgs = 0;
 
   constructor(data?: PartialMessage<UserQuotas>) {
     super();
@@ -3813,7 +3813,7 @@ export class UserQuotas extends Message<UserQuotas> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.UserQuotas";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "quota_singleuser_orgs", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 1, name: "singleuser_orgs", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UserQuotas {
@@ -3838,29 +3838,29 @@ export class UserQuotas extends Message<UserQuotas> {
  */
 export class OrganizationQuotas extends Message<OrganizationQuotas> {
   /**
-   * @generated from field: uint32 quota_projects = 1;
+   * @generated from field: uint32 projects = 1;
    */
-  quotaProjects = 0;
+  projects = 0;
 
   /**
-   * @generated from field: uint32 quota_deployments = 2;
+   * @generated from field: uint32 deployments = 2;
    */
-  quotaDeployments = 0;
+  deployments = 0;
 
   /**
-   * @generated from field: uint32 quota_slots_total = 3;
+   * @generated from field: uint32 slots_total = 3;
    */
-  quotaSlotsTotal = 0;
+  slotsTotal = 0;
 
   /**
-   * @generated from field: uint32 quota_slots_per_deployment = 4;
+   * @generated from field: uint32 slots_per_deployment = 4;
    */
-  quotaSlotsPerDeployment = 0;
+  slotsPerDeployment = 0;
 
   /**
-   * @generated from field: uint32 quota_outstanding_invites = 5;
+   * @generated from field: uint32 outstanding_invites = 5;
    */
-  quotaOutstandingInvites = 0;
+  outstandingInvites = 0;
 
   constructor(data?: PartialMessage<OrganizationQuotas>) {
     super();
@@ -3870,11 +3870,11 @@ export class OrganizationQuotas extends Message<OrganizationQuotas> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.OrganizationQuotas";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "quota_projects", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 2, name: "quota_deployments", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 3, name: "quota_slots_total", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 4, name: "quota_slots_per_deployment", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 5, name: "quota_outstanding_invites", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 1, name: "projects", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 2, name: "deployments", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "slots_total", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "slots_per_deployment", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 5, name: "outstanding_invites", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OrganizationQuotas {
