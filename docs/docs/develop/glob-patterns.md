@@ -20,11 +20,9 @@ By default, Rill applies certain limits when using glob patterns to ingest data.
 - **Total files listed**: 1 million
 
 These limits can be configured in the `.yaml` file for the source. To modify the default limits, you can update the `.yaml` file with following fields:
-```yaml
- - glob.max_total_size: The maximum total size (in bytes) of all objects. 
- - glob.max_objects_matched: The total file matches allowed.
- - glob.max_objects_listed: The total files listed to match against the glob pattern. 
- ```
+- `glob.max_total_size`: The maximum total size (in bytes) of all objects. 
+- `glob.max_objects_matched`: The total file matches allowed.
+- `glob.max_objects_listed`: The total files listed to match against the glob pattern. 
 
 For example, to increase the limit on the total bytes downloaded to 100GB, you would add the following line to the `source.yaml` file:
 ```yaml
