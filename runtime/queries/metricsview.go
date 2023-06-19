@@ -338,12 +338,7 @@ func writeXLSX(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, wri
 	row := make([]interface{}, 0, len(meta))
 	for i, s := range data {
 		for _, f := range s.Fields {
-			str, err := convert(f)
-			if err != nil {
-				return err
-			}
-
-			row = append(row, str)
+			row = append(row, f.AsInterface())
 		}
 
 		cell, err := excelize.CoordinatesToCellName(1, i+2) // 1-based, and +1 for headers
