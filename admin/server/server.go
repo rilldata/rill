@@ -109,7 +109,7 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, opt
 
 // ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
-	grpcReqRateLimiter := s.limiter.Middleware().WithAnonLimit(ratelimit.Forbidden).WithAuthLimit(ratelimit.Default)
+	grpcReqRateLimiter := s.limiter.Middleware().WithAnonLimit(ratelimit.Default).WithAuthLimit(ratelimit.Default)
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),

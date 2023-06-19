@@ -12,10 +12,35 @@ import (
 	"reflect"
 )
 
+// RequestRateLimiter is a struct that provides rate limiting functionality
+// leveraging the Redis-based rate limiter from the `go-redis/redis_rate` package.
+// It offers methods to control rate limiting for different types of requests
+// (anonymous vs authenticated) and for different request keys.
+//
+// A Redis client is initialized in the constructor with the provided Redis address.
+// If no address is provided, the rate limiter is not set up.
+//
+// The rate limits can be adjusted on a per-key basis, and different limits
+// can be set up for authenticated and anonymous requests. These limits are applied
+// each time a request is made, and an error is returned if the rate limit is exceeded.
+//
+// The package also defines several rate limiting constants, which can be used
+// to adjust the rate limiting limits: Default, Sensitive, Public, Unlimited, and Zero.
+//
+// Additionally, a custom error type, QuotaExceededError, is used to indicate
+// when the rate limit for a particular key has been exceeded.
 type RequestRateLimiter struct {
 	*redis_rate.Limiter
 }
 
+// NewRequestRateLimiter is a constructor for creating a new RequestRateLimiter instance.
+// It takes a string representing the Redis address as input. If the address string
+// is not empty, a new Redis client is initialized with this address and a
+// rate limiter is set up using this client.
+//
+// If the Redis address is empty, the constructor still returns a valid
+// RequestRateLimiter instance, but the Limiter within it is not initialized,
+// effectively making this rate limiter a no-op. E.g. in local environment.
 func NewRequestRateLimiter(redisAddr string) *RequestRateLimiter {
 	// if RedisAddr is not passed then rateLimiter doesn't limit user requests
 	var limiter *redis_rate.Limiter
@@ -46,7 +71,7 @@ func (l *RequestRateLimiter) LimitKeyedRequest(ctx context.Context, limitKey str
 		return nil
 	}
 
-	if limit == Forbidden {
+	if limit.IsZero() {
 		return NewQuotaExceededError("Resource quota not provided")
 	}
 
@@ -90,7 +115,7 @@ var Public = redis_rate.PerMinute(250)
 
 var Unlimited = redis_rate.PerSecond(math.MaxInt)
 
-var Forbidden = redis_rate.Limit{}
+var Zero = redis_rate.Limit{}
 
 func isAnonymous(ctx context.Context) bool {
 	claims := auth.GetClaims(ctx)
