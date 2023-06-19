@@ -311,7 +311,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 
 	if rowCount < int64(q.Pixels*4) {
 		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query:            `SELECT ` + safeTimestampColumnName + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
+			Query:            `SELECT ` + safeTimestampColumnName + ` as ts, "` + valueColumn + `"::DOUBLE as count FROM "` + tableName + `"`,
 			Priority:         priority,
 			ExecutionTimeout: defaultExecutionTimeout,
 		})
@@ -351,7 +351,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 
 	querySQL := ` -- extract unix time
       WITH Q as (
-        SELECT extract('epoch' from ` + safeTimestampColumnName + `) as t, "` + valueColumn + `" as v FROM "` + tableName + `"
+        SELECT extract('epoch' from ` + safeTimestampColumnName + `) as t, "` + valueColumn + `"::DOUBLE as v FROM "` + tableName + `"
       ),
       -- generate bounds
       M as (
