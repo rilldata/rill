@@ -54,13 +54,12 @@ const (
 	AdminService_CreateWhitelistedDomain_FullMethodName      = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
 	AdminService_RemoveWhitelistedDomain_FullMethodName      = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
 	AdminService_ListWhitelistedDomains_FullMethodName       = "/rill.admin.v1.AdminService/ListWhitelistedDomains"
+	AdminService_GetUser_FullMethodName                      = "/rill.admin.v1.AdminService/GetUser"
 	AdminService_SearchUsers_FullMethodName                  = "/rill.admin.v1.AdminService/SearchUsers"
 	AdminService_ListSuperusers_FullMethodName               = "/rill.admin.v1.AdminService/ListSuperusers"
 	AdminService_SetSuperuser_FullMethodName                 = "/rill.admin.v1.AdminService/SetSuperuser"
 	AdminService_SudoGetResource_FullMethodName              = "/rill.admin.v1.AdminService/SudoGetResource"
-	AdminService_SudoGetUserQuotas_FullMethodName            = "/rill.admin.v1.AdminService/SudoGetUserQuotas"
 	AdminService_SudoUpdateUserQuotas_FullMethodName         = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
-	AdminService_SudoGetOrganizationQuotas_FullMethodName    = "/rill.admin.v1.AdminService/SudoGetOrganizationQuotas"
 	AdminService_SudoUpdateOrganizationQuotas_FullMethodName = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
 )
 
@@ -139,7 +138,9 @@ type AdminServiceClient interface {
 	RemoveWhitelistedDomain(ctx context.Context, in *RemoveWhitelistedDomainRequest, opts ...grpc.CallOption) (*RemoveWhitelistedDomainResponse, error)
 	// ListWhitelistedDomains lists all the whitelisted domains for the organization
 	ListWhitelistedDomains(ctx context.Context, in *ListWhitelistedDomainsRequest, opts ...grpc.CallOption) (*ListWhitelistedDomainsResponse, error)
-	// GetUsersByEmail returns user by email
+	// GetUsers returns user by email
+	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
+	// GetUsersByEmail returns users by email
 	SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error)
 	// ListSuperusers lists all the superusers
 	ListSuperusers(ctx context.Context, in *ListSuperusersRequest, opts ...grpc.CallOption) (*ListSuperusersResponse, error)
@@ -147,12 +148,8 @@ type AdminServiceClient interface {
 	SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
 	SudoGetResource(ctx context.Context, in *SudoGetResourceRequest, opts ...grpc.CallOption) (*SudoGetResourceResponse, error)
-	// SudoGetUserQuotas returns quotas available for users
-	SudoGetUserQuotas(ctx context.Context, in *SudoGetUserQuotasRequest, opts ...grpc.CallOption) (*SudoGetUserQuotasResponse, error)
 	// SudoUpdateUserQuotas update the quotas for users
 	SudoUpdateUserQuotas(ctx context.Context, in *SudoUpdateUserQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateUserQuotasResponse, error)
-	// SudoGetOrganizationQuotas returns quotas available for orgs
-	SudoGetOrganizationQuotas(ctx context.Context, in *SudoGetOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoGetOrganizationQuotasResponse, error)
 	// SudoUpdateOrganizationQuotas update the quotas available for orgs
 	SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error)
 }
@@ -480,6 +477,15 @@ func (c *adminServiceClient) ListWhitelistedDomains(ctx context.Context, in *Lis
 	return out, nil
 }
 
+func (c *adminServiceClient) GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error) {
+	out := new(GetUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetUser_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error) {
 	out := new(SearchUsersResponse)
 	err := c.cc.Invoke(ctx, AdminService_SearchUsers_FullMethodName, in, out, opts...)
@@ -516,27 +522,9 @@ func (c *adminServiceClient) SudoGetResource(ctx context.Context, in *SudoGetRes
 	return out, nil
 }
 
-func (c *adminServiceClient) SudoGetUserQuotas(ctx context.Context, in *SudoGetUserQuotasRequest, opts ...grpc.CallOption) (*SudoGetUserQuotasResponse, error) {
-	out := new(SudoGetUserQuotasResponse)
-	err := c.cc.Invoke(ctx, AdminService_SudoGetUserQuotas_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *adminServiceClient) SudoUpdateUserQuotas(ctx context.Context, in *SudoUpdateUserQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateUserQuotasResponse, error) {
 	out := new(SudoUpdateUserQuotasResponse)
 	err := c.cc.Invoke(ctx, AdminService_SudoUpdateUserQuotas_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) SudoGetOrganizationQuotas(ctx context.Context, in *SudoGetOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoGetOrganizationQuotasResponse, error) {
-	out := new(SudoGetOrganizationQuotasResponse)
-	err := c.cc.Invoke(ctx, AdminService_SudoGetOrganizationQuotas_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -627,7 +615,9 @@ type AdminServiceServer interface {
 	RemoveWhitelistedDomain(context.Context, *RemoveWhitelistedDomainRequest) (*RemoveWhitelistedDomainResponse, error)
 	// ListWhitelistedDomains lists all the whitelisted domains for the organization
 	ListWhitelistedDomains(context.Context, *ListWhitelistedDomainsRequest) (*ListWhitelistedDomainsResponse, error)
-	// GetUsersByEmail returns user by email
+	// GetUsers returns user by email
+	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
+	// GetUsersByEmail returns users by email
 	SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error)
 	// ListSuperusers lists all the superusers
 	ListSuperusers(context.Context, *ListSuperusersRequest) (*ListSuperusersResponse, error)
@@ -635,12 +625,8 @@ type AdminServiceServer interface {
 	SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
 	SudoGetResource(context.Context, *SudoGetResourceRequest) (*SudoGetResourceResponse, error)
-	// SudoGetUserQuotas returns quotas available for users
-	SudoGetUserQuotas(context.Context, *SudoGetUserQuotasRequest) (*SudoGetUserQuotasResponse, error)
 	// SudoUpdateUserQuotas update the quotas for users
 	SudoUpdateUserQuotas(context.Context, *SudoUpdateUserQuotasRequest) (*SudoUpdateUserQuotasResponse, error)
-	// SudoGetOrganizationQuotas returns quotas available for orgs
-	SudoGetOrganizationQuotas(context.Context, *SudoGetOrganizationQuotasRequest) (*SudoGetOrganizationQuotasResponse, error)
 	// SudoUpdateOrganizationQuotas update the quotas available for orgs
 	SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
@@ -755,6 +741,9 @@ func (UnimplementedAdminServiceServer) RemoveWhitelistedDomain(context.Context, 
 func (UnimplementedAdminServiceServer) ListWhitelistedDomains(context.Context, *ListWhitelistedDomainsRequest) (*ListWhitelistedDomainsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListWhitelistedDomains not implemented")
 }
+func (UnimplementedAdminServiceServer) GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
+}
 func (UnimplementedAdminServiceServer) SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchUsers not implemented")
 }
@@ -767,14 +756,8 @@ func (UnimplementedAdminServiceServer) SetSuperuser(context.Context, *SetSuperus
 func (UnimplementedAdminServiceServer) SudoGetResource(context.Context, *SudoGetResourceRequest) (*SudoGetResourceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoGetResource not implemented")
 }
-func (UnimplementedAdminServiceServer) SudoGetUserQuotas(context.Context, *SudoGetUserQuotasRequest) (*SudoGetUserQuotasResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SudoGetUserQuotas not implemented")
-}
 func (UnimplementedAdminServiceServer) SudoUpdateUserQuotas(context.Context, *SudoUpdateUserQuotasRequest) (*SudoUpdateUserQuotasResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateUserQuotas not implemented")
-}
-func (UnimplementedAdminServiceServer) SudoGetOrganizationQuotas(context.Context, *SudoGetOrganizationQuotasRequest) (*SudoGetOrganizationQuotasResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SudoGetOrganizationQuotas not implemented")
 }
 func (UnimplementedAdminServiceServer) SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationQuotas not implemented")
@@ -1422,6 +1405,24 @@ func _AdminService_ListWhitelistedDomains_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetUser(ctx, req.(*GetUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_SearchUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SearchUsersRequest)
 	if err := dec(in); err != nil {
@@ -1494,24 +1495,6 @@ func _AdminService_SudoGetResource_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_SudoGetUserQuotas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SudoGetUserQuotasRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).SudoGetUserQuotas(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_SudoGetUserQuotas_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).SudoGetUserQuotas(ctx, req.(*SudoGetUserQuotasRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _AdminService_SudoUpdateUserQuotas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SudoUpdateUserQuotasRequest)
 	if err := dec(in); err != nil {
@@ -1526,24 +1509,6 @@ func _AdminService_SudoUpdateUserQuotas_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).SudoUpdateUserQuotas(ctx, req.(*SudoUpdateUserQuotasRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_SudoGetOrganizationQuotas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SudoGetOrganizationQuotasRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).SudoGetOrganizationQuotas(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_SudoGetOrganizationQuotas_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).SudoGetOrganizationQuotas(ctx, req.(*SudoGetOrganizationQuotasRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1714,6 +1679,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_ListWhitelistedDomains_Handler,
 		},
 		{
+			MethodName: "GetUser",
+			Handler:    _AdminService_GetUser_Handler,
+		},
+		{
 			MethodName: "SearchUsers",
 			Handler:    _AdminService_SearchUsers_Handler,
 		},
@@ -1730,16 +1699,8 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_SudoGetResource_Handler,
 		},
 		{
-			MethodName: "SudoGetUserQuotas",
-			Handler:    _AdminService_SudoGetUserQuotas_Handler,
-		},
-		{
 			MethodName: "SudoUpdateUserQuotas",
 			Handler:    _AdminService_SudoUpdateUserQuotas_Handler,
-		},
-		{
-			MethodName: "SudoGetOrganizationQuotas",
-			Handler:    _AdminService_SudoGetOrganizationQuotas_Handler,
 		},
 		{
 			MethodName: "SudoUpdateOrganizationQuotas",

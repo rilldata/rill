@@ -224,7 +224,7 @@ func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResour
 	return res, nil
 }
 
-func (s *Server) SudoGetUserQuotas(ctx context.Context, req *adminv1.SudoGetUserQuotasRequest) (*adminv1.SudoGetUserQuotasResponse, error) {
+func (s *Server) GetUser(ctx context.Context, req *adminv1.GetUserRequest) (*adminv1.GetUserResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
@@ -235,15 +235,18 @@ func (s *Server) SudoGetUserQuotas(ctx context.Context, req *adminv1.SudoGetUser
 		return nil, err
 	}
 
-	return &adminv1.SudoGetUserQuotasResponse{UserQuotas: &adminv1.UserQuotas{
-		QuotaSingleuserOrgs: uint32(user.QuotaSingleuserOrgs),
-	}}, nil
+	return &adminv1.GetUserResponse{User: userToPB(user)}, nil
 }
 
 func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpdateUserQuotasRequest) (*adminv1.SudoUpdateUserQuotasResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
+	}
+
+	observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
+	if req.QuotaSingleuserOrgs != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int("args.quota_singleuser_orgs", int(*req.QuotaSingleuserOrgs)))
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
@@ -256,7 +259,7 @@ func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpda
 		DisplayName:         user.DisplayName,
 		PhotoURL:            user.PhotoURL,
 		GithubUsername:      user.GithubUsername,
-		QuotaSingleuserOrgs: int(req.QuotaSingleuserOrgs),
+		QuotaSingleuserOrgs: int(valOrDefault(req.QuotaSingleuserOrgs, uint32(user.QuotaSingleuserOrgs))),
 	})
 	if err != nil {
 		return nil, err
@@ -273,8 +276,11 @@ func userToPB(u *database.User) *adminv1.User {
 		Email:       u.Email,
 		DisplayName: u.DisplayName,
 		PhotoUrl:    u.PhotoURL,
-		CreatedOn:   timestamppb.New(u.CreatedOn),
-		UpdatedOn:   timestamppb.New(u.UpdatedOn),
+		Quotas: &adminv1.UserQuotas{
+			QuotaSingleuserOrgs: uint32(u.QuotaSingleuserOrgs),
+		},
+		CreatedOn: timestamppb.New(u.CreatedOn),
+		UpdatedOn: timestamppb.New(u.UpdatedOn),
 	}
 }
 

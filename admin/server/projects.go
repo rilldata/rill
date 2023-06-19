@@ -747,3 +747,10 @@ func safeStr(s *string) string {
 	}
 	return *s
 }
+
+func valOrDefault[T any](ptr *T, def T) T {
+	if ptr != nil {
+		return *ptr
+	}
+	return def
+}

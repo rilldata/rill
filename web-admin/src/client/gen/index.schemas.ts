@@ -18,14 +18,6 @@ export type AdminServiceSudoGetResourceParams = {
   instanceId?: string;
 };
 
-export type AdminServiceSudoGetUserQuotasParams = {
-  email?: string;
-};
-
-export type AdminServiceSudoGetOrganizationQuotasParams = {
-  orgName?: string;
-};
-
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
   [key: string]: string;
 };
@@ -143,6 +135,7 @@ export interface V1User {
   email?: string;
   displayName?: string;
   photoUrl?: string;
+  quotas?: V1UserQuotas;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -197,20 +190,12 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   quotaOutstandingInvites?: number;
 }
 
-export interface V1SudoGetUserQuotasResponse {
-  userQuotas?: V1UserQuotas;
-}
-
 export interface V1SudoGetResourceResponse {
   user?: V1User;
   org?: V1Organization;
   project?: V1Project;
   deployment?: V1Deployment;
   instance?: V1Deployment;
-}
-
-export interface V1SudoGetOrganizationQuotasResponse {
-  organizationQuotas?: V1OrganizationQuotas;
 }
 
 export interface V1SetSuperuserResponse {
@@ -311,6 +296,7 @@ export interface V1Organization {
   id?: string;
   name?: string;
   description?: string;
+  quotas?: V1OrganizationQuotas;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -373,6 +359,10 @@ export interface V1IssueRepresentativeAuthTokenResponse {
 export interface V1IssueRepresentativeAuthTokenRequest {
   email?: string;
   ttlMinutes?: string;
+}
+
+export interface V1GetUserResponse {
+  user?: V1User;
 }
 
 export type V1GetProjectVariablesResponseVariables = { [key: string]: string };

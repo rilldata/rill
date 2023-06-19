@@ -6453,482 +6453,6 @@ var _ interface {
 	ErrorName() string
 } = SudoGetResourceResponseValidationError{}
 
-// Validate checks the field values on SudoGetOrganizationQuotasRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *SudoGetOrganizationQuotasRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on SudoGetOrganizationQuotasRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// SudoGetOrganizationQuotasRequestMultiError, or nil if none found.
-func (m *SudoGetOrganizationQuotasRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *SudoGetOrganizationQuotasRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for OrgName
-
-	if len(errors) > 0 {
-		return SudoGetOrganizationQuotasRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// SudoGetOrganizationQuotasRequestMultiError is an error wrapping multiple
-// validation errors returned by
-// SudoGetOrganizationQuotasRequest.ValidateAll() if the designated
-// constraints aren't met.
-type SudoGetOrganizationQuotasRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m SudoGetOrganizationQuotasRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m SudoGetOrganizationQuotasRequestMultiError) AllErrors() []error { return m }
-
-// SudoGetOrganizationQuotasRequestValidationError is the validation error
-// returned by SudoGetOrganizationQuotasRequest.Validate if the designated
-// constraints aren't met.
-type SudoGetOrganizationQuotasRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e SudoGetOrganizationQuotasRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e SudoGetOrganizationQuotasRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e SudoGetOrganizationQuotasRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e SudoGetOrganizationQuotasRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e SudoGetOrganizationQuotasRequestValidationError) ErrorName() string {
-	return "SudoGetOrganizationQuotasRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e SudoGetOrganizationQuotasRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sSudoGetOrganizationQuotasRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = SudoGetOrganizationQuotasRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = SudoGetOrganizationQuotasRequestValidationError{}
-
-// Validate checks the field values on SudoGetOrganizationQuotasResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *SudoGetOrganizationQuotasResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on SudoGetOrganizationQuotasResponse
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// SudoGetOrganizationQuotasResponseMultiError, or nil if none found.
-func (m *SudoGetOrganizationQuotasResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *SudoGetOrganizationQuotasResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetOrganizationQuotas()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, SudoGetOrganizationQuotasResponseValidationError{
-					field:  "OrganizationQuotas",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, SudoGetOrganizationQuotasResponseValidationError{
-					field:  "OrganizationQuotas",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetOrganizationQuotas()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return SudoGetOrganizationQuotasResponseValidationError{
-				field:  "OrganizationQuotas",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return SudoGetOrganizationQuotasResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// SudoGetOrganizationQuotasResponseMultiError is an error wrapping multiple
-// validation errors returned by
-// SudoGetOrganizationQuotasResponse.ValidateAll() if the designated
-// constraints aren't met.
-type SudoGetOrganizationQuotasResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m SudoGetOrganizationQuotasResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m SudoGetOrganizationQuotasResponseMultiError) AllErrors() []error { return m }
-
-// SudoGetOrganizationQuotasResponseValidationError is the validation error
-// returned by SudoGetOrganizationQuotasResponse.Validate if the designated
-// constraints aren't met.
-type SudoGetOrganizationQuotasResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e SudoGetOrganizationQuotasResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e SudoGetOrganizationQuotasResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e SudoGetOrganizationQuotasResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e SudoGetOrganizationQuotasResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e SudoGetOrganizationQuotasResponseValidationError) ErrorName() string {
-	return "SudoGetOrganizationQuotasResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e SudoGetOrganizationQuotasResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sSudoGetOrganizationQuotasResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = SudoGetOrganizationQuotasResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = SudoGetOrganizationQuotasResponseValidationError{}
-
-// Validate checks the field values on SudoGetUserQuotasRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *SudoGetUserQuotasRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on SudoGetUserQuotasRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// SudoGetUserQuotasRequestMultiError, or nil if none found.
-func (m *SudoGetUserQuotasRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *SudoGetUserQuotasRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Email
-
-	if len(errors) > 0 {
-		return SudoGetUserQuotasRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// SudoGetUserQuotasRequestMultiError is an error wrapping multiple validation
-// errors returned by SudoGetUserQuotasRequest.ValidateAll() if the designated
-// constraints aren't met.
-type SudoGetUserQuotasRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m SudoGetUserQuotasRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m SudoGetUserQuotasRequestMultiError) AllErrors() []error { return m }
-
-// SudoGetUserQuotasRequestValidationError is the validation error returned by
-// SudoGetUserQuotasRequest.Validate if the designated constraints aren't met.
-type SudoGetUserQuotasRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e SudoGetUserQuotasRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e SudoGetUserQuotasRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e SudoGetUserQuotasRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e SudoGetUserQuotasRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e SudoGetUserQuotasRequestValidationError) ErrorName() string {
-	return "SudoGetUserQuotasRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e SudoGetUserQuotasRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sSudoGetUserQuotasRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = SudoGetUserQuotasRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = SudoGetUserQuotasRequestValidationError{}
-
-// Validate checks the field values on SudoGetUserQuotasResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *SudoGetUserQuotasResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on SudoGetUserQuotasResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// SudoGetUserQuotasResponseMultiError, or nil if none found.
-func (m *SudoGetUserQuotasResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *SudoGetUserQuotasResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetUserQuotas()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, SudoGetUserQuotasResponseValidationError{
-					field:  "UserQuotas",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, SudoGetUserQuotasResponseValidationError{
-					field:  "UserQuotas",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetUserQuotas()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return SudoGetUserQuotasResponseValidationError{
-				field:  "UserQuotas",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return SudoGetUserQuotasResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// SudoGetUserQuotasResponseMultiError is an error wrapping multiple validation
-// errors returned by SudoGetUserQuotasResponse.ValidateAll() if the
-// designated constraints aren't met.
-type SudoGetUserQuotasResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m SudoGetUserQuotasResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m SudoGetUserQuotasResponseMultiError) AllErrors() []error { return m }
-
-// SudoGetUserQuotasResponseValidationError is the validation error returned by
-// SudoGetUserQuotasResponse.Validate if the designated constraints aren't met.
-type SudoGetUserQuotasResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e SudoGetUserQuotasResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e SudoGetUserQuotasResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e SudoGetUserQuotasResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e SudoGetUserQuotasResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e SudoGetUserQuotasResponseValidationError) ErrorName() string {
-	return "SudoGetUserQuotasResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e SudoGetUserQuotasResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sSudoGetUserQuotasResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = SudoGetUserQuotasResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = SudoGetUserQuotasResponseValidationError{}
-
 // Validate checks the field values on SudoUpdateOrganizationQuotasRequest with
 // the rules defined in the proto definition for this message. If any rules
 // are violated, the first error encountered is returned, or nil if there are
@@ -6954,69 +6478,24 @@ func (m *SudoUpdateOrganizationQuotasRequest) validate(all bool) error {
 
 	// no validation rules for OrgName
 
-	switch v := m.Quota.(type) {
-	case *SudoUpdateOrganizationQuotasRequest_QuotaProjects:
-		if v == nil {
-			err := SudoUpdateOrganizationQuotasRequestValidationError{
-				field:  "Quota",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
+	if m.QuotaProjects != nil {
 		// no validation rules for QuotaProjects
-	case *SudoUpdateOrganizationQuotasRequest_QuotaDeployments:
-		if v == nil {
-			err := SudoUpdateOrganizationQuotasRequestValidationError{
-				field:  "Quota",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
+	}
+
+	if m.QuotaDeployments != nil {
 		// no validation rules for QuotaDeployments
-	case *SudoUpdateOrganizationQuotasRequest_QuotaSlotsTotal:
-		if v == nil {
-			err := SudoUpdateOrganizationQuotasRequestValidationError{
-				field:  "Quota",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
+	}
+
+	if m.QuotaSlotsTotal != nil {
 		// no validation rules for QuotaSlotsTotal
-	case *SudoUpdateOrganizationQuotasRequest_QuotaSlotsPerDeployment:
-		if v == nil {
-			err := SudoUpdateOrganizationQuotasRequestValidationError{
-				field:  "Quota",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
+	}
+
+	if m.QuotaSlotsPerDeployment != nil {
 		// no validation rules for QuotaSlotsPerDeployment
-	case *SudoUpdateOrganizationQuotasRequest_QuotaOutstandingInvites:
-		if v == nil {
-			err := SudoUpdateOrganizationQuotasRequestValidationError{
-				field:  "Quota",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
+	}
+
+	if m.QuotaOutstandingInvites != nil {
 		// no validation rules for QuotaOutstandingInvites
-	default:
-		_ = v // ensures v is used
 	}
 
 	if len(errors) > 0 {
@@ -7259,7 +6738,9 @@ func (m *SudoUpdateUserQuotasRequest) validate(all bool) error {
 
 	// no validation rules for Email
 
-	// no validation rules for QuotaSingleuserOrgs
+	if m.QuotaSingleuserOrgs != nil {
+		// no validation rules for QuotaSingleuserOrgs
+	}
 
 	if len(errors) > 0 {
 		return SudoUpdateUserQuotasRequestMultiError(errors)
@@ -9155,6 +8636,297 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetCurrentUserResponseValidationError{}
+
+// Validate checks the field values on GetUserRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *GetUserRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetUserRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in GetUserRequestMultiError,
+// or nil if none found.
+func (m *GetUserRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetUserRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = GetUserRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return GetUserRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *GetUserRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *GetUserRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
+}
+
+// GetUserRequestMultiError is an error wrapping multiple validation errors
+// returned by GetUserRequest.ValidateAll() if the designated constraints
+// aren't met.
+type GetUserRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetUserRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetUserRequestMultiError) AllErrors() []error { return m }
+
+// GetUserRequestValidationError is the validation error returned by
+// GetUserRequest.Validate if the designated constraints aren't met.
+type GetUserRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetUserRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetUserRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetUserRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetUserRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetUserRequestValidationError) ErrorName() string { return "GetUserRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e GetUserRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetUserRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetUserRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetUserRequestValidationError{}
+
+// Validate checks the field values on GetUserResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *GetUserResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetUserResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetUserResponseMultiError, or nil if none found.
+func (m *GetUserResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetUserResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetUser()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetUserResponseValidationError{
+					field:  "User",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetUserResponseValidationError{
+					field:  "User",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUser()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetUserResponseValidationError{
+				field:  "User",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GetUserResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetUserResponseMultiError is an error wrapping multiple validation errors
+// returned by GetUserResponse.ValidateAll() if the designated constraints
+// aren't met.
+type GetUserResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetUserResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetUserResponseMultiError) AllErrors() []error { return m }
+
+// GetUserResponseValidationError is the validation error returned by
+// GetUserResponse.Validate if the designated constraints aren't met.
+type GetUserResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetUserResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetUserResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetUserResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetUserResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetUserResponseValidationError) ErrorName() string { return "GetUserResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e GetUserResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetUserResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetUserResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetUserResponseValidationError{}
 
 // Validate checks the field values on SearchUsersRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -11105,6 +10877,35 @@ func (m *User) validate(all bool) error {
 	// no validation rules for PhotoUrl
 
 	if all {
+		switch v := interface{}(m.GetQuotas()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, UserValidationError{
+					field:  "Quotas",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, UserValidationError{
+					field:  "Quotas",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetQuotas()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UserValidationError{
+				field:  "Quotas",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
@@ -11266,6 +11067,35 @@ func (m *Organization) validate(all bool) error {
 	// no validation rules for Name
 
 	// no validation rules for Description
+
+	if all {
+		switch v := interface{}(m.GetQuotas()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, OrganizationValidationError{
+					field:  "Quotas",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, OrganizationValidationError{
+					field:  "Quotas",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetQuotas()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return OrganizationValidationError{
+				field:  "Quotas",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

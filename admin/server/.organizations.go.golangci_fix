@@ -1,0 +1,355 @@
+package server
+
+import (
+	"context"
+	"errors"
+	"math"
+	"strings"
+
+	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/email"
+	"github.com/rilldata/rill/admin/pkg/publicemail"
+	"github.com/rilldata/rill/admin/server/auth"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
+)
+
+func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganizationsRequest) (*adminv1.ListOrganizationsResponse, error) {
+	// Check the request is made by an authenticated user
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	}
+
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	orgs, err := s.admin.DB.FindOrganizationsForUser(ctx, claims.OwnerID(), token.Val, pageSize)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	nextToken := ""
+	if len(orgs) >= pageSize {
+		nextToken = marshalPageToken(orgs[len(orgs)-1].Name)
+	}
+
+	pbs := make([]*adminv1.Organization, len(orgs))
+	for i, org := range orgs {
+		pbs[i] = organizationToDTO(org)
+	}
+
+	return &adminv1.ListOrganizationsResponse{Organizations: pbs, NextPageToken: nextToken}, nil
+}
+
+func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizationRequest) (*adminv1.GetOrganizationResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Name),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "org not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) && !claims.OrganizationPermissions(ctx, org.ID).ReadOrg {
+		// check if the org has any public projects, this works for anonymous users as well
+		hasPublicProject, err := s.admin.DB.CheckOrganizationHasPublicProjects(ctx, org.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		// these are the permissions for public and for outside members
+		publicPermissions := &adminv1.OrganizationPermissions{ReadOrg: true, ReadProjects: true}
+		if hasPublicProject {
+			return &adminv1.GetOrganizationResponse{
+				Organization: organizationToDTO(org),
+				Permissions:  publicPermissions,
+			}, nil
+		}
+		// check if the user is outside members of a project in the org
+		if claims.OwnerType() == auth.OwnerTypeUser {
+			exists, err := s.admin.DB.CheckOrganizationHasOutsideUser(ctx, org.ID, claims.OwnerID())
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			if exists {
+				return &adminv1.GetOrganizationResponse{
+					Organization: organizationToDTO(org),
+					Permissions:  publicPermissions,
+				}, nil
+			}
+		}
+		return nil, status.Error(codes.PermissionDenied, "not allowed to read org")
+	}
+
+	return &adminv1.GetOrganizationResponse{
+		Organization: organizationToDTO(org),
+		Permissions:  claims.OrganizationPermissions(ctx, org.ID),
+	}, nil
+}
+
+func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrganizationRequest) (*adminv1.CreateOrganizationResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Name),
+		attribute.String("args.description", req.Description),
+	)
+
+	// Check the request is made by an authenticated user
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	}
+
+	// check single user org limit for this user
+	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	count, err := s.admin.DB.CountSingleuserOrganizationsForMemberUser(ctx, user.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if user.QuotaSingleuserOrgs >= 0 && count >= user.QuotaSingleuserOrgs {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: you can only create %d single-user orgs", user.QuotaSingleuserOrgs)
+	}
+
+	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, req.Name, req.Description)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &adminv1.CreateOrganizationResponse{
+		Organization: organizationToDTO(org),
+	}, nil
+}
+
+func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrganizationRequest) (*adminv1.DeleteOrganizationResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Name),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to delete org")
+	}
+
+	err = s.admin.DB.DeleteOrganization(ctx, req.Name)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &adminv1.DeleteOrganizationResponse{}, nil
+}
+
+func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrganizationRequest) (*adminv1.UpdateOrganizationResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.id", req.Id),
+		attribute.String("args.org", req.Name),
+		attribute.String("args.description", req.Description),
+	)
+
+	org, err := s.admin.DB.FindOrganization(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
+	}
+
+	org, err = s.admin.DB.UpdateOrganization(ctx, req.Id, &database.UpdateOrganizationOptions{
+		Name:                    req.Name,
+		Description:             req.Description,
+		QuotaProjects:           org.QuotaProjects,
+		QuotaDeployments:        org.QuotaDeployments,
+		QuotaSlotsTotal:         org.QuotaSlotsTotal,
+		QuotaSlotsPerDeployment: org.QuotaSlotsPerDeployment,
+		QuotaOutstandingInvites: org.QuotaOutstandingInvites,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.UpdateOrganizationResponse{
+		Organization: organizationToDTO(org),
+	}, nil
+}
+
+func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListOrganizationMembersRequest) (*adminv1.ListOrganizationMembersResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
+	}
+
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	members, err := s.admin.DB.FindOrganizationMemberUsers(ctx, org.ID, token.Val, pageSize)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	nextToken := ""
+	if len(members) >= pageSize {
+		nextToken = marshalPageToken(members[len(members)-1].Email)
+	}
+
+	dtos := make([]*adminv1.Member, len(members))
+	for i, user := range members {
+		dtos[i] = memberToPB(user)
+	}
+
+	return &adminv1.ListOrganizationMembersResponse{
+		Members:       dtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
+func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListOrganizationInvitesRequest) (*adminv1.ListOrganizationInvitesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
+	}
+
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	// get pending user invites for this org
+	userInvites, err := s.admin.DB.FindOrganizationInvites(ctx, org.ID, token.Val, pageSize)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	nextToken := ""
+	if len(userInvites) >= pageSize {
+		nextToken = marshalPageToken(userInvites[len(userInvites)-1].Email)
+	}
+
+	invitesDtos := make([]*adminv1.UserInvite, len(userInvites))
+	for i, invite := range userInvites {
+		invitesDtos[i] = inviteToPB(invite)
+	}
+
+	return &adminv1.ListOrganizationInvitesResponse{
+		Invites:       invitesDtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
+func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrganizationMemberRequest) (*adminv1.AddOrganizationMemberResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.role", req.Role),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to add org members")
+	}
+
+	count, err := s.admin.DB.CountInvitesForOrganization(ctx, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if org.QuotaOutstandingInvites >= 0 && count >= org.QuotaOutstandingInvites {
+		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org can at most have %d outstanding invitations", org.QuotaOutstandingInvites)
+	}
+
+	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var invitedByUserID, invitedByName string
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		invitedByUserID = user.ID
+		invitedByName = user.DisplayName
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		if !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		// Invite user to join org
+		err := s.admin.DB.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
+			Email:     req.Email,
+			InviterID: invitedByUserID,
+			OrgID:     org.ID,
+			RoleID:    role.ID,
+		})
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		// Send invitation email
+		err = s.admin.Email.SendOrganizationInvite(&email.OrganizationInvite{
+			ToEmail:       req.Email,
+			ToName:        "",
+			OrgName:       org.Name,
+			RoleName:      role.Name,
+			InvitedByName: invitedByName,
+		})
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		return &adminv1.AddOrganizationMemberResponse{
+			PendingSignup: true,
+		}, nil
+	}
+
+	ctx, tx, err := s.admin.DB.NewTx(ctx)
+	if err != nil {

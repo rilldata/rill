@@ -2,7 +2,6 @@ package quota
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -12,18 +11,13 @@ import (
 
 func SetCmd(cfg *config.Config) *cobra.Command {
 	var org, email string
+	var quotaSingleUser, quotaProjects, quotaDeployments, quotaSlotsTotal, quotaSlotsPerDeployment, quotaOutstandingInvites uint32
 	setCmd := &cobra.Command{
-		Use:   "set <key> <value>",
-		Args:  cobra.ExactArgs(2),
+		Use:   "set [org|user]",
+		Args:  cobra.NoArgs,
 		Short: "Set quota for user or org",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			key := args[0]
-			value, err := strconv.Atoi(args[1])
-			if err != nil {
-				return err
-			}
-
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -35,29 +29,20 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 					OrgName: org,
 				}
 
-				switch key {
-				case "quota_projects":
-					req.Quota = &adminv1.SudoUpdateOrganizationQuotasRequest_QuotaProjects{
-						QuotaProjects: uint32(value),
-					}
-				case "quota_deployments":
-					req.Quota = &adminv1.SudoUpdateOrganizationQuotasRequest_QuotaDeployments{
-						QuotaDeployments: uint32(value),
-					}
-				case "quota_slots_total":
-					req.Quota = &adminv1.SudoUpdateOrganizationQuotasRequest_QuotaSlotsTotal{
-						QuotaSlotsTotal: uint32(value),
-					}
-				case "quota_slots_per_deployment":
-					req.Quota = &adminv1.SudoUpdateOrganizationQuotasRequest_QuotaSlotsPerDeployment{
-						QuotaSlotsPerDeployment: uint32(value),
-					}
-				case "quota_outstanding_invites":
-					req.Quota = &adminv1.SudoUpdateOrganizationQuotasRequest_QuotaOutstandingInvites{
-						QuotaOutstandingInvites: uint32(value),
-					}
-				default:
-					return fmt.Errorf("invalid quota key %q", args[0])
+				if cmd.Flags().Changed("quota_projects") {
+					req.QuotaProjects = &quotaProjects
+				}
+				if cmd.Flags().Changed("quota_deployments") {
+					req.QuotaDeployments = &quotaDeployments
+				}
+				if cmd.Flags().Changed("quota_slots_total") {
+					req.QuotaSlotsTotal = &quotaSlotsTotal
+				}
+				if cmd.Flags().Changed("quota_slots_per_deployment") {
+					req.QuotaSlotsPerDeployment = &quotaSlotsPerDeployment
+				}
+				if cmd.Flags().Changed("quota_outstanding_invites") {
+					req.QuotaOutstandingInvites = &quotaOutstandingInvites
 				}
 
 				res, err := client.SudoUpdateOrganizationQuotas(ctx, req)
@@ -74,10 +59,15 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 				fmt.Printf("QuotaSlotsPerDeployment: %d\n", orgQuotas.QuotaSlotsPerDeployment)
 				fmt.Printf("QuotaOutstandingInvites: %d\n", orgQuotas.QuotaOutstandingInvites)
 			} else if email != "" {
-				res, err := client.SudoUpdateUserQuotas(ctx, &adminv1.SudoUpdateUserQuotasRequest{
-					Email:               email,
-					QuotaSingleuserOrgs: uint32(value),
-				})
+				req := &adminv1.SudoUpdateUserQuotasRequest{
+					Email: email,
+				}
+
+				if cmd.Flags().Changed("quota_singleuser_orgs") {
+					req.QuotaSingleuserOrgs = &quotaSingleUser
+				}
+
+				res, err := client.SudoUpdateUserQuotas(ctx, req)
 				if err != nil {
 					return err
 				}
@@ -97,5 +87,11 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 	setCmd.Flags().SortFlags = false
 	setCmd.Flags().StringVar(&org, "org", "", "Organization Name")
 	setCmd.Flags().StringVar(&email, "user", "", "User Email")
+	setCmd.Flags().Uint32Var(&quotaSingleUser, "quota_singleuser_orgs", 0, "Quota single user org")
+	setCmd.Flags().Uint32Var(&quotaProjects, "quota_projects", 0, "Quota projects")
+	setCmd.Flags().Uint32Var(&quotaDeployments, "quota_deployments", 0, "Quota deployments")
+	setCmd.Flags().Uint32Var(&quotaSlotsTotal, "quota_slots_total", 0, "Quota slots total")
+	setCmd.Flags().Uint32Var(&quotaSlotsPerDeployment, "quota_slots_per_deployment", 0, "Quota slots per deployment")
+	setCmd.Flags().Uint32Var(&quotaOutstandingInvites, "quota_outstanding_invites", 0, "Quota outstanding invites")
 	return setCmd
 }

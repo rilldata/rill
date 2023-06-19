@@ -63,7 +63,7 @@ func (s *Server) GetOrganization(ctx context.Context, req *adminv1.GetOrganizati
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrg {
+	if !claims.Superuser(ctx) && !claims.OrganizationPermissions(ctx, org.ID).ReadOrg {
 		// check if the org has any public projects, this works for anonymous users as well
 		hasPublicProject, err := s.admin.DB.CheckOrganizationHasPublicProjects(ctx, org.ID)
 		if err != nil {
@@ -773,32 +773,27 @@ func (s *Server) ListWhitelistedDomains(ctx context.Context, req *adminv1.ListWh
 	}, nil
 }
 
-func (s *Server) SudoGetOrganizationQuotas(ctx context.Context, req *adminv1.SudoGetOrganizationQuotasRequest) (*adminv1.SudoGetOrganizationQuotasResponse, error) {
-	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
-	}
-
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
-	if err != nil {
-		return nil, err
-	}
-
-	return &adminv1.SudoGetOrganizationQuotasResponse{
-		OrganizationQuotas: &adminv1.OrganizationQuotas{
-			QuotaProjects:           uint32(org.QuotaProjects),
-			QuotaDeployments:        uint32(org.QuotaDeployments),
-			QuotaSlotsTotal:         uint32(org.QuotaSlotsTotal),
-			QuotaSlotsPerDeployment: uint32(org.QuotaSlotsPerDeployment),
-			QuotaOutstandingInvites: uint32(org.QuotaOutstandingInvites),
-		},
-	}, nil
-}
-
 func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.SudoUpdateOrganizationQuotasRequest) (*adminv1.SudoUpdateOrganizationQuotasResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
+	}
+
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
+	if req.QuotaProjects != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int("args.quota_projects", int(*req.QuotaProjects)))
+	}
+	if req.QuotaDeployments != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int("args.quota_deployments", int(*req.QuotaDeployments)))
+	}
+	if req.QuotaSlotsTotal != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int("args.quota_slots_total", int(*req.QuotaSlotsTotal)))
+	}
+	if req.QuotaSlotsPerDeployment != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int("args.quota_slots_per_deployment", int(*req.QuotaSlotsPerDeployment)))
+	}
+	if req.QuotaOutstandingInvites != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int("args.quota_outstanding_invites", int(*req.QuotaOutstandingInvites)))
 	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
@@ -809,27 +804,11 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 	opts := &database.UpdateOrganizationOptions{
 		Name:                    req.OrgName,
 		Description:             org.Description,
-		QuotaProjects:           org.QuotaProjects,
-		QuotaDeployments:        org.QuotaDeployments,
-		QuotaSlotsTotal:         org.QuotaSlotsTotal,
-		QuotaSlotsPerDeployment: org.QuotaSlotsPerDeployment,
-		QuotaOutstandingInvites: org.QuotaOutstandingInvites,
-	}
-
-	// Update user quota here
-	switch id := req.Quota.(type) {
-	case *adminv1.SudoUpdateOrganizationQuotasRequest_QuotaProjects:
-		opts.QuotaProjects = int(id.QuotaProjects)
-	case *adminv1.SudoUpdateOrganizationQuotasRequest_QuotaDeployments:
-		opts.QuotaDeployments = int(id.QuotaDeployments)
-	case *adminv1.SudoUpdateOrganizationQuotasRequest_QuotaSlotsTotal:
-		opts.QuotaSlotsTotal = int(id.QuotaSlotsTotal)
-	case *adminv1.SudoUpdateOrganizationQuotasRequest_QuotaSlotsPerDeployment:
-		opts.QuotaSlotsPerDeployment = int(id.QuotaSlotsPerDeployment)
-	case *adminv1.SudoUpdateOrganizationQuotasRequest_QuotaOutstandingInvites:
-		opts.QuotaOutstandingInvites = int(id.QuotaOutstandingInvites)
-	default:
-		return nil, status.Errorf(codes.Internal, "unexpected quota type %T", id)
+		QuotaProjects:           int(valOrDefault(req.QuotaProjects, uint32(org.QuotaProjects))),
+		QuotaDeployments:        int(valOrDefault(req.QuotaDeployments, uint32(org.QuotaDeployments))),
+		QuotaSlotsTotal:         int(valOrDefault(req.QuotaSlotsTotal, uint32(org.QuotaSlotsTotal))),
+		QuotaSlotsPerDeployment: int(valOrDefault(req.QuotaSlotsPerDeployment, uint32(org.QuotaSlotsPerDeployment))),
+		QuotaOutstandingInvites: int(valOrDefault(req.QuotaOutstandingInvites, uint32(org.QuotaOutstandingInvites))),
 	}
 
 	updatedOrg, err := s.admin.DB.UpdateOrganization(ctx, org.ID, opts)
@@ -853,8 +832,15 @@ func organizationToDTO(o *database.Organization) *adminv1.Organization {
 		Id:          o.ID,
 		Name:        o.Name,
 		Description: o.Description,
-		CreatedOn:   timestamppb.New(o.CreatedOn),
-		UpdatedOn:   timestamppb.New(o.UpdatedOn),
+		Quotas: &adminv1.OrganizationQuotas{
+			QuotaProjects:           uint32(o.QuotaProjects),
+			QuotaDeployments:        uint32(o.QuotaDeployments),
+			QuotaSlotsTotal:         uint32(o.QuotaSlotsTotal),
+			QuotaSlotsPerDeployment: uint32(o.QuotaSlotsPerDeployment),
+			QuotaOutstandingInvites: uint32(o.QuotaOutstandingInvites),
+		},
+		CreatedOn: timestamppb.New(o.CreatedOn),
+		UpdatedOn: timestamppb.New(o.UpdatedOn),
 	}
 }
 

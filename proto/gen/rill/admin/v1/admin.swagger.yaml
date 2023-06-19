@@ -927,25 +927,6 @@ paths:
       tags:
         - AdminService
   /v1/superuser/quotas/organization:
-    get:
-      summary: SudoGetOrganizationQuotas returns quotas available for orgs
-      operationId: AdminService_SudoGetOrganizationQuotas
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1SudoGetOrganizationQuotasResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: orgName
-          in: query
-          required: false
-          type: string
-      tags:
-        - AdminService
     post:
       summary: SudoUpdateOrganizationQuotas update the quotas available for orgs
       operationId: AdminService_SudoUpdateOrganizationQuotas
@@ -967,25 +948,6 @@ paths:
       tags:
         - AdminService
   /v1/superuser/quotas/user:
-    get:
-      summary: SudoGetUserQuotas returns quotas available for users
-      operationId: AdminService_SudoGetUserQuotas
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1SudoGetUserQuotasResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: email
-          in: query
-          required: false
-          type: string
-      tags:
-        - AdminService
     post:
       summary: SudoUpdateUserQuotas update the quotas for users
       operationId: AdminService_SudoUpdateUserQuotas
@@ -1078,6 +1040,26 @@ paths:
             $ref: '#/definitions/v1IssueRepresentativeAuthTokenRequest'
       tags:
         - AdminService
+  /v1/users/{email}:
+    get:
+      summary: GetUsers returns user by email
+      operationId: AdminService_GetUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: email
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/users/current:
     get:
       summary: GetCurrentUser returns the currently authenticated user (if any)
@@ -1095,7 +1077,7 @@ paths:
         - AdminService
   /v1/users/search:
     get:
-      summary: GetUsersByEmail returns user by email
+      summary: GetUsersByEmail returns users by email
       operationId: AdminService_SearchUsers
       responses:
         "200":
@@ -1262,6 +1244,11 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  v1GetUserResponse:
+    type: object
+    properties:
+      user:
+        $ref: '#/definitions/v1User'
   v1IssueRepresentativeAuthTokenRequest:
     type: object
     properties:
@@ -1380,6 +1367,8 @@ definitions:
         title: Globally unique
       description:
         type: string
+      quotas:
+        $ref: '#/definitions/v1OrganizationQuotas'
       createdOn:
         type: string
         format: date-time
@@ -1527,12 +1516,6 @@ definitions:
         type: boolean
   v1SetSuperuserResponse:
     type: object
-  v1SudoGetOrganizationQuotasResponse:
-    type: object
-    properties:
-      organizationQuotas:
-        $ref: '#/definitions/v1OrganizationQuotas'
-    title: SudoGetOrganizationQuotasResponse
   v1SudoGetResourceResponse:
     type: object
     properties:
@@ -1547,12 +1530,6 @@ definitions:
       instance:
         $ref: '#/definitions/v1Deployment'
     title: SudoGetResourceResponse
-  v1SudoGetUserQuotasResponse:
-    type: object
-    properties:
-      userQuotas:
-        $ref: '#/definitions/v1UserQuotas'
-    title: SudoGetUserQuotasResponse
   v1SudoUpdateOrganizationQuotasRequest:
     type: object
     properties:
@@ -1629,6 +1606,8 @@ definitions:
         type: string
       photoUrl:
         type: string
+      quotas:
+        $ref: '#/definitions/v1UserQuotas'
       createdOn:
         type: string
         format: date-time

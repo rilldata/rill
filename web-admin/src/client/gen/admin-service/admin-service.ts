@@ -68,12 +68,8 @@ import type {
   V1ListSuperusersResponse,
   V1SetSuperuserResponse,
   V1SetSuperuserRequest,
-  V1SudoGetOrganizationQuotasResponse,
-  AdminServiceSudoGetOrganizationQuotasParams,
   V1SudoUpdateOrganizationQuotasResponse,
   V1SudoUpdateOrganizationQuotasRequest,
-  V1SudoGetUserQuotasResponse,
-  AdminServiceSudoGetUserQuotasParams,
   V1SudoUpdateUserQuotasResponse,
   V1SudoUpdateUserQuotasRequest,
   V1SudoGetResourceResponse,
@@ -81,6 +77,7 @@ import type {
   V1RevokeCurrentAuthTokenResponse,
   V1IssueRepresentativeAuthTokenResponse,
   V1IssueRepresentativeAuthTokenRequest,
+  V1GetUserResponse,
   V1GetCurrentUserResponse,
   V1SearchUsersResponse,
   AdminServiceSearchUsersParams,
@@ -2072,68 +2069,6 @@ export const createAdminServiceSetSuperuser = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary SudoGetOrganizationQuotas returns quotas available for orgs
- */
-export const adminServiceSudoGetOrganizationQuotas = (
-  params?: AdminServiceSudoGetOrganizationQuotasParams,
-  signal?: AbortSignal
-) => {
-  return httpClient<V1SudoGetOrganizationQuotasResponse>({
-    url: `/v1/superuser/quotas/organization`,
-    method: "get",
-    params,
-    signal,
-  });
-};
-
-export const getAdminServiceSudoGetOrganizationQuotasQueryKey = (
-  params?: AdminServiceSudoGetOrganizationQuotasParams
-) =>
-  [`/v1/superuser/quotas/organization`, ...(params ? [params] : [])] as const;
-
-export type AdminServiceSudoGetOrganizationQuotasQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceSudoGetOrganizationQuotas>>
->;
-export type AdminServiceSudoGetOrganizationQuotasQueryError = RpcStatus;
-
-export const createAdminServiceSudoGetOrganizationQuotas = <
-  TData = Awaited<ReturnType<typeof adminServiceSudoGetOrganizationQuotas>>,
-  TError = RpcStatus
->(
-  params?: AdminServiceSudoGetOrganizationQuotasParams,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceSudoGetOrganizationQuotas>>,
-      TError,
-      TData
-    >;
-  }
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getAdminServiceSudoGetOrganizationQuotasQueryKey(params);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceSudoGetOrganizationQuotas>>
-  > = ({ signal }) => adminServiceSudoGetOrganizationQuotas(params, signal);
-
-  const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceSudoGetOrganizationQuotas>>,
-    TError,
-    TData
-  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
-    TData,
-    TError
-  > & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
  * @summary SudoUpdateOrganizationQuotas update the quotas available for orgs
  */
 export const adminServiceSudoUpdateOrganizationQuotas = (
@@ -2184,66 +2119,6 @@ export const createAdminServiceSudoUpdateOrganizationQuotas = <
     TContext
   >(mutationFn, mutationOptions);
 };
-/**
- * @summary SudoGetUserQuotas returns quotas available for users
- */
-export const adminServiceSudoGetUserQuotas = (
-  params?: AdminServiceSudoGetUserQuotasParams,
-  signal?: AbortSignal
-) => {
-  return httpClient<V1SudoGetUserQuotasResponse>({
-    url: `/v1/superuser/quotas/user`,
-    method: "get",
-    params,
-    signal,
-  });
-};
-
-export const getAdminServiceSudoGetUserQuotasQueryKey = (
-  params?: AdminServiceSudoGetUserQuotasParams
-) => [`/v1/superuser/quotas/user`, ...(params ? [params] : [])] as const;
-
-export type AdminServiceSudoGetUserQuotasQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceSudoGetUserQuotas>>
->;
-export type AdminServiceSudoGetUserQuotasQueryError = RpcStatus;
-
-export const createAdminServiceSudoGetUserQuotas = <
-  TData = Awaited<ReturnType<typeof adminServiceSudoGetUserQuotas>>,
-  TError = RpcStatus
->(
-  params?: AdminServiceSudoGetUserQuotasParams,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceSudoGetUserQuotas>>,
-      TError,
-      TData
-    >;
-  }
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ?? getAdminServiceSudoGetUserQuotasQueryKey(params);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceSudoGetUserQuotas>>
-  > = ({ signal }) => adminServiceSudoGetUserQuotas(params, signal);
-
-  const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceSudoGetUserQuotas>>,
-    TError,
-    TData
-  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
-    TData,
-    TError
-  > & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
 /**
  * @summary SudoUpdateUserQuotas update the quotas for users
  */
@@ -2450,6 +2325,63 @@ export const createAdminServiceIssueRepresentativeAuthToken = <
   >(mutationFn, mutationOptions);
 };
 /**
+ * @summary GetUsers returns user by email
+ */
+export const adminServiceGetUser = (email: string, signal?: AbortSignal) => {
+  return httpClient<V1GetUserResponse>({
+    url: `/v1/users/${email}`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetUserQueryKey = (email: string) =>
+  [`/v1/users/${email}`] as const;
+
+export type AdminServiceGetUserQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetUser>>
+>;
+export type AdminServiceGetUserQueryError = RpcStatus;
+
+export const createAdminServiceGetUser = <
+  TData = Awaited<ReturnType<typeof adminServiceGetUser>>,
+  TError = RpcStatus
+>(
+  email: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetUser>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceGetUserQueryKey(email);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetUser>>
+  > = ({ signal }) => adminServiceGetUser(email, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetUser>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!email,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
  * @summary GetCurrentUser returns the currently authenticated user (if any)
  */
 export const adminServiceGetCurrentUser = (signal?: AbortSignal) => {
@@ -2502,7 +2434,7 @@ export const createAdminServiceGetCurrentUser = <
 };
 
 /**
- * @summary GetUsersByEmail returns user by email
+ * @summary GetUsersByEmail returns users by email
  */
 export const adminServiceSearchUsers = (
   params?: AdminServiceSearchUsersParams,
