@@ -3000,6 +3000,7 @@ definitions:
       - TIME_GRAIN_DAY
       - TIME_GRAIN_WEEK
       - TIME_GRAIN_MONTH
+      - TIME_GRAIN_QUARTER
       - TIME_GRAIN_YEAR
     default: TIME_GRAIN_UNSPECIFIED
   v1TimeRange:

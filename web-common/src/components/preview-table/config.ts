@@ -6,7 +6,7 @@ export const config: VirtualizedTableConfig = {
   minColumnWidth: 120,
   minHeaderWidthWhenColumsAreSmall: 160,
   rowHeight: 36,
-  columnHeaderHeight: 32,
+  columnHeaderHeight: 36,
   indexWidth: 60,
   columnHeaderFontWeightClass: "font-bold",
   defaultFontWeightClass: "font-semibold",

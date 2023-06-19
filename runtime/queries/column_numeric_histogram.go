@@ -75,7 +75,7 @@ func (q *ColumnNumericHistogram) Export(ctx context.Context, rt *runtime.Runtime
 func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, instanceID string, priority int) (float64, error) {
 	sanitizedColumnName := safeName(q.ColumnName)
 	querySQL := fmt.Sprintf(
-		"SELECT approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25) AS iqr, approx_count_distinct(%s) AS count, max(%s) - min(%s) AS range FROM %s",
+		"SELECT (approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25))::DOUBLE AS iqr, approx_count_distinct(%s) AS count, (max(%s) - min(%s))::DOUBLE AS range FROM %s",
 		sanitizedColumnName,
 		sanitizedColumnName,
 		sanitizedColumnName,

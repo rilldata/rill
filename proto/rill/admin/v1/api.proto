@@ -267,7 +267,7 @@ message PingResponse {
 }
 
 message ListOrganizationsRequest {
-  uint32 page_size = 1 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 1 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 2;
 }
 
@@ -312,7 +312,7 @@ message UpdateOrganizationResponse {
 
 message ListProjectsForOrganizationRequest {
   string organization_name = 1 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
 
@@ -423,7 +423,7 @@ message TriggerReprovisionResponse {}
 
 message ListOrganizationMembersRequest {
   string organization = 1;
-  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
 
@@ -434,7 +434,7 @@ message ListOrganizationMembersResponse {
 
 message ListOrganizationInvitesRequest {
   string organization = 1;
-  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
 
@@ -513,7 +513,7 @@ message SudoGetResourceResponse {
 message ListProjectMembersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 4 ;
 }
 
@@ -525,7 +525,7 @@ message ListProjectMembersResponse {
 message ListProjectInvitesRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 4;
 }
 
@@ -571,7 +571,7 @@ message GetCurrentUserResponse {
 // It can be some string as well so not validating for email here
 message SearchUsersRequest {
   string email_pattern = 1 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
 
