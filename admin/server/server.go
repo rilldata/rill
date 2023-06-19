@@ -34,7 +34,11 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var minCliVersion = version.Must(version.NewVersion("0.28.0"))
+var _minCliVersion = version.Must(version.NewVersion("0.20.0"))
+var methodWiseMinCliVersion = map[string]*version.Version{
+	"UpdateProject":      version.Must(version.NewVersion("0.28.0")),
+	"UpdateOrganization": version.Must(version.NewVersion("0.28.0")),
+}
 
 type Options struct {
 	HTTPPort               int
@@ -111,7 +115,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			observability.TracingStreamServerInterceptor(),
 			observability.LoggingStreamServerInterceptor(s.logger),
 			errorMappingStreamServerInterceptor(),
-			grpc_auth.StreamServerInterceptor(checkUserAgent),
+			grpc_auth.StreamServerInterceptor(nil),
 			grpc_validator.StreamServerInterceptor(),
 			s.authenticator.StreamServerInterceptor(),
 		),
@@ -120,7 +124,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			observability.TracingUnaryServerInterceptor(),
 			observability.LoggingUnaryServerInterceptor(s.logger),
 			errorMappingUnaryServerInterceptor(),
-			grpc_auth.UnaryServerInterceptor(checkUserAgent),
+			grpc_auth.UnaryServerInterceptor(nil),
 			grpc_validator.UnaryServerInterceptor(),
 			s.authenticator.UnaryServerInterceptor(),
 		),
@@ -236,6 +240,21 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 	return resp, nil
 }
 
+func (s *Server) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
+	_, method, err := parseFullMethod(fullMethodName)
+	if err != nil {
+		return nil, err
+	}
+
+	minCliVersion, ok := methodWiseMinCliVersion[method]
+	if !ok {
+		minCliVersion = _minCliVersion
+	}
+	return checkUserAgent(ctx, minCliVersion)
+}
+
+var _ grpc_auth.ServiceAuthFuncOverride = &Server{}
+
 func timeoutSelector(service, method string) time.Duration {
 	return time.Minute
 }
@@ -271,7 +290,7 @@ func mapGRPCError(err error) error {
 }
 
 // checkUserAgent is an interceptor that checks rejects from requests from old versions of the Rill CLI.
-func checkUserAgent(ctx context.Context) (context.Context, error) {
+func checkUserAgent(ctx context.Context, minVersion *version.Version) (context.Context, error) {
 	userAgent := strings.Split(metautils.ExtractIncoming(ctx).Get("user-agent"), " ")
 	var ver string
 	for _, s := range userAgent {
@@ -290,11 +309,20 @@ func checkUserAgent(ctx context.Context) (context.Context, error) {
 		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("could not parse rill-cli version: %s", err.Error()))
 	}
 
-	if v.LessThan(minCliVersion) {
-		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported, please upgrade to the latest version", v))
+	if v.LessThan(minVersion) {
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported for given operation, please upgrade to the latest version", v))
 	}
 
 	return ctx, nil
+}
+
+func parseFullMethod(fullMethod string) (string, string, error) {
+	name := strings.TrimLeft(fullMethod, "/")
+	parts := strings.SplitN(name, "/", 2)
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("Invalid format, %s does not follow `/package.service/method`", name)
+	}
+	return parts[0], parts[1], nil
 }
 
 type externalURLs struct {
