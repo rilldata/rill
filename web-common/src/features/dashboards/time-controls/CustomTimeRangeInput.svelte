@@ -164,6 +164,8 @@
     <Litepicker
       {startEl}
       {endEl}
+      min={getDateFromObject(boundaryStart)}
+      max={getDateFromObject(boundaryEnd)}
       defaultStart={start}
       defaultEnd={end}
       openOnMount
