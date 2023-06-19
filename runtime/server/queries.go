@@ -64,6 +64,7 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 
 func (s *Server) QueryBatch(req *runtimev1.QueryBatchRequest, srv runtimev1.QueryService_QueryBatchServer) error {
 	var wg sync.WaitGroup
+	s.runtime.SetEnableQueryCache(req.Cache)
 
 	for _, query := range req.Queries {
 		wg.Add(1)
@@ -79,6 +80,7 @@ func (s *Server) QueryBatch(req *runtimev1.QueryBatchRequest, srv runtimev1.Quer
 	}
 
 	wg.Wait()
+	s.runtime.SetEnableQueryCache(true)
 	return nil
 }
 

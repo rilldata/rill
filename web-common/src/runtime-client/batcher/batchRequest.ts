@@ -1,3 +1,4 @@
+import { perfTestStore } from "@rilldata/web-common/features/models/workspace/perf-test-store";
 import type {
   V1ColumnCardinalityRequest,
   V1ColumnDescriptiveStatisticsRequest,
@@ -20,6 +21,7 @@ import type {
   V1TableRowsRequest,
 } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { streamingFetchWrapper } from "@rilldata/web-common/runtime-client/streamingFetchWrapper";
+import { get } from "svelte/store";
 
 export type QueryRequestTypes =
   | V1MetricsViewToplistRequest
@@ -49,7 +51,10 @@ export type QueryEntry = [
 
 export async function batchRequest(url: string, queries: Array<QueryEntry>) {
   const request = {
-    queries: queries.map(([type, req], index) => mapRequest(index, type, req)),
+    queries: queries
+      .sort(([, req1], [, req2]) => req2.priority - req1.priority)
+      .map(([type, req], index) => mapRequest(index, type, req)),
+    cache: get(perfTestStore).cache,
   };
   const controller = new AbortController();
   const stream = streamingFetchWrapper<{ result: V1QueryBatchResponse }>(
@@ -87,6 +92,7 @@ export async function batchRequest(url: string, queries: Array<QueryEntry>) {
 
   for (let i = 0; i < queries.length; i++) {
     if (hit.has(i)) continue;
+    console.log(queries[i], i);
     queries[i][3](new Error("No response"));
   }
 }

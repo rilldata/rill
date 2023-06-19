@@ -22,15 +22,22 @@ export async function* streamingFetchWrapper<T>(
   const decoder = new TextDecoder();
 
   let readResult = await reader.read();
+  let prevPart = "";
   while (!readResult.done && !signal?.aborted) {
     const str = decoder.decode(readResult.value);
     const parts = str.split("\n");
     for (const part of parts) {
       if (part === "") continue;
+      if (!part.endsWith("}")) {
+        prevPart = part;
+        continue;
+      }
       try {
-        const json = JSON.parse(part);
+        const json = JSON.parse(prevPart + part);
+        prevPart = "";
         yield json;
       } catch (err) {
+        prevPart = part;
         // nothing
       }
     }

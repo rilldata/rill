@@ -1,3 +1,4 @@
+import { perfTestStore } from "@rilldata/web-common/features/models/workspace/perf-test-store";
 import { Batcher } from "@rilldata/web-common/runtime-client/batcher/Batcher";
 import type { FetchWrapperOptions } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { get } from "svelte/store";
@@ -34,7 +35,11 @@ export const httpClient = async <T>(
     };
   }
 
-  return (await batcher.add(interceptedConfig)) as Promise<T>;
+  if (get(perfTestStore).batch) {
+    return (await batcher.add(interceptedConfig)) as Promise<T>;
+  } else {
+    return (await httpRequestQueue.add(interceptedConfig)) as Promise<T>;
+  }
 };
 
 export default httpClient;

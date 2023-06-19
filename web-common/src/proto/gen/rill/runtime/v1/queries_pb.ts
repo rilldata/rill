@@ -3794,7 +3794,12 @@ export class QueryBatchRequest extends Message<QueryBatchRequest> {
   instanceId = "";
 
   /**
-   * @generated from field: repeated rill.runtime.v1.QueryBatchSingleRequest queries = 2;
+   * @generated from field: bool cache = 2;
+   */
+  cache = false;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.QueryBatchSingleRequest queries = 3;
    */
   queries: QueryBatchSingleRequest[] = [];
 
@@ -3807,7 +3812,8 @@ export class QueryBatchRequest extends Message<QueryBatchRequest> {
   static readonly typeName = "rill.runtime.v1.QueryBatchRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "queries", kind: "message", T: QueryBatchSingleRequest, repeated: true },
+    { no: 2, name: "cache", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "queries", kind: "message", T: QueryBatchSingleRequest, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): QueryBatchRequest {

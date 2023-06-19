@@ -26,6 +26,7 @@ type Runtime struct {
 	connCache          *connectionCache
 	migrationMetaCache *migrationMetaCache
 	queryCache         *queryCache
+	enableQueryCache   bool
 }
 
 func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
@@ -52,6 +53,7 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger),
 		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
 		queryCache:         newQueryCache(opts.QueryCacheSizeBytes),
+		enableQueryCache:   true,
 	}, nil
 }
 
@@ -65,4 +67,8 @@ func (r *Runtime) Close() error {
 		r.connCache.Close(),
 		r.queryCache.close(),
 	)
+}
+
+func (r *Runtime) SetEnableQueryCache(enableQueryCache bool) {
+	r.enableQueryCache = enableQueryCache
 }

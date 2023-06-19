@@ -1439,6 +1439,8 @@ paths:
           schema:
             type: object
             properties:
+              cache:
+                type: boolean
               queries:
                 type: array
                 items:

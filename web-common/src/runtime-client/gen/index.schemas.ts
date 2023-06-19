@@ -35,6 +35,7 @@ export type QueryServiceQueryBatch200 = {
 };
 
 export type QueryServiceQueryBatchBody = {
+  cache?: boolean;
   queries?: V1QueryBatchSingleRequest[];
 };
 

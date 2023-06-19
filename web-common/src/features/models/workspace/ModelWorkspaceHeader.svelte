@@ -1,14 +1,27 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { IconButton } from "@rilldata/web-common/components/button";
+  import {
+    Button,
+    IconButton,
+    IconSpaceFixer,
+    Switch,
+  } from "@rilldata/web-common/components/button";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
+  import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import {
+    perfTestStore,
+    togglePerfBatch,
+    togglePerfCache,
+  } from "@rilldata/web-common/features/models/workspace/perf-test-store";
   import { createRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
+  import { invalidateProfilingQueries } from "@rilldata/web-common/runtime-client/invalidation";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
@@ -88,12 +101,16 @@
   };
 
   $: titleInput = modelName;
+
+  function refreshQueries() {
+    invalidateProfilingQueries(queryClient, modelName);
+  }
 </script>
 
 <WorkspaceHeader
-  let:width
   {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
   appRunning={$appQueryStatusStore}
+  let:width
 >
   <svelte:fragment slot="workspace-controls">
     <IconButton
@@ -110,16 +127,23 @@
         >
       </svelte:fragment>
     </IconButton>
+    <Switch checked={$perfTestStore.batch} on:click={togglePerfBatch}>
+      Batch
+    </Switch>
+    <Switch checked={$perfTestStore.cache} on:click={togglePerfCache}>
+      Cache
+    </Switch>
+    <Button on:click={refreshQueries} type="secondary">Refresh</Button>
   </svelte:fragment>
   <svelte:fragment slot="cta">
     {@const collapse = width < 800}
     <PanelCTA side="right">
       <ModelWorkspaceCTAs
         availableDashboards={$availableDashboards?.data}
-        suppressTooltips={contextMenuOpen}
-        {modelName}
         {collapse}
         {modelHasError}
+        {modelName}
+        suppressTooltips={contextMenuOpen}
       />
     </PanelCTA>
   </svelte:fragment>
