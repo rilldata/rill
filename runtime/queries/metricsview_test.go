@@ -292,7 +292,7 @@ func Test_writeXSLX_bool(t *testing.T) {
 
 	v, err := file.GetCellValue("Sheet1", "A2")
 	require.NoError(t, err)
-	require.Equal(t, "true", v)
+	require.Equal(t, "TRUE", v)
 }
 
 func Test_writeXSLX_struct(t *testing.T) {

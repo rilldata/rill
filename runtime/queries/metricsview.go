@@ -264,7 +264,7 @@ func repeatString(val string, n int) []string {
 	return res
 }
 
-func convert(pbvalue *structpb.Value) (string, error) {
+func convertToString(pbvalue *structpb.Value) (string, error) {
 	switch pbvalue.GetKind().(type) {
 	case *structpb.Value_StructValue:
 		bts, err := json.Marshal(pbvalue)
@@ -277,6 +277,22 @@ func convert(pbvalue *structpb.Value) (string, error) {
 		return "", nil
 	default:
 		return fmt.Sprintf("%v", pbvalue.AsInterface()), nil
+	}
+}
+
+func convertToXLSXValue(pbvalue *structpb.Value) (interface{}, error) {
+	switch pbvalue.GetKind().(type) {
+	case *structpb.Value_StructValue:
+		bts, err := json.Marshal(pbvalue)
+		if err != nil {
+			return "", err
+		}
+
+		return string(bts), nil
+	case *structpb.Value_NullValue:
+		return "", nil
+	default:
+		return pbvalue.AsInterface(), nil
 	}
 }
 
@@ -295,7 +311,7 @@ func writeCSV(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writ
 	for _, structs := range data {
 		for _, field := range meta {
 			pbvalue := structs.Fields[field.Name]
-			str, err := convert(pbvalue)
+			str, err := convertToString(pbvalue)
 			if err != nil {
 				return err
 			}
@@ -338,7 +354,12 @@ func writeXLSX(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, wri
 	row := make([]interface{}, 0, len(meta))
 	for i, s := range data {
 		for _, f := range s.Fields {
-			row = append(row, f.AsInterface())
+			value, err := convertToXLSXValue(f)
+			if err != nil {
+				return err
+			}
+
+			row = append(row, value)
 		}
 
 		cell, err := excelize.CoordinatesToCellName(1, i+2) // 1-based, and +1 for headers
