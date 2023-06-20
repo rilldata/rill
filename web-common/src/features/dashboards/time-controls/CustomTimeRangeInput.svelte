@@ -73,7 +73,7 @@
   // HAM, you left off here.
   $: error = validateTimeRange(
     parseLocaleStringDate(start),
-    parseLocaleStringDate(end),
+    getEndOfPeriod(parseLocaleStringDate(end), Period.DAY),
     minTimeGrain
   );
   $: disabled = !start || !end || !!error;
