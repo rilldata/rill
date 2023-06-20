@@ -60,6 +60,7 @@
   );
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
+  $: dimensionColumn = dimension?.column || dimension?.name;
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
@@ -91,7 +92,9 @@
       : $dashboardStore?.filters.include.find((d) => d.name === dimension?.name)
           ?.in) ?? [];
 
-  $: allMeasures = $metaQuery.data?.measures;
+  $: allMeasures = $metaQuery.data?.measures.filter((m) =>
+    $dashboardStore?.visibleMeasureKeys.has(m.name)
+  );
 
   $: sortByColumn = $leaderboardMeasureQuery.data?.name;
   $: sortDirection = sortDirection || "desc";
@@ -118,7 +121,7 @@
       sort: [
         {
           name: sortByColumn,
-          ascending: sortDirection === "asc" ? true : false,
+          ascending: sortDirection === "asc",
         },
       ],
     },
@@ -186,7 +189,7 @@
       sort: [
         {
           name: sortByColumn,
-          ascending: sortDirection === "asc" ? true : false,
+          ascending: sortDirection === "asc",
         },
       ],
     },
@@ -240,7 +243,11 @@
 
     let columnNames: Array<string> = columnsMeta
       .map((c) => c.name)
-      .filter((name) => name !== dimension?.name);
+      .filter(
+        (name) =>
+          name !== dimensionColumn &&
+          $dashboardStore.visibleMeasureKeys.has(name)
+      );
 
     const selectedMeasure = allMeasures.find((m) => m.name === sortByColumn);
     const sortByColumnIndex = columnNames.indexOf(sortByColumn);
@@ -259,7 +266,7 @@
     }
 
     // Make dimension the first column
-    columnNames.unshift(dimension?.name);
+    columnNames.unshift(dimensionColumn);
     measureNames = allMeasures.map((m) => m.name);
 
     columns = columnNames.map((columnName) => {
@@ -275,7 +282,7 @@
           enableResize: false,
           format: measure?.format,
         };
-      } else if (columnName === dimension?.name) {
+      } else if (columnName === dimensionColumn) {
         // Handle dimension column
         return {
           name: columnName,
@@ -299,7 +306,7 @@
   }
 
   function onSelectItem(event) {
-    const label = values[event.detail][dimension?.name];
+    const label = values[event.detail][dimensionColumn];
     cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilter(metricViewName, dimension?.name, label);
   }
@@ -360,7 +367,7 @@
         <DimensionTable
           on:select-item={(event) => onSelectItem(event)}
           on:sort={(event) => onSortByColumn(event)}
-          dimensionName={dimension?.name}
+          dimensionName={dimensionColumn}
           {columns}
           {selectedValues}
           rows={values}

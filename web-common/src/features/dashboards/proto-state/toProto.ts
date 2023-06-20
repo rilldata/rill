@@ -56,6 +56,19 @@ export function getProtoFromDashboardState(
   if (metrics.selectedDimensionName) {
     state.selectedDimension = metrics.selectedDimensionName;
   }
+
+  if (metrics.allMeasuresVisible) {
+    state.allMeasuresVisible = true;
+  } else if (metrics.visibleMeasureKeys) {
+    state.visibleMeasures = [...metrics.visibleMeasureKeys];
+  }
+
+  if (metrics.allDimensionsVisible) {
+    state.allDimensionsVisible = true;
+  } else if (metrics.visibleDimensionKeys) {
+    state.visibleDimensions = [...metrics.visibleDimensionKeys];
+  }
+
   const message = new DashboardState(state);
   return encodeURIComponent(protoToBase64(message.toBinary()));
 }

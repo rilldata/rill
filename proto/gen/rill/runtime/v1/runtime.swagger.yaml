@@ -1309,8 +1309,6 @@ paths:
                 type: string
               timeRange:
                 $ref: '#/definitions/v1TimeSeriesTimeRange'
-              filters:
-                $ref: '#/definitions/v1MetricsViewFilter'
               pixels:
                 type: integer
                 format: int32
@@ -1735,6 +1733,8 @@ definitions:
       label:
         type: string
       description:
+        type: string
+      column:
         type: string
     title: Dimensions are columns to filter and group by
   MetricsViewFilterCond:
