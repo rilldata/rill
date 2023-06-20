@@ -156,7 +156,7 @@
         {prettyFormatTimeRange(
           $dashboardStore?.selectedTimeRange?.start,
           $dashboardStore?.selectedTimeRange?.end,
-          $dashboardStore?.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
+          $dashboardStore?.selectedTimeRange?.name
         )}
       </span>
     </div>
