@@ -183,7 +183,7 @@ func Test_writeCSV_quotes(t *testing.T) {
 	buf.Reset()
 }
 
-func Test_writeXSLX_emptystring(t *testing.T) {
+func Test_writeXLSX_emptystring(t *testing.T) {
 	meta := []*runtimev1.MetricsViewColumn{
 		{
 			Name: "col",
@@ -214,7 +214,7 @@ func Test_writeXSLX_emptystring(t *testing.T) {
 	require.Equal(t, "", v)
 }
 
-func Test_writeXSLX_number(t *testing.T) {
+func Test_writeXLSX_number(t *testing.T) {
 	meta := []*runtimev1.MetricsViewColumn{
 		{
 			Name: "col",
@@ -241,7 +241,7 @@ func Test_writeXSLX_number(t *testing.T) {
 	require.Equal(t, "2.5", v)
 }
 
-func Test_writeXSLX_null(t *testing.T) {
+func Test_writeXLSX_null(t *testing.T) {
 	meta := []*runtimev1.MetricsViewColumn{
 		{
 			Name: "col",
@@ -268,7 +268,7 @@ func Test_writeXSLX_null(t *testing.T) {
 	require.Equal(t, "", v)
 }
 
-func Test_writeXSLX_bool(t *testing.T) {
+func Test_writeXLSX_bool(t *testing.T) {
 	meta := []*runtimev1.MetricsViewColumn{
 		{
 			Name: "col",
@@ -295,7 +295,7 @@ func Test_writeXSLX_bool(t *testing.T) {
 	require.Equal(t, "TRUE", v)
 }
 
-func Test_writeXSLX_struct(t *testing.T) {
+func Test_writeXLSX_struct(t *testing.T) {
 	meta := []*runtimev1.MetricsViewColumn{
 		{
 			Name: "col",
@@ -327,7 +327,7 @@ func Test_writeXSLX_struct(t *testing.T) {
 	require.Equal(t, "{\"a\":2.5}", v)
 }
 
-func Test_writeXSLX_list(t *testing.T) {
+func Test_writeXLSX_list(t *testing.T) {
 	meta := []*runtimev1.MetricsViewColumn{
 		{
 			Name: "col",
@@ -361,7 +361,7 @@ func Test_writeXSLX_list(t *testing.T) {
 	require.Equal(t, "[2.5 true]", v)
 }
 
-func Test_writeXSLX_quotes(t *testing.T) {
+func Test_writeXLSX_quotes(t *testing.T) {
 	meta := []*runtimev1.MetricsViewColumn{
 		{
 			Name: "col",

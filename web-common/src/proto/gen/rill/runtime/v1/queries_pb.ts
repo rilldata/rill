@@ -25,15 +25,15 @@ export enum ExportFormat {
   CSV = 1,
 
   /**
-   * @generated from enum value: EXPORT_FORMAT_XSLX = 2;
+   * @generated from enum value: EXPORT_FORMAT_XLSX = 2;
    */
-  XSLX = 2,
+  XLSX = 2,
 }
 // Retrieve enum metadata with: proto3.getEnumType(ExportFormat)
 proto3.util.setEnumType(ExportFormat, "rill.runtime.v1.ExportFormat", [
   { no: 0, name: "EXPORT_FORMAT_UNSPECIFIED" },
   { no: 1, name: "EXPORT_FORMAT_CSV" },
-  { no: 2, name: "EXPORT_FORMAT_XSLX" },
+  { no: 2, name: "EXPORT_FORMAT_XLSX" },
 ]);
 
 /**

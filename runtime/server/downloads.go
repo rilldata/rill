@@ -80,7 +80,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	switch request.Format {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
 		w.Header().Set("Content-Type", "text/csv")
-	case runtimev1.ExportFormat_EXPORT_FORMAT_XSLX:
+	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
 		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	default:
 		http.Error(w, fmt.Sprintf("Unsupported format %s", request.Format), http.StatusBadRequest)
