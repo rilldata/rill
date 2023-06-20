@@ -8,7 +8,10 @@
   import type { DashboardTimeControls } from "../../../lib/time/types";
   import type { V1TimeGrain } from "../../../runtime-client";
   import Litepicker from "@rilldata/web-common/components/date-picker/Litepicker.svelte";
-  import { parseLocaleStringDate } from "@rilldata/web-common/components/date-picker/util";
+  import {
+    parseLocaleStringDate,
+    shiftToUTC,
+  } from "@rilldata/web-common/components/date-picker/util";
 
   export let minTimeGrain: V1TimeGrain;
   export let boundaryStart: Date;
@@ -28,9 +31,12 @@
   // functions for extracting the right kind of date string out of
   // a Date object. Used in the input elements.
   export function getDateFromObject(date: Date): string {
-    return date.toLocaleDateString(window.navigator.language, {
-      timeZone: "UTC",
-    });
+    return date.toLocaleDateString(
+      Intl.DateTimeFormat().resolvedOptions().locale,
+      {
+        timeZone: "UTC",
+      }
+    );
   }
 
   export function getDateFromISOString(isoDate: string): string {
@@ -87,8 +93,8 @@
   let startEl, endEl, editingDate, isOpen;
 
   const handleDatePickerChange = (d) => {
-    start = getDateFromObject(d.detail.start);
-    end = getDateFromObject(d.detail.end);
+    start = getDateFromObject(shiftToUTC(d.detail.start));
+    end = getDateFromObject(shiftToUTC(d.detail.end));
   };
 
   const handleEditingChange = (d) => {

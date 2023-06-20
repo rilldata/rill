@@ -243,3 +243,7 @@ export function parseLocaleStringDate(str: string, timeZone?: string) {
   if (!timeZone) return localDate;
   return new Date(localDate.toDateString() + " " + timeZone);
 }
+
+export function shiftToUTC(date: Date) {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000);
+}

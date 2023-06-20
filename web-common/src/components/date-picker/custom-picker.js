@@ -84,10 +84,10 @@ export default class Custompicker extends Litepicker {
     const [start, end] = this.datePicked;
     const startString = start
       .toJSDate()
-      .toLocaleDateString(window.navigator.language);
+      .toLocaleDateString(Intl.DateTimeFormat().resolvedOptions().locale);
     const endString = end
       .toJSDate()
-      .toLocaleDateString(window.navigator.language);
+      .toLocaleDateString(Intl.DateTimeFormat().resolvedOptions().locale);
 
     if (startEl instanceof HTMLInputElement) {
       startEl.value = startString;
