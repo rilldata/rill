@@ -67,13 +67,13 @@ export class Batcher {
     request.tableName = name;
 
     return new Promise((resolve, reject) => {
-      this.queries.push([
-        ProfileQueryMap[profileType],
+      this.queries.push({
+        type: ProfileQueryMap[profileType],
         request,
         resolve,
         reject,
-        requestOptions.signal,
-      ]);
+        signal: requestOptions.signal,
+      });
       this.throttleBatch();
     });
   }

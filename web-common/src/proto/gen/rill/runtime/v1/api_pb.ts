@@ -2979,3 +2979,71 @@ export class ListConnectorsResponse extends Message<ListConnectorsResponse> {
   }
 }
 
+/**
+ * @generated from message rill.runtime.v1.ToggleCachingRequest
+ */
+export class ToggleCachingRequest extends Message<ToggleCachingRequest> {
+  /**
+   * @generated from field: bool enable = 1;
+   */
+  enable = false;
+
+  constructor(data?: PartialMessage<ToggleCachingRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ToggleCachingRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "enable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ToggleCachingRequest {
+    return new ToggleCachingRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ToggleCachingRequest {
+    return new ToggleCachingRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ToggleCachingRequest {
+    return new ToggleCachingRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ToggleCachingRequest | PlainMessage<ToggleCachingRequest> | undefined, b: ToggleCachingRequest | PlainMessage<ToggleCachingRequest> | undefined): boolean {
+    return proto3.util.equals(ToggleCachingRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ToggleCachingResponse
+ */
+export class ToggleCachingResponse extends Message<ToggleCachingResponse> {
+  constructor(data?: PartialMessage<ToggleCachingResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ToggleCachingResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ToggleCachingResponse {
+    return new ToggleCachingResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ToggleCachingResponse {
+    return new ToggleCachingResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ToggleCachingResponse {
+    return new ToggleCachingResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ToggleCachingResponse | PlainMessage<ToggleCachingResponse> | undefined, b: ToggleCachingResponse | PlainMessage<ToggleCachingResponse> | undefined): boolean {
+    return proto3.util.equals(ToggleCachingResponse, a, b);
+  }
+}
+

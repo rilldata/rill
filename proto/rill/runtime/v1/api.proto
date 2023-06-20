@@ -182,6 +182,12 @@ service RuntimeService {
   rpc ListConnectors(ListConnectorsRequest) returns (ListConnectorsResponse) {
     option (google.api.http) = {get: "/v1/connectors/meta"};
   }
+
+  // Temp
+
+  rpc ToggleCaching(ToggleCachingRequest) returns (ToggleCachingResponse) {
+    option (google.api.http) = {get: "/v1/query/caching"};
+  }
 }
 
 // Request message for RuntimeService.Ping
@@ -719,3 +725,9 @@ message ListConnectorsRequest {}
 message ListConnectorsResponse {
   repeated Connector connectors = 1;
 }
+
+message ToggleCachingRequest {
+  bool enable = 1;
+}
+
+message ToggleCachingResponse {}

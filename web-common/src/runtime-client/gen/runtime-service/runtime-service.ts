@@ -50,6 +50,8 @@ import type {
   V1PingResponse,
   V1PutFileAndReconcileResponse,
   V1PutFileAndReconcileRequest,
+  V1ToggleCachingResponse,
+  RuntimeServiceToggleCachingParams,
   V1RefreshAndReconcileResponse,
   V1RefreshAndReconcileRequest,
   V1RenameFileAndReconcileResponse,
@@ -1243,6 +1245,63 @@ export const createRuntimeServicePutFileAndReconcile = <
     TContext
   >(mutationFn, mutationOptions);
 };
+export const runtimeServiceToggleCaching = (
+  params?: RuntimeServiceToggleCachingParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1ToggleCachingResponse>({
+    url: `/v1/query/caching`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceToggleCachingQueryKey = (
+  params?: RuntimeServiceToggleCachingParams
+) => [`/v1/query/caching`, ...(params ? [params] : [])] as const;
+
+export type RuntimeServiceToggleCachingQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceToggleCaching>>
+>;
+export type RuntimeServiceToggleCachingQueryError = RpcStatus;
+
+export const createRuntimeServiceToggleCaching = <
+  TData = Awaited<ReturnType<typeof runtimeServiceToggleCaching>>,
+  TError = RpcStatus
+>(
+  params?: RuntimeServiceToggleCachingParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceToggleCaching>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getRuntimeServiceToggleCachingQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceToggleCaching>>
+  > = ({ signal }) => runtimeServiceToggleCaching(params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceToggleCaching>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 export const runtimeServiceRefreshAndReconcile = (
   v1RefreshAndReconcileRequest: V1RefreshAndReconcileRequest
 ) => {

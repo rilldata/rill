@@ -9532,8 +9532,6 @@ func (m *QueryBatchRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for Cache
-
 	for idx, item := range m.GetQueries() {
 		_, _ = idx, item
 

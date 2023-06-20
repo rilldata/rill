@@ -1,4 +1,3 @@
-import { perfTestStore } from "@rilldata/web-common/features/models/workspace/perf-test-store";
 import type {
   V1ColumnCardinalityRequest,
   V1ColumnDescriptiveStatisticsRequest,
@@ -21,7 +20,6 @@ import type {
   V1TableRowsRequest,
 } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { streamingFetchWrapper } from "@rilldata/web-common/runtime-client/streamingFetchWrapper";
-import { get } from "svelte/store";
 
 export type QueryRequestTypes =
   | V1MetricsViewToplistRequest
@@ -41,20 +39,19 @@ export type QueryRequestTypes =
   | V1TableColumnsRequest
   | V1TableRowsRequest;
 
-export type QueryEntry = [
-  type: V1QueryBatchType,
-  request: QueryRequestTypes,
-  resolve: (data: any) => void,
-  reject: (err: Error) => void,
-  signal: AbortSignal | undefined
-];
+export type QueryEntry = {
+  type: V1QueryBatchType;
+  request: QueryRequestTypes;
+  resolve: (data: any) => void;
+  reject: (err: Error) => void;
+  signal: AbortSignal | undefined;
+};
 
 export async function batchRequest(url: string, queries: Array<QueryEntry>) {
   const request = {
     queries: queries
-      .sort(([, req1], [, req2]) => req2.priority - req1.priority)
-      .map(([type, req], index) => mapRequest(index, type, req)),
-    cache: get(perfTestStore).cache,
+      .sort((e1, e2) => e2.request.priority - e1.request.priority)
+      .map(({ type, request }, index) => mapRequest(index, type, request)),
   };
   const controller = new AbortController();
   const stream = streamingFetchWrapper<{ result: V1QueryBatchResponse }>(
@@ -64,7 +61,7 @@ export async function batchRequest(url: string, queries: Array<QueryEntry>) {
     controller.signal
   );
 
-  queries.forEach(([, , , , signal]) => {
+  queries.forEach(({ signal }) => {
     signal?.addEventListener(
       "abort",
       () => {
@@ -84,16 +81,15 @@ export async function batchRequest(url: string, queries: Array<QueryEntry>) {
     const idx = res.result.id ?? 0;
     hit.add(idx);
     if (res.result.error) {
-      queries[idx][3](new Error(res.result.error));
+      queries[idx].reject(buildError(res.result.error));
       continue;
     }
-    queries[idx][2](mapResponse(res.result));
+    queries[idx].resolve(mapResponse(res.result));
   }
 
   for (let i = 0; i < queries.length; i++) {
     if (hit.has(i)) continue;
-    console.log(queries[i], i);
-    queries[i][3](new Error("No response"));
+    queries[i].reject(buildError("No response"));
   }
 }
 
@@ -178,4 +174,15 @@ function mapResponse(res: V1QueryBatchResponse) {
     res.tableColumnsResponse ??
     res.tableRowsResponse
   );
+}
+
+function buildError(message: string): Error {
+  const err = new Error(message);
+  (err as any).response = {
+    status: 500,
+    data: {
+      error: message,
+    },
+  };
+  return err;
 }

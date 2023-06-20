@@ -687,8 +687,7 @@ message QueryBatchSingleRequest {
 
 message QueryBatchRequest {
   string instance_id = 1;
-  bool cache = 2;
-  repeated QueryBatchSingleRequest queries = 3;
+  repeated QueryBatchSingleRequest queries = 2;
 }
 
 message QueryBatchResponse {

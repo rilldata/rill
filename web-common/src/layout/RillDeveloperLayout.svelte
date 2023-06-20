@@ -14,6 +14,7 @@
   import { duplicateSourceName } from "@rilldata/web-common/features/sources/sources-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
+  import { runtimeServiceToggleCaching } from "@rilldata/web-common/runtime-client";
   import { batcher } from "@rilldata/web-common/runtime-client/http-client";
   import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -49,6 +50,10 @@
     fileArtifactsStore.setErrors(res.affectedPaths, res.errors);
 
     initMetrics(config);
+
+    runtimeServiceToggleCaching({
+      enable: true,
+    });
   });
 
   syncFileSystemPeriodically(

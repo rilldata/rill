@@ -43,6 +43,7 @@ const (
 	RuntimeService_RenameFileAndReconcile_FullMethodName = "/rill.runtime.v1.RuntimeService/RenameFileAndReconcile"
 	RuntimeService_RefreshAndReconcile_FullMethodName    = "/rill.runtime.v1.RuntimeService/RefreshAndReconcile"
 	RuntimeService_ListConnectors_FullMethodName         = "/rill.runtime.v1.RuntimeService/ListConnectors"
+	RuntimeService_ToggleCaching_FullMethodName          = "/rill.runtime.v1.RuntimeService/ToggleCaching"
 )
 
 // RuntimeServiceClient is the client API for RuntimeService service.
@@ -105,6 +106,7 @@ type RuntimeServiceClient interface {
 	// ListConnectors returns a description of all the connectors implemented in the runtime,
 	// including their schema and validation rules
 	ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error)
+	ToggleCaching(ctx context.Context, in *ToggleCachingRequest, opts ...grpc.CallOption) (*ToggleCachingResponse, error)
 }
 
 type runtimeServiceClient struct {
@@ -331,6 +333,15 @@ func (c *runtimeServiceClient) ListConnectors(ctx context.Context, in *ListConne
 	return out, nil
 }
 
+func (c *runtimeServiceClient) ToggleCaching(ctx context.Context, in *ToggleCachingRequest, opts ...grpc.CallOption) (*ToggleCachingResponse, error) {
+	out := new(ToggleCachingResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ToggleCaching_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RuntimeServiceServer is the server API for RuntimeService service.
 // All implementations must embed UnimplementedRuntimeServiceServer
 // for forward compatibility
@@ -391,6 +402,7 @@ type RuntimeServiceServer interface {
 	// ListConnectors returns a description of all the connectors implemented in the runtime,
 	// including their schema and validation rules
 	ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error)
+	ToggleCaching(context.Context, *ToggleCachingRequest) (*ToggleCachingResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
 
@@ -469,6 +481,9 @@ func (UnimplementedRuntimeServiceServer) RefreshAndReconcile(context.Context, *R
 }
 func (UnimplementedRuntimeServiceServer) ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListConnectors not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ToggleCaching(context.Context, *ToggleCachingRequest) (*ToggleCachingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ToggleCaching not implemented")
 }
 func (UnimplementedRuntimeServiceServer) mustEmbedUnimplementedRuntimeServiceServer() {}
 
@@ -915,6 +930,24 @@ func _RuntimeService_ListConnectors_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_ToggleCaching_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ToggleCachingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ToggleCaching(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ToggleCaching_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ToggleCaching(ctx, req.(*ToggleCachingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RuntimeService_ServiceDesc is the grpc.ServiceDesc for RuntimeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1017,6 +1050,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListConnectors",
 			Handler:    _RuntimeService_ListConnectors_Handler,
+		},
+		{
+			MethodName: "ToggleCaching",
+			Handler:    _RuntimeService_ToggleCaching_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

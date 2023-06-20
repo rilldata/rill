@@ -1439,8 +1439,6 @@ paths:
           schema:
             type: object
             properties:
-              cache:
-                type: boolean
               queries:
                 type: array
                 items:
@@ -1561,6 +1559,25 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1PutFileAndReconcileRequest'
+      tags:
+        - RuntimeService
+  /v1/query/caching:
+    get:
+      operationId: RuntimeService_ToggleCaching
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ToggleCachingResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: enable
+          in: query
+          required: false
+          type: boolean
       tags:
         - RuntimeService
   /v1/refresh-and-reconcile:
@@ -3444,6 +3461,8 @@ definitions:
         format: double
       records:
         type: object
+  v1ToggleCachingResponse:
+    type: object
   v1TopK:
     type: object
     properties:

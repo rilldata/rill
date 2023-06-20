@@ -6839,6 +6839,212 @@ var _ interface {
 	ErrorName() string
 } = ListConnectorsResponseValidationError{}
 
+// Validate checks the field values on ToggleCachingRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ToggleCachingRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ToggleCachingRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ToggleCachingRequestMultiError, or nil if none found.
+func (m *ToggleCachingRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ToggleCachingRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Enable
+
+	if len(errors) > 0 {
+		return ToggleCachingRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ToggleCachingRequestMultiError is an error wrapping multiple validation
+// errors returned by ToggleCachingRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ToggleCachingRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ToggleCachingRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ToggleCachingRequestMultiError) AllErrors() []error { return m }
+
+// ToggleCachingRequestValidationError is the validation error returned by
+// ToggleCachingRequest.Validate if the designated constraints aren't met.
+type ToggleCachingRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ToggleCachingRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ToggleCachingRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ToggleCachingRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ToggleCachingRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ToggleCachingRequestValidationError) ErrorName() string {
+	return "ToggleCachingRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ToggleCachingRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sToggleCachingRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ToggleCachingRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ToggleCachingRequestValidationError{}
+
+// Validate checks the field values on ToggleCachingResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ToggleCachingResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ToggleCachingResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ToggleCachingResponseMultiError, or nil if none found.
+func (m *ToggleCachingResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ToggleCachingResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ToggleCachingResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ToggleCachingResponseMultiError is an error wrapping multiple validation
+// errors returned by ToggleCachingResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ToggleCachingResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ToggleCachingResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ToggleCachingResponseMultiError) AllErrors() []error { return m }
+
+// ToggleCachingResponseValidationError is the validation error returned by
+// ToggleCachingResponse.Validate if the designated constraints aren't met.
+type ToggleCachingResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ToggleCachingResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ToggleCachingResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ToggleCachingResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ToggleCachingResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ToggleCachingResponseValidationError) ErrorName() string {
+	return "ToggleCachingResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ToggleCachingResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sToggleCachingResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ToggleCachingResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ToggleCachingResponseValidationError{}
+
 // Validate checks the field values on ReconcileError_CharLocation with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

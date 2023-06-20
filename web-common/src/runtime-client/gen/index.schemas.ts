@@ -18,6 +18,10 @@ export type ConnectorServiceS3ListObjectsParams = {
   delimiter?: string;
 };
 
+export type RuntimeServiceToggleCachingParams = {
+  enable?: boolean;
+};
+
 export type RuntimeServiceReconcileBody = {
   /** Changed paths provides a way to "hint" what files have changed in the repo, enabling
 reconciliation to execute faster by not scanning all code artifacts for changes. */
@@ -35,7 +39,6 @@ export type QueryServiceQueryBatch200 = {
 };
 
 export type QueryServiceQueryBatchBody = {
-  cache?: boolean;
   queries?: V1QueryBatchSingleRequest[];
 };
 
@@ -326,6 +329,10 @@ export interface V1TriggerRefreshResponse {
 
 export interface V1TopK {
   entries?: TopKEntry[];
+}
+
+export interface V1ToggleCachingResponse {
+  [key: string]: any;
 }
 
 export type V1TimeSeriesValueRecords = { [key: string]: any };
