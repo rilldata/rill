@@ -3,7 +3,6 @@ package queries
 import (
 	"context"
 	"encoding/csv"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -12,8 +11,10 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"github.com/xuri/excelize/v2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -269,6 +270,38 @@ func repeatString(val string, n int) []string {
 	return res
 }
 
+func convertToString(pbvalue *structpb.Value) (string, error) {
+	switch pbvalue.GetKind().(type) {
+	case *structpb.Value_StructValue:
+		bts, err := protojson.Marshal(pbvalue)
+		if err != nil {
+			return "", err
+		}
+
+		return string(bts), nil
+	case *structpb.Value_NullValue:
+		return "", nil
+	default:
+		return fmt.Sprintf("%v", pbvalue.AsInterface()), nil
+	}
+}
+
+func convertToXLSXValue(pbvalue *structpb.Value) (interface{}, error) {
+	switch pbvalue.GetKind().(type) {
+	case *structpb.Value_StructValue:
+		bts, err := protojson.Marshal(pbvalue)
+		if err != nil {
+			return "", err
+		}
+
+		return string(bts), nil
+	case *structpb.Value_NullValue:
+		return "", nil
+	default:
+		return pbvalue.AsInterface(), nil
+	}
+}
+
 func metricsViewDimensionToSafeColumn(mv *runtimev1.MetricsView, dimName string) (string, error) {
 	dimName = strings.ToLower(dimName)
 	for _, dimension := range mv.Dimensions {
@@ -299,19 +332,12 @@ func writeCSV(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writ
 	for _, structs := range data {
 		for _, field := range meta {
 			pbvalue := structs.Fields[field.Name]
-			switch pbvalue.GetKind().(type) {
-			case *structpb.Value_StructValue:
-				bts, err := json.Marshal(pbvalue)
-				if err != nil {
-					return err
-				}
-
-				record = append(record, string(bts))
-			case *structpb.Value_NullValue:
-				record = append(record, "")
-			default:
-				record = append(record, fmt.Sprintf("%v", pbvalue.AsInterface()))
+			str, err := convertToString(pbvalue)
+			if err != nil {
+				return err
 			}
+
+			record = append(record, str)
 		}
 
 		if err := w.Write(record); err != nil {
@@ -324,4 +350,54 @@ func writeCSV(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writ
 	w.Flush()
 
 	return nil
+}
+
+func writeXLSX(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writer io.Writer) error {
+	f := excelize.NewFile()
+	defer func() {
+		_ = f.Close()
+	}()
+
+	sw, err := f.NewStreamWriter("Sheet1")
+	if err != nil {
+		return err
+	}
+
+	headers := make([]interface{}, 0, len(meta))
+	for _, v := range meta {
+		headers = append(headers, v.Name)
+	}
+
+	if err := sw.SetRow("A1", headers, excelize.RowOpts{Height: 45, Hidden: false}); err != nil {
+		return err
+	}
+
+	row := make([]interface{}, 0, len(meta))
+	for i, s := range data {
+		for _, f := range s.Fields {
+			value, err := convertToXLSXValue(f)
+			if err != nil {
+				return err
+			}
+
+			row = append(row, value)
+		}
+
+		cell, err := excelize.CoordinatesToCellName(1, i+2) // 1-based, and +1 for headers
+		if err != nil {
+			return err
+		}
+
+		if err := sw.SetRow(cell, row); err != nil {
+			return err
+		}
+	}
+
+	if err := sw.Flush(); err != nil {
+		return err
+	}
+
+	err = f.Write(writer)
+
+	return err
 }
