@@ -312,8 +312,7 @@ export function getAdjustedFetchTime(
 export function getAdjustedChartTime(
   start: Date,
   end: Date,
-  interval: V1TimeGrain,
-  boundEnd: Date
+  interval: V1TimeGrain
 ) {
   if (!start || !end)
     return {
@@ -323,13 +322,10 @@ export function getAdjustedChartTime(
 
   const grainDuration = TIME_GRAIN[interval].duration;
 
-  // Only plot the chart till the last period containing a datum
-  let adjustedEnd = new Date(boundEnd);
-  adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration);
+  let adjustedEnd = new Date(end);
 
-  // Remove half extra period with no data from chart
-  const halfPeriod = getDurationMultiple(grainDuration, 0.4);
-  adjustedEnd = getOffset(adjustedEnd, halfPeriod, TimeOffsetType.SUBTRACT);
+  const offsetDuration = getDurationMultiple(grainDuration, 0.45);
+  adjustedEnd = getOffset(adjustedEnd, offsetDuration, TimeOffsetType.SUBTRACT);
 
   adjustedEnd = removeTimezoneOffset(adjustedEnd);
 
