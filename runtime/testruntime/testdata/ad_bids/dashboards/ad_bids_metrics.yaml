@@ -7,9 +7,11 @@ smallest_time_grain: ""
 
 dimensions:
   - label: Publisher
+    name: pub
     property: publisher
     description: ""
   - label: Domain
+    name: dom
     property: domain
     description: ""
 

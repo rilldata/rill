@@ -569,6 +569,11 @@ export class MetricsView_Dimension extends Message<MetricsView_Dimension> {
    */
   description = "";
 
+  /**
+   * @generated from field: string column = 4;
+   */
+  column = "";
+
   constructor(data?: PartialMessage<MetricsView_Dimension>) {
     super();
     proto3.util.initPartial(data, this);
@@ -580,6 +585,7 @@ export class MetricsView_Dimension extends Message<MetricsView_Dimension> {
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsView_Dimension {
