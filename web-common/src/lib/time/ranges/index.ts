@@ -278,7 +278,7 @@ export function getAdjustedFetchTime(
   endTime: Date,
   interval: V1TimeGrain
 ) {
-  if (!startTime || !endTime) return undefined;
+  if (!startTime || !endTime) return { start: startTime, end: endTime };
   const offsetedStartTime = getOffset(
     startTime,
     TIME_GRAIN[interval].duration,
