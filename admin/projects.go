@@ -263,10 +263,12 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		return multierr.Combine(err, err2)
 	}
 
-	// Delete old prod deployment
-	err = s.teardownDeployment(ctx, proj, prevDepl)
-	if err != nil {
-		s.logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
+	// Delete old prod deployment if exists
+	if proj.ProdDeploymentID != nil {
+		err = s.teardownDeployment(ctx, proj, prevDepl)
+		if err != nil {
+			s.logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
+		}
 	}
 
 	// Trigger reconcile on new deployment

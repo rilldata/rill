@@ -89,31 +89,6 @@ paths:
                   type: string
       tags:
         - AdminService
-  /v1/deployments/{deploymentId}/reprovision:
-    post:
-      summary: TriggerReprovision re-provision the hibernated deployment
-      operationId: AdminService_TriggerReprovision
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1TriggerReprovisionResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: deploymentId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-      tags:
-        - AdminService
   /v1/github/repositories:
     get:
       summary: |-
@@ -751,9 +726,6 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
-              prodTtlSeconds:
-                type: string
-                format: int64
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}:
@@ -1483,8 +1455,6 @@ definitions:
   v1TriggerRedeployResponse:
     type: object
   v1TriggerRefreshSourcesResponse:
-    type: object
-  v1TriggerReprovisionResponse:
     type: object
   v1UpdateOrganizationResponse:
     type: object

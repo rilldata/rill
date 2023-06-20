@@ -282,7 +282,6 @@ const (
 	DeploymentStatusOK          DeploymentStatus = 2
 	DeploymentStatusReconciling DeploymentStatus = 3
 	DeploymentStatusError       DeploymentStatus = 4
-	DeploymentStatusHibernated  DeploymentStatus = 5
 )
 
 // Deployment is a single deployment of a git branch.
@@ -297,9 +296,9 @@ type Deployment struct {
 	RuntimeAudience   string           `db:"runtime_audience"`
 	Status            DeploymentStatus `db:"status"`
 	Logs              string           `db:"logs"`
-	UsedOn            time.Time        `db:"used_on"`
 	CreatedOn         time.Time        `db:"created_on"`
 	UpdatedOn         time.Time        `db:"updated_on"`
+	UsedOn            time.Time        `db:"used_on"`
 }
 
 // InsertDeploymentOptions defines options for inserting a new Deployment.

@@ -21,7 +21,7 @@ type Service struct {
 	DB             database.DB
 	Provisioner    *provisioner.StaticProvisioner
 	Email          *email.Client
-	UsedFlusher    *usedFlusher
+	Used           *usedFlusher
 	Github         Github
 	opts           *Options
 	logger         *zap.Logger
@@ -66,19 +66,16 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 	// Create context that we cancel in Close() (for background reconciles)
 	ctx, cancel := context.WithCancel(context.Background())
 
-	usedFlusher := newUsedFlusher(*logger, db)
 	adm := &Service{
 		DB:             db,
 		Provisioner:    prov,
 		Email:          emailClient,
-		UsedFlusher:    usedFlusher,
+		Used:           newUsedFlusher(logger, db),
 		opts:           opts,
 		logger:         logger,
 		closeCtx:       ctx,
 		closeCtxCancel: cancel,
 	}
-
-	adm.UsedFlusher.LastUsedFlusher(ctx)
 
 	return adm, nil
 }
@@ -86,7 +83,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 func (s *Service) Close() error {
 	s.closeCtxCancel()
 	s.reconcileWg.Wait()
-	s.UsedFlusher.Close()
+	s.Used.Close()
 
 	return s.DB.Close()
 }

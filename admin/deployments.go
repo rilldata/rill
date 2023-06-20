@@ -126,131 +126,6 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	return depl, nil
 }
 
-type reprovisionDeploymentOptions struct {
-	ProjectID            string
-	Region               string
-	GithubURL            *string
-	GithubInstallationID *int64
-	Subpath              string
-	ProdBranch           string
-	ProdVariables        database.Variables
-	ProdOLAPDriver       string
-	ProdOLAPDSN          string
-	ProdSlots            int
-}
-
-func (s *Service) ReprovisionDeployment(ctx context.Context, proj *database.Project, depl *database.Deployment) error {
-	// Reprovision deployment
-	newDepl, err := s.reprovisionDeployment(ctx, depl.ID, &reprovisionDeploymentOptions{
-		ProjectID:            proj.ID,
-		Region:               proj.Region,
-		GithubURL:            proj.GithubURL,
-		GithubInstallationID: proj.GithubInstallationID,
-		Subpath:              proj.Subpath,
-		ProdBranch:           proj.ProdBranch,
-		ProdVariables:        proj.ProdVariables,
-		ProdOLAPDriver:       proj.ProdOLAPDriver,
-		ProdOLAPDSN:          proj.ProdOLAPDSN,
-		ProdSlots:            proj.ProdSlots,
-	})
-	if err != nil {
-		return err
-	}
-
-	// Trigger reconcile on reprovisioned deployment
-	err = s.TriggerReconcile(ctx, newDepl)
-	if err != nil {
-		// This error is weird. But it's safe not to teardown the rest.
-		return err
-	}
-
-	return nil
-}
-
-func (s *Service) reprovisionDeployment(ctx context.Context, id string, opts *reprovisionDeploymentOptions) (*database.Deployment, error) {
-	// We require Github info on project to create a deployment
-	if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == "" {
-		return nil, fmt.Errorf("cannot create project without github info")
-	}
-	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*opts.GithubURL, *opts.GithubInstallationID, opts.Subpath, opts.ProdBranch)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get a runtime with capacity for the deployment
-	alloc, err := s.Provisioner.Provision(ctx, &provisioner.ProvisionOptions{
-		OLAPDriver: opts.ProdOLAPDriver,
-		Slots:      opts.ProdSlots,
-		Region:     opts.Region,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Build instance config
-	instanceID := strings.ReplaceAll(uuid.New().String(), "-", "")
-	olapDriver := opts.ProdOLAPDriver
-	olapDSN := opts.ProdOLAPDSN
-	var embedCatalog bool
-	var ingestionLimit int64
-	if olapDriver == "duckdb" {
-		if olapDSN != "" {
-			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb'")
-		}
-		if opts.ProdSlots == 0 {
-			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb'")
-		}
-
-		embedCatalog = true
-		ingestionLimit = alloc.StorageBytes
-
-		olapDSN = fmt.Sprintf("%s.db?rill_pool_size=%d&threads=%d&max_memory=%dGB", path.Join(alloc.DataDir, instanceID), alloc.CPU, alloc.CPU, alloc.MemoryGB)
-	}
-
-	// Open a runtime client
-	rt, err := s.openRuntimeClient(alloc.Host, alloc.Audience)
-	if err != nil {
-		return nil, err
-	}
-	defer rt.Close()
-
-	// Create the instance
-	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
-		InstanceId:          instanceID,
-		OlapDriver:          olapDriver,
-		OlapDsn:             olapDSN,
-		RepoDriver:          repoDriver,
-		RepoDsn:             repoDSN,
-		EmbedCatalog:        embedCatalog,
-		Variables:           opts.ProdVariables,
-		IngestionLimitBytes: ingestionLimit,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Create the deployment
-	depl, err := s.DB.UpdateDeployment(ctx, id, &database.UpdateDeploymentOptions{
-		ProjectID:         opts.ProjectID,
-		Branch:            opts.ProdBranch,
-		Slots:             opts.ProdSlots,
-		RuntimeHost:       alloc.Host,
-		RuntimeInstanceID: instanceID,
-		RuntimeAudience:   alloc.Audience,
-		Status:            database.DeploymentStatusPending,
-		Logs:              "",
-	})
-	if err != nil {
-		_, err2 := rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
-			InstanceId: instanceID,
-			DropDb:     olapDriver == "duckdb", // Only drop DB if it's DuckDB
-		})
-		return nil, multierr.Combine(err, err2)
-	}
-
-	return depl, nil
-}
-
 type updateDeploymentOptions struct {
 	GithubURL            *string
 	GithubInstallationID *int64
@@ -337,39 +212,30 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 			continue
 		}
 
-		err = s.hibernateDeployment(ctx, proj, depl)
+		err = s.teardownDeployment(ctx, proj, depl)
 		if err != nil {
 			s.logger.Error("skipping because error while hibernate deployment", zap.String("projectId", proj.ID), zap.String("deplId", depl.ID), zap.Error(err))
 			continue
 		}
+
+		// Update prod deployment on project
+		_, err = s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+			Name:                 proj.Name,
+			Description:          proj.Description,
+			Public:               proj.Public,
+			GithubURL:            proj.GithubURL,
+			GithubInstallationID: proj.GithubInstallationID,
+			ProdBranch:           proj.ProdBranch,
+			ProdVariables:        proj.ProdVariables,
+			ProdSlots:            proj.ProdSlots,
+			Region:               proj.Region,
+			ProdTTL:              proj.ProdTTL,
+			ProdDeploymentID:     nil,
+		})
+		if err != nil {
+			return err
+		}
 	}
-
-	return nil
-}
-
-func (s *Service) hibernateDeployment(ctx context.Context, proj *database.Project, depl *database.Deployment) error {
-	// Connect to the deployment's runtime
-	rt, err := s.openRuntimeClientForDeployment(depl)
-	if err != nil {
-		return err
-	}
-	defer rt.Close()
-
-	// Delete the instance
-	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
-		InstanceId: depl.RuntimeInstanceID,
-		DropDb:     proj.ProdOLAPDriver == "duckdb", // Only drop DB if it's DuckDB
-	})
-	if err != nil {
-		return err
-	}
-
-	updatedDepl, err := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusHibernated, "")
-	if err != nil {
-		return err
-	}
-
-	s.logger.Info("Updated deployment", zap.String("deplId", updatedDepl.ID), zap.String("projectId", proj.ID))
 
 	return nil
 }

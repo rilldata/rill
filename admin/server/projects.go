@@ -20,6 +20,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const prodDeplTTL = 7 * 24 * time.Hour
+
 func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.ListProjectsForOrganizationRequest) (*adminv1.ListProjectsForOrganizationResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
@@ -138,7 +140,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
 	}
 
-	s.admin.UsedFlusher.UpdateDeplTS(ctx, depl.ID)
+	s.admin.Used.Deployment(depl.ID)
 
 	return &adminv1.GetProjectResponse{
 		Project:            s.projToDTO(proj, org.Name),
@@ -211,6 +213,14 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, err
 	}
 
+	// Add prod TTL as 7 days if not a public project else infinite
+	prodTTL := int64(prodDeplTTL.Seconds())
+	var prodTTLPtr *int64
+	prodTTLPtr = &prodTTL
+	if req.Public {
+		prodTTLPtr = nil
+	}
+
 	// Create the project
 	proj, err := s.admin.CreateProject(ctx, org, claims.OwnerID(), &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
@@ -226,7 +236,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		GithubURL:            &req.GithubUrl,
 		GithubInstallationID: &installationID,
 		ProdVariables:        req.Variables,
-		ProdTTL:              &req.ProdTtlSeconds,
+		ProdTTL:              prodTTLPtr,
 	})
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -728,8 +738,6 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RECONCILING
 	case database.DeploymentStatusError:
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERROR
-	case database.DeploymentStatusHibernated:
-		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_HIBERNATED
 	default:
 		panic(fmt.Errorf("unhandled deployment status %d", d.Status))
 	}

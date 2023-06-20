@@ -15,27 +15,35 @@ type usedFlusher struct {
 	deployments map[string]bool
 	lock        sync.Mutex
 	db          database.DB
-	logger      zap.Logger
+	logger      *zap.Logger
+	ctx         context.Context
+	cancel      context.CancelFunc
 }
 
-func newUsedFlusher(logger zap.Logger, db database.DB) *usedFlusher {
-	return &usedFlusher{
+func newUsedFlusher(logger *zap.Logger, db database.DB) *usedFlusher {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	used := &usedFlusher{
 		deployments: make(map[string]bool),
 		db:          db,
 		logger:      logger,
+		ctx:         ctx,
+		cancel:      cancel,
 	}
+	go used.runBackground(ctx)
+
+	return used
 }
 
-func (u *usedFlusher) UpdateDeplTS(ctx context.Context, deplID string) {
+func (u *usedFlusher) Deployment(id string) {
 	u.lock.Lock()
 	defer u.lock.Unlock()
 
-	u.deployments[deplID] = true
+	u.deployments[id] = true
 }
 
-func (u *usedFlusher) LastUsedFlusher(ctx context.Context) {
+func (u *usedFlusher) runBackground(ctx context.Context) {
 	ticker := time.NewTicker(20 * time.Second)
-	quit := make(chan struct{})
 	go func() {
 		for {
 			select {
@@ -47,7 +55,7 @@ func (u *usedFlusher) LastUsedFlusher(ctx context.Context) {
 						fmt.Printf("Error while flush update timestamp map into db, error: %v", err)
 					}
 				}
-			case <-quit:
+			case <-u.ctx.Done():
 				ticker.Stop()
 				return
 			}
@@ -71,6 +79,6 @@ func (u *usedFlusher) updateDeplToDB(ctx context.Context) error {
 	return err
 }
 
-func (u *usedFlusher) Close() error {
-	return u.db.Close()
+func (u *usedFlusher) Close() {
+	u.cancel()
 }

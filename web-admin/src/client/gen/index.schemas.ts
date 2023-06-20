@@ -51,7 +51,6 @@ export type AdminServiceCreateProjectBody = {
   prodBranch?: string;
   githubUrl?: string;
   variables?: AdminServiceCreateProjectBodyVariables;
-  prodTtlSeconds?: string;
 };
 
 export type AdminServiceListProjectsForOrganizationParams = {
@@ -151,10 +150,6 @@ export interface V1UpdateProjectResponse {
 
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
-}
-
-export interface V1TriggerReprovisionResponse {
-  [key: string]: any;
 }
 
 export interface V1TriggerRefreshSourcesResponse {
