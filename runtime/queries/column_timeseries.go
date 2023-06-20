@@ -33,10 +33,13 @@ type ColumnTimeseries struct {
 	Measures            []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure `json:"measures"`
 	TimestampColumnName string                                            `json:"timestamp_column_name"`
 	TimeRange           *runtimev1.TimeSeriesTimeRange                    `json:"time_range"`
-	Filters             *runtimev1.MetricsViewFilter                      `json:"filters"`
 	Pixels              int32                                             `json:"pixels"`
 	SampleSize          int32                                             `json:"sample_size"`
 	Result              *ColumnTimeseriesResult                           `json:"-"`
+
+	// MetricsView-related fields. These can be removed when MetricsViewTimeSeries is refactored to a standalone implementation.
+	MetricsView       *runtimev1.MetricsView       `json:"-"`
+	MetricsViewFilter *runtimev1.MetricsViewFilter `json:"filters"`
 }
 
 var _ runtime.Query = &ColumnTimeseries{}
@@ -90,7 +93,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	}
 
 	return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context) error {
-		filter, args, err := buildFilterClauseForMetricsViewFilter(q.Filters, olap.Dialect())
+		filter, args, err := buildFilterClauseForMetricsViewFilter(q.MetricsView, q.MetricsViewFilter, olap.Dialect())
 		if err != nil {
 			return err
 		}
@@ -311,7 +314,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 
 	if rowCount < int64(q.Pixels*4) {
 		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query:            `SELECT ` + safeTimestampColumnName + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
+			Query:            `SELECT ` + safeTimestampColumnName + ` as ts, "` + valueColumn + `"::DOUBLE as count FROM "` + tableName + `"`,
 			Priority:         priority,
 			ExecutionTimeout: defaultExecutionTimeout,
 		})
@@ -351,7 +354,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 
 	querySQL := ` -- extract unix time
       WITH Q as (
-        SELECT extract('epoch' from ` + safeTimestampColumnName + `) as t, "` + valueColumn + `" as v FROM "` + tableName + `"
+        SELECT extract('epoch' from ` + safeTimestampColumnName + `) as t, "` + valueColumn + `"::DOUBLE as v FROM "` + tableName + `"
       ),
       -- generate bounds
       M as (

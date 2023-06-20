@@ -74,6 +74,7 @@
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
   $: displayName = dimension?.label || dimension?.name;
+  $: dimensionColumn = dimension?.column || dimension?.name;
 
   $: measureQuery = useMetaMeasure(
     $runtime.instanceId,
@@ -146,7 +147,7 @@
     values =
       $topListQuery?.data?.data.map((val) => ({
         value: val[measure?.name],
-        label: val[dimension?.name],
+        label: val[dimensionColumn],
       })) ?? [];
   }
 
@@ -223,7 +224,7 @@
     comparisonValues =
       $comparisonTopListQuery?.data?.data?.map((val) => ({
         value: val[measure?.name],
-        label: val[dimension?.name],
+        label: val[dimensionColumn],
       })) ?? [];
   }
 

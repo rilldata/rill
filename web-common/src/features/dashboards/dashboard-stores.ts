@@ -28,30 +28,26 @@ export interface MetricsExplorerEntity {
   // selected measure names to be shown
   selectedMeasureNames: Array<string>;
 
-  /** 
-  FIXME For now we are using the user supplied `expression` for measures
-  and `name` (column name) for dimensions to determine which measures and
-  dimensions are visible. These are used because they are the only fields
-  that are required to exist in measures/dimensions for them to be shown
-  in the dashboard
-
-  This may lead to problems if there are ever duplicates among
-  these. Hamilton has started discussions with Benjamin about
-  adding unique keys that could be used to replace these temporary keys. 
-  Once those become available the logic around the fields below
-  should be updated.
-*/
   // This array controls which measures are visible in
   // explorer on the client. Note that this will need to be
   // updated to include all measure keys upon initialization
   // or else all measure will be hidden
   visibleMeasureKeys: Set<string>;
+  // While the `visibleMeasureKeys` has the list of visible measures,
+  // this is explicitly needed to fill the state.
+  // TODO: clean this up when we refactor how url state is synced
+  allMeasuresVisible: boolean;
+
   // This array controls which dimensions are visible in
   // explorer on the client.Note that if this is null, all
   // dimensions will be visible (this is needed to default to all visible
   // when there are not existing keys in the URL or saved on the
   // server)
   visibleDimensionKeys: Set<string>;
+  // While the `visibleDimensionKeys` has the list of all visible dimensions,
+  // this is explicitly needed to fill the state.
+  // TODO: clean this up when we refactor how url state is synced
+  allDimensionsVisible: boolean;
 
   // this is used to show leaderboard values
   leaderboardMeasureName: string;
@@ -89,7 +85,7 @@ function updateMetricsExplorerProto(metricsExplorer: MetricsExplorerEntity) {
   }
 }
 
-const updateMetricsExplorerByName = (
+export const updateMetricsExplorerByName = (
   name: string,
   callback: (metricsExplorer: MetricsExplorerEntity) => void,
   absenceCallback?: () => MetricsExplorerEntity
@@ -118,7 +114,46 @@ function includeExcludeModeFromFilters(filters: V1MetricsViewFilter) {
   return map;
 }
 
-function removeNonExistentDimensions(
+function syncMeasures(
+  metricsView: V1MetricsView,
+  metricsExplorer: MetricsExplorerEntity
+) {
+  const measuresMap = getMapFromArray(
+    metricsView.measures,
+    (measure) => measure.name
+  );
+
+  // sync measures with selected leaderboard measure.
+  if (
+    metricsView.measures.length &&
+    (!metricsExplorer.leaderboardMeasureName ||
+      !measuresMap.has(metricsExplorer.leaderboardMeasureName))
+  ) {
+    metricsExplorer.leaderboardMeasureName = metricsView.measures[0].name;
+  } else if (!metricsView.measures.length) {
+    metricsExplorer.leaderboardMeasureName = undefined;
+  }
+  // TODO: how does this differ from visibleMeasureKeys?
+  metricsExplorer.selectedMeasureNames = metricsView.measures.map(
+    (measure) => measure.name
+  );
+
+  if (metricsExplorer.allMeasuresVisible) {
+    // this makes sure that the visible keys is in sync with list of measures
+    metricsExplorer.visibleMeasureKeys = new Set(
+      metricsView.measures.map((measure) => measure.name)
+    );
+  } else {
+    // remove any keys from visible measure if it doesn't exist anymore
+    for (const measureKey of metricsExplorer.visibleMeasureKeys) {
+      if (!measuresMap.has(measureKey)) {
+        metricsExplorer.visibleMeasureKeys.delete(measureKey);
+      }
+    }
+  }
+}
+
+function syncDimensions(
   metricsView: V1MetricsView,
   metricsExplorer: MetricsExplorerEntity
 ) {
@@ -140,13 +175,27 @@ function removeNonExistentDimensions(
   ) {
     metricsExplorer.selectedDimensionName = undefined;
   }
+
+  if (metricsExplorer.allDimensionsVisible) {
+    // this makes sure that the visible keys is in sync with list of dimensions
+    metricsExplorer.visibleDimensionKeys = new Set(
+      metricsView.dimensions.map((dimension) => dimension.name)
+    );
+  } else {
+    // remove any keys from visible dimension if it doesn't exist anymore
+    for (const dimensionKey of metricsExplorer.visibleDimensionKeys) {
+      if (!dimensionsMap.has(dimensionKey)) {
+        metricsExplorer.visibleDimensionKeys.delete(dimensionKey);
+      }
+    }
+  }
 }
 
 const metricViewReducers = {
-  syncFromUrl(name: string, url: URL) {
+  syncFromUrl(name: string, url: URL, metricsView: V1MetricsView) {
     // not all data for MetricsExplorerEntity will be filled out here.
     // Hence, it is a Partial<MetricsExplorerEntity>
-    const partial = getDashboardStateFromUrl(url);
+    const partial = getDashboardStateFromUrl(url, metricsView);
     if (!partial) return;
 
     updateMetricsExplorerByName(
@@ -163,7 +212,9 @@ const metricViewReducers = {
         name,
         selectedMeasureNames: [],
         visibleMeasureKeys: new Set(),
+        allMeasuresVisible: false,
         visibleDimensionKeys: new Set(),
+        allDimensionsVisible: false,
         leaderboardMeasureName: "",
         filters: {},
         dimensionFilterExcludeMode: includeExcludeModeFromFilters(
@@ -180,35 +231,11 @@ const metricViewReducers = {
     updateMetricsExplorerByName(
       name,
       (metricsExplorer) => {
-        // sync measures with selected leaderboard measure.
-        if (
-          metricsView.measures.length &&
-          (!metricsExplorer.leaderboardMeasureName ||
-            !metricsView.measures.find(
-              (measure) =>
-                measure.name === metricsExplorer.leaderboardMeasureName
-            ))
-        ) {
-          metricsExplorer.leaderboardMeasureName = metricsView.measures[0].name;
-        } else if (!metricsView.measures.length) {
-          metricsExplorer.leaderboardMeasureName = undefined;
-        }
-        // TODO: how does this differ from visibleMeasureKeys?
-        metricsExplorer.selectedMeasureNames = metricsView.measures.map(
-          (measure) => measure.name
-        );
-
-        // visible measure and dimensions sync
-        metricsExplorer.visibleMeasureKeys = new Set(
-          metricsView.measures.map((measure) => measure.expression)
-        );
-
-        metricsExplorer.visibleDimensionKeys = new Set(
-          metricsView.dimensions.map((dim) => dim.name)
-        );
+        // remove references to non existent measures
+        syncMeasures(metricsView, metricsExplorer);
 
         // remove references to non existent dimensions
-        removeNonExistentDimensions(metricsView, metricsExplorer);
+        syncDimensions(metricsView, metricsExplorer);
       },
       () => ({
         name,
@@ -217,11 +244,13 @@ const metricViewReducers = {
         ),
 
         visibleMeasureKeys: new Set(
-          metricsView.measures.map((measure) => measure.expression)
+          metricsView.measures.map((measure) => measure.name)
         ),
+        allMeasuresVisible: true,
         visibleDimensionKeys: new Set(
           metricsView.dimensions.map((dim) => dim.name)
         ),
+        allDimensionsVisible: true,
         leaderboardMeasureName: metricsView.measures[0]?.name,
         filters: {
           include: [],
@@ -235,56 +264,6 @@ const metricViewReducers = {
   setLeaderboardMeasureName(name: string, measureName: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.leaderboardMeasureName = measureName;
-    });
-  },
-
-  toggleMeasureVisibilityByKey(name: string, key: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      if (metricsExplorer.visibleMeasureKeys.has(key)) {
-        metricsExplorer.visibleMeasureKeys.delete(key);
-      } else {
-        metricsExplorer.visibleMeasureKeys.add(key);
-      }
-    });
-  },
-
-  hideAllMeasures(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.visibleMeasureKeys.clear();
-    });
-  },
-
-  setMultipleMeasuresVisible(name: string, keys: string[]) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.visibleMeasureKeys = new Set([
-        ...metricsExplorer.visibleMeasureKeys,
-        ...keys,
-      ]);
-    });
-  },
-
-  toggleDimensionVisibilityByKey(name: string, key: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      if (metricsExplorer.visibleDimensionKeys.has(key)) {
-        metricsExplorer.visibleDimensionKeys.delete(key);
-      } else {
-        metricsExplorer.visibleDimensionKeys.add(key);
-      }
-    });
-  },
-
-  hideAllDimensions(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.visibleDimensionKeys.clear();
-    });
-  },
-
-  setMultipleDimensionsVisible(name: string, keys: string[]) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.visibleDimensionKeys = new Set([
-        ...metricsExplorer.visibleDimensionKeys,
-        ...keys,
-      ]);
     });
   },
 
