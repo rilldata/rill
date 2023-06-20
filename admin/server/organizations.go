@@ -782,13 +782,13 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		observability.AddRequestAttributes(ctx, attribute.Int("args.deployments", int(*req.Deployments)))
 	}
 	if req.SlotsTotal != nil {
-		observability.AddRequestAttributes(ctx, attribute.Int("args.slots-total", int(*req.SlotsTotal)))
+		observability.AddRequestAttributes(ctx, attribute.Int("args.slots_total", int(*req.SlotsTotal)))
 	}
 	if req.SlotsPerDeployment != nil {
-		observability.AddRequestAttributes(ctx, attribute.Int("args.slots-per-deployment", int(*req.SlotsPerDeployment)))
+		observability.AddRequestAttributes(ctx, attribute.Int("args.slots_per_deployment", int(*req.SlotsPerDeployment)))
 	}
 	if req.OutstandingInvites != nil {
-		observability.AddRequestAttributes(ctx, attribute.Int("args.outstanding-invites", int(*req.OutstandingInvites)))
+		observability.AddRequestAttributes(ctx, attribute.Int("args.outstanding_invites", int(*req.OutstandingInvites)))
 	}
 
 	claims := auth.GetClaims(ctx)

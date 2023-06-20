@@ -241,7 +241,7 @@ func (s *Server) GetUser(ctx context.Context, req *adminv1.GetUserRequest) (*adm
 func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpdateUserQuotasRequest) (*adminv1.SudoUpdateUserQuotasResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
 	if req.SingleuserOrgs != nil {
-		observability.AddRequestAttributes(ctx, attribute.Int("args.singleuser-orgs", int(*req.SingleuserOrgs)))
+		observability.AddRequestAttributes(ctx, attribute.Int("args.singleuser_orgs", int(*req.SingleuserOrgs)))
 	}
 
 	claims := auth.GetClaims(ctx)
