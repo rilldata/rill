@@ -123,6 +123,8 @@ function toTimeGrainProto(timeGrain: V1TimeGrain) {
       return TimeGrainProto.WEEK;
     case V1TimeGrain.TIME_GRAIN_MONTH:
       return TimeGrainProto.MONTH;
+    case V1TimeGrain.TIME_GRAIN_QUARTER:
+      return TimeGrainProto.QUARTER;
     case V1TimeGrain.TIME_GRAIN_YEAR:
       return TimeGrainProto.YEAR;
   }

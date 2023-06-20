@@ -384,6 +384,15 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
       month: "short",
     },
   },
+  TIME_GRAIN_QUARTER: {
+    grain: V1TimeGrain.TIME_GRAIN_QUARTER,
+    label: "quarter",
+    duration: Period.QUARTER,
+    formatDate: {
+      year: "numeric",
+      month: "short",
+    },
+  },
   TIME_GRAIN_YEAR: {
     grain: V1TimeGrain.TIME_GRAIN_YEAR,
     label: "year",

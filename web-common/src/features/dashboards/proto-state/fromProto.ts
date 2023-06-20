@@ -149,6 +149,8 @@ function fromTimeGrainProto(timeGrain: TimeGrain): V1TimeGrain {
       return V1TimeGrain.TIME_GRAIN_WEEK;
     case TimeGrain.MONTH:
       return V1TimeGrain.TIME_GRAIN_MONTH;
+    case TimeGrain.QUARTER:
+      return V1TimeGrain.TIME_GRAIN_QUARTER;
     case TimeGrain.YEAR:
       return V1TimeGrain.TIME_GRAIN_YEAR;
   }
