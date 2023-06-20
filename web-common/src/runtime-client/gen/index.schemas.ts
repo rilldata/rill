@@ -50,7 +50,6 @@ export type QueryServiceColumnTimeSeriesBody = {
   measures?: ColumnTimeSeriesRequestBasicMeasure[];
   timestampColumnName?: string;
   timeRange?: V1TimeSeriesTimeRange;
-  filters?: V1MetricsViewFilter;
   pixels?: number;
   sampleSize?: number;
   priority?: number;
@@ -361,6 +360,7 @@ export const V1TimeGrain = {
   TIME_GRAIN_DAY: "TIME_GRAIN_DAY",
   TIME_GRAIN_WEEK: "TIME_GRAIN_WEEK",
   TIME_GRAIN_MONTH: "TIME_GRAIN_MONTH",
+  TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
 
@@ -1093,6 +1093,7 @@ export interface MetricsViewDimension {
   name?: string;
   label?: string;
   description?: string;
+  column?: string;
 }
 
 export type ExtractPolicyStrategy =

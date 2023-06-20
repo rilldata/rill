@@ -213,7 +213,8 @@ message Instance {
   string olap_driver = 2 [(validate.rules).string = {
     in: [
       "duckdb",
-      "druid"
+      "druid",
+      "motherduck"
     ]
   }];
   // DSN for connection to OLAP
@@ -272,7 +273,8 @@ message CreateInstanceRequest {
   string olap_driver = 2 [(validate.rules).string = {
     in: [
       "duckdb",
-      "druid"
+      "druid",
+      "motherduck"
     ]
   }];
   string olap_dsn = 3;
@@ -307,7 +309,7 @@ message DeleteInstanceResponse {}
 // See message Instance for field descriptions.
 message EditInstanceRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string olap_driver = 2 [(validate.rules).string = {in: ["duckdb", "druid"]}];
+  string olap_driver = 2 [(validate.rules).string = {in: ["duckdb", "druid", "motherduck"]}];
   string olap_dsn = 3; 
   string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore", "github"]}];
   string repo_dsn = 5; 

@@ -52,6 +52,16 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		return query.Resolve(ctx, r, instanceID, priority)
 	}
 
+	// Skip caching for specific named drivers.
+	// TODO: Make this configurable with a default provided by the driver.
+	inst, err := r.FindInstance(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+	if inst.OLAPDriver == "druid" {
+		return query.Resolve(ctx, r, instanceID, priority)
+	}
+
 	// Get dependency cache keys
 	deps := query.Deps()
 	depKeys := make([]string, len(deps))

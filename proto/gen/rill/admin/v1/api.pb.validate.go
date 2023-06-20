@@ -288,10 +288,10 @@ func (m *ListOrganizationsRequest) validate(all bool) error {
 
 	if m.GetPageSize() != 0 {
 
-		if m.GetPageSize() > 100 {
+		if m.GetPageSize() > 1000 {
 			err := ListOrganizationsRequestValidationError{
 				field:  "PageSize",
-				reason: "value must be less than or equal to 100",
+				reason: "value must be less than or equal to 1000",
 			}
 			if !all {
 				return err
@@ -1521,10 +1521,10 @@ func (m *ListProjectsForOrganizationRequest) validate(all bool) error {
 
 	if m.GetPageSize() != 0 {
 
-		if m.GetPageSize() > 100 {
+		if m.GetPageSize() > 1000 {
 			err := ListProjectsForOrganizationRequestValidationError{
 				field:  "PageSize",
-				reason: "value must be less than or equal to 100",
+				reason: "value must be less than or equal to 1000",
 			}
 			if !all {
 				return err
@@ -3897,10 +3897,10 @@ func (m *ListOrganizationMembersRequest) validate(all bool) error {
 
 	if m.GetPageSize() != 0 {
 
-		if m.GetPageSize() > 100 {
+		if m.GetPageSize() > 1000 {
 			err := ListOrganizationMembersRequestValidationError{
 				field:  "PageSize",
-				reason: "value must be less than or equal to 100",
+				reason: "value must be less than or equal to 1000",
 			}
 			if !all {
 				return err
@@ -4158,10 +4158,10 @@ func (m *ListOrganizationInvitesRequest) validate(all bool) error {
 
 	if m.GetPageSize() != 0 {
 
-		if m.GetPageSize() > 100 {
+		if m.GetPageSize() > 1000 {
 			err := ListOrganizationInvitesRequestValidationError{
 				field:  "PageSize",
-				reason: "value must be less than or equal to 100",
+				reason: "value must be less than or equal to 1000",
 			}
 			if !all {
 				return err
@@ -5974,6 +5974,485 @@ var _ interface {
 	ErrorName() string
 } = SetSuperuserResponseValidationError{}
 
+// Validate checks the field values on SudoGetResourceRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SudoGetResourceRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SudoGetResourceRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SudoGetResourceRequestMultiError, or nil if none found.
+func (m *SudoGetResourceRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoGetResourceRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	switch v := m.Id.(type) {
+	case *SudoGetResourceRequest_UserId:
+		if v == nil {
+			err := SudoGetResourceRequestValidationError{
+				field:  "Id",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for UserId
+	case *SudoGetResourceRequest_OrgId:
+		if v == nil {
+			err := SudoGetResourceRequestValidationError{
+				field:  "Id",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for OrgId
+	case *SudoGetResourceRequest_ProjectId:
+		if v == nil {
+			err := SudoGetResourceRequestValidationError{
+				field:  "Id",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for ProjectId
+	case *SudoGetResourceRequest_DeploymentId:
+		if v == nil {
+			err := SudoGetResourceRequestValidationError{
+				field:  "Id",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for DeploymentId
+	case *SudoGetResourceRequest_InstanceId:
+		if v == nil {
+			err := SudoGetResourceRequestValidationError{
+				field:  "Id",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for InstanceId
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return SudoGetResourceRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoGetResourceRequestMultiError is an error wrapping multiple validation
+// errors returned by SudoGetResourceRequest.ValidateAll() if the designated
+// constraints aren't met.
+type SudoGetResourceRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoGetResourceRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoGetResourceRequestMultiError) AllErrors() []error { return m }
+
+// SudoGetResourceRequestValidationError is the validation error returned by
+// SudoGetResourceRequest.Validate if the designated constraints aren't met.
+type SudoGetResourceRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoGetResourceRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoGetResourceRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoGetResourceRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoGetResourceRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoGetResourceRequestValidationError) ErrorName() string {
+	return "SudoGetResourceRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoGetResourceRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoGetResourceRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoGetResourceRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoGetResourceRequestValidationError{}
+
+// Validate checks the field values on SudoGetResourceResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SudoGetResourceResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SudoGetResourceResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SudoGetResourceResponseMultiError, or nil if none found.
+func (m *SudoGetResourceResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoGetResourceResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	switch v := m.Resource.(type) {
+	case *SudoGetResourceResponse_User:
+		if v == nil {
+			err := SudoGetResourceResponseValidationError{
+				field:  "Resource",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetUser()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SudoGetResourceResponseValidationError{
+						field:  "User",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SudoGetResourceResponseValidationError{
+						field:  "User",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetUser()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SudoGetResourceResponseValidationError{
+					field:  "User",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *SudoGetResourceResponse_Org:
+		if v == nil {
+			err := SudoGetResourceResponseValidationError{
+				field:  "Resource",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetOrg()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SudoGetResourceResponseValidationError{
+						field:  "Org",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SudoGetResourceResponseValidationError{
+						field:  "Org",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetOrg()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SudoGetResourceResponseValidationError{
+					field:  "Org",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *SudoGetResourceResponse_Project:
+		if v == nil {
+			err := SudoGetResourceResponseValidationError{
+				field:  "Resource",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetProject()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SudoGetResourceResponseValidationError{
+						field:  "Project",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SudoGetResourceResponseValidationError{
+						field:  "Project",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetProject()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SudoGetResourceResponseValidationError{
+					field:  "Project",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *SudoGetResourceResponse_Deployment:
+		if v == nil {
+			err := SudoGetResourceResponseValidationError{
+				field:  "Resource",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetDeployment()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SudoGetResourceResponseValidationError{
+						field:  "Deployment",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SudoGetResourceResponseValidationError{
+						field:  "Deployment",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetDeployment()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SudoGetResourceResponseValidationError{
+					field:  "Deployment",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *SudoGetResourceResponse_Instance:
+		if v == nil {
+			err := SudoGetResourceResponseValidationError{
+				field:  "Resource",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetInstance()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SudoGetResourceResponseValidationError{
+						field:  "Instance",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SudoGetResourceResponseValidationError{
+						field:  "Instance",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetInstance()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SudoGetResourceResponseValidationError{
+					field:  "Instance",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return SudoGetResourceResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoGetResourceResponseMultiError is an error wrapping multiple validation
+// errors returned by SudoGetResourceResponse.ValidateAll() if the designated
+// constraints aren't met.
+type SudoGetResourceResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoGetResourceResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoGetResourceResponseMultiError) AllErrors() []error { return m }
+
+// SudoGetResourceResponseValidationError is the validation error returned by
+// SudoGetResourceResponse.Validate if the designated constraints aren't met.
+type SudoGetResourceResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoGetResourceResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoGetResourceResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoGetResourceResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoGetResourceResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoGetResourceResponseValidationError) ErrorName() string {
+	return "SudoGetResourceResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoGetResourceResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoGetResourceResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoGetResourceResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoGetResourceResponseValidationError{}
+
 // Validate checks the field values on ListProjectMembersRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -6020,10 +6499,10 @@ func (m *ListProjectMembersRequest) validate(all bool) error {
 
 	if m.GetPageSize() != 0 {
 
-		if m.GetPageSize() > 100 {
+		if m.GetPageSize() > 1000 {
 			err := ListProjectMembersRequestValidationError{
 				field:  "PageSize",
-				reason: "value must be less than or equal to 100",
+				reason: "value must be less than or equal to 1000",
 			}
 			if !all {
 				return err
@@ -6299,10 +6778,10 @@ func (m *ListProjectInvitesRequest) validate(all bool) error {
 
 	if m.GetPageSize() != 0 {
 
-		if m.GetPageSize() > 100 {
+		if m.GetPageSize() > 1000 {
 			err := ListProjectInvitesRequestValidationError{
 				field:  "PageSize",
-				reason: "value must be less than or equal to 100",
+				reason: "value must be less than or equal to 1000",
 			}
 			if !all {
 				return err
@@ -7691,10 +8170,10 @@ func (m *SearchUsersRequest) validate(all bool) error {
 
 	if m.GetPageSize() != 0 {
 
-		if m.GetPageSize() > 100 {
+		if m.GetPageSize() > 1000 {
 			err := SearchUsersRequestValidationError{
 				field:  "PageSize",
-				reason: "value must be less than or equal to 100",
+				reason: "value must be less than or equal to 1000",
 			}
 			if !all {
 				return err

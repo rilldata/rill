@@ -35,8 +35,7 @@ type Source struct {
 	Format                string         `yaml:"format,omitempty" mapstructure:"format,omitempty"`
 	DuckDBProps           map[string]any `yaml:"duckdb,omitempty" mapstructure:"duckdb,omitempty"`
 	Headers               map[string]any `yaml:"headers,omitempty" mapstructure:"headers,omitempty"`
-	AllowFieldRelaxation  *bool          `yaml:"ingest.allow_field_relaxation,omitempty" mapstructure:"allow_field_relaxation,omitempty"`
-	AllowFieldAddition    *bool          `yaml:"ingest.allow_field_addition,omitempty" mapstructure:"allow_field_addition,omitempty"`
+	AllowSchemaRelaxation *bool          `yaml:"ingest.allow_schema_relaxation,omitempty" mapstructure:"allow_schema_relaxation,omitempty"`
 }
 
 type ExtractPolicy struct {
@@ -71,8 +70,10 @@ type Measure struct {
 }
 
 type Dimension struct {
+	Name        string
 	Label       string
-	Property    string `copier:"Name"`
+	Property    string `yaml:"property,omitempty"`
+	Column      string
 	Description string
 	Ignore      bool `yaml:"ignore,omitempty"`
 }
@@ -198,12 +199,8 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		props["headers"] = source.Headers
 	}
 
-	if source.AllowFieldAddition != nil {
-		props["allow_field_addition"] = *source.AllowFieldAddition
-	}
-
-	if source.AllowFieldRelaxation != nil {
-		props["allow_field_relaxation"] = *source.AllowFieldRelaxation
+	if source.AllowSchemaRelaxation != nil {
+		props["allow_schema_relaxation"] = *source.AllowSchemaRelaxation
 	}
 
 	propsPB, err := structpb.NewStruct(props)
@@ -326,6 +323,10 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		if dimension.Ignore {
 			continue
 		}
+		if dimension.Property != "" && dimension.Column == "" {
+			// backwards compatibility when we were using `property` instead of `column`
+			dimension.Column = dimension.Property
+		}
 		dimensions = append(dimensions, dimension)
 	}
 	metrics.Dimensions = dimensions
@@ -350,6 +351,19 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 	for i, measure := range apiMetrics.Measures {
 		if measure.Name == "" {
 			measure.Name = fmt.Sprintf("measure_%d", i)
+		}
+	}
+
+	// backwards compatibility where name was used as property
+	for i, dimension := range apiMetrics.Dimensions {
+		if dimension.Name == "" {
+			if dimension.Column == "" {
+				// if there is no name and property add dimension_<index> as name
+				dimension.Name = fmt.Sprintf("dimension_%d", i)
+			} else {
+				// else use property as name
+				dimension.Name = dimension.Column
+			}
 		}
 	}
 
@@ -388,6 +402,8 @@ func getTimeGrainEnum(timeGrain string) (runtimev1.TimeGrain, error) {
 		return runtimev1.TimeGrain_TIME_GRAIN_WEEK, nil
 	case "month":
 		return runtimev1.TimeGrain_TIME_GRAIN_MONTH, nil
+	case "quarter":
+		return runtimev1.TimeGrain_TIME_GRAIN_QUARTER, nil
 	case "year":
 		return runtimev1.TimeGrain_TIME_GRAIN_YEAR, nil
 	default:
@@ -412,6 +428,8 @@ func getTimeGrainString(timeGrain runtimev1.TimeGrain) string {
 		return "week"
 	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
 		return "month"
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return "quarter"
 	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
 		return "year"
 	default:

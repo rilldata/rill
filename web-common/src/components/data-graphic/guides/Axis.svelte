@@ -128,7 +128,7 @@ This component will draw an axis on the specified side.
 
     const millisecondDiff = diff < 1;
     const secondDiff = diff < 60;
-    const dayDiff = diff / (60 * 60) < 24;
+    const twoDayDiff = diff / (60 * 60) < 48;
     const fourDaysDiff = diff / (60 * 60) < 24 * 4;
     const manyDaysDiff = diff / (60 * 60 * 24) < 60;
     const manyMonthsDiff = diff / (60 * 60 * 24) < 365;
@@ -137,7 +137,7 @@ This component will draw an axis on the specified side.
       return [timeFormat("%M:%S.%L"), timeFormat("%H %d %b %Y")];
     } else if (secondDiff) {
       return [timeFormat("%M:%S"), timeFormat("%H %d %b %Y")];
-    } else if (dayDiff) {
+    } else if (twoDayDiff) {
       return [timeFormat("%H:%M"), timeFormat("%d %b %Y")];
     } else if (fourDaysDiff || manyDaysDiff || manyMonthsDiff) {
       return [timeFormat("%b %d"), timeFormat("%Y")];

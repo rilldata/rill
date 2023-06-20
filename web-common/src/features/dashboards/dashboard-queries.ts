@@ -6,7 +6,7 @@ export function cancelDashboardQueries(
   metricsViewName: string
 ) {
   return queryClient.cancelQueries({
-    fetching: true,
+    fetchStatus: "fetching",
     predicate: (query) => {
       return isMetricsViewQuery(query.queryHash, metricsViewName);
     },

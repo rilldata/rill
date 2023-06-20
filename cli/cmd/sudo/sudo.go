@@ -18,6 +18,7 @@ func SudoCmd(cfg *config.Config) *cobra.Command {
 	sudoCmd.AddCommand(superuser.SuperuserCmd(cfg))
 	sudoCmd.AddCommand(user.UserCmd(cfg))
 	sudoCmd.AddCommand(gitCloneCmd(cfg))
+	sudoCmd.AddCommand(lookupCmd(cfg))
 
 	return sudoCmd
 }

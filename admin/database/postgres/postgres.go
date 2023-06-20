@@ -370,6 +370,15 @@ func (c *connection) FindDeployment(ctx context.Context, id string) (*database.D
 	return res, nil
 }
 
+func (c *connection) FindDeploymentByInstanceID(ctx context.Context, instanceID string) (*database.Deployment, error) {
+	res := &database.Deployment{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM deployments d WHERE d.runtime_instance_id=$1", instanceID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("deployment", err)
+	}
+	return res, nil
+}
+
 func (c *connection) InsertDeployment(ctx context.Context, opts *database.InsertDeploymentOptions) (*database.Deployment, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err

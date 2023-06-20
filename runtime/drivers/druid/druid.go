@@ -25,6 +25,8 @@ func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 		return nil, err
 	}
 
+	db.SetMaxOpenConns(40)
+
 	conn := &connection{db: db}
 	return conn, nil
 }

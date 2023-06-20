@@ -89,7 +89,7 @@ export function emitSourceErrorTelemetry(
   const fileType = getFileTypeFromPath(fileName);
   const isGlob = fileName.includes("*");
 
-  errorEvent.fireSourceErrorEvent(
+  errorEvent?.fireSourceErrorEvent(
     space,
     screenName,
     categorizedError,
@@ -109,7 +109,7 @@ export function emitSourceSuccessTelemetry(
   const fileType = getFileTypeFromPath(fileName);
   const isGlob = fileName.includes("*");
 
-  behaviourEvent.fireSourceSuccessEvent(
+  behaviourEvent?.fireSourceSuccessEvent(
     medium,
     screenName,
     space,

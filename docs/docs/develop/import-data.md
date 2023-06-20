@@ -7,7 +7,7 @@ sidebar_position: 10
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-Rill supports several connectors for importing data: local files, download from an S3 or GCS bucket, or download using HTTP(S). Rill can ingest `.csv`, `.tsv`, and `.parquet` files, which may be compressed (`.gz`). You can only import a single data file as a source at a time.
+Rill supports several connectors for importing data: local files, download from an S3 or GCS bucket, or download using HTTP(S). Rill can ingest `.csv`, `.tsv`, and `.parquet` files, which may be compressed (`.gz`). To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the documentation on [glob-patterns](glob-patterns).
 
 ## Adding a local file
 
