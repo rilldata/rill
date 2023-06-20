@@ -225,7 +225,10 @@ export function getLocaleDateString(lang?: string) {
     "zu-ZA": "yyyy/MM/dd",
   };
 
-  return formats[lang ?? navigator.language] ?? "dd/MM/yyyy";
+  return (
+    formats[lang ?? Intl.DateTimeFormat().resolvedOptions().locale] ??
+    "dd/MM/yyyy"
+  );
 }
 
 // Using a timezone here SHIFTS the date as if it started in that timezone, rather than using the locale.
