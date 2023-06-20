@@ -125,7 +125,7 @@ export function convertTimeRangePreset(
     return {
       name: timeRangePreset,
       start,
-      end,
+      end: new Date(end.getTime() + 1),
     };
   }
   const timeRange = DEFAULT_TIME_RANGES[timeRangePreset];

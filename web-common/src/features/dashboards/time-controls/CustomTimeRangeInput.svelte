@@ -78,15 +78,19 @@
   }
 
   // HAM, you left off here.
-  $: error = validateTimeRange(
-    parseLocaleStringDate(start),
-    getOffset(
-      new Date(getISOStringFromDate(end, "UTC")),
-      Period.DAY,
-      TimeOffsetType.ADD
-    ),
-    minTimeGrain
-  );
+  let error = undefined;
+  $: if (start && end) {
+    error = validateTimeRange(
+      parseLocaleStringDate(start),
+      getOffset(
+        new Date(getISOStringFromDate(end, "UTC")),
+        Period.DAY,
+        TimeOffsetType.ADD
+      ),
+      minTimeGrain
+    );
+  }
+
   $: disabled = !start || !end || !!error;
 
   $: max = getDateFromISOString(boundaryEnd.toISOString());

@@ -103,12 +103,11 @@
   }
 
   function setDefaultTimeControls(allTimeRange: DashboardTimeControls) {
-    baseTimeRange =
-      convertTimeRangePreset(
-        defaultTimeRange,
-        allTimeRange.start,
-        allTimeRange.end
-      ) || allTimeRange;
+    baseTimeRange = convertTimeRangePreset(
+      defaultTimeRange,
+      allTimeRange.start,
+      allTimeRange.end
+    ) || { ...allTimeRange, end: new Date(allTimeRange.end.getTime() + 1) };
 
     const timeGrain = getDefaultTimeGrain(
       baseTimeRange.start,
