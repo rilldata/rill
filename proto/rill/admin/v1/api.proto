@@ -37,7 +37,7 @@ service AdminService {
   // UpdateOrganization deletes an organizations
   rpc UpdateOrganization(UpdateOrganizationRequest) returns (UpdateOrganizationResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{name}",
+      patch: "/v1/organizations/{name}",
       body: "*"
     };
   }
@@ -73,7 +73,7 @@ service AdminService {
   // UpdateProject updates a project
   rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization_name}/projects/{name}",
+      patch: "/v1/organizations/{organization_name}/projects/{name}",
       body: "*"
     };
   }
@@ -293,9 +293,9 @@ message DeleteOrganizationRequest {
 message DeleteOrganizationResponse {}
 
 message UpdateOrganizationRequest {
-  string id = 1;
-  string name = 2 [(validate.rules).string.min_len = 1];
-  string description = 3;
+  string name = 1 [(validate.rules).string.min_len = 1];
+  optional string description = 2;
+  optional string new_name = 3;
 }
 
 message UpdateOrganizationResponse {
@@ -361,15 +361,15 @@ message DeleteProjectRequest {
 message DeleteProjectResponse {}
 
 message UpdateProjectRequest {
-  string id = 1;
-  string organization_name = 2 [(validate.rules).string.min_len = 1];
-  string name = 3 [(validate.rules).string.min_len = 1];
-  string description = 4;
-  bool public = 5;
-  string prod_branch = 6;
-  string github_url = 7;
-  int64 prod_slots = 8;
-  string region = 9;
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string name = 2 [(validate.rules).string.min_len = 1];
+  optional string description = 3;
+  optional bool public = 4;
+  optional string prod_branch = 5;
+  optional string github_url = 6;
+  optional int64 prod_slots = 7;
+  optional string region = 8;
+  optional string new_name = 9;
 }
 
 message UpdateProjectResponse {

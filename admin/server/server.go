@@ -34,7 +34,11 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var minCliVersion = version.Must(version.NewVersion("0.20.0"))
+var _minCliVersion = version.Must(version.NewVersion("0.20.0"))
+var _minCliVersionByMethod = map[string]*version.Version{
+	"/rill.admin.v1.AdminService/UpdateProject":      version.Must(version.NewVersion("0.28.0")),
+	"/rill.admin.v1.AdminService/UpdateOrganization": version.Must(version.NewVersion("0.28.0")),
+}
 
 type Options struct {
 	HTTPPort               int
@@ -290,8 +294,14 @@ func checkUserAgent(ctx context.Context) (context.Context, error) {
 		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("could not parse rill-cli version: %s", err.Error()))
 	}
 
-	if v.LessThan(minCliVersion) {
-		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported, please upgrade to the latest version", v))
+	method, _ := grpc.Method(ctx)
+	minVersion, ok := _minCliVersionByMethod[method]
+	if !ok {
+		minVersion = _minCliVersion
+	}
+
+	if v.LessThan(minVersion) {
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported for given operation, please upgrade to the latest version", v))
 	}
 
 	return ctx, nil

@@ -518,7 +518,7 @@ export const adminServiceUpdateOrganization = (
 ) => {
   return httpClient<V1UpdateOrganizationResponse>({
     url: `/v1/organizations/${name}`,
-    method: "put",
+    method: "patch",
     headers: { "Content-Type": "application/json" },
     data: adminServiceUpdateOrganizationBody,
   });
@@ -1731,7 +1731,7 @@ export const adminServiceUpdateProject = (
 ) => {
   return httpClient<V1UpdateProjectResponse>({
     url: `/v1/organizations/${organizationName}/projects/${name}`,
-    method: "put",
+    method: "patch",
     headers: { "Content-Type": "application/json" },
     data: adminServiceUpdateProjectBody,
   });
