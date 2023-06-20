@@ -5,13 +5,14 @@
   } from "@rilldata/web-common/lib/time/grains";
   import { createEventDispatcher } from "svelte";
   import { Button } from "../../../components/button";
-  import type { DashboardTimeControls } from "../../../lib/time/types";
+  import { DashboardTimeControls, Period } from "../../../lib/time/types";
   import type { V1TimeGrain } from "../../../runtime-client";
   import Litepicker from "@rilldata/web-common/components/date-picker/Litepicker.svelte";
   import {
     parseLocaleStringDate,
     shiftToUTC,
   } from "@rilldata/web-common/components/date-picker/util";
+  import { getEndOfPeriod } from "@rilldata/web-common/lib/time/transforms";
 
   export let minTimeGrain: V1TimeGrain;
   export let boundaryStart: Date;
@@ -83,7 +84,11 @@
   function applyCustomTimeRange() {
     // Shift the selected dates to start in UTC instead of system timezone
     const startDate = getISOStringFromDate(start, "UTC");
-    const endDate = getISOStringFromDate(end, "UTC");
+    const endDate = getEndOfPeriod(
+      new Date(getISOStringFromDate(end, "UTC")),
+      Period.DAY
+    ).toISOString();
+
     dispatch("apply", {
       startDate,
       endDate,

@@ -241,8 +241,7 @@ export function parseLocaleStringDate(str: string, timeZone?: string) {
   let localDate = parse(str, format, new Date());
 
   // if date is still invalid, try parsing with default Date string parsing.
-  // Hack: if the string looks like an ISO date, Date() tries to parse it as ISO instead of as a locale date string. Add a space to the end to prevent this.
-  if (isNaN(localDate.valueOf())) localDate = new Date(`${str} `);
+  if (isNaN(localDate.valueOf())) localDate = new Date(`${str}`);
   if (!timeZone) return localDate;
   return new Date(localDate.toDateString() + " " + timeZone);
 }
