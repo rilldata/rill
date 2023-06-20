@@ -5,10 +5,14 @@
   } from "@rilldata/web-common/lib/time/grains";
   import { createEventDispatcher } from "svelte";
   import { Button } from "../../../components/button";
-  import type { DashboardTimeControls } from "../../../lib/time/types";
+  import { DashboardTimeControls, Period } from "../../../lib/time/types";
   import type { V1TimeGrain } from "../../../runtime-client";
   import Litepicker from "@rilldata/web-common/components/date-picker/Litepicker.svelte";
-  import { parseLocaleStringDate } from "@rilldata/web-common/components/date-picker/util";
+  import {
+    parseLocaleStringDate,
+    shiftToUTC,
+  } from "@rilldata/web-common/components/date-picker/util";
+  import { getEndOfPeriod } from "@rilldata/web-common/lib/time/transforms";
 
   export let minTimeGrain: V1TimeGrain;
   export let boundaryStart: Date;
@@ -28,9 +32,12 @@
   // functions for extracting the right kind of date string out of
   // a Date object. Used in the input elements.
   export function getDateFromObject(date: Date): string {
-    return date.toLocaleDateString(window.navigator.language, {
-      timeZone: "UTC",
-    });
+    return date.toLocaleDateString(
+      Intl.DateTimeFormat().resolvedOptions().locale,
+      {
+        timeZone: "UTC",
+      }
+    );
   }
 
   export function getDateFromISOString(isoDate: string): string {
@@ -66,7 +73,7 @@
   // HAM, you left off here.
   $: error = validateTimeRange(
     parseLocaleStringDate(start),
-    parseLocaleStringDate(end),
+    getEndOfPeriod(parseLocaleStringDate(end), Period.DAY),
     minTimeGrain
   );
   $: disabled = !start || !end || !!error;
@@ -77,7 +84,11 @@
   function applyCustomTimeRange() {
     // Shift the selected dates to start in UTC instead of system timezone
     const startDate = getISOStringFromDate(start, "UTC");
-    const endDate = getISOStringFromDate(end, "UTC");
+    const endDate = getEndOfPeriod(
+      new Date(getISOStringFromDate(end, "UTC")),
+      Period.DAY
+    ).toISOString();
+
     dispatch("apply", {
       startDate,
       endDate,
@@ -87,8 +98,8 @@
   let startEl, endEl, editingDate, isOpen;
 
   const handleDatePickerChange = (d) => {
-    start = getDateFromObject(d.detail.start);
-    end = getDateFromObject(d.detail.end);
+    start = getDateFromObject(shiftToUTC(d.detail.start));
+    end = getDateFromObject(shiftToUTC(d.detail.end));
   };
 
   const handleEditingChange = (d) => {

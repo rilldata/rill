@@ -187,7 +187,7 @@ describe("dashboards", () => {
     await timeRangeMenu.getByRole("button", { name: "Apply" }).click();
 
     // Check number
-    await playwrightExpect(page.getByText("Total records 64.0k")).toBeVisible();
+    await playwrightExpect(page.getByText("Total records 65.1k")).toBeVisible();
 
     // Flip back to All Time
     await page.getByLabel("Select time range").click();
