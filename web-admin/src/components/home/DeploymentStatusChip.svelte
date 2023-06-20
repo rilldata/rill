@@ -107,6 +107,14 @@
       textClass: "text-purple-600",
       wrapperClass: "bg-purple-50 border-purple-300",
     },
+    [V1DeploymentStatus.DEPLOYMENT_STATUS_HIBERNATED]: {
+      // TODO: review with Design team and replace icon
+      icon: CheckCircle,
+      iconProps: { className: "text-indigo-600 hover:text-indigo-500" },
+      text: "sleeping",
+      textClass: "text-indigo-600",
+      wrapperClass: "bg-indigo-50 border-indigo-300",
+    },
     [V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR]: {
       icon: CancelCircle,
       iconProps: { className: "text-red-600 hover:text-red-500" },
