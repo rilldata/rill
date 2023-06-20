@@ -78,6 +78,7 @@ import type {
   V1IssueRepresentativeAuthTokenResponse,
   V1IssueRepresentativeAuthTokenRequest,
   V1GetUserResponse,
+  AdminServiceGetUserParams,
   V1GetCurrentUserResponse,
   V1SearchUsersResponse,
   AdminServiceSearchUsersParams,
@@ -2327,16 +2328,21 @@ export const createAdminServiceIssueRepresentativeAuthToken = <
 /**
  * @summary GetUser returns user by email
  */
-export const adminServiceGetUser = (email: string, signal?: AbortSignal) => {
+export const adminServiceGetUser = (
+  params?: AdminServiceGetUserParams,
+  signal?: AbortSignal
+) => {
   return httpClient<V1GetUserResponse>({
-    url: `/v1/users/${email}`,
+    url: `/v1/users`,
     method: "get",
+    params,
     signal,
   });
 };
 
-export const getAdminServiceGetUserQueryKey = (email: string) =>
-  [`/v1/users/${email}`] as const;
+export const getAdminServiceGetUserQueryKey = (
+  params?: AdminServiceGetUserParams
+) => [`/v1/users`, ...(params ? [params] : [])] as const;
 
 export type AdminServiceGetUserQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceGetUser>>
@@ -2347,7 +2353,7 @@ export const createAdminServiceGetUser = <
   TData = Awaited<ReturnType<typeof adminServiceGetUser>>,
   TError = RpcStatus
 >(
-  email: string,
+  params?: AdminServiceGetUserParams,
   options?: {
     query?: CreateQueryOptions<
       Awaited<ReturnType<typeof adminServiceGetUser>>,
@@ -2359,22 +2365,20 @@ export const createAdminServiceGetUser = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getAdminServiceGetUserQueryKey(email);
+    queryOptions?.queryKey ?? getAdminServiceGetUserQueryKey(params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetUser>>
-  > = ({ signal }) => adminServiceGetUser(email, signal);
+  > = ({ signal }) => adminServiceGetUser(params, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceGetUser>>,
     TError,
     TData
-  >({
-    queryKey,
-    queryFn,
-    enabled: !!email,
-    ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
 
   query.queryKey = queryKey;
 

@@ -228,7 +228,7 @@ service AdminService {
 
   // GetUser returns user by email
   rpc GetUser(GetUserRequest) returns (GetUserResponse) {
-    option (google.api.http) = {get: "/v1/users/{email}"};
+    option (google.api.http) = {get: "/v1/users"};
   }
    // GetUsersByEmail returns users by email
   rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse) {

@@ -1040,7 +1040,7 @@ paths:
             $ref: '#/definitions/v1IssueRepresentativeAuthTokenRequest'
       tags:
         - AdminService
-  /v1/users/{email}:
+  /v1/users:
     get:
       summary: GetUser returns user by email
       operationId: AdminService_GetUser
@@ -1055,8 +1055,8 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: email
-          in: path
-          required: true
+          in: query
+          required: false
           type: string
       tags:
         - AdminService

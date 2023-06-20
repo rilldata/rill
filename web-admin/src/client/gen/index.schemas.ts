@@ -10,6 +10,10 @@ export type AdminServiceSearchUsersParams = {
   pageToken?: string;
 };
 
+export type AdminServiceGetUserParams = {
+  email?: string;
+};
+
 export type AdminServiceSudoGetResourceParams = {
   userId?: string;
   orgId?: string;
