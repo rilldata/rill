@@ -181,7 +181,7 @@ export const prettyFormatTimeRange = (
     startYear === endYear
   ) {
     return `${start.toLocaleDateString(undefined, {
-      month: "long",
+      month: "short",
       timeZone: TIMEZONE,
     })} ${startDate}, ${startYear} (${start
       .toLocaleString(undefined, {
@@ -205,7 +205,7 @@ export const prettyFormatTimeRange = (
     timeRangeDurationMs <= durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
   ) {
     return `${start.toLocaleDateString(undefined, {
-      month: "long",
+      month: "short",
       timeZone: TIMEZONE,
     })} ${startDate}-${endDate}, ${startYear} (${start
       .toLocaleString(undefined, {
@@ -242,7 +242,7 @@ export const prettyFormatTimeRange = (
   // month is the same
   if (startMonth === endMonth && startYear === endYear) {
     return `${start.toLocaleDateString(undefined, {
-      month: "long",
+      month: "short",
       timeZone: TIMEZONE,
     })} ${startDate}-${endDate}, ${startYear}`;
   }
@@ -250,11 +250,11 @@ export const prettyFormatTimeRange = (
   // year is the same
   if (startYear === endYear) {
     return `${start.toLocaleDateString(undefined, {
-      month: "long",
+      month: "short",
       day: "numeric",
       timeZone: TIMEZONE,
     })} - ${inclusiveEndDate.toLocaleDateString(undefined, {
-      month: "long",
+      month: "short",
       day: "numeric",
       timeZone: TIMEZONE,
     })}, ${startYear}`;
@@ -262,7 +262,7 @@ export const prettyFormatTimeRange = (
   // year is different
   const dateFormatOptions: Intl.DateTimeFormatOptions = {
     year: "numeric",
-    month: "long",
+    month: "short",
     day: "numeric",
     timeZone: TIMEZONE,
   };
