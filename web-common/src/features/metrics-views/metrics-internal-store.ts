@@ -32,8 +32,10 @@ export interface MeasureEntity {
   __ERROR__?: string;
 }
 export interface DimensionEntity {
+  name?: string;
   label?: string;
   property?: string;
+  column?: string;
   description?: string;
   __ERROR__?: string;
 }
@@ -42,6 +44,7 @@ export interface DimensionEntity {
 // EG: "measure_2".replace(NameNumberRegex, "") => "measure"
 const NameNumberRegex = new RegExp(/(\d+)$/);
 const MeasureNamePrefix = "measure";
+const DimensionNamePrefix = "dimension";
 
 export class MetricsInternalRepresentation {
   // All operations are done on the document to preserve comments
@@ -81,7 +84,10 @@ export class MetricsInternalRepresentation {
         ?.items as YAMLMap[],
       MeasureNamePrefix
     );
-    // TODO: fill names for dimensions
+    this.fixDimensions(
+      (internalRepresentationDoc.get("dimensions") as Collection)
+        ?.items as YAMLMap[]
+    );
 
     this.internalRepresentationDocument = internalRepresentationDoc;
 
@@ -212,9 +218,15 @@ export class MetricsInternalRepresentation {
   }
 
   addNewDimension() {
+    const newName = getName(
+      DimensionNamePrefix,
+      this.internalRepresentation.dimensions.map((dimension) => dimension.name)
+    );
+
     const dimensionNode = this.internalRepresentationDocument.createNode({
+      name: newName,
       label: "",
-      property: "",
+      column: "",
       description: "",
     });
 
@@ -233,6 +245,22 @@ export class MetricsInternalRepresentation {
   deleteDimension(index: number) {
     this.internalRepresentationDocument.deleteIn(["dimensions", index]);
     this.regenerateInternalYAML();
+  }
+
+  fixDimensions(dimensions: Array<YAMLMap>) {
+    this.fillNames(dimensions, DimensionNamePrefix);
+
+    for (const dimension of dimensions) {
+      const property = dimension.get("property");
+      if (property) {
+        dimension.delete("property");
+      }
+
+      const column = dimension.get("column");
+      if (!column) {
+        dimension.set("column", property);
+      }
+    }
   }
 
   fillNames(entities: Array<YAMLMap>, namePrefix: string) {
@@ -327,8 +355,9 @@ export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
     })
     .map((field) => {
       return {
+        name: field.name,
         label: capitalize(field.name),
-        property: field.name,
+        column: field.name,
         description: "",
       };
     });

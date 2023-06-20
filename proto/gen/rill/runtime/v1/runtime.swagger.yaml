@@ -1309,8 +1309,6 @@ paths:
                 type: string
               timeRange:
                 $ref: '#/definitions/v1TimeSeriesTimeRange'
-              filters:
-                $ref: '#/definitions/v1MetricsViewFilter'
               pixels:
                 type: integer
                 format: int32
@@ -1736,6 +1734,8 @@ definitions:
         type: string
       description:
         type: string
+      column:
+        type: string
     title: Dimensions are columns to filter and group by
   MetricsViewFilterCond:
     type: object
@@ -2133,6 +2133,7 @@ definitions:
     enum:
       - EXPORT_FORMAT_UNSPECIFIED
       - EXPORT_FORMAT_CSV
+      - EXPORT_FORMAT_XLSX
     default: EXPORT_FORMAT_UNSPECIFIED
     title: ExportFormat is a file format for a data export
   v1ExportResponse:

@@ -50,7 +50,6 @@ export type QueryServiceColumnTimeSeriesBody = {
   measures?: ColumnTimeSeriesRequestBasicMeasure[];
   timestampColumnName?: string;
   timeRange?: V1TimeSeriesTimeRange;
-  filters?: V1MetricsViewFilter;
   pixels?: number;
   sampleSize?: number;
   priority?: number;
@@ -858,6 +857,7 @@ export type V1ExportFormat =
 export const V1ExportFormat = {
   EXPORT_FORMAT_UNSPECIFIED: "EXPORT_FORMAT_UNSPECIFIED",
   EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
+  EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
 } as const;
 
 export interface V1EditInstanceResponse {
@@ -1093,6 +1093,7 @@ export interface MetricsViewDimension {
   name?: string;
   label?: string;
   description?: string;
+  column?: string;
 }
 
 export type ExtractPolicyStrategy =

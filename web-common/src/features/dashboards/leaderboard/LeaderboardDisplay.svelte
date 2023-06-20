@@ -5,6 +5,7 @@
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import {
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
@@ -108,17 +109,13 @@
     observer?.disconnect();
   });
 
-  // FIXME: this is pending the remaining state work for show/hide measures and dimensions
-  // $: availableDimensionKeys = selectDimensionKeys($metaQuery);
-  // $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
-  // $: visibleDimensionsBitmask = availableDimensionKeys.map((k) =>
-  //   visibleDimensionKeys.has(k)
-  // );
+  $: showHideDimensions = createShowHideDimensionsStore(
+    metricViewName,
+    metaQuery
+  );
 
-  // $: dimensionsShown =
-  //   dimensions?.filter((_, i) => visibleDimensionsBitmask[i]) ?? [];
-
-  $: dimensionsShown = dimensions ?? [];
+  $: dimensionsShown =
+    dimensions?.filter((_, i) => $showHideDimensions.selectedItems[i]) ?? [];
 </script>
 
 <svelte:window on:resize={onResize} />
