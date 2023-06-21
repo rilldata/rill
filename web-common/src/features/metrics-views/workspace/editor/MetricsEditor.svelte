@@ -16,13 +16,6 @@
   export let yaml: string;
   export let metricsDefName: string;
 
-  /** note: this codemirror plugin does actually utilize tanstack query, and the
-   * instantiation of the underlying svelte component that defines the placeholder
-   * must be instantiated in the component.
-   */
-  const placeholderElement = createPlaceholderElement(metricsDefName);
-  const placeholder = createPlaceholder(placeholderElement.DOMElement);
-
   /** a temporary set of enums that shoul be emitted by orval's codegen */
   enum ConfigErrors {
     SourceNotSelected = "metrics view source not selected",
@@ -94,17 +87,25 @@
 
   /** We display the mainError even if there are multiple errors elsewhere. */
   $: mainError = [
-    ...(mappedErrors || []),
     ...mappedSyntaxErrors,
+    ...(mappedErrors || []),
+
     ...(errors || []),
   ]?.at(0);
 
+  /** create the line status system */
   const { createUpdater, extension: lineStatusExtensions } =
     createLineStatusSystem();
   $: updateLineStatus = createUpdater([...mappedErrors, ...mappedSyntaxErrors]);
 
   let cursor;
-  let hasFocus;
+
+  /** note: this codemirror plugin does actually utilize tanstack query, and the
+   * instantiation of the underlying svelte component that defines the placeholder
+   * must be instantiated in the component.
+   */
+  const placeholderElement = createPlaceholderElement(metricsDefName);
+  const placeholder = createPlaceholder(placeholderElement.DOMElement);
 </script>
 
 <div
@@ -123,8 +124,7 @@
         on:cursor={(event) => {
           cursor = event.detail;
         }}
-        bind:hasFocus
-        plugins={[
+        extensions={[
           editorTheme(),
           placeholder,
           lineStatusExtensions,

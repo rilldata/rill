@@ -31,6 +31,12 @@
     str = undefined
   ) {
     if (str === undefined) {
+      //       const model = await queryClient.fetchQuery<V1Model>(
+      //   getRuntimeServiceGetCatalogEntryQueryKey(
+      //     $runtime?.instanceId,
+      //     modelName
+      //   )
+      // );
       const model = await runtimeServiceGetCatalogEntry(
         $runtime?.instanceId,
         modelName
