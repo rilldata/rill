@@ -44,7 +44,7 @@ func (l *Redis) Limit(ctx context.Context, limitKey string, limit redis_rate.Lim
 	return nil
 }
 
-type Noop struct {}
+type Noop struct{}
 
 func NewNoop() *Noop {
 	return &Noop{}

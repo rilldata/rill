@@ -324,4 +324,3 @@ func (i CtxInspector) GetAuthID(ctx context.Context) string {
 func LimiterHTTPHandler(route string, l ratelimit.Limiter, anonLimit redis_rate.Limit, next http.Handler) http.Handler {
 	return ratelimit.NewInterceptor(l, CtxInspector{}, anonLimit, ratelimit.Unlimited).HTTPHandler(route, next)
 }
-
