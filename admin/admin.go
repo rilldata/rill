@@ -70,9 +70,11 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		DB:             db,
 		Provisioner:    prov,
 		Email:          emailClient,
+		Github:         github,
 		Used:           newUsedFlusher(logger, db),
 		opts:           opts,
 		logger:         logger,
+		issuer:         issuer,
 		closeCtx:       ctx,
 		closeCtxCancel: cancel,
 	}
