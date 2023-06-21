@@ -123,7 +123,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			// Create ctx that cancels on termination signals
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 
-			var limiter *ratelimit.RequestRateLimiter
+			var limiter ratelimit.Limiter
 			if conf.RedisURL == "" {
 				limiter = ratelimit.NewNoop()
 			} else {
@@ -131,7 +131,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				if err != nil {
 					logger.Fatal("failed to parse redis url")
 				}
-				limiter = ratelimit.NewLimiter(redis.NewClient(opts))
+				limiter = ratelimit.NewRedis(redis.NewClient(opts))
 			}
 
 			// Init server

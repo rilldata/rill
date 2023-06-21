@@ -63,12 +63,12 @@ type Server struct {
 	authenticator *auth.Authenticator
 	issuer        *runtimeauth.Issuer
 	urls          *externalURLs
-	limiter       *ratelimit.RequestRateLimiter
+	limiter       ratelimit.Limiter
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
-func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter *ratelimit.RequestRateLimiter, opts *Options) (*Server, error) {
+func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, opts *Options) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)
@@ -117,7 +117,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			grpc_auth.StreamServerInterceptor(checkUserAgent),
 			grpc_validator.StreamServerInterceptor(),
 			s.authenticator.StreamServerInterceptor(),
-			limiterStreamServerInterceptor(*s.limiter, ratelimit.Default, ratelimit.Default),
+			limiterStreamServerInterceptor(s.limiter, ratelimit.Default, ratelimit.Default),
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
@@ -127,7 +127,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			grpc_auth.UnaryServerInterceptor(checkUserAgent),
 			grpc_validator.UnaryServerInterceptor(),
 			s.authenticator.UnaryServerInterceptor(),
-			limiterUnaryServerInterceptor(*s.limiter, ratelimit.Default, ratelimit.Default),
+			limiterUnaryServerInterceptor(s.limiter, ratelimit.Default, ratelimit.Default),
 		),
 	)
 
@@ -175,10 +175,10 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	mux.Handle("/.well-known/jwks.json", s.issuer.WellKnownHandler())
 
 	// Add auth endpoints (not gRPC handlers, just regular endpoints on /auth/*)
-	s.authenticator.RegisterEndpoints(mux, *s.limiter)
+	s.authenticator.RegisterEndpoints(mux, s.limiter)
 
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
-	s.registerGithubEndpoints(mux, *s.limiter)
+	s.registerGithubEndpoints(mux, s.limiter)
 
 	// Add temporary internal endpoint for refreshing sources
 	mux.Handle("/internal/projects/trigger-refresh", otelhttp.WithRouteTag("/internal/projects/trigger-refresh", http.HandlerFunc(s.triggerRefreshSourcesInternal)))

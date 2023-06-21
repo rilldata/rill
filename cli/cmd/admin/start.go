@@ -179,7 +179,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 
 			// Init and run server
 			if runServer {
-				var limiter *ratelimit.RequestRateLimiter
+				var limiter ratelimit.Limiter
 				if conf.RedisURL == "" {
 					limiter = ratelimit.NewNoop()
 				} else {
@@ -187,7 +187,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 					if err != nil {
 						logger.Fatal("failed to parse redis url")
 					}
-					limiter = ratelimit.NewLimiter(redis.NewClient(opts))
+					limiter = ratelimit.NewRedis(redis.NewClient(opts))
 				}
 				srv, err := server.New(logger, adm, issuer, limiter, &server.Options{
 					HTTPPort:               conf.HTTPPort,

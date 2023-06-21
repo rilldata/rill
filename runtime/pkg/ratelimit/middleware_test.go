@@ -44,11 +44,11 @@ func TestUnaryServerInterceptor(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	limiter := NewLimiter(redis.NewClient(opts))
+	limiter := NewRedis(redis.NewClient(opts))
 
 	t.Run("No Error (anonymous request)", func(t *testing.T) {
 		mr.FlushDB()
-		interceptor := NewInterceptor(*limiter, TestContextInspector{}, Unlimited, Unlimited)
+		interceptor := NewInterceptor(limiter, TestContextInspector{}, Unlimited, Unlimited)
 		ctx := peer.NewContext(context.Background(), &peer.Peer{Addr: localhost})
 		nextHandler := func(ctx context.Context, req interface{}) (interface{}, error) {
 			return nil, nil
@@ -62,7 +62,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 
 	t.Run("No Error (authenticated request)", func(t *testing.T) {
 		mr.FlushDB()
-		interceptor := NewInterceptor(*limiter, TestContextInspector{}, Unlimited, Unlimited)
+		interceptor := NewInterceptor(limiter, TestContextInspector{}, Unlimited, Unlimited)
 		ctx := context.WithValue(context.Background(), "authorization", "userid")
 		nextHandler := func(ctx context.Context, req interface{}) (interface{}, error) {
 			return nil, nil
@@ -76,7 +76,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 
 	t.Run("Quota Exceeded Error (anonymous request)", func(t *testing.T) {
 		mr.FlushDB()
-		interceptor := NewInterceptor(*limiter, TestContextInspector{}, redis_rate.PerMinute(1), Unlimited)
+		interceptor := NewInterceptor(limiter, TestContextInspector{}, redis_rate.PerMinute(1), Unlimited)
 		ctx := peer.NewContext(context.Background(), &peer.Peer{Addr: localhost})
 		nextHandler := func(ctx context.Context, req interface{}) (interface{}, error) {
 			return nil, nil
@@ -91,7 +91,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 
 	t.Run("Quota Exceeded Error (authenticated request)", func(t *testing.T) {
 		mr.FlushDB()
-		interceptor := NewInterceptor(*limiter, TestContextInspector{}, Unlimited, redis_rate.PerMinute(1))
+		interceptor := NewInterceptor(limiter, TestContextInspector{}, Unlimited, redis_rate.PerMinute(1))
 		ctx := context.WithValue(context.Background(), "authorization", "userid")
 		ctx = peer.NewContext(ctx, &peer.Peer{Addr: localhost})
 		nextHandler := func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -118,11 +118,11 @@ func TestHTTPHandler(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	limiter := NewLimiter(redis.NewClient(opts))
+	limiter := NewRedis(redis.NewClient(opts))
 
 	t.Run("No Error (anonymous request)", func(t *testing.T) {
 		mr.FlushDB()
-		interceptor := NewInterceptor(*limiter, TestContextInspector{}, Unlimited, Unlimited)
+		interceptor := NewInterceptor(limiter, TestContextInspector{}, Unlimited, Unlimited)
 		handler := interceptor.HTTPHandler("/foo", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
 		req := httptest.NewRequest(http.MethodGet, "http://rilldata.com/foo", nil)
@@ -138,7 +138,7 @@ func TestHTTPHandler(t *testing.T) {
 
 	t.Run("No Error (authenticated request)", func(t *testing.T) {
 		mr.FlushDB()
-		interceptor := NewInterceptor(*limiter, TestContextInspector{}, Unlimited, Unlimited)
+		interceptor := NewInterceptor(limiter, TestContextInspector{}, Unlimited, Unlimited)
 		handler := interceptor.HTTPHandler("/foo", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
 		req := httptest.NewRequest(http.MethodGet, "http://rilldata.com/foo", nil)
@@ -155,7 +155,7 @@ func TestHTTPHandler(t *testing.T) {
 
 	t.Run("Quota Exceeded Error (anonymous request)", func(t *testing.T) {
 		mr.FlushDB()
-		interceptor := NewInterceptor(*limiter, TestContextInspector{}, redis_rate.PerMinute(1), Unlimited)
+		interceptor := NewInterceptor(limiter, TestContextInspector{}, redis_rate.PerMinute(1), Unlimited)
 		handler := interceptor.HTTPHandler("/foo", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
 		req := httptest.NewRequest(http.MethodGet, "http://rilldata.com/foo", nil)
@@ -174,7 +174,7 @@ func TestHTTPHandler(t *testing.T) {
 
 	t.Run("Quota Exceeded Error (authenticated request)", func(t *testing.T) {
 		mr.FlushDB()
-		interceptor := NewInterceptor(*limiter, TestContextInspector{}, Unlimited, redis_rate.PerMinute(1))
+		interceptor := NewInterceptor(limiter, TestContextInspector{}, Unlimited, redis_rate.PerMinute(1))
 		handler := interceptor.HTTPHandler("/foo", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
 		req := httptest.NewRequest(http.MethodGet, "http://rilldata.com/foo", nil)

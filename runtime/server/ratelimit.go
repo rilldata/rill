@@ -18,12 +18,12 @@ func (i RuntimeUserCtxInspector) GetAuthID(ctx context.Context) string {
 	return auth.GetClaims(ctx).Subject()
 }
 
-var ctxInspector ratelimit.AuthContextInspector = RuntimeUserCtxInspector{}
+var ctxInspector ratelimit.CtxInspector = RuntimeUserCtxInspector{}
 
-func limiterUnaryServerInterceptor(l ratelimit.RequestRateLimiter, anonLimit, authLimit redis_rate.Limit) grpc.UnaryServerInterceptor {
+func limiterUnaryServerInterceptor(l ratelimit.Limiter, anonLimit, authLimit redis_rate.Limit) grpc.UnaryServerInterceptor {
 	return ratelimit.NewInterceptor(l, ctxInspector, anonLimit, authLimit).UnaryServerInterceptor()
 }
 
-func limiterStreamServerInterceptor(l ratelimit.RequestRateLimiter, anonLimit, authLimit redis_rate.Limit) grpc.StreamServerInterceptor {
+func limiterStreamServerInterceptor(l ratelimit.Limiter, anonLimit, authLimit redis_rate.Limit) grpc.StreamServerInterceptor {
 	return ratelimit.NewInterceptor(l, ctxInspector, anonLimit, authLimit).StreamServerInterceptor()
 }

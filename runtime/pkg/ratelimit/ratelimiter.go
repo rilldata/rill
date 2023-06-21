@@ -8,26 +8,22 @@ import (
 	"math"
 )
 
-// RequestRateLimiter offers rate limiting functionality using a Redis-based rate limiter from the `go-redis/redis_rate`.
-// The RequestRateLimiter supports the concept of 'No-operation' (Noop) that performs no rate limiting.
+type Limiter interface {
+	Limit(ctx context.Context, limitKey string, limit redis_rate.Limit) error
+}
+
+// Redis offers rate limiting functionality using a Redis-based rate limiter from the `go-redis/redis_rate`.
+// The Redis supports the concept of 'No-operation' (Noop) that performs no rate limiting.
 // This can be useful in local/testing environments or when rate limiting is not required.
-type RequestRateLimiter struct {
+type Redis struct {
 	*redis_rate.Limiter
 }
 
-func NewLimiter(client *redis.Client) *RequestRateLimiter {
-	return &RequestRateLimiter{Limiter: redis_rate.NewLimiter(client)}
+func NewRedis(client *redis.Client) *Redis {
+	return &Redis{Limiter: redis_rate.NewLimiter(client)}
 }
 
-func NewNoop() *RequestRateLimiter {
-	return &RequestRateLimiter{Limiter: nil}
-}
-
-func (l *RequestRateLimiter) Limit(ctx context.Context, limitKey string, limit redis_rate.Limit) error {
-	if l.Limiter == nil {
-		return nil
-	}
-
+func (l *Redis) Limit(ctx context.Context, limitKey string, limit redis_rate.Limit) error {
 	if limit == Unlimited {
 		return nil
 	}
@@ -45,6 +41,16 @@ func (l *RequestRateLimiter) Limit(ctx context.Context, limitKey string, limit r
 		return NewQuotaExceededError(fmt.Sprintf("Rate limit exceeded. Try again in %v seconds", rateResult.RetryAfter))
 	}
 
+	return nil
+}
+
+type Noop struct {}
+
+func NewNoop() *Noop {
+	return &Noop{}
+}
+
+func (n Noop) Limit(ctx context.Context, limitKey string, limit redis_rate.Limit) error {
 	return nil
 }
 

@@ -21,7 +21,7 @@ func TestRequestRateLimiter_Limit(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	limiter := NewLimiter(redis.NewClient(opts))
+	limiter := NewRedis(redis.NewClient(opts))
 
 	t.Run("allowed & not allowed keyed authorized request", func(t *testing.T) {
 		mr.FlushDB()

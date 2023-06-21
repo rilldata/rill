@@ -139,7 +139,7 @@ func (s *Server) GetGitCredentials(ctx context.Context, req *adminv1.GetGitCrede
 }
 
 // registerGithubEndpoints registers the non-gRPC endpoints for the Github integration.
-func (s *Server) registerGithubEndpoints(mux *http.ServeMux, limiter ratelimit.RequestRateLimiter) {
+func (s *Server) registerGithubEndpoints(mux *http.ServeMux, limiter ratelimit.Limiter) {
 	// TODO: Add helper utils to clean this up
 	inner := http.NewServeMux()
 	inner.Handle("/github/webhook", otelhttp.WithRouteTag("/github/webhook", http.HandlerFunc(s.githubWebhook)))

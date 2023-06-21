@@ -47,7 +47,7 @@ type Server struct {
 	opts    *Options
 	logger  *zap.Logger
 	aud     *auth.Audience
-	limiter *ratelimit.RequestRateLimiter
+	limiter ratelimit.Limiter
 }
 
 var (
@@ -58,7 +58,7 @@ var (
 
 // NewServer creates a new runtime server.
 // The provided ctx is used for the lifetime of the server for background refresh of the JWKS that is used to validate auth tokens.
-func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter *ratelimit.RequestRateLimiter) (*Server, error) {
+func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter ratelimit.Limiter) (*Server, error) {
 	srv := &Server{
 		opts:    opts,
 		runtime: rt,
@@ -107,7 +107,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingStreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
-			limiterStreamServerInterceptor(*s.limiter, ratelimit.Public, ratelimit.Unlimited),
+			limiterStreamServerInterceptor(s.limiter, ratelimit.Public, ratelimit.Unlimited),
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
@@ -116,7 +116,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingUnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
-			limiterUnaryServerInterceptor(*s.limiter, ratelimit.Public, ratelimit.Unlimited),
+			limiterUnaryServerInterceptor(s.limiter, ratelimit.Public, ratelimit.Unlimited),
 		),
 	)
 
