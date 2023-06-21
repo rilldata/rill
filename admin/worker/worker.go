@@ -44,7 +44,7 @@ func (w *Worker) Run(ctx context.Context) error {
 	})
 
 	group.Go(func() error {
-		return w.schedule(ctx, "hibernateExpiredDeployments", w.hibernateExpiredDeployments, 2*time.Minute)
+		return w.schedule(ctx, "hibernateExpiredDeployments", w.hibernateExpiredDeployments, 15*time.Minute)
 	})
 
 	// NOTE: Add new scheduled jobs here
