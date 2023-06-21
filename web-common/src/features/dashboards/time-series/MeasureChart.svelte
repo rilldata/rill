@@ -204,7 +204,7 @@
             >
               {mouseoverTimeFormat(point[labelAccessor])}
             </text>
-            {#if showComparison}
+            {#if showComparison && point[`comparison.${labelAccessor}`]}
               <text
                 style:paint-order="stroke"
                 stroke="white"

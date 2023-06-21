@@ -18,6 +18,7 @@ import {
   clearMetricsExplorerStore,
   createAdBidsInStore,
   createAdBidsMirrorInStore,
+  createMetricsMetaQueryMock,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -28,6 +29,7 @@ describe("dashboard-stores", () => {
   });
 
   it("Toggle filters", () => {
+    const mock = createMetricsMetaQueryMock();
     createAdBidsInStore();
     assertMetricsView(AD_BIDS_NAME);
 
@@ -50,7 +52,7 @@ describe("dashboard-stores", () => {
     assertMetricsView(AD_BIDS_NAME, AD_BIDS_BASE_FILTER);
 
     // create a mirror using the proto and assert that the filters are persisted
-    createAdBidsMirrorInStore();
+    createAdBidsMirrorInStore(get(mock).data);
     assertMetricsView(
       AD_BIDS_MIRROR_NAME,
       AD_BIDS_BASE_FILTER,
@@ -65,7 +67,7 @@ describe("dashboard-stores", () => {
     assertMetricsView(AD_BIDS_NAME, AD_BIDS_EXCLUDE_FILTER);
 
     // create a mirror using the proto and assert that the filters are persisted
-    createAdBidsMirrorInStore();
+    createAdBidsMirrorInStore(get(mock).data);
     assertMetricsView(
       AD_BIDS_MIRROR_NAME,
       AD_BIDS_EXCLUDE_FILTER,
@@ -81,7 +83,7 @@ describe("dashboard-stores", () => {
     assertMetricsView(AD_BIDS_NAME, AD_BIDS_CLEARED_FILTER);
 
     // create a mirror using the proto and assert that the filters are persisted
-    createAdBidsMirrorInStore();
+    createAdBidsMirrorInStore(get(mock).data);
     assertMetricsView(
       AD_BIDS_MIRROR_NAME,
       AD_BIDS_CLEARED_FILTER,
@@ -93,7 +95,7 @@ describe("dashboard-stores", () => {
     assertMetricsView(AD_BIDS_NAME);
 
     // create a mirror using the proto and assert that the filters are persisted
-    createAdBidsMirrorInStore();
+    createAdBidsMirrorInStore(get(mock).data);
     assertMetricsView(
       AD_BIDS_MIRROR_NAME,
       undefined,
@@ -102,6 +104,7 @@ describe("dashboard-stores", () => {
   });
 
   it("Update time selections", () => {
+    const mock = createMetricsMetaQueryMock();
     createAdBidsInStore();
     assertMetricsView(AD_BIDS_NAME);
 
@@ -113,7 +116,7 @@ describe("dashboard-stores", () => {
     assertMetricsView(AD_BIDS_NAME, undefined, LAST_6_HOURS_TEST_CONTROLS);
 
     // create a mirror using the proto and assert that the time controls are persisted
-    createAdBidsMirrorInStore();
+    createAdBidsMirrorInStore(get(mock).data);
     // start and end are not persisted
     assertMetricsView(
       AD_BIDS_MIRROR_NAME,
@@ -129,12 +132,13 @@ describe("dashboard-stores", () => {
     assertMetricsView(AD_BIDS_NAME, undefined, CUSTOM_TEST_CONTROLS);
 
     // create a mirror using the proto and assert that the time controls are persisted
-    createAdBidsMirrorInStore();
+    createAdBidsMirrorInStore(get(mock).data);
     // start and end are persisted for custom
     assertMetricsView(AD_BIDS_MIRROR_NAME, undefined, CUSTOM_TEST_CONTROLS);
   });
 
   it("Select different measure", () => {
+    const mock = createMetricsMetaQueryMock();
     createAdBidsInStore();
     assertMetricsView(AD_BIDS_NAME);
 
@@ -151,7 +155,7 @@ describe("dashboard-stores", () => {
     );
 
     // create a mirror using the proto and assert that the leaderboard measure is persisted
-    createAdBidsMirrorInStore();
+    createAdBidsMirrorInStore(get(mock).data);
     assertMetricsView(
       AD_BIDS_MIRROR_NAME,
       undefined,
@@ -162,6 +166,7 @@ describe("dashboard-stores", () => {
 
   describe("Restore invalid state", () => {
     it("Restore invalid filter", () => {
+      const mock = createMetricsMetaQueryMock();
       createAdBidsInStore();
       metricsExplorerStore.toggleFilter(
         AD_BIDS_NAME,
@@ -175,7 +180,7 @@ describe("dashboard-stores", () => {
       );
 
       // create a mirror from state
-      createAdBidsMirrorInStore();
+      createAdBidsMirrorInStore(get(mock).data);
       // update the mirrored dashboard mimicking meta query update
       metricsExplorerStore.sync(
         AD_BIDS_MIRROR_NAME,
@@ -198,6 +203,7 @@ describe("dashboard-stores", () => {
     });
 
     it("Restore invalid leaderboard measure", () => {
+      const mock = createMetricsMetaQueryMock();
       createAdBidsInStore();
       metricsExplorerStore.setLeaderboardMeasureName(
         AD_BIDS_NAME,
@@ -205,7 +211,7 @@ describe("dashboard-stores", () => {
       );
 
       // create a mirror from state
-      createAdBidsMirrorInStore();
+      createAdBidsMirrorInStore(get(mock).data);
       // update the mirrored dashboard mimicking meta query update
       metricsExplorerStore.sync(AD_BIDS_MIRROR_NAME, {
         name: "AdBids",
@@ -229,6 +235,7 @@ describe("dashboard-stores", () => {
     });
 
     it("Restore invalid selected dimension", () => {
+      const mock = createMetricsMetaQueryMock();
       createAdBidsInStore();
       metricsExplorerStore.setMetricDimensionName(
         AD_BIDS_NAME,
@@ -236,7 +243,7 @@ describe("dashboard-stores", () => {
       );
 
       // create a mirror from state
-      createAdBidsMirrorInStore();
+      createAdBidsMirrorInStore(get(mock).data);
       // update the mirrored dashboard mimicking meta query update
       metricsExplorerStore.sync(
         AD_BIDS_MIRROR_NAME,

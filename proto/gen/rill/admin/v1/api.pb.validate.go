@@ -1259,8 +1259,6 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Id
-
 	if utf8.RuneCountInString(m.GetName()) < 1 {
 		err := UpdateOrganizationRequestValidationError{
 			field:  "Name",
@@ -1272,7 +1270,13 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Description
+	if m.Description != nil {
+		// no validation rules for Description
+	}
+
+	if m.NewName != nil {
+		// no validation rules for NewName
+	}
 
 	if len(errors) > 0 {
 		return UpdateOrganizationRequestMultiError(errors)
@@ -2772,8 +2776,6 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Id
-
 	if utf8.RuneCountInString(m.GetOrganizationName()) < 1 {
 		err := UpdateProjectRequestValidationError{
 			field:  "OrganizationName",
@@ -2796,17 +2798,33 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Description
+	if m.Description != nil {
+		// no validation rules for Description
+	}
 
-	// no validation rules for Public
+	if m.Public != nil {
+		// no validation rules for Public
+	}
 
-	// no validation rules for ProdBranch
+	if m.ProdBranch != nil {
+		// no validation rules for ProdBranch
+	}
 
-	// no validation rules for GithubUrl
+	if m.GithubUrl != nil {
+		// no validation rules for GithubUrl
+	}
 
-	// no validation rules for ProdSlots
+	if m.ProdSlots != nil {
+		// no validation rules for ProdSlots
+	}
 
-	// no validation rules for Region
+	if m.Region != nil {
+		// no validation rules for Region
+	}
+
+	if m.NewName != nil {
+		// no validation rules for NewName
+	}
 
 	if len(errors) > 0 {
 		return UpdateProjectRequestMultiError(errors)

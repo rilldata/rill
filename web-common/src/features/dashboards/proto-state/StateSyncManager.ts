@@ -2,6 +2,7 @@ import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 
 export class StateSyncManager {
@@ -27,7 +28,7 @@ export class StateSyncManager {
     }
   }
 
-  public handleUrlChange() {
+  public handleUrlChange(metricsView: V1MetricsView) {
     const pageUrl = get(page).url;
     const newUrlState = pageUrl.searchParams.get("state");
     if (this.urlState === newUrlState) return;
@@ -36,7 +37,11 @@ export class StateSyncManager {
     // run sync if we didn't change the url through a state change
     // this can happen when url is updated directly by the user
     if (!this.updating && this.urlState && this.urlState !== this.protoState) {
-      metricsExplorerStore.syncFromUrl(this.metricViewName, pageUrl);
+      metricsExplorerStore.syncFromUrl(
+        this.metricViewName,
+        pageUrl,
+        metricsView
+      );
     }
     this.updating = false;
   }

@@ -191,6 +191,7 @@ message ExportResponse {
 enum ExportFormat {
   EXPORT_FORMAT_UNSPECIFIED = 0;
   EXPORT_FORMAT_CSV = 1;
+  EXPORT_FORMAT_XLSX = 2;
 }
 
 // **********
@@ -559,7 +560,6 @@ message ColumnTimeSeriesRequest {
   repeated BasicMeasure measures = 3;
   string timestamp_column_name = 4;
   TimeSeriesTimeRange time_range = 5;
-  MetricsViewFilter filters = 6;
   int32 pixels = 7;
   int32 sample_size = 8;
   int32 priority = 9;

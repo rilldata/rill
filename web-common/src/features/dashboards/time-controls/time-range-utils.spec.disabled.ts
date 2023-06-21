@@ -1,40 +1,5 @@
 import { V1TimeGrain } from "../../../runtime-client";
-import { getDefaultTimeGrain, getTimeGrainOptions } from "./time-range-utils";
-
-describe("getTimeGrainOptions", () => {
-  it("should return an array of available time grains", () => {
-    const timeGrains = getTimeGrainOptions(
-      new Date("2020-03-01"),
-      new Date("2020-03-31")
-    );
-    expect(timeGrains).toEqual([
-      {
-        enabled: false,
-        timeGrain: V1TimeGrain.TIME_GRAIN_MINUTE,
-      },
-      {
-        enabled: true,
-        timeGrain: V1TimeGrain.TIME_GRAIN_HOUR,
-      },
-      {
-        enabled: true,
-        timeGrain: V1TimeGrain.TIME_GRAIN_DAY,
-      },
-      {
-        enabled: true,
-        timeGrain: V1TimeGrain.TIME_GRAIN_WEEK,
-      },
-      {
-        enabled: false,
-        timeGrain: V1TimeGrain.TIME_GRAIN_MONTH,
-      },
-      {
-        enabled: false,
-        timeGrain: V1TimeGrain.TIME_GRAIN_YEAR,
-      },
-    ]);
-  });
-});
+import { getDefaultTimeGrain } from "./time-range-utils";
 
 describe("getDefaultTimeGrain", () => {
   it("should return the default time grain (for a 5 day time range)", () => {

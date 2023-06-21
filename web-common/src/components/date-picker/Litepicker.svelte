@@ -8,7 +8,9 @@
     defaultStart: string,
     defaultEnd: string,
     openOnMount = false,
-    editingDate: 0 | 1 = 0;
+    editingDate: 0 | 1 = 0,
+    min: string,
+    max: string;
 
   let container: HTMLElement, picker: Custompicker;
 
@@ -37,8 +39,8 @@
       numberOfColumns: 2,
       position: "bottom left",
       singleMode: false,
-      startDate: parseLocaleStringDate(defaultStart),
-      endDate: parseLocaleStringDate(defaultEnd),
+      startDate: parseLocaleStringDate(defaultStart || min),
+      endDate: parseLocaleStringDate(defaultEnd || max),
       startEl,
       endEl,
     });
