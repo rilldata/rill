@@ -66,7 +66,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 	// Create context that we cancel in Close() (for background reconciles)
 	ctx, cancel := context.WithCancel(context.Background())
 
-	adm := &Service{
+	return &Service{
 		DB:             db,
 		Provisioner:    prov,
 		Email:          emailClient,
@@ -77,9 +77,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		issuer:         issuer,
 		closeCtx:       ctx,
 		closeCtxCancel: cancel,
-	}
-
-	return adm, nil
+	}, nil
 }
 
 func (s *Service) Close() error {
