@@ -29,6 +29,8 @@ describe("Litepicker", () => {
       endEl,
       defaultStart: "1/1/2023",
       defaultEnd: "1/15/2023",
+      min: "1/1/2023",
+      max: "1/30/2023",
       openOnMount: true,
     });
 
@@ -46,6 +48,8 @@ describe("Litepicker", () => {
       endEl,
       defaultStart: "1/1/2023",
       defaultEnd: "1/15/2023",
+      min: "1/1/2023",
+      max: "1/30/2023",
       openOnMount: true,
     });
 
@@ -80,6 +84,8 @@ describe("Litepicker", () => {
       endEl,
       defaultStart: "1/1/2023",
       defaultEnd: "1/15/2023",
+      min: "1/1/2023",
+      max: "1/30/2023",
       openOnMount: true,
     });
 
@@ -114,6 +120,8 @@ describe("Litepicker", () => {
       endEl,
       defaultStart: "1/1/2023",
       defaultEnd: "1/15/2023",
+      min: "1/1/2023",
+      max: "1/30/2023",
       openOnMount: true,
     });
 
@@ -160,6 +168,8 @@ describe("Litepicker", () => {
       endEl,
       defaultStart: "1/1/2023",
       defaultEnd: "1/15/2023",
+      min: "1/1/2023",
+      max: "1/30/2023",
       openOnMount: true,
     });
 
@@ -177,6 +187,8 @@ describe("Litepicker", () => {
       endEl,
       defaultStart: "1/1/2023",
       defaultEnd: "1/15/2023",
+      min: "1/1/2023",
+      max: "1/30/2023",
       openOnMount: true,
     });
 
@@ -211,6 +223,8 @@ describe("Litepicker", () => {
       endEl,
       defaultStart: "1/1/2023",
       defaultEnd: "1/15/2023",
+      min: "1/1/2023",
+      max: "1/30/2023",
     });
 
     let showState = null;

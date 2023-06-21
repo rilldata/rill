@@ -124,10 +124,11 @@ export const TimeRangePreset: { [K in TimeRangeType]: K } = {
   LAST_24_HOURS: "LAST_24_HOURS",
   LAST_7_DAYS: "LAST_7_DAYS",
   LAST_4_WEEKS: "LAST_4_WEEKS",
-  LAST_YEAR: "LAST_YEAR",
+  LAST_12_MONTHS: "LAST_12_MONTHS",
   TODAY: "TODAY",
   WEEK_TO_DATE: "WEEK_TO_DATE",
   MONTH_TO_DATE: "MONTH_TO_DATE",
+  QUARTER_TO_DATE: "QUARTER_TO_DATE",
   YEAR_TO_DATE: "YEAR_TO_DATE",
   CUSTOM: "CUSTOM",
 };
@@ -160,11 +161,6 @@ export interface TimeGrain {
    * the time grain. This preserves locale-based formatting.
    */
   formatDate: Intl.DateTimeFormatOptions;
-}
-
-// FIXME: is this needed?
-export interface TimeGrainOption extends TimeGrain {
-  enabled: boolean;
 }
 
 // limit the set of available time grains to those supported
