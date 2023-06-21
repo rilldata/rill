@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"testing"
 	"time"
 
@@ -578,7 +579,7 @@ func getColumnTestServerWithEmptyModel(t *testing.T) (*Server, string) {
 func getColumnTestServerWithModel(t *testing.T, sql string, expectation int) (*Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", sql)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil)
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
 	require.NoError(t, err)
 
 	olap, err := rt.OLAP(testCtx(), instanceID)
