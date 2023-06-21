@@ -1,0 +1,63 @@
+services:
+    admin:
+        build:
+            context: .
+            dockerfile: dev/backend/Dockerfile
+        image: rill-developer-dev-backend:latest
+        pull_policy: never
+        platform: linux/amd64
+        env_file: .env
+        restart: always
+        command: ["run", "/rill-developer/cli/main.go", "admin", "start"]
+        environment:
+            - RILL_ADMIN_DATABASE_URL=postgres://postgres:postgres@docker.for.mac.localhost:5432/postgres
+            - 'RILL_ADMIN_ISSUER_URL=http://docker.for.mac.localhost:8080'
+            - 'RILL_ADMIN_PROVISIONER_SPEC={"runtimes":[{"host":"http://docker.for.mac.localhost:9091","slots":50,"data_dir":"","audience_url":"http://localhost:8081"}]}'
+        ports:
+            - '8080:8080'
+            - '9090:9090'
+        volumes:
+            - ./:/rill-developer
+            
+    runtime:
+        image: rill-developer-dev-backend:latest
+        platform: linux/amd64
+        pull_policy: never
+        depends_on:
+            - admin
+        env_file: .env
+        restart: always
+        command: ["run", "/rill-developer/cli/main.go", "runtime", "start"]
+        environment:
+            - 'RILL_RUNTIME_AUTH_ISSUER_URL=http://docker.for.mac.localhost:8080'
+            - OTEL_EXPORTER_OTLP_ENDPOINT=http://docker.for.mac.localhost:4317
+        ports:
+            - '8081:8081'
+            - '9091:9091'
+        volumes:
+            - ./:/rill-developer
+
+    web-admin:
+        build:
+            context: .
+            dockerfile: dev/frontend/Dockerfile
+        depends_on:
+            - admin
+        image: rill-developer-dev-frontend:latest
+        platform: linux/amd64
+        pull_policy: never
+        restart: always
+        ports:
+            - '3000:3000'
+        volumes:
+            - ./:/rill-developer
+
+    postgres:
+        image: postgres
+        restart: always
+        environment:
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+        ports:
+            - '5432:5432'
+        
