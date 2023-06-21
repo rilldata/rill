@@ -4,6 +4,7 @@
   import { StateSyncManager } from "@rilldata/web-common/features/dashboards/proto-state/StateSyncManager";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { get } from "svelte/store";
 
   export let metricViewName: string;
 
@@ -15,7 +16,10 @@
     stateSyncManager.handleStateChange($metricsExplorer);
   }
   $: if ($page && $metricsViewQuery.data) {
-    stateSyncManager.handleUrlChange($metricsViewQuery.data);
+    stateSyncManager.handleUrlChange(
+      get(metricsExplorer),
+      $metricsViewQuery.data
+    );
   }
 </script>
 

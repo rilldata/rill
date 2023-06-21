@@ -17,6 +17,7 @@ export class StateSyncManager {
     if (this.protoState === metricsExplorer.proto) return;
     this.protoState = metricsExplorer.proto;
 
+    console.log("handleStateChange", this.protoState, this.urlState);
     // if state didn't change do not call goto. this avoids adding unnecessary urls to history stack
     if (this.protoState !== this.urlState) {
       if (this.protoState === metricsExplorer.defaultProto) {
@@ -28,18 +29,30 @@ export class StateSyncManager {
     }
   }
 
-  public handleUrlChange(metricsView: V1MetricsView) {
+  public handleUrlChange(
+    metricsExplorer: MetricsExplorerEntity,
+    metricsView: V1MetricsView
+  ) {
     const pageUrl = get(page).url;
-    const newUrlState = pageUrl.searchParams.get("state");
+    let newUrlState = pageUrl.searchParams.get("state");
     if (this.urlState === newUrlState) return;
+    if (!newUrlState && metricsExplorer?.defaultProto) {
+      newUrlState = metricsExplorer.defaultProto;
+    }
     this.urlState = newUrlState;
 
+    console.log(
+      "handleUrlChange",
+      this.updating,
+      this.protoState,
+      this.urlState
+    );
     // run sync if we didn't change the url through a state change
     // this can happen when url is updated directly by the user
     if (!this.updating && this.urlState && this.urlState !== this.protoState) {
       metricsExplorerStore.syncFromUrl(
         this.metricViewName,
-        pageUrl,
+        this.urlState,
         metricsView
       );
     }
