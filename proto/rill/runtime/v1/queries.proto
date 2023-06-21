@@ -147,6 +147,10 @@ service QueryService {
   rpc TableRows(TableRowsRequest) returns (TableRowsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
   }
+
+  rpc CustomQuery(CustomQueryRequest) returns (CustomQueryResponse) {
+    option (google.api.http) = {post: "/v1/instances/{instance_id}/queries/sql"};
+  }
 }
 
 // Request message for QueryService.Query
@@ -632,5 +636,14 @@ message TableRowsRequest {
 }
 
 message TableRowsResponse {
+  repeated google.protobuf.Struct data = 1;
+}
+
+message CustomQueryRequest {
+  string instance_id = 1;
+  int32 priority = 4;
+}
+
+message CustomQueryResponse {
   repeated google.protobuf.Struct data = 1;
 }
