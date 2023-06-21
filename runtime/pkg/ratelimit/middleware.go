@@ -98,11 +98,11 @@ func (i *Interceptor) gRPCRequestLimitKeyByCtx(ctx context.Context, req interfac
 	return AnonReqLimitKey(GRPCRequestName(req), observability.GrpcPeer(ctx))
 }
 
-func AuthReqLimitKey(reqName string, authID string) string {
+func AuthReqLimitKey(reqName, authID string) string {
 	return fmt.Sprintf("auth:%s:%s", reqName, authID)
 }
 
-func AnonReqLimitKey(reqName string, ipAddr string) string {
+func AnonReqLimitKey(reqName, ipAddr string) string {
 	return fmt.Sprintf("anon:%s:%s", reqName, ipAddr)
 }
 
