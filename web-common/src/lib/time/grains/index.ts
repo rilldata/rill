@@ -7,7 +7,7 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { Duration } from "luxon";
 import { TIME_GRAIN } from "../config";
 import { getTimeWidth } from "../transforms";
-import type { TimeGrain, TimeGrainOption } from "../types";
+import type { TimeGrain } from "../types";
 
 export function unitToTimeGrain(unit: string): V1TimeGrain {
   return (
@@ -18,30 +18,6 @@ export function unitToTimeGrain(unit: string): V1TimeGrain {
 
 export function durationToMillis(duration: string): number {
   return Duration.fromISO(duration).toMillis();
-}
-
-// FIXME: what is the difference between this and getAllowedTimeGrains?
-// It appears that we're using this instead of getAllowedTimeGrains.
-// I think we should deprecate this function as soon as possible.
-export function getTimeGrainOptions(start: Date, end: Date): TimeGrainOption[] {
-  const timeGrains: TimeGrainOption[] = [];
-  const timeRangeDurationMs = getTimeWidth(start, end);
-
-  for (const timeGrain of Object.values(TIME_GRAIN)) {
-    // only show a time grain if it results in a reasonable number of points on the line chart
-    const MINIMUM_POINTS_ON_LINE_CHART = 3;
-    const MAXIMUM_POINTS_ON_LINE_CHART = 2500;
-    const timeGrainDurationMs = durationToMillis(timeGrain.duration);
-    const pointsOnLineChart = timeRangeDurationMs / timeGrainDurationMs;
-    const showTimeGrain =
-      pointsOnLineChart >= MINIMUM_POINTS_ON_LINE_CHART &&
-      pointsOnLineChart <= MAXIMUM_POINTS_ON_LINE_CHART;
-    timeGrains.push({
-      ...timeGrain,
-      enabled: showTimeGrain,
-    });
-  }
-  return timeGrains;
 }
 
 // Get the default grain for a given time range.
@@ -72,14 +48,11 @@ export function getDefaultTimeGrain(start: Date, end: Date): TimeGrain {
   }
 }
 
-// Return time grains that are allowed for a given time range. Note that
-// this function is similar to getTimeGrainOptions. We should deprecate getTimeGrainOptions
-// in favor of this logic.
+// Return time grains that are allowed for a given time range.
 export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
   const timeRangeDurationMs = getTimeWidth(start, end);
   if (
-    timeRangeDurationMs <
-    2 * durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration)
+    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration)
   ) {
     return [TIME_GRAIN.TIME_GRAIN_MINUTE];
   } else if (
@@ -88,17 +61,17 @@ export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
   ) {
     return [TIME_GRAIN.TIME_GRAIN_MINUTE, TIME_GRAIN.TIME_GRAIN_HOUR];
   } else if (
-    timeRangeDurationMs <= durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
+    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
   ) {
     return [TIME_GRAIN.TIME_GRAIN_HOUR];
   } else if (
-    timeRangeDurationMs <=
-    14 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
+    timeRangeDurationMs <
+    7 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
   ) {
     return [TIME_GRAIN.TIME_GRAIN_HOUR, TIME_GRAIN.TIME_GRAIN_DAY];
   } else if (
     timeRangeDurationMs <
-    durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 30
+    30 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
   ) {
     return [
       TIME_GRAIN.TIME_GRAIN_HOUR,
@@ -107,22 +80,27 @@ export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
     ];
   } else if (
     timeRangeDurationMs <
-    3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 30
-  ) {
-    return [TIME_GRAIN.TIME_GRAIN_DAY, TIME_GRAIN.TIME_GRAIN_WEEK];
-  } else if (
-    timeRangeDurationMs <
-    3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration)
+    3 * 30 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
   ) {
     return [
       TIME_GRAIN.TIME_GRAIN_DAY,
       TIME_GRAIN.TIME_GRAIN_WEEK,
       TIME_GRAIN.TIME_GRAIN_MONTH,
     ];
+  } else if (
+    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration)
+  ) {
+    return [
+      TIME_GRAIN.TIME_GRAIN_DAY,
+      TIME_GRAIN.TIME_GRAIN_WEEK,
+      TIME_GRAIN.TIME_GRAIN_MONTH,
+      TIME_GRAIN.TIME_GRAIN_QUARTER,
+    ];
   } else {
     return [
       TIME_GRAIN.TIME_GRAIN_WEEK,
       TIME_GRAIN.TIME_GRAIN_MONTH,
+      TIME_GRAIN.TIME_GRAIN_QUARTER,
       TIME_GRAIN.TIME_GRAIN_YEAR,
     ];
   }

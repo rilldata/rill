@@ -41,7 +41,7 @@
     buttonDisabled = true;
     buttonStatus = ["Select a model before exploring metrics"];
   } else if (!possibleModel) {
-    // FIXME: get these decision rules right
+    // FIXME: get these decision rules right {
     buttonDisabled = true;
     buttonStatus = ["Add measures and dimensions before exploring metrics"];
   } else if (Object.values($metricsConfigErrorStore).some((error) => error)) {
@@ -58,8 +58,8 @@
 <Tooltip alignment="middle" distance={5} location="right">
   <!-- TODO: we need to standardize these buttons. -->
   <Button
-    label="Go to dashboard"
     disabled={buttonDisabled}
+    label="Go to dashboard"
     on:click={() => viewDashboard()}
     type="primary"
   >

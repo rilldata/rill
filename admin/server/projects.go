@@ -262,51 +262,70 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
 		attribute.String("args.project", req.Name),
-		attribute.String("args.description", req.Description),
-		attribute.Bool("args.public", req.Public),
-		attribute.String("args.region", req.Region),
-		attribute.Int64("args.prod_slots", req.ProdSlots),
-		attribute.String("args.prod_branch", req.ProdBranch),
-		attribute.String("args.github_url", req.GithubUrl),
 	)
+	if req.Description != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.description", *req.Description))
+	}
+	if req.Region != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.region", *req.Region))
+	}
+	if req.ProdBranch != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.prod_branch", *req.ProdBranch))
+	}
+	if req.GithubUrl != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.github_url", *req.GithubUrl))
+	}
+	if req.Public != nil {
+		observability.AddRequestAttributes(ctx, attribute.Bool("args.public", *req.Public))
+	}
+	if req.ProdSlots != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_slots", *req.ProdSlots))
+	}
+	if req.NewName != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
+	}
+
+	// Check the request is made by a user
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated")
+	}
 
 	// Find project
-	proj, err := s.admin.DB.FindProject(ctx, req.Id)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	claims := auth.GetClaims(ctx)
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
 
-	// If changing the Github URL, check github app is installed and caller has access on the repo
-	if safeStr(proj.GithubURL) != req.GithubUrl {
-		_, err = s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, claims.OwnerID())
-		if err != nil {
-			return nil, err
+	githubURL := proj.GithubURL
+	if req.GithubUrl != nil {
+		// If changing the Github URL, check github app is installed and caller has access on the repo
+		if safeStr(proj.GithubURL) != *req.GithubUrl {
+			_, err = s.getAndCheckGithubInstallationID(ctx, *req.GithubUrl, claims.OwnerID())
+			if err != nil {
+				return nil, err
+			}
+			githubURL = req.GithubUrl
 		}
 	}
 
-	githubURL := proj.GithubURL
-	if req.GithubUrl != "" {
-		githubURL = &req.GithubUrl
-	}
-
 	opts := &database.UpdateProjectOptions{
-		Name:                 req.Name,
-		Description:          req.Description,
-		Public:               req.Public,
-		ProdBranch:           req.ProdBranch,
+		Name:                 valOrDefault(req.NewName, proj.Name),
+		Description:          valOrDefault(req.Description, proj.Description),
+		Public:               valOrDefault(req.Public, proj.Public),
+		ProdBranch:           valOrDefault(req.ProdBranch, proj.ProdBranch),
 		ProdVariables:        proj.ProdVariables,
 		GithubURL:            githubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdDeploymentID:     proj.ProdDeploymentID,
-		ProdSlots:            int(req.ProdSlots),
-		Region:               req.Region,
+		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
+		Region:               valOrDefault(req.Region, proj.Region),
 	}
-	proj, err = s.admin.UpdateProject(ctx, proj, opts, true)
+	proj, err = s.admin.UpdateProject(ctx, proj, opts)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -341,24 +360,17 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	// Check the request is made by a user
 	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated")
+	}
+
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
 	}
 
-	opts := &database.UpdateProjectOptions{
-		Name:                 proj.Name,
-		Description:          proj.Description,
-		Public:               proj.Public,
-		ProdBranch:           proj.ProdBranch,
-		GithubURL:            proj.GithubURL,
-		GithubInstallationID: proj.GithubInstallationID,
-		ProdDeploymentID:     proj.ProdDeploymentID,
-		ProdSlots:            proj.ProdSlots,
-		Region:               proj.Region,
-		ProdVariables:        req.Variables,
-	}
-	proj, err = s.admin.UpdateProject(ctx, proj, opts, false)
+	proj, err = s.admin.UpdateProjectVariables(ctx, proj, req.Variables)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "variables updated failed with error %s", err.Error())
 	}
@@ -746,4 +758,11 @@ func safeStr(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+func valOrDefault[T any](ptr *T, def T) T {
+	if ptr != nil {
+		return *ptr
+	}
+	return def
 }
