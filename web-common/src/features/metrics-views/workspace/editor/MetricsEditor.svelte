@@ -26,6 +26,7 @@
     MissingDimension = "at least one dimension should be present",
     MissingMeasure = "at least one measure should be present",
     Malformed = "did not find expected key",
+    InvalidTimeGrainForSmallest = "invalid time grain",
   }
 
   function runtimeErrorToLine(message: string, yaml: string) {
@@ -33,6 +34,12 @@
     if (message === ConfigErrors.SouceNotSelected) {
       /** if this is undefined, then the field isn't here either. */
       const line = lines.findIndex((line) => line.startsWith("model: "));
+      return { line: line + 1, end: line, message, level: "error" };
+    }
+    if (message.startsWith(ConfigErrors.InvalidTimeGrainForSmallest)) {
+      const line = lines.findIndex((line) =>
+        line.startsWith("smallest_time_grain:")
+      );
       return { line: line + 1, end: line, message, level: "error" };
     }
     if (message === ConfigErrors.TimestampNotFound) {
