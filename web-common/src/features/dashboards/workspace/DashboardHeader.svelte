@@ -1,6 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { Button } from "@rilldata/web-common/components/button";
+  import {
+    Button,
+    IconSpaceFixer,
+  } from "@rilldata/web-common/components/button";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -13,19 +16,22 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  //  import { getContext } from "svelte";
-  //  import type { Tweened } from "svelte/motion";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Filters from "../filters/Filters.svelte";
   import { useMetaQuery } from "../selectors";
   import TimeControls from "../time-controls/TimeControls.svelte";
+  import {
+    V1ExportFormat,
+    createQueryServiceExport,
+  } from "@rilldata/web-common/runtime-client";
+  import exportMetrics from "./export-metrics";
+  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
+  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
 
   export let metricViewName: string;
   export let hasTitle: boolean;
-
-  //  const navigationVisibilityTween = getContext(
-  //    "rill:app:navigation-visibility-tween"
-  //  ) as Tweened<number>;
 
   const viewMetrics = (metricViewName: string) => {
     goto(`/dashboard/${metricViewName}/edit`);
@@ -37,6 +43,16 @@
       MetricsEventScreenName.Dashboard,
       MetricsEventScreenName.MetricsDefinition
     );
+  };
+
+  const exportDash = createQueryServiceExport();
+
+  const handleExportMetrics = async (format: V1ExportFormat) => {
+    exportMetrics({
+      metricViewName,
+      query: exportDash,
+      format,
+    });
   };
 
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
@@ -66,8 +82,50 @@
         </div>
       </h1>
       <!-- top right CTAs -->
-      {#if isEditableDashboard}
-        <PanelCTA side="right">
+
+      <PanelCTA side="right">
+        <Tooltip alignment="middle" distance={16} location="left">
+          <!-- attach floating element right here-->
+          <WithTogglableFloatingElement
+            alignment="end"
+            distance={8}
+            let:toggleFloatingElement
+            location="bottom"
+          >
+            <Button on:click={toggleFloatingElement} type="secondary">
+              <IconSpaceFixer pullLeft><CaretDownIcon /></IconSpaceFixer>
+
+              <ResponsiveButtonText>Export</ResponsiveButtonText>
+            </Button>
+            <Menu
+              dark
+              on:click-outside={toggleFloatingElement}
+              on:escape={toggleFloatingElement}
+              slot="floating-element"
+            >
+              <MenuItem
+                on:select={() => {
+                  toggleFloatingElement();
+                  handleExportMetrics("EXPORT_FORMAT_XLSX");
+                }}
+              >
+                Export as XLSX
+              </MenuItem>
+              <MenuItem
+                on:select={() => {
+                  toggleFloatingElement();
+                  handleExportMetrics("EXPORT_FORMAT_CSV");
+                }}
+              >
+                Export as CSV
+              </MenuItem>
+            </Menu>
+          </WithTogglableFloatingElement>
+          <TooltipContent slot="tooltip-content">
+            Export the filtered dashboard data as a file
+          </TooltipContent>
+        </Tooltip>
+        {#if isEditableDashboard}
           <Tooltip distance={8}>
             <Button
               on:click={() => viewMetrics(metricViewName)}
@@ -85,8 +143,8 @@
               Deploy this dashboard to Rill Cloud
             </TooltipContent>
           </Tooltip>
-        </PanelCTA>
-      {/if}
+        {/if}
+      </PanelCTA>
     </div>
   {/if}
   <!-- bottom row -->
