@@ -35,8 +35,7 @@ type Source struct {
 	Format                string         `yaml:"format,omitempty" mapstructure:"format,omitempty"`
 	DuckDBProps           map[string]any `yaml:"duckdb,omitempty" mapstructure:"duckdb,omitempty"`
 	Headers               map[string]any `yaml:"headers,omitempty" mapstructure:"headers,omitempty"`
-	AllowFieldRelaxation  *bool          `yaml:"ingest.allow_field_relaxation,omitempty" mapstructure:"allow_field_relaxation,omitempty"`
-	AllowFieldAddition    *bool          `yaml:"ingest.allow_field_addition,omitempty" mapstructure:"allow_field_addition,omitempty"`
+	AllowSchemaRelaxation *bool          `yaml:"ingest.allow_schema_relaxation,omitempty" mapstructure:"allow_schema_relaxation,omitempty"`
 }
 
 type ExtractPolicy struct {
@@ -198,12 +197,8 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		props["headers"] = source.Headers
 	}
 
-	if source.AllowFieldAddition != nil {
-		props["allow_field_addition"] = *source.AllowFieldAddition
-	}
-
-	if source.AllowFieldRelaxation != nil {
-		props["allow_field_relaxation"] = *source.AllowFieldRelaxation
+	if source.AllowSchemaRelaxation != nil {
+		props["allow_schema_relaxation"] = *source.AllowSchemaRelaxation
 	}
 
 	propsPB, err := structpb.NewStruct(props)
@@ -388,6 +383,8 @@ func getTimeGrainEnum(timeGrain string) (runtimev1.TimeGrain, error) {
 		return runtimev1.TimeGrain_TIME_GRAIN_WEEK, nil
 	case "month":
 		return runtimev1.TimeGrain_TIME_GRAIN_MONTH, nil
+	case "quarter":
+		return runtimev1.TimeGrain_TIME_GRAIN_QUARTER, nil
 	case "year":
 		return runtimev1.TimeGrain_TIME_GRAIN_YEAR, nil
 	default:
@@ -412,6 +409,8 @@ func getTimeGrainString(timeGrain runtimev1.TimeGrain) string {
 		return "week"
 	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
 		return "month"
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return "quarter"
 	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
 		return "year"
 	default:

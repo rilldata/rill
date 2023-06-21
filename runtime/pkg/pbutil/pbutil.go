@@ -64,6 +64,12 @@ func ToValue(v any) (*structpb.Value, error) {
 		// This is what we should do when frontend supports it:
 		// s := v.String()
 		// return structpb.NewStringValue(s), nil
+	case duckdb.Decimal:
+		// Evil cast to float until frontend can deal with bigs:
+		denom := big.NewInt(10)
+		denom.Exp(denom, big.NewInt(int64(v.Scale)), nil)
+		v2, _ := new(big.Rat).SetFrac(v.Value, denom).Float64()
+		return structpb.NewNumberValue(v2), nil
 	case duckdb.Map:
 		return ToValue(map[any]any(v))
 	case map[any]any:

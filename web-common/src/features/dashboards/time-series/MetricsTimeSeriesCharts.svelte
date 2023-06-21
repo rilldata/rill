@@ -13,17 +13,18 @@
     useModelAllTimeRange,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import { getOffset } from "@rilldata/web-common/lib/time/transforms";
-  import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import {
     createQueryServiceMetricsViewTimeSeries,
     createQueryServiceMetricsViewTotals,
     V1MetricsViewTimeSeriesResponse,
   } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
-  import { isRangeInsideOther } from "../../../lib/time/ranges";
+  import {
+    getAdjustedChartTime,
+    getAdjustedFetchTime,
+    isRangeInsideOther,
+  } from "../../../lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -42,6 +43,7 @@
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
   $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
   $: showComparison = $dashboardStore?.showComparison;
+  $: interval = $dashboardStore?.selectedTimeRange?.interval;
 
   $: allTimeRangeQuery = useModelAllTimeRange(
     $runtime.instanceId,
@@ -134,29 +136,40 @@
     !$metaQuery.isRefetching &&
     $dashboardStore?.selectedTimeRange?.start
   ) {
+    const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
+      $dashboardStore.selectedTimeRange?.start,
+      $dashboardStore.selectedTimeRange?.end,
+      interval
+    );
+
     timeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
       instanceId,
       metricViewName,
       {
         measureNames: selectedMeasureNames,
         filter: $dashboardStore?.filters,
-        timeStart: $dashboardStore.selectedTimeRange?.start.toISOString(),
-        timeEnd: $dashboardStore.selectedTimeRange?.end.toISOString(),
-        timeGranularity: $dashboardStore.selectedTimeRange?.interval,
+        timeStart: adjustedStart,
+        timeEnd: adjustedEnd,
+        timeGranularity: interval,
       }
     );
     if (displayComparison) {
+      const { start: compAdjustedStart, end: compAdjustedEnd } =
+        getAdjustedFetchTime(
+          $dashboardStore.selectedComparisonTimeRange?.start,
+          $dashboardStore.selectedComparisonTimeRange?.end,
+          interval
+        );
+
       timeSeriesComparisonQuery = createQueryServiceMetricsViewTimeSeries(
         instanceId,
         metricViewName,
         {
           measureNames: selectedMeasureNames,
           filter: $dashboardStore?.filters,
-          timeStart:
-            $dashboardStore?.selectedComparisonTimeRange?.start.toISOString(),
-          timeEnd:
-            $dashboardStore?.selectedComparisonTimeRange?.end.toISOString(),
-          timeGranularity: $dashboardStore.selectedTimeRange?.interval,
+          timeStart: compAdjustedStart,
+          timeEnd: compAdjustedEnd,
+          timeGranularity: interval,
         }
       );
     }
@@ -177,7 +190,11 @@
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
   $: if (dataCopy && dataCopy?.length) {
-    formattedData = prepareTimeSeries(dataCopy, dataComparisonCopy);
+    formattedData = prepareTimeSeries(
+      dataCopy,
+      dataComparisonCopy,
+      TIME_GRAIN[interval].duration
+    );
   }
 
   let mouseoverValue = undefined;
@@ -190,21 +207,15 @@
     $dashboardStore?.selectedTimeRange &&
     $dashboardStore?.selectedTimeRange?.start
   ) {
-    startValue = removeTimezoneOffset(
-      new Date($dashboardStore?.selectedTimeRange?.start)
+    const adjustedChartValue = getAdjustedChartTime(
+      $dashboardStore.selectedTimeRange?.start,
+      $dashboardStore.selectedTimeRange?.end,
+      interval,
+      allTimeRange?.end
     );
 
-    // selectedTimeRange.end is exclusive and rounded to the time grain ("interval").
-    // Since values are grouped with DATE_TRUNC, we subtract one grain to get the (inclusive) axis end.
-    endValue = new Date($dashboardStore?.selectedTimeRange?.end);
-
-    endValue = getOffset(
-      new Date($dashboardStore?.selectedTimeRange?.end),
-      TIME_GRAIN[$dashboardStore?.selectedTimeRange?.interval].duration,
-      TimeOffsetType.SUBTRACT
-    );
-
-    endValue = removeTimezoneOffset(endValue);
+    startValue = adjustedChartValue?.start;
+    endValue = adjustedChartValue?.end;
   }
 
   // FIXME: this is pending the remaining state work for show/hide measures and dimensions
@@ -304,8 +315,9 @@
           <MeasureChart
             bind:mouseoverValue
             data={formattedData}
-            xAccessor="ts"
-            timeGrain={$dashboardStore?.selectedTimeRange?.interval}
+            xAccessor="ts_position"
+            labelAccessor="ts"
+            timeGrain={interval}
             yAccessor={measure.name}
             xMin={startValue}
             xMax={endValue}
@@ -314,17 +326,14 @@
               /** format the date according to the time grain */
               return new Date(value).toLocaleDateString(
                 undefined,
-                TIME_GRAIN[$dashboardStore?.selectedTimeRange?.interval]
-                  .formatDate
+                TIME_GRAIN[interval].formatDate
               );
             }}
             numberKind={nicelyFormattedTypesToNumberKind(measure?.format)}
             mouseoverFormat={(value) =>
               formatPreset === NicelyFormattedTypes.NONE
                 ? `${value}`
-                : humanizeDataType(value, measure?.format, {
-                    excludeDecimalZeros: true,
-                  })}
+                : humanizeDataType(value, measure?.format)}
           />
         {:else}
           <div>

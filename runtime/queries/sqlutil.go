@@ -46,6 +46,8 @@ func convertToDateTruncSpecifier(specifier runtimev1.TimeGrain) string {
 		return "WEEK"
 	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
 		return "MONTH"
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return "QUARTER"
 	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
 		return "YEAR"
 	}
@@ -68,6 +70,8 @@ func toTimeGrain(val string) runtimev1.TimeGrain {
 		return runtimev1.TimeGrain_TIME_GRAIN_WEEK
 	case "MONTH":
 		return runtimev1.TimeGrain_TIME_GRAIN_MONTH
+	case "QUARTER":
+		return runtimev1.TimeGrain_TIME_GRAIN_QUARTER
 	case "YEAR":
 		return runtimev1.TimeGrain_TIME_GRAIN_YEAR
 	default:

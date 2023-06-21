@@ -683,14 +683,14 @@ mum,8.2`)
 				{file1, file2, file3, file4},
 			}},
 			name:     "variable_schema_ingested_at_once",
-			hasError: false,
+			hasError: true,
 		},
 		{
 			mockIterator: mockIterator{batches: [][]string{
 				{file1, file2, file3, file4},
 			}},
 			name:     "columns_jumbled",
-			hasError: false,
+			hasError: true,
 		},
 		{
 			mockIterator: mockIterator{batches: [][]string{
@@ -733,9 +733,8 @@ mum,8.2`)
 			Name:      test.name,
 			Connector: "mock-csv-error",
 			Properties: map[string]any{
-				"path":                   filepath.Join(tempDir, "*.csv"),
-				"allow_field_addition":   false,
-				"allow_field_relaxation": false,
+				"path":                    filepath.Join(tempDir, "*.csv"),
+				"allow_schema_relaxation": false,
 			},
 		})
 		if test.hasError {
