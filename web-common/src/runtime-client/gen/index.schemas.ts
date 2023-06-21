@@ -65,6 +65,10 @@ export type QueryServiceTableCardinalityParams = {
   priority?: number;
 };
 
+export type QueryServiceCustomQueryParams = {
+  priority?: number;
+};
+
 export type QueryServiceColumnTimeGrainParams = {
   columnName?: string;
   priority?: number;
@@ -751,12 +755,6 @@ export interface V1ListFilesResponse {
   paths?: string[];
 }
 
-export interface V1Example {
-  name?: string;
-  title?: string;
-  description?: string;
-}
-
 export interface V1ListExamplesResponse {
   examples?: V1Example[];
 }
@@ -860,6 +858,12 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
 } as const;
 
+export interface V1Example {
+  name?: string;
+  title?: string;
+  description?: string;
+}
+
 export interface V1EditInstanceResponse {
   instance?: V1Instance;
 }
@@ -888,6 +892,12 @@ export interface V1DeleteFileAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
   strict?: boolean;
+}
+
+export type V1CustomQueryResponseDataItem = { [key: string]: any };
+
+export interface V1CustomQueryResponse {
+  data?: V1CustomQueryResponseDataItem[];
 }
 
 export interface V1CreateInstanceResponse {

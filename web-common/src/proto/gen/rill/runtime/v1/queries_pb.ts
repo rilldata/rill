@@ -3520,3 +3520,83 @@ export class TableRowsResponse extends Message<TableRowsResponse> {
   }
 }
 
+/**
+ * @generated from message rill.runtime.v1.CustomQueryRequest
+ */
+export class CustomQueryRequest extends Message<CustomQueryRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: int32 priority = 4;
+   */
+  priority = 0;
+
+  constructor(data?: PartialMessage<CustomQueryRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CustomQueryRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CustomQueryRequest {
+    return new CustomQueryRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CustomQueryRequest {
+    return new CustomQueryRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CustomQueryRequest {
+    return new CustomQueryRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CustomQueryRequest | PlainMessage<CustomQueryRequest> | undefined, b: CustomQueryRequest | PlainMessage<CustomQueryRequest> | undefined): boolean {
+    return proto3.util.equals(CustomQueryRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.CustomQueryResponse
+ */
+export class CustomQueryResponse extends Message<CustomQueryResponse> {
+  /**
+   * @generated from field: repeated google.protobuf.Struct data = 1;
+   */
+  data: Struct[] = [];
+
+  constructor(data?: PartialMessage<CustomQueryResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CustomQueryResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "data", kind: "message", T: Struct, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CustomQueryResponse {
+    return new CustomQueryResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CustomQueryResponse {
+    return new CustomQueryResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CustomQueryResponse {
+    return new CustomQueryResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CustomQueryResponse | PlainMessage<CustomQueryResponse> | undefined, b: CustomQueryResponse | PlainMessage<CustomQueryResponse> | undefined): boolean {
+    return proto3.util.equals(CustomQueryResponse, a, b);
+  }
+}
+
