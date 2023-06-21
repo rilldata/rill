@@ -16,6 +16,6 @@ func limiterStreamServerInterceptor(l ratelimit.Limiter, anonLimit, authLimit re
 	return ratelimit.NewInterceptor(l, auth.CtxInspector{}, anonLimit, authLimit).StreamServerInterceptor()
 }
 
-func LimiterHTTPHandler(route string, l ratelimit.Limiter, anonLimit redis_rate.Limit, next http.Handler) http.Handler {
+func limiterHTTPHandler(route string, l ratelimit.Limiter, anonLimit redis_rate.Limit, next http.Handler) http.Handler {
 	return ratelimit.NewInterceptor(l, auth.CtxInspector{}, anonLimit, ratelimit.Unlimited).HTTPHandler(route, next)
 }
